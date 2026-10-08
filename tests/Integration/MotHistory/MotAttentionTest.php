@@ -32,7 +32,10 @@ final class MotAttentionTest extends MotHistoryTestCase
         $overview = (string) $browser->get('/vehicles/' . $golf->id)->getBody();
         self::assertStringContainsString('Outstanding recall on AB12 CDE', $overview);
         self::assertStringContainsString('/vehicles/' . $golf->id . '/mot-history', $overview);
-        self::assertStringContainsString('Outstanding recall on AB12 CDE', (string) $viewer->get('/vehicles/' . $golf->id)->getBody());
+        self::assertStringContainsString(
+            'Outstanding recall on AB12 CDE',
+            (string) $viewer->get('/vehicles/' . $golf->id)->getBody(),
+        );
 
         $this->answer = fn (): MockResponse => $this->withRecall('No');
         $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', []);
@@ -60,8 +63,15 @@ final class MotAttentionTest extends MotHistoryTestCase
 
         $overview = (string) $browser->get('/vehicles/' . $golf->id)->getBody();
 
-        self::assertStringContainsString('Your reading on 2 Mar 2026 (41,200 mi) is lower than the MOT on 15 Feb 2026 (43,961 mi)', $overview);
-        self::assertStringContainsString('/vehicles/' . $golf->id . '/odometer/' . $ours . '/edit', $overview, 'Fix opens the owner\'s reading');
+        self::assertStringContainsString(
+            'Your reading on 2 Mar 2026 (41,200 mi) is lower than the MOT on 15 Feb 2026 (43,961 mi)',
+            $overview,
+        );
+        self::assertStringContainsString(
+            '/vehicles/' . $golf->id . '/odometer/' . $ours . '/edit',
+            $overview,
+            'Fix opens the owner\'s reading',
+        );
     }
 
     public function testAnOwnersReadingAboveALaterMotIsTheOneToFix(): void
@@ -74,7 +84,10 @@ final class MotAttentionTest extends MotHistoryTestCase
 
         $overview = (string) $browser->get('/vehicles/' . $golf->id)->getBody();
 
-        self::assertStringContainsString('Your reading on 10 Jan 2025 (45,000 mi) is higher than the MOT on 14 Feb 2025 (41,950 mi)', $overview);
+        self::assertStringContainsString(
+            'Your reading on 10 Jan 2025 (45,000 mi) is higher than the MOT on 14 Feb 2025 (41,950 mi)',
+            $overview,
+        );
         self::assertStringContainsString('/vehicles/' . $golf->id . '/odometer/' . $ours . '/edit', $overview);
         $motIds = array_map(
             static fn ($r): int => $r->id,
@@ -115,7 +128,8 @@ final class MotAttentionTest extends MotHistoryTestCase
 
     private function withRecall(string $state): MockResponse
     {
-        $data = json_decode((string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json'), true, 32, JSON_THROW_ON_ERROR);
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
         self::assertIsArray($data);
         $data['hasOutstandingRecall'] = $state;
 

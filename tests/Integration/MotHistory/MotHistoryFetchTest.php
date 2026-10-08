@@ -27,9 +27,15 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $browser = $this->browserFor($this->app, 'owner');
 
         self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/mot-history')->getStatusCode());
-        self::assertSame(404, $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', ['confirm' => '1'])->getStatusCode());
+        self::assertSame(
+            404,
+            $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', ['confirm' => '1'])->getStatusCode(),
+        );
         self::assertStringNotContainsString('data-mot-history-link', (string) $browser->get('/vehicles/' . $golf->id)->getBody());
-        self::assertStringNotContainsString('data-mot-history-link', (string) $browser->get('/vehicles/' . $golf->id . '/documents')->getBody());
+        self::assertStringNotContainsString(
+            'data-mot-history-link',
+            (string) $browser->get('/vehicles/' . $golf->id . '/documents')->getBody(),
+        );
         self::assertSame([], $this->requests);
     }
 
@@ -40,11 +46,17 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $browser = $this->browserFor($this->app, 'owner');
 
         $page = (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody();
-        self::assertStringContainsString('Sends this vehicle&#039;s registration (or VIN) to DVSA (UK). Nothing else is sent.', $page);
+        self::assertStringContainsString(
+            'Sends this vehicle&#039;s registration (or VIN) to DVSA (UK). Nothing else is sent.',
+            $page,
+        );
         $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', []);
 
         self::assertSame([], $this->requests);
-        self::assertStringContainsString('Tick the box to confirm', (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
+        self::assertStringContainsString(
+            'Tick the box to confirm',
+            (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody(),
+        );
     }
 
     public function testOnlyTheOwnerMayFetch(): void
@@ -54,7 +66,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $manager = $this->shareWith($golf, ShareLevel::Manage);
 
         self::assertSame(200, $manager->get('/vehicles/' . $golf->id . '/mot-history')->getStatusCode());
-        self::assertStringNotContainsString('mot-history/fetch', (string) $manager->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
+        self::assertStringNotContainsString(
+            'mot-history/fetch',
+            (string) $manager->get('/vehicles/' . $golf->id . '/mot-history')->getBody(),
+        );
         self::assertContains(
             $manager->post('/vehicles/' . $golf->id . '/mot-history/fetch', ['confirm' => '1'])->getStatusCode(),
             [403, 404],
@@ -69,7 +84,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
 
         $response = $this->fetch($golf)->post('/vehicles/' . $golf->id . '/mot-history/fetch', []);
 
-        self::assertSame(['https://history.mot.api.gov.uk/v1/trade/vehicles/registration/AB12CDE'], array_slice($this->vehicleRequests(), 0, 1));
+        self::assertSame(
+            ['https://history.mot.api.gov.uk/v1/trade/vehicles/registration/AB12CDE'],
+            array_slice($this->vehicleRequests(), 0, 1),
+        );
         $tests = $this->service($this->app, MotTestRepository::class)->listForVehicle($golf->id);
         self::assertCount(5, $tests, 'a refresh adds no duplicates');
         self::assertSame('323456789012', $tests[0]->number);
@@ -118,7 +136,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         self::assertSame([], $this->service($this->app, MotTestRepository::class)->listForVehicle($fiesta->id));
         self::assertNull($this->service($this->app, MotTestRepository::class)->state($fiesta->id)->recall);
         $page = (string) $browser->get('/vehicles/' . $fiesta->id . '/mot-history')->getBody();
-        self::assertStringContainsString('DVSA&#039;s record for AB12 CDE is a VOLKSWAGEN GOLF MATCH TSI; this vehicle is a Ford Fiesta.', $page);
+        self::assertStringContainsString(
+            'DVSA&#039;s record for AB12 CDE is a VOLKSWAGEN GOLF MATCH TSI; this vehicle is a Ford Fiesta.',
+            $page,
+        );
     }
 
     public function testNoRecordByRegistrationTriesTheVinAndNamesThePlate(): void
@@ -146,7 +167,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $golf = $this->golf();
         $browser = $this->fetch($golf);
 
-        self::assertStringContainsString('No DVSA record for AB12 CDE.', (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
+        self::assertStringContainsString(
+            'No DVSA record for AB12 CDE.',
+            (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody(),
+        );
         self::assertSame([], $this->service($this->app, MotTestRepository::class)->listForVehicle($golf->id));
     }
 
@@ -157,7 +181,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $golf = $this->golf();
         $browser = $this->fetch($golf);
 
-        self::assertStringContainsString('DVSA is busy; try again later.', (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
+        self::assertStringContainsString(
+            'DVSA is busy; try again later.',
+            (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody(),
+        );
         self::assertSame([], $this->service($this->app, MotTestRepository::class)->listForVehicle($golf->id));
     }
 
@@ -167,7 +194,10 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         $golf = $this->golf('');
         $browser = $this->browserFor($this->app, 'owner');
 
-        self::assertStringContainsString('Add a registration or VIN', (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
+        self::assertStringContainsString(
+            'Add a registration or VIN',
+            (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody(),
+        );
         $this->fetch($golf, $browser);
         self::assertSame([], $this->vehicleRequests());
     }
@@ -193,6 +223,9 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
         self::assertNotContains('mot', $sources);
         $connection = $this->connection($this->app);
         self::assertEquals(1, $connection->fetchOne('SELECT COUNT(*) FROM issues WHERE vehicle_id = ?', [$golf->id]));
-        self::assertEquals(1, $connection->fetchOne('SELECT COUNT(*) FROM compliance_documents WHERE vehicle_id = ?', [$golf->id]));
+        self::assertEquals(
+            1,
+            $connection->fetchOne('SELECT COUNT(*) FROM compliance_documents WHERE vehicle_id = ?', [$golf->id]),
+        );
     }
 }

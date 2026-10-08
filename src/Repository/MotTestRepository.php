@@ -145,7 +145,11 @@ final readonly class MotTestRepository
                     'mot_defects',
                     $columns,
                     ['mot_test_id' => $testId, 'position' => $position],
-                    ['dangerous' => ParameterType::BOOLEAN, 'mot_test_id' => ParameterType::INTEGER, 'position' => ParameterType::INTEGER],
+                    [
+                        'dangerous' => ParameterType::BOOLEAN,
+                        'mot_test_id' => ParameterType::INTEGER,
+                        'position' => ParameterType::INTEGER,
+                    ],
                 );
                 continue;
             }
@@ -231,7 +235,8 @@ final readonly class MotTestRepository
         }
         $ids = self::ints($ids);
         // Explicit, so no engine depends on cascades being switched on.
-        foreach (['odometer_readings' => 'mot_test_id', 'mot_defects' => 'mot_test_id', 'mot_tests' => 'id'] as $table => $column) {
+        $tables = ['odometer_readings' => 'mot_test_id', 'mot_defects' => 'mot_test_id', 'mot_tests' => 'id'];
+        foreach ($tables as $table => $column) {
             $this->connection->createQueryBuilder()
                 ->delete($table)
                 ->where($column . ' IN (:ids)')
@@ -381,10 +386,12 @@ final readonly class MotTestRepository
     {
         $platform = $this->connection->getDatabasePlatform();
         $recall = Row::nullableString($row, 'mot_recall_state');
+        $enabledAt = $row['mot_history_enabled_at'] ?? null;
+        $fetchedAt = $row['mot_history_fetched_at'] ?? null;
 
         return new MotVehicleState(
-            ($row['mot_history_enabled_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['mot_history_enabled_at'], $platform),
-            ($row['mot_history_fetched_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['mot_history_fetched_at'], $platform),
+            $enabledAt === null ? null : UtcDateTime::fromDatabase($enabledAt, $platform),
+            $fetchedAt === null ? null : UtcDateTime::fromDatabase($fetchedAt, $platform),
             $recall === null ? null : RecallState::tryFrom($recall),
             Row::nullableDate($row, 'mot_first_due_on'),
         );

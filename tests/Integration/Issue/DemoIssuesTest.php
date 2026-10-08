@@ -47,7 +47,12 @@ final class DemoIssuesTest extends AppTestCase
             $byStatus[$issue->status()->value][] = $issue;
         }
         self::assertCount(1, $byStatus['open'] ?? []);
-        self::assertCount(1, $byStatus['watching'] ?? []);
+        // Phase 41: the MOT's tyre advisory is watched too (#335).
+        $byStatus['watching'] = array_values(array_filter(
+            $byStatus['watching'] ?? [],
+            static fn ($issue): bool => $issue->source->value === 'manual',
+        ));
+        self::assertCount(1, $byStatus['watching']);
         self::assertCount(1, $byStatus['fixed'] ?? []);
         $knock = $byStatus['open'][0] ?? null;
         $pipes = $byStatus['watching'][0] ?? null;

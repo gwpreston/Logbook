@@ -6243,6 +6243,11 @@ return [
     'mot_history' => [
         'attribution' => 'Contains public sector information licensed under the',
         'provider' => [
+            'sample' => [
+                'name' => 'Sample MOT history (development)',
+                'description' => 'Made-up MOT tests for the sample vehicles, so MOT history can be tried. Only outside production.',
+                'sends' => 'Nothing is sent anywhere.',
+            ],
             'uk_dvsa' => [
                 'name' => 'DVSA (UK)',
                 'description' => 'Past MOT tests, their mileages, advisories and defects, and the recall status, from DVSA\'s official record: cars, motorcycles and vans in Great Britain since 2005 and Northern Ireland since 2017. Needs free credentials from DVSA\'s MOT history API (apply as an individual; about 5 working days).',

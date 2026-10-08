@@ -182,7 +182,10 @@ final class MotReviewTest extends MotHistoryTestCase
         self::assertCount(1, $issues, 'not offered as a new issue');
         $repeat = $this->defectWithText($golf, 'nearside front tyre worn close to legal limit/worn on edge (5.2.3 (e))');
         self::assertSame($issues[0]->id, $repeat->issueId);
-        $notes = $this->connection($this->app)->fetchFirstColumn('SELECT note FROM issue_updates WHERE issue_id = ?', [$issues[0]->id]);
+        $notes = $this->connection($this->app)->fetchFirstColumn(
+            'SELECT note FROM issue_updates WHERE issue_id = ?',
+            [$issues[0]->id],
+        );
         self::assertContains('Advised again at the MOT on 14 Feb 2026, 43,950 mi', $notes);
         $page = (string) $browser->get($this->url($golf))->getBody();
         self::assertStringContainsString('Advised again: added to Nearside Front Tyre', $page);
@@ -205,7 +208,9 @@ final class MotReviewTest extends MotHistoryTestCase
     public function testANewVehicleIsOfferedItsFirstMotDueDateAndNeverGivenItAlone(): void
     {
         $this->start();
-        $this->answer = static fn (): MockResponse => new MockResponse((string) file_get_contents(self::FIXTURES . 'new-vehicle.json'));
+        $this->answer = static fn (): MockResponse => new MockResponse(
+            (string) file_get_contents(self::FIXTURES . 'new-vehicle.json'),
+        );
         $puma = $this->golf('XY25 ABC', make: 'Ford', model: 'Puma');
         $browser = $this->fetch($puma);
 
@@ -283,7 +288,8 @@ final class MotReviewTest extends MotHistoryTestCase
      */
     private function withDefect(string $text, string $type): MockResponse
     {
-        $data = json_decode((string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json'), true, 32, JSON_THROW_ON_ERROR);
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
         self::assertIsArray($data);
         $tests = $data['motTests'] ?? null;
         self::assertIsArray($tests);

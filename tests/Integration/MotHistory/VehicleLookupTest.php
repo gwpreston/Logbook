@@ -60,7 +60,9 @@ final class VehicleLookupTest extends MotHistoryTestCase
     public function testWithJsTheAnswerIsJson(): void
     {
         $this->start();
-        $this->answer = static fn (): MockResponse => new MockResponse((string) file_get_contents(self::FIXTURES . 'new-vehicle.json'));
+        $this->answer = static fn (): MockResponse => new MockResponse(
+            (string) file_get_contents(self::FIXTURES . 'new-vehicle.json'),
+        );
         $browser = $this->browserFor($this->app, 'owner');
 
         $response = $browser->post(
@@ -72,6 +74,7 @@ final class VehicleLookupTest extends MotHistoryTestCase
         );
 
         $body = json_decode((string) $response->getBody(), true, 8, JSON_THROW_ON_ERROR);
+        self::assertIsArray($body);
         self::assertSame([
             'make' => 'Ford',
             'model' => 'Puma',
@@ -104,10 +107,18 @@ final class VehicleLookupTest extends MotHistoryTestCase
         $browser = $this->browserFor($this->app, 'owner');
         $browser->post('/vehicles/new', ['registration' => 'AB12CDE', 'lookup' => '1'], [], true, ['X-Lookup' => '1']);
 
-        $browser->post('/vehicles/new', ['type' => 'car', 'make' => 'Volkswagen', 'model' => 'Golf', 'fuel_type' => 'petrol', 'registration' => 'AB12CDE']);
+        $browser->post('/vehicles/new', [
+            'type' => 'car',
+            'make' => 'Volkswagen',
+            'model' => 'Golf',
+            'fuel_type' => 'petrol',
+            'registration' => 'AB12CDE',
+        ]);
 
         self::assertSame(1, $this->vehicles());
-        $enabled = $this->connection($this->app)->fetchOne('SELECT COUNT(*) FROM vehicles WHERE mot_history_enabled_at IS NOT NULL');
+        $enabled = $this->connection($this->app)->fetchOne(
+            'SELECT COUNT(*) FROM vehicles WHERE mot_history_enabled_at IS NOT NULL',
+        );
         self::assertEquals(0, $enabled);
     }
 

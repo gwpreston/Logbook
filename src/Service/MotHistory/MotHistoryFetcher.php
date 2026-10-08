@@ -73,7 +73,9 @@ final readonly class MotHistoryFetcher
             $knownAs = $record->registration;
         }
         if (!MakeMatch::agrees($vehicle->data->make, $record->make)) {
-            return new FetchOutcome(true, refusedAs: trim(($record->make ?? '') . ' ' . ($record->model ?? '')), knownAs: $knownAs);
+            $refusedAs = trim(($record->make ?? '') . ' ' . ($record->model ?? ''));
+
+            return new FetchOutcome(true, refusedAs: $refusedAs, knownAs: $knownAs);
         }
         $modelAs = MakeMatch::modelDiffers($vehicle->data->model, $record->model) ? $record->model : null;
 

@@ -60,7 +60,8 @@ final readonly class MotHistoryAction
             'issues_on' => $issuesOn,
             'can_fetch' => $this->access->can($user, VehicleAbility::Own, $vehicle),
             'can_review' => $this->access->can($user, VehicleAbility::Log, $vehicle),
-            'review_pending' => $tests !== [] && array_filter($tests, static fn (MotTest $t): bool => $t->reviewedAt === null) !== []
+            'review_pending' => $tests !== []
+                && array_filter($tests, static fn (MotTest $t): bool => $t->reviewedAt === null) !== []
                 && $this->review->card($vehicle, $issuesOn)->pending(),
             'has_identifier' => trim((string) $vehicle->data->registration) !== '' || trim((string) $vehicle->data->vin) !== '',
         ]);

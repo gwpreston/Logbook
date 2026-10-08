@@ -72,7 +72,7 @@
                 {{ ui.field_error(errors, 'provider') }}
             </fieldset>
 
-            {% for row in providers %}
+            {% for row in providers|filter(r => r.provider.credentials() is not empty) %}
                 {% set provider = row.provider %}
                 <fieldset class="card fieldset" data-provider-credentials="{{ provider.code() }}">
                     <legend class="card__title fieldset__legend">{{ 'mot_history.settings.credentials.legend'|trans({provider: provider.nameKey()|trans}) }}</legend>

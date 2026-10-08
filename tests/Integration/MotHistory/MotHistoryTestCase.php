@@ -67,28 +67,34 @@ abstract class MotHistoryTestCase extends AppTestCase
                 }
                 $answer = $this->answer === null ? null : ($this->answer)($url);
 
-                return $answer ?? new MockResponse((string) file_get_contents(self::FIXTURES . (str_contains($url, 'bulk-download')
-                    ? 'bulk-download.json'
-                    : 'vehicle-with-tests.json')));
+                $fixture = str_contains($url, 'bulk-download') ? 'bulk-download.json' : 'vehicle-with-tests.json';
+
+                return $answer ?? new MockResponse((string) file_get_contents(self::FIXTURES . $fixture));
             },
         ));
         if ($enable) {
             $provider = $this->service($this->app, DvsaProvider::class);
             $secrets = $this->service($this->app, MotHistorySecrets::class);
-            foreach ([
+            foreach (
+                [
                 'client_id' => 'client-id',
                 'client_secret' => 'client-secret-value',
                 'api_key' => 'the-api-key-value',
                 'token_url' => 'https://login.microsoftonline.com/tenant/oauth2/v2.0/token',
-            ] as $slot => $value) {
+                ] as $slot => $value
+            ) {
                 $secrets->store($provider, $slot, $value);
             }
             $this->service($this->app, MotHistoryConfig::class)->saveProvider($provider);
         }
     }
 
-    protected function golf(string $registration = 'AB12 CDE', ?string $vin = null, string $make = 'VW', string $model = 'Golf'): Vehicle
-    {
+    protected function golf(
+        string $registration = 'AB12 CDE',
+        ?string $vin = null,
+        string $make = 'VW',
+        string $model = 'Golf',
+    ): Vehicle {
         return $this->service($this->app, VehicleService::class)->create($this->owner, new VehicleData(
             VehicleType::Car,
             $make,

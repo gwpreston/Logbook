@@ -46,7 +46,10 @@ final readonly class VehicleLookup
             return ['fields' => [], 'message' => 'mot_history.lookup.no_registration', 'params' => []];
         }
         try {
-            $record = $this->calls->run($provider, static fn (MotHistoryClient $client): ?MotVehicleRecord => $client->byRegistration($plate));
+            $record = $this->calls->run(
+                $provider,
+                static fn (MotHistoryClient $client): ?MotVehicleRecord => $client->byRegistration($plate),
+            );
         } catch (MotHistoryFailure $failure) {
             return ['fields' => [], 'message' => $failure->error->messageKey(), 'params' => $failure->parameters];
         }

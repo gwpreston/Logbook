@@ -6240,6 +6240,11 @@ return [
     'mot_history' => [
         'attribution' => 'Enthält Informationen des öffentlichen Sektors, lizenziert unter der',
         'provider' => [
+            'sample' => [
+                'name' => 'Beispiel-MOT-Historie (Entwicklung)',
+                'description' => 'Erfundene MOT-Prüfungen für die Beispielfahrzeuge, um die MOT-Historie auszuprobieren. Nur außerhalb des Produktivbetriebs.',
+                'sends' => 'Es wird nichts gesendet.',
+            ],
             'uk_dvsa' => [
                 'name' => 'DVSA (Vereinigtes Königreich)',
                 'description' => 'Frühere MOT-Prüfungen, ihre Kilometerstände, Hinweise und Mängel sowie der Rückrufstatus aus dem offiziellen Register der DVSA: Autos, Motorräder und Transporter in Großbritannien seit 2005 und Nordirland seit 2017. Benötigt kostenlose Zugangsdaten für die MOT-History-API der DVSA (als Privatperson beantragbar; etwa 5 Werktage).',

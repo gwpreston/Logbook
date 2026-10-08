@@ -72,10 +72,12 @@ final readonly class MotReviewAction
         $card = $this->review->card($vehicle, $issuesOn);
         $titles = [];
         foreach ($card->tests as $test) {
-            foreach ([...$test->notSeenAgain, ...array_filter(array_map(
-                static fn ($d): ?int => $d->defect->issueId,
-                $test->defects,
-            ))] as $issueId) {
+            foreach (
+                [...$test->notSeenAgain, ...array_filter(array_map(
+                    static fn ($d): ?int => $d->defect->issueId,
+                    $test->defects,
+                ))] as $issueId
+            ) {
                 $issue = $this->issues->find($vehicle, $issueId);
                 if ($issue !== null) {
                     $titles[$issueId] = $issue->data->title;
@@ -119,8 +121,10 @@ final readonly class MotReviewAction
                 }
                 break;
             case 'issue':
-                if ($issuesOn && $defect !== null && $defectTest !== null
-                    && $this->review->addIssue($vehicle, $defectTest, $defect, $zone)) {
+                if (
+                    $issuesOn && $defect !== null && $defectTest !== null
+                    && $this->review->addIssue($vehicle, $defectTest, $defect, $zone)
+                ) {
                     $session->flash('success', 'mot_history.review.issues_added', ['count' => 1]);
                 }
                 break;
