@@ -171,7 +171,7 @@ final readonly class WebhookDeliveryRepository
             $int($row['id'] ?? null),
             $int($row['webhook_id'] ?? null),
             WebhookEvent::tryFrom(is_string($row['event'] ?? null) ? $row['event'] : '') ?? WebhookEvent::EntryUpdated,
-            $decoded,
+            WebhookDelivery::ordered($decoded),
             $int($row['attempts'] ?? null),
             $date($row['next_attempt_at'] ?? null),
             $date($row['delivered_at'] ?? null),

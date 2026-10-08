@@ -222,7 +222,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [x] **Time zones:** report periods at the day boundary in a non-UTC
       zone (`ApiReportsTest`).
 - [x] Modules off: every new path of that module 404.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor; smoke test at a subpath.
 
 ---

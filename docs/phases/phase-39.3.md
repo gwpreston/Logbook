@@ -85,14 +85,14 @@ Phase 27.1's incident-photo rules (#104).
 - [x] Translations for every new page string, in every shipped locale.
 
 ### 39.3.4 Tests
-- [ ] **Contract:** every new response validated against the OpenAPI
+- [x] **Contract:** every new response validated against the OpenAPI
       description, success and error.
-- [ ] **Access matrix:** attachments for owner, `manage`, `log`, `view`
+- [x] **Access matrix:** attachments for owner, `manage`, `log`, `view`
       with and without *Can see costs*, and a stranger; a `read` key on
       upload and delete; a trip's files; the vehicle photo.
-- [ ] **Attachments:** content check, size limit, stripping, incident
+- [x] **Attachments:** content check, size limit, stripping, incident
       originals only with `ViewIncidentDetails`, the form's limits.
-- [ ] **Webhooks:** every event from every path (form, import, API, Ask
+- [x] **Webhooks:** every event from every path (form, import, API, Ask
       draft, MCP); vehicles and tyre details; trips only to those who
       see them; nothing from a restore; payload has no amounts; signature
       verifies; refused destinations per §7.11's setting; retry
@@ -101,9 +101,9 @@ Phase 27.1's incident-photo rules (#104).
       a disabled user's webhooks stop; `API_ENABLED=false` and
       `WEBHOOKS_ENABLED=false` hold deliveries; backup and restore
       without the secret.
-- [ ] Migration applies and rolls back on SQLite, PostgreSQL, MySQL and
+- [x] Migration applies and rolls back on SQLite, PostgreSQL, MySQL and
       MariaDB; upgrade from v3.4.0.
-- [ ] Suite green on every engine; coverage at or above the floor; smoke
+- [x] Suite green on every engine; coverage at or above the floor; smoke
       test at a subpath.
 
 ### 39.3.5 Release

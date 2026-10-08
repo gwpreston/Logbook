@@ -37,6 +37,26 @@ final readonly class WebhookDelivery
     ) {
     }
 
+    /** The payload's keys in the order they are sent (MySQL's JSON column keeps its own order). */
+    private const array KEYS = ['event', 'id', 'occurred_at', 'vehicle_id', 'kind', 'entry_id', 'change', 'links'];
+    private const array LINKS = ['entry', 'list', 'vehicle'];
+
+    /**
+     * The payload with its keys in the documented order, whatever the
+     * database gave back, so every engine sends the same body.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    public static function ordered(array $payload): array
+    {
+        if (is_array($payload['links'] ?? null)) {
+            $payload['links'] = array_merge(array_intersect_key(array_flip(self::LINKS), $payload['links']), $payload['links']);
+        }
+
+        return array_merge(array_intersect_key(array_flip(self::KEYS), $payload), $payload);
+    }
+
     /**
      * When to try again after the attempt numbered $attempts (1 for the
      * first) failed, or null once every retry is spent.
