@@ -765,8 +765,9 @@ MySQL only.
   `UPLOAD_PATH`) and `issue` reminders, and drops the tables.
 
 **MotTest** (Phase 41, §7.38), `mot_tests`
-- id, vehicle_id (`ON DELETE CASCADE`), test_number (up to 32; unique
-  `(vehicle_id, test_number)`), completed_at (UTC instant), result
+- id, vehicle_id (`ON DELETE CASCADE`), test_number (up to 40; unique
+  `(vehicle_id, test_number)`; a test DVSA gives no number is keyed by
+  its source and completed time, `dva_ni:2023-02-17T09:17:46Z`, #334), completed_at (UTC instant), result
   (`passed` | `failed`), expiry_on (optional date), odometer_km (optional
   `decimal(12,3)`, converted from the tested unit), odometer_unit
   (optional, as tested: `mi` | `km`), odometer_state (`read` |
@@ -779,7 +780,8 @@ MySQL only.
 **MotDefect** (Phase 41), `mot_defects`
 - id, mot_test_id (`ON DELETE CASCADE`), position (the order DVSA lists
   them), type (`advisory` | `minor` | `major` | `dangerous` | `fail` |
-  `prs` | `user_entered`), text (up to 2,000, as DVSA gives it),
+  `user_entered` | `non_specific` | `system_generated`, DVSA's types; a
+  null or unknown type is stored as `non_specific`, #333), text (up to 2,000, as DVSA gives it),
   dangerous (bool), issue_id (optional, `ON DELETE SET NULL`: the issue
   made from it or updated by it), dismissed_at (optional UTC: *Not now*
   on the review card), created/updated (UTC). Unique `(mot_test_id,
@@ -8487,7 +8489,11 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   - **Credentials:** *client ID*, *client secret*, *API key* and *token
     URL*, each *Saved* / *Not set*, replaced by typing a new value or
     `env:NAME`, never shown back; stored sealed in `mot_history_secrets`
-    (§6, §7.25). The provider cannot be enabled without all four.
+    (§6, §7.25). The provider cannot be enabled without all four. The
+    token URL receives the client secret, so it must be
+    `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
+    (tenant: letters, digits, `.` and `-`), checked when typed and again
+    when an `env:` value is read; no redirects are followed.
   - ***Test*** (#327): a token request and one `bulk-download` call, so
     both the client credentials and the API key are checked; no vehicle
     is sent and the files it links are never downloaded.
@@ -8525,6 +8531,11 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   on either side never disagrees), nothing is stored and the page says:
   "DVSA's record for AB12 CDE is a Ford Fiesta; this vehicle is a VW
   Golf. Check the registration."
+- **Tests without a number or a date** (#334): a test DVSA gives no
+  number (often Northern Ireland's) is keyed by its source and completed
+  time, so a refresh still matches it; a test with no completed date
+  (possible for heavy vehicles) can't be dated and is skipped, and the
+  fetch's message counts it ("1 test without a date was not stored").
 - **Upsert by test number:** tests and defects are never duplicated;
   DVSA's values and text replace the stored ones. A test no longer in
   DVSA's answer is kept, with what was made from it (#331). Each fetch sets `mot_history_fetched_at`,
@@ -8567,9 +8578,10 @@ overview while any test is unreviewed. A test is reviewed
   - source `mot_advisory`, `source_ref` the test number, noticed on the
     test date at its odometer (no second reading, #319), title the text
     cut to 120 with the full text in the description;
-  - status `open` for `fail`, `dangerous`, `major` and `prs`;
-    **`watching`** for `advisory`, `minor` (#324) and `user_entered` (a
-    tester's own note, #328),
+  - status `open` for `fail`, `dangerous` and `major`;
+    **`watching`** for `advisory`, `minor` (#324), `user_entered` (a
+    tester's own note, #328), `non_specific` and `system_generated`
+    (#333),
     with *Look again* on the test's expiry less 30 days (none when the
     test has no expiry);
   - `dangerous` (type or flag) and `major` set *Affects safety* (#310).

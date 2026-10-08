@@ -161,7 +161,8 @@ and the decisions below win. In short:
 
 ### 41.2 Fetch and store
 - [ ] Fetch, VIN fallback, mismatch refusal, upsert, readings, *Stop and
-      remove*; migration (reversible on every engine).
+      remove*. (The migration, reversible on every engine, landed in
+      41.1 with the secrets table it needs.)
 - [ ] MOT history page; review card (documents, first MOT due,
       advisories and defects to issues, repeats, *Not now*).
 - [ ] Recall state stored, shown and its *Needs attention* item (#325).
@@ -223,7 +224,7 @@ and the decisions below win. In short:
 
 ## Open questions
 
-Logged as #320–#332 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#334 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -274,6 +275,15 @@ Found while starting, decided by the owner on 2026-10-08:
 - A test missing from a later DVSA answer is kept. (#331)
 - #221, #279 and #280 (earlier phases) were reviewed and carried as
   they are: none changes Phase 41, which adds no draft type.
+- Found while building 41.1, from DVSA's OpenAPI specification: its
+  defect types are `ADVISORY`, `DANGEROUS`, `FAIL`, `MAJOR`, `MINOR`,
+  `NON SPECIFIC`, `SYSTEM GENERATED` and `USER ENTERED` (a type may be
+  null), with no PRS. Stored as DVSA's: `prs` is dropped,
+  `non_specific` and `system_generated` added and offered as *watching*;
+  a null or unknown type is `non_specific`. (#333)
+- Also from the specification: a test may have no number (keyed by its
+  source and completed time) or, for heavy vehicles, no completed date
+  (skipped, and the fetch says how many). (#334)
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.
