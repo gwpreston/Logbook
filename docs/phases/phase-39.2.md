@@ -59,8 +59,7 @@ nested routes, entry guard and `ETag`).
       and delete services, under `EntryAccess::canChange`.
 - [x] Manual reminders: `PATCH`, `DELETE` (`Manage`); other sources 409
       `reminder_not_manual`.
-
-- [ ] Page edits keep unchanged converted values (spec.md §8 *Units*):
+- [x] Page edits keep unchanged converted values (spec.md §8 *Units*):
       the fill-up, reading, service record, document, incident, tyre
       change and trip edit forms keep the stored km, litres and price per
       litre when the submitted value equals what the form showed, so a

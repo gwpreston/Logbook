@@ -241,6 +241,43 @@ final class FuelEntryFormTest extends TestCase
         self::assertSame('2026-09-28T01:30', $defaults['filled_at'], 'already tomorrow in Auckland');
     }
 
+    public function testAnEditKeepsWhatTheFormShowedAndConvertsWhatChanged(): void
+    {
+        $us = self::preferences(UnitPreset::Us, 'en_US', 'America/New_York');
+        // Shown as 25351.945 mi, 11.128 gal and $5.515/gal: each a step off once converted back.
+        $stored = self::entry(new FuelEntryData(
+            new DateTimeImmutable('2026-08-01 07:30:00 UTC'),
+            '40800.000',
+            Fuel::Petrol,
+            '42.123',
+            '1.456924',
+            '61.370',
+        ));
+        $shown = FuelEntryForm::values($stored, $us);
+
+        $kept = FuelEntryForm::parse(['notes' => 'Receipt lost'] + $shown, $us, 'USD', $stored);
+        self::assertInstanceOf(FuelEntryData::class, $kept);
+        self::assertSame(['40800.000', '42.123', '1.456924'], [$kept->odometerKm, $kept->volume, $kept->pricePerUnit]);
+        self::assertSame('Receipt lost', $kept->notes);
+
+        $converted = FuelEntryForm::parse($shown, $us, 'USD');
+        self::assertInstanceOf(FuelEntryData::class, $converted);
+        self::assertNotSame('40800.000', $converted->odometerKm, 'a new entry converts what it is given');
+        self::assertNotSame('42.123', $converted->volume);
+
+        $changed = FuelEntryForm::parse(['odometer' => '25352', 'volume' => '11.2'] + $shown, $us, 'USD', $stored);
+        self::assertInstanceOf(FuelEntryData::class, $changed);
+        self::assertSame('40800.089', $changed->odometerKm, 'a changed odometer is converted');
+        self::assertSame('42.397', $changed->volume, 'a changed volume is converted');
+        self::assertSame('1.456924', $changed->pricePerUnit, 'the price still as shown');
+
+        // kWh are stored as typed: the gallons shown no longer mean the stored litres.
+        $electric = FuelEntryForm::parse(['fuel' => 'ev'] + $shown, $us, 'USD', $stored);
+        self::assertInstanceOf(FuelEntryData::class, $electric);
+        self::assertSame('11.128', $electric->volume);
+        self::assertSame('40800.000', $electric->odometerKm, 'the odometer is still the one shown');
+    }
+
     private static function preferences(UnitPreset $preset, string $locale, string $zone): DisplayPreferences
     {
         return new DisplayPreferences($locale, $zone, $preset->distance(), $preset->volume(), $preset->consumption(), 'GBP');

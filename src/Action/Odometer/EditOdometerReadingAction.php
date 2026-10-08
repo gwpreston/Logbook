@@ -55,7 +55,7 @@ final readonly class EditOdometerReadingAction
             return $this->page->render($request, $response, $vehicle, $values, $reading);
         }
 
-        $data = OdometerReadingForm::parse(RequestContext::form($request), $preferences);
+        $data = OdometerReadingForm::parse(RequestContext::form($request), $preferences, $reading->readingKm);
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {

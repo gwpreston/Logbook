@@ -48,16 +48,14 @@ final class FuelEntryForm
     {
         $data = $entry->data;
         $unit = self::volumeUnit($data->fuel, $preferences);
-        // Per litre: exact. Per gallon: 4 places recovers anything typed with up to 4.
-        $priceScale = $unit === VolumeUnit::Litre ? FuelAmounts::PRICE_SCALE : 4;
         $filledAt = LocalTime::fromUtc($data->filledAt, $preferences->timeZone());
 
         return [
             'filled_at' => $filledAt->format(OdometerReadingForm::LOCAL_FORMAT),
             'odometer' => OdometerReadingForm::distanceForDisplay($data->odometerKm, $preferences),
             'fuel' => (new FuelChoice($data->fuel, $data->grade))->value(),
-            'volume' => Decimal::trim($unit->fromLitresDecimal($data->volume, FuelAmounts::VOLUME_SCALE)),
-            'price' => Decimal::trim($unit->pricePerUnit($data->pricePerUnit, $priceScale)),
+            'volume' => self::volumeForDisplay($data->volume, $unit),
+            'price' => self::priceForDisplay($data->pricePerUnit, $unit),
             'total' => Decimal::trim($data->totalCost),
             'partial' => $data->isPartial ? '1' : '',
             'missed_previous' => $data->isMissedPrevious ? '1' : '',
@@ -91,9 +89,15 @@ final class FuelEntryForm
     /**
      * @param array<array-key, mixed> $input
      * @param string $currency the vehicle's currency (a derived total is rounded to its minor unit)
+     * @param ?FuelEntry $stored the fill-up being edited: an odometer, volume or price submitted as the
+     *     form showed it keeps its stored value (spec.md §8 *Units*)
      */
-    public static function parse(array $input, DisplayPreferences $preferences, string $currency): FuelEntryData|ValidationErrors
-    {
+    public static function parse(
+        array $input,
+        DisplayPreferences $preferences,
+        string $currency,
+        ?FuelEntry $stored = null,
+    ): FuelEntryData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
 
         $filledAt = $validator->dateTime('filled_at', $preferences->timeZone(), true);
@@ -140,13 +144,20 @@ final class FuelEntryForm
         }
 
         $unit = self::volumeUnit($fuel, $preferences);
+        // The stored litres and price only mean what the form showed while the unit is the same.
+        $kept = $stored !== null && self::volumeUnit($stored->data->fuel, $preferences) === $unit ? $stored->data : null;
 
         return new FuelEntryData(
             filledAt: $filledAt,
-            odometerKm: $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+            odometerKm: OdometerReadingForm::distanceToKm($odometer, $preferences, $stored?->data->odometerKm),
             fuel: $fuel,
-            volume: $unit->toLitresDecimal($amounts->volume, FuelAmounts::VOLUME_SCALE),
-            pricePerUnit: $unit->pricePerLitre($amounts->pricePerUnit, FuelAmounts::PRICE_SCALE),
+            volume: $kept !== null && Decimal::compare($amounts->volume, self::volumeForDisplay($kept->volume, $unit)) === 0
+                ? $kept->volume
+                : $unit->toLitresDecimal($amounts->volume, FuelAmounts::VOLUME_SCALE),
+            pricePerUnit: $kept !== null
+                && Decimal::compare($amounts->pricePerUnit, self::priceForDisplay($kept->pricePerUnit, $unit)) === 0
+                ? $kept->pricePerUnit
+                : $unit->pricePerLitre($amounts->pricePerUnit, FuelAmounts::PRICE_SCALE),
             totalCost: Decimal::round($amounts->total, self::MONEY_SCALE),
             isPartial: $validator->checkbox('partial'),
             isMissedPrevious: $validator->checkbox('missed_previous'),
@@ -214,6 +225,19 @@ final class FuelEntryForm
         }
 
         return [$fuel, $grade];
+    }
+
+    private static function volumeForDisplay(string $litres, VolumeUnit $unit): string
+    {
+        return Decimal::trim($unit->fromLitresDecimal($litres, FuelAmounts::VOLUME_SCALE));
+    }
+
+    private static function priceForDisplay(string $pricePerLitre, VolumeUnit $unit): string
+    {
+        // Per litre: exact. Per gallon: 4 places recovers anything typed with up to 4.
+        $scale = $unit === VolumeUnit::Litre ? FuelAmounts::PRICE_SCALE : 4;
+
+        return Decimal::trim($unit->pricePerUnit($pricePerLitre, $scale));
     }
 
     /**

@@ -72,8 +72,8 @@ final class ApiEntryEditTest extends AppTestCase
         $this->app = $this->createApp(['FEATURES_TRIPS' => 'true']);
         $this->pinClock($this->app, '2026-09-30T12:00:00Z');
         $this->resetDatabase($this->app);
-        // Metric, so the pages' own round trip through miles (which can move the
-        // third decimal of a km) doesn't blur the parity checks.
+        // Metric, so a changed figure is the same km typed into the page or sent
+        // to the API. (Unchanged ones are kept either way: ImperialEditKeepsStoredTest.)
         $this->owner = $this->createOwner($this->app, preferences: new DisplayPreferences(
             'en_GB',
             'Europe/London',

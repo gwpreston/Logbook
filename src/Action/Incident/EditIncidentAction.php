@@ -66,6 +66,7 @@ final readonly class EditIncidentAction
             LocalTime::today($this->clock, $zone),
             array_keys($this->page->drivers($vehicle)),
             array_map(static fn (ComplianceDocument $policy): int => $policy->id, $this->page->policies($vehicle)),
+            $this->incidents->odometerOf($vehicle, $incident),
         );
         $files = $this->scan->files($request, $this->upload->fromRequest($request, owner: AttachmentOwner::Incident));
         $errors = $this->upload->errors($input, $files);

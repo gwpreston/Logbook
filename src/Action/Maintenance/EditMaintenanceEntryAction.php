@@ -58,7 +58,12 @@ final readonly class EditMaintenanceEntryAction
         }
 
         $input = RequestContext::form($request);
-        $data = MaintenanceEntryForm::parse($input, $user->preferences, $this->page->scheduleIds($vehicle));
+        $data = MaintenanceEntryForm::parse(
+            $input,
+            $user->preferences,
+            $this->page->scheduleIds($vehicle),
+            $entry->data->odometerKm,
+        );
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {

@@ -52,7 +52,7 @@ final readonly class EditComplianceDocumentAction
             return $this->page->render($request, $response, $vehicle, $currency, $values, $document);
         }
 
-        $data = ComplianceDocumentForm::parse(RequestContext::form($request), $user->preferences);
+        $data = ComplianceDocumentForm::parse(RequestContext::form($request), $user->preferences, $document->data->odometerKm);
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {

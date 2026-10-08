@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Trip\TripData;
+use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DistanceUnit;
@@ -113,12 +114,15 @@ final class TripForm
      * @param array<array-key, mixed> $input
      * @param DateTimeImmutable $today calendar date in the user's time zone
      * @param bool $wholeDistance the typed distance is the whole trip (import, API), never doubled
+     * @param ?Trip $stored the trip being edited: odometers and a distance submitted as the form
+     *     showed them keep their stored km (spec.md §8 *Units*)
      */
     public static function parse(
         array $input,
         DisplayPreferences $preferences,
         DateTimeImmutable $today,
         bool $wholeDistance = false,
+        ?Trip $stored = null,
     ): TripData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
         $unit = $preferences->distanceUnit;
@@ -178,14 +182,24 @@ final class TripForm
             return $validator->errors();
         }
 
+        $was = $stored?->data;
+        $startKm = $start === null ? null : OdometerReadingForm::distanceToKm($start, $preferences, $was?->odometerStartKm);
+        $endKm = $end === null ? null : OdometerReadingForm::distanceToKm($end, $preferences, $was?->odometerEndKm);
+        $keepsDistance = $was !== null && ($startKm !== null
+            // Both odometers as stored: so is the distance between them.
+            ? $startKm === $was->odometerStartKm && $endKm === $was->odometerEndKm
+            // The same one-way figure, still one way or return as before.
+            : $was->odometerStartKm === null && $typed !== null && $isReturn === $was->isReturn
+                && Decimal::compare($typed, self::oneWay($was->distanceKm, $was->isReturn, $unit)) === 0);
+
         return new TripData(
             travelledOn: $travelledOn,
             fromPlace: $from,
             toPlace: $to,
             isReturn: $isReturn,
-            distanceKm: $unit->toKmDecimal($distance, self::KM_SCALE),
-            odometerStartKm: $start === null ? null : $unit->toKmDecimal($start, self::KM_SCALE),
-            odometerEndKm: $end === null ? null : $unit->toKmDecimal($end, self::KM_SCALE),
+            distanceKm: $keepsDistance ? $was->distanceKm : $unit->toKmDecimal($distance, self::KM_SCALE),
+            odometerStartKm: $startKm,
+            odometerEndKm: $endKm,
             isBusiness: $isBusiness,
             purpose: $purpose,
             passengers: $passengers,

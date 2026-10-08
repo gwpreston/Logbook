@@ -48,7 +48,7 @@ final readonly class EditTripAction
         }
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
-        $data = TripForm::parse(RequestContext::form($request), $user->preferences, $today);
+        $data = TripForm::parse(RequestContext::form($request), $user->preferences, $today, stored: $trip);
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
         if ($errors !== null || $data instanceof ValidationErrors) {

@@ -7968,7 +7968,7 @@ owner. Decided 2026-10-06 (#212–#217).
   stored value in the user's unit (an odometer or trip distance to 3
   decimals in miles; a volume to 3 and a price per unit to 4 in gallons),
   and converting that back can land a step off the stored km or litres
-  (40 800 km → 25 351.718 mi → 40 800.001 km). So when a submitted value
+  (40 800 km → 25 351.945 mi → 40 800.001 km). So when a submitted value
   equals what the form showed for the stored entry (compared as numbers,
   not text), the stored SI value is kept as is; only a changed value is
   converted. Volume and price keep theirs only while the fuel's unit is

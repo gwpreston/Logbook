@@ -249,7 +249,7 @@ final class TyreChangeForm
         TyreFormContext $context,
     ): TyreChangeData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
-        [$data] = self::common($validator, $change->kind, $preferences, $context, false);
+        [$data] = self::common($validator, $change->kind, $preferences, $context, false, $change->data->odometerKm);
         if (!$validator->errors()->isEmpty() || $data === null) {
             return $validator->errors();
         }
@@ -320,7 +320,7 @@ final class TyreChangeForm
 
     /**
      * Date, odometer, note; and (maintenance on, for kinds that take one) the
-     * cost, garage and link.
+     * cost, garage and link. On an edit, the stored odometer is kept unless changed.
      *
      * @return array{0: ?TyreChangeData, 1: ?TyreCost}
      */
@@ -330,6 +330,7 @@ final class TyreChangeForm
         DisplayPreferences $preferences,
         TyreFormContext $context,
         bool $costs = true,
+        ?string $storedKm = null,
     ): array {
         $doneOn = $validator->date('done_on', true);
         $link = null;
@@ -367,9 +368,7 @@ final class TyreChangeForm
 
         $data = $doneOn === null ? null : new TyreChangeData(
             doneOn: $doneOn,
-            odometerKm: $odometer === null
-                ? null
-                : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE),
+            odometerKm: $odometer === null ? null : OdometerReadingForm::distanceToKm($odometer, $preferences, $storedKm),
             maintenanceEntryId: $link,
             note: $note,
         );

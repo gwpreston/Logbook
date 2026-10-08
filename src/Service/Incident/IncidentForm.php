@@ -140,6 +140,7 @@ final class IncidentForm
      * @param DateTimeImmutable $today calendar date in the user's time zone
      * @param list<int> $drivers the users who may be named as the driver
      * @param list<int> $policies the vehicle's `insurance` documents
+     * @param ?string $storedKm the edited incident's odometer, kept unless changed
      */
     public static function parse(
         array $input,
@@ -147,6 +148,7 @@ final class IncidentForm
         DateTimeImmutable $today,
         array $drivers,
         array $policies,
+        ?string $storedKm = null,
     ): IncidentInput|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
 
@@ -236,7 +238,7 @@ final class IncidentForm
                 updatedOn: $updatedOn,
                 repairEstimate: $estimate,
             ),
-        ), $odometer === null ? null : $preferences->distanceUnit->toKmDecimal($odometer, OdometerReadingForm::KM_SCALE));
+        ), $odometer === null ? null : OdometerReadingForm::distanceToKm($odometer, $preferences, $storedKm));
     }
 
     /**

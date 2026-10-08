@@ -47,9 +47,13 @@ final class OdometerReadingForm
 
     /**
      * @param array<array-key, mixed> $input
+     * @param ?string $storedKm the edited reading's km, kept unless the reading is changed
      */
-    public static function parse(array $input, DisplayPreferences $preferences): OdometerReadingData|ValidationErrors
-    {
+    public static function parse(
+        array $input,
+        DisplayPreferences $preferences,
+        ?string $storedKm = null,
+    ): OdometerReadingData|ValidationErrors {
         $validator = new Validator($input, $preferences->locale);
 
         $recordedAt = $validator->dateTime('recorded_at', $preferences->timeZone(), true);
@@ -61,7 +65,7 @@ final class OdometerReadingForm
         }
 
         return new OdometerReadingData(
-            $preferences->distanceUnit->toKmDecimal($reading, self::KM_SCALE),
+            self::distanceToKm($reading, $preferences, $storedKm),
             $recordedAt,
             $note,
         );
@@ -74,5 +78,21 @@ final class OdometerReadingForm
     public static function distanceForDisplay(string $km, DisplayPreferences $preferences): string
     {
         return Decimal::trim($preferences->distanceUnit->fromKmDecimal($km, self::KM_SCALE));
+    }
+
+    /**
+     * A typed distance → kilometres. On an edit, a value equal to what the
+     * form showed for the stored km keeps the stored km (spec.md §8 *Units*):
+     * 40800 km shows as 25351.945 mi, which converts back to 40800.001.
+     *
+     * @param ?string $storedKm the edited entry's km, null on a new entry
+     */
+    public static function distanceToKm(string $typed, DisplayPreferences $preferences, ?string $storedKm = null): string
+    {
+        if ($storedKm !== null && Decimal::compare($typed, self::distanceForDisplay($storedKm, $preferences)) === 0) {
+            return $storedKm;
+        }
+
+        return $preferences->distanceUnit->toKmDecimal($typed, self::KM_SCALE);
     }
 }
