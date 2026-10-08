@@ -70,6 +70,10 @@ final class RouteInventoryTest extends AppTestCase
         'api.fuel_prices.alerts.create',
         'api.fuel_prices.alerts.edit',
         'settings.api_keys',
+        // Phase 39.3: the user's own entry webhooks, found by user and id (WebhookService).
+        'settings.webhooks',
+        'settings.webhooks.action',
+        'settings.webhooks.delete',
         'settings.api_keys.revoke',
         // Phase 33.1: one's own email address and avatar, and anyone's avatar picture (#161).
         'settings.email',

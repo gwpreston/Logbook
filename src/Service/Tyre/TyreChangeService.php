@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Tyre;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use DateTimeZone;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
@@ -51,6 +54,7 @@ final readonly class TyreChangeService
         private TranslatorInterface $translator,
         private ClockInterface $clock,
         private AccessContext $author,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -417,6 +421,7 @@ final readonly class TyreChangeService
             $this->tyres->updateChange($vehicle->id, $change->id, $data, $this->clock->now());
             $this->sync->recordReading($vehicle, $change->id, $data, $zone);
             $this->sync->replay($vehicle);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, self::webhookKind($change->kind), $change->id);
         });
 
         return $this->get($vehicle, $change->id);
@@ -433,8 +438,10 @@ final readonly class TyreChangeService
         $this->transaction->run(function () use ($vehicle, $change): void {
             $this->odometer->forgetEntry($vehicle, OdometerSource::Tyre, $change->id);
             $this->tyres->deleteChange($vehicle->id, $change->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, self::webhookKind($change->kind), $change->id);
             foreach ($this->createdBy($vehicle, $change) as $tyre) {
                 $this->tyres->deleteTyre($vehicle->id, $tyre->id);
+                $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::TyreDetails, $tyre->id);
             }
             $this->sync->replay($vehicle);
         });
@@ -474,10 +481,12 @@ final readonly class TyreChangeService
     {
         $this->transaction->run(function () use ($vehicle, $tyre): void {
             $this->tyres->deleteTyre($vehicle->id, $tyre->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::TyreDetails, $tyre->id);
             foreach ($this->tyres->listChanges($vehicle->id) as $change) {
                 if ($change->lines === []) {
                     $this->odometer->forgetEntry($vehicle, OdometerSource::Tyre, $change->id);
                     $this->tyres->deleteChange($vehicle->id, $change->id);
+                    $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, self::webhookKind($change->kind), $change->id);
                 }
             }
             $this->sync->replay($vehicle);
@@ -529,6 +538,7 @@ final readonly class TyreChangeService
             $this->assertOdometer($kind, $data);
             $by = $this->author->authorId() ?? $vehicle->userId;
             $id = $this->tyres->insertChange($vehicle->id, $kind, $data, $lines, $now, $by);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, self::webhookKind($kind), $id);
 
             $setId = $into->setId ?? ($into->newSet === null ? null : $this->tyres->insertSet($vehicle->id, $into->newSet, $now));
             if ($setId !== null) {
@@ -668,6 +678,14 @@ final readonly class TyreChangeService
             <=> array_search($b, $order, true));
 
         return $fitted;
+    }
+
+    /**
+     * A tread check is its own kind; every other change is the history feed's `tyre` (spec.md §7.20).
+     */
+    private static function webhookKind(TyreChangeKind $kind): WebhookKind
+    {
+        return $kind === TyreChangeKind::Check ? WebhookKind::TreadCheck : WebhookKind::Tyre;
     }
 
     private static function position(TyrePosition $position): TranslatableMessage

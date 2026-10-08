@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Odometer;
 
+use Logbook\Support\Database\Transaction;
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use LogicException;
@@ -32,6 +36,8 @@ final readonly class OdometerService
         private AttachmentService $attachments,
         private ClockInterface $clock,
         private AccessContext $author,
+        private WebhookEvents $webhooks,
+        private Transaction $transaction,
     ) {
     }
 
@@ -59,6 +65,7 @@ final readonly class OdometerService
             $by = $this->author->authorId() ?? $vehicle->userId;
             $id = $this->readings->insert($vehicle->id, $data, OdometerSource::Manual, null, $now, $by);
             $this->attachments->record($vehicle, AttachmentOwner::Odometer, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Odometer, $id);
 
             return $id;
         });
@@ -76,6 +83,7 @@ final readonly class OdometerService
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $reading, $data): void {
             $this->readings->update($vehicle->id, $reading->id, $data, $this->clock->now());
             $this->attachments->record($vehicle, AttachmentOwner::Odometer, $reading->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Odometer, $reading->id);
         });
 
         return $this->get($vehicle, $reading->id);
@@ -87,7 +95,10 @@ final readonly class OdometerService
     public function delete(Vehicle $vehicle, OdometerReading $reading): void
     {
         self::assertManual($reading);
-        $this->readings->delete($vehicle->id, $reading->id);
+        $this->transaction->run(function () use ($vehicle, $reading): void {
+            $this->readings->delete($vehicle->id, $reading->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Odometer, $reading->id);
+        });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Odometer, $reading->id);
     }
 

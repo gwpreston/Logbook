@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Trip;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
+use Logbook\Support\Database\Transaction;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\VehicleAbility;
@@ -39,6 +43,8 @@ final readonly class TripService
         private VehicleAccess $access,
         private AccessContext $author,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
+        private Transaction $transaction,
     ) {
     }
 
@@ -101,6 +107,7 @@ final readonly class TripService
         $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $by): int {
             $id = $this->trips->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->attachments->record($vehicle, AttachmentOwner::Trip, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Trip, $id, $by);
 
             return $id;
         });
@@ -121,6 +128,8 @@ final readonly class TripService
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $trip, $data): void {
             $this->trips->update($vehicle->id, $trip->id, $data, $this->clock->now());
             $this->attachments->record($vehicle, AttachmentOwner::Trip, $trip->id, $stored);
+            $author = $trip->createdBy ?? $vehicle->userId;
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Trip, $trip->id, $author);
         });
         if ($saveJourney) {
             $this->saveAsJourney($this->author->authorId() ?? $trip->createdBy ?? $vehicle->userId, $data);
@@ -131,7 +140,11 @@ final readonly class TripService
 
     public function delete(Vehicle $vehicle, Trip $trip): void
     {
-        $this->trips->delete($vehicle->id, $trip->id);
+        $this->transaction->run(function () use ($vehicle, $trip): void {
+            $this->trips->delete($vehicle->id, $trip->id);
+            $author = $trip->createdBy ?? $vehicle->userId;
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Trip, $trip->id, $author);
+        });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Trip, $trip->id);
     }
 

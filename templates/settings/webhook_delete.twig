@@ -1,0 +1,26 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{# Confirmation before deleting a webhook (works without JS). #}
+{% set active_nav = 'settings' %}
+{% set heading = 'webhooks.delete_title'|trans({name: webhook.name}) %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.webhooks') }}">{{ ui.icon('chevron_left') }}{{ 'webhooks.title'|trans }}</a>
+
+        <section class="card" aria-labelledby="delete-heading">
+            <h1 id="delete-heading" class="card__title card__title--lg">{{ heading }}</h1>
+            <p>{{ 'webhooks.delete_body'|trans({name: webhook.name}) }}</p>
+            <div class="btn-row">
+                <form method="post" action="{{ url_for('settings.webhooks.delete', {webhook: webhook.id}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'webhooks.delete_confirm'|trans }}</button>
+                </form>
+                <a class="btn btn--ghost" href="{{ url_for('settings.webhooks') }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </section>
+    </div>
+{% endblock %}

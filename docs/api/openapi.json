@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.21.0",
+    "version": "1.22.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -18218,6 +18218,153 @@
             }
           }
         }
+      },
+      "WebhookPayload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event",
+          "id",
+          "occurred_at",
+          "vehicle_id",
+          "kind",
+          "entry_id",
+          "links"
+        ],
+        "description": "What an entry webhook receives (Phase 39.3): ids and links only, never the entry or any amount. Fetch it with your own key, so access is checked when it is read. Signed: `X-Logbook-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of \"t.body\" with the webhook's secret>`.",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "entry.created",
+              "entry.updated",
+              "entry.deleted",
+              "reminder.changed"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique per delivery (also in `X-Logbook-Delivery`); a retry repeats it."
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fuel",
+              "odometer",
+              "maintenance",
+              "document",
+              "expense",
+              "tyre",
+              "valuation",
+              "trip",
+              "incident",
+              "tread_check",
+              "tyre_details",
+              "schedule",
+              "finance",
+              "vehicle",
+              "reminder"
+            ],
+            "description": "The history feed's kinds where it has one (`tyre` is a tyre change). `tyre_details`: entry_id is the tyre; `finance`: the agreement (a payment, quote or End updates it); `vehicle`: the vehicle; `reminder`: reminder.changed only."
+          },
+          "entry_id": {
+            "type": "integer"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "due",
+              "overdue",
+              "done",
+              "dismissed",
+              "reopened",
+              "created",
+              "updated",
+              "deleted"
+            ],
+            "description": "reminder.changed only."
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "list",
+              "vehicle"
+            ],
+            "properties": {
+              "entry": {
+                "type": "string",
+                "description": "GET the entry (relative to the API's base); absent after a delete, or where the API has no single read."
+              },
+              "list": {
+                "type": "string",
+                "description": "The list it is in."
+              },
+              "vehicle": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "entryEvent": {
+      "post": {
+        "operationId": "entryWebhook",
+        "summary": "An entry or reminder changed",
+        "description": "Sent by the `webhooks` job to each webhook on Settings → API keys → Webhooks that takes the event, for a vehicle its user may view (a trip only to those who may see it). Answer 2xx within 10 seconds; anything else is tried again after 1 min, 5 min, 30 min, 2 h and 6 h. 50 failed attempts in a row pause the webhook. *Send test* posts `{\"event\": \"webhook.test\", \"id\", \"occurred_at\", \"webhook_id\"}` (Phase 39.3).",
+        "parameters": [
+          {
+            "name": "X-Logbook-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "t=<unix time>,v1=<hex HMAC-SHA256 of \"t.body\">; reject old timestamps."
+          },
+          {
+            "name": "X-Logbook-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Logbook-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received (any 2xx)."
+          }
+        },
+        "security": []
       }
     }
   }

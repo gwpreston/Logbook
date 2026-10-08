@@ -86,6 +86,17 @@ final readonly class BackupRepository
         // Phase 36.2: each user's notification channels. Never their secrets
         // (`notification_secrets`): a restored channel asks for its token again.
         'notification_channels',
+        // Phase 39.3: each user's entry webhooks, without their signing secret (WITHOUT); a
+        // restored one is paused with *Needs a new secret* (spec.md §7.20 *Webhooks*, #289).
+        'webhooks',
+    ];
+
+    /**
+     * Columns never written to a backup (Phase 39.3): a webhook's sealed
+     * signing secret, as channel and AI secrets are never carried.
+     */
+    private const array WITHOUT = [
+        'webhooks' => ['secret'],
     ];
 
     /**
@@ -133,6 +144,8 @@ final readonly class BackupRepository
         // Phase 36.1: the email server's password (its settings are in `settings`), never carried:
         // the Delivery page asks for it again.
         'notification_secrets',
+        // Phase 39.3: queued webhook deliveries are this install's, and old within 7 days.
+        'webhook_deliveries',
     ];
 
     /** Every setting but the demo marker. */
@@ -187,7 +200,10 @@ final readonly class BackupRepository
             ->executeQuery();
         $columns = [];
         for ($i = 0; $i < $result->columnCount(); $i++) {
-            $columns[] = strtolower($result->getColumnName($i));
+            $column = strtolower($result->getColumnName($i));
+            if (!in_array($column, self::WITHOUT[$table] ?? [], true)) {
+                $columns[] = $column;
+            }
         }
         $result->free();
 
@@ -254,6 +270,8 @@ final readonly class BackupRepository
             // Phase 36.1: secrets belong to the replaced settings and accounts; the
             // restored `email.smtp` asks for its password again.
             $connection->createQueryBuilder()->delete('notification_secrets')->executeStatement();
+            // Phase 39.3: deliveries were queued for the replaced webhooks.
+            $connection->createQueryBuilder()->delete('webhook_deliveries')->executeStatement();
 
             $later = [];
             foreach (self::TABLES as $table) {
@@ -268,6 +286,13 @@ final readonly class BackupRepository
                             $later[] = [$table, $column, $row[$column], $row['id']];
                             $row[$column] = null;
                         }
+                    }
+                    if ($table === 'webhooks') {
+                        // Without its secret it can't sign: paused until the user makes a new one (#289).
+                        $row['paused'] = '1';
+                        $row['paused_reason'] = 'restored';
+                        $row['notice_pending'] = '0';
+                        unset($row['secret']);
                     }
                     $connection->insert($table, $row);
                 }

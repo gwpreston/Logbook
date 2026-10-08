@@ -634,6 +634,107 @@ with its message. The lines, by kind:
 
 An error points at the body's path: `positions.0.dot`, `moves.12`.
 
+## Attachments
+
+From 3.5, receipts, invoices and photos go in and out over the API, with
+the pages' checks: a PDF, or a JPEG, PNG or WebP image (detected from the
+content), up to `MAX_UPLOAD_MB`; images are turned upright and stripped
+of their metadata, except an incident's photos, which are kept as taken.
+
+| Endpoint | Needs | Notes |
+|---|---|---|
+| `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips` or `incidents`; `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
+| `POST …/{entry}/attachments` | Log (your own entry) or Manage; Manage for valuations | `multipart/form-data`, **one file** in the field `file`; `201` with the attachment. A reading another entry wrote takes none (`409 reading_derived`) |
+| `GET`, `POST /vehicles/{id}/purchase/attachments` and `…/sale/attachments` | View; Manage to add | the purchase or sale paperwork; needs the purchase or sale date (`422`) |
+| `GET /attachments/{id}` | View | the file, as the pages serve it: an incident photo is the original only for its author or with *Can see incident details*, otherwise an upright copy without its metadata. `?download=1` downloads an image instead of opening it |
+| `DELETE /attachments/{id}` | Log (your own upload) or Manage | `204` |
+| `GET`, `POST`, `DELETE /vehicles/{id}/photo` | View; Manage to change | the vehicle's photo (not an attachment): `POST` a JPEG, PNG or WebP in the field `file`; `204` |
+
+An archived vehicle's files don't change (`409 vehicle_archived`), except
+a valuation's. A trip's files are only for those who may see the trip.
+
+```sh
+# Attach a receipt to fill-up 42, list its files and download the first.
+curl -H "Authorization: Bearer $KEY" -F "file=@receipt.pdf" "$BASE/vehicles/1/fuel/42/attachments"
+curl -H "Authorization: Bearer $KEY" "$BASE/vehicles/1/fuel/42/attachments"
+curl -H "Authorization: Bearer $KEY" -o receipt.pdf "$BASE/attachments/7"
+```
+
+## Webhooks
+
+From 3.5, Logbook can tell another system when something changes, so a
+dashboard or a Node-RED flow refreshes without polling. Add one on
+**Settings → API keys → Webhooks**: a name, an address and the events
+(`entry.created`, `entry.updated`, `entry.deleted`, `reminder.changed`).
+Its signing secret is shown once; *New secret* makes another.
+
+Each call is a `POST` of JSON with **ids and links only**, never the
+entry or any amount: fetch what changed with your own key, so access is
+checked when you read it.
+
+```json
+{
+  "event": "entry.created",
+  "id": "5f0c1d2e3a4b5c6d7e8f9a0b1c2d3e4f",
+  "occurred_at": "2026-10-08T09:00:00Z",
+  "vehicle_id": 1,
+  "kind": "fuel",
+  "entry_id": 42,
+  "links": {"entry": "/vehicles/1/fuel/42", "list": "/vehicles/1/fuel", "vehicle": "/vehicles/1"}
+}
+```
+
+`kind` is the history's kind where there is one (`fuel`, `odometer`,
+`maintenance`, `document`, `expense`, `tyre` for a tyre change,
+`valuation`, `trip`, `incident`), else `tread_check`, `tyre_details`
+(`entry_id` is the tyre), `schedule`, `finance` (the agreement; a
+payment, quote or *End* updates it) and `vehicle`. `reminder.changed`
+has `kind: "reminder"` and `change`: `due`, `overdue`, `done`,
+`dismissed`, `reopened`, `created`, `updated` or `deleted`. Links are
+relative to `/api/v1`; a deleted entry has no `entry` link. *Send test*
+posts `{"event": "webhook.test", …}`.
+
+Everyone who may see the vehicle can have webhooks for it; a trip only
+reaches those who may see it. Addresses follow the same rules as your
+notification channels (your administrator decides which networks members
+may reach). Calls are sent by the scheduler, so they arrive with the next
+pass (every 15 minutes by default). A call that doesn't get a `2xx`
+within 10 seconds is tried again after at least 1 minute, 5 minutes, 30
+minutes, 2 hours and 6 hours; after 50 failed tries in a row the webhook
+pauses and you are told through your notification channels. *Resume*
+sends what waited (up to 7 days).
+
+### Checking the signature
+
+Every call carries `X-Logbook-Signature: t=<unix time>,v1=<hex>`, where
+`<hex>` is the HMAC-SHA256 of `t` + `.` + the raw body, keyed with the
+secret. Check it against the raw body and reject old timestamps:
+
+```python
+import hashlib, hmac, time
+
+def verify(secret: str, body: bytes, header: str, tolerance: int = 300) -> bool:
+    parts = dict(p.split("=", 1) for p in header.split(","))
+    t, sent = int(parts["t"]), parts["v1"]
+    if abs(time.time() - t) > tolerance:
+        return False
+    expected = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sent)
+```
+
+```js
+const crypto = require('crypto');
+
+function verify(secret, rawBody, header, tolerance = 300) {
+    const parts = Object.fromEntries(header.split(',').map((p) => p.split('=')));
+    const t = Number(parts.t);
+    if (Math.abs(Date.now() / 1000 - t) > tolerance) return false;
+    const expected = crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+    return expected.length === parts.v1.length
+        && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
+}
+```
+
 ## Errors
 
 Errors are [RFC 9457 problem details](https://www.rfc-editor.org/rfc/rfc9457)
@@ -852,3 +953,31 @@ Set the http request node's *Method* to "- set by msg.method -" and
 whether the reading was already there, and `msg.statusCode` is `201` or
 `200`. Reading the summary is a GET to `/vehicles/1/summary` with the same
 header.
+
+### Receiving webhooks in Node-RED
+
+An *http in* node (`POST /logbook`), a function node that checks the
+signature, then an *http request* node that fetches the entry, and an
+*http response* node answering `200`. Turn on the http in node's raw body
+(or set `httpNodeMiddleware` to keep it) so the signature is checked
+against the exact bytes:
+
+```js
+// function node after "http in"; LOGBOOK_SECRET and LOGBOOK_KEY in the flow's environment
+const crypto = global.get('crypto');   // functionGlobalContext: { crypto: require('crypto') }
+const header = msg.req.headers['x-logbook-signature'] || '';
+const parts = Object.fromEntries(header.split(',').map((p) => p.split('=')));
+const raw = msg.req.rawBody || JSON.stringify(msg.payload);
+const expected = crypto.createHmac('sha256', env.get('LOGBOOK_SECRET')).update(`${parts.t}.${raw}`).digest('hex');
+if (expected !== parts.v1 || Math.abs(Date.now() / 1000 - Number(parts.t)) > 300) {
+    msg.statusCode = 401;
+    return [null, msg];                 // second output: straight to "http response"
+}
+const link = msg.payload.links.entry || msg.payload.links.list;
+msg.statusCode = 200;
+return [{
+    method: 'GET',
+    url: 'https://garage.example.com/api/v1' + link,
+    headers: {Authorization: 'Bearer ' + env.get('LOGBOOK_KEY')},
+}, msg];
+```

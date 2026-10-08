@@ -25,8 +25,9 @@ final class DemoRoutes
         'oidc.start', 'oidc.callback', 'proxy.link', 'settings.sso.link', 'settings.sso.unlink',
         // One's own credentials.
         'settings.password', 'settings.email', 'settings.email.action', 'settings.avatar', 'settings.avatar.action',
-        // API keys and MCP.
+        // API keys and MCP, and (Phase 39.3) entry webhooks.
         'settings.api_keys', 'settings.api_keys.revoke', 'mcp', 'drafts.action',
+        'settings.webhooks', 'settings.webhooks.action', 'settings.webhooks.delete',
         // AI connections and every AI feature.
         'settings.ai', 'settings.ai.tasks', 'settings.ai.this_host', 'settings.ai.connections.create',
         'settings.ai.connections.show', 'settings.ai.connections.edit', 'settings.ai.connections.delete',

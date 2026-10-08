@@ -222,6 +222,9 @@ use Logbook\Action\Settings\ProfileAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\RemoveIdentityAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
+use Logbook\Action\Settings\WebhookAction;
+use Logbook\Action\Settings\WebhooksAction;
+use Logbook\Action\Settings\DeleteWebhookAction;
 use Logbook\Action\Settings\RevokeInvitationAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
@@ -1181,6 +1184,12 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
         $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)
             ->setName('settings.api_keys.revoke');
+        // Entry webhooks (Phase 39.3, spec.md §7.20 *Webhooks*): the user's own, by id.
+        $group->map(['GET', 'POST'], '/settings/webhooks', WebhooksAction::class)->setName('settings.webhooks');
+        $group->post('/settings/webhooks/{webhook:[0-9]+}/{action:test|pause|resume|secret}', WebhookAction::class)
+            ->setName('settings.webhooks.action');
+        $group->map(['GET', 'POST'], '/settings/webhooks/{webhook:[0-9]+}/delete', DeleteWebhookAction::class)
+            ->setName('settings.webhooks.delete');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         // One's own email address and avatar (spec.md §7.9, Phase 33.1).

@@ -173,6 +173,8 @@ final class UserExport
 
         // Phase 36.2: their own notification channels, without secrets (never exported).
         $out['notification_channels'] = $keep('notification_channels', static fn (array $row): bool => $row['user_id'] === $user);
+        // Phase 39.3: their own webhooks, without secrets (the column is never exported).
+        $out['webhooks'] = $keep('webhooks', static fn (array $row): bool => $row['user_id'] === $user);
 
         $files = array_values(array_filter([
             ...array_column($out['vehicles'], 'photo_path'),

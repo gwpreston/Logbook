@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Expense;
 
+use Logbook\Support\Database\Transaction;
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Expense\ExpenseEntry;
@@ -26,6 +30,8 @@ final readonly class ExpenseService
         private AttachmentService $attachments,
         private ClockInterface $clock,
         private AccessContext $author,
+        private WebhookEvents $webhooks,
+        private Transaction $transaction,
     ) {
     }
 
@@ -52,6 +58,7 @@ final readonly class ExpenseService
             $by = $this->author->authorId() ?? $vehicle->userId;
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->attachments->record($vehicle, AttachmentOwner::Expense, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Expense, $id);
 
             return $id;
         });
@@ -68,6 +75,7 @@ final readonly class ExpenseService
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->attachments->record($vehicle, AttachmentOwner::Expense, $entry->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Expense, $entry->id);
         });
 
         return $this->get($vehicle, $entry->id);
@@ -78,7 +86,10 @@ final readonly class ExpenseService
      */
     public function delete(Vehicle $vehicle, ExpenseEntry $entry): void
     {
-        $this->entries->delete($vehicle->id, $entry->id);
+        $this->transaction->run(function () use ($vehicle, $entry): void {
+            $this->entries->delete($vehicle->id, $entry->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Expense, $entry->id);
+        });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Expense, $entry->id);
     }
 }

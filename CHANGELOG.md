@@ -6,6 +6,51 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-10-08
+
+Phase 39: **the API does what the pages do**. Read everything a vehicle's
+pages show, write, correct and delete what they let you, move files in
+and out, and have Logbook tell other systems when something changes.
+
+### Added
+
+- **Reads** (Phase 39.1): every entry on its own (`GET …/fuel/{entry}`,
+  `odometer`, `maintenance`, `documents`, `expenses`, `trips`,
+  `incidents`, `schedules`, `valuations`) with an `ETag`; maintenance and
+  document filters; schedules, valuations and ownership; the vehicle's
+  and the fleet's history; the four reports (costs, cost per distance,
+  fuel, mileage); tyre changes and sets; closed reminders; *Needs
+  attention*; price alerts; every finance agreement. A vehicle now says
+  how it left (`disposal`) and carries an `ETag`.
+- **Reminder actions** (Phase 39.1): *done*, *dismiss* and *reopen*,
+  safe to retry.
+- **Edits and deletes** (Phase 39.2): `PATCH` (only the fields you send)
+  and `DELETE` for every entry, through the edit and delete pages'
+  rules, with optional `If-Match` (a stale tag is `412`, nothing
+  written); the same on every other `PATCH` and `DELETE` below.
+- **More writes** (Phase 39.2): vehicles (add, edit, archive, restore),
+  valuations, schedules, tyre changes and tyres, saved journeys, station
+  favourites, price alerts, hiding a *Needs attention* item, manual
+  reminders, and finance (agreements, payments, settlement quotes and
+  *End*).
+- **Attachments** (Phase 39.3): list, upload (one file per request,
+  `multipart/form-data`, field `file`), download and delete files on
+  every kind of entry, trips and purchase and sale paperwork included,
+  with the pages' checks and limits; an incident's photos as the pages
+  serve them. The vehicle photo on `GET`, `POST` and `DELETE
+  /vehicles/{id}/photo`.
+- **Webhooks** (Phase 39.3): Settings → API keys → Webhooks. Logbook
+  calls your address when an entry, vehicle or reminder changes, by any
+  path (a form, an import, the API, Ask or MCP), with ids and links only,
+  signed (`X-Logbook-Signature`). Retried after 1 minute, 5 minutes, 30
+  minutes, 2 hours and 6 hours; paused after 50 failed tries in a row,
+  and you're told through your notification channels. *Send test*,
+  *Pause*, *Resume*, *New secret*. Addresses follow the same rules as
+  notification channels. The [API guide](docs/api.md#webhooks) shows how
+  to check the signature in Python, JavaScript and Node-RED.
+- `docs/api/openapi.json` 1.22.0 describes all of it, the webhook payload
+  included.
+
 ### Fixed
 
 - **Editing an entry in miles or gallons** no longer nudges what you didn't
@@ -14,6 +59,21 @@ is called out explicitly.
   by a metre (40 800 km became 40 800.001 km) and its volume and price by
   their last decimal. A value saved as the form showed it now keeps the
   stored one.
+
+### Upgrade notes
+- Pull and restart. **One migration** adds the `webhooks` and
+  `webhook_deliveries` tables; it rolls back cleanly.
+- New setting `WEBHOOKS_ENABLED` (default `true`; `false` queues and sends
+  nothing). Webhooks are sent by the scheduler, so they arrive with the
+  next pass; run passes more often to have them sooner
+  ([deployment](docs/deployment.md#scheduled-tasks-cron)).
+- `API_CORS_ORIGINS`: the preflight now allows `PUT`, `PATCH` and `DELETE`
+  and the `If-Match` header, and responses expose `ETag`.
+- Backups carry webhooks **without their signing secret**: a restored
+  webhook is paused until you make a new secret (and give it to the
+  receiver). Queued calls are not backed up.
+- Existing API clients work unchanged: the API stays `v1`, and every
+  change is additive.
 
 ## [3.4.0] — 2026-10-08
 

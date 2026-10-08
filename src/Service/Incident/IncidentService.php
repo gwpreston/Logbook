@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Incident;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Domain\Tyre\TyreChange;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -50,6 +53,7 @@ final readonly class IncidentService
         private AccessContext $author,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -87,6 +91,7 @@ final readonly class IncidentService
             $id = $this->incidents->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $odometerKm, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Incident, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Incident, $id);
 
             return $id;
         });
@@ -108,6 +113,7 @@ final readonly class IncidentService
             $this->incidents->update($vehicle->id, $id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $id, $data, $odometerKm, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Incident, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Incident, $id);
         });
 
         return $this->get($vehicle, $incident->id);
@@ -122,6 +128,7 @@ final readonly class IncidentService
         $this->transaction->run(function () use ($vehicle, $incident): void {
             $this->odometer->forgetEntry($vehicle, OdometerSource::Incident, $incident->id);
             $this->incidents->delete($vehicle->id, $incident->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Incident, $incident->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Incident, $incident->id);
     }

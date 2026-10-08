@@ -213,7 +213,7 @@ final class JobsPagesTest extends ReminderTestCase
         // Two beacons: one pass.
         self::assertSame([204, 204], [$this->tick($admin), $this->tick($admin)]);
         $runs = $this->runs($app)->recent(10);
-        self::assertSame(['cleanup', 'digest', 'reminders'], array_map(static fn ($r): string => $r->job, $runs));
+        self::assertSame(['cleanup', 'webhooks', 'digest', 'reminders'], array_map(static fn ($r): string => $r->job, $runs));
         $triggers = array_values(array_unique(array_map(static fn ($r): string => $r->trigger->value, $runs)));
         self::assertSame(['page_visit'], $triggers);
         self::assertStringNotContainsString('data-scheduler-beacon', self::body($admin->get('/settings')), 'not due now');
@@ -221,7 +221,7 @@ final class JobsPagesTest extends ReminderTestCase
         $clock->set(new DateTimeImmutable('2026-09-27T10:15:00Z'));
         self::assertStringContainsString('data-scheduler-beacon', self::body($admin->get('/settings')));
         $this->tick($admin);
-        self::assertCount(5, $this->runs($app)->recent(10), 'reminders and digest again; cleanup is hourly');
+        self::assertCount(7, $this->runs($app)->recent(10), 'reminders, digest and webhooks again; cleanup is hourly');
 
         $admin->post('/settings/jobs/triggers', []);
         self::assertSame(404, $this->tick($admin), 'off again');

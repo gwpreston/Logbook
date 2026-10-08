@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Compliance;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -43,6 +46,7 @@ final readonly class ComplianceService
         private Transaction $transaction,
         private ClockInterface $clock,
         private AccessContext $author,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -90,6 +94,7 @@ final readonly class ComplianceService
             $id = $this->documents->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Compliance, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Document, $id);
 
             return $id;
         });
@@ -108,6 +113,7 @@ final readonly class ComplianceService
             $this->documents->update($vehicle->id, $document->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $document->id, $data, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Compliance, $document->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Document, $document->id);
         });
 
         return $this->get($vehicle, $document->id);
@@ -121,6 +127,7 @@ final readonly class ComplianceService
         $this->transaction->run(function () use ($vehicle, $document): void {
             $this->odometer->forgetEntry($vehicle, OdometerSource::Document, $document->id);
             $this->documents->delete($vehicle->id, $document->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Document, $document->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Compliance, $document->id);
     }

@@ -52,37 +52,37 @@ Phase 27.1's incident-photo rules (#104).
       `DELETE /vehicles/{id}/photo`, through the edit form's rules (#300).
 
 ### 39.3.2 Webhooks
-- [ ] Migration: `webhooks` (with `notice_pending`, #294),
+- [x] Migration: `webhooks` (with `notice_pending`, #294),
       `webhook_deliveries` (reversible on every engine).
-- [ ] Event recorder hooked into the entry services (one place per
+- [x] Event recorder hooked into the entry services (one place per
       service, inside its transaction), so every path (form, import,
       API, Ask draft, MCP) queues, with §7.20's kinds (#290, #301);
       vehicles and tyre details too; trips only for those who may see
       them (#302); cost kinds for everyone with `View` (#295);
       `reminder.changed` on status changes and a manual reminder's
       create, edit and delete; nothing from a restore or the demo reset.
-- [ ] `webhooks` job on the scheduler, every pass (#291): signing,
+- [x] `webhooks` job on the scheduler, every pass (#291): signing,
       pinned destination under §7.11's policy, backoff (minimums), pause
       after 50 consecutive failed attempts, reset by a success (#293),
       deliveries waiting while paused, 7-day cleanup; held by
       `WEBHOOKS_ENABLED=false` and `API_ENABLED=false`; a disabled or
       deleted user's webhooks stop.
-- [ ] Settings → API keys → Webhooks (`/settings/webhooks`): add, events,
+- [x] Settings → API keys → Webhooks (`/settings/webhooks`): add, events,
       secret shown once (`Cache-Control: no-store`), status, *Send test*,
       *Pause*, *Resume* (failures back to 0), *New secret* (shown once),
       *Delete* (confirmation page), *Needs a new secret*; works without
       JS (#292).
-- [ ] The "webhook paused" notice: no category, every usable channel,
+- [x] The "webhook paused" notice: no category, every usable channel,
       held until quiet hours end, sent once (#294); translated.
-- [ ] Backups (§7.19): `webhooks` in without `secret`, restored paused
+- [x] Backups (§7.19): `webhooks` in without `secret`, restored paused
       (`restored`); deliveries out.
 
 ### 39.3.3 OpenAPI, docs, translations
-- [ ] `docs/api/openapi.json`: the attachment operations (multipart) and
+- [x] `docs/api/openapi.json`: the attachment operations (multipart) and
       the webhook payload schema.
-- [ ] `docs/api.md`: attachments with `curl`; webhooks with a Node-RED
+- [x] `docs/api.md`: attachments with `curl`; webhooks with a Node-RED
       flow and signature checking in Python and JavaScript.
-- [ ] Translations for every new page string, in every shipped locale.
+- [x] Translations for every new page string, in every shipped locale.
 
 ### 39.3.4 Tests
 - [ ] **Contract:** every new response validated against the OpenAPI

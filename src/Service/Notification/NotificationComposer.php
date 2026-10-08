@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Notification;
 
+use Logbook\Domain\Webhook\Webhook;
 use DateTimeImmutable;
 use IntlDateFormatter;
 use Logbook\Domain\FuelPrices\ListedPrice;
@@ -244,6 +245,27 @@ final readonly class NotificationComposer
                     'channels' => implode(', ', $names),
                 ]),
                 url: $this->urls->route('settings.notifications'),
+                urgent: true,
+                locale: $this->translator->getLocale(),
+            );
+        });
+    }
+
+    /**
+     * An entry webhook paused itself after 50 failed attempts in a row
+     * (spec.md §7.20 *Webhooks*, #294): no category, to every usable channel.
+     */
+    public function webhookPaused(User $user, string $name): Notification
+    {
+        return $this->scope->run($user, function () use ($name): Notification {
+            return new Notification(
+                kind: NotificationKind::WebhookPaused,
+                title: $this->translator->trans('notifications.webhook_paused.title', ['name' => $name]),
+                message: $this->translator->trans('notifications.webhook_paused.message', [
+                    'name' => $name,
+                    'count' => Webhook::PAUSE_AFTER,
+                ]),
+                url: $this->urls->route('settings.webhooks'),
                 urgent: true,
                 locale: $this->translator->getLocale(),
             );

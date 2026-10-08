@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Reminder\ManualReminderData;
@@ -44,6 +45,7 @@ final readonly class ReminderService
         private ReminderSettingsStore $settings,
         private UserDirectory $directory,
         private FinanceService $finance,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -144,11 +146,13 @@ final readonly class ReminderService
     public function dismiss(Reminder $reminder): void
     {
         $this->reminders->setStatus($reminder->id, ReminderStatus::Dismissed, $this->clock->now());
+        $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'dismissed');
     }
 
     public function markDone(Reminder $reminder): void
     {
         $this->reminders->setStatus($reminder->id, ReminderStatus::Done, $this->clock->now());
+        $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'done');
     }
 
     /**
@@ -162,12 +166,14 @@ final readonly class ReminderService
         }
 
         $this->reminders->setStatus($reminder->id, ReminderStatus::Upcoming, $this->clock->now());
+        $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'reopened');
         $this->sync->sync($user);
     }
 
     public function createManual(User $user, ManualReminderData $data): Reminder
     {
         $id = $this->reminders->insertManual($data, $this->statusFor($user, $data), $this->clock->now());
+        $this->webhooks->reminder($data->vehicleId, $id, 'created');
 
         return $this->get($user, $id);
     }
@@ -184,6 +190,7 @@ final readonly class ReminderService
             : ReminderRules::next($reminder->status, $this->statusFor($user, $data));
 
         $this->reminders->updateManual($reminder->id, $data, $status, $newOccurrence, $this->clock->now());
+        $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'updated');
 
         return $this->get($user, $reminder->id);
     }
@@ -195,6 +202,7 @@ final readonly class ReminderService
         }
 
         $this->reminders->delete($reminder->id);
+        $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'deleted');
     }
 
     /**

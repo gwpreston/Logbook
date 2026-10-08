@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use Logbook\Service\Webhook\WebhookEvents;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
@@ -61,6 +62,7 @@ final readonly class ReminderSync
         private FinanceAgreementRepository $agreements,
         private VehicleService $vehicleService,
         private DisplayFormatter $formatter,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -190,6 +192,7 @@ final readonly class ReminderSync
             )->status;
             if ($status !== $manual->status) {
                 $this->reminders->setStatus($manual->id, $status, $this->clock->now());
+                $this->told($manual->vehicleId, $manual->id, $status);
             }
         }
     }
@@ -211,6 +214,7 @@ final readonly class ReminderSync
         unset($existing[$key]);
         if ($stored->status !== ReminderStatus::Done) {
             $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
+            $this->told($vehicleId, $stored->id, ReminderStatus::Done);
         }
     }
 
@@ -232,6 +236,7 @@ final readonly class ReminderSync
             unset($existing[$key]);
             if (!$stored->status->isClosed()) {
                 $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
+                $this->told($vehicleId, $stored->id, ReminderStatus::Done);
             }
         }
     }
@@ -270,7 +275,8 @@ final readonly class ReminderSync
     private function insert(GeneratedReminder $generated): void
     {
         try {
-            $this->reminders->insertGenerated($generated, $this->clock->now());
+            $id = $this->reminders->insertGenerated($generated, $this->clock->now());
+            $this->told($generated->vehicleId, $id, $generated->status);
         } catch (UniqueConstraintViolationException) {
             // A concurrent sync (the scheduled task and a page view) added it
             // first; the next sync reconciles anything that differs.
@@ -294,5 +300,19 @@ final readonly class ReminderSync
         }
 
         $this->reminders->updateGenerated($stored->id, $generated, $status, $newOccurrence, $this->clock->now());
+        if ($status !== $stored->status) {
+            $this->told($stored->vehicleId, $stored->id, $status);
+        }
+    }
+
+    /**
+     * Entry webhooks hear when a reminder becomes due, overdue or done
+     * (spec.md §7.20 *Webhooks*): once, as the status is stored.
+     */
+    private function told(int $vehicleId, int $reminderId, ReminderStatus $status): void
+    {
+        if (in_array($status, [ReminderStatus::Due, ReminderStatus::Overdue, ReminderStatus::Done], true)) {
+            $this->webhooks->reminder($vehicleId, $reminderId, $status->value);
+        }
     }
 }

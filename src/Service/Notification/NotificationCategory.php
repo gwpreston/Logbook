@@ -31,7 +31,10 @@ enum NotificationCategory: string
             NotificationKind::Digest => self::Digest,
             NotificationKind::PriceAlert => self::PriceAlerts,
             NotificationKind::JobFailed => self::JobFailures,
-            NotificationKind::Reminders, NotificationKind::Test, NotificationKind::ChannelOff => null,
+            NotificationKind::Reminders,
+            NotificationKind::Test,
+            NotificationKind::ChannelOff,
+            NotificationKind::WebhookPaused => null,
         };
     }
 
