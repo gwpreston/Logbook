@@ -58,6 +58,7 @@ use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\EditEntryAction as ApiEditEntryAction;
 use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
+use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -369,6 +370,9 @@ return static function (App $app): void {
                     ->add($module(Feature::Fuel));
                 // Needs attention (Phase 39.1, spec.md §7.24): the visible active vehicles.
                 $keyed->get('/attention', ApiAttentionAction::class)->setName('api.attention');
+                // Phase 39.2: Hide, for the key's user; Log on the key's vehicle, checked by ApiUserWrites.
+                $keyed->post('/attention/{key:[^/]+}/hide', ApiUserWriteAction::class)->setName('api.attention.hide')
+                    ->setArgument('write', 'hide');
                 // History (Phase 39.1, spec.md §7.16): the fleet's, or one vehicle's below.
                 $keyed->get('/history', ApiHistoryAction::class)->setName('api.history');
                 $keyed->get('/vehicles/{id:[0-9]+}/history', ApiHistoryAction::class)->setName('api.history.vehicle')
@@ -449,6 +453,15 @@ return static function (App $app): void {
                     $stations->get('/fuel-prices/near', FuelPricesNearAction::class)->setName('api.fuel_prices.near');
                     // Phase 39.1: the key user's price alerts, also 404 until a provider is enabled.
                     $stations->get('/fuel-prices/alerts', ApiPriceAlertsAction::class)->setName('api.fuel_prices.alerts');
+                    // Phase 39.2: the key user's favourites and alerts (ApiUserWrites).
+                    $stations->map(['PUT', 'DELETE'], '/stations/{station:[0-9]+}/favourite', ApiUserWriteAction::class)
+                        ->setName('api.stations.favourite')
+                        ->setArgument('write', 'favourite');
+                    $stations->post('/fuel-prices/alerts', ApiUserWriteAction::class)->setName('api.fuel_prices.alerts.create')
+                        ->setArgument('write', 'alert');
+                    $stations->map(['PATCH', 'DELETE'], '/fuel-prices/alerts/{alert:[0-9]+}', ApiUserWriteAction::class)
+                        ->setName('api.fuel_prices.alerts.edit')
+                        ->setArgument('write', 'alert');
                 })->add($module(Feature::Stations));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
                     ->setArgument($ability, VehicleAbility::View->value)
@@ -525,6 +538,12 @@ return static function (App $app): void {
                     $edits($trips, 'trips');
                     $trips->get('/trips/claim', ApiTripClaimAction::class)->setName('api.trips.claim');
                     $trips->get('/journeys', ApiJourneysAction::class)->setName('api.journeys');
+                    // Phase 39.2: the Settings → Trips journey form, the key user's own.
+                    $trips->post('/journeys', ApiUserWriteAction::class)->setName('api.journeys.create')
+                        ->setArgument('write', 'journey');
+                    $trips->map(['PATCH', 'DELETE'], '/journeys/{journey:[0-9]+}', ApiUserWriteAction::class)
+                        ->setName('api.journeys.edit')
+                        ->setArgument('write', 'journey');
                 })->add($module(Feature::Trips));
                 // Incidents (spec.md §7.20, §7.29): the access rules of IncidentAccess.
                 $keyed->group('', function (Group $incidents) use ($ability, $edits): void {

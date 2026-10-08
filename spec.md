@@ -5049,15 +5049,22 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   /journeys/{id}`, the Settings → Trips journey form, for the key's user
   only. Deleting leaves the trips logged from it.
 - **Station favourites** (module `stations`): `PUT` and `DELETE
-  /stations/{id}/favourite`, the key user's favourite, idempotent.
-  Stations are still created only by naming one on a fill-up.
+  /stations/{id}/favourite`, the key user's favourite, idempotent
+  (`204`); unstarring removes the station's price alerts, as on the
+  page. Stations are still created only by naming one on a fill-up.
 - **Price alerts** (a price provider enabled): `POST /fuel-prices/alerts`,
   `PATCH` and `DELETE /fuel-prices/alerts/{id}`, the alert form's fields
-  and limits (§7.34, #138).
+  and limits (§7.34, #138): `station_id`, `grade`, `below` per
+  `volume_unit` (the owner's when left out; stored per litre). An alert
+  already set for that station and grade is changed, as the form does,
+  and answers `200` with `duplicate: true`. `PATCH` changes the price
+  only; the station and grade are the alert's own.
 - **Needs attention:** `POST /attention/{key}/hide`, the page's *Hide*
   for the key's user (§6 AttentionHidden); no un-hide, as the pages have
   no *Show again* (decided 2026-10-08, #296),
-  idempotent.
+  idempotent (`204`), with `Log` on the key's vehicle as the page. The
+  item is judged again first: a key that no longer names a hideable item
+  answers 404.
 - **Finance** (#287; module `finance`, `Manage`): `POST
   /vehicles/{id}/finance/agreements` and `PATCH
   …/agreements/{agreement}` with the agreement form's fields, derivations

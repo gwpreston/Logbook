@@ -159,6 +159,19 @@ final class JsonInput
         'notes' => 'notes',
     ];
 
+    /** API field → form field, for the saved journey form (Phase 39.2); in km, one way. */
+    public const array JOURNEY_FIELDS = [
+        'from' => 'from_place',
+        'to' => 'to_place',
+        'distance_km' => 'distance',
+        'is_return' => 'is_return_default',
+        'is_business' => 'is_business_default',
+        'purpose' => 'purpose_default',
+    ];
+
+    /** A price alert's fields (Phase 39.2, spec.md §7.34). */
+    public const array PRICE_ALERT_FIELDS = ['station_id', 'grade', 'below', 'volume_unit'];
+
     /**
      * The body as an object, numbers as strings.
      *
@@ -538,6 +551,63 @@ final class JsonInput
         return $errors->isEmpty()
             ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
             : $errors;
+    }
+
+    /**
+     * A saved journey body as the journey form's input (Phase 39.2), in km
+     * and one way, as `GET /journeys` returns it. A new journey is a
+     * business one unless the body says otherwise, as the form starts.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function journey(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::JOURNEY_FIELDS), $errors);
+
+        $input = [
+            'from_place' => self::text($body, 'from', $errors),
+            'to_place' => self::text($body, 'to', $errors),
+            'distance' => self::decimal($body, 'distance_km', $errors),
+            'is_return_default' => self::flag($body, 'is_return', $errors),
+            'is_business_default' => self::flag($body, 'is_business', $errors, true),
+            'purpose_default' => self::text($body, 'purpose', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A price alert body (Phase 39.2): the station, the grade, and the
+     * price per `volume_unit` (the owner's when left out) as a decimal.
+     *
+     * @param array<string, mixed> $body
+     * @return array{station_id: string, grade: string, below: string, volume: VolumeUnit}|ValidationErrors
+     */
+    public static function priceAlert(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, self::PRICE_ALERT_FIELDS, $errors);
+        $volume = $owner->volumeUnit;
+        $unit = $body['volume_unit'] ?? null;
+        if ($unit !== null) {
+            $volume = is_string($unit) ? VolumeUnit::tryFrom($unit) : null;
+            if ($volume === null) {
+                $errors->add('volume_unit', 'validation.choice');
+                $volume = $owner->volumeUnit;
+            }
+        }
+        $values = [
+            'station_id' => self::stationId($body, $errors),
+            'grade' => self::text($body, 'grade', $errors),
+            'below' => self::decimal($body, 'below', $errors),
+            'volume' => $volume,
+        ];
+
+        return $errors->isEmpty() ? $values : $errors;
     }
 
     /**

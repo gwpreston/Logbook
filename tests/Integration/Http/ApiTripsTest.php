@@ -405,6 +405,47 @@ final class ApiTripsTest extends AppTestCase
         self::assertSame(404, $api->post($this->trips, self::trip())->getStatusCode());
         self::assertSame(404, $api->get('/trips/claim')->getStatusCode());
         self::assertSame(404, $api->get('/journeys')->getStatusCode());
+        self::assertSame(404, $api->post('/journeys', ['from' => 'A', 'to' => 'B', 'distance_km' => '1'])->getStatusCode());
+        self::assertSame(404, $api->patch('/journeys/1', ['to' => 'C'])->getStatusCode());
+        self::assertSame(404, $api->delete('/journeys/1')->getStatusCode());
         self::assertFalse(ApiClient::json($api->get('/me'))->get('modules', 'trips'));
+    }
+
+    public function testAJourneyIsSavedEditedAndDeletedAsTheSettingsFormDoes(): void
+    {
+        $created = $this->api->post('/journeys', ['from' => 'Ballymena', 'to' => 'Belfast', 'distance_km' => 45.25]);
+        self::assertSame(201, $created->getStatusCode(), self::body($created));
+        $journey = ApiClient::json($created)->doc('entry');
+        self::assertSame('45.250', $journey->get('distance_km'), 'one way, in km, whatever the owner\'s unit');
+        self::assertTrue($journey->get('is_business'), 'as the form starts');
+        self::assertFalse($journey->get('is_return'));
+        $id = $journey->int('id');
+        self::assertSame([$id], ApiClient::json($this->api->get('/journeys'))->column('id', 'items'));
+
+        $edited = ApiClient::json($this->api->patch('/journeys/' . $id, ['is_return' => true, 'purpose' => 'Site visit']));
+        self::assertSame('Ballymena → Belfast → Ballymena', $edited->get('entry', 'journey'));
+        self::assertSame('45.250', $edited->get('entry', 'distance_km'), 'unsent fields stay');
+        self::assertNull(ApiClient::json($this->api->patch('/journeys/' . $id, ['purpose' => null]))->get('entry', 'purpose'));
+
+        $unknown = $this->api->post('/journeys', ['from' => 'Ballymena', 'colour' => 'red']);
+        self::assertSame(['colour'], array_keys(ApiClient::json($unknown)->doc('errors')->toArray()));
+        $missing = $this->api->post('/journeys', ['from' => 'Ballymena']);
+        self::assertSame(422, $missing->getStatusCode());
+        self::assertSame(['to', 'distance_km'], array_keys(ApiClient::json($missing)->doc('errors')->toArray()));
+        self::assertSame(422, $this->api->patch('/journeys/' . $id, ['to' => null])->getStatusCode());
+
+        $trip = $this->api->post($this->trips, ['journey_id' => $id, 'travelled_on' => '2026-09-28', 'purpose' => 'Visit']);
+        self::assertSame(201, $trip->getStatusCode());
+        $member = $this->createMember($this->app);
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $member));
+        self::assertSame(404, $theirs->patch('/journeys/' . $id, ['to' => 'Larne'])->getStatusCode(), 'their own only');
+        self::assertSame(404, $theirs->delete('/journeys/' . $id)->getStatusCode());
+        $reader = $this->api($this->app, $this->apiKey($this->app, $this->owner, ApiScope::Read));
+        self::assertSame('insufficient_scope', ApiClient::json($reader->delete('/journeys/' . $id))->get('code'));
+
+        self::assertSame(204, $this->api->delete('/journeys/' . $id)->getStatusCode());
+        self::assertSame([], ApiClient::json($this->api->get('/journeys'))->get('items'));
+        self::assertSame(1, count((array) ApiClient::json($this->api->get($this->trips))->get('items')), 'trips stay');
+        self::assertSame(404, $this->api->delete('/journeys/' . $id)->getStatusCode());
     }
 }

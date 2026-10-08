@@ -33,17 +33,9 @@ final readonly class PriceAlertsAction
     {
         $provider = $this->config->provider() ?? throw ApiProblem::notFound('Fuel prices are off on this install.');
 
-        return $this->responder->json(['items' => array_map(static fn (PriceAlert $alert): array => [
-            'id' => $alert->id,
-            'station_id' => $alert->stationId,
-            'grade' => $alert->grade->value,
-            'below' => Serializer::dec($alert->below, Serializer::QUANTITY_SCALE),
-            'volume_unit' => 'l',
-            'currency' => $provider->currency(),
-            'armed' => $alert->isArmed(),
-            'triggered_at' => Serializer::instant($alert->triggeredAt),
-            'created_at' => Serializer::instant($alert->createdAt),
-            'updated_at' => Serializer::instant($alert->updatedAt),
-        ], $this->alerts->forUser(RequestContext::requireUser($request)))]);
+        return $this->responder->json(['items' => array_map(
+            static fn (PriceAlert $alert): array => Serializer::priceAlert($alert, $provider->currency()),
+            $this->alerts->forUser(RequestContext::requireUser($request)),
+        )]);
     }
 }

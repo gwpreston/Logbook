@@ -75,8 +75,8 @@ nested routes, entry guard and `ETag`).
 - [ ] Schedules: create (duplicate key), edit, delete (records kept).
 - [ ] Tyre changes: create (replayed, every kind), edit, delete (replay,
       409 where the page refuses); tyre details edit.
-- [ ] Journeys: create, edit, delete (trips kept).
-- [ ] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
+- [x] Journeys: create, edit, delete (trips kept).
+- [x] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
       (create, edit, delete, the form's limits); attention hide
       (idempotent; no unhide, #296).
 - [ ] Finance: agreements (create with the one-active rule, edit; the

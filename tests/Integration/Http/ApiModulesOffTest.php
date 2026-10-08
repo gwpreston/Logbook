@@ -74,7 +74,20 @@ final class ApiModulesOffTest extends AppTestCase
             Feature::Fuel->value => [['PATCH', $base . '/fuel/1'], ['DELETE', $base . '/fuel/1']],
             Feature::Maintenance->value => [['PATCH', $base . '/maintenance/1'], ['DELETE', $base . '/maintenance/1']],
             Feature::Compliance->value => [['PATCH', $base . '/documents/1'], ['DELETE', $base . '/documents/1']],
-            Feature::Trips->value => [['PATCH', $base . '/trips/1'], ['DELETE', $base . '/trips/1']],
+            Feature::Trips->value => [
+                ['PATCH', $base . '/trips/1'],
+                ['DELETE', $base . '/trips/1'],
+                ['POST', '/journeys'],
+                ['PATCH', '/journeys/1'],
+                ['DELETE', '/journeys/1'],
+            ],
+            Feature::Stations->value => [
+                ['PUT', '/stations/1/favourite'],
+                ['DELETE', '/stations/1/favourite'],
+                ['POST', '/fuel-prices/alerts'],
+                ['PATCH', '/fuel-prices/alerts/1'],
+                ['DELETE', '/fuel-prices/alerts/1'],
+            ],
             Feature::Incidents->value => [['PATCH', $base . '/incidents/1'], ['DELETE', $base . '/incidents/1']],
             Feature::Reminders->value => [['PATCH', '/reminders/1'], ['DELETE', '/reminders/1']],
         ];

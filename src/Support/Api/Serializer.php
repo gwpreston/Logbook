@@ -19,6 +19,7 @@ use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
+use Logbook\Domain\FuelPrices\PriceAlert;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
@@ -707,6 +708,27 @@ final class Serializer
             'payout' => self::dec($view->payout, self::QUANTITY_SCALE),
             'currency' => $row->currency,
             'ncd_affected' => $view->ncdAffected?->value,
+        ];
+    }
+
+    /**
+     * A price alert (spec.md §7.34): per litre, in the provider's currency.
+     *
+     * @return array<string, mixed>
+     */
+    public static function priceAlert(PriceAlert $alert, string $currency): array
+    {
+        return [
+            'id' => $alert->id,
+            'station_id' => $alert->stationId,
+            'grade' => $alert->grade->value,
+            'below' => self::dec($alert->below, self::QUANTITY_SCALE),
+            'volume_unit' => 'l',
+            'currency' => $currency,
+            'armed' => $alert->isArmed(),
+            'triggered_at' => self::instant($alert->triggeredAt),
+            'created_at' => self::instant($alert->createdAt),
+            'updated_at' => self::instant($alert->updatedAt),
         ];
     }
 

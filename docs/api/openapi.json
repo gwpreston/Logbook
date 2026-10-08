@@ -3202,6 +3202,51 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "createJourney",
+        "summary": "Save a journey",
+        "description": "The Settings → Trips journey form, for the key's user (Phase 39.2). Module trips.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/openapi.json": {
@@ -3980,6 +4025,61 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "setPriceAlert",
+        "summary": "Set a price alert",
+        "description": "The station page's alert form, with its limits (Phase 39.2). An alert already set for that station and grade is changed and answers 200 with duplicate true. 404 while fuel prices are off.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceAlertInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Changed (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/reminders/{reminder}": {
@@ -4103,6 +4203,292 @@
           },
           "412": {
             "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/stations/{station}/favourite": {
+      "put": {
+        "operationId": "favouriteStation",
+        "summary": "Star a station",
+        "description": "The station page's star, for the key's user; idempotent. Needs a read and write key (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "station",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "A favourite"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unfavouriteStation",
+        "summary": "Unstar a station",
+        "description": "Idempotent; the station's price alerts go too, as on the page (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "station",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Not a favourite"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/attention/{key}/hide": {
+      "post": {
+        "operationId": "hideAttention",
+        "summary": "Hide a Needs attention item",
+        "description": "The page's Hide, for the key's user (spec.md §7.24), with Log on the key's vehicle. The item is judged again first: a key that no longer names a hideable item (it changed or is gone) answers 404. Hiding again is a no-op. There is no un-hide, as the pages have no Show again (#296).",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "An item's key from GET /attention."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Hidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}": {
+      "patch": {
+        "operationId": "editJourney",
+        "summary": "Edit a saved journey",
+        "description": "The key user's own; another user's is not found (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "journey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteJourney",
+        "summary": "Delete a saved journey",
+        "description": "Trips logged from it keep what they copied (Phase 39.2).",
+        "parameters": [
+          {
+            "name": "journey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/fuel-prices/alerts/{alert}": {
+      "patch": {
+        "operationId": "editPriceAlert",
+        "summary": "Change a price alert's price",
+        "parameters": [
+          {
+            "name": "alert",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceAlertPatch"
+              }
+            }
+          }
+        },
+        "description": "The key user's own alert (Phase 39.2).",
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertEdit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePriceAlert",
+        "summary": "Remove a price alert",
+        "parameters": [
+          {
+            "name": "alert",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "description": "The key user's own alert (Phase 39.2).",
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
@@ -13070,6 +13456,257 @@
         "properties": {
           "entry": {
             "$ref": "#/components/schemas/Reminder"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "JourneyInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "distance_km"
+        ],
+        "description": "The Settings → Trips journey form: one way, in km, as GET /journeys returns it.",
+        "properties": {
+          "from": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "One way."
+          },
+          "is_return": {
+            "type": "boolean",
+            "description": "What a trip logged from it starts with. Default: false."
+          },
+          "is_business": {
+            "type": "boolean",
+            "description": "Default: true, as the form starts."
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      },
+      "JourneyPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput",
+                "description": "One way."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_return": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "What a trip logged from it starts with. Default: false."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_business": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Default: true, as the form starts."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "JourneyWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/SavedJourney"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "JourneyEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/SavedJourney"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PriceAlertInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "station_id",
+          "grade",
+          "below"
+        ],
+        "description": "The station page's alert form (spec.md §7.34): a favourite station with listed prices, a grade it sells, a price from 0.001 to 99.999 per litre, at most 20 alerts.",
+        "properties": {
+          "station_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "grade": {
+            "type": "string"
+          },
+          "below": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The price per volume_unit to alert below."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          }
+        }
+      },
+      "PriceAlertPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A new price; the station and grade are the alert's own (refused here).",
+        "properties": {
+          "below": {
+            "$ref": "#/components/schemas/NumberInput",
+            "description": "The price per volume_unit to alert below."
+          },
+          "volume_unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "gal_uk",
+              "gal_us"
+            ],
+            "description": "Default: the owner's."
+          }
+        }
+      },
+      "PriceAlertWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/PriceAlert"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PriceAlertEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/PriceAlert"
           },
           "warnings": {
             "type": "array",

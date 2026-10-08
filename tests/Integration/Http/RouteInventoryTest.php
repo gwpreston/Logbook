@@ -61,6 +61,12 @@ final class RouteInventoryTest extends AppTestCase
         'scheduler.tick',
         'api.me',
         'api.trips.claim',
+        // Phase 39.2: the key user's own journeys, favourites and alerts.
+        'api.journeys.create',
+        'api.journeys.edit',
+        'api.stations.favourite',
+        'api.fuel_prices.alerts.create',
+        'api.fuel_prices.alerts.edit',
         'settings.api_keys',
         'settings.api_keys.revoke',
         // Phase 33.1: one's own email address and avatar, and anyone's avatar picture (#161).
@@ -175,6 +181,8 @@ final class RouteInventoryTest extends AppTestCase
         'api.reports.mileage',
         'api.tyre_sets',
         'api.attention',
+        // Phase 39.2: hide names its vehicle in the key; ApiUserWrites checks Log on it.
+        'api.attention.hide',
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',
@@ -351,7 +359,7 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
         self::assertNotEmpty($apiRoutes);
 
         foreach ($apiRoutes as $route) {
-            $path = (string) preg_replace('/\{[a-z]+:\[0-9\]\+\}/', '1', $route->getPattern());
+            $path = (string) preg_replace('/\{[a-z]+:[^}]+\}/', '1', $route->getPattern());
             foreach ($route->getMethods() as $method) {
                 // Signed in, but no key: a session never opens the API.
                 $response = match ($method) {
