@@ -31,7 +31,8 @@ final class IssuesToolTest extends ToolsBTestCase
         $issues = $this->service($app, IssueService::class);
         $day = static fn (string $date) => LocalTime::parseDate($date) ?? throw new \LogicException($date);
         $issues->create($golf, new IssueData($day('2026-08-12'), 'Knock from front left', odometerKm: '41000.000'), $zone);
-        $issues->create($golf, new IssueData($day('2026-09-01'), 'Brake pipes corroded', IssueStatus::Watching, affectsSafety: true), $zone);
+        $pipes = new IssueData($day('2026-09-01'), 'Brake pipes corroded', IssueStatus::Watching, affectsSafety: true);
+        $issues->create($golf, $pipes, $zone);
         $fixed = $issues->create($golf, new IssueData($day('2026-07-01'), 'Squeak'), $zone);
         $issues->fixWithoutRecord($golf, $fixed, $day('2026-07-20'), 'Went away');
         $issues->create($fiesta, new IssueData($day('2026-09-10'), 'Slow leak, rear right'), $zone);
@@ -48,7 +49,9 @@ final class IssuesToolTest extends ToolsBTestCase
         self::assertSame('/vehicles/' . $golf->id . '/issues', $open->link);
         self::assertStringContainsString('qualified mechanic', $data->string('note'));
 
-        $fixedOnly = new JsonDoc($this->toolResult($app, $owner, 'issues', ['vehicles' => [$golf->id], 'status' => 'fixed'])->data);
+        $fixedOnly = new JsonDoc(
+            $this->toolResult($app, $owner, 'issues', ['vehicles' => [$golf->id], 'status' => 'fixed'])->data,
+        );
         self::assertSame(1, $fixedOnly->int('issues'));
         self::assertTrue($fixedOnly->get('rows', 0, 'fixed_without_record'));
 
@@ -56,7 +59,8 @@ final class IssuesToolTest extends ToolsBTestCase
         self::assertSame(3, (new JsonDoc($everyone->data))->int('issues'), 'every vehicle');
         self::assertSame('/issues', $everyone->link);
         $this->service($app, VehicleService::class)->archive($owner, $fiesta);
-        self::assertSame(3, (new JsonDoc($this->toolResult($app, $owner, 'issues')->data))->int('issues'), 'archived ones still read');
+        $archived = new JsonDoc($this->toolResult($app, $owner, 'issues')->data);
+        self::assertSame(3, $archived->int('issues'), 'archived ones still read');
     }
 
     public function testADraftIssueIsACardUntilAddAndKeepsTheUsersWords(): void
@@ -72,7 +76,8 @@ final class IssuesToolTest extends ToolsBTestCase
             'affects_safety' => true,
         ]);
         $card = new JsonDoc($result->data);
-        self::assertSame([], $this->service($app, IssueRepository::class)->listForVehicle($golf->id), 'nothing saved yet');
+        $before = $this->service($app, IssueRepository::class)->listForVehicle($golf->id);
+        self::assertSame([], $before, 'nothing saved yet');
 
         $this->service($app, DraftStore::class)->apply($owner, $card->int('draft_id'));
         $saved = $this->service($app, IssueRepository::class)->listForVehicle($golf->id);
@@ -89,7 +94,8 @@ final class IssuesToolTest extends ToolsBTestCase
         $this->vehicle($app);
         foreach ($this->service($app, ToolRegistry::class)->definitions($owner) as $offered) {
             if (in_array($offered->name, ['issues', 'draft_issue'], true)) {
-                self::assertMatchesRegularExpression('/never (add )?a (cause|diagnosis)/i', $offered->description, $offered->name);
+                $never = '/never (add )?a (cause|diagnosis)/i';
+                self::assertMatchesRegularExpression($never, $offered->description, $offered->name);
             }
         }
     }

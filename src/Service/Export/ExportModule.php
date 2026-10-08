@@ -32,7 +32,11 @@ enum ExportModule: string
 
     public function isImportable(): bool
     {
-        return !in_array($this, [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues], true);
+        return !in_array(
+            $this,
+            [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues],
+            true,
+        );
     }
 
     /**

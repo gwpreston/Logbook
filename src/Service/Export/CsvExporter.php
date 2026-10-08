@@ -713,13 +713,6 @@ final readonly class CsvExporter
     }
 
     /**
-     * The vehicle's incidents, oldest first (spec.md §7.13): every field but
-     * the other party; the odometer in the owner's unit; links as the
-     * linked records' ids. Exporting is `Manage`, which sees every detail.
-     *
-     * @return array{0: list<string>, 1: list<list<string|null>>}
-     */
-    /**
      * Issues (Phase 40.2, spec.md §7.13 *Issues*): safety first, then newest
      * noticed; the mileage is the issue's own, in the owner's unit; *fixed
      * by* names the service records fixing it now. Updates are not exported.
@@ -769,6 +762,13 @@ final readonly class CsvExporter
         ]), $rows];
     }
 
+    /**
+     * The vehicle's incidents, oldest first (spec.md §7.13): every field but
+     * the other party; the odometer in the owner's unit; links as the
+     * linked records' ids. Exporting is `Manage`, which sees every detail.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
     private function incidentsTable(User $user, Vehicle $vehicle): array
     {
         $unit = $user->preferences->distanceUnit;

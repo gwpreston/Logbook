@@ -203,6 +203,7 @@ final readonly class ImportField
             ExportModule::TyreChanges,
             ExportModule::Valuations,
             ExportModule::Incidents,
+            ExportModule::Issues,
             ExportModule::Finance => [],
         };
     }

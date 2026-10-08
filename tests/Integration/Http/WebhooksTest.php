@@ -242,7 +242,8 @@ final class WebhooksTest extends ReminderTestCase
             self::assertContains($expected, $seen);
         }
         self::assertSame(2, count(array_keys($seen, 'entry.updated vehicle ' . $this->golf->id, true)), 'archive and restore');
-        self::assertSame(3, count(array_keys($seen, 'entry.updated issue ' . $issue, true)), 'update, fix, reopen; a repeated fix is not told');
+        $updated = count(array_keys($seen, 'entry.updated issue ' . $issue, true));
+        self::assertSame(3, $updated, 'update, fix, reopen; a repeated fix is not told');
         foreach ($this->queued($webhook) as $delivery) {
             self::assertMatchesPayloadSchema($delivery->payload);
         }

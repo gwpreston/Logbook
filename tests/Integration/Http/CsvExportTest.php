@@ -165,18 +165,28 @@ final class CsvExportTest extends AppTestCase
         $record = $this->maintenance($app, $golf, '2026-09-14', 'Front pads', '120', '1609.344');
         $knock = $issues->create($golf, new IssueData($day('2026-08-12'), 'Knock, front left', odometerKm: '1609.344'), $zone);
         $issues->fixWith($golf, $knock, [$record->id]);
-        $issues->create($golf, new IssueData($day('2026-09-01'), 'Brake pipes', IssueStatus::Watching, affectsSafety: true), $zone);
+        $pipes = new IssueData($day('2026-09-01'), 'Brake pipes', IssueStatus::Watching, affectsSafety: true);
+        $issues->create($golf, $pipes, $zone);
         $squeak = $issues->create($golf, new IssueData($day('2026-07-01'), 'Squeak', description: 'Cold mornings'), $zone);
         $issues->fixWithoutRecord($golf, $squeak, $day('2026-07-20'), null);
 
         $rows = self::rows(self::body($browser->get('/vehicles/' . $golf->id . '/export/issues.csv')));
         self::assertSame(
-            ['Noticed on', 'Odometer (Miles)', 'Title', 'Description', 'Category', 'Status', 'Affects safety', 'Fixed on', 'Fixed by'],
+            [
+                'Noticed on', 'Odometer (Miles)', 'Title', 'Description', 'Category', 'Status', 'Affects safety', 'Fixed on',
+                'Fixed by',
+            ],
             $rows[0],
         );
         self::assertSame(['2026-09-01', '', 'Brake pipes', '', '', 'Watching', 'yes', '', ''], $rows[1], 'safety first');
-        self::assertSame(['2026-08-12', '1000', 'Knock, front left', '', '', 'Fixed', 'no', '2026-09-14', '2026-09-14 Front pads'], $rows[2]);
-        self::assertSame(['2026-07-01', '', 'Squeak', 'Cold mornings', '', 'Fixed', 'no', '2026-07-20', 'Fixed without a record'], $rows[3]);
+        self::assertSame(
+            ['2026-08-12', '1000', 'Knock, front left', '', '', 'Fixed', 'no', '2026-09-14', '2026-09-14 Front pads'],
+            $rows[2],
+        );
+        self::assertSame(
+            ['2026-07-01', '', 'Squeak', 'Cold mornings', '', 'Fixed', 'no', '2026-07-20', 'Fixed without a record'],
+            $rows[3],
+        );
 
         $html = self::body($browser->get('/vehicles/' . $golf->id . '/issues'));
         self::assertStringContainsString('href="/vehicles/' . $golf->id . '/export/issues.csv"', $html);
