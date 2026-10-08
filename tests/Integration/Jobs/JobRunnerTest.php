@@ -65,7 +65,10 @@ final class JobRunnerTest extends ReminderTestCase
 
         $summary = $this->service($app, ScheduledTasks::class)->run(JobTrigger::Cron);
         self::assertSame(1, $summary->remindersSent);
-        self::assertSame(['reminders' => 'cron', 'digest' => 'cron', 'cleanup' => 'cron'], $this->runsByJob($app));
+        self::assertSame(
+            ['reminders' => 'cron', 'digest' => 'cron', 'webhooks' => 'cron', 'cleanup' => 'cron'],
+            $this->runsByJob($app),
+        );
         $reminders = $this->runs($app)->latest('reminders');
         self::assertNotNull($reminders);
         self::assertSame(JobStatus::Ok, $reminders->status);
@@ -81,7 +84,10 @@ final class JobRunnerTest extends ReminderTestCase
         // Cleanup is hourly; backups are off.
         $clock->set(new DateTimeImmutable('2026-09-27T10:15:00Z'));
         $this->service($app, ScheduledTasks::class)->run(JobTrigger::Docker);
-        self::assertSame(['reminders' => 'docker', 'digest' => 'docker', 'cleanup' => 'cron'], $this->runsByJob($app));
+        self::assertSame(
+            ['reminders' => 'docker', 'digest' => 'docker', 'webhooks' => 'docker', 'cleanup' => 'cron'],
+            $this->runsByJob($app),
+        );
         self::assertCount(1, $this->mail->sent, 'never sent twice');
 
         $clock->set(new DateTimeImmutable('2026-09-27T11:00:00Z'));

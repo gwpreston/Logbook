@@ -85,6 +85,9 @@ use Logbook\Action\Api\LogReminderAction as ApiLogReminderAction;
 use Logbook\Action\Api\LogTreadCheckAction as ApiLogTreadCheckAction;
 use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
+use Logbook\Action\Api\AttachmentAction as ApiAttachmentAction;
+use Logbook\Action\Api\EntryAttachmentsAction as ApiEntryAttachmentsAction;
+use Logbook\Action\Api\VehiclePhotoWriteAction as ApiVehiclePhotoWriteAction;
 use Logbook\Action\Api\OpenApiAction;
 use Logbook\Action\Api\RemindersAction as ApiRemindersAction;
 use Logbook\Action\Api\ShowVehicleAction as ApiVehicleAction;
@@ -219,6 +222,9 @@ use Logbook\Action\Settings\ProfileAction;
 use Logbook\Action\Settings\ReminderSettingsAction;
 use Logbook\Action\Settings\RemoveIdentityAction;
 use Logbook\Action\Settings\RevokeApiKeyAction;
+use Logbook\Action\Settings\WebhookAction;
+use Logbook\Action\Settings\WebhooksAction;
+use Logbook\Action\Settings\DeleteWebhookAction;
 use Logbook\Action\Settings\RevokeInvitationAction;
 use Logbook\Action\Settings\SavePreferencesAction;
 use Logbook\Action\Settings\SendTestNotificationAction;
@@ -361,6 +367,48 @@ return static function (App $app): void {
                         }
                     }
                 };
+                // Attachments (Phase 39.3, spec.md §7.20 *Attachments*, #286, #300): an entry's files under
+                // its own path, read with the entry's read ability and module, added with its edit form's
+                // (Log, Manage for valuations and paperwork; ApiAttachments checks canChange). The file
+                // itself, and its delete, by id: ApiAttachments finds the vehicle and checks it.
+                $owners = [
+                    'fuel' => [VehicleAbility::View, VehicleAbility::Log, Feature::Fuel],
+                    'odometer' => [VehicleAbility::View, VehicleAbility::Log, null],
+                    'maintenance' => [VehicleAbility::View, VehicleAbility::Log, Feature::Maintenance],
+                    'documents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Compliance],
+                    'expenses' => [VehicleAbility::ViewCosts, VehicleAbility::Log, null],
+                    'valuations' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
+                    'trips' => [VehicleAbility::View, VehicleAbility::Log, Feature::Trips],
+                    'incidents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Incidents],
+                    // #305: the paperwork proves a price, so its list needs ViewCosts, as the ownership card.
+                    'purchase' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
+                    'sale' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
+                ];
+                foreach ($owners as $owner => [$read, $write, $feature]) {
+                    $path = '/vehicles/{id:[0-9]+}/' . $owner
+                        . ($owner === 'purchase' || $owner === 'sale' ? '' : '/{entry:[0-9]+}') . '/attachments';
+                    $routes = [
+                        $keyed->get($path, ApiEntryAttachmentsAction::class)->setName('api.' . $owner . '.attachments')
+                            ->setArgument($ability, $read->value),
+                        $keyed->post($path, ApiEntryAttachmentsAction::class)->setName('api.' . $owner . '.attachments.create')
+                            ->setArgument($ability, $write->value),
+                    ];
+                    foreach ($routes as $route) {
+                        $route->setArgument('list', $owner);
+                        if ($feature !== null) {
+                            $route->add($module($feature));
+                        }
+                    }
+                }
+                $keyed->map(['GET', 'DELETE'], '/attachments/{attachment:[0-9]+}', ApiAttachmentAction::class)
+                    ->setName('api.attachments.show');
+                // The vehicle's photo (#300): not an attachment; Manage to change it, as the edit form.
+                $keyed->get('/vehicles/{id:[0-9]+}/photo', VehiclePhotoAction::class)->setName('api.vehicles.photo')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $keyed->map(['POST', 'DELETE'], '/vehicles/{id:[0-9]+}/photo', ApiVehiclePhotoWriteAction::class)
+                    ->setName('api.vehicles.photo.edit')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.
@@ -1137,6 +1185,12 @@ return static function (App $app): void {
         $group->map(['GET', 'POST'], '/settings/api-keys', ApiKeysAction::class)->setName('settings.api_keys');
         $group->map(['GET', 'POST'], '/settings/api-keys/{key:[0-9]+}/revoke', RevokeApiKeyAction::class)
             ->setName('settings.api_keys.revoke');
+        // Entry webhooks (Phase 39.3, spec.md §7.20 *Webhooks*): the user's own, by id.
+        $group->map(['GET', 'POST'], '/settings/webhooks', WebhooksAction::class)->setName('settings.webhooks');
+        $group->post('/settings/webhooks/{webhook:[0-9]+}/{action:test|pause|resume|secret}', WebhookAction::class)
+            ->setName('settings.webhooks.action');
+        $group->map(['GET', 'POST'], '/settings/webhooks/{webhook:[0-9]+}/delete', DeleteWebhookAction::class)
+            ->setName('settings.webhooks.delete');
         $group->post('/settings/preferences', SavePreferencesAction::class)->setName('settings.preferences');
         $group->post('/settings/password', ChangePasswordAction::class)->setName('settings.password');
         // One's own email address and avatar (spec.md §7.9, Phase 33.1).

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Finance;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\VehicleAbility;
@@ -17,6 +20,7 @@ use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Expense\ExpenseEntryData;
+use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\ReminderRepository;
@@ -60,6 +64,7 @@ final readonly class FinanceService
         private VehicleAccess $access,
         private FeatureToggles $features,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -349,6 +354,7 @@ final readonly class FinanceService
         }
         $id = $this->agreements->insert($vehicle->id, $input->data, $this->clock->now(), $user->id);
         $this->applyPurchasePrice($vehicle, $input);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Finance, $id);
 
         return $id;
     }
@@ -358,12 +364,14 @@ final readonly class FinanceService
         $this->assertCanSee($user, $vehicle);
         $this->agreements->update($vehicle->id, $agreement->id, $input->data, $this->clock->now());
         $this->applyPurchasePrice($vehicle, $input);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
     }
 
     public function delete(User $user, Vehicle $vehicle, FinanceAgreement $agreement): void
     {
         $this->assertCanSee($user, $vehicle);
         $this->agreements->delete($vehicle->id, $agreement->id);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Finance, $agreement->id);
     }
 
     /**
@@ -379,6 +387,7 @@ final readonly class FinanceService
     ): void {
         $this->assertCanSee($user, $vehicle);
         $this->agreements->insertEvent($agreement->id, $kind, $dueOn, null, $paidOn, null, $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
     }
 
     public function addExtraPayment(
@@ -392,6 +401,7 @@ final readonly class FinanceService
         $this->assertCanSee($user, $vehicle);
         $now = $this->clock->now();
         $this->agreements->insertEvent($agreement->id, PaymentEventKind::Extra, null, $amount, $paidOn, $notes, $now);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
     }
 
     /**
@@ -413,6 +423,7 @@ final readonly class FinanceService
                     }
                 }
             }
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
 
             return;
         }
@@ -431,12 +442,14 @@ final readonly class FinanceService
     ): void {
         $this->assertCanSee($user, $vehicle);
         $this->agreements->insertQuote($agreement->id, $quotedOn, $amount, $validUntil, $notes, $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
     }
 
     public function deleteQuote(User $user, Vehicle $vehicle, FinanceAgreement $agreement, int $quoteId): void
     {
         $this->assertCanSee($user, $vehicle);
         $this->agreements->deleteQuote($agreement->id, $quoteId);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
     }
 
     /**
@@ -547,6 +560,7 @@ final readonly class FinanceService
             );
         }
         $this->agreements->setStatus($vehicle->id, $agreement->id, $end->outcome, $end->endedOn, $now);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Finance, $agreement->id);
 
         $charges = ['finance.end.excess_note' => $end->excessCharge, 'finance.end.damage_note' => $end->damageCharge];
         foreach ($charges as $note => $amount) {
@@ -561,8 +575,17 @@ final readonly class FinanceService
             ));
         }
 
+        $closing = array_filter(
+            $this->reminders->listGeneratedForVehicles([$vehicle->id]),
+            static fn (Reminder $r): bool => in_array($r->source, [ReminderSource::Finance, ReminderSource::FinanceEnd], true)
+                && $r->sourceId === $agreement->id
+                && $r->status->isOpen(),
+        );
         foreach ([ReminderSource::Finance, ReminderSource::FinanceEnd] as $source) {
             $this->reminders->markDone($vehicle->id, $source, $agreement->id, $now);
+        }
+        foreach ($closing as $reminder) {
+            $this->webhooks->reminder($vehicle->id, $reminder->id, 'done');
         }
     }
 

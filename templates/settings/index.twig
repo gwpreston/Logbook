@@ -92,6 +92,7 @@
             <div class="card">
                 <ul class="list">
                     {{ settings.row(url_for('settings.api_keys'), 'key', 'api_keys.link'|trans, 'api_keys.link_hint'|trans) }}
+                    {{ settings.row(url_for('settings.webhooks'), 'webhook', 'webhooks.link'|trans, 'webhooks.link_hint'|trans) }}
                 </ul>
             </div>
         </section>

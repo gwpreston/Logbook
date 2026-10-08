@@ -61,6 +61,8 @@ final readonly class AppSettings
         public AiConfig $ai = new AiConfig(),
         /** The MCP server (spec.md §7.28, Phase 26.5); routed only while the API is on too. */
         public bool $mcpEnabled = true,
+        /** Entry webhooks (`WEBHOOKS_ENABLED`, spec.md §7.20, Phase 39.3): off queues and sends nothing. */
+        public bool $webhooksEnabled = true,
         /** Seconds between scheduler passes (Phase 28.1, §7.30). */
         public int $schedulerInterval = 900,
         /** Seconds a *Run now* may take (Phase 28.1). */
@@ -121,6 +123,7 @@ final readonly class AppSettings
             proxy: ProxyAuthConfig::fromEnv($env),
             ai: AiConfig::fromEnv($env),
             mcpEnabled: $env->bool('MCP_ENABLED', true),
+            webhooksEnabled: $env->bool('WEBHOOKS_ENABLED', true),
             schedulerInterval: max(60, $env->int('SCHEDULER_INTERVAL', 900)),
             jobTimeLimit: max(30, $env->int('JOB_TIME_LIMIT', 300)),
             updateCheckRepo: self::repository($env->string('UPDATE_CHECK_REPO', self::UPDATE_CHECK_REPO)),

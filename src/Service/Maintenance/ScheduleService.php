@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Maintenance;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use DateTimeImmutable;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
@@ -32,6 +35,7 @@ final readonly class ScheduleService
         private MaintenanceEntryRepository $entries,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -91,6 +95,7 @@ final readonly class ScheduleService
         $id = $this->transaction->run(function () use ($vehicle, $data): int {
             $id = $this->schedules->insert($vehicle->id, $data, $this->clock->now());
             $this->recompute($vehicle, $id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Schedule, $id);
 
             return $id;
         });
@@ -103,6 +108,7 @@ final readonly class ScheduleService
         $this->transaction->run(function () use ($vehicle, $schedule, $data): void {
             $this->schedules->update($vehicle->id, $schedule->id, $data, $this->clock->now());
             $this->recompute($vehicle, $schedule->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Schedule, $schedule->id);
         });
 
         return $this->get($vehicle, $schedule->id);
@@ -116,6 +122,7 @@ final readonly class ScheduleService
         $this->transaction->run(function () use ($vehicle, $schedule): void {
             $this->entries->unlinkSchedule($vehicle->id, $schedule->id);
             $this->schedules->delete($vehicle->id, $schedule->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Schedule, $schedule->id);
         });
     }
 

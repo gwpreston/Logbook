@@ -16,6 +16,8 @@ use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Webhook\WebhookEvents;
+use Logbook\Support\Database\Transaction;
 use Logbook\Tests\Support\AppTestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Container\ContainerInterface;
@@ -115,6 +117,8 @@ final class VehicleDetailsTest extends AppTestCase
             $this->service($app, AttachmentService::class),
             $this->service($app, ClockInterface::class),
             $this->service($app, AccessContext::class),
+            $this->service($app, WebhookEvents::class),
+            $this->service($app, Transaction::class),
         ));
         $browser = $this->signedIn($app);
 

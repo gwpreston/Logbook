@@ -2509,6 +2509,11 @@ a.segmented__option {
     font-size: var(--fs-sm);
 }
 
+/* An address on its own line (Phase 39.3, a webhook's URL): wraps anywhere rather than widening the page. */
+.list__meta--url {
+    overflow-wrap: anywhere;
+}
+
 .list__meta--warning {
     color: var(--amber);
     font-weight: 600;

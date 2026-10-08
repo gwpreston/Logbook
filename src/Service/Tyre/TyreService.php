@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Tyre;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use DateTimeImmutable;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
@@ -53,6 +56,7 @@ final readonly class TyreService
         private ClockInterface $clock,
         private TyreSettingsStore $settings,
         private ReminderSettingsStore $reminderSettings,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -274,6 +278,7 @@ final readonly class TyreService
     public function updateTyre(Vehicle $vehicle, Tyre $tyre, TyreData $data): Tyre
     {
         $this->tyres->updateTyre($vehicle->id, $tyre->id, $data, $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::TyreDetails, $tyre->id);
 
         return $this->tyre($vehicle, $tyre->id);
     }

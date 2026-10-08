@@ -70,6 +70,10 @@ final class RouteInventoryTest extends AppTestCase
         'api.fuel_prices.alerts.create',
         'api.fuel_prices.alerts.edit',
         'settings.api_keys',
+        // Phase 39.3: the user's own entry webhooks, found by user and id (WebhookService).
+        'settings.webhooks',
+        'settings.webhooks.action',
+        'settings.webhooks.delete',
         'settings.api_keys.revoke',
         // Phase 33.1: one's own email address and avatar, and anyone's avatar picture (#161).
         'settings.email',
@@ -185,6 +189,9 @@ final class RouteInventoryTest extends AppTestCase
         'api.attention',
         // Phase 39.2: hide names its vehicle in the key; ApiUserWrites checks Log on it.
         'api.attention.hide',
+        // Phase 39.3: a file by id; ApiAttachments finds its vehicle and checks View (404), and Log
+        // and canChange for a delete, as the page's delete link; AttachmentGuard for a trip's or a cost entry's file.
+        'api.attachments.show',
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',

@@ -286,6 +286,25 @@ send PATCH "/vehicles/$vid/odometer/$rid" 412 '{"note":"stale"}' 'If-Match: "000
 send PATCH "/vehicles/$vid/odometer/$rid" 200 '{"note":"Smoke"}' "If-Match: $etag"
 send DELETE "/vehicles/$vid/odometer/$rid" 204
 
+# Attachments (Phase 39.3): a real multipart upload through the web server and proxy (PHP's own
+# parsing, the proxy's body limit), then the list, the download and the delete.
+send POST "/vehicles/$vid/odometer" 201 '{"odometer":1100,"distance_unit":"km"}'
+rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+printf '%%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%%%EOF\n' \
+    > /tmp/smoke.pdf
+status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' -H "Authorization: Bearer $rw" -F "file=@/tmp/smoke.pdf;type=application/pdf" \
+    "$base/api/v1/vehicles/$vid/odometer/$rid/attachments")" || fail "attachment upload failed"
+[ "$status" = 201 ] || fail "attachment upload returned $status: $(cat /tmp/smoke.body)"
+aid="$(sed -n 's/^{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+[ -n "$aid" ] || fail "no attachment id in $(cat /tmp/smoke.body)"
+echo "ok  201  API POST multipart attachment"
+send GET "/vehicles/$vid/odometer/$rid/attachments" 200
+grep -qF '"filename":"smoke.pdf"' /tmp/smoke.body || fail "attachment not listed: $(cat /tmp/smoke.body)"
+send GET "/attachments/$aid" 200
+grep -q '^%PDF' /tmp/smoke.body || fail "the download is not the PDF"
+send DELETE "/attachments/$aid" 204
+rm -f /tmp/smoke.pdf
+
 # MCP server (Phase 26.5): the same key at /mcp, through the web server (and,
 # in the header variant, nginx's forward-auth exemption).
 mcp() { # mcp <status> <body-substring> [token]
@@ -298,6 +317,9 @@ mcp() { # mcp <status> <body-substring> [token]
 }
 mcp 200 '"name":"find_vehicles"' "$token"
 mcp 401 '"code":-31401'
+
+# Entry webhooks' page (Phase 39.3), signed in, at the root or the subpath.
+expect "$base/settings/webhooks" 200 'Add a webhook'
 
 # Restarting must be idempotent (migrations already applied) and keep sessions.
 $compose restart app >/dev/null

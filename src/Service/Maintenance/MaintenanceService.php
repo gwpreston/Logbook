@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Maintenance;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -47,6 +50,7 @@ final readonly class MaintenanceService
         private ClockInterface $clock,
         private TyreSync $tyres,
         private AccessContext $author,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -85,6 +89,7 @@ final readonly class MaintenanceService
             $this->recordOdometer($vehicle, $id, $data, $zone);
             $this->recomputeSchedules($vehicle, $data->scheduleId);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Maintenance, $id);
 
             return $id;
         });
@@ -108,6 +113,7 @@ final readonly class MaintenanceService
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
             $this->tyres->followServiceRecord($vehicle, $this->get($vehicle, $entry->id), $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $entry->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Maintenance, $entry->id);
         });
 
         return $this->get($vehicle, $entry->id);
@@ -127,6 +133,7 @@ final readonly class MaintenanceService
             $this->odometer->forgetEntry($vehicle, OdometerSource::Maintenance, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Maintenance, $entry->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Maintenance, $entry->id);
     }

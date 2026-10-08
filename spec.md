@@ -327,7 +327,7 @@ disagree):
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
     | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
-    | `webhooks` | every pass, after `reminders` (Phase 39.3; how the retry intervals map onto passes is open, #291) | sends the entry-webhook deliveries that are due and removes delivery rows older than 7 days (§7.20 *Webhooks*) |
+    | `webhooks` | every pass, after `reminders` (Phase 39.3, decided 2026-10-08, #291: the retry intervals are minimums, so a retry goes on the first pass after it is due; a shorter `SCHEDULER_INTERVAL` or a cron line every minute makes deliveries and retries quicker) | sends the entry-webhook deliveries that are due and removes delivery rows older than 7 days (§7.20 *Webhooks*) |
     | `demo_reset` | every `DEMO_RESET_HOURS` (default 24), listed only while the demo is active; never run from a page visit (Phase 35.1, §7.36) | puts the sample data back |
 
     A job is due when its interval is `0`, or when its last finished run
@@ -860,9 +860,12 @@ MySQL only.
   one), paused (bool), paused_reason (`user` | `failures` | `restored`,
   null when running), last_status (`ok` | `failed`, null before the first
   delivery), last_attempt_at (UTC), last_error (up to 255, redacted),
-  failures (consecutive failed deliveries, default 0), created_at,
-  updated_at (UTC). Index on user_id. In backups **without** `secret`
-  (§7.20 *Webhooks*): restored rows are paused with `restored`.
+  failures (consecutive failed attempts, first tries and retries alike,
+  set back to 0 by any success and by *Resume*; default 0, #293),
+  notice_pending (bool, default false: paused for failures and the user
+  not yet told, #294), created_at, updated_at (UTC). Index on user_id. In
+  backups **without** `secret` (§7.20 *Webhooks*): restored rows are
+  paused with `restored`.
 
 **WebhookDelivery** (Phase 39.3), `webhook_deliveries`
 - id, webhook_id (`ON DELETE CASCADE`), event, payload (JSON: ids and
@@ -3684,7 +3687,9 @@ outside web root, served via an authenticated handler; type/size validated.
   screenshot to its valuation (owner type `valuation`), never to the
   vehicle itself, which keeps a single photo (§7.1) and has no gallery.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
-  only (the same responder as photos: `nosniff`, sandboxing CSP, private
+  only (from Phase 39.3, an expense's or valuation's file and the purchase and
+  sale paperwork only with *Can see costs* or to its uploader, #303,
+  #305; the same responder as photos: `nosniff`, sandboxing CSP, private
   caching). Images open inline; PDFs download under their original name
   (browsers will not render a PDF inside the sandbox).
 
@@ -5114,47 +5119,84 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   *End* on an agreement that has ended are 409 `finance_ended`; quotes on
   a lease are 404 (it has none).
 
-*Attachments* (Phase 39.3, #286). Owner types as §7.12: `fuel`,
-`maintenance`, `document`, `expense`, `reading` (manual only),
-`valuation`, `purchase`, `sale`, `incident`, `vehicle_photo`.
+*Attachments* (Phase 39.3, #286, #300). Every owner type of §6 and
+§7.12, each under its entry's own API path: `…/fuel/{entry}`,
+`…/maintenance/{entry}`, `…/documents/{entry}`, `…/expenses/{entry}`,
+`…/odometer/{entry}` (manual readings only), `…/valuations/{entry}`,
+`…/trips/{entry}`, `…/incidents/{entry}`, and `…/purchase` and `…/sale`
+for the vehicle's paperwork, each followed by `/attachments`. The entry's
+module must be on, as its pages; a trip's files only for those who may
+see the trip (§7.22). The ability is the entry's edit form's: `Log` and
+`EntryAccess::canChange`, but `Manage` for valuations, purchase and sale.
+Purchase and sale paperwork proves a price, so its list needs *Can see
+costs*, as the ownership card (#305).
+The vehicle's **photo** is not an attachment (§6, decided 2026-10-08,
+#300): `GET /vehicles/{id}/photo` (`View`) serves it, `POST` (multipart,
+field `file`) replaces it and `DELETE` removes it (`Manage`, as the edit
+form; `POST` because PHP reads multipart bodies on `POST` only).
 - `GET …/{entry}/attachments` (`View`): id, filename, content type,
   size, uploaded at, uploaded by (as the page names them), and a
   `download` link.
 - `GET /attachments/{id}`: the file, through the pages' authenticated
   handler, so incident photos follow §7.12 and #104 (the original only
   with `ViewIncidentDetails`, otherwise an upright, stripped copy made as
-  it is served).
+  it is served). An expense's or a valuation's file, and the purchase
+  and sale paperwork, need *Can see costs*, or are the user's own upload,
+  on the API and the page alike (decided 2026-10-08, #303, #305); a trip's needs the trip; otherwise 404.
 - `POST …/{entry}/attachments`: `multipart/form-data`, **one file per
   request** in the field `file`, with the pages' content check, decode
   check, `MAX_UPLOAD_MB`, stripping (except incident photos) and the edit
   form's limits. `201` with the attachment. `Log` and
   `EntryAccess::canChange` on the entry, as the edit form.
-- `DELETE /attachments/{id}`, as the page's delete link.
+- `DELETE /attachments/{id}`, as the page's delete link: `Log`, and
+  `Manage` or the user's own upload.
+- As 39.2's writes, an archived vehicle's files don't change (409
+  `vehicle_archived`) except a valuation's. A reading another entry wrote
+  takes no files (409 `reading_derived`: attach them to that entry), and
+  paperwork needs its purchase or sale date (422), as the edit form. No
+  `If-Match`: a stored file never changes.
 
 *Webhooks* (Phase 39.3, #285, #288, #289). A user can have Logbook tell
 another system when an entry changes, so a dashboard or Node-RED flow
 refreshes without polling. These are **entry** webhooks; the
 generic-webhook *format* for reminder pushes parked in §12 (#168) is a
 notification channel and unrelated.
-- **Settings → API keys → Webhooks** (`/settings/webhooks`): add a URL
+- **Settings → API keys → Webhooks** (`/settings/webhooks`): up to **10**
+  per user (decided 2026-10-08, #304: one change queues a call per
+  webhook); add a URL
   with a name and the events to send (`entry.created`, `entry.updated`,
   `entry.deleted`, `reminder.changed`; all by default). The signing
   secret is shown **once**, as a key's token is. Each webhook shows its
   last delivery status, time and error (redacted, 255 characters), with
-  *Send test*, *Pause* and *Delete* (on its own confirmation page). Works
-  without JS.
+  *Send test*, *Pause* or *Resume*, *New secret* and *Delete* (on its own
+  confirmation page). Works without JS.
 - **Where it may send** is §7.11 *Where members' channels may send*: the
   same classes, the same always-refused ranges, resolved and pinned on
   save, test and every send, and an admin's own webhooks unrestricted, as
   their channels. No new rules.
-- **What triggers it** (which entries, and their `kind`, open: #290;
-  who is told about cost entries, open: #295): any create, edit or delete of an entry on a
-  vehicle the webhook's user can `View`, by any path (form, import, API,
-  Ask draft, MCP). `reminder.changed` covers status changes (due,
-  overdue, done, dismissed, reopened).
+- **What triggers it** (decided 2026-10-08, #290, #295, #301, #302): any
+  create, edit or delete of something the API can write on a vehicle the
+  webhook's user can `View`, by any path (form, import, API, Ask draft,
+  MCP). Restoring a backup and the demo reset queue nothing. The `kind`
+  is the history feed's where it has one: `fuel`, `odometer`,
+  `maintenance`, `document`, `expense`, `tyre` (a tyre change),
+  `valuation`, `trip`, `incident`; and otherwise `tread_check`,
+  `tyre_details` (a tyre's own details; `entry_id` is the tyre),
+  `schedule`, `finance` (`entry_id` is the agreement: a payment, quote or
+  *End* is `entry.updated` of its agreement) and `vehicle` (create,
+  edit, archive and restore; `entry_id` is the vehicle). Attachments
+  queue nothing of their own: the receiver sees them when it fetches the
+  entry. Cost entries (expenses, valuations, finance) are queued for
+  users without *Can see costs* too, ids and kind only (#295): the fetch
+  applies the rule. A trip is queued only for those who may see it, as
+  the history feed (§7.22, #302). `reminder.changed` covers status
+  changes (due, overdue, done, dismissed, reopened) and a manual
+  reminder's create, edit and delete (#301), with `change` naming which;
+  due and overdue fire once, when the reminder becomes so.
 - **Payload:** `event`, `id` (unique per delivery), `occurred_at`,
-  `vehicle_id`, `kind` (the history feed's kinds), `entry_id`, and
-  `links` (the API URLs to fetch it). **No entry contents and no
+  `vehicle_id`, `kind`, `entry_id`, `change` (`reminder.changed` only),
+  and `links` (`entry`, the API URL to fetch it where the API has one;
+  `list`, the list it is in; `vehicle`). **No entry contents and no
   amounts**: the receiver fetches with its own key, so access is checked
   when the data is read, never at send time.
 - **Signing:** `X-Logbook-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of
@@ -5163,12 +5205,19 @@ notification channel and unrelated.
 - **Delivery:** queued in the transaction that changes the entry and sent
   by the job scheduler (§7.30), never in the request. A failed delivery
   is retried after **1 minute, 5 minutes, 30 minutes, 2 hours and 6
-  hours**, then given up (how these map onto the scheduler's passes is
-  open, #291). After **50 consecutive failures** (what counts as one is
-  open, #293) the webhook is paused and the user is told through their
-  notification channels (which ones, and quiet hours, open: #294). How a
-  paused or restored webhook comes back is open (#292). Delivered or given up, a delivery row is removed after **7
-  days**.
+  hours**, then given up. The intervals are minimums: the job runs every
+  pass, so a retry goes on the first pass after it is due (#291). After
+  **50 consecutive failed attempts** (first tries and retries alike; any
+  success sets the count back to 0, #293) the webhook is paused. While a
+  webhook is paused its deliveries wait, unattempted, and new ones are
+  still queued; on *Resume* those under 7 days old are sent. The user is
+  told once, by a notice with no category sent to every usable channel
+  they have on, as the switched-off notice (§7.11), held until their
+  quiet hours end, and on the Webhooks page (#294). A paused webhook
+  comes back with *Resume*, which sets its failures back to 0; *New
+  secret* makes and shows (once) a new signing secret, and a restored
+  webhook offers *Resume* only once it has one (#292). Delivered or given
+  up, a delivery row is removed after **7 days**.
 - **Switches:** `API_ENABLED=false` stops deliveries (queued ones wait).
   `WEBHOOKS_ENABLED` (default `true`, §9) switches only this feature off:
   the Settings page says so and nothing is queued or sent. A disabled or
@@ -9018,10 +9067,13 @@ task breakdowns live in the per-phase files; this is the map.
   hiding, manual reminders and finance (§7.20; #282–#284, #287). No
   migration. Ships with Phase 39.3 as v3.5.0.
 - **Phase 39.3 — API attachments and entry webhooks + v3.5 release.**
-  Attachments over the API (one file per request); signed entry webhooks
-  carrying ids only, sent by the scheduler with backoff, paused after 50
-  failures, on Settings → API keys → Webhooks; `WEBHOOKS_ENABLED`
-  (§6, §7.11, §7.20, §7.30, §9; #285, #286, #288, #289). One migration. Release
+  Attachments over the API (one file per request), every owner type,
+  and the vehicle photo on its own path; signed entry webhooks
+  carrying ids only for everything the API writes, sent every pass with
+  backoff, paused after 50 failed attempts (*Resume*, *New secret*), the
+  notice to every usable channel after quiet hours, on Settings → API
+  keys → Webhooks; `WEBHOOKS_ENABLED` (§6, §7.11, §7.20, §7.30, §9;
+  #285, #286, #288–#295, #300–#302). One migration. Release
   v3.5.0 (Phases 39.1 to 39.3).
 ---
 

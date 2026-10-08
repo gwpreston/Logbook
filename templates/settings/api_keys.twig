@@ -99,6 +99,8 @@
                 <p><a href="{{ openapi_url }}">{{ 'api_keys.openapi'|trans }}</a></p>
             {% endif %}
             <p class="field__hint">{{ 'api_keys.secret_hint'|trans }}</p>
+            {# Phase 39.3: entry webhooks live under API keys (spec.md §7.20 *Webhooks*). #}
+            <p><a href="{{ url_for('settings.webhooks') }}">{{ 'webhooks.from_api_keys'|trans }}</a></p>
             {% if mcp_url %}
                 {# The MCP server (spec.md §7.28) takes the same keys. #}
                 <div class="field">

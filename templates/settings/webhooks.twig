@@ -1,0 +1,155 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Settings → API keys → Webhooks (spec.md §7.20 *Webhooks*, Phase 39.3):
+ # add a webhook (a name, an address and the events), see its signing
+ # secret once, and test, pause, resume, renew the secret of or delete each.
+ # Works without JS: every button is a form. The secret is only ever in the
+ # response to the add or *New secret*, which is not cached.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'webhooks.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    {% set chosen = values.events ?? [] %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings.api_keys') }}">{{ ui.icon('chevron_left') }}{{ 'api_keys.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'webhooks.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'webhooks.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if not webhooks_enabled %}
+            <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'webhooks.disabled'|trans }}</span></div>
+        {% elseif not api_enabled %}
+            <div class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'webhooks.api_disabled'|trans }}</span></div>
+        {% endif %}
+
+        {% if shown %}
+            <section class="card" aria-labelledby="secret-heading" data-webhook-secret>
+                <h2 id="secret-heading" class="card__title">{{ ui.icon('key') }}{{ ((shown.renewed ?? false) ? 'webhooks.renewed_heading' : 'webhooks.created_heading')|trans({name: shown.webhook.name}) }}</h2>
+                <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'webhooks.copy_now'|trans }}</span></div>
+                <div class="field">
+                    <label class="field__label" for="f-webhook-secret">{{ 'webhooks.secret_label'|trans }}</label>
+                    <div class="input-group">
+                        <input class="input tabular" id="f-webhook-secret" type="text" readonly value="{{ shown.secret }}" autocomplete="off" spellcheck="false" aria-describedby="f-webhook-secret-hint">
+                        <button type="button" class="btn btn--soft" data-copy="#f-webhook-secret" data-copied-label="{{ 'api_keys.copied'|trans }}" hidden>{{ ui.icon('content_copy') }}<span>{{ 'api_keys.copy'|trans }}</span></button>
+                    </div>
+                    <p class="field__hint" id="f-webhook-secret-hint">{{ 'webhooks.secret_hint'|trans }}</p>
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="add-heading">
+            <h2 id="add-heading" class="card__title">{{ 'webhooks.add_heading'|trans }}</h2>
+            {% if not can_store %}
+                <p class="field__hint">{{ 'webhooks.no_session_secret'|trans }}</p>
+            {% else %}
+                <form class="form" method="post" action="{{ url_for('settings.webhooks') }}">
+                    {{ ui.csrf(csrf) }}
+                    {{ ui.input('name', 'webhooks.name'|trans, values, errors, {required: true, maxlength: 100, placeholder: 'webhooks.name_placeholder'|trans, autocomplete: 'off'}) }}
+                    {{ ui.input('url', 'webhooks.url'|trans, values, errors, {required: true, maxlength: 500, type: 'url', inputmode: 'url', placeholder: 'https://', autocomplete: 'off', hint: 'webhooks.url_hint'|trans}) }}
+                    <fieldset class="field fieldset" aria-describedby="f-events-hint{% if errors.events ?? null %} f-events-error{% endif %}">
+                        <legend class="field__label">{{ 'webhooks.events_legend'|trans }}</legend>
+                        <div class="chip-row">
+                            {% for event in events %}
+                                <label class="chip">
+                                    <input type="checkbox" name="events[]" value="{{ event.value }}"{% if event.value in chosen %} checked{% endif %}>
+                                    <span>{{ ('webhooks.event.' ~ event.value|replace({'.': '_'}))|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="field__hint" id="f-events-hint">{{ 'webhooks.events_hint'|trans }}</p>
+                        {% if errors.events ?? null %}<div role="alert">{{ ui.field_error(errors, 'events') }}</div>{% endif %}
+                    </fieldset>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">{{ ui.icon('webhook') }}{{ 'webhooks.add'|trans }}</button>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="list-heading">
+            <h2 id="list-heading" class="card__title">{{ 'webhooks.list_heading'|trans }}</h2>
+            {% if webhooks is empty %}
+                <p class="field__hint">{{ 'webhooks.none'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for webhook in webhooks %}
+                        <li>
+                            <div class="list__item">
+                                <span class="list__icon">{{ ui.icon(webhook.isPaused() ? 'stop_circle' : 'webhook') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ webhook.name }}</span>
+                                    <span class="list__meta list__meta--url tabular">{{ webhook.url }}</span>
+                                    <span class="list__meta">
+                                        {%- if webhook.events is null -%}
+                                            {{ 'webhooks.all_events'|trans }}
+                                        {%- else -%}
+                                            {{ webhook.events|map(e => ('webhooks.event.' ~ e.value|replace({'.': '_'}))|trans)|join(', ') }}
+                                        {%- endif -%}
+                                    </span>
+                                    <span class="list__meta">
+                                        {%- if webhook.isPaused() -%}
+                                            <strong>{{ ('webhooks.status.paused_' ~ webhook.pausedReason.value)|trans({count: pause_after}) }}</strong>
+                                            {%- if webhook.needsSecret() and webhook.pausedReason.value != 'restored' %} · {{ 'webhooks.status.needs_secret'|trans }}{% endif -%}
+                                        {%- elseif webhook.needsSecret() -%}
+                                            <strong>{{ 'webhooks.status.needs_secret'|trans }}</strong>
+                                        {%- elseif webhook.lastStatus == 'ok' -%}
+                                            {{ 'webhooks.status.ok'|trans({when: webhook.lastAttemptAt|local_datetime}) }}
+                                        {%- elseif webhook.lastStatus == 'failed' -%}
+                                            {{ 'webhooks.status.failed'|trans({when: webhook.lastAttemptAt|local_datetime, error: webhook.lastError ?? ''}) }}
+                                        {%- else -%}
+                                            {{ 'webhooks.status.never'|trans }}
+                                        {%- endif -%}
+                                        {%- if (waiting[webhook.id] ?? 0) > 0 %} · {{ 'webhooks.waiting'|trans({count: waiting[webhook.id]}) }}{% endif -%}
+                                    </span>
+                                    <span class="btn-row btn-row--compact">
+                                        {% if not webhook.needsSecret() %}
+                                            <form method="post" action="{{ url_for('settings.webhooks.action', {webhook: webhook.id, action: 'test'}) }}">
+                                                {{ ui.csrf(csrf) }}
+                                                <button type="submit" class="btn btn--ghost">{{ ui.icon('send') }}{{ 'webhooks.test'|trans }}<span class="visually-hidden">: {{ webhook.name }}</span></button>
+                                            </form>
+                                        {% endif %}
+                                        {% if webhook.isPaused() %}
+                                            {% if not webhook.needsSecret() %}
+                                                <form method="post" action="{{ url_for('settings.webhooks.action', {webhook: webhook.id, action: 'resume'}) }}">
+                                                    {{ ui.csrf(csrf) }}
+                                                    <button type="submit" class="btn btn--ghost">{{ ui.icon('replay') }}{{ 'webhooks.resume'|trans }}<span class="visually-hidden">: {{ webhook.name }}</span></button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
+                                            <form method="post" action="{{ url_for('settings.webhooks.action', {webhook: webhook.id, action: 'pause'}) }}">
+                                                {{ ui.csrf(csrf) }}
+                                                <button type="submit" class="btn btn--ghost">{{ ui.icon('stop_circle') }}{{ 'webhooks.pause'|trans }}<span class="visually-hidden">: {{ webhook.name }}</span></button>
+                                            </form>
+                                        {% endif %}
+                                        {% if can_store %}
+                                            <form method="post" action="{{ url_for('settings.webhooks.action', {webhook: webhook.id, action: 'secret'}) }}">
+                                                {{ ui.csrf(csrf) }}
+                                                <button type="submit" class="btn btn--ghost">{{ ui.icon('key') }}{{ 'webhooks.new_secret'|trans }}<span class="visually-hidden">: {{ webhook.name }}</span></button>
+                                            </form>
+                                        {% endif %}
+                                        <a class="btn btn--ghost" href="{{ url_for('settings.webhooks.delete', {webhook: webhook.id}) }}">{{ ui.icon('delete') }}{{ 'webhooks.delete'|trans }}<span class="visually-hidden">: {{ webhook.name }}</span></a>
+                                    </span>
+                                </span>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        <section class="card card--quiet" aria-labelledby="about-heading">
+            <h2 id="about-heading" class="card__title">{{ 'webhooks.about_heading'|trans }}</h2>
+            <p>{{ 'webhooks.about_payload'|trans }}</p>
+            <p class="field__hint">{{ 'webhooks.about_signature'|trans }}</p>
+            <p class="field__hint">{{ 'webhooks.about_retries'|trans({count: pause_after}) }}</p>
+        </section>
+    </div>
+{% endblock %}

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.21.0",
+    "version": "1.22.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -5825,6 +5825,1242 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/fuel/{entry}/attachments": {
+      "get": {
+        "operationId": "listFuelAttachments",
+        "summary": "List the files of a fill-up",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadFuelAttachment",
+        "summary": "Attach a file to a fill-up",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/odometer/{entry}/attachments": {
+      "get": {
+        "operationId": "listOdometerAttachments",
+        "summary": "List the files of a manual odometer reading",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadOdometerAttachment",
+        "summary": "Attach a file to a manual odometer reading",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. A reading another entry wrote takes no files of its own (409 reading_derived): attach them to that entry. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/maintenance/{entry}/attachments": {
+      "get": {
+        "operationId": "listMaintenanceAttachments",
+        "summary": "List the files of a service record",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadMaintenanceAttachment",
+        "summary": "Attach a file to a service record",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/documents/{entry}/attachments": {
+      "get": {
+        "operationId": "listDocumentAttachments",
+        "summary": "List the files of a document",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadDocumentAttachment",
+        "summary": "Attach a file to a document",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/expenses/{entry}/attachments": {
+      "get": {
+        "operationId": "listExpenseAttachments",
+        "summary": "List the files of a expense",
+        "description": "Needs ViewCosts on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadExpenseAttachment",
+        "summary": "Attach a file to a expense",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/valuations/{entry}/attachments": {
+      "get": {
+        "operationId": "listValuationAttachments",
+        "summary": "List the files of a valuation",
+        "description": "Needs ViewCosts on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadValuationAttachment",
+        "summary": "Attach a file to a valuation",
+        "description": "Needs a read and write key and Manage on the vehicle. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. Allowed on an archived vehicle. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/trips/{entry}/attachments": {
+      "get": {
+        "operationId": "listTripAttachments",
+        "summary": "List the files of a trip",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadTripAttachment",
+        "summary": "Attach a file to a trip",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. A trip's files only for those who may see the trip (404 otherwise). (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/incidents/{entry}/attachments": {
+      "get": {
+        "operationId": "listIncidentAttachments",
+        "summary": "List the files of a incident",
+        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadIncidentAttachment",
+        "summary": "Attach a file to a incident",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/purchase/attachments": {
+      "get": {
+        "operationId": "listPurchaseAttachments",
+        "summary": "List the vehicle's purchase paperwork",
+        "description": "Needs ViewCosts on the vehicle (the paperwork proves a price), and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadPurchaseAttachment",
+        "summary": "Attach a file to the vehicle's purchase paperwork",
+        "description": "Needs a read and write key and Manage on the vehicle. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. Needs the purchase date (422 otherwise). (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/sale/attachments": {
+      "get": {
+        "operationId": "listSaleAttachments",
+        "summary": "List the vehicle's sale paperwork",
+        "description": "Needs ViewCosts on the vehicle (the paperwork proves a price), and the entry's module on, as the entry's own read (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadSaleAttachment",
+        "summary": "Attach a file to the vehicle's sale paperwork",
+        "description": "Needs a read and write key and Manage on the vehicle. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping (an incident photo is kept as taken). An archived vehicle is 409. Needs the sale date (422 otherwise). (Phase 39.3)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/attachments/{attachment}": {
+      "get": {
+        "operationId": "downloadAttachment",
+        "summary": "Download an attachment",
+        "description": "Needs View on its vehicle; a trip's file needs the trip, and an expense's, a valuation's or purchase or sale paperwork needs ViewCosts or your own upload (else 404). Served as the pages serve it: images inline, PDFs (and anything with `?download=1`) as a download. An incident photo is the original only with ViewIncidentDetails or for its author; otherwise an upright copy without its metadata (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/attachment"
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "description": "1 to download an image under its name instead of opening it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAttachment",
+        "summary": "Delete an attachment",
+        "description": "As the page's delete link: a read and write key, Log on the vehicle, and Manage or the key user's own upload. An archived vehicle keeps its files (409) except a valuation's (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/attachment"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/photo": {
+      "get": {
+        "operationId": "getVehiclePhoto",
+        "summary": "The vehicle's photo",
+        "description": "Needs View. 404 when it has none (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The photo",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "replaceVehiclePhoto",
+        "summary": "Replace the vehicle's photo",
+        "description": "Needs a read and write key and Manage, as the edit form. A JPEG, PNG or WebP image in the multipart field `file`, turned upright and stripped. The photo is not an attachment. An archived vehicle is 409 (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Replaced"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteVehiclePhoto",
+        "summary": "Remove the vehicle's photo",
+        "description": "Needs a read and write key and Manage. 204 whether or not it had one. An archived vehicle is 409 (Phase 39.3).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5907,6 +7143,16 @@
         "description": "Optional (#282): the ETag of the entry as last read. When it no longer matches, the answer is 412 and nothing is written; without it the last write wins, as on the pages.",
         "schema": {
           "type": "string"
+        }
+      },
+      "attachment": {
+        "name": "attachment",
+        "in": "path",
+        "required": true,
+        "description": "The attachment's id.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },
@@ -16862,6 +18108,263 @@
             }
           }
         }
+      },
+      "Attachment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "owner",
+          "filename",
+          "content_type",
+          "size",
+          "uploaded_at",
+          "uploaded_by",
+          "links"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "id"
+            ],
+            "description": "What the file belongs to: the entry's type and id; for `purchase` and `sale` the id is the vehicle's.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "fuel",
+                  "maintenance",
+                  "compliance",
+                  "expense",
+                  "odometer",
+                  "purchase",
+                  "sale",
+                  "valuation",
+                  "trip",
+                  "incident"
+                ]
+              },
+              "id": {
+                "type": "integer"
+              }
+            }
+          },
+          "filename": {
+            "type": "string",
+            "description": "The uploaded name, sanitised; never used on disk."
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "description": "Detected from the content."
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bytes, as stored (an image is stored upright and stripped, except an incident photo)."
+          },
+          "uploaded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The user who uploaded it; null for the vehicle's owner before sharing, or a former user."
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "download"
+            ],
+            "properties": {
+              "download": {
+                "type": "string",
+                "description": "GET it (relative to the API's base)."
+              }
+            }
+          }
+        }
+      },
+      "AttachmentList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          }
+        }
+      },
+      "WebhookPayload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event",
+          "id",
+          "occurred_at",
+          "vehicle_id",
+          "kind",
+          "entry_id",
+          "links"
+        ],
+        "description": "What an entry webhook receives (Phase 39.3): ids and links only, never the entry or any amount. Fetch it with your own key, so access is checked when it is read. Signed: `X-Logbook-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of \"t.body\" with the webhook's secret>`.",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "entry.created",
+              "entry.updated",
+              "entry.deleted",
+              "reminder.changed"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique per delivery (also in `X-Logbook-Delivery`); a retry repeats it."
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fuel",
+              "odometer",
+              "maintenance",
+              "document",
+              "expense",
+              "tyre",
+              "valuation",
+              "trip",
+              "incident",
+              "tread_check",
+              "tyre_details",
+              "schedule",
+              "finance",
+              "vehicle",
+              "reminder"
+            ],
+            "description": "The history feed's kinds where it has one (`tyre` is a tyre change). `tyre_details`: entry_id is the tyre; `finance`: the agreement (a payment, quote or End updates it); `vehicle`: the vehicle; `reminder`: reminder.changed only."
+          },
+          "entry_id": {
+            "type": "integer"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "due",
+              "overdue",
+              "done",
+              "dismissed",
+              "reopened",
+              "created",
+              "updated",
+              "deleted"
+            ],
+            "description": "reminder.changed only."
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "list",
+              "vehicle"
+            ],
+            "properties": {
+              "entry": {
+                "type": "string",
+                "description": "GET the entry (relative to the API's base); absent after a delete, or where the API has no single read."
+              },
+              "list": {
+                "type": "string",
+                "description": "The list it is in."
+              },
+              "vehicle": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "entryEvent": {
+      "post": {
+        "operationId": "entryWebhook",
+        "summary": "An entry or reminder changed",
+        "description": "Sent by the `webhooks` job to each webhook on Settings → API keys → Webhooks that takes the event, for a vehicle its user may view (a trip only to those who may see it). Answer 2xx within 10 seconds; anything else is tried again after 1 min, 5 min, 30 min, 2 h and 6 h. 50 failed attempts in a row pause the webhook. *Send test* posts `{\"event\": \"webhook.test\", \"id\", \"occurred_at\", \"webhook_id\"}` (Phase 39.3).",
+        "parameters": [
+          {
+            "name": "X-Logbook-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "t=<unix time>,v1=<hex HMAC-SHA256 of \"t.body\">; reject old timestamps."
+          },
+          {
+            "name": "X-Logbook-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Logbook-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received (any 2xx)."
+          }
+        },
+        "security": []
       }
     }
   }

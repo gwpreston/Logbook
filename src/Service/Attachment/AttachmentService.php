@@ -179,6 +179,40 @@ final readonly class AttachmentService
         }
     }
 
+    /**
+     * Add one checked file to an entry that is already saved (the API's
+     * upload, spec.md §7.20 *Attachments*): written, then its row inserted
+     * in one transaction, the file deleted again if that fails.
+     */
+    public function add(Vehicle $vehicle, AttachmentOwner $type, int $ownerId, PendingUpload $upload): Attachment
+    {
+        $id = $this->saveWithFiles(new PendingUploads([$upload]), function (array $stored) use ($vehicle, $type, $ownerId): int {
+            $file = $stored[0];
+
+            return $this->attachments->insert(
+                $vehicle->id,
+                $type,
+                $ownerId,
+                $file->name,
+                $file->mime,
+                $file->size,
+                $file->path,
+                $this->clock->now(),
+                $this->author->authorId() ?? $vehicle->userId,
+            );
+        });
+
+        return $this->get($vehicle, $id);
+    }
+
+    /**
+     * The vehicle id of an attachment named only by its id, or null.
+     */
+    public function vehicleIdOf(int $id): ?int
+    {
+        return $this->attachments->vehicleIdOf($id);
+    }
+
     public function delete(Vehicle $vehicle, Attachment $attachment): void
     {
         $this->attachments->delete($vehicle->id, $attachment->id);

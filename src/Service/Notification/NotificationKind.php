@@ -18,13 +18,15 @@ enum NotificationKind: string
     case PriceAlert = 'price_alert';
     /** A personal channel switched itself off after failing 5 times in a row (Phase 36.2). */
     case ChannelOff = 'channel_off';
+    /** An entry webhook paused itself after 50 failed attempts in a row (Phase 39.3, #294). */
+    case WebhookPaused = 'webhook_paused';
 
     /**
      * Whether a send counts towards a channel's last result and failures
-     * (spec.md §7.11): tests and the switched-off notice never do.
+     * (spec.md §7.11): tests and the switched-off and webhook-paused notices never do.
      */
     public function counts(): bool
     {
-        return $this !== self::Test && $this !== self::ChannelOff;
+        return !in_array($this, [self::Test, self::ChannelOff, self::WebhookPaused], true);
     }
 }

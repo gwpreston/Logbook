@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Api;
 
+use Logbook\Domain\Attachment\Attachment;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Station\Station;
 use Logbook\Service\Station\GradeStats;
@@ -245,6 +246,27 @@ final class Serializer
         }
 
         return $out;
+    }
+
+    /**
+     * A file attached to an entry (spec.md §7.20 *Attachments*): never its
+     * stored path. `download` is relative to the API's base, as every link.
+     *
+     * @return array<string, mixed>
+     */
+    public static function attachment(Attachment $attachment): array
+    {
+        return [
+            'id' => $attachment->id,
+            'vehicle_id' => $attachment->vehicleId,
+            'owner' => ['type' => $attachment->ownerType->value, 'id' => $attachment->ownerId],
+            'filename' => $attachment->filename,
+            'content_type' => $attachment->mime,
+            'size' => $attachment->size,
+            'uploaded_at' => self::instant($attachment->uploadedAt),
+            'uploaded_by' => $attachment->uploadedBy,
+            'links' => ['download' => '/attachments/' . $attachment->id],
+        ];
     }
 
     /**

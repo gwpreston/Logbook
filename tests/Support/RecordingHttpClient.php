@@ -36,11 +36,16 @@ final class RecordingHttpClient
     public array $headersFor = [];
     /** @var array<string, string> a transport error (its message) by URL prefix */
     public array $errorFor = [];
+    /** @var (\Closure(string): void)|null called with each request's URL as it is made (a slow receiver moving the clock) */
+    public ?\Closure $onRequest = null;
     public readonly MockHttpClient $client;
 
     public function __construct()
     {
         $this->client = new MockHttpClient(function (string $method, string $url, array $options): ResponseInterface {
+            if ($this->onRequest !== null) {
+                ($this->onRequest)($url);
+            }
             $this->requests[] = [
                 'method' => $method,
                 'url' => $url,

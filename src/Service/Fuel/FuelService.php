@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Fuel;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Access\AccessContext;
 use DateTimeZone;
 use Logbook\Domain\Attachment\AttachmentOwner;
@@ -42,6 +45,7 @@ final readonly class FuelService
         private ClockInterface $clock,
         private AccessContext $author,
         private StationLinker $stations,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -162,6 +166,7 @@ final readonly class FuelService
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Fuel, $id);
 
             return $id;
         });
@@ -180,6 +185,7 @@ final readonly class FuelService
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->odometer->recordForEntry($vehicle, OdometerSource::Fuel, $entry->id, $data->odometerKm, $data->filledAt);
             $this->attachments->record($vehicle, AttachmentOwner::Fuel, $entry->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Fuel, $entry->id);
         });
 
         return $this->get($vehicle, $entry->id);
@@ -195,6 +201,7 @@ final readonly class FuelService
         $this->transaction->run(function () use ($vehicle, $entry): void {
             $this->odometer->forgetEntry($vehicle, OdometerSource::Fuel, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Fuel, $entry->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Fuel, $entry->id);
     }

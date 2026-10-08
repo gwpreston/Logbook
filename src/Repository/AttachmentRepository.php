@@ -112,6 +112,23 @@ final readonly class AttachmentRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
+    /**
+     * The vehicle an attachment is on, for a path that names only the
+     * attachment (the API's `/attachments/{id}`, spec.md §7.20); the caller
+     * then checks access to that vehicle.
+     */
+    public function vehicleIdOf(int $id): ?int
+    {
+        $vehicleId = $this->connection->createQueryBuilder()
+            ->select('vehicle_id')
+            ->from(self::TABLE)
+            ->where('id = :id')
+            ->setParameter('id', $id, ParameterType::INTEGER)
+            ->fetchOne();
+
+        return is_numeric($vehicleId) ? (int) $vehicleId : null;
+    }
+
     public function insert(
         int $vehicleId,
         AttachmentOwner $type,

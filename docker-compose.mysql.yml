@@ -27,6 +27,8 @@ services:
       SESSION_SECURE: ${SESSION_SECURE:-}
       UPLOAD_PATH: /data/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      # Entry webhooks (Phase 39.3); false queues and sends nothing.
+      WEBHOOKS_ENABLED: ${WEBHOOKS_ENABLED:-true}
       # Notifications are set up in the app (Settings → Delivery, Account → Notifications).
       # NTFY_* and GOTIFY_* are passed only so the v3.3.0 upgrade can import them once;
       # they are not read after it (see .env.example). WEBHOOK_URL is deprecated.

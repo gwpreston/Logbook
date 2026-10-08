@@ -14,8 +14,10 @@ use Logbook\Support\Api\OpenApiDocument;
 use PHPUnit\Framework\Assert;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
+use Slim\Psr7\UploadedFile;
 
 /**
  * Drives the REST API (spec.md §7.20) with a key, and validates every
@@ -92,6 +94,35 @@ final class ApiClient
     }
 
     /**
+     * A `multipart/form-data` POST with one file (spec.md §7.20
+     * *Attachments*): the bytes are written to a temporary file, as PHP
+     * would, and handed to the app as an uploaded file named $field.
+     *
+     * @param array<string, string> $headers
+     */
+    public function upload(
+        string $path,
+        string $contents,
+        string $name,
+        string $type = 'application/pdf',
+        string $field = 'file',
+        array $headers = [],
+    ): ResponseInterface {
+        $tmp = (string) tempnam(sys_get_temp_dir(), 'logbook-api-upload-');
+        file_put_contents($tmp, $contents);
+        $file = new UploadedFile($tmp, $name, $type, strlen($contents), UPLOAD_ERR_OK);
+        try {
+            $headers += ['Content-Type' => 'multipart/form-data; boundary=x'];
+
+            return $this->send('POST', $path, null, $headers, [$field => $file]);
+        } finally {
+            if (is_file($tmp)) {
+                unlink($tmp);
+            }
+        }
+    }
+
+    /**
      * @param array<string, string> $headers
      */
     public function delete(string $path, array $headers = []): ResponseInterface
@@ -101,9 +132,15 @@ final class ApiClient
 
     /**
      * @param array<string, string> $headers
+     * @param array<string, UploadedFileInterface> $files
      */
-    public function send(string $method, string $path, ?string $body = null, array $headers = []): ResponseInterface
-    {
+    public function send(
+        string $method,
+        string $path,
+        ?string $body = null,
+        array $headers = [],
+        array $files = [],
+    ): ResponseInterface {
         $request = (new ServerRequestFactory())->createServerRequest(
             $method,
             $this->prefix . $path,
@@ -118,6 +155,9 @@ final class ApiClient
         if ($body !== null) {
             $request->getBody()->write($body);
             $request->getBody()->rewind();
+        }
+        if ($files !== []) {
+            $request = $request->withUploadedFiles($files);
         }
 
         $response = $this->app->handle($request);

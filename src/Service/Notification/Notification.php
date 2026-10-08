@@ -44,7 +44,10 @@ final readonly class Notification
             NotificationKind::Reminders => $this->urgent ? Urgency::High : Urgency::Normal,
             NotificationKind::JobFailed => Urgency::High,
             NotificationKind::Digest => Urgency::Low,
-            NotificationKind::Test, NotificationKind::PriceAlert, NotificationKind::ChannelOff => Urgency::Normal,
+            NotificationKind::Test,
+            NotificationKind::PriceAlert,
+            NotificationKind::ChannelOff,
+            NotificationKind::WebhookPaused => Urgency::Normal,
         };
     }
 

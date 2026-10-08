@@ -22,6 +22,8 @@ final readonly class SecretBox
 {
     public const string AI = 'logbook-ai';
     public const string NOTIFY = 'logbook-notify';
+    /** Entry webhooks' signing secrets (Phase 39.3, spec.md §6 Webhook). */
+    public const string WEBHOOK = 'logbook-webhook';
 
     private const string PREFIX = 'v1:';
     private const string REFERENCE = '/^env:([A-Za-z_][A-Za-z0-9_]*)$/';

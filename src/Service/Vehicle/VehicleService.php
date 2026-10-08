@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Vehicle;
 
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Service\Webhook\WebhookEvents;
 use Collator;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -56,6 +59,7 @@ final readonly class VehicleService
         private TyreRepository $tyres,
         private VehicleAccess $access,
         private UserDirectory $directory,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -163,6 +167,7 @@ final readonly class VehicleService
                 $this->recordPurchaseMileage($user, $vehicle, $data, $purchaseKm);
             }
             $this->recordPaperwork($vehicle, $files, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Vehicle, $vehicle->id);
 
             return $vehicle;
         });
@@ -219,6 +224,7 @@ final readonly class VehicleService
             $this->vehicles->setSold($vehicle->userId, $vehicle->id, $data->saleDate !== null);
             $this->recordPurchaseMileage($user, $vehicle, $data, $purchaseKm);
             $this->recordPaperwork($vehicle, $files, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
         });
 
         return $this->get($user, $vehicle->id);
@@ -230,6 +236,7 @@ final readonly class VehicleService
     public function delete(User $user, Vehicle $vehicle): void
     {
         $this->attachments->deleteFilesForVehicle($vehicle);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Vehicle, $vehicle->id);
         $this->vehicles->delete($vehicle->userId, $vehicle->id);
         $this->access->forget();
         $this->files->delete($vehicle->photoPath);
@@ -239,6 +246,7 @@ final readonly class VehicleService
     {
         $this->vehicles->setStatus($vehicle->userId, $vehicle->id, VehicleStatus::Archived, $this->clock->now());
         $this->access->forget();
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
     }
 
     /**
@@ -257,6 +265,7 @@ final readonly class VehicleService
         $now = $this->clock->now();
         $this->vehicles->archiveWrittenOff($vehicle->userId, $vehicle->id, $incidentId, $saleDate, $salePrice, $now);
         $this->access->forget();
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
     }
 
     /**
@@ -275,6 +284,7 @@ final readonly class VehicleService
         $now = $this->clock->now();
         $this->vehicles->archiveAs($vehicle->userId, $vehicle->id, $disposal, null, $saleDate, $salePrice, $now);
         $this->access->forget();
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
     }
 
     /**
@@ -284,6 +294,7 @@ final readonly class VehicleService
     {
         $this->vehicles->setStatus($vehicle->userId, $vehicle->id, VehicleStatus::Active, $this->clock->now());
         $this->access->forget();
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
     }
 
     /**
@@ -297,12 +308,14 @@ final readonly class VehicleService
 
         $path = $this->files->store($file, self::PHOTO_DIRECTORY, $checked->extension);
         $this->vehicles->setPhoto($vehicle->userId, $vehicle->id, $path, $checked->mime, $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
         $this->files->delete($vehicle->photoPath);
     }
 
     public function removePhoto(User $user, Vehicle $vehicle): void
     {
         $this->vehicles->setPhoto($vehicle->userId, $vehicle->id, null, null, $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Vehicle, $vehicle->id);
         $this->files->delete($vehicle->photoPath);
     }
 

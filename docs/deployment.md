@@ -273,6 +273,14 @@ only once per status, so running it more often is harmless.
 No cron on your host? See [Background jobs](#background-jobs): Logbook can
 run its jobs on page visits, or when an external service calls a secret URL.
 
+The same pass sends entry webhooks ([API guide](api.md#webhooks)), so a
+change reaches a webhook with the next pass, and a failed call is retried
+no sooner than its next retry time (1 minute, 5 minutes, 30 minutes, 2
+hours, 6 hours) and no later than the pass after it. To have them arrive
+sooner, run passes more often: every minute in cron (`* * * * *`), or
+`SCHEDULER_INTERVAL=60` in Docker. Jobs that aren't due skip, so this
+costs little.
+
 ### Trying it locally without a web server
 
 ```bash
@@ -594,10 +602,21 @@ cannot do, and how to stop being a demo are in [demo-mode.md](demo-mode.md).
      If PHP runs with opcache, reload php-fpm/Apache afterwards.
 4. Check `<your URL>/health` and sign in.
 
-Database changes always ship as reversible migrations. To go back: restore the
-previous code, run `vendor/bin/phinx rollback -e production -t <version>`
-(the version before the upgrade, from `vendor/bin/phinx status`), or restore
-the backup from step 2 with the previous version.
+Database changes always ship as reversible migrations. To go back, roll the
+database back **with the new code still in place**, then switch to the old
+code or image: the old code doesn't have the new migration files, so its
+rollback finds nothing to undo and leaves the newer database behind (backups
+it then makes won't restore anywhere).
+
+- Bare PHP: `vendor/bin/phinx rollback -e production -t <version>` (the
+  version before the upgrade, from `vendor/bin/phinx status`), then restore
+  the previous code.
+- Docker: `docker compose exec -u www-data app vendor/bin/phinx rollback -e production -t <version>`
+  in the new container, then switch to the previous image.
+
+Or start an empty database with the previous version and restore the backup
+from step 2. A rollback drops what only the newer version stores (each
+release's upgrade notes say what).
 
 New environment variables always have a default that keeps the old behaviour,
 so an existing `.env` keeps working.

@@ -94,6 +94,8 @@ use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
+use Logbook\Service\Jobs\WebhooksJob;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Service\Jobs\RunCapture;
 use Logbook\Kernel;
 use Logbook\Service\Updates\UpdateCheckJob;
@@ -186,6 +188,8 @@ return [
         [
             RemindersJob::class,
             DigestJob::class,
+            // Entry webhooks (Phase 39.3, spec.md §7.20): every pass, after the reminders they hear of.
+            WebhooksJob::class,
             CleanupJob::class,
             BackupJob::class,
             // `UPDATE_CHECK_ALLOWED=false` leaves the job out entirely (spec.md §7.31).
@@ -353,6 +357,9 @@ return [
         ->constructorParameter('results', get(ChannelResults::class))
         ->constructorParameter('notice', get(SwitchOffNotice::class)),
     RemindersJob::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
+    // Entry webhooks (Phase 39.3): nothing is queued while a demo runs.
+    WebhookEvents::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
+    WebhooksJob::class => autowire()->constructorParameter('breaker', get(HostBreaker::class)),
     AdminNotices::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
 
     // PHP drops files past max_file_uploads silently, so the attachment limit

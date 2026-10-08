@@ -3,7 +3,7 @@
 *Everything a vehicle's pages show, an automation can read, and a
 reminder can be marked done from a phone notification.*
 
-Status: 🚧 in progress · no release of its own (**v3.5.0** ships with
+Status: ✅ complete · no release of its own (**v3.5.0** ships with
 [Phase 39.3](phase-39.3.md)) · file lives in `docs/phases/`
 
 Phase 18.2 gave the API reads and two writes. Phases 22, 26.3, 27.1, 29.2,
@@ -222,7 +222,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [x] **Time zones:** report periods at the day boundary in a non-UTC
       zone (`ApiReportsTest`).
 - [x] Modules off: every new path of that module 404.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
       or above the floor; smoke test at a subpath.
 
 ---
@@ -267,9 +267,10 @@ Phase 39's questions, decided 2026-10-08 before 39.1 started (logged as
   *Decided 2026-10-08 (#289):* no, as channel secrets; a restored webhook
   is paused with *Needs a new secret*. In 39.3.
 
-Still open, for 39.3 (none of them blocks 39.1 or 39.2; see
-[Phase 39.3](phase-39.3.md#open-questions)): #290, found while starting,
-and #291–#295, raised by the spec review of 2026-10-08.
+For 39.3 (none of them blocked 39.1 or 39.2): #290, found while
+starting, and #291–#295, raised by the spec review of 2026-10-08, were
+decided on 2026-10-08 before 39.3 started; see
+[Phase 39.3](phase-39.3.md#open-questions).
 
 Found while building 39.1 (2026-10-08):
 

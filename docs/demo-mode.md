@@ -117,7 +117,7 @@ with its link left out of the navigation:
 - **Install-wide tools:** backup, restore, export everything, importing from
   another app or a CSV file, jobs, the update check, fuel price providers
   (the sample prices need none).
-- **API keys, the REST API and MCP**, and **every AI feature**.
+- **API keys, the REST API, MCP and entry webhooks** (nothing is queued or sent), and **every AI feature**.
 - **Sending anything out:** reminder and digest notifications, test
   notifications, email and every channel are switched off (the reminder job
   records *demo: not sent*), calendar feeds cannot be made, and the app makes
