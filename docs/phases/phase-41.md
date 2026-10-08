@@ -3,7 +3,7 @@
 *Past MOT tests, their mileages and advisories, from the official UK
 record.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 **Reopens #7** (parked 2026-09-30: "sits with registration lookup in §12",
 for keeping data local). Phase 30.2 has since set the precedent: an
@@ -293,10 +293,14 @@ duplicated, and DVSA's text replaces the stored text.
 - [x] Credentials question (A) answered from DVSA before anything else
       (2026-10-08: individuals can apply).
 - [x] B–H decided (2026-10-08, #320–#327).
-- [ ] §4 (endpoints, auth, quotas from DVSA's documentation), §6 (MotTest,
+- [x] §4 (endpoints, auth, quotas from DVSA's documentation), §6 (MotTest,
       MotDefect, reading source `mot`, vehicle `mot_history_enabled_at`,
       `mot_history_secrets`), §7.38, §7.2, §7.24 wording, §7.16, §7.19,
       §7.20, §7.26, §7.30, §9, §13; #7 marked *Decided*; `ROADMAP.md` row.
+      (2026-10-08: §4, §6, §7.1, §7.16, §7.19, §7.20, §7.24, §7.26,
+      §7.30, §7.38, §12, §13; #7 *Scheduled*; no new environment
+      variables, so §9 is unchanged. Secrets are never in backups, as
+      every other secret table.)
 
 ### 41.1 Provider
 - [ ] Interface, registry, `uk_dvsa` adapter (token, request, parsing,

@@ -68,6 +68,7 @@ each vehicle costs.*
 | MCP server (Phase 26.5) | No SDK: Logbook's own Streamable HTTP endpoint (JSON-RPC over POST, JSON responses), protocol versions `2026-07-28` and the legacy `2025-11-25` / `2025-06-18`; conformance tested against the specification's JSON schemas with `justinrainbow/json-schema` (dev only) | The official `mcp/sdk` is experimental before 1.0, adds five dependencies and registers tools by attribute, while Logbook's tool list varies by key and language (decided 2026-10-01, `docs/phases/open-questions.md` #90; §7.28) |
 | Finance arithmetic (Phase 29.1) | `brick/math` (`BigDecimal`, pure PHP; uses `gmp` or `bcmath` when present) | Present values over up to 120 months at a 10-place monthly rate overflow the scaled-integer `Decimal` helper; the phase file allows it (§7.32) |
 | Fuel prices (Phase 30.2) | UK Fuel Finder's Information Recipient API over `symfony/http-client`: `https://www.fuel-finder.service.gov.uk`, `POST /api/v1/oauth/generate_access_token` (JSON `client_id`, `client_secret`; a bearer token for an hour), `GET /api/v1/pfs` (stations) and `GET /api/v1/pfs/fuel-prices` (prices), paged by `batch-number` (500 a page) with `effective-start-timestamp` (`YYYY-MM-DD HH:MM:SS`, UTC) for changes only; 30 requests a minute, one at a time. Open Government Licence v3.0. | The UK's statutory open price feed (Motor Fuel Price (Open Data) Regulations 2025). Endpoints and fields follow the developer portal and the community specification v1.3 (16 Mar 2026), checked against a recorded download with real credentials (`bin/record-fuel-finder.php`) (§7.34) |
+| MOT history (Phase 41) | DVSA's MOT history API over `symfony/http-client`: `https://history.mot.api.gov.uk`, `GET /v1/trade/vehicles/registration/{registration}` and `GET /v1/trade/vehicles/vin/{vin}` (the vehicle, its `hasOutstandingRecall` — `Yes`, `No`, `Unknown`, `Unavailable` — and `motTests`, each with `completedDate`, `testResult`, `expiryDate`, `odometerValue`, `odometerUnit` (`MI`, `KM`), `odometerResultType` (`READ`, `UNREADABLE`, `NO_ODOMETER`), `motTestNumber`, `dataSource` and `defects` (`text`, `type`, `dangerous`); a new vehicle answers `motTestDueDate` instead of tests), and `GET /v1/trade/vehicles/bulk-download` (file links only: *Test* and the keep-alive, #327). Auth: an OAuth 2 client-credentials token from the Microsoft token URL DVSA issues (scope `https://tapi.dvsa.gov.uk/.default`) as `Authorization: Bearer`, plus `X-API-Key`. 500,000 requests a day, 15 a second, a burst of 10; `429` over them, and a key over its daily quota is blocked for 24 hours. A key unused for 90 days is revoked; the client secret expires every 2 years. Open Government Licence v3.0. | The official UK record, free to individuals (#320). Fields from DVSA's OpenAPI specification (`mot_history_open_api_specification.yml`), checked against a recorded response with real credentials when built (§7.38) |
 | Logging | Monolog | PSR-3 |
 | Config | symfony/dotenv (parser only) + env vars | `.env` support; real env always wins |
 | Clock | psr/clock (`UtcClock`) | Injectable "now", always UTC; testable time |
@@ -328,6 +329,7 @@ disagree):
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
     | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
     | `webhooks` | every pass, after `reminders` (Phase 39.3, decided 2026-10-08, #291: the retry intervals are minimums, so a retry goes on the first pass after it is due; a shorter `SCHEDULER_INTERVAL` or a cron line every minute makes deliveries and retries quicker) | sends the entry-webhook deliveries that are due and removes delivery rows older than 7 days (§7.20 *Webhooks*) |
+    | `mot_history` | daily while an MOT history provider is enabled; never otherwise (Phase 41, §7.38) | refreshes enabled vehicles whose latest MOT expiry is 14 days before to 60 days after the owner's today and not fetched in 7 days; stops at DVSA's throttle; a keep-alive call after 80 idle days (#327) |
     | `demo_reset` | every `DEMO_RESET_HOURS` (default 24), listed only while the demo is active; never run from a page visit (Phase 35.1, §7.36) | puts the sample data back |
 
     A job is due when its interval is `0`, or when its last finished run
@@ -428,17 +430,26 @@ MySQL only.
   `FirstInspection`, decides this for every page). Upgrading to 2.1.0 adds
   the column empty (§7.1 *First MOT prompt*); rolling it back drops it,
   the reminders it raised and the prompt settings.
+- From Phase 41 (§7.38): mot_history_enabled_at (optional UTC instant:
+  when the owner confirmed fetching this vehicle's MOT history; cleared by
+  *Stop and remove*), mot_history_fetched_at (optional UTC instant, the
+  last successful fetch), mot_recall_state (optional: `yes` | `no` |
+  `unknown` | `unavailable`, DVSA's `hasOutstandingRecall` at that fetch)
+  and mot_first_due_on (optional date: DVSA's first MOT due date for a
+  vehicle with no tests, offered for *First MOT due*, never copied on its
+  own).
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`|`mot`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
   readings), incident_id (likewise, for `incident` readings, Phase 27.1),
   issue_id and issue_update_id (likewise, for `issue` and `issue_update`
   readings, Phase 40.1:
-  an issue's or an update's odometer, §7.37),
+  an issue's or an update's odometer, §7.37), mot_test_id (likewise, for
+  `mot` readings, Phase 41: a DVSA test's odometer, §7.38),
   created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
@@ -752,6 +763,34 @@ MySQL only.
   Rolling it back turns `issue` readings into `manual` ones (links
   cleared), removes `issue` attachment rows (the files stay under
   `UPLOAD_PATH`) and `issue` reminders, and drops the tables.
+
+**MotTest** (Phase 41, §7.38), `mot_tests`
+- id, vehicle_id (`ON DELETE CASCADE`), test_number (up to 32; unique
+  `(vehicle_id, test_number)`), completed_at (UTC instant), result
+  (`passed` | `failed`), expiry_on (optional date), odometer_km (optional
+  `decimal(12,3)`, converted from the tested unit), odometer_unit
+  (optional, as tested: `mi` | `km`), odometer_state (`read` |
+  `unreadable` | `none`), registration_at_test (optional, up to 20),
+  data_source (`dvsa` | `dva_ni` | `cvs`, as DVSA labels the test),
+  reviewed_at (optional UTC: the review card has been dealt with for this
+  test), fetched_at (UTC), created/updated (UTC). Index `(vehicle_id,
+  completed_at)`.
+
+**MotDefect** (Phase 41), `mot_defects`
+- id, mot_test_id (`ON DELETE CASCADE`), position (the order DVSA lists
+  them), type (`advisory` | `minor` | `major` | `dangerous` | `fail` |
+  `prs` | `user_entered`), text (up to 2,000, as DVSA gives it),
+  dangerous (bool), issue_id (optional, `ON DELETE SET NULL`: the issue
+  made from it or updated by it), dismissed_at (optional UTC: *Not now*
+  on the review card), created/updated (UTC). Unique `(mot_test_id,
+  position)`.
+- Upgrading to 3.7.0 creates both tables, the vehicle columns, the
+  reading link (`odometer_readings.mot_test_id`, `ON DELETE CASCADE`) and
+  `mot_history_secrets`. Rolling it back deletes `mot` readings, drops
+  the tables, the link and the columns; issues and documents made from
+  tests stay, as the owner's own entries (`mot_advisory` issues keep their
+  source).
+- In backups and `bin/export-user.php` (the user's vehicles' rows).
 
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
@@ -1164,6 +1203,12 @@ their fill-ups use. The schema version moves.
 - provider, slot (`client_id`, `client_secret`), value (sealed or
   `env:NAME`, §7.25), updated_at. Unique `(provider, slot)`.
 
+**MotHistorySecret** (Phase 41, §7.38), `mot_history_secrets`
+- provider, slot (`client_id`, `client_secret`, `api_key`, `token_url`),
+  value (sealed or `env:NAME`, §7.25), updated_at. Unique `(provider,
+  slot)`. **Never** in backups, exports, the API or any page, as fuel
+  price secrets.
+
 - **Station** (Phase 30.1) gains `provider` and `provider_ref` (both
   nullable, together; unique together: one Logbook station per provider
   station) and `keep_my_details` (bool, default false). No foreign key:
@@ -1253,7 +1298,11 @@ In backups (the password is not).
   the global `fuel_prices` (provider, refresh, E5 mapping) and
   `fuel_prices.sync` (the last good and last full sync times) hold the
   price feed's, and the user-scoped `dashboard.cheapest_fuel`
-  (`{"place": id}`) the widget's place (§7.34). Like every setting they travel in a
+  (`{"place": id}`) the widget's place (§7.34). From Phase 41 the global
+  `mot_history` (`{"provider": "uk_dvsa" | null}`) and
+  `mot_history.status` (the last call's time, status and redacted error,
+  and the last successful call's time for the keep-alive) hold the MOT
+  history provider's (§7.38). Like every setting they travel in a
   backup; the URL token, like API keys, works only where
   `SESSION_SECRET` is the same.
 
@@ -1362,6 +1411,11 @@ from fleet totals unless "include archived" is toggled.
   (`vehicles.first_inspection_prompted`, a list of vehicle ids), so the
   card is settled for everyone who manages that vehicle. Nothing is set
   without the owner.
+- **Look up** (Phase 41, §7.38, #326; add form only, while an MOT
+  history provider is on): beside the registration, "Sends this
+  registration to DVSA". Fills only blank fields (make, model, fuel type,
+  colour, first registration and, for a vehicle DVSA lists with no tests,
+  *First MOT due*); nothing is stored until the vehicle is saved.
 - **Current odometer** (add form only, optional, in the owner's distance unit,
   parsed like a reading; 0 is valid for a new vehicle): when filled, saving
   writes an ordinary `manual` odometer reading in the same transaction as
@@ -4076,7 +4130,8 @@ with a printable service history to hand to a buyer.
   history page; nothing else lists entries across modules. Its rules:
   - newest first by the owner's local date, then by when the entry was added;
   - readings written by a fill-up, service or document are left out (the
-    entry itself is listed);
+    entry itself is listed), as are `mot` readings (the MOT test is
+    listed, Phase 41);
   - a switched-off module's entries are left out.
 - **What is listed.** Each row has an icon, the kind, a one-line summary,
   the amount (in the vehicle's currency, as the Expenses list shows it), the
@@ -4094,6 +4149,7 @@ with a printable service history to hand to a buyer.
 | Valuation (Phase 14.1) | `valued_on` | "Valued at £9,800 · Auto Trader valuation" |
   | Issue noticed (Phase 40.1) | `noticed_on` | title; "Affects safety" |
   | Issue fixed (Phase 40.1) | `fixed_on` | title; the record(s) that fixed it, or "Fixed without a record" |
+  | MOT test (Phase 41) | the test's instant | "MOT passed" / "MOT failed", mileage, number of defects; not listed when the test became an `inspection` document, whose row carries it (§7.38). Under the *Documents* chip |
 
   **A tyre change linked to a service record is never listed on its own**
   (§7.17): the service record's row carries the change's summary as a second
@@ -4651,7 +4707,10 @@ available for active and archived vehicles.
     document type's). For an owner whose locale region is
     GB and a vehicle with a registration, the line "Check the full MOT
     history at gov.uk/check-mot-history" follows. The URL is plain printed
-    text, a constant on the service, checked at release. Nothing is fetched.
+    text, a constant on the service, checked at release. Nothing is fetched
+    for the pack. From Phase 41, a vehicle with MOT history fetched
+    (§7.38) also prints its stored tests, newest first (date, result,
+    mileage), with DVSA's attribution.
     A vehicle with no `inspection` document and a *First MOT due* date
     (Phase 21.2) shows "First MOT due 14 Jun 2027" instead of a certificate
     line; *Due next* includes it through *Coming up*.
@@ -4824,6 +4883,7 @@ parameter answers 400 (`invalid_parameter`).
 | `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it) and, from Phase 32, the true cost per distance (§7.35), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
+| `GET /vehicles/{id}/mot-tests` | Phase 41 (§7.38; `compliance` on, provider on): the stored MOT tests, newest first, each with its defects (type, text, dangerous, issue id), mileage, expiry, and the vehicle's recall state; 404 while the module or provider is off |
 | `GET /vehicles/{id}/maintenance` | service records |
 | `GET /vehicles/{id}/documents` | compliance documents |
 | `GET /vehicles/{id}/expenses` | ad-hoc expenses (needs `ViewCosts`, like the Expenses tab) |
@@ -5617,6 +5677,10 @@ wrong.
        backwards, or over 2,000 km a day), one item each: "Reading on 12
        Aug 2026 (48,120 mi) is lower than the one before". *Fix* opens the
        reading's edit form, which sends a derived reading to its entry.
+       From Phase 41, when one of the pair is a `mot` reading (§7.38) and
+       the other the owner's, the item names both: "Your reading on 2 Mar
+       2026 (41,200 mi) is lower than the MOT on 14 Feb 2026 (43,950
+       mi)", and *Fix* always opens the owner's reading.
     3. **Economy flags:** the fill-ups the economy check flags and that are
        not confirmed (§7.3), as **one** item per vehicle: "3 fill-ups look
        unusual", linking to the Fuel tab's `?check=1`, where *Looks right*
@@ -5725,6 +5789,13 @@ wrong.
         your allowance: about £108". It links to the agreement. The
         fingerprint is the agreement's id and the projected excess
         rounded to 100. Needs §7.32's access.
+    12. **Outstanding recall** (Phase 41; `compliance` on, MOT history
+        provider on, #325): the vehicle's last MOT history fetch said
+        `hasOutstandingRecall` `Yes` (§7.38): "Outstanding recall on AB12
+        CDE · Check with the manufacturer or a dealer". It links to the
+        MOT history page; *Refresh* there (`Own`) asks DVSA again. The
+        fingerprint is the fetch's time, so a hidden item comes back only
+        if a later fetch still says `Yes`. `View` to see it.
     Items 7–11 are plain arithmetic on the owner's data: no model, no
     network, and no figure changes (flagged entries count everywhere).
     From Phase 29.2 a finance payment marked `missed` with no later
@@ -5746,7 +5817,7 @@ wrong.
   whoever looks (as lead times, §7.6). The single-tank economy bands
   (§7.3) and the 2,000 km a day rule (§7.2) stay fixed; the drift
   threshold above is a different check.
-- **Hiding.** Items 2, 4, 6, 7, 8, 9 and 10 have *Hide* (*Looks right* on 8
+- **Hiding.** Items 2, 4, 6, 7, 8, 9, 10 and 12 have *Hide* (*Looks right* on 8
   and 9): `POST
   /vehicles/{id}/attention/hide` with CSRF, the item's kind, subject and
   the fingerprint the page showed. The server recomputes the item and
@@ -6070,6 +6141,7 @@ request to any model service.
   | `needs_attention(vehicles?)` | Phase 24 and 25 | current items |
   | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
   | `issues(vehicles?, status?)` | issues (Phase 40.2, §7.37, module on) | the vehicles' issues (open and watching by default; `status` `open`, `watching`, `fixed` or `all`), safety first, then newest noticed: title, the owner's description, status, *Affects safety*, noticed date and mileage, look-again point, what fixed it. Never a cause |
+  | `mot_history(vehicle)` | MOT history (Phase 41, §7.38; `compliance` and the provider on, history fetched) | the stored tests (date, result, expiry, mileage, defects by type), the recall state, the issues and documents made from them, and when it was fetched. Never fetches |
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
   | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
   | `cheapest_fuel(vehicle?, grade?, near, radius?, lat?, lng?)` | *Cheapest near me* (Phase 30.2, §7.34, a price provider enabled) | the cheapest stations by effective cost with each row's sum and the attribution; a position is used and never stored |
@@ -8377,6 +8449,193 @@ that fixed it. Decided 2026-10-08 (`docs/phases/open-questions.md`
   as a source (Phase 41, which writes through this create path); video
   files.
 
+### 7.38 MOT history (Phase 41)
+
+Past MOT tests, their mileages, advisories and defects, and the
+vehicle's recall state, from DVSA's official UK record. Off until an
+admin enables it, because it calls a third party; then fetched per
+vehicle, by its owner, because the thing sent identifies their car.
+Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
+
+- **Where it lives.** Part of the `compliance` module: with it off, or
+  the provider off, nothing in this section appears or runs, and nothing
+  is sent. In demo mode (§7.36) every call is blocked
+  (`DemoRestriction`), and the settings page with it.
+- **Provider.** `Service\MotHistory\MotHistoryProvider`, registered in
+  `MotHistoryRegistry` as §7.34's providers are. Each adapter has a code,
+  a name, a description, what it sends, its licence and attribution, the
+  credentials it needs and the countries it covers. One provider at a
+  time. One adapter ships: **DVSA (UK)** (`uk_dvsa`; endpoints, fields
+  and quotas in §4). It covers cars, motorcycles and vans in Great
+  Britain since 2005 and Northern Ireland since 2017. Credentials are
+  free to individuals (#320): DVSA asks for a name, email and postal
+  address and answers in about 5 working days (`docs/mot-history.md`).
+- **Settings → MOT history** (`/settings/mot-history`, admins,
+  `InstanceAbility::ManageMotHistory`):
+  - **Provider:** *Off* (default) or *DVSA (UK)*, with its description,
+    the statement "Sends the registration (or VIN) of vehicles whose
+    owners choose to fetch their MOT history to DVSA. Nothing else is
+    sent.", and its licence and attribution.
+  - **Credentials:** *client ID*, *client secret*, *API key* and *token
+    URL*, each *Saved* / *Not set*, replaced by typing a new value or
+    `env:NAME`, never shown back; stored sealed in `mot_history_secrets`
+    (§6, §7.25). The provider cannot be enabled without all four.
+  - ***Test*** (#327): a token request and one `bulk-download` call, so
+    both the client credentials and the API key are checked; no vehicle
+    is sent and the files it links are never downloaded.
+  - The last call: when, its status and its error (redacted: no
+    secrets, no token), and the last successful call's time.
+  - Settings are the global `mot_history` and `mot_history.status` (§6).
+    Switching the provider off keeps stored tests.
+- **Requests.** Made in the request that asked (a fetch, *Look up*,
+  *Test*) or by the job, each limited to 10 s, the error shown redacted
+  on failure. A token is fetched per fetch (one per job run) and never
+  stored. `404` = "No DVSA record for AB12 CDE"; `429` = "DVSA is busy;
+  try again later" (the job stops there); `401`/`403` = "DVSA refused
+  Logbook's credentials" (shown to admins on Settings, to owners as
+  "MOT history isn't available right now").
+
+#### Fetching
+
+- **Who:** `Own` on the vehicle (#321): sending the registration to a
+  third party is the owner's call, as sharing and transfer are. Viewing
+  the stored history is `View`. The vehicle needs a registration or a
+  VIN.
+- **Where:** the vehicle's Documents tab and the overview *Ownership*
+  card: *Fetch MOT history*. Before the first fetch for the vehicle, the
+  statement "Sends this vehicle's registration (or VIN) to DVSA" is
+  confirmed once (`mot_history_enabled_at`). After that, *Refresh* and
+  *Stop and remove*: deletes the stored tests, their defects and
+  readings, the recall state and the flag; issues and documents made
+  from them stay, as the owner's own entries.
+- **Lookup:** by registration (spaces removed, upper-cased); when DVSA
+  has no record and the vehicle has a VIN, by VIN. When the VIN's record
+  is under another registration (a private plate), the page states it:
+  "DVSA knows this vehicle as AB12 CDE".
+- **Matching:** when the make or the model clearly disagrees with the
+  vehicle's (case-folded; the model compared by its first word; blank
+  on either side never disagrees), nothing is stored and the page says:
+  "DVSA's record for AB12 CDE is a Ford Fiesta; this vehicle is a VW
+  Golf. Check the registration."
+- **Upsert by test number:** tests and defects are never duplicated;
+  DVSA's values and text replace the stored ones. A test no longer in
+  DVSA's answer is kept. Each fetch sets `mot_history_fetched_at`,
+  `mot_recall_state` and, for a vehicle with no tests, `mot_first_due_on`.
+
+#### Mileage
+
+- Every test with a read odometer (#322: passes and fails alike) writes a
+  reading, source **`mot`**, at the test's instant, linked by
+  `mot_test_id`, converted from miles when tested in miles. Like other
+  derived readings it is changed only by refreshing, and goes with *Stop
+  and remove*. An unreadable or missing odometer writes none; the page
+  shows "Odometer not read".
+- They are ordinary readings, so §7.2's backwards and 2,000 km a day
+  warnings and *Needs attention* item 2 (*Implausible readings*, §7.24)
+  apply. When the flagged pair is a `mot` reading and one of the
+  owner's, the item says which is which: "Your reading on 2 Mar 2026
+  (41,200 mi) is lower than the MOT on 14 Feb 2026 (43,950 mi)", and
+  *Fix* goes to the owner's reading, never the MOT's.
+
+#### Review card
+
+`/vehicles/{id}/mot-history/review` (`Log`, with `issues` for the issue
+buttons and `compliance` for the documents), shown after a fetch that
+brought anything new, and linked from the MOT history page and the
+overview while any test is unreviewed. A test is reviewed
+(`reviewed_at`) when each of its offers has been taken or put off.
+
+- **Documents:** each **passed** test not already logged as an
+  `inspection` document (one with that test number as its reference, or
+  with that start date) is offered: start = the test date, expiry,
+  reference = the test number, provider "DVSA MOT", no cost, no odometer
+  of its own (the `mot` reading is the reading). *Add all* adds them
+  oldest first, so the latest pass drives the MOT reminder (§7.5, §7.6).
+- **First MOT due:** a vehicle with no tests, a `mot_first_due_on` and a
+  blank *First MOT due* (§7.1) is offered it ("DVSA: first MOT due 14
+  Mar 2027 · Use this date"). Never filled on its own.
+- **Defects → issues** (§7.37), grouped by type, each *Add as issue* /
+  *Not now* (`dismissed_at`, which sticks), and *Add all*:
+  - source `mot_advisory`, `source_ref` the test number, noticed on the
+    test date at its odometer (no second reading, #319), title the text
+    cut to 120 with the full text in the description;
+  - status `open` for `fail`, `dangerous`, `major` and `prs`;
+    **`watching`** for `advisory`, `minor` and `user_entered` (#324),
+    with *Look again* on the test's expiry less 30 days (none when the
+    test has no expiry);
+  - `dangerous` (type or flag) and `major` set *Affects safety* (#310).
+- **Repeats:** a defect whose text matches (case-folded, whitespace
+  collapsed) one on the vehicle's previous test that became an issue is
+  not offered; that issue gets an update instead ("Advised again at the
+  MOT on 14 Feb 2026, 43,950 mi") and the defect links to it.
+- **Not seen again:** an issue from a defect that is not on the next
+  test is never closed by Logbook; the card notes "Not advised at the
+  following MOT" beside it, for the owner.
+
+#### Recalls (#325)
+
+- The MOT history page states `mot_recall_state` in words: "An
+  outstanding recall. Check with the manufacturer or a dealer." (`yes`),
+  "Recalls, all fixed" (`no`), "No recalls found" (`unknown`), "Recall
+  status unavailable" (`unavailable`), with the fetch's date.
+- `yes` raises a *Check* item in *Needs attention* (§7.24): "Outstanding
+  recall on AB12 CDE", linking to the page, until a later fetch says
+  otherwise or *Stop and remove*. The others raise nothing.
+
+#### Look up on add (#326)
+
+- While the provider is on, the add-vehicle form (§7.1) shows *Look up*
+  beside the registration, for anyone who may add a vehicle, with "Sends
+  this registration to DVSA" beside it; the click is the choice. With JS
+  the form is filled in place; without it, a submit redraws the form
+  filled.
+- It fills only blank fields: make, model, fuel type (DVSA's fuel mapped
+  to §7.3's types; unmapped left blank), colour, first registration and,
+  for a vehicle with no tests, *First MOT due*. Nothing is stored until
+  the owner saves; the lookup doesn't enable MOT history for the new
+  vehicle. Errors and "No DVSA record for AB12 CDE" show beside the
+  button; the form saves without a lookup. Not offered on the edit form.
+
+#### Refresh
+
+- Job `mot_history` (§7.30), registered always, due daily while the
+  provider is enabled: for each vehicle with MOT history enabled, not
+  archived, whose latest stored expiry is between 14 days before and 60
+  days after its owner's today, and not fetched in the last 7 days
+  (#323). A run stops at a `429` and carries on the next day.
+- **Keep-alive (#327):** when the last successful call is more than 80
+  days old, the job makes one `bulk-download` call (no vehicle sent), so
+  DVSA doesn't revoke an unused key. Its result shows on Settings.
+- A refresh that brings a new test shows on the overview ("New MOT
+  result: passed 14 Feb 2026", linking to the review card), and, with
+  reminders on, a pass added as a document closes the MOT reminder as
+  done (§7.6).
+
+#### Pages and elsewhere
+
+- **MOT history** (`/vehicles/{id}/mot-history`, `View`), linked from the
+  Documents tab: the recall state, then each test newest first (date,
+  result, expiry, mileage in the owner's unit with the tested unit when
+  different, defects with their type as text and an icon, never colour
+  alone), links to issues and documents made from it, the attribution,
+  and when it was fetched.
+- **History** (§7.16): kind *MOT test*, dated by the test, unless the
+  test became a document, whose row carries it (never listed twice).
+- **Ask** (§7.26): read tool `mot_history(vehicle)` (tests, mileages,
+  defects, recall state, links). **API** (§7.20): `GET
+  /vehicles/{id}/mot-tests` (`View`). **CSV:** `mot-tests.csv`.
+  **Backups:** `mot_tests` and `mot_defects`; `mot_history_secrets`
+  never. `bin/export-user.php` includes the tests.
+- **Sale pack** (§7.19): the printed DVSA link stays; with history
+  fetched, a summary of the tests is printed too (date, result,
+  mileage).
+- **Attribution** wherever DVSA's data shows: "Contains public sector
+  information licensed under the Open Government Licence v3.0." with a
+  link to the licence.
+- **Not in scope:** downloading the bulk files; other countries'
+  inspection records (the provider interface allows them later); the
+  variant, which DVSA doesn't give (#3 stays in §12 for it).
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -8860,7 +9119,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Single sign-on (Phase 23.1): more than one OIDC provider (#50); linking
   an SSO account by a verified email (`OIDC_LINK=email`) once Logbook
   verifies its own email addresses (#51).
-- Personal fuel-tank entity, VIN decode/registration lookup,
+- Personal fuel-tank entity, VIN decode, a registration lookup that
+  fills the variant or works outside the UK (the UK's from DVSA is §7.38,
+  Phase 41),
   OBD-II / vehicle-API mileage import.
 - Server-side PDF (emailed reports, one-file sale pack with invoices
   merged).
@@ -9422,6 +9683,17 @@ task breakdowns live in the per-phase files; this is the map.
   system line; MCP; CSV (§7.13, §7.20, §7.26, §7.27, §7.28, §7.37;
   #313, #314, #317, #319). No migration.
   Release v3.6.0 (Phases 40.1 and 40.2).
+- **Phase 41 — DVSA MOT history + v3.7 release.** Reopens #7. Settings →
+  *MOT history* for admins (off by default, sealed credentials, *Test*
+  and an 80-day keep-alive by `bulk-download`); per vehicle, by its
+  owner, *Fetch*, *Refresh* and *Stop and remove*, refusing a mismatched
+  record; tests and defects stored, every read odometer a `mot` reading;
+  the review card (inspection documents, *First MOT due*, defects to
+  issues, repeats as updates); the recall state and its *Needs
+  attention* item; *Look up* on the add-vehicle form; the `mot_history`
+  job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
+  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#327). One migration.
+  Release v3.7.0.
 ---
 
 ## 14. Definition of done
