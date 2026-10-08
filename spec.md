@@ -8526,8 +8526,9 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   third party is the owner's call, as sharing and transfer are. Viewing
   the stored history is `View`. The vehicle needs a registration or a
   VIN.
-- **Where:** the vehicle's Documents tab and the overview *Ownership*
-  card: *Fetch MOT history*. Before the first fetch for the vehicle, the
+- **Where:** the vehicle's Documents tab and the overview's *Documents*
+  card (its *Ownership* card shows only with costs): *Fetch MOT
+  history*. Before the first fetch for the vehicle, the
   statement "Sends this vehicle's registration (or VIN) to DVSA" is
   confirmed once (`mot_history_enabled_at`). After that, *Refresh* and
   *Stop and remove*: deletes the stored tests, their defects and

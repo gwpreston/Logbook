@@ -41,6 +41,7 @@ final class DemoRoutes
         'settings.fuel_prices',
         // The MOT history provider (Phase 41): it sends registrations to DVSA.
         'settings.mot_history', 'settings.mot_history.test',
+        'mot_history.show', 'mot_history.fetch', 'mot_history.stop', 'mot_history.review',
         // The email server (Phase 36.1).
         'settings.delivery', 'settings.delivery.remove',
         // Backup, restore, importing, and everything-exports.

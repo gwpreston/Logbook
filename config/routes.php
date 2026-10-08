@@ -18,6 +18,10 @@ use Logbook\Action\Settings\Notifications\NotificationsAction;
 use Logbook\Action\Settings\Notifications\RemoveChannelAction;
 use Logbook\Action\Settings\Notifications\SwitchChannelAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
+use Logbook\Action\MotHistory\FetchMotHistoryAction;
+use Logbook\Action\MotHistory\MotHistoryAction;
+use Logbook\Action\MotHistory\MotReviewAction;
+use Logbook\Action\MotHistory\StopMotHistoryAction;
 use Logbook\Action\Settings\MotHistory\MotHistorySettingsAction;
 use Logbook\Action\Settings\MotHistory\TestMotHistoryAction;
 use Logbook\Action\Station\CreateStationAction;
@@ -1024,6 +1028,19 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
                 $documents->map(['GET', 'POST'], '/documents/{document:[0-9]+}/delete', DeleteComplianceDocumentAction::class)
                     ->setName('compliance.delete')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+            })->add($module(Feature::Compliance));
+
+            // MOT history (spec.md §7.38): a 404 while the provider is off; fetching sends the
+            // registration out, so it is the owner's (#321).
+            $vehicle->group('', function (Group $mot) use ($ability): void {
+                $mot->get('/mot-history', MotHistoryAction::class)->setName('mot_history.show')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $mot->post('/mot-history/fetch', FetchMotHistoryAction::class)->setName('mot_history.fetch')
+                    ->setArgument($ability, VehicleAbility::Own->value);
+                $mot->post('/mot-history/stop', StopMotHistoryAction::class)->setName('mot_history.stop')
+                    ->setArgument($ability, VehicleAbility::Own->value);
+                $mot->map(['GET', 'POST'], '/mot-history/review', MotReviewAction::class)->setName('mot_history.review')
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Compliance));
 

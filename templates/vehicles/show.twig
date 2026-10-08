@@ -209,9 +209,15 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
-                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                {% if (not vehicle.isArchived() and can_vehicle(vehicle, 'log')) or mot_history_enabled() %}
                     <div class="btn-row">
-                        <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                        {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                            <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                        {% endif %}
+                        {# MOT history (spec.md §7.38): fetched by the owner, seen by anyone with View. #}
+                        {% if mot_history_enabled() %}
+                            <a class="btn btn--soft" href="{{ url_for('mot_history.show', {id: vehicle.id}) }}" data-mot-history-link>{{ ui.icon('fact_check') }}{{ (can_vehicle(vehicle, 'own') ? 'mot_history.fetch.button' : 'mot_history.page.link')|trans }}</a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </section>
