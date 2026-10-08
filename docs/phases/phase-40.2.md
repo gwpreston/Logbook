@@ -28,39 +28,42 @@ and §7.28.
       issue noticed where the vehicle already has one.
 
 ### 40.2.1 Recommended work
-- [ ] The card shown with either right (#313); *Add as issue*, *Watch*
-      (#314) and *Add all as issues*; lines already added marked.
+- [x] The card shown with either right (#313); *Add as issue*, *Watch*
+      (#314) and *Add all as issues*; lines already added marked (as a
+      reminder or an issue; a card saved before 40.2 reads as reminders).
 
 ### 40.2.2 API and webhooks
-- [ ] `GET`/`POST /vehicles/{id}/issues`, `GET`/`PATCH`/`DELETE` one
+- [x] `GET`/`POST /vehicles/{id}/issues`, `GET`/`PATCH`/`DELETE` one
       (`ETag`, `If-Match`), `GET /issues`, updates, fix, reopen,
       attachments with owner type `issue`; duplicate key; OpenAPI and
-      `docs/api.md`.
-- [ ] Webhooks: kind `issue`; updates, fixes, unlinks and reopens are
+      `docs/api.md`. The `ETag` is taken over the issue with its timeline
+      and fixes, so a note changes it.
+- [x] Webhooks: kind `issue`; updates, fixes, unlinks and reopens are
       `entry.updated` (#317). Create, edit and delete too: #317's note
       that they "already" fired under #290 was wrong, as 40.1 queued none
       (found while starting).
 
 ### 40.2.3 Ask, MCP, CSV, backups
-- [ ] Ask read tool `issues` and draft tool `draft_issue`; the system
+- [x] Ask read tool `issues` and draft tool `draft_issue`; the system
       line; AI insights never take a cause.
-- [ ] MCP: the read tool and the `draft_issue` pending draft.
-- [ ] CSV `/vehicles/{id}/export/issues.csv`.
+- [x] MCP: the read tool and the `draft_issue` pending draft.
+- [x] CSV `/vehicles/{id}/export/issues.csv`.
 - [x] Backups and `bin/export-user.php` carry the three tables: built in
       [40.1](phase-40.1.md).
-- [ ] Translations (every shipped locale).
+- [x] Translations (every shipped locale).
 
 ### 40.2.4 Tests
-- [ ] Recommended work: lines become issues with the right fields; marks
+- [x] Recommended work: lines become issues with the right fields; marks
       for lines already added; gating by each right.
-- [ ] Ask never offers a cause: the system line is present; an eval
+- [x] Ask never offers a cause: the system line is present; an eval
       question in `bin/ai-eval.php`'s set asking "what's causing this
-      knock?" expects the refusal wording.
+      knock?" expects the refusal wording (a new optional fourth element:
+      words any of which the answer must contain).
 - [ ] API contract and access; webhooks queued; backup round-trip; CSV;
       suite green on every engine; coverage at or above the floor.
 
 ### 40.2.5 Release
-- [ ] `VERSION` → 3.6.0; `CHANGELOG.md` (*Added* — issues log; *Upgrade
+- [x] `VERSION` → 3.6.0; `CHANGELOG.md` (*Added* — issues log; *Upgrade
       notes* — one migration, module on by default).
 - [ ] `docs/issues.md`, README, `ROADMAP.md` rows ✅. Tag v3.6.0 once
       merged.

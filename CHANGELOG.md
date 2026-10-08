@@ -4,11 +4,11 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [3.6.0] — 2026-10-08
 
-Phase 40.1 (ships with 40.2 as **v3.6.0**): **the issues log**, for the
-fault you've noticed and haven't fixed yet. Logbook records your words and
-links the fix; it never suggests what a fault is. See
+Phase 40: **the issues log**, for the fault you've noticed and haven't
+fixed yet, everywhere entries go. Logbook records your words and links
+the fix; it never suggests what a fault is. See
 [docs/issues.md](docs/issues.md).
 
 ### Added
@@ -38,11 +38,35 @@ links the fix; it never suggests what a fault is. See
 - Settings → Modules: **Issues**, on by default (`FEATURES_ISSUES`).
 - The demo Golf has an open knock, a watched brake-pipe advisory and
   grinding brakes fixed by its June pads.
+- **Recommended work** from a scanned invoice or MOT certificate can
+  become issues: *Add as issue*, *Watch* (with the line's own date or
+  mileage to look again) and *Add all as issues*, beside *Add reminder*.
+  The card shows for anyone who may add either, and each line says what it
+  became.
+- The **API**: `GET`/`POST /vehicles/{id}/issues`, one issue with its
+  timeline and an `ETag`, `PATCH`, `DELETE`, `…/updates`, `…/fix` (service
+  records, or without one), `…/reopen`, attachments, and `GET /issues`
+  across your vehicles. `docs/api/openapi.json` describes them.
+- **Webhooks** of kind `issue`: a note, a fix from either side, an unlink
+  and a reopen are each `entry.updated` of the issue.
+- **Ask** reads your issues (`issues`) and drafts one (`draft_issue`);
+  asked what causes a fault, it says Logbook only records what you noted
+  and suggests a qualified mechanic. AI insights may count issues, never
+  guess a cause. **MCP** has both tools.
+- **Export CSV** on the Issues tab (`/vehicles/{id}/export/issues.csv`).
+
+### Changed
+- An issue's odometer adds no reading when the vehicle already has one
+  that day at the same mileage (#319), so issues added from a service
+  record's card don't repeat its reading.
 
 ### Upgrade notes
 - One migration (`issues`, `issue_fixes`, `issue_updates`, and two links
-  on `odometer_readings`). Nothing to do. Backups carry issues; rolling
-  the migration back keeps their mileage as ordinary readings.
+  on `odometer_readings`). Nothing to do. The **Issues** module is on by
+  default; switch it off in Settings → Modules or with
+  `FEATURES_ISSUES=false`. Backups carry issues; rolling the migration
+  back keeps their mileage as ordinary readings.
+- The API stays at 1.23.0 (new operations only).
 
 ## [3.5.0] — 2026-10-08
 
