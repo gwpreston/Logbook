@@ -201,6 +201,7 @@ final class RouteInventoryTest extends AppTestCase
         'stations.near',
         'stations.near.add',
         'api.fuel_prices.near',
+        'api.fuel_prices.alerts',
         'stations.link',
         'stations.alerts',
         // Phase 31: importing from another app; the target vehicle must be one the user can

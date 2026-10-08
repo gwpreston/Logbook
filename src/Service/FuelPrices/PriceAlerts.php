@@ -33,6 +33,16 @@ final readonly class PriceAlerts
     }
 
     /**
+     * Every alert the user has set (the API's list, spec.md §7.20).
+     *
+     * @return list<PriceAlert>
+     */
+    public function forUser(User $user): array
+    {
+        return $this->alerts->forUser($user->id);
+    }
+
+    /**
      * @return array<string, PriceAlert> by grade code
      */
     public function forStation(User $user, Station $station): array

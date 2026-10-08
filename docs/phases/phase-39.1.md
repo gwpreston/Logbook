@@ -183,8 +183,9 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.
 - [x] *Needs attention*, with each item's `key` and its fix's API link.
       (`?hidden=1` waits for #296.)
-- [ ] Price alerts (read); finance agreements (every one, with payment
-      events and quotes, never the number).
+- [x] Price alerts (read).
+- [ ] Finance agreements (every one, with payment events and quotes,
+      never the number).
 
 ### 39.1.3 Reminder actions
 - [x] `POST /reminders/{id}/done`, `/dismiss`, `/reopen` through the

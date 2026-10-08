@@ -3156,6 +3156,33 @@
           }
         }
       }
+    },
+    "/fuel-prices/alerts": {
+      "get": {
+        "operationId": "listPriceAlerts",
+        "summary": "The key user's price alerts (404 while no price provider is enabled)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAlertList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10240,6 +10267,71 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AttentionItem"
+            }
+          }
+        }
+      },
+      "PriceAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "station_id",
+          "grade",
+          "below",
+          "volume_unit",
+          "currency",
+          "armed",
+          "triggered_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "station_id": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "below": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "volume_unit": {
+            "type": "string",
+            "const": "l"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "armed": {
+            "type": "boolean"
+          },
+          "triggered_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A price alert (spec.md §7.34): sent once when the station's listed price drops below `below` per litre, re-armed when it rises above."
+      },
+      "PriceAlertList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceAlert"
             }
           }
         }

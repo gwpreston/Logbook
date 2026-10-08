@@ -48,6 +48,7 @@ use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
 use Logbook\Action\Api\AttentionAction as ApiAttentionAction;
 use Logbook\Action\Api\HistoryAction as ApiHistoryAction;
+use Logbook\Action\Api\PriceAlertsAction as ApiPriceAlertsAction;
 use Logbook\Action\Api\ReportAction as ApiReportAction;
 use Logbook\Action\Api\TyreReadAction as ApiTyreReadAction;
 use Logbook\Action\Api\ListSchedulesAction as ApiSchedulesAction;
@@ -418,6 +419,8 @@ return static function (App $app): void {
                     $stations->get('/stations/{station:[0-9]+}', ApiStationAction::class)->setName('api.stations.show');
                     // Live fuel prices (spec.md §7.34): 404 until a provider is enabled.
                     $stations->get('/fuel-prices/near', FuelPricesNearAction::class)->setName('api.fuel_prices.near');
+                    // Phase 39.1: the key user's price alerts, also 404 until a provider is enabled.
+                    $stations->get('/fuel-prices/alerts', ApiPriceAlertsAction::class)->setName('api.fuel_prices.alerts');
                 })->add($module(Feature::Stations));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance', ApiMaintenanceAction::class)->setName('api.maintenance.index')
                     ->setArgument($ability, VehicleAbility::View->value)
