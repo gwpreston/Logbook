@@ -13,8 +13,9 @@ final class DemoRoutes
 {
     /**
      * Blocked: users, invitations, sign-in providers, header sign-in, API keys and MCP, AI,
-     * fuel price providers, the email server, backup and restore, importing, jobs, the update check, and changing
-     * the password, email address or avatar. They answer the *Not available in the demo* page.
+     * fuel price providers, the MOT history provider, the email server, backup and restore, importing,
+     * jobs, the update check, and changing the password, email address or avatar. They answer the
+     * *Not available in the demo* page.
      */
     public const array BLOCKED = [
         // Users, invitations and the links that sign someone in.
@@ -38,6 +39,8 @@ final class DemoRoutes
         'scan', 'scan.result', 'scan.file', 'scan.reminders', 'scan.vehicle',
         // Fuel price providers (the demo's sample prices need no setting).
         'settings.fuel_prices',
+        // The MOT history provider (Phase 41): it sends registrations to DVSA.
+        'settings.mot_history', 'settings.mot_history.test',
         // The email server (Phase 36.1).
         'settings.delivery', 'settings.delivery.remove',
         // Backup, restore, importing, and everything-exports.

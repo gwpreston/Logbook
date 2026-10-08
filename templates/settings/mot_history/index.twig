@@ -1,0 +1,111 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/fuel_prices.twig' as fp %}
+
+{#
+ # Settings → MOT history (spec.md §7.38; admins only): the provider (off by
+ # default), what it sends and its licence, its credentials (never shown
+ # back), Test (a sign-in and a call that sends no vehicle, #327), and the
+ # last call with its redacted error.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'mot_history.settings.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ url_for('settings') }}#admin">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'mot_history.settings.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'mot_history.settings.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <section class="card" aria-labelledby="status-heading" data-mot-status>
+            <h2 id="status-heading" class="card__title">{{ ui.icon('sync') }}{{ 'mot_history.settings.status.heading'|trans }}</h2>
+            <dl class="details">
+                <div><dt>{{ 'mot_history.settings.status.provider'|trans }}</dt><dd>{{ enabled ? enabled.nameKey()|trans : 'mot_history.settings.provider.off'|trans }}</dd></div>
+                <div><dt>{{ 'mot_history.settings.status.last_call'|trans }}</dt><dd data-last-call>{{ status.lastCallAt ? status.lastCallAt|local_datetime : 'mot_history.settings.status.never'|trans }}</dd></div>
+                <div><dt>{{ 'mot_history.settings.status.last_success'|trans }}</dt><dd data-last-success>{{ status.lastSuccessAt ? status.lastSuccessAt|local_datetime : 'mot_history.settings.status.never'|trans }}</dd></div>
+            </dl>
+            {% if status.error %}
+                <div class="alert alert--warning" role="status" data-mot-error>{{ ui.icon('warning') }}<span>{{ status.error.messageKey()|trans(status.parameters) }}</span></div>
+            {% elseif status.ok() %}
+                <p data-mot-ok>{{ ui.icon('check_circle') }} {{ 'mot_history.settings.status.ok'|trans }}</p>
+            {% endif %}
+            {% for row in providers %}
+                {% if row.credentials is not empty and false not in row.credentials %}
+                    <form method="post" action="{{ url_for('settings.mot_history.test') }}">
+                        {{ ui.csrf(csrf) }}
+                        <input type="hidden" name="provider" value="{{ row.provider.code() }}">
+                        <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'mot_history.settings.test.button'|trans({provider: row.provider.nameKey()|trans}) }}</button>
+                        <p class="field__hint">{{ 'mot_history.settings.test.hint'|trans }}</p>
+                    </form>
+                {% endif %}
+            {% endfor %}
+            {{ fp.attribution(enabled) }}
+        </section>
+
+        <form class="form" method="post" action="{{ url_for('settings.mot_history') }}">
+            {{ ui.csrf(csrf) }}
+            <fieldset class="card fieldset" aria-describedby="provider-hint{% if errors.provider ?? null %} f-provider-error{% endif %}">
+                <legend class="card__title fieldset__legend">{{ 'mot_history.settings.provider.legend'|trans }}</legend>
+                <label class="toggle">
+                    <input type="radio" name="provider" value=""{% if values.provider == '' %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'mot_history.settings.provider.off'|trans }}</span>
+                        <span class="toggle__hint">{{ 'mot_history.settings.provider.off_hint'|trans }}</span>
+                    </span>
+                </label>
+                {% for row in providers %}
+                    {% set provider = row.provider %}
+                    <label class="toggle">
+                        <input type="radio" name="provider" value="{{ provider.code() }}"{% if values.provider == provider.code() %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ provider.nameKey()|trans }}</span>
+                            <span class="toggle__hint">{{ provider.descriptionKey()|trans }}</span>
+                            <span class="toggle__hint" data-sends>{{ ui.icon('shield') }} {{ provider.sendsKey()|trans }}</span>
+                            <span class="toggle__hint">{{ 'mot_history.settings.provider.licence'|trans({licence: provider.licence().name}) }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+                <p class="field__hint" id="provider-hint">{{ 'mot_history.settings.provider.hint'|trans }}</p>
+                {{ ui.field_error(errors, 'provider') }}
+            </fieldset>
+
+            {% for row in providers %}
+                {% set provider = row.provider %}
+                <fieldset class="card fieldset" data-provider-credentials="{{ provider.code() }}">
+                    <legend class="card__title fieldset__legend">{{ 'mot_history.settings.credentials.legend'|trans({provider: provider.nameKey()|trans}) }}</legend>
+                    <p class="field__hint">{{ 'mot_history.settings.credentials.hint'|trans }}</p>
+                    {% for slot, label in provider.credentials() %}
+                        {% set name = 'secret[' ~ slot ~ ']' %}
+                        {% set key = 'secret.' ~ slot %}
+                        <div class="field">
+                            <label class="field__label" for="f-secret-{{ slot }}">{{ label|trans }}</label>
+                            <input class="input" id="f-secret-{{ slot }}" name="{{ name }}" type="password" autocomplete="off" spellcheck="false" maxlength="2000"
+                                   aria-describedby="f-secret-{{ slot }}-hint{% if errors[key] ?? null %} f-{{ key }}-error{% endif %}"{% if errors[key] ?? null %} aria-invalid="true"{% endif %}>
+                            <p class="field__hint" id="f-secret-{{ slot }}-hint" data-secret-state="{{ row.credentials[slot] ? 'saved' : 'unset' }}">
+                                {%- if row.variables[slot] -%}
+                                    {{ 'mot_history.settings.credentials.from_env'|trans({name: row.variables[slot]}) }}
+                                {%- elseif row.credentials[slot] -%}
+                                    {{ 'mot_history.settings.credentials.saved'|trans }}
+                                {%- else -%}
+                                    {{ 'mot_history.settings.credentials.unset'|trans }}
+                                {%- endif -%}
+                                {%- if slot == 'token_url' %} {{ 'mot_history.settings.credentials.token_url_hint'|trans }}{% endif -%}
+                            </p>
+                            {{ ui.field_error(errors, key) }}
+                        </div>
+                    {% endfor %}
+                </fieldset>
+            {% endfor %}
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ 'mot_history.settings.save'|trans }}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

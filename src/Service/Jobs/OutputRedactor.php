@@ -7,6 +7,7 @@ namespace Logbook\Service\Jobs;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiSecretRepository;
 use Logbook\Repository\FuelPriceSecretRepository;
+use Logbook\Repository\MotHistorySecretRepository;
 use Logbook\Service\Ai\SecretBox;
 use Logbook\Service\Mail\NotificationSecrets;
 use Logbook\Support\Config\AppSettings;
@@ -16,9 +17,9 @@ use Throwable;
  * Takes secrets out of a job's output before a line is stored or printed
  * (spec.md §5 *Jobs*, *Redaction*): the values of environment variables
  * whose names contain PASSWORD, SECRET, TOKEN or KEY, every stored AI
- * connection secret, fuel price credential and notification secret (the
- * email server's password, Phase 36.1, and the value an `env:` reference
- * reads), and anything shaped like a Logbook API key.
+ * connection secret, fuel price credential, MOT history credential (Phase
+ * 41) and notification secret (the email server's password, Phase 36.1,
+ * and the value an `env:` reference reads), and anything shaped like a Logbook API key.
  */
 final class OutputRedactor
 {
@@ -44,6 +45,7 @@ final class OutputRedactor
         private readonly SecretBox $box,
         private readonly FuelPriceSecretRepository $fuelPriceSecrets,
         private readonly NotificationSecrets $notificationSecrets,
+        private readonly MotHistorySecretRepository $motHistorySecrets,
     ) {
     }
 
@@ -90,6 +92,18 @@ final class OutputRedactor
             foreach ($this->fuelPriceSecrets->all() as $stored) {
                 try {
                     $values[] = $this->box->open('fuel_prices', $stored);
+                } catch (Throwable) {
+                    // Unreadable here, so it cannot be printed either.
+                }
+            }
+        } catch (Throwable) {
+            // No table yet (mid-upgrade).
+        }
+        try {
+            // Phase 41: the MOT history provider's credentials (spec.md §7.38).
+            foreach ($this->motHistorySecrets->all() as $stored) {
+                try {
+                    $values[] = $this->box->open('mot_history', $stored);
                 } catch (Throwable) {
                     // Unreadable here, so it cannot be printed either.
                 }

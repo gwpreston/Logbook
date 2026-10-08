@@ -91,6 +91,9 @@ use Logbook\Service\FuelPrices\Pause;
 use Logbook\Service\FuelPrices\ProviderRegistry;
 use Logbook\Service\FuelPrices\SystemPause;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
+use Logbook\Service\MotHistory\MotHistoryRegistry;
+use Logbook\Service\MotHistory\MotHistoryTwigExtension;
+use Logbook\Service\MotHistory\Uk\DvsaProvider;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
@@ -203,6 +206,13 @@ return [
         ],
     )),
     // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
+    // MOT history providers (spec.md §7.38): DVSA (UK) only.
+    MotHistoryRegistry::class => static function (ContainerInterface $c): MotHistoryRegistry {
+        $dvsa = $c->get(DvsaProvider::class);
+        assert($dvsa instanceof DvsaProvider);
+
+        return new MotHistoryRegistry([$dvsa]);
+    },
     ProviderRegistry::class => static function (ContainerInterface $c) use ($settingsOf): ProviderRegistry {
         $ukFuelFinder = $c->get(FuelFinderProvider::class);
         assert($ukFuelFinder instanceof FuelFinderProvider);
@@ -307,6 +317,9 @@ return [
         $finance = $c->get(FinanceTwigExtension::class);
         assert($finance instanceof FinanceTwigExtension);
         $twig->addExtension($finance);
+        $motHistory = $c->get(MotHistoryTwigExtension::class);
+        assert($motHistory instanceof MotHistoryTwigExtension);
+        $twig->addExtension($motHistory);
         $fuelPrices = $c->get(FuelPricesTwigExtension::class);
         assert($fuelPrices instanceof FuelPricesTwigExtension);
         $twig->addExtension($fuelPrices);

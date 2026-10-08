@@ -18,6 +18,8 @@ use Logbook\Action\Settings\Notifications\NotificationsAction;
 use Logbook\Action\Settings\Notifications\RemoveChannelAction;
 use Logbook\Action\Settings\Notifications\SwitchChannelAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
+use Logbook\Action\Settings\MotHistory\MotHistorySettingsAction;
+use Logbook\Action\Settings\MotHistory\TestMotHistoryAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
 use Logbook\Action\Station\EditStationAction;
@@ -1152,6 +1154,16 @@ return static function (App $app): void {
             $stations->post('/settings/places/{place:[0-9]+}/delete', PlaceDeleteAction::class)
                 ->setName('settings.places.delete');
         })->add($module(Feature::Stations));
+
+        // Settings → MOT history (spec.md §7.38): admins only, 404 to others; part of `compliance`.
+        $group->group('', function (Group $mot) use ($instance): void {
+            $mot->map(['GET', 'POST'], '/settings/mot-history', MotHistorySettingsAction::class)
+                ->setName('settings.mot_history')
+                ->setArgument($instance, InstanceAbility::ManageMotHistory->value);
+            $mot->post('/settings/mot-history/test', TestMotHistoryAction::class)
+                ->setName('settings.mot_history.test')
+                ->setArgument($instance, InstanceAbility::ManageMotHistory->value);
+        })->add($module(Feature::Compliance));
 
         // Every visible vehicle's open and watching issues (spec.md §7.37 *Fleet*).
         $group->get('/issues', FleetIssuesAction::class)->setName('issues.fleet')->add($module(Feature::Issues));
