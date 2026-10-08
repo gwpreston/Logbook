@@ -1618,8 +1618,14 @@ jumps, going backwards) without blocking.
   history), *average per year since first registered* (below), distance
   logged; odometer-over-time chart; readings newest first (25 per page) with
   the distance since the one before and their source (*Manual*, *Fill-up*,
-  *Service*, *Document*, *Tyres*, and *Issue* from Phase 40.1). Each row shows a paperclip with its number of
+  *Service*, *Document*, *Tyres*, and *Issue* from Phase 40.1, and *MOT*
+  from Phase 41). Each row shows a paperclip with its number of
   files: a manual reading's own, a derived reading's owning entry's.
+- **MOT readings** (Phase 41, §7.38): each read odometer of a fetched DVSA
+  test is a `mot` reading at the test's instant. It is changed only by
+  *Refresh* and removed by *Stop and remove*; its row links to the MOT
+  history page instead of an edit form. The backwards and 2,000 km a day
+  warnings apply to it as to any reading.
 - Manual readings take attachments (a photo of the dashboard) through the
   shared attachment input (§7.12) on their add and edit forms; deleting the
   reading deletes its files. A derived reading has no attachment input: its
@@ -8214,7 +8220,8 @@ owner. Decided 2026-10-06 (#212–#217).
   from navigation):
   - users, invitations, sign-in providers, header sign-in, API keys and
     MCP, AI connections and every AI feature, fuel-price providers other
-    than the built-in *Sample prices (demo)* one, backup, restore,
+    than the built-in *Sample prices (demo)* one, the MOT history provider,
+    its *Fetch*, *Refresh* and *Look up* (Phase 41, §7.38), backup, restore,
     export-everything, import from another app, running or editing jobs,
     the update check, and `/setup`;
   - changing the password, the email address or the avatar, and linking
@@ -8460,7 +8467,8 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
 - **Where it lives.** Part of the `compliance` module: with it off, or
   the provider off, nothing in this section appears or runs, and nothing
   is sent. In demo mode (§7.36) every call is blocked
-  (`DemoRestriction`), and the settings page with it.
+  (`DemoRestriction`), and the settings page with it; its routes are on
+  `DemoRoutes::BLOCKED`.
 - **Provider.** `Service\MotHistory\MotHistoryProvider`, registered in
   `MotHistoryRegistry` as §7.34's providers are. Each adapter has a code,
   a name, a description, what it sends, its licence and attribution, the
@@ -8626,7 +8634,8 @@ overview while any test is unreviewed. A test is reviewed
   test became a document, whose row carries it (never listed twice).
 - **Ask** (§7.26): read tool `mot_history(vehicle)` (tests, mileages,
   defects, recall state, links). **API** (§7.20): `GET
-  /vehicles/{id}/mot-tests` (`View`). **CSV:** `mot-tests.csv`.
+  /vehicles/{id}/mot-tests` (`View`; the recall state as Logbook's
+  lower-case codes, `yes` | `no` | `unknown` | `unavailable`). **CSV:** `mot-tests.csv`.
   **Backups:** `mot_tests` and `mot_defects`; `mot_history_secrets`
   never, as no secret table is (#332). `bin/export-user.php` includes the tests.
 - **Sale pack** (§7.19): the printed DVSA link stays; with history
