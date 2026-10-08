@@ -114,6 +114,26 @@ final readonly class OdometerReadingRepository
         return array_values(array_map($this->hydrate(...), $rows));
     }
 
+    /**
+     * A vehicle's readings recorded in [from, until), every source.
+     *
+     * @return list<OdometerReading> oldest first
+     */
+    public function listForVehicleBetween(int $vehicleId, DateTimeImmutable $from, DateTimeImmutable $until): array
+    {
+        $platform = $this->connection->getDatabasePlatform();
+        $rows = $this->select()
+            ->where('vehicle_id = :vehicle', 'recorded_at >= :from', 'recorded_at < :until')
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('from', UtcDateTime::toDatabase($from, $platform))
+            ->setParameter('until', UtcDateTime::toDatabase($until, $platform))
+            ->orderBy('recorded_at')
+            ->addOrderBy('id')
+            ->fetchAllAssociative();
+
+        return array_values(array_map($this->hydrate(...), $rows));
+    }
+
     public function find(int $vehicleId, int $id): ?OdometerReading
     {
         $row = $this->select()

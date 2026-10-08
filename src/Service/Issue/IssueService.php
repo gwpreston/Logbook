@@ -17,6 +17,8 @@ use Logbook\Domain\Issue\IssueUpdateReason;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Domain\Webhook\WebhookKind;
 use Logbook\Repository\IssueRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Service\Access\AccessContext;
@@ -24,6 +26,7 @@ use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -36,6 +39,11 @@ use Psr\Clock\ClockInterface;
  *
  * Callers pass a Vehicle already resolved for the signed-in user. Logbook
  * records the owner's words; nothing here judges what a fault is.
+ *
+ * Every change queues an `issue` webhook inside its transaction (#317):
+ * create, edit and delete as such, and an update, a fix from either side,
+ * an unlink, a reopen or *Looked at it* as `entry.updated` of the issue,
+ * once per issue per call.
  */
 final readonly class IssueService
 {
@@ -50,6 +58,7 @@ final readonly class IssueService
         private AccessContext $author,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -120,6 +129,7 @@ final readonly class IssueService
             $id = $this->issues->insert($vehicle->id, $data, $this->clock->now(), $by, $source, $sourceRef);
             $this->recordReading($vehicle, OdometerSource::Issue, $id, $data->odometerKm, $data->noticedOn, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Issue, $id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Issue, $id);
 
             return $id;
         });
@@ -152,6 +162,7 @@ final readonly class IssueService
             if ($data->status !== $issue->status()) {
                 $this->automatic($issue, $issue->status(), $data->status, IssueUpdateReason::Edited, $zone);
             }
+            $this->changed($vehicle, $issue->id);
         });
 
         return $this->get($vehicle, $issue->id);
@@ -169,6 +180,7 @@ final readonly class IssueService
             }
             $this->odometer->forgetEntry($vehicle, OdometerSource::Issue, $issue->id);
             $this->issues->delete($vehicle->id, $issue->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Issue, $issue->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Issue, $issue->id);
     }
@@ -186,6 +198,7 @@ final readonly class IssueService
         $this->transaction->run(function () use ($vehicle, $issue, $on, $km, $zone): void {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->watching($on, $km), $this->clock->now());
             $this->automatic($issue, $issue->status(), IssueStatus::Watching, IssueUpdateReason::Watch, $zone);
+            $this->changed($vehicle, $issue->id);
         });
 
         return $this->get($vehicle, $issue->id);
@@ -213,6 +226,7 @@ final readonly class IssueService
                 $this->issues->markHistorical($issue->id);
             }
             $this->automatic($issue, $issue->status(), IssueStatus::Open, $reason, $zone);
+            $this->changed($vehicle, $issue->id);
         });
 
         return $this->get($vehicle, $issue->id);
@@ -229,6 +243,7 @@ final readonly class IssueService
         $this->transaction->run(function () use ($vehicle, $issue, $zone): void {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->withStatus(IssueStatus::Open), $this->clock->now());
             $this->automatic($issue, IssueStatus::Watching, IssueStatus::Open, IssueUpdateReason::StopWatching, $zone);
+            $this->changed($vehicle, $issue->id);
         });
 
         return $this->get($vehicle, $issue->id);
@@ -246,6 +261,7 @@ final readonly class IssueService
         $this->transaction->run(function () use ($vehicle, $issue, $zone): void {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->watching(null, null), $this->clock->now());
             $this->automatic($issue, IssueStatus::Watching, IssueStatus::Watching, IssueUpdateReason::LookedAt, $zone);
+            $this->changed($vehicle, $issue->id);
         });
     }
 
@@ -274,6 +290,7 @@ final readonly class IssueService
                 $this->author->authorId(),
                 $now,
             );
+            $this->changed($vehicle, $issue->id);
         });
 
         return $this->get($vehicle, $issue->id);
@@ -288,11 +305,15 @@ final readonly class IssueService
     public function fixWith(Vehicle $vehicle, Issue $issue, array $recordIds): Issue
     {
         $this->transaction->run(function () use ($vehicle, $issue, $recordIds): void {
+            $linked = false;
             foreach ($recordIds as $recordId) {
                 $record = $this->records->find($vehicle->id, $recordId);
                 if ($record !== null) {
-                    $this->link($vehicle, $this->get($vehicle, $issue->id), $record);
+                    $linked = $this->link($vehicle, $this->get($vehicle, $issue->id), $record) || $linked;
                 }
+            }
+            if ($linked) {
+                $this->changed($vehicle, $issue->id);
             }
         });
 
@@ -312,19 +333,24 @@ final readonly class IssueService
     public function setFixesOf(Vehicle $vehicle, MaintenanceEntry $record, array $issueIds, DateTimeZone $zone): void
     {
         $today = LocalTime::today($this->clock, $zone);
+        $changed = [];
         foreach ($this->issues->fixedBy($record->id, currentOnly: true) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
             // A link kept as history (*It's back*) is shown unticked, and
             // leaving it so keeps it.
             if ($issue !== null && $issue->isFixed() && !in_array($issueId, $issueIds, true)) {
                 $this->unlink($vehicle, $issue, $record->id, IssueUpdateReason::RecordUnlinked, $today);
+                $changed[$issueId] = true;
             }
         }
         foreach (array_unique($issueIds) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
-            if ($issue !== null) {
-                $this->link($vehicle, $issue, $record);
+            if ($issue !== null && $this->link($vehicle, $issue, $record)) {
+                $changed[$issueId] = true;
             }
+        }
+        foreach (array_keys($changed) as $issueId) {
+            $this->changed($vehicle, $issueId);
         }
     }
 
@@ -337,8 +363,8 @@ final readonly class IssueService
     {
         foreach ($this->issues->fixedBy($record->id, currentOnly: true) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
-            if ($issue !== null && $issue->isFixed()) {
-                $this->refreshFixedOn($vehicle, $issue);
+            if ($issue !== null && $issue->isFixed() && $this->refreshFixedOn($vehicle, $issue)) {
+                $this->changed($vehicle, $issueId);
             }
         }
     }
@@ -365,10 +391,15 @@ final readonly class IssueService
     public function recordDeleted(Vehicle $vehicle, int $recordId, DateTimeZone $zone): void
     {
         $today = LocalTime::today($this->clock, $zone);
+        $current = $this->issues->fixedBy($recordId, currentOnly: true);
         foreach ($this->issues->fixedBy($recordId) as $issueId) {
             $issue = $this->issues->find($vehicle->id, $issueId);
             if ($issue !== null) {
                 $this->unlink($vehicle, $issue, $recordId, IssueUpdateReason::RecordDeleted, $today);
+                // A link kept as history changes nothing a receiver can read.
+                if (in_array($issueId, $current, true)) {
+                    $this->changed($vehicle, $issueId);
+                }
             }
         }
     }
@@ -395,11 +426,23 @@ final readonly class IssueService
      * Every fix link of these issues, in one query.
      *
      * @param list<Issue> $issues
+     * @param bool $currentOnly leave out the fixes kept as history (*It's back*)
      * @return array<int, list<int>> record ids by issue id
      */
-    public function fixLinks(array $issues): array
+    public function fixLinks(array $issues, bool $currentOnly = false): array
     {
-        return $this->issues->fixesFor(array_map(static fn (Issue $i): int => $i->id, $issues));
+        return $this->issues->fixesFor(array_map(static fn (Issue $i): int => $i->id, $issues), $currentOnly);
+    }
+
+    /**
+     * The timelines of these issues, in one query.
+     *
+     * @param list<Issue> $issues
+     * @return array<int, list<IssueUpdate>> oldest first, by issue id
+     */
+    public function updatesFor(array $issues): array
+    {
+        return $this->issues->updatesFor(array_map(static fn (Issue $i): int => $i->id, $issues));
     }
 
     /**
@@ -471,8 +514,12 @@ final readonly class IssueService
             $to = $data->status;
             // A fixed issue changes status only by *It's back* (the form refuses it too).
             $changed = $to !== null && $to !== IssueStatus::Fixed && !$issue->isFixed() && $to !== $issue->status();
-            if ($changed) {
-                $next = $to === IssueStatus::Watching
+            // Still watching with a new point given: the point moves, as *Watch again*.
+            // (The form gives a point only with *watching* chosen; on a watching issue that is no status change.)
+            $moved = !$changed && $issue->status() === IssueStatus::Watching
+                && ($data->lookAgainOn !== null || $data->lookAgainKm !== null);
+            if ($changed || $moved) {
+                $next = $moved || $to === IssueStatus::Watching
                     ? $issue->data->watching($data->lookAgainOn, $data->lookAgainKm)
                     : $issue->data->withStatus($to);
                 $this->issues->update($vehicle->id, $issue->id, $next, $now);
@@ -489,6 +536,7 @@ final readonly class IssueService
                 $now,
             );
             $this->recordReading($vehicle, OdometerSource::IssueUpdate, $id, $data->odometerKm, $data->notedOn, $zone);
+            $this->changed($vehicle, $issue->id);
 
             return $id;
         });
@@ -514,6 +562,7 @@ final readonly class IssueService
             $now = $this->clock->now();
             $this->issues->updateNote($issue->id, $update->id, $data->notedOn, $data->odometerKm, $data->note, $now);
             $this->recordReading($vehicle, OdometerSource::IssueUpdate, $update->id, $data->odometerKm, $data->notedOn, $zone);
+            $this->changed($vehicle, $issue->id);
         });
     }
 
@@ -528,6 +577,7 @@ final readonly class IssueService
         $this->transaction->run(function () use ($vehicle, $issue, $update): void {
             $this->odometer->forgetEntry($vehicle, OdometerSource::IssueUpdate, $update->id);
             $this->issues->deleteUpdate($issue->id, $update->id);
+            $this->changed($vehicle, $issue->id);
         });
     }
 
@@ -551,10 +601,13 @@ final readonly class IssueService
      * Link one record as a fix: an unfixed issue becomes fixed on the
      * record's date, remembering the status to return to; a fixed one keeps
      * the latest fixing record's date.
+     *
+     * @return bool whether anything changed
      */
-    private function link(Vehicle $vehicle, Issue $issue, MaintenanceEntry $record): void
+    private function link(Vehicle $vehicle, Issue $issue, MaintenanceEntry $record): bool
     {
         $now = $this->clock->now();
+        $already = in_array($record->id, $this->issues->fixesOf($issue->id, currentOnly: true), true);
         $this->issues->addFix($issue->id, $record->id, $now);
         if (!$issue->isFixed()) {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->withStatus(IssueStatus::Fixed), $now);
@@ -571,9 +624,10 @@ final readonly class IssueService
                 $now,
             );
 
-            return;
+            return true;
         }
-        $this->refreshFixedOn($vehicle, $this->get($vehicle, $issue->id));
+
+        return $this->refreshFixedOn($vehicle, $this->get($vehicle, $issue->id)) || !$already;
     }
 
     /**
@@ -602,11 +656,13 @@ final readonly class IssueService
 
     /**
      * A fixed-by-records issue is fixed on its latest fixing record's date.
+     *
+     * @return bool whether the date moved
      */
-    private function refreshFixedOn(Vehicle $vehicle, Issue $issue, ?int $without = null): void
+    private function refreshFixedOn(Vehicle $vehicle, Issue $issue, ?int $without = null): bool
     {
         if ($issue->statusBeforeFix === null) {
-            return;
+            return false;
         }
         $latest = null;
         foreach ($this->issues->fixesOf($issue->id, currentOnly: true) as $recordId) {
@@ -617,7 +673,20 @@ final readonly class IssueService
         }
         if ($latest !== null && $latest != $issue->fixedOn) {
             $this->issues->setFixed($vehicle->id, $issue->id, $latest, $issue->statusBeforeFix, $this->clock->now());
+
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * Queue `entry.updated` of the issue (#317). Call inside the change's
+     * transaction.
+     */
+    private function changed(Vehicle $vehicle, int $issueId): void
+    {
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Issue, $issueId);
     }
 
     /**
@@ -645,7 +714,9 @@ final readonly class IssueService
 
     /**
      * Create, move or remove the reading an issue or update owns, at local
-     * noon on its date.
+     * noon on its date. None is written where the vehicle already has a
+     * reading that day at the same odometer (#319): the issue keeps its
+     * odometer, and a later save writes the reading if that one has gone.
      */
     private function recordReading(
         Vehicle $vehicle,
@@ -655,8 +726,17 @@ final readonly class IssueService
         DateTimeImmutable $on,
         DateTimeZone $zone,
     ): void {
-        $at = LocalTime::toUtc($on->format('Y-m-d') . self::READING_TIME, $zone)
+        $day = $on->format('Y-m-d');
+        $at = LocalTime::toUtc($day . self::READING_TIME, $zone)
             ?? DateTimeImmutable::createFromInterface($on);
+        $from = LocalTime::toUtc($day . 'T00:00', $zone);
+        $until = LocalTime::toUtc((new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . 'T00:00', $zone);
+        if (
+            $km !== null && $from !== null && $until !== null
+            && $this->odometer->hasOtherReadingAt($vehicle, $km, $from, $until, $source, $id)
+        ) {
+            $km = null;
+        }
         $this->odometer->recordForEntry($vehicle, $source, $id, $km, $at);
     }
 }

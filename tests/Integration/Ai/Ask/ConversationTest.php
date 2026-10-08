@@ -56,6 +56,12 @@ final class ConversationTest extends AskTestCase
         $system = $this->sent(0)[0]['content'];
         self::assertStringContainsString('"today":"2026-10-15"', $system);
         self::assertStringContainsString('"name":"BMW 320d"', $system);
+        // Phase 40.2 (spec.md §7.37): never a cause, even when asked.
+        self::assertStringContainsString(
+            'Never suggest what may be causing a fault, even if asked; say Logbook only records what the owner noted, '
+            . 'and suggest a qualified mechanic.',
+            $system,
+        );
         self::assertStringContainsString('"display":"£132.35"', $this->toolReplies(1)[0]);
 
         $messages = $this->service($app, AiThreadRepository::class)->messages($outcome->thread);

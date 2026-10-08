@@ -88,6 +88,7 @@ final readonly class ApiEditor
         private TripService $trips,
         private IncidentService $incidents,
         private IncidentChoices $incidentChoices,
+        private ApiIssues $issues,
     ) {
     }
 
@@ -109,6 +110,9 @@ final readonly class ApiEditor
             'expenses' => $this->updateExpense($user, $vehicle, $stored, $body),
             'trips' => $this->updateTrip($user, $vehicle, $stored, $body),
             'incidents' => $this->updateIncident($user, $vehicle, $stored, $body),
+            'issues' => $stored instanceof IssueState
+                ? $this->issues->patch($user, $vehicle, $stored, $body)
+                : throw new \LogicException('Not an issue.'),
         };
 
         return ['entry' => $this->entries->read($list, $user, $vehicle, $id), 'warnings' => $warnings];
@@ -134,6 +138,7 @@ final readonly class ApiEditor
                 $stored instanceof ExpenseEntry => $this->expenses->delete($vehicle, $stored),
                 $stored instanceof Trip => $this->trips->delete($vehicle, $stored),
                 $stored instanceof Incident => $this->incidents->delete($vehicle, $stored),
+                $stored instanceof IssueState => $this->issues->delete($vehicle, $stored),
                 default => throw new \LogicException('No delete for ' . $stored::class . '.'),
             };
         } catch (TyreChangeRefused $refused) {
@@ -171,6 +176,9 @@ final readonly class ApiEditor
      */
     private function find(string $list, User $user, Vehicle $vehicle, int $id): object
     {
+        if ($list === 'issues') {
+            return $this->issues->state($vehicle, $id);
+        }
         try {
             return match ($list) {
                 'fuel' => $this->fuel->get($vehicle, $id),

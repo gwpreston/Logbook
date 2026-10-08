@@ -65,6 +65,11 @@ final class AiInsightsTest extends AskTestCase
         self::assertContains('costs', $offered);
         $drafts = array_filter($offered, static fn (string $n): bool => str_starts_with($n, 'draft_'));
         self::assertSame([], $drafts, 'never a draft tool');
+        $messages = $this->provider->requests[0]['json']['messages'] ?? [];
+        self::assertIsArray($messages);
+        $system = (string) json_encode($messages[0] ?? null, JSON_UNESCAPED_UNICODE);
+        $rule = 'Never write about what may be causing an issue';
+        self::assertStringContainsString($rule, $system, 'counts, never a cause (§7.37)');
 
         $page = (string) $browser->get('/insights')->getBody();
         self::assertStringNotContainsString('data-ai-insights-auto', $page);

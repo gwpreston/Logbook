@@ -19,6 +19,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
+use Logbook\Support\Number\Decimal;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -129,6 +130,32 @@ final readonly class OdometerService
         } else {
             $this->readings->update($vehicle->id, $existing->id, $data, $this->clock->now());
         }
+    }
+
+    /**
+     * Whether the vehicle has a reading in [from, until) at this odometer
+     * other than the one this entry owns (spec.md §7.37, #319).
+     */
+    public function hasOtherReadingAt(
+        Vehicle $vehicle,
+        string $km,
+        DateTimeImmutable $from,
+        DateTimeImmutable $until,
+        OdometerSource $source,
+        int $entryId,
+    ): bool {
+        foreach ($this->readings->listForVehicleBetween($vehicle->id, $from, $until) as $reading) {
+            $own = $reading->source === $source && match ($source) {
+                OdometerSource::Issue => $reading->issueId === $entryId,
+                OdometerSource::IssueUpdate => $reading->issueUpdateId === $entryId,
+                default => false,
+            };
+            if (!$own && Decimal::compare($reading->readingKm, $km) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function forgetEntry(Vehicle $vehicle, OdometerSource $source, int $entryId): void

@@ -37,14 +37,16 @@ final readonly class ApiEntries
     /** The lists that have a single-entry read, as their path segment. */
     public const array LISTS = [
         'fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'schedules', 'valuations',
+        'issues',
     ];
 
     /** The lists whose entries the API edits and deletes (Phase 39.2). */
-    public const array EDITABLE = ['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents'];
+    public const array EDITABLE = ['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'issues'];
 
     public function __construct(
         private ApiReader $reader,
         private ApiIncidents $incidentReader,
+        private ApiIssues $issueReader,
         private FuelService $fuel,
         private OdometerService $odometer,
         private MaintenanceService $maintenance,
@@ -68,6 +70,11 @@ final readonly class ApiEntries
         }
         if ($list === 'valuations') {
             return $this->figures->valuation($user, $vehicle, $id);
+        }
+        if ($list === 'issues') {
+            $state = $this->issueReader->state($vehicle, $id);
+
+            return new ApiEntry($this->issueReader->serialize($state), $this->issueReader->tag($state));
         }
         try {
             return match ($list) {

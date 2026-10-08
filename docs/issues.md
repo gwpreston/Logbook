@@ -18,7 +18,9 @@ someone; ask a qualified mechanic.
 - [Updates](#updates)
 - [Needs attention and reminders](#needs-attention-and-reminders)
 - [History, print and the sale pack](#history-print-and-the-sale-pack)
+- [Recommended work](#recommended-work)
 - [Shared and archived vehicles](#shared-and-archived-vehicles)
+- [Export, API, Ask and MCP](#export-api-ask-and-mcp)
 - [Backups](#backups)
 
 ## Switching it on or off
@@ -38,7 +40,8 @@ Links on service records are left as they are.
 - **What did you notice?** Up to 120 characters, as you'd tell a mechanic.
 - **Noticed on** (not in the future) and the **odometer**. The odometer
   adds a reading to the mileage log, as a service record's does, with the
-  usual warning if it looks wrong.
+  usual warning if it looks wrong. If the vehicle already has a reading
+  that day at the same mileage, no second one is added.
 - **Details**, an **Area** (the maintenance categories, so the repair can be
   prefilled) and **photos or PDFs**.
 - **Affects safety:** your judgement, never Logbook's. A safety issue is
@@ -112,12 +115,39 @@ updates are not listed. The printable service history includes fixed issues
 with what fixed them, never open ones. The sale pack has **Include open
 issues**, off by default: honest disclosure is your choice.
 
+## Recommended work
+
+When you save a service invoice or an MOT certificate read from a photo or
+PDF, its recommended work (or advisories) is offered line by line. Beside
+*Add reminder*, each line has **Add as issue** (open) and **Watch**
+(watching, with the line's own date or mileage, if it gave one, to look
+again), and **Add all as issues** adds every line open. Each issue is
+noticed on the invoice's date at its mileage. A line is added once, and
+then says whether it became a reminder or an issue.
+
+You see the issue buttons if you can add issues to the vehicle (*Log*,
+issues on) and the reminder buttons if you can add reminders (*Manage*,
+reminders on).
+
 ## Shared and archived vehicles
 
 Anyone who can view a vehicle sees its issues. *Log* lets someone add
 issues, notes and fixes, and watch or reopen them; editing or deleting
 someone else's issue or note needs *Manage*. An archived vehicle keeps its
 issues read-only, and its open ones raise nothing.
+
+## Export, API, Ask and MCP
+
+- **Export CSV** on the Issues tab (*Manage*) downloads every issue: date
+  noticed, mileage, title, description, area, status, affects safety,
+  fixed on and what fixed it. Updates are not included.
+- The [API](api.md#issues) lists, reads, logs, edits, deletes, fixes and
+  reopens issues and adds updates and files; webhooks of kind `issue` tell
+  you when one changes.
+- [Ask](ai.md) reads your issues and drafts one from a sentence ("noticed a
+  knock from the front left when braking"). Asked what causes a fault, it
+  says Logbook only records what you noted and suggests a qualified
+  mechanic. The [MCP server](mcp.md) has the same tools.
 
 ## Backups
 

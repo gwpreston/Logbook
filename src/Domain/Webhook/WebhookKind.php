@@ -21,6 +21,8 @@ enum WebhookKind: string
     case Valuation = 'valuation';
     case Trip = 'trip';
     case Incident = 'incident';
+    /** An issue; its updates, fixes, unlinks and reopens are updates of it (#317). */
+    case Issue = 'issue';
     case TreadCheck = 'tread_check';
     /** A tyre's own details; `entry_id` is the tyre. */
     case TyreDetails = 'tyre_details';
@@ -48,6 +50,7 @@ enum WebhookKind: string
             self::Valuation => 'valuations',
             self::Trip => 'trips',
             self::Incident => 'incidents',
+            self::Issue => 'issues',
             self::Schedule => 'schedules',
             self::Vehicle => '',
             self::Tyre, self::TreadCheck, self::TyreDetails, self::Finance, self::Reminder => null,
@@ -76,6 +79,7 @@ enum WebhookKind: string
             self::Valuation => $base . '/valuations',
             self::Trip => $base . '/trips',
             self::Incident => $base . '/incidents',
+            self::Issue => $base . '/issues',
             self::Schedule => $base . '/schedules',
             self::Tyre => $base . '/tyres/changes',
             self::TreadCheck, self::TyreDetails => $base . '/tyres',

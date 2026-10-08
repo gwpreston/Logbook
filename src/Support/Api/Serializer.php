@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Api;
 
+use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Issue\IssueUpdate;
 use Logbook\Domain\Attachment\Attachment;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Station\Station;
@@ -701,6 +703,52 @@ final class Serializer
             'created_by' => $view->createdBy,
             'created_at' => $createdAt === null ? null : self::instant($createdAt),
             'updated_at' => $updatedAt === null ? null : self::instant($updatedAt),
+        ];
+    }
+
+    /**
+     * An issue (spec.md §7.20 *Issues*, §7.37): the owner's words, its
+     * status and what fixed it, with its timeline oldest first. Never a
+     * cause: Logbook has none.
+     *
+     * @param list<IssueUpdate> $updates
+     * @param list<int> $fixedBy the current fixes' service record ids
+     * @return array<string, mixed>
+     */
+    public static function issue(Issue $issue, array $updates, array $fixedBy): array
+    {
+        $data = $issue->data;
+
+        return [
+            'id' => $issue->id,
+            'vehicle_id' => $issue->vehicleId,
+            'noticed_on' => self::date($data->noticedOn),
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'title' => $data->title,
+            'description' => $data->description,
+            'category' => $data->category?->value,
+            'status' => $issue->status()->value,
+            'affects_safety' => $data->affectsSafety,
+            'look_again_on' => $data->lookAgainOn === null ? null : self::date($data->lookAgainOn),
+            'look_again_odometer' => self::dec($data->lookAgainKm, self::QUANTITY_SCALE),
+            'fixed_on' => $issue->fixedOn === null ? null : self::date($issue->fixedOn),
+            'fixed_without_record' => $issue->isFixed() && $issue->statusBeforeFix === null,
+            'fixed_by' => $issue->isFixed() ? $fixedBy : [],
+            'source' => $issue->source->value,
+            'source_ref' => $issue->sourceRef,
+            'updates' => array_map(static fn (IssueUpdate $update): array => [
+                'id' => $update->id,
+                'noted_on' => self::date($update->notedOn),
+                'odometer' => self::dec($update->odometerKm, self::QUANTITY_SCALE),
+                'note' => $update->note,
+                'status_from' => $update->statusFrom?->value,
+                'status_to' => $update->statusTo?->value,
+                'automatic' => $update->isAutomatic(),
+            ], $updates),
+            'created_by' => $issue->createdBy,
+            'created_at' => self::instant($issue->createdAt),
+            'updated_at' => self::instant($issue->updatedAt),
         ];
     }
 

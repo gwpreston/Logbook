@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Scan;
 
+use Logbook\Domain\Issue\IssueData;
+use Logbook\Domain\Issue\IssueStatus;
+use Logbook\Service\Issue\IssueForm;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Scan\ScanKind;
 use Logbook\Domain\Reminder\ManualReminderData;
@@ -124,6 +127,28 @@ final readonly class Recommendations
             $leadDays,
             null,
             $offer['due_km'],
+        );
+    }
+
+    /**
+     * An offer as the issue *Add as issue* (open) or *Watch* creates
+     * (spec.md §7.37 *Phase 40.2*, #314): noticed on the entry's date at its
+     * odometer; watching takes the line's own date or distance as the
+     * look-again point, never the guessed 30 days.
+     *
+     * @param array{text: string, due_on: ?string, due_km: ?string, guessed: bool} $offer
+     */
+    public static function issue(array $offer, DateTimeImmutable $noticedOn, ?string $atKm, bool $watch): IssueData
+    {
+        $lookOn = $watch && !$offer['guessed'] && $offer['due_on'] !== null ? LocalTime::parseDate($offer['due_on']) : null;
+
+        return new IssueData(
+            $noticedOn,
+            mb_substr($offer['text'], 0, IssueForm::TITLE_MAX),
+            $watch ? IssueStatus::Watching : IssueStatus::Open,
+            $atKm,
+            lookAgainOn: $lookOn !== null && $lookOn >= $noticedOn ? $lookOn : null,
+            lookAgainKm: $watch ? $offer['due_km'] : null,
         );
     }
 

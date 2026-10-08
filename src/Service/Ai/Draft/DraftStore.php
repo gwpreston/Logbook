@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Draft;
 
+use Logbook\Service\Incident\IncidentNotFound;
 use Logbook\Service\Incident\IncidentService;
+use Logbook\Service\Issue\IssueNotFound;
+use Logbook\Service\Issue\IssueService;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\AiDraft;
 use Logbook\Domain\Ai\Draft\DraftKind;
@@ -57,6 +60,7 @@ final readonly class DraftStore
         private ReminderService $reminders,
         private ClockInterface $clock,
         private IncidentService $incidents,
+        private IssueService $issues,
     ) {
     }
 
@@ -264,6 +268,13 @@ final readonly class DraftStore
                     }
                     $this->incidents->delete($vehicle, $incident);
                     break;
+                case DraftKind::Issue:
+                    $issue = $this->issues->get($vehicle, $entryId);
+                    if (!$untouched($issue->updatedAt)) {
+                        return false;
+                    }
+                    $this->issues->delete($vehicle, $issue);
+                    break;
                 case DraftKind::TyreCheck:
                     $check = $this->tyreChanges->get($vehicle, $entryId);
                     if (!$untouched($check->updatedAt)) {
@@ -287,6 +298,8 @@ final readonly class DraftStore
             | ExpenseEntryNotFound
             | TyreChangeNotFound
             | ReminderNotFound
+            | IncidentNotFound
+            | IssueNotFound
         ) {
             return false;
         }

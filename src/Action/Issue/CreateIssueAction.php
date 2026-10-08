@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Issue;
 
+use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\Odometer\OdometerWarningFlash;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Service\Issue\IssueForm;
 use Logbook\Service\Issue\IssueService;
@@ -29,6 +31,7 @@ final readonly class CreateIssueAction
         private Redirector $redirect,
         private ClockInterface $clock,
         private OdometerWarningFlash $warnings,
+        private DraftPrefill $prefill,
     ) {
     }
 
@@ -47,7 +50,10 @@ final readonly class CreateIssueAction
         }
 
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, $vehicle, IssueForm::defaults($today));
+            // *Edit* on a draft card (Phase 40.2): the draft's values, marked.
+            $values = $this->prefill->values($request, DraftKind::Issue, $vehicle->id, IssueForm::defaults($today));
+
+            return $this->page->render($request, $response, $vehicle, $values);
         }
 
         $data = IssueForm::parse(RequestContext::form($request), $user->preferences, $today);
@@ -58,6 +64,7 @@ final readonly class CreateIssueAction
         }
 
         $issue = $this->issues->create($vehicle, $data, $zone, $files);
+        $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'issue.created');
         $this->warnings->queue($session, $this->issues->odometerWarning($vehicle, $issue));

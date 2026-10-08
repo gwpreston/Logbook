@@ -9,6 +9,8 @@ use Logbook\Domain\Ai\Capability;
 use Logbook\Domain\Ai\Scan\ScanStatus;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Issue\IssueSource;
+use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -17,6 +19,7 @@ use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Repository\AttachmentRepository;
 use Logbook\Repository\ComplianceDocumentRepository;
+use Logbook\Repository\IssueRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\PendingUploadRepository;
@@ -134,6 +137,112 @@ final class ScanFlowTest extends ScanTestCase
         self::assertCount(2, $this->manualReminders());
         $guessed = $this->manualReminders()[1];
         self::assertSame('2026-11-14', $guessed->dueOn?->format('Y-m-d'), 'no date or distance: in 30 days');
+    }
+
+    /**
+     * Phase 40.2 (spec.md §7.37, #314, #319): *Watch* takes the line's own
+     * distance as the look-again point; *Add all as issues* adds the rest
+     * open; each is noticed on the record's date at its odometer, adds no
+     * second reading, and the card says what each line became.
+     */
+    public function testRecommendedWorkBecomesIssues(): void
+    {
+        $golf = $this->garage['Golf'];
+        $this->readings($golf, ['2026-08-01T09:00' => '47500', '2026-09-01T09:00' => '47810']);
+        [$form, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', $values);
+        $record = $this->service($this->app, MaintenanceEntryRepository::class)->listForVehicle($golf->id)[0];
+        $readingsBefore = $this->rows('odometer_readings');
+
+        $card = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Add as issue', $card);
+        self::assertStringContainsString('Add all as issues', $card);
+
+        $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0', 'as' => 'watch']);
+        $issues = $this->service($this->app, IssueRepository::class);
+        $watched = $issues->listForVehicle($golf->id);
+        self::assertCount(1, $watched);
+        self::assertSame('Front brake pads', $watched[0]->data->title);
+        self::assertSame(IssueStatus::Watching, $watched[0]->status());
+        self::assertSame('85488.353', $watched[0]->data->lookAgainKm, 'the line\'s distance from the record\'s odometer');
+        self::assertNull($watched[0]->data->lookAgainOn);
+        self::assertSame($record->data->performedOn->format('Y-m-d'), $watched[0]->data->noticedOn->format('Y-m-d'));
+        self::assertSame($record->data->odometerKm, $watched[0]->data->odometerKm);
+        self::assertSame(IssueSource::RecommendedWork, $watched[0]->source);
+        self::assertNotNull($watched[0]->sourceRef);
+        self::assertSame($readingsBefore, $this->rows('odometer_readings'), 'no second reading (#319)');
+        $marked = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Added as an issue', $marked);
+
+        $done = $this->browser->post('/scan/' . $token . '/reminders', ['item' => 'all', 'as' => 'issue']);
+        self::assertSame('/vehicles/' . $golf->id . '/maintenance', $done->getHeaderLine('Location'));
+        $all = $issues->listForVehicle($golf->id);
+        self::assertCount(2, $all, 'the watched line is not added again');
+        $wipers = array_values(array_filter($all, static fn ($i): bool => $i->data->title === 'Wiper blades'));
+        self::assertCount(1, $wipers);
+        self::assertSame(IssueStatus::Open, $wipers[0]->status());
+        self::assertSame([], $this->manualReminders());
+    }
+
+    /**
+     * #313: the card shows with either right, and each button checks its own.
+     */
+    public function testTheCardShowsWithEitherRightAndEachButtonChecksItsOwn(): void
+    {
+        $golf = $this->garage['Golf'];
+        $this->switchOff(Feature::Reminders);
+        [$form, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        $saved = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', $values);
+        self::assertSame('/scan/' . $token . '/reminders', $saved->getHeaderLine('Location'), 'issues alone show the card');
+
+        $card = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Add as issue', $card);
+        self::assertStringNotContainsString('Add reminder', $card);
+        self::assertStringNotContainsString('No date given', $card, 'the 30-day guess is a reminder\'s');
+        self::assertSame(404, $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0'])->getStatusCode());
+
+        // A card saved before Phase 40.2 marks added lines as reminders.
+        $uploads = $this->service($this->app, PendingUploadRepository::class);
+        $upload = $this->pending($token);
+        $stored = $upload->recommendations ?? [];
+        $items = is_array($stored['items'] ?? null) ? $stored['items'] : [];
+        self::assertIsArray($items[0]);
+        $items[0]['added'] = true;
+        $uploads->setRecommendations($upload->id, ['items' => $items] + $stored);
+        $legacy = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Added as a reminder', $legacy);
+
+        $this->switchOff(Feature::Issues);
+        self::assertSame(404, $this->browser->get('/scan/' . $token . '/reminders')->getStatusCode(), 'neither right');
+    }
+
+    /**
+     * #313 by ability: with `Log` and no `Manage`, the card offers issues
+     * only, and a reminder press is refused.
+     */
+    public function testWithLogAndNoManageTheCardOffersIssuesOnly(): void
+    {
+        $golf = $this->garage['Golf'];
+        $container = $this->app->getContainer();
+        self::assertInstanceOf(\DI\Container::class, $container);
+        $access = new \Logbook\Tests\Support\ConfigurableVehicleAccess($this->service($this->app, VehicleRepository::class));
+        $access->except($golf, \Logbook\Domain\Access\VehicleAbility::Manage);
+        $container->set(\Logbook\Service\Access\VehicleAccess::class, $access);
+        [$form, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        $saved = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', $values);
+        self::assertSame('/scan/' . $token . '/reminders', $saved->getHeaderLine('Location'));
+
+        $card = self::body($this->browser->get('/scan/' . $token . '/reminders'));
+        self::assertStringContainsString('Add as issue', $card);
+        self::assertStringNotContainsString('Add reminder', $card);
+        self::assertSame(404, $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0'])->getStatusCode());
+        $issue = $this->browser->post('/scan/' . $token . '/reminders', ['item' => '0', 'as' => 'issue']);
+        self::assertSame(303, $issue->getStatusCode());
+        self::assertCount(1, $this->service($this->app, IssueRepository::class)->listForVehicle($golf->id));
+        self::assertSame([], $this->manualReminders());
     }
 
     /**

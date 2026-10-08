@@ -27,10 +27,16 @@ enum ExportModule: string
     case Incidents = 'incidents';
     /** Export only (Phase 29.1, spec.md §7.13 *Finance*): agreements and their schedules. */
     case Finance = 'finance';
+    /** Export only (Phase 40.2, spec.md §7.13 *Issues*). */
+    case Issues = 'issues';
 
     public function isImportable(): bool
     {
-        return !in_array($this, [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance], true);
+        return !in_array(
+            $this,
+            [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues],
+            true,
+        );
     }
 
     /**
@@ -46,6 +52,7 @@ enum ExportModule: string
             self::Trips => Feature::Trips,
             self::Incidents => Feature::Incidents,
             self::Finance => Feature::Finance,
+            self::Issues => Feature::Issues,
             self::Odometer, self::Expenses, self::Valuations => null,
         };
     }
@@ -66,6 +73,7 @@ enum ExportModule: string
             self::Trips => 'trips.index',
             self::Incidents => 'incidents.index',
             self::Finance => 'finance.index',
+            self::Issues => 'issues.index',
         };
     }
 }

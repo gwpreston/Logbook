@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.5.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.6.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -67,7 +67,11 @@ your own server.
 > other entries as drafts for you to add; incidents, damage and insurance
 > claims, with repairs linked so they count once, a five-year claims history
 > for insurance quotes, insurer letters read into the incident, and a car
-> archived as written off with its settlement as the sale; background jobs
+> archived as written off with its settlement as the sale; an issues log
+> for faults you've noticed and not fixed yet, in your own words, open,
+> watched or fixed by the service record that fixed it, with recommended
+> work from an invoice or MOT added in one tap (Logbook never guesses a
+> cause); background jobs
 > you can see and run from Settings, with a warning when they stop and ways
 > to run them without cron, and scheduled backups; an optional check for new
 > versions (off until you switch it on); hire purchase, PCP, loan and lease
@@ -140,6 +144,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/finance.md](docs/finance.md) | Finance and lease agreements: entering one from the paperwork, the schedule, what each figure means, estimates and your lender's quote, mileage against the allowance, ending an agreement and selling with finance owing, costs counted once, who can see it |
 | [docs/stations.md](docs/stations.md) | Fuel stations: your station names as stations, choosing one on a fill-up with what you paid last time, what you paid at each, favourites, your private places and straight-line distances, merging duplicates, chargers, who sees and changes what; live fuel prices (UK Fuel Finder), Cheapest near me and effective cost, Was it worth it?, price alerts, adding a provider adapter |
 | [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim and repair estimates, reading insurer letters, archiving a car as written off, the claims history for insurance quotes and what the sale pack shows |
+| [docs/issues.md](docs/issues.md) | Issues: faults you've noticed and not fixed yet, open, watching and fixed, fixing from either side, look-again reminders, recommended work, the API, Ask and CSV |
 | [docs/demo-mode.md](docs/demo-mode.md) | Running a public demo that resets itself: seeding an empty database, the reset schedule, what visitors can and cannot do, why it cannot wipe a real instance, stopping being a demo |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost, Slack and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |

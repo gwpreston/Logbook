@@ -386,6 +386,7 @@ return [
         get(Tool\Tyres::class),
         get(Tool\TripsSummary::class),
         get(Tool\Incidents::class),
+        get(Tool\Issues::class),
         get(Tool\Finance::class),
         get(Tool\Stations::class),
         get(Tool\CheapestFuel::class),
@@ -399,6 +400,7 @@ return [
         get(Tool\Draft\DraftTyreCheck::class),
         get(Tool\Draft\DraftReminder::class),
         get(Tool\Draft\DraftIncident::class),
+        get(Tool\Draft\DraftIssue::class),
     ]),
 
     // The MCP server (spec.md §7.28, Phase 26.5): the read tools come from the
@@ -412,6 +414,7 @@ return [
         get(Tool\Draft\DraftTyreCheck::class),
         get(Tool\Draft\DraftReminder::class),
         get(Tool\Draft\DraftIncident::class),
+        get(Tool\Draft\DraftIssue::class),
     ]),
 
     // Single sign-on (spec.md §7.9, Phase 23.1).

@@ -24,6 +24,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Api\ApiIncidents;
+use Logbook\Service\Api\ApiIssues;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Valuation\ValuationService;
@@ -66,6 +67,7 @@ final class ApiAccessTest extends AppTestCase
         'expenses' => 'expense_entries',
         'trips' => 'trips',
         'incidents' => 'incidents',
+        'issues' => 'issues',
         'schedules' => 'maintenance_schedules',
         'valuations' => 'vehicle_valuations',
     ];
@@ -295,6 +297,10 @@ final class ApiAccessTest extends AppTestCase
             'type' => 'parked_damage',
             'fault' => 'not_at_fault',
             'damage_areas' => ['rear'],
+        ]);
+        $this->service($app, ApiIssues::class)->log($this->owner($app), $golf, [
+            'noticed_on' => '2026-08-12',
+            'title' => 'Knock from front left',
         ]);
         // Added by someone else: a user's own entries always carry their amounts (Phase 19).
         $author = $this->createMember($app, 'author');

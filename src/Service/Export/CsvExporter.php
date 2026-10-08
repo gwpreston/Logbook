@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Export;
 
+use Logbook\Domain\Issue\Issue;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Logbook\Domain\Fuel\EnergyKind;
@@ -21,6 +22,7 @@ use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Incident\ClaimsHistoryReport;
 use Logbook\Repository\IncidentRepository;
+use Logbook\Repository\IssueRepository;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\Forecast\ForecastItem;
@@ -70,6 +72,7 @@ final readonly class CsvExporter
         private IncidentRepository $incidents,
         private UserDirectory $directory,
         private FinanceCsv $finance,
+        private IssueRepository $issues,
     ) {
     }
 
@@ -87,6 +90,7 @@ final readonly class CsvExporter
             ExportModule::Trips => $this->tripsTable($user, $vehicle),
             ExportModule::Incidents => $this->incidentsTable($user, $vehicle),
             ExportModule::Finance => $this->finance->vehicleTable($user, $vehicle),
+            ExportModule::Issues => $this->issuesTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -705,6 +709,56 @@ final readonly class CsvExporter
             'export.column.purpose',
             'export.column.passengers',
             'export.column.notes',
+        ]), $rows];
+    }
+
+    /**
+     * Issues (Phase 40.2, spec.md §7.13 *Issues*): safety first, then newest
+     * noticed; the mileage is the issue's own, in the owner's unit; *fixed
+     * by* names the service records fixing it now. Updates are not exported.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function issuesTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $issues = $this->issues->listForVehicle($vehicle->id);
+        $fixes = $this->issues->fixSummaries(array_map(static fn (Issue $issue): int => $issue->id, $issues));
+        $rows = [];
+        foreach ($issues as $issue) {
+            $data = $issue->data;
+            $fixedBy = null;
+            if ($issue->isFixed()) {
+                $fixedBy = $issue->statusBeforeFix === null
+                    ? $this->t('issue.fix.none_title')
+                    : implode('; ', array_map(
+                        static fn (array $fix): string => $fix['date']->format('Y-m-d') . ' ' . $fix['title'],
+                        $fixes[$issue->id] ?? [],
+                    ));
+            }
+            $rows[] = [
+                $data->noticedOn->format('Y-m-d'),
+                $data->odometerKm === null ? null : Decimal::trim($unit->fromKmDecimal($data->odometerKm, 3)),
+                $data->title,
+                $data->description,
+                $data->category === null ? null : $this->t('maintenance.category.' . $data->category->value),
+                $this->t($issue->status()->labelKey()),
+                $this->yesNo($data->affectsSafety),
+                $issue->fixedOn?->format('Y-m-d'),
+                $fixedBy,
+            ];
+        }
+
+        return [$this->headers([
+            'issue.column.noticed_on',
+            ['export.column.odometer', ['unit' => $this->t('units.name.' . $unit->value)]],
+            'export.column.title',
+            'export.column.description',
+            'export.column.category',
+            'export.column.status',
+            'issue.affects_safety',
+            'issue.column.fixed_on',
+            'issue.column.fixed_by',
         ]), $rows];
     }
 

@@ -18,6 +18,9 @@
         <div class="toolbar list-toolbar">
             <h1 id="issues-heading" class="visually-hidden">{{ 'issue.title'|trans }}</h1>
             <div class="btn-row list-toolbar__actions">
+                {% if counts.all > 0 and can_vehicle(vehicle, 'manage') %}
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'issues'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                {% endif %}
                 {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
                     <a class="btn btn--primary" href="{{ url_for('issues.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'issue.add'|trans }}</a>
                 {% endif %}

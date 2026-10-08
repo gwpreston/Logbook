@@ -199,6 +199,7 @@ final class RouteInventoryTest extends AppTestCase
         'incidents.history',
         'incidents.history.export',
         'api.incidents.history',
+        'api.issues',
         // Phase 40.1: open and watching issues on the active vehicles the user can see.
         'issues.fleet',
         // Phase 30.1: stations are shared records; what was paid at them comes from the
