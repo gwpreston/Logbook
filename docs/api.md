@@ -645,13 +645,15 @@ of their metadata, except an incident's photos, which are kept as taken.
 |---|---|---|
 | `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips` or `incidents`; `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
 | `POST …/{entry}/attachments` | Log (your own entry) or Manage; Manage for valuations | `multipart/form-data`, **one file** in the field `file`; `201` with the attachment. A reading another entry wrote takes none (`409 reading_derived`) |
-| `GET`, `POST /vehicles/{id}/purchase/attachments` and `…/sale/attachments` | View; Manage to add | the purchase or sale paperwork; needs the purchase or sale date (`422`) |
+| `GET`, `POST /vehicles/{id}/purchase/attachments` and `…/sale/attachments` | Can see costs; Manage to add | the purchase or sale paperwork; needs the purchase or sale date (`422`) |
 | `GET /attachments/{id}` | View | the file, as the pages serve it: an incident photo is the original only for its author or with *Can see incident details*, otherwise an upright copy without its metadata. `?download=1` downloads an image instead of opening it |
 | `DELETE /attachments/{id}` | Log (your own upload) or Manage | `204` |
 | `GET`, `POST`, `DELETE /vehicles/{id}/photo` | View; Manage to change | the vehicle's photo (not an attachment): `POST` a JPEG, PNG or WebP in the field `file`; `204` |
 
 An archived vehicle's files don't change (`409 vehicle_archived`), except
-a valuation's. A trip's files are only for those who may see the trip.
+a valuation's. A trip's files are only for those who may see the trip; an
+expense's, a valuation's and the purchase and sale paperwork only with
+*Can see costs* (or your own upload).
 
 ```sh
 # Attach a receipt to fill-up 42, list its files and download the first.
@@ -666,7 +668,8 @@ From 3.5, Logbook can tell another system when something changes, so a
 dashboard or a Node-RED flow refreshes without polling. Add one on
 **Settings → API keys → Webhooks**: a name, an address and the events
 (`entry.created`, `entry.updated`, `entry.deleted`, `reminder.changed`).
-Its signing secret is shown once; *New secret* makes another.
+Its signing secret is shown once; *New secret* makes another. You can
+have up to 10.
 
 Each call is a `POST` of JSON with **ids and links only**, never the
 entry or any amount: fetch what changed with your own key, so access is

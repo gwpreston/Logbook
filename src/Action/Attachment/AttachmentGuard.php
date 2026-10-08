@@ -24,14 +24,23 @@ use Slim\Exception\HttpNotFoundException;
  * - A trip's file is where someone went (a parking or toll receipt): only
  *   for those who may see the trip, and not at all while the trips module
  *   is off (§7.10, §7.22).
- * - An expense's receipt or a valuation's quote shows an amount: only with
- *   *Can see costs*, or to whoever uploaded it (decided 2026-10-08, #303),
- *   as the lists they appear in.
+ * - An expense's receipt, a valuation's quote and the purchase and sale
+ *   paperwork show an amount: only with *Can see costs*, or to whoever
+ *   uploaded it (decided 2026-10-08, #303, #305), as the lists and cards
+ *   they appear in.
  *
  * Other files pass.
  */
 final readonly class AttachmentGuard
 {
+    /** Files that show an amount: an expense's receipt, a valuation's quote, the purchase and sale paperwork (#303, #305). */
+    private const array COSTS = [
+        AttachmentOwner::Expense,
+        AttachmentOwner::Valuation,
+        AttachmentOwner::Purchase,
+        AttachmentOwner::Sale,
+    ];
+
     public function __construct(
         private TripService $trips,
         private FeatureToggles $features,
@@ -52,7 +61,7 @@ final readonly class AttachmentGuard
      */
     public function mayUse(User $user, Vehicle $vehicle, Attachment $attachment): bool
     {
-        if ($attachment->ownerType === AttachmentOwner::Expense || $attachment->ownerType === AttachmentOwner::Valuation) {
+        if (in_array($attachment->ownerType, self::COSTS, true)) {
             return $this->entries->canSeeAmount($user, $vehicle, $attachment->uploadedBy);
         }
         if ($attachment->ownerType !== AttachmentOwner::Trip) {

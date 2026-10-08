@@ -181,6 +181,14 @@ Found while starting 39.3 (2026-10-08):
   valuation's quote by id, on the API and the existing page route. —
   *Decided 2026-10-08:* only with *Can see costs*, or one's own upload, on
   both (404 otherwise).
+- **#304 How many webhooks may a user have?** (found by the security
+  review) One change queues a call per webhook, with no limit. —
+  *Decided 2026-10-08:* 10 per user.
+- **#305 Which other files show an amount?** (found by the security
+  review) The purchase invoice proves the price the pages hide without
+  *Can see costs*. — *Decided 2026-10-08:* purchase and sale paperwork
+  follow #303's rule too (their list needs *Can see costs*); fuel and
+  service files stay with their entry.
 - **#302 Who hears about a trip?** — *Decided 2026-10-08:* only the
   users who may see it (its author, and those who see everyone's
   trips), as the history feed.

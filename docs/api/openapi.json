@@ -6646,7 +6646,7 @@
       "get": {
         "operationId": "listPurchaseAttachments",
         "summary": "List the vehicle's purchase paperwork",
-        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "description": "Needs ViewCosts on the vehicle (the paperwork proves a price), and the entry's module on, as the entry's own read (Phase 39.3).",
         "parameters": [
           {
             "$ref": "#/components/parameters/id"
@@ -6742,7 +6742,7 @@
       "get": {
         "operationId": "listSaleAttachments",
         "summary": "List the vehicle's sale paperwork",
-        "description": "Needs View on the vehicle, and the entry's module on, as the entry's own read (Phase 39.3).",
+        "description": "Needs ViewCosts on the vehicle (the paperwork proves a price), and the entry's module on, as the entry's own read (Phase 39.3).",
         "parameters": [
           {
             "$ref": "#/components/parameters/id"
@@ -6838,7 +6838,7 @@
       "get": {
         "operationId": "downloadAttachment",
         "summary": "Download an attachment",
-        "description": "Needs View on its vehicle (and, for a trip's file, to see the trip). Served as the pages serve it: images inline, PDFs (and anything with `?download=1`) as a download. An incident photo is the original only with ViewIncidentDetails or for its author; otherwise an upright copy without its metadata (Phase 39.3).",
+        "description": "Needs View on its vehicle; a trip's file needs the trip, and an expense's, a valuation's or purchase or sale paperwork needs ViewCosts or your own upload (else 404). Served as the pages serve it: images inline, PDFs (and anything with `?download=1`) as a download. An incident photo is the original only with ViewIncidentDetails or for its author; otherwise an upright copy without its metadata (Phase 39.3).",
         "parameters": [
           {
             "$ref": "#/components/parameters/attachment"

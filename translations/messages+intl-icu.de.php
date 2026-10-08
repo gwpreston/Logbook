@@ -3522,6 +3522,7 @@ return [
         'error' => [
             'destination' => 'Logbook kann dorthin nicht senden: {reason}',
             'events' => 'Wähle mindestens eines.',
+            'too_many' => 'Du hast {max} Webhooks, mehr kann eine Person nicht haben. Lösche einen, um einen weiteren hinzuzufügen.',
         ],
         'about_heading' => 'Was Logbook sendet',
         'about_payload' => 'Jeder Aufruf sagt, was passiert ist, bei welchem Fahrzeug und Eintrag, mit Links, um ihn mit deinem eigenen Schlüssel über die API abzurufen. Er enthält nie den Eintrag selbst oder einen Betrag.',

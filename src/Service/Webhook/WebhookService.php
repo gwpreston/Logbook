@@ -27,6 +27,8 @@ final readonly class WebhookService
 {
     public const int NAME_MAX = 100;
     public const int URL_MAX = 500;
+    /** Webhooks a user may have (decided 2026-10-08, #304): one change queues a call per webhook. */
+    public const int MAX_PER_USER = 10;
 
     public function __construct(
         private WebhookRepository $webhooks,
@@ -80,6 +82,11 @@ final readonly class WebhookService
         if (!$this->secrets->canStore()) {
             // No SESSION_SECRET to seal a signing secret with (the page hides the form).
             $errors->add('name', 'webhooks.no_session_secret');
+
+            return $errors;
+        }
+        if (count($this->webhooks->listForUser($user->id)) >= self::MAX_PER_USER) {
+            $errors->add('name', 'webhooks.error.too_many', ['max' => self::MAX_PER_USER]);
 
             return $errors;
         }

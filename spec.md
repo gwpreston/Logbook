@@ -3687,8 +3687,9 @@ outside web root, served via an authenticated handler; type/size validated.
   screenshot to its valuation (owner type `valuation`), never to the
   vehicle itself, which keeps a single photo (§7.1) and has no gallery.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
-  only (from Phase 39.3, an expense's or valuation's file only with *Can
-  see costs* or to its uploader, #303; the same responder as photos: `nosniff`, sandboxing CSP, private
+  only (from Phase 39.3, an expense's or valuation's file and the purchase and
+  sale paperwork only with *Can see costs* or to its uploader, #303,
+  #305; the same responder as photos: `nosniff`, sandboxing CSP, private
   caching). Images open inline; PDFs download under their original name
   (browsers will not render a PDF inside the sandbox).
 
@@ -5127,6 +5128,8 @@ for the vehicle's paperwork, each followed by `/attachments`. The entry's
 module must be on, as its pages; a trip's files only for those who may
 see the trip (§7.22). The ability is the entry's edit form's: `Log` and
 `EntryAccess::canChange`, but `Manage` for valuations, purchase and sale.
+Purchase and sale paperwork proves a price, so its list needs *Can see
+costs*, as the ownership card (#305).
 The vehicle's **photo** is not an attachment (§6, decided 2026-10-08,
 #300): `GET /vehicles/{id}/photo` (`View`) serves it, `POST` (multipart,
 field `file`) replaces it and `DELETE` removes it (`Manage`, as the edit
@@ -5137,9 +5140,9 @@ form; `POST` because PHP reads multipart bodies on `POST` only).
 - `GET /attachments/{id}`: the file, through the pages' authenticated
   handler, so incident photos follow §7.12 and #104 (the original only
   with `ViewIncidentDetails`, otherwise an upright, stripped copy made as
-  it is served). An expense's or a valuation's file needs *Can see
-  costs*, or is the user's own upload, on the API and the page alike
-  (decided 2026-10-08, #303); a trip's needs the trip; otherwise 404.
+  it is served). An expense's or a valuation's file, and the purchase
+  and sale paperwork, need *Can see costs*, or are the user's own upload,
+  on the API and the page alike (decided 2026-10-08, #303, #305); a trip's needs the trip; otherwise 404.
 - `POST …/{entry}/attachments`: `multipart/form-data`, **one file per
   request** in the field `file`, with the pages' content check, decode
   check, `MAX_UPLOAD_MB`, stripping (except incident photos) and the edit
@@ -5158,7 +5161,9 @@ another system when an entry changes, so a dashboard or Node-RED flow
 refreshes without polling. These are **entry** webhooks; the
 generic-webhook *format* for reminder pushes parked in §12 (#168) is a
 notification channel and unrelated.
-- **Settings → API keys → Webhooks** (`/settings/webhooks`): add a URL
+- **Settings → API keys → Webhooks** (`/settings/webhooks`): up to **10**
+  per user (decided 2026-10-08, #304: one change queues a call per
+  webhook); add a URL
   with a name and the events to send (`entry.created`, `entry.updated`,
   `entry.deleted`, `reminder.changed`; all by default). The signing
   secret is shown **once**, as a key's token is. Each webhook shows its

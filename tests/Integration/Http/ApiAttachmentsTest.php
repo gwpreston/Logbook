@@ -248,6 +248,15 @@ final class ApiAttachmentsTest extends AppTestCase
         self::assertSame(1, $files->doc('items')->count());
         self::assertSame(['type' => 'purchase', 'id' => $this->golf->id], $files->get('items', 0, 'owner'));
 
+        // The invoice proves the price: not for a share without Can see costs, on the API or the page (#305).
+        $invoice = $files->int('items', 0, 'id');
+        $without = $this->share('nocosts', ShareLevel::View, false);
+        self::assertSame(403, $without->get($paperwork)->getStatusCode());
+        self::assertSame(404, $without->get('/attachments/' . $invoice)->getStatusCode());
+        $page = $this->browserFor($this->app, 'nocosts');
+        self::assertSame(404, $page->get($this->base . '/attachments/' . $invoice)->getStatusCode());
+        self::assertSame(200, $this->share('costs', ShareLevel::View, true)->get('/attachments/' . $invoice)->getStatusCode());
+
         $fill = $this->fillUp($this->app, $this->golf, '2026-09-01T08:00:00Z', '40000', '40', '60');
         $readings = ApiClient::json($this->api->get($this->base . '/odometer'));
         $derived = array_search($fill->id, $readings->column('source_id', 'items'), true);

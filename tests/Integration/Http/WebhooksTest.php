@@ -329,6 +329,31 @@ final class WebhooksTest extends ReminderTestCase
         self::assertCount(1, $this->http->to(self::HOOK), 'never sent twice');
     }
 
+    public function testEachCallIsSignedWithTheTimeItIsSent(): void
+    {
+        $member = $this->member('driver', ShareLevel::Log);
+        $this->webhook($member);
+        $this->logReading('12000');
+        $this->logReading('12100');
+        // Each request takes 200 seconds of the clock, as a slow receiver would.
+        $clock = $this->clock;
+        $times = [];
+        $this->http->onRequest = static function () use ($clock, &$times): void {
+            $times[] = $clock->now()->getTimestamp();
+            $clock->set($clock->now()->modify('+200 seconds'));
+        };
+
+        $this->runJob();
+
+        $sent = $this->http->to(self::HOOK);
+        self::assertCount(2, $sent);
+        foreach ($sent as $i => $request) {
+            $line = (string) ($request['headers']['x-logbook-signature'][0] ?? '');
+            self::assertSame(1, preg_match('/t=(\d+)/', $line, $m));
+            self::assertSame($times[$i], (int) ($m[1] ?? 0), 'signed when it is sent, not when the run began');
+        }
+    }
+
     public function testFailuresRetryOnScheduleThenGiveUp(): void
     {
         $webhook = $this->webhook($this->owner);
@@ -381,6 +406,19 @@ final class WebhooksTest extends ReminderTestCase
         self::assertLessThan(4, count($attempted), 'the rest wait for the next pass');
         $stored = $this->stored($webhook);
         self::assertSame('The service did not answer in time.', $stored->lastError, 'never the URL');
+    }
+
+    public function testAUserHasAtMostTenWebhooks(): void
+    {
+        for ($i = 0; $i < WebhookService::MAX_PER_USER; $i++) {
+            $this->webhook($this->owner, self::HOOK . '/' . $i);
+        }
+        $refused = $this->browser->post('/settings/webhooks', [
+            'name' => 'One more', 'url' => self::HOOK, 'events' => ['entry.created'],
+        ]);
+        self::assertSame(422, $refused->getStatusCode());
+        self::assertStringContainsString('the most one person can have', self::body($refused));
+        self::assertCount(10, $this->service($this->app, WebhookRepository::class)->listForUser($this->owner->id));
     }
 
     public function testSendTestIsLimitedAsChannelTestsAre(): void

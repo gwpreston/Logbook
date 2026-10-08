@@ -3525,6 +3525,7 @@ return [
         'error' => [
             'destination' => 'Logbook can’t send there: {reason}',
             'events' => 'Choose at least one.',
+            'too_many' => 'You have {max} webhooks, the most one person can have. Delete one to add another.',
         ],
         'about_heading' => 'What Logbook sends',
         'about_payload' => 'Each call says what happened, to which vehicle and entry, with links to fetch it over the API with your own key. It never carries the entry itself or any amount.',

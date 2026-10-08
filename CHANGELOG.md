@@ -44,7 +44,8 @@ and out, and have Logbook tell other systems when something changes.
   path (a form, an import, the API, Ask or MCP), with ids and links only,
   signed (`X-Logbook-Signature`). Retried after 1 minute, 5 minutes, 30
   minutes, 2 hours and 6 hours; paused after 50 failed tries in a row,
-  and you're told through your notification channels. *Send test*,
+  and you're told through your notification channels. Up to 10 per
+  person. *Send test*,
   *Pause*, *Resume*, *New secret*. Addresses follow the same rules as
   notification channels. The [API guide](docs/api.md#webhooks) shows how
   to check the signature in Python, JavaScript and Node-RED.
@@ -53,6 +54,11 @@ and out, and have Logbook tell other systems when something changes.
 
 ### Fixed
 
+- **Receipts and paperwork without *Can see costs*** (Phase 39.3, #303,
+  #305): a share without cost access could open an expense's receipt, a
+  valuation's quote or the purchase and sale paperwork by its address,
+  though no page linked it. Those files now need *Can see costs*, or to
+  be your own upload, on the pages and the API.
 - **Editing an entry in miles or gallons** no longer nudges what you didn't
   change: saving a fill-up, reading, service record, document, incident,
   tyre change or trip with only the notes changed could move its odometer

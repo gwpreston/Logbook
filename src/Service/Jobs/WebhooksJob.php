@@ -99,7 +99,7 @@ final readonly class WebhooksJob implements Job
                 continue;
             }
             try {
-                $paused = $this->deliver($webhook, $owner, $delivery, $now, $counts);
+                $paused = $this->deliver($webhook, $owner, $delivery, $counts);
             } catch (Throwable $e) {
                 $errors++;
                 $context->logger->error('Webhook {webhook} delivery {delivery} failed: {message}', [
@@ -148,10 +148,11 @@ final readonly class WebhooksJob implements Job
         Webhook $webhook,
         User $owner,
         WebhookDelivery $delivery,
-        DateTimeImmutable $now,
         array &$counts,
     ): bool {
         $attempts = $delivery->attempts + 1;
+        // The time of this request, not the run's start: a long run must not sign with a stale `t`.
+        $now = $this->clock->now();
         $result = $this->sender->send($webhook, $owner, $delivery->payload, $now);
         if ($result->delivered) {
             $this->deliveries->markDelivered($delivery->id, $attempts, $now);

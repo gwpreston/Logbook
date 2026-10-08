@@ -380,8 +380,9 @@ return static function (App $app): void {
                     'valuations' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
                     'trips' => [VehicleAbility::View, VehicleAbility::Log, Feature::Trips],
                     'incidents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Incidents],
-                    'purchase' => [VehicleAbility::View, VehicleAbility::Manage, null],
-                    'sale' => [VehicleAbility::View, VehicleAbility::Manage, null],
+                    // #305: the paperwork proves a price, so its list needs ViewCosts, as the ownership card.
+                    'purchase' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
+                    'sale' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
                 ];
                 foreach ($owners as $owner => [$read, $write, $feature]) {
                     $path = '/vehicles/{id:[0-9]+}/' . $owner
