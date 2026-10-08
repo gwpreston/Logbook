@@ -2,8 +2,7 @@
 
 *The fault you've noticed and haven't fixed yet.*
 
-Status: ✅ complete · no release of its own (ships with [Phase 40.2](phase-40.2.md) as
-**v3.6.0**) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.6.0** (with [Phase 40.2](phase-40.2.md)) · file lives in `docs/phases/`
 
 Logbook records what was done to a car (service records), what happened
 to it (incidents) and what is due (schedules, documents, reminders). It

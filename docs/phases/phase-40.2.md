@@ -3,7 +3,7 @@
 *Recommended work becomes issues in one tap, and issues go everywhere
 entries go.*
 
-Status: ✅ complete · releases **v3.6.0** (Phases 40.1 and 40.2) · file
+Status: ✅ complete · released as **v3.6.0** (Phases 40.1 and 40.2) · file
 lives in `docs/phases/`
 
 The second of Phase 40's two parts (#318). [Phase 40.1](phase-40.1.md) has
@@ -70,7 +70,7 @@ and §7.28.
 - [x] `VERSION` → 3.6.0; `CHANGELOG.md` (*Added* — issues log; *Upgrade
       notes* — one migration, module on by default).
 - [x] `docs/issues.md`, README, `ROADMAP.md` rows ✅.
-- [ ] Tag v3.6.0 once merged.
+- [x] Tag `v3.6.0` once merged.
 
 ---
 
