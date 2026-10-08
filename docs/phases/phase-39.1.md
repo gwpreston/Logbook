@@ -50,7 +50,7 @@ Phase 39. The last column says which sub-phase closes the gap.
 | Trips, journeys (§7.22) | trips add, edit, delete; journeys add, edit, delete | trips list and add; journeys list | trip read one; trip edit and delete; journey writes | 39.1; 39.2 |
 | Incidents (§7.29) | add, edit, delete | list, add, history | read one; edit, delete | 39.1; 39.2 |
 | Finance (§7.32) | agreement add and edit, payment events, settlement quotes | the active agreement, read only | every agreement (read); the writes | 39.1; 39.2 |
-| Needs attention (§7.24) | the list; hide an item (no *Show again*) | none | the list; hide (unhide open, #296) | 39.1; 39.2 |
+| Needs attention (§7.24) | the list; hide an item (no *Show again*) | none | the list; hide (no unhide, #296) | 39.1; 39.2 |
 | Stations (§7.33) | list, favourites | list (`?q=`, `?favourites=`), read one | favourite, unfavourite | 39.2 |
 | Fuel prices (§7.34) | cheapest near me, price alerts | cheapest near me | price alerts (read; write) | 39.1; 39.2 |
 | Attachments (§7.12) | upload, list, download, delete | none | everything | 39.3 |
@@ -182,7 +182,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
 - [x] Tyre changes and sets (vehicle and fleet).
 - [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.
 - [x] *Needs attention*, with each item's `key` and its fix's API link.
-      (`?hidden=1` waits for #296.)
+      (No `?hidden=1`: #296.)
 - [x] Price alerts (read).
 - [x] Finance agreements (every one, with payment events and quotes,
       never the number).
@@ -271,7 +271,7 @@ Still open, for 39.3 (none of them blocks 39.1 or 39.2; see
 [Phase 39.3](phase-39.3.md#open-questions)): #290, found while starting,
 and #291–#295, raised by the spec review of 2026-10-08.
 
-Found while building 39.1 (2026-10-08), not decided:
+Found while building 39.1 (2026-10-08):
 
 - **#296 Listing and un-hiding hidden *Needs attention* items.** The plan
   had `GET /attention?hidden=1` (39.1) and `POST /attention/{key}/unhide`
@@ -280,10 +280,10 @@ Found while building 39.1 (2026-10-08), not decided:
   (1) leave both out, so the API does what the pages do (hide only);
   (2) add them to the API only; (3) add *Show again* to the pages as well,
   and the API with it. *Recommendation:* (1); (3) is a page feature for
-  its own phase.
+  its own phase. — *Decided 2026-10-08:* (1), hide only.
 - **#297 Grade verdicts without cost access.** The security review noted
   that the fuel report's grade verdicts carry relative price and
   cost-per-distance percentages to a user without *Can see costs*, as the
   Fuel tab and Ask already do. Options: (1) keep them (relative figures
   only); (2) hide `price` and `cost_per_distance` without cost access on
-  all three. Not changed in 39.1: it matches the pages.
+  all three. — *Decided 2026-10-08:* (1), keep them.

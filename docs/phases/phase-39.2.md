@@ -71,7 +71,7 @@ nested routes, entry guard and `ETag`).
 - [ ] Journeys: create, edit, delete (trips kept).
 - [ ] Station favourites (`PUT`, `DELETE`, idempotent); price alerts
       (create, edit, delete, the form's limits); attention hide
-      (idempotent; unhide per #296).
+      (idempotent; no unhide, #296).
 - [ ] Finance: agreements (create with the one-active rule, edit; the
       number never returned), payment events and settlement quotes
       (create and delete for each), *End*.
@@ -118,7 +118,5 @@ nested routes, entry guard and `ETag`).
 ## Open questions
 
 This sub-phase's questions (#282–#284, #287, #288) were decided on
-2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). Still open:
-**#296** decides whether `POST /attention/{key}/unhide` exists (the pages
-have no *Show again*); it doesn't block 39.2's *Hide*. Until it is
-decided the API does what the pages do: hide only.
+2026-10-08; see [Phase 39.1](phase-39.1.md#open-questions). #296 (decided
+2026-10-08): no `unhide`; the API hides only, as the pages.

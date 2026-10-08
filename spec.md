@@ -4959,7 +4959,7 @@ stays `v1`, and existing responses don't change.
 | `GET /vehicles/{id}/tyres/changes` | tyre changes and tread checks, newest first, with their lines (tyre, action, position: where it went for `on` and `move`, where it was for `off`, `retire`, `repair`; depth; the tyre's retire reason on a `retire` line) | `View`; module `tyres` |
 | `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | sets with name, storage, notes and their tyres (id, status, position); the fleet's are every active visible vehicle's, `?vehicle=` narrows | `View`; module `tyres` |
 | `GET /reminders` | gains `?status=done\|dismissed` and `?closed=1`, as the Reminders page's closed list (#208) | `View` |
-| `GET /attention` | *Needs attention* (§7.24) for the active visible vehicles, `?vehicle=`, in the page's order and words (kind, severity, title, detail), each hideable item with its `key` (vehicle, kind, subject, fingerprint) and every item with its fix's API link where one exists; hidden items left out, as on the page (listing hidden ones is open, #296) | `View` |
+| `GET /attention` | *Needs attention* (§7.24) for the active visible vehicles, `?vehicle=`, in the page's order and words (kind, severity, title, detail), each hideable item with its `key` (vehicle, kind, subject, fingerprint) and every item with its fix's API link where one exists; hidden items left out, as on the page (#296: no listing of hidden items) | `View` |
 | `GET /fuel-prices/alerts` | the key user's price alerts | a price provider enabled |
 | `GET /vehicles/{id}/finance/agreements` | every agreement, active first, then ended ones newest first, with payment events and settlement quotes; never the agreement number | module `finance`; §7.32's access |
 
@@ -5045,8 +5045,8 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `PATCH` and `DELETE /fuel-prices/alerts/{id}`, the alert form's fields
   and limits (§7.34, #138).
 - **Needs attention:** `POST /attention/{key}/hide`, the page's *Hide*
-  for the key's user (§6 AttentionHidden); `/unhide` is open (#296: the
-  pages have no *Show again*),
+  for the key's user (§6 AttentionHidden); no un-hide, as the pages have
+  no *Show again* (decided 2026-10-08, #296),
   idempotent.
 - **Finance** (#287; module `finance`, `Manage`): `POST
   /vehicles/{id}/finance/agreements` and `PATCH
