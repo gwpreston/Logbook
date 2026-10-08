@@ -98,23 +98,25 @@ nested routes, entry guard and `ETag`).
 - [x] Translations for every new string, in every shipped locale.
 
 ### 39.2.5 Tests
-- [ ] **Contract:** every new response validated against the OpenAPI
+- [x] **Contract:** every new response validated against the OpenAPI
       description, success and error.
-- [ ] **Access matrix:** each new endpoint for owner, `manage`, `log`,
+- [x] **Access matrix:** each new endpoint for owner, `manage`, `log`,
       `view` share with and without *Can see costs*, and a stranger; a
       `read` key on each write (403 `insufficient_scope`); a `log` share
       editing its own and someone else's entry.
-- [ ] **Parity:** an edit and a delete over the API leave the database
+- [x] **Parity:** an edit and a delete over the API leave the database
       exactly as the page's form does (economy segments, schedules,
       reminders, readings, attachments) for each entry type.
-- [ ] **Retries:** duplicate keys on vehicles, valuations and schedules;
+- [x] **Retries:** duplicate keys on vehicles, valuations and schedules;
       idempotent favourites and attention hiding.
-- [ ] **Concurrency:** a stale `If-Match` answers 412 and writes nothing.
-- [ ] **Archived vehicles:** every write refused (409) except restore and
+- [x] **Concurrency:** a stale `If-Match` answers 412 and writes nothing.
+- [x] **Archived vehicles:** every write refused (409) except restore and
       an allowed valuation.
-- [ ] Modules off: every path of that module 404.
-- [ ] Suite green on SQLite, PostgreSQL, MySQL and MariaDB; coverage at
-      or above the floor; smoke test at a subpath.
+- [x] Modules off: every path of that module 404.
+- [x] Suite green on SQLite, PostgreSQL, MySQL and MariaDB (3,436 tests,
+      2026-10-08); line coverage 94.71% over the 94% floor, 90.7% of the
+      changed `src/` lines; smoke test at `/logbook` behind nginx writes,
+      edits with `If-Match` and deletes.
 
 ---
 
