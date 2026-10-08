@@ -169,6 +169,10 @@ final class RouteInventoryTest extends AppTestCase
         'api.reminders',
         // Phase 39.1: the fleet's history, over the vehicles the user may see.
         'api.history',
+        'api.reports.costs',
+        'api.reports.cost-per-distance',
+        'api.reports.fuel',
+        'api.reports.mileage',
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',

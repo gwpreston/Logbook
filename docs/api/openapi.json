@@ -1441,6 +1441,397 @@
         }
       }
     },
+    "/reports/costs": {
+      "get": {
+        "operationId": "reportCosts",
+        "summary": "Spend by category, month or vehicle",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "category",
+                "month",
+                "vehicle"
+              ]
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Only this cost group.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fuel",
+                "maintenance",
+                "compliance",
+                "other"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostsReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/cost-per-distance": {
+      "get": {
+        "operationId": "reportCostPerDistance",
+        "summary": "Cost per distance, per vehicle and in all",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostPerDistanceReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/fuel": {
+      "get": {
+        "operationId": "reportFuel",
+        "summary": "Fuel statistics per vehicle, kind and grade",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "e10_95",
+                "e5_95",
+                "e5_97",
+                "e5_98",
+                "e10_98",
+                "e5_99",
+                "e0",
+                "e85",
+                "e15",
+                "e20",
+                "aki_87",
+                "aki_89",
+                "aki_91",
+                "b7",
+                "b7_premium",
+                "b10",
+                "b20",
+                "b100",
+                "xtl",
+                "home",
+                "ac",
+                "dc",
+                "dc_rapid",
+                "dc_ultra"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/reports/mileage": {
+      "get": {
+        "operationId": "reportMileage",
+        "summary": "Distance driven and averages",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "As the Reports page: month, 3m, 12m (default), ytd, all, custom.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "month",
+                "3m",
+                "12m",
+                "ytd",
+                "all",
+                "custom"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "With range=custom: first day.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "With range=custom: last day (default today).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "description": "1: archived vehicles count towards the fleet.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "0",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MileageReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/history": {
       "get": {
         "operationId": "listFleetHistory",
@@ -8679,6 +9070,672 @@
             ],
             "format": "uri",
             "description": "The next page, or null."
+          }
+        }
+      },
+      "ReportPeriod": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "range",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "month",
+              "3m",
+              "12m",
+              "ytd",
+              "all",
+              "custom"
+            ]
+          },
+          "from": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Date"
+          }
+        },
+        "description": "The calendar days covered, both inclusive, in the key user's time zone."
+      },
+      "CostsReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "group",
+          "group_by",
+          "currencies"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles counted."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "fuel",
+              "maintenance",
+              "compliance",
+              "other",
+              null
+            ]
+          },
+          "group_by": {
+            "type": "string",
+            "enum": [
+              "category",
+              "month",
+              "vehicle"
+            ]
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "total",
+                "entries",
+                "distance_km",
+                "cost_per_km",
+                "average_per_month"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "total": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "entries": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "cost_per_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_per_month": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "by_category": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "group",
+                      "total"
+                    ],
+                    "properties": {
+                      "group": {
+                        "type": "string",
+                        "enum": [
+                          "fuel",
+                          "maintenance",
+                          "compliance",
+                          "other"
+                        ]
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      }
+                    }
+                  }
+                },
+                "by_month": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "month",
+                      "total"
+                    ],
+                    "properties": {
+                      "month": {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}-[0-9]{2}$"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      }
+                    }
+                  }
+                },
+                "by_vehicle": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "vehicle_id",
+                      "total",
+                      "entries",
+                      "distance_km"
+                    ],
+                    "properties": {
+                      "vehicle_id": {
+                        "type": "integer"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "entries": {
+                        "type": "integer"
+                      },
+                      "distance_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Spend by category group, month or vehicle, per currency (spec.md §7.7). Exactly one by_* list is present, per group_by."
+      },
+      "CostPerDistanceReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "currencies"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles counted."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "total",
+                "entries",
+                "distance_km",
+                "cost_per_km",
+                "average_per_month",
+                "vehicles"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "total": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "entries": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "cost_per_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_per_month": {
+                  "$ref": "#/components/schemas/Decimal"
+                },
+                "vehicles": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "vehicle_id",
+                      "total",
+                      "distance_km",
+                      "cost_per_km"
+                    ],
+                    "properties": {
+                      "vehicle_id": {
+                        "type": "integer"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "distance_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      },
+                      "cost_per_km": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "FuelReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "grade",
+          "by_vehicle"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles covered."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "by_vehicle": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vehicle_id",
+                "currency",
+                "kinds"
+              ],
+              "properties": {
+                "vehicle_id": {
+                  "type": "integer"
+                },
+                "currency": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "fill_ups",
+                      "volume",
+                      "volume_unit",
+                      "economy",
+                      "by_grade",
+                      "grade_verdicts"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "liquid",
+                          "electric",
+                          "gas"
+                        ]
+                      },
+                      "fill_ups": {
+                        "type": "integer"
+                      },
+                      "volume": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "volume_unit": {
+                        "type": "string",
+                        "enum": [
+                          "l",
+                          "kwh",
+                          "kg"
+                        ]
+                      },
+                      "spend": {
+                        "$ref": "#/components/schemas/Decimal"
+                      },
+                      "average_price_per_unit": {
+                        "$ref": "#/components/schemas/NullableDecimal"
+                      },
+                      "economy": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "distance_km",
+                              "volume",
+                              "per_100km"
+                            ],
+                            "properties": {
+                              "distance_km": {
+                                "$ref": "#/components/schemas/Decimal"
+                              },
+                              "volume": {
+                                "$ref": "#/components/schemas/Decimal"
+                              },
+                              "per_100km": {
+                                "$ref": "#/components/schemas/Decimal"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "by_grade": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "grade",
+                            "fill_ups",
+                            "volume",
+                            "volume_unit",
+                            "economy"
+                          ],
+                          "properties": {
+                            "grade": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "fill_ups": {
+                              "type": "integer"
+                            },
+                            "volume": {
+                              "$ref": "#/components/schemas/Decimal"
+                            },
+                            "volume_unit": {
+                              "type": "string",
+                              "enum": [
+                                "l",
+                                "kwh",
+                                "kg"
+                              ]
+                            },
+                            "spend": {
+                              "$ref": "#/components/schemas/Decimal"
+                            },
+                            "average_price_per_unit": {
+                              "$ref": "#/components/schemas/NullableDecimal"
+                            },
+                            "economy": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "distance_km",
+                                    "volume",
+                                    "per_100km"
+                                  ],
+                                  "properties": {
+                                    "distance_km": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    },
+                                    "volume": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    },
+                                    "per_100km": {
+                                      "$ref": "#/components/schemas/Decimal"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "grade_verdicts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "grade",
+                            "compared_with",
+                            "status",
+                            "cost_per_distance",
+                            "price",
+                            "fuel_used"
+                          ],
+                          "properties": {
+                            "grade": {
+                              "type": "string"
+                            },
+                            "compared_with": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "cost_per_distance": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "price": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "fuel_used": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "direction",
+                                    "percent"
+                                  ],
+                                  "properties": {
+                                    "direction": {
+                                      "type": "string",
+                                      "enum": [
+                                        "more",
+                                        "less",
+                                        "same"
+                                      ]
+                                    },
+                                    "percent": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Phase 16's fuel statistics. spend and average_price_per_unit are left out without ViewCosts on the vehicle. Grade verdicts are over the whole history, as the Fuel tab."
+      },
+      "MileageReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "vehicles",
+          "excluded",
+          "distance_unit",
+          "distance_km",
+          "by_vehicle"
+        ],
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The vehicles covered."
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Vehicles in scope whose costs the key's user may not see: not counted."
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "by_vehicle": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vehicle_id",
+                "distance_km",
+                "average_km_per_month",
+                "average_km_per_year",
+                "latest_odometer",
+                "latest_recorded_at"
+              ],
+              "properties": {
+                "vehicle_id": {
+                  "type": "integer"
+                },
+                "distance_km": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_km_per_month": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "average_km_per_year": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "latest_odometer": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "latest_recorded_at": {
+                  "$ref": "#/components/schemas/NullableInstant"
+                }
+              }
+            }
           }
         }
       }

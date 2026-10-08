@@ -177,7 +177,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       without), with `display` strings.
 - [x] History: per vehicle and fleet, `?kinds=`, `?since=`, `?until=`,
       cursor paging, amounts per `canSeeAmount`.
-- [ ] Reports: costs (`?group_by=`), cost per distance, fuel, mileage,
+- [x] Reports: costs (`?group_by=`), cost per distance, fuel, mileage,
       with `excluded` for vehicles without `ViewCosts`.
 - [ ] Tyre changes and sets (vehicle and fleet).
 - [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.

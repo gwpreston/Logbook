@@ -4951,10 +4951,10 @@ stays `v1`, and existing responses don't change.
 | `GET /vehicles/{id}/valuations`, `…/valuations/{valuation}` | valuations, newest first, paged as the entry lists | `ViewCosts` |
 | `GET /vehicles/{id}/ownership` | Phase 14.2's figures: lifetime running cost, purchase and current value, depreciation (amount, percentage, per year, per distance, or the state that stops it: `no_purchase_price`, `no_value`), the stale-valuation flag, with `display` strings | `ViewCosts` (403 without) |
 | `GET /vehicles/{id}/history`, `GET /history` | the `ActivityFeed` (§7.16) for one vehicle or every active visible one (`?vehicle=` narrows the fleet's): kind, milestone, date, summary, amount (per `canSeeAmount`), price (a purchase, sale or valuation; `ViewCosts`), odometer, attachment count, entry id and API link; `?kinds=` (comma list), `?since=` / `?until=` (calendar days, inclusive), paged by a cursor of its own (newest first by date, then when added, id and kind) | `View` |
-| `GET /reports/costs` | §7.7's totals by category group, month or vehicle (`?group_by=`), per currency, with distance driven; `?vehicles=`, `?period=` as Reports accepts them | `ViewCosts` on each vehicle counted; others are left out and listed in `excluded` |
+| `GET /reports/costs` | §7.7's totals by category group, month or vehicle (`?group_by=category\|month\|vehicle`, one `by_*` list), per currency, with distance driven; `?group=` one cost group | `ViewCosts` on each vehicle counted; others in scope are left out and listed in `excluded` |
 | `GET /reports/cost-per-distance` | per vehicle and fleet, with distance | as above |
-| `GET /reports/fuel` | Phase 16's fuel statistics: economy, volume, spend, price per unit, by grade, with verdicts; `?vehicle=`, `?period=`, `?grade=` | `View`; amounts per `ViewCosts` |
-| `GET /reports/mileage` | distance driven, average per month and per year; `?vehicle=`, `?period=` | `View` |
+| `GET /reports/fuel` | Phase 16's fuel statistics per vehicle (`by_vehicle`) and kind of energy: fill-ups, volume, spend, price per unit, economy, by grade, with the grade verdicts (over the whole history, as the Fuel tab); `?grade=`; module `fuel` | `View`; spend and price only with `ViewCosts` |
+| `GET /reports/mileage` | distance driven in the period per vehicle (`by_vehicle`) and in all, the average per month and per year over the whole log, the latest reading | `View` |
 | `GET /vehicles/{id}/tyres/changes` | tyre changes, newest first, with their lines (kind, tyre, from and to position, retire reason, depth) | `View`; module `tyres` |
 | `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | sets with name, storage, and their tyres | `View`; module `tyres` |
 | `GET /reminders` | gains `?status=done\|dismissed` and `?closed=1`, as the Reminders page's closed list (#208) | `View` |
@@ -4964,8 +4964,13 @@ stays `v1`, and existing responses don't change.
 
 `GET /stations` (`?q=`, `?favourites=1`) and `GET /stations/{id}` already
 exist (Phase 30.1, §7.33). Reports read the **same services as the
-Reports page**, so the API's totals always match it, and a report's
-`period` takes the page's values.
+Reports page** (and Ask's report tools; the fuel statistics' sums are
+`FuelStatistics`, shared with Ask), so the API's totals always match it.
+Every report takes the page's parameters, read strictly (anything that
+can't be read is 400, not a fallback): `range` (`month`, `3m`, `12m`
+the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
+(one; else the active fleet) and `include_archived=1`; each answers its
+`period` (range, from, to), the `vehicles` covered and `excluded`.
 
 *Reminder actions* (scope `read_write`; Phase 39.1).
 - `POST /reminders/{id}/done`, `/dismiss`, `/reopen`: the Reminders

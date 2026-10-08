@@ -47,6 +47,7 @@ use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
 use Logbook\Action\Api\HistoryAction as ApiHistoryAction;
+use Logbook\Action\Api\ReportAction as ApiReportAction;
 use Logbook\Action\Api\ListSchedulesAction as ApiSchedulesAction;
 use Logbook\Action\Api\ListValuationsAction as ApiValuationsAction;
 use Logbook\Action\Api\OwnershipAction as ApiOwnershipAction;
@@ -336,6 +337,14 @@ return static function (App $app): void {
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
+                // Reports (Phase 39.1, spec.md §7.7): over the vehicles the user may see; costs only where visible.
+                foreach (['costs', 'cost-per-distance', 'mileage'] as $report) {
+                    $keyed->get('/reports/' . $report, ApiReportAction::class)->setName('api.reports.' . $report)
+                        ->setArgument('report', $report);
+                }
+                $keyed->get('/reports/fuel', ApiReportAction::class)->setName('api.reports.fuel')
+                    ->setArgument('report', 'fuel')
+                    ->add($module(Feature::Fuel));
                 // History (Phase 39.1, spec.md §7.16): the fleet's, or one vehicle's below.
                 $keyed->get('/history', ApiHistoryAction::class)->setName('api.history');
                 $keyed->get('/vehicles/{id:[0-9]+}/history', ApiHistoryAction::class)->setName('api.history.vehicle')

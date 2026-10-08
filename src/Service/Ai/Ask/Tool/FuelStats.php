@@ -20,6 +20,7 @@ use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Fuel\EconomyStatus;
 use Logbook\Service\Fuel\FillEconomy;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Fuel\FuelStatistics;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
@@ -183,21 +184,13 @@ final readonly class FuelStats implements AskTool
      */
     private function totals(array $fills, EnergyKind $kind, bool $costs, string $currency, ?FuelGrade $grade = null): array
     {
-        $volume = '0';
-        $spend = '0';
-        $distance = '0';
-        $measured = '0';
-        foreach ($fills as $fill) {
-            $volume = Decimal::add($volume, $fill->entry->data->volume);
-            $spend = Decimal::add($spend, $fill->entry->data->totalCost);
-            $segment = $fill->status === EconomyStatus::Measured ? $fill->segment : null;
-            if ($segment !== null && ($grade === null || $segment->grade === $grade)) {
-                $distance = Decimal::add($distance, $segment->distanceKm);
-                $measured = Decimal::add($measured, $segment->volume);
-            }
-        }
-        $hasEconomy = Decimal::compare($distance, '0') > 0 && Decimal::compare($measured, '0') > 0;
-        $price = Decimal::compare($volume, '0') > 0 ? Decimal::divide($spend, $volume, 6) : null;
+        $totals = FuelStatistics::totals($fills, $grade);
+        $volume = $totals->volume;
+        $spend = $totals->spend;
+        $distance = $totals->distanceKm;
+        $measured = $totals->measuredVolume;
+        $hasEconomy = $totals->hasEconomy();
+        $price = $totals->pricePerUnit;
         $volumeShown = $this->kit->format->quantity($volume, $kind);
         $economyShown = $hasEconomy ? $this->kit->format->economy($distance, $measured, $kind) : null;
         $spendShown = $costs ? $this->kit->format->money(Money::of($spend, $currency)) : null;
@@ -237,12 +230,7 @@ final readonly class FuelStats implements AskTool
      */
     private function byGrade(array $fills): array
     {
-        $groups = [];
-        foreach ($fills as $fill) {
-            $groups[$fill->entry->data->grade->value ?? ''][] = $fill;
-        }
-
-        return $groups;
+        return FuelStatistics::byGrade($fills);
     }
 
     /**
