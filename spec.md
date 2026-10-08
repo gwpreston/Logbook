@@ -5789,13 +5789,6 @@ wrong.
         your allowance: about £108". It links to the agreement. The
         fingerprint is the agreement's id and the projected excess
         rounded to 100. Needs §7.32's access.
-    12. **Outstanding recall** (Phase 41; `compliance` on, MOT history
-        provider on, #325): the vehicle's last MOT history fetch said
-        `hasOutstandingRecall` `Yes` (§7.38): "Outstanding recall on AB12
-        CDE · Check with the manufacturer or a dealer". It links to the
-        MOT history page; *Refresh* there (`Own`) asks DVSA again. The
-        fingerprint is the fetch's time, so a hidden item comes back only
-        if a later fetch still says `Yes`. `View` to see it.
     Items 7–11 are plain arithmetic on the owner's data: no model, no
     network, and no figure changes (flagged entries count everywhere).
     From Phase 29.2 a finance payment marked `missed` with no later
@@ -5804,6 +5797,13 @@ wrong.
     From Phase 40.1 (`issues` on) *Now* also holds **Open issue** and
     **Look again** (§7.37), safety issues first within *Now*; they have
     no *Hide*: *Watch* sets an issue aside.
+    From Phase 41 (`compliance` on, MOT history provider on, #325,
+    #329) *Now* also holds **Outstanding recall**: the vehicle's last MOT
+    history fetch said `hasOutstandingRecall` `Yes` (§7.38): "Outstanding
+    recall on AB12 CDE · Check with the manufacturer or a dealer",
+    linking to the MOT history page, where *Refresh* (`Own`) asks DVSA
+    again. No *Hide*: it goes when a later fetch stops saying `Yes`, or
+    with *Stop and remove*. `View` to see it.
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
   (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
@@ -5817,7 +5817,7 @@ wrong.
   whoever looks (as lead times, §7.6). The single-tank economy bands
   (§7.3) and the 2,000 km a day rule (§7.2) stay fixed; the drift
   threshold above is a different check.
-- **Hiding.** Items 2, 4, 6, 7, 8, 9, 10 and 12 have *Hide* (*Looks right* on 8
+- **Hiding.** Items 2, 4, 6, 7, 8, 9 and 10 have *Hide* (*Looks right* on 8
   and 9): `POST
   /vehicles/{id}/attention/hide` with CSRF, the item's kind, subject and
   the fingerprint the page showed. The server recomputes the item and
@@ -8519,7 +8519,7 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   Golf. Check the registration."
 - **Upsert by test number:** tests and defects are never duplicated;
   DVSA's values and text replace the stored ones. A test no longer in
-  DVSA's answer is kept. Each fetch sets `mot_history_fetched_at`,
+  DVSA's answer is kept, with what was made from it (#331). Each fetch sets `mot_history_fetched_at`,
   `mot_recall_state` and, for a vehicle with no tests, `mot_first_due_on`.
 
 #### Mileage
@@ -8560,7 +8560,8 @@ overview while any test is unreviewed. A test is reviewed
     test date at its odometer (no second reading, #319), title the text
     cut to 120 with the full text in the description;
   - status `open` for `fail`, `dangerous`, `major` and `prs`;
-    **`watching`** for `advisory`, `minor` and `user_entered` (#324),
+    **`watching`** for `advisory`, `minor` (#324) and `user_entered` (a
+    tester's own note, #328),
     with *Look again* on the test's expiry less 30 days (none when the
     test has no expiry);
   - `dangerous` (type or flag) and `major` set *Affects safety* (#310).
@@ -8578,14 +8579,16 @@ overview while any test is unreviewed. A test is reviewed
   outstanding recall. Check with the manufacturer or a dealer." (`yes`),
   "Recalls, all fixed" (`no`), "No recalls found" (`unknown`), "Recall
   status unavailable" (`unavailable`), with the fetch's date.
-- `yes` raises a *Check* item in *Needs attention* (§7.24): "Outstanding
-  recall on AB12 CDE", linking to the page, until a later fetch says
-  otherwise or *Stop and remove*. The others raise nothing.
+- `yes` raises a *Now* item in *Needs attention* (§7.24, #329):
+  "Outstanding recall on AB12 CDE", linking to the page, with no *Hide*,
+  until a later fetch says otherwise or *Stop and remove*. The others
+  raise nothing.
 
 #### Look up on add (#326)
 
 - While the provider is on, the add-vehicle form (§7.1) shows *Look up*
-  beside the registration, for anyone who may add a vehicle, with "Sends
+  beside the registration, for anyone who may add a vehicle (they become
+  its owner, #330), with "Sends
   this registration to DVSA" beside it; the click is the choice. With JS
   the form is filled in place; without it, a submit redraws the form
   filled.
@@ -8625,7 +8628,7 @@ overview while any test is unreviewed. A test is reviewed
   defects, recall state, links). **API** (§7.20): `GET
   /vehicles/{id}/mot-tests` (`View`). **CSV:** `mot-tests.csv`.
   **Backups:** `mot_tests` and `mot_defects`; `mot_history_secrets`
-  never. `bin/export-user.php` includes the tests.
+  never, as no secret table is (#332). `bin/export-user.php` includes the tests.
 - **Sale pack** (§7.19): the printed DVSA link stays; with history
   fetched, a summary of the tests is printed too (date, result,
   mileage).

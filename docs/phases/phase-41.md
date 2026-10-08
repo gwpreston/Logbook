@@ -230,9 +230,9 @@ duplicated, and DVSA's text replaces the stored text.
 - The MOT history page states it in words: "An outstanding recall"
   (with "Check with the manufacturer or a dealer"), "Recalls, all
   fixed", "No recalls found", "Recall status unavailable".
-- `yes` raises a *Check* item in *Needs attention* ("Outstanding recall
-  on AB12 CDE"), until a later fetch says otherwise or *Stop and
-  remove*. The others raise nothing.
+- `yes` raises a *Now* item in *Needs attention* ("Outstanding recall
+  on AB12 CDE"), no *Hide*, until a later fetch says otherwise or *Stop
+  and remove*. The others raise nothing.
 
 ### Look up on add (#326)
 
@@ -338,7 +338,8 @@ duplicated, and DVSA's text replaces the stored text.
       become updates; *Not now* sticks.
 - [ ] Job selects only vehicles in the window and not fetched in 7 days;
       stops on throttling; keep-alive after 80 days only.
-- [ ] Recall states each worded; `yes` raises the item, the rest don't.
+- [ ] Recall states each worded; `yes` raises the *Now* item, the rest
+      don't.
 - [ ] *Look up* fills only blank fields, stores nothing, needs the
       provider on; works without JS.
 - [ ] Nothing is sent with the provider off, compliance off, or before
@@ -364,13 +365,13 @@ duplicated, and DVSA's text replaces the stored text.
    statuses, and repeats don't duplicate.
 5. A new MOT appears within a week of the old one expiring, without
    polling every vehicle daily, and an idle key isn't revoked.
-6. An outstanding recall is stated and raises a *Check* item; *Look up*
+6. An outstanding recall is stated and raises a *Now* item; *Look up*
    fills a new vehicle's blank fields from DVSA.
 7. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
-Logged as #320–#327 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#332 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -393,8 +394,8 @@ question found while starting on 2026-10-08, before the phase started.
   `hasOutstandingRecall` is `Yes` (at least one recall not yet fixed),
   `No` (recalls, all fixed), `Unknown` (none found) or `Unavailable`
   (the recalls service failed), per its OpenAPI specification. The MOT
-  history page states it in words; `Yes` raises a *Check* item in *Needs
-  attention*; the others raise nothing. (#325)
+  history page states it in words; `Yes` raises a *Now* item in *Needs
+  attention*, with no *Hide* (#329); the others raise nothing. (#325)
 - **G. Vehicle lookup on add.** *Decided 2026-10-08:* in this phase: a
   *Look up* button on the add-vehicle form while the provider is on.
   (#326)
@@ -403,6 +404,23 @@ question found while starting on 2026-10-08, before the phase started.
   *Decided 2026-10-08:* use `GET /v1/trade/vehicles/bulk-download`,
   which sends no vehicle and answers only file links: *Test* calls it
   (token and key together), and the daily job calls it when the last
-  successful call is more than 80 days old. Checked against a real key
-  before it is built; if the endpoint refuses ordinary keys, the owner
-  is asked again. (#327)
+  successful call is more than 80 days old. DVSA's OpenAPI
+  specification gives `bulk-download` the same global security (bearer
+  token and API key) as the vehicle endpoints, with no override;
+  checked against a real key before it is built, and if the endpoint
+  refuses ordinary keys, the owner is asked again. (#327)
+
+Found while starting, decided by the owner on 2026-10-08:
+
+- `user_entered` defects (a tester's own note) become *watching*, as
+  advisories. (#328)
+- The recall item is a *Now* item with no *Hide* (a recall is work to
+  do, not data that looks wrong); it goes when a later fetch stops
+  saying `Yes`. (#329)
+- *Look up* is for anyone who may add a vehicle, on the add form only,
+  and may fill *First MOT due*. (#330)
+- A test missing from a later DVSA answer is kept. (#331)
+- Answered from the spec: `mot_history_secrets` is never in backups, as
+  §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
+  *Spec addition* draft's "the secrets sealed as others" means that.
+  (#332)
