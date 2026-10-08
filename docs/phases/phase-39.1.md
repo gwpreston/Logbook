@@ -175,7 +175,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       distance limit.
 - [x] Valuations (list, paged, and one); ownership (`ViewCosts`, 403
       without), with `display` strings.
-- [ ] History: per vehicle and fleet, `?kinds=`, `?since=`, `?until=`,
+- [x] History: per vehicle and fleet, `?kinds=`, `?since=`, `?until=`,
       cursor paging, amounts per `canSeeAmount`.
 - [ ] Reports: costs (`?group_by=`), cost per distance, fuel, mileage,
       with `excluded` for vehicles without `ViewCosts`.

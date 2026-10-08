@@ -46,6 +46,7 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\HistoryAction as ApiHistoryAction;
 use Logbook\Action\Api\ListSchedulesAction as ApiSchedulesAction;
 use Logbook\Action\Api\ListValuationsAction as ApiValuationsAction;
 use Logbook\Action\Api\OwnershipAction as ApiOwnershipAction;
@@ -335,6 +336,10 @@ return static function (App $app): void {
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 $keyed->get('/upcoming', ApiUpcomingAction::class)->setName('api.upcoming');
+                // History (Phase 39.1, spec.md §7.16): the fleet's, or one vehicle's below.
+                $keyed->get('/history', ApiHistoryAction::class)->setName('api.history');
+                $keyed->get('/vehicles/{id:[0-9]+}/history', ApiHistoryAction::class)->setName('api.history.vehicle')
+                    ->setArgument($ability, VehicleAbility::View->value);
                 $keyed->get('/reminders', ApiRemindersAction::class)->setName('api.reminders')
                     ->add($module(Feature::Reminders));
                 // Reminder actions (Phase 39.1): the ability is checked on the reminder's vehicle by ApiReminders.

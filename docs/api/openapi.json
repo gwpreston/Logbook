@@ -171,6 +171,76 @@
         "description": "Current odometer, economy per series, last fill-up, 12-month cost per distance, what is due next, reminder counts, current documents and tyres, and the same figures as text in the owner's units."
       }
     },
+    "/vehicles/{id}/history": {
+      "get": {
+        "operationId": "listVehicleHistory",
+        "summary": "One vehicle's history feed, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "description": "A comma list of kinds; all by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "First calendar day (YYYY-MM-DD), inclusive, on the owner's calendar.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "Last calendar day (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vehicles/{id}/fuel": {
       "get": {
         "operationId": "listFuel",
@@ -1367,6 +1437,76 @@
           },
           "400": {
             "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "operationId": "listFleetHistory",
+        "summary": "The history feed of every active vehicle (or ?vehicle=), newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "description": "A comma list of kinds; all by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "First calendar day (YYYY-MM-DD), inclusive, on the owner's calendar.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "Last calendar day (YYYY-MM-DD), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            }
           }
         }
       }
@@ -8401,6 +8541,146 @@
           }
         },
         "description": "Cost of ownership and depreciation (Phase 14.2), as the overview's card works them out. change is current value − purchase price (negative is a loss)."
+      },
+      "HistoryItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "milestone",
+          "vehicle_id",
+          "entry_id",
+          "date",
+          "created_at",
+          "summary",
+          "amount",
+          "price",
+          "currency",
+          "odometer",
+          "distance_unit",
+          "attachments",
+          "created_by",
+          "links"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fuel",
+              "odometer",
+              "maintenance",
+              "document",
+              "expense",
+              "tyre",
+              "valuation",
+              "trip",
+              "incident",
+              "milestone"
+            ]
+          },
+          "milestone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "first_registered",
+              "bought",
+              "sold",
+              "written_off",
+              "returned_lender",
+              "returned_lessor",
+              null
+            ]
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "entry_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "attachments": {
+            "type": "integer"
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry"
+            ],
+            "properties": {
+              "entry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The entry's path under /api/v1 where it has a single read; the vehicle for a milestone."
+              }
+            }
+          }
+        },
+        "description": "One line of the history feed (spec.md §7.16). amount follows the entry's cost access; price (a purchase, sale or valuation) needs ViewCosts; null otherwise."
+      },
+      "HistoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
       }
     }
   }
