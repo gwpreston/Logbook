@@ -177,7 +177,9 @@ final readonly class ApiVehicleFigures
                 'depreciation' => $depreciation->change === null
                     ? null
                     : $this->format->money($depreciation->change, $currency),
-                'depreciation_percent' => $depreciation->fraction === null ? null : $this->format->percent($depreciation->fraction),
+                'depreciation_percent' => $depreciation->fraction === null
+                    ? null
+                    : $this->format->percent($depreciation->fraction),
                 'per_distance' => $cost?->perKm === null ? null : $this->format->perDistance($cost->perKm, $currency),
                 'per_month' => $cost?->perMonth === null ? null : $this->format->money($cost->perMonth),
             ],
