@@ -29,7 +29,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §6
 first.
 
 **Prerequisites:** [Phase 38](phase-38.md) complete and green. Independent
-of [Phase 39](phase-39.md); if 39 is built first, issues get its edit,
+of [Phase 39](phase-39.1.md); if 39 is built first, issues get its edit,
 delete and attachment endpoints too.
 
 ---

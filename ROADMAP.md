@@ -86,7 +86,9 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [36.4](docs/phases/phase-36.4.md) | What each channel receives, and quiet hours + v3.3 release | ✅ |
 | [37](docs/phases/phase-37.md) | Space between the Fuel prices providers + patch release | ✅ |
 | [38](docs/phases/phase-38.md) | Ask lives on Insights; the Ask page goes + v3.4 release | ✅ |
-| [39](docs/phases/phase-39.md) | The rest of the REST API + release | 📋 |
+| [39.1](docs/phases/phase-39.1.md) | API reads and reminder actions | 🚧 |
+| [39.2](docs/phases/phase-39.2.md) | API writes, edit and delete | 📋 |
+| [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | 📋 |
 | [40](docs/phases/phase-40.md) | Issues log + release | 📋 |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
@@ -995,24 +997,52 @@ list of choices in Settings.*
 
 ---
 
-## Phase 39 — The rest of the REST API + release
-*Everything you can do to a vehicle in Logbook, an automation can do too:
-read it, log it, change it, and hear about it.*
+## Phase 39.1 — API reads and reminder actions
+*Everything a vehicle's pages show, an automation can read.*
 
-- Reads for everything a vehicle's pages show: single entries, schedules,
-  valuations, ownership, reports, history, tyre changes and sets,
-  stations, *Needs attention*, price alerts and closed reminders.
-- Reminder actions (done, dismiss, reopen); writes for vehicles,
-  valuations, schedules, tyre changes, journeys, finance, price alerts,
-  attention hiding and station favourites; edit and delete for every
-  entry under `EntryAccess`, with optional optimistic concurrency.
-- Attachments (list, download, upload, delete) and webhooks for entries
-  created, changed and deleted.
-- Administration, sharing, deleting a vehicle and Ask stay out. The API
-  stays `v1` (additive only); OpenAPI and `docs/api.md` updated. Minor
-  release.
+- Single-entry reads with `ETag`; maintenance and documents filters;
+  schedules, valuations, ownership, history (vehicle and fleet); the four
+  reports (costs, cost per distance, fuel, mileage) from the Reports
+  page's services; tyre changes and sets; closed reminders; *Needs
+  attention*; price alerts; every finance agreement.
+- Reminder *done*, *dismiss* and *reopen*, safe to retry.
+- Phase 39 planned as one, split in three (#281); open questions A–H and
+  one found while starting (#281–#289) decided 2026-10-08. Ships with
+  39.3 as **v3.5.0**.
 
-→ [`phase-39.md`](docs/phases/phase-39.md)
+→ [`phase-39.1.md`](docs/phases/phase-39.1.md)
+
+---
+
+## Phase 39.2 — API writes, edit and delete
+*What the pages let you write, correct or remove, a key can too.*
+
+- `PATCH` (partial) and `DELETE` for every entry under `EntryAccess`, with
+  optional `If-Match` (412 on a stale tag).
+- Vehicles (create, edit, archive, restore), valuations, schedules, tyre
+  changes and tyres, journeys, station favourites, price alerts,
+  attention hiding, manual reminders, and finance (agreements, payments,
+  quotes, *End*).
+- Deleting a vehicle and account administration stay out. Ships with 39.3
+  as **v3.5.0**.
+
+→ [`phase-39.2.md`](docs/phases/phase-39.2.md)
+
+---
+
+## Phase 39.3 — API attachments and entry webhooks + v3.5 release
+*Files in and out, and other systems hear when an entry changes.*
+
+- Attachments: list, download (incident photos per #104), upload (one
+  file per request), delete.
+- Signed entry webhooks carrying ids and links only, sent by the
+  scheduler with backoff, paused after 50 failures, under §7.11's
+  destination rules; Settings → API keys → Webhooks; `WEBHOOKS_ENABLED`.
+  Backed up without their secret.
+- One migration. Release **v3.5.0** (Phases 39.1 to 39.3; the API stays
+  `v1`).
+
+→ [`phase-39.3.md`](docs/phases/phase-39.3.md)
 
 ---
 
