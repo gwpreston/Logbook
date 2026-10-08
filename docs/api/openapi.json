@@ -1318,6 +1318,114 @@
         }
       }
     },
+    "/vehicles/{id}/tyres/changes": {
+      "get": {
+        "operationId": "listTyreChanges",
+        "summary": "Tyre changes and tread checks, newest first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreChangeList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/tyre-sets": {
+      "get": {
+        "operationId": "listVehicleTyreSets",
+        "summary": "A vehicle's tyre sets with their tyres",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreSetList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/tyre-sets": {
+      "get": {
+        "operationId": "listTyreSets",
+        "summary": "Tyre sets of every active vehicle (or ?vehicle=)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TyreSetList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/finance": {
       "get": {
         "operationId": "showFinance",
@@ -9735,6 +9843,265 @@
                   "$ref": "#/components/schemas/NullableInstant"
                 }
               }
+            }
+          }
+        }
+      },
+      "TyreChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "kind",
+          "changed_on",
+          "odometer",
+          "distance_unit",
+          "note",
+          "service_record_id",
+          "incident_id",
+          "lines",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "existing",
+              "fit",
+              "swap",
+              "rotate",
+              "repair",
+              "remove",
+              "check"
+            ]
+          },
+          "changed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_record_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "incident_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "tyre_id",
+                "action",
+                "position",
+                "depth_mm",
+                "retire_reason"
+              ],
+              "properties": {
+                "tyre_id": {
+                  "type": "integer"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "off",
+                    "retire",
+                    "move",
+                    "repair",
+                    "measure"
+                  ]
+                },
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "spare",
+                    "front",
+                    "rear",
+                    null
+                  ],
+                  "description": "Where the tyre went (on, move) or where it was (off, retire, repair)."
+                },
+                "depth_mm": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                },
+                "retire_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "worn",
+                    "damaged",
+                    "puncture",
+                    "sold",
+                    "other",
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A tyre change or tread check (Phase 39.1)."
+      },
+      "TyreChangeList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TyreChange"
+            }
+          }
+        }
+      },
+      "TyreSet": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "name",
+          "storage_location",
+          "notes",
+          "tyres",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "storage_location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tyres": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "status",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "fitted",
+                    "stored",
+                    "retired"
+                  ]
+                },
+                "position": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "fl",
+                    "fr",
+                    "rl",
+                    "rr",
+                    "spare",
+                    "front",
+                    "rear",
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A tyre set and its tyres (Phase 39.1)."
+      },
+      "TyreSetList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TyreSet"
             }
           }
         }

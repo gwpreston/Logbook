@@ -179,7 +179,7 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       cursor paging, amounts per `canSeeAmount`.
 - [x] Reports: costs (`?group_by=`), cost per distance, fuel, mileage,
       with `excluded` for vehicles without `ViewCosts`.
-- [ ] Tyre changes and sets (vehicle and fleet).
+- [x] Tyre changes and sets (vehicle and fleet).
 - [x] Closed reminders: `?status=done|dismissed`, `?closed=1`.
 - [ ] *Needs attention*, with each item's `key`, its fix's API link, and
       `?hidden=1`.

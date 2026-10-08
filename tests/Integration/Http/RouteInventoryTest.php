@@ -173,6 +173,7 @@ final class RouteInventoryTest extends AppTestCase
         'api.reports.cost-per-distance',
         'api.reports.fuel',
         'api.reports.mileage',
+        'api.tyre_sets',
         // Phase 22: the user's own claim, over the vehicles they may see.
         'trips.claim',
         'trips.claim.export',

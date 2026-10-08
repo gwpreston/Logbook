@@ -4955,8 +4955,8 @@ stays `v1`, and existing responses don't change.
 | `GET /reports/cost-per-distance` | per vehicle and fleet, with distance | as above |
 | `GET /reports/fuel` | Phase 16's fuel statistics per vehicle (`by_vehicle`) and kind of energy: fill-ups, volume, spend, price per unit, economy, by grade, with the grade verdicts (over the whole history, as the Fuel tab); `?grade=`; module `fuel` | `View`; spend and price only with `ViewCosts` |
 | `GET /reports/mileage` | distance driven in the period per vehicle (`by_vehicle`) and in all, the average per month and per year over the whole log, the latest reading | `View` |
-| `GET /vehicles/{id}/tyres/changes` | tyre changes, newest first, with their lines (kind, tyre, from and to position, retire reason, depth) | `View`; module `tyres` |
-| `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | sets with name, storage, and their tyres | `View`; module `tyres` |
+| `GET /vehicles/{id}/tyres/changes` | tyre changes and tread checks, newest first, with their lines (tyre, action, position: where it went for `on` and `move`, where it was for `off`, `retire`, `repair`; depth; the tyre's retire reason on a `retire` line) | `View`; module `tyres` |
+| `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | sets with name, storage, notes and their tyres (id, status, position); the fleet's are every active visible vehicle's, `?vehicle=` narrows | `View`; module `tyres` |
 | `GET /reminders` | gains `?status=done\|dismissed` and `?closed=1`, as the Reminders page's closed list (#208) | `View` |
 | `GET /attention` | *Needs attention* (§7.24) for the visible vehicles, `?vehicle=`, in the page's order and words, each item with its `key` and its fix's API link where one exists; hidden items left out, `?hidden=1` lists them | `View` |
 | `GET /fuel-prices/alerts` | the key user's price alerts | a price provider enabled |

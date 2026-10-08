@@ -25,7 +25,10 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Trip\SavedJourney;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Tyre\TyreChange;
+use Logbook\Domain\Tyre\Tyre;
 use Logbook\Domain\Tyre\TyreChangeLine;
+use Logbook\Domain\Tyre\TyreLineAction;
+use Logbook\Domain\Tyre\TyreSet;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -344,6 +347,68 @@ final class Serializer
             'expiry_on' => self::date($document->data->expiryOn),
             'status' => $state->status->value,
             'days_left' => $state->daysLeft,
+        ];
+    }
+
+    /**
+     * A tyre change (spec.md §7.17, §7.20 Phase 39) with its lines. A line's
+     * `position` is where the tyre went for `on` and `move`, and where it was
+     * for `off`, `retire` and `repair`; `retire_reason` is the tyre's, on a
+     * `retire` line.
+     *
+     * @param array<int, Tyre> $tyres the vehicle's tyres by id
+     * @return array<string, mixed>
+     */
+    public static function tyreChange(TyreChange $change, array $tyres): array
+    {
+        $data = $change->data;
+
+        return [
+            'id' => $change->id,
+            'vehicle_id' => $change->vehicleId,
+            'kind' => $change->kind->value,
+            'changed_on' => self::date($data->doneOn),
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'note' => $data->note,
+            'service_record_id' => $data->maintenanceEntryId,
+            'incident_id' => $change->incidentId,
+            'lines' => array_map(static fn (TyreChangeLine $line): array => [
+                'tyre_id' => $line->tyreId,
+                'action' => $line->action->value,
+                'position' => $line->position?->value,
+                'depth_mm' => self::dec($line->treadMm, 3),
+                'retire_reason' => $line->action === TyreLineAction::Retire
+                    ? ($tyres[$line->tyreId] ?? null)?->retiredReason?->value
+                    : null,
+            ], $change->lines),
+            'created_by' => $change->createdBy,
+            'created_at' => self::instant($change->createdAt),
+            'updated_at' => self::instant($change->updatedAt),
+        ];
+    }
+
+    /**
+     * A tyre set (spec.md §7.17) with the tyres in it.
+     *
+     * @param list<Tyre> $tyres the set's tyres
+     * @return array<string, mixed>
+     */
+    public static function tyreSet(TyreSet $set, array $tyres): array
+    {
+        return [
+            'id' => $set->id,
+            'vehicle_id' => $set->vehicleId,
+            'name' => $set->data->name,
+            'storage_location' => $set->data->storageLocation,
+            'notes' => $set->data->notes,
+            'tyres' => array_map(static fn (Tyre $tyre): array => [
+                'id' => $tyre->id,
+                'status' => $tyre->status->value,
+                'position' => $tyre->position?->value,
+            ], $tyres),
+            'created_at' => self::instant($set->createdAt),
+            'updated_at' => self::instant($set->updatedAt),
         ];
     }
 

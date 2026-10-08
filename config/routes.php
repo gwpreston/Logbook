@@ -48,6 +48,7 @@ use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
 use Logbook\Action\Api\HistoryAction as ApiHistoryAction;
 use Logbook\Action\Api\ReportAction as ApiReportAction;
+use Logbook\Action\Api\TyreReadAction as ApiTyreReadAction;
 use Logbook\Action\Api\ListSchedulesAction as ApiSchedulesAction;
 use Logbook\Action\Api\ListValuationsAction as ApiValuationsAction;
 use Logbook\Action\Api\OwnershipAction as ApiOwnershipAction;
@@ -443,6 +444,18 @@ return static function (App $app): void {
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Tyres));
+                // Tyre changes and sets (Phase 39.1, spec.md §7.17).
+                $keyed->group('', function (Group $tyres) use ($ability): void {
+                    $tyres->get('/vehicles/{id:[0-9]+}/tyres/changes', ApiTyreReadAction::class)
+                        ->setName('api.tyres.changes')
+                        ->setArgument('list', 'changes')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $tyres->get('/vehicles/{id:[0-9]+}/tyre-sets', ApiTyreReadAction::class)->setName('api.tyre_sets.vehicle')
+                        ->setArgument('list', 'sets')
+                        ->setArgument($ability, VehicleAbility::View->value);
+                    $tyres->get('/tyre-sets', ApiTyreReadAction::class)->setName('api.tyre_sets')
+                        ->setArgument('list', 'sets');
+                })->add($module(Feature::Tyres));
                 $keyed->post('/vehicles/{id:[0-9]+}/maintenance', ApiLogMaintenanceAction::class)
                     ->setName('api.maintenance.create')
                     ->setArgument($ability, VehicleAbility::Log->value)
