@@ -13,6 +13,7 @@ use Logbook\Repository\WebhookDeliveryRepository;
 use Logbook\Repository\WebhookRepository;
 use Logbook\Service\Notification\NotificationComposer;
 use Logbook\Service\Notification\NotificationDispatcher;
+use Logbook\Service\Notification\Outbound\HostBreaker;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Webhook\WebhookSender;
@@ -50,6 +51,7 @@ final readonly class WebhooksJob implements Job
         private AppSettings $settings,
         private ClockInterface $clock,
         private TranslatorInterface $translator,
+        private ?HostBreaker $breaker = null,
     ) {
     }
 
@@ -77,6 +79,9 @@ final readonly class WebhooksJob implements Job
         /** @var array<int, User|null> $owners */
         $owners = [];
         foreach ($this->deliveries->due($now, self::BATCH) as $delivery) {
+            if ($context->cancelled()) {
+                break;
+            }
             $webhook = array_key_exists($delivery->webhookId, $webhooks)
                 ? $webhooks[$delivery->webhookId]
                 : ($webhooks[$delivery->webhookId] = $this->webhooks->findById($delivery->webhookId));
@@ -87,6 +92,10 @@ final readonly class WebhooksJob implements Job
                 ? $owners[$webhook->userId]
                 : ($owners[$webhook->userId] = $this->users->find($webhook->userId));
             if ($owner === null || !$owner->isActive()) {
+                continue;
+            }
+            // A host that stopped answering earlier in this run: left for the next pass, no attempt used.
+            if ($this->breaker?->skips($webhook->url) === true) {
                 continue;
             }
             try {

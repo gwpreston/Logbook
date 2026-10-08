@@ -359,6 +359,7 @@ return [
     RemindersJob::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
     // Entry webhooks (Phase 39.3): nothing is queued while a demo runs.
     WebhookEvents::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
+    WebhooksJob::class => autowire()->constructorParameter('breaker', get(HostBreaker::class)),
     AdminNotices::class => autowire()->constructorParameter('demo', get(DemoMode::class)),
 
     // PHP drops files past max_file_uploads silently, so the attachment limit

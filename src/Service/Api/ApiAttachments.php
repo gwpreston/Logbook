@@ -101,8 +101,14 @@ final readonly class ApiAttachments
      * @return array<string, mixed> the stored attachment
      * @throws ApiProblem 403, 404, 409 or 422
      */
-    public function upload(string $list, User $user, Vehicle $vehicle, ?int $entryId, ?UploadedFileInterface $file): array
-    {
+    public function upload(
+        string $list,
+        User $user,
+        Vehicle $vehicle,
+        ?int $entryId,
+        ?UploadedFileInterface $file,
+        bool $tooLarge = false,
+    ): array {
         $type = self::OWNERS[$list];
         $owner = $this->owner($list, $user, $vehicle, $entryId);
         if (!$this->access->canChange($user, $vehicle, $owner['createdBy'])) {
@@ -133,7 +139,9 @@ final readonly class ApiAttachments
             }
         }
 
-        return Serializer::attachment($this->attachments->add($vehicle, $type, $owner['id'], $this->checked($file, $type)));
+        $upload = $this->checked($file, $type, $tooLarge);
+
+        return Serializer::attachment($this->attachments->add($vehicle, $type, $owner['id'], $upload));
     }
 
     /**
@@ -221,9 +229,13 @@ final readonly class ApiAttachments
      *
      * @throws ApiProblem 422
      */
-    private function checked(?UploadedFileInterface $file, AttachmentOwner $type): PendingUpload
+    private function checked(?UploadedFileInterface $file, AttachmentOwner $type, bool $tooLarge): PendingUpload
     {
         $errors = new ValidationErrors();
+        if ($tooLarge) {
+            $errors->add(self::FIELD, 'upload.too_large', ['max' => $this->attachments->maxMegabytes()]);
+            throw $this->validation->of($errors);
+        }
         if ($file === null || $file->getError() === UPLOAD_ERR_NO_FILE) {
             $errors->add(self::FIELD, 'validation.required');
             throw $this->validation->of($errors);

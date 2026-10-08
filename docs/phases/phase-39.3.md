@@ -175,6 +175,11 @@ Found while starting 39.3 (2026-10-08):
   create, edit, archive and restore (`vehicle`) and tyre details
   (`tyre_details`) fire `entry.*`; a manual reminder's create, edit and
   delete fire `reminder.changed` with `change` naming which.
+- **#303 Who may download a cost entry's file?** (found while building)
+  A share without *Can see costs* could fetch an expense receipt or a
+  valuation's quote by id, on the API and the existing page route. —
+  *Decided 2026-10-08:* only with *Can see costs*, or one's own upload, on
+  both (404 otherwise).
 - **#302 Who hears about a trip?** — *Decided 2026-10-08:* only the
   users who may see it (its author, and those who see everyone's
   trips), as the history feed.

@@ -9,6 +9,7 @@ use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Access\EntryAccess;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Trip\TripNotFound;
 use Logbook\Service\Trip\TripService;
@@ -17,15 +18,24 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * A trip's file is where someone went (a parking or toll receipt): it is
- * served and deleted only for those who may see the trip, and not at all
- * while the trips module is off (spec.md §7.10, §7.22). Other files pass.
+ * Who may have a file at all, beyond `View` on its vehicle, for the pages'
+ * and the API's download and delete (spec.md §7.12, §7.20 *Attachments*):
+ *
+ * - A trip's file is where someone went (a parking or toll receipt): only
+ *   for those who may see the trip, and not at all while the trips module
+ *   is off (§7.10, §7.22).
+ * - An expense's receipt or a valuation's quote shows an amount: only with
+ *   *Can see costs*, or to whoever uploaded it (decided 2026-10-08, #303),
+ *   as the lists they appear in.
+ *
+ * Other files pass.
  */
-final readonly class TripFileGuard
+final readonly class AttachmentGuard
 {
     public function __construct(
         private TripService $trips,
         private FeatureToggles $features,
+        private EntryAccess $entries,
     ) {
     }
 
@@ -42,6 +52,9 @@ final readonly class TripFileGuard
      */
     public function mayUse(User $user, Vehicle $vehicle, Attachment $attachment): bool
     {
+        if ($attachment->ownerType === AttachmentOwner::Expense || $attachment->ownerType === AttachmentOwner::Valuation) {
+            return $this->entries->canSeeAmount($user, $vehicle, $attachment->uploadedBy);
+        }
         if ($attachment->ownerType !== AttachmentOwner::Trip) {
             return true;
         }

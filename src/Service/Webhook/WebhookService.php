@@ -77,6 +77,12 @@ final readonly class WebhookService
     public function parse(User $user, array $input): array|ValidationErrors
     {
         $errors = new ValidationErrors();
+        if (!$this->secrets->canStore()) {
+            // No SESSION_SECRET to seal a signing secret with (the page hides the form).
+            $errors->add('name', 'webhooks.no_session_secret');
+
+            return $errors;
+        }
         $name = trim(is_string($input['name'] ?? null) ? $input['name'] : '');
         $url = trim(is_string($input['url'] ?? null) ? $input['url'] : '');
         $chosen = is_array($input['events'] ?? null) ? $input['events'] : [];

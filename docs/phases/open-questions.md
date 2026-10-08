@@ -97,7 +97,7 @@ started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
 changes Phase 39. #290 was found while starting Phase 39.1 and waits
 for a decision before Phase 39.3; the spec review of the same day
-raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day. Phase 39.2's #298 was found while starting it and answered on 2026-10-08, before it was built, and #299 while building it, answered the same day; #279 and #280 (Phase 38) stay open, none of them blocking 39.2. The owner answered 39.3's #290–#295 on 2026-10-08, before it started, with #300–#302, found while starting it; #279 and #280 still don't change Phase 39.
+raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 by its security review; the owner answered both the same day. Phase 39.2's #298 was found while starting it and answered on 2026-10-08, before it was built, and #299 while building it, answered the same day; #279 and #280 (Phase 38) stay open, none of them blocking 39.2. The owner answered 39.3's #290–#295 on 2026-10-08, before it started, with #300–#302, found while starting it, and #303, found while building it; #279 and #280 still don't change Phase 39.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -403,6 +403,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 300 | [39.3](phase-39.3.md) | Attachment owner types: §7.20 named `vehicle_photo` and left out `trip`, but a vehicle photo is not an attachment (found while starting) | Decided | Every real owner type, `trip` included (only for those who may see it); the photo on its own `GET`, `POST`, `DELETE /vehicles/{id}/photo`. spec §7.20 *Attachments*. | 2026-10-08 |
 | 301 | [39.3](phase-39.3.md) | Do vehicle, tyre-detail and manual-reminder writes fire webhooks? (found while starting) | Decided | Vehicles (`vehicle`) and tyre details (`tyre_details`) fire `entry.*`; a manual reminder's create, edit and delete fire `reminder.changed` with `change`. spec §7.20. | 2026-10-08 |
 | 302 | [39.3](phase-39.3.md) | Who hears about a trip, which is private to its author unless one sees everyone's? (found while starting) | Decided | Only those who may see it, as the history feed. spec §7.20. | 2026-10-08 |
+| 303 | [39.3](phase-39.3.md) | Who may download an expense's or valuation's file by id? A share without *Can see costs* could, on the API and the page (found while building) | Decided | Only with *Can see costs* or one's own upload, on both routes; 404 otherwise. spec §7.12, §7.20 *Attachments*. | 2026-10-08 |
 
 ## Other loose ends found in the review
 

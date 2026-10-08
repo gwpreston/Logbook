@@ -36,6 +36,8 @@ use Logbook\Kernel;
 use Logbook\Support\Api\OpenApiDocument;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\Html;
+use Logbook\Tests\Support\JsonDoc;
+use Psr\Http\Message\ResponseInterface;
 use Logbook\Tests\Support\MutableClock;
 use Logbook\Tests\Support\ReminderTestCase;
 use Logbook\Tests\Support\TestBrowser;
@@ -85,6 +87,10 @@ final class WebhooksTest extends ReminderTestCase
             }
         }
         self::clearThrottle();
+        // *Send test* shares the channel tests' allowance, counted per user id, which every test reuses.
+        foreach (glob(Kernel::rootDir() . '/var/cache/rate-limit/*.json') ?: [] as $file) {
+            @unlink($file);
+        }
         parent::tearDown();
     }
 
@@ -175,6 +181,77 @@ final class WebhooksTest extends ReminderTestCase
         self::assertContains('schedule:entry.created', $kinds);
         self::assertContains('reminder:created', $kinds);
         self::assertContains('reminder:dismissed', $kinds);
+    }
+
+    public function testEachKindNamesWhatToFetch(): void
+    {
+        $webhook = $this->webhook($this->owner);
+        $api = $this->api($this->app, $this->apiKey($this->app, $this->owner));
+        $base = '/vehicles/' . $this->golf->id;
+        $json = static fn (ResponseInterface $response): JsonDoc => \Logbook\Tests\Support\ApiClient::json($response);
+
+        $change = $json($api->post($base . '/tyres/changes', ['kind' => 'existing', 'odometer' => 10000, 'tyres' => [
+            ['position' => 'fl', 'brand' => 'Goodyear'],
+        ]]))->int('entry', 'id');
+        $tyre = $json($api->get($base . '/tyres'))->int('items', 0, 'id');
+        $api->patch($base . '/tyres/' . $tyre, ['brand' => 'Michelin']);
+        $checked = $api->post($base . '/tyres/checks', [
+            'checked_on' => '2026-10-08', 'odometer' => '10500', 'depth_unit' => 'in32', 'depths' => ['fl' => '8'],
+        ]);
+        $check = $json($checked)->int('entry', 'id');
+        $agreement = $json($api->post($base . '/finance/agreements', [
+            'type' => 'hp', 'lender' => 'Black Horse', 'started_on' => '2024-01-15', 'first_payment_on' => '2024-02-15',
+            'number_of_payments' => 48, 'regular_payment' => '301.35', 'cash_price' => 15000,
+        ]))->int('entry', 'id');
+        $api->post($base . '/finance/agreements/' . $agreement . '/payments', ['kind' => 'missed', 'due_on' => '2026-08-15']);
+        $valuation = $json($api->post($base . '/valuations', ['amount' => 9000]))->int('entry', 'id');
+        $incident = $json($api->post($base . '/incidents', [
+            'occurred_on' => '2026-09-14', 'type' => 'parked_damage', 'fault' => 'not_at_fault', 'damage_areas' => ['rear'],
+        ]))->int('entry', 'id');
+        $api->post($base . '/archive', []);
+        $api->post($base . '/restore', []);
+
+        $seen = array_map(
+            static fn (WebhookDelivery $d): string => self::text($d->payload['event'] ?? null) . ' '
+                . self::text($d->payload['kind'] ?? null) . ' '
+                . (is_int($d->payload['entry_id'] ?? null) ? $d->payload['entry_id'] : ''),
+            $this->queued($webhook),
+        );
+        foreach (
+            [
+            'entry.created tyre ' . $change,
+            'entry.updated tyre_details ' . $tyre,
+            'entry.created tread_check ' . $check,
+            'entry.created finance ' . $agreement,
+            'entry.updated finance ' . $agreement,
+            'entry.created valuation ' . $valuation,
+            'entry.created incident ' . $incident,
+            'entry.updated vehicle ' . $this->golf->id,
+            ] as $expected
+        ) {
+            self::assertContains($expected, $seen);
+        }
+        self::assertSame(2, count(array_keys($seen, 'entry.updated vehicle ' . $this->golf->id, true)), 'archive and restore');
+        foreach ($this->queued($webhook) as $delivery) {
+            self::assertMatchesPayloadSchema($delivery->payload);
+        }
+    }
+
+    public function testAReminderBecomingDueIsToldOnce(): void
+    {
+        $webhook = $this->webhook($this->owner, events: [WebhookEvent::ReminderChanged]);
+        $api = $this->api($this->app, $this->apiKey($this->app, $this->owner));
+        $api->post('/vehicles/' . $this->golf->id . '/reminders', ['title' => 'Wash it', 'due_on' => '2026-12-01']);
+        $this->clock->set(new DateTimeImmutable('2026-12-02T09:00:00Z'));
+        $reminders = $this->service($this->app, \Logbook\Service\Jobs\RemindersJob::class);
+        $this->service($this->app, JobRunner::class)->run($reminders, JobTrigger::Manual);
+        $this->service($this->app, JobRunner::class)->run($reminders, JobTrigger::Manual);
+
+        $changes = array_map(
+            static fn (WebhookDelivery $d): string => self::text($d->payload['change'] ?? null),
+            $this->queued($webhook),
+        );
+        self::assertSame(['created', 'overdue'], $changes);
     }
 
     public function testWhoHearsOfWhat(): void
@@ -285,6 +362,34 @@ final class WebhooksTest extends ReminderTestCase
         $this->clock->set(new DateTimeImmutable('2026-10-15T09:00:01Z'));
         $this->runJob();
         self::assertSame([], $this->queued($webhook));
+    }
+
+    public function testAHostThatStopsAnsweringLeavesTheRestForTheNextPass(): void
+    {
+        $webhook = $this->webhook($this->owner);
+        $this->http->errorFor[self::HOOK] = 'Idle timeout reached for "https://hooks.test/entries?token=abc".';
+        foreach (['12000', '12100', '12200', '12300'] as $km) {
+            $this->logReading($km);
+        }
+
+        $this->runJob();
+        $attempted = array_values(array_filter(
+            $this->queued($webhook),
+            static fn (WebhookDelivery $d): bool => $d->attempts > 0,
+        ));
+        self::assertCount(count($this->http->to(self::HOOK)), $attempted, 'only what was sent used an attempt');
+        self::assertLessThan(4, count($attempted), 'the rest wait for the next pass');
+        $stored = $this->stored($webhook);
+        self::assertSame('The service did not answer in time.', $stored->lastError, 'never the URL');
+    }
+
+    public function testSendTestIsLimitedAsChannelTestsAre(): void
+    {
+        $webhook = $this->webhook($this->owner);
+        for ($i = 0; $i < 6; $i++) {
+            $this->browser->post('/settings/webhooks/' . $webhook->id . '/test');
+        }
+        self::assertCount(5, $this->http->to(self::HOOK));
     }
 
     public function testFiftyFailedAttemptsPauseItAndTheUserIsToldOnceAfterQuietHours(): void

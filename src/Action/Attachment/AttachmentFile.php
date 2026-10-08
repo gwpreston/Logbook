@@ -24,7 +24,7 @@ use Slim\Exception\HttpNotFoundException;
  * open in the browser; PDFs, and anything with ?download=1, download under
  * their original name (browsers will not render a PDF inside the sandbox
  * every file is served with). The caller has checked access to the vehicle
- * and TripFileGuard.
+ * and AttachmentGuard.
  */
 final readonly class AttachmentFile
 {

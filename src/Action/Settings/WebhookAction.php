@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Settings;
 
+use Logbook\Action\Settings\Notifications\ChannelAction;
 use Logbook\Service\Webhook\WebhookService;
+use Logbook\Support\Security\RateLimiter;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -24,6 +26,7 @@ final readonly class WebhookAction
         private WebhookService $webhooks,
         private WebhooksAction $page,
         private Redirector $redirect,
+        private RateLimiter $limiter,
     ) {
     }
 
@@ -50,6 +53,17 @@ final readonly class WebhookAction
                     'renewed' => true,
                 ]);
             case 'test':
+                // The channel tests' allowance (spec.md §7.11): a test is a request to an address the user chose.
+                $allowed = $this->limiter->attempt(
+                    ChannelAction::TEST_BUCKET,
+                    (string) $user->id,
+                    ChannelAction::TEST_MAX,
+                    ChannelAction::TEST_WINDOW,
+                );
+                if (!$allowed) {
+                    $session->flash('error', 'notifications.test.throttled');
+                    break;
+                }
                 $result = $this->webhooks->test($user, $webhook);
                 $result->delivered
                     ? $session->flash('success', 'webhooks.test_sent', $name)

@@ -43,10 +43,24 @@ final readonly class EntryAttachmentsAction
             return $this->responder->json(['items' => $this->attachments->list($list, $user, $vehicle, $entry)]);
         }
         $file = $request->getUploadedFiles()[ApiAttachments::FIELD] ?? null;
+        $file = $file instanceof UploadedFileInterface ? $file : null;
 
         return $this->responder->json(
-            $this->attachments->upload($list, $user, $vehicle, $entry, $file instanceof UploadedFileInterface ? $file : null),
+            $this->attachments->upload($list, $user, $vehicle, $entry, $file, $file === null && self::bodyDropped($request)),
             201,
         );
+    }
+
+    /**
+     * A multipart body PHP threw away for being over `post_max_size`: it
+     * arrives with no files and no fields, so say it was too large rather
+     * than that the file is missing.
+     */
+    public static function bodyDropped(ServerRequestInterface $request): bool
+    {
+        return str_starts_with(strtolower($request->getHeaderLine('Content-Type')), 'multipart/form-data')
+            && (int) $request->getHeaderLine('Content-Length') > 0
+            && $request->getUploadedFiles() === []
+            && in_array($request->getParsedBody(), [null, []], true);
     }
 }

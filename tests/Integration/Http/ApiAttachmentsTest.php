@@ -113,6 +113,13 @@ final class ApiAttachmentsTest extends AppTestCase
         self::assertSame(422, $none->getStatusCode());
         self::assertSame('validation.required', ApiClient::json($none)->get('errors', 'file', 'key'));
 
+        // A body over post_max_size reaches the app with no file and no fields.
+        $dropped = $this->api->send('POST', $path, null, [
+            'Content-Type' => 'multipart/form-data; boundary=x',
+            'Content-Length' => '99999999',
+        ]);
+        self::assertSame('upload.too_large', ApiClient::json($dropped)->get('errors', 'file', 'key'));
+
         self::assertSame([], $this->service($this->app, AttachmentRepository::class)->listForVehicle($this->golf->id));
     }
 
@@ -195,6 +202,18 @@ final class ApiAttachmentsTest extends AppTestCase
         self::assertSame(1, ApiClient::json($withCosts->get($path))->doc('items')->count());
         $without = $this->share('nocosts', ShareLevel::View, false);
         self::assertSame(403, $without->get($path)->getStatusCode());
+        // Not by id either, on the API or the page (#303); a file of one's own is.
+        $file = ApiClient::json($this->api->get($path))->int('items', 0, 'id');
+        self::assertSame(404, $without->get('/attachments/' . $file)->getStatusCode());
+        self::assertSame(404, $without->delete('/attachments/' . $file)->getStatusCode());
+        $page = $this->browserFor($this->app, 'nocosts');
+        self::assertSame(404, $page->get($this->base . '/attachments/' . $file)->getStatusCode());
+        self::assertSame(200, $withCosts->get('/attachments/' . $file)->getStatusCode());
+        $logger = $this->share('logger', ShareLevel::Log, false);
+        $mine = ApiClient::json($logger->post($this->base . '/expenses', ['category' => 'parking', 'amount' => '2']))
+            ->int('entry', 'id');
+        $own = ApiClient::json($logger->upload($this->base . '/expenses/' . $mine . '/attachments', self::PDF, 'mine.pdf'));
+        self::assertSame(200, $logger->get('/attachments/' . $own->int('id'))->getStatusCode());
     }
 
     public function testATripsFilesAreOnlyForThoseWhoSeeTheTrip(): void

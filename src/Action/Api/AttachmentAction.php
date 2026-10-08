@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Api;
 
 use Logbook\Action\Attachment\AttachmentFile;
-use Logbook\Action\Attachment\TripFileGuard;
+use Logbook\Action\Attachment\AttachmentGuard;
 use Logbook\Service\Api\ApiAttachments;
 use Logbook\Support\Api\ApiProblem;
 use Logbook\Support\Http\RequestContext;
@@ -18,13 +18,13 @@ use Psr\Http\Message\ServerRequestInterface;
  * an incident photo follows #104), or deleted as the page's delete link
  * does (`204`). The path names no vehicle: the attachment's own is checked
  * for the key's user, and a trip's file is only for those who may see the
- * trip (TripFileGuard); anything else is 404.
+ * trip (AttachmentGuard); anything else is 404.
  */
 final readonly class AttachmentAction
 {
     public function __construct(
         private ApiAttachments $attachments,
-        private TripFileGuard $tripFiles,
+        private AttachmentGuard $guard,
         private AttachmentFile $file,
     ) {
     }
@@ -36,7 +36,7 @@ final readonly class AttachmentAction
     {
         $user = RequestContext::requireUser($request);
         ['vehicle' => $vehicle, 'attachment' => $attachment] = $this->attachments->find($user, (int) ($args['attachment'] ?? 0));
-        if (!$this->tripFiles->mayUse($user, $vehicle, $attachment)) {
+        if (!$this->guard->mayUse($user, $vehicle, $attachment)) {
             throw ApiProblem::notFound('There is no such attachment.');
         }
 

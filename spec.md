@@ -3687,7 +3687,8 @@ outside web root, served via an authenticated handler; type/size validated.
   screenshot to its valuation (owner type `valuation`), never to the
   vehicle itself, which keeps a single photo (§7.1) and has no gallery.
 - Served by `/vehicles/{id}/attachments/{attachment}` to the signed-in owner
-  only (the same responder as photos: `nosniff`, sandboxing CSP, private
+  only (from Phase 39.3, an expense's or valuation's file only with *Can
+  see costs* or to its uploader, #303; the same responder as photos: `nosniff`, sandboxing CSP, private
   caching). Images open inline; PDFs download under their original name
   (browsers will not render a PDF inside the sandbox).
 
@@ -5136,7 +5137,9 @@ form; `POST` because PHP reads multipart bodies on `POST` only).
 - `GET /attachments/{id}`: the file, through the pages' authenticated
   handler, so incident photos follow §7.12 and #104 (the original only
   with `ViewIncidentDetails`, otherwise an upright, stripped copy made as
-  it is served).
+  it is served). An expense's or a valuation's file needs *Can see
+  costs*, or is the user's own upload, on the API and the page alike
+  (decided 2026-10-08, #303); a trip's needs the trip; otherwise 404.
 - `POST …/{entry}/attachments`: `multipart/form-data`, **one file per
   request** in the field `file`, with the pages' content check, decode
   check, `MAX_UPLOAD_MB`, stripping (except incident photos) and the edit

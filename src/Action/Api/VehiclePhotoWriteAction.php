@@ -48,6 +48,10 @@ final readonly class VehiclePhotoWriteAction
 
         $file = $request->getUploadedFiles()[self::FIELD] ?? null;
         $errors = new ValidationErrors();
+        if (!$file instanceof UploadedFileInterface && EntryAttachmentsAction::bodyDropped($request)) {
+            $errors->add(self::FIELD, 'upload.too_large', ['max' => $this->vehicles->maxPhotoMegabytes()]);
+            throw $this->validation->of($errors);
+        }
         if (!$file instanceof UploadedFileInterface || !FileUpload::wasProvided($file)) {
             $errors->add(self::FIELD, 'validation.required');
             throw $this->validation->of($errors);

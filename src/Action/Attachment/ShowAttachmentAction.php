@@ -18,7 +18,7 @@ final readonly class ShowAttachmentAction
 {
     public function __construct(
         private AttachmentService $attachments,
-        private TripFileGuard $tripFiles,
+        private AttachmentGuard $guard,
         private AttachmentFile $file,
     ) {
     }
@@ -30,7 +30,7 @@ final readonly class ShowAttachmentAction
     {
         $vehicle = RequestContext::vehicle($request);
         $attachment = AttachmentRoute::attachment($this->attachments, $vehicle, $request, $args);
-        $this->tripFiles->allow($request, $attachment);
+        $this->guard->allow($request, $attachment);
 
         return $this->file->send($request, $response, RequestContext::requireUser($request), $vehicle, $attachment);
     }
