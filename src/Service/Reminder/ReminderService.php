@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use Logbook\Domain\Feature\Feature;
 use DateTimeZone;
 use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Webhook\WebhookEvents;
@@ -155,8 +156,10 @@ final readonly class ReminderService
     public function markDone(Reminder $reminder): void
     {
         $this->reminders->setStatus($reminder->id, ReminderStatus::Done, $this->clock->now());
-        if ($reminder->source === ReminderSource::Issue && $reminder->sourceId !== null) {
-            $this->lookedAt($reminder->vehicleId, $reminder->sourceId);
+        // With `issues` off its data is left as it is (spec.md §7.10).
+        $issue = $reminder->source === ReminderSource::Issue ? $reminder->sourceId : null;
+        if ($issue !== null && $this->features->isEnabled(Feature::Issues)) {
+            $this->lookedAt($reminder->vehicleId, $issue);
         }
         $this->webhooks->reminder($reminder->vehicleId, $reminder->id, 'done');
     }
