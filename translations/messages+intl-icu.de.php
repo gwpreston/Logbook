@@ -6280,6 +6280,7 @@ return [
                 'ok' => 'Die DVSA hat die Zugangsdaten akzeptiert.',
                 'failed' => 'Der Test ist fehlgeschlagen. Den Grund findest du unter „Letzter Aufruf“.',
                 'incomplete' => 'Speichere zuerst alle vier Zugangsdaten.',
+                'off' => 'Wähle einen Anbieter und speichere, bevor du testest: Bei ausgeschalteter MOT-Historie wird nichts gesendet.',
             ],
             'error' => [
                 'provider' => 'Wähle einen Anbieter aus der Liste.',

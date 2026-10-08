@@ -6283,6 +6283,7 @@ return [
                 'ok' => 'DVSA accepted the credentials.',
                 'failed' => 'The test failed. The reason is under Last call.',
                 'incomplete' => 'Save all four credentials first.',
+                'off' => 'Choose a provider and save before testing: with MOT history off nothing is sent.',
             ],
             'error' => [
                 'provider' => 'Choose a provider from the list.',

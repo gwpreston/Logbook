@@ -35,16 +35,13 @@
             {% elseif status.ok() %}
                 <p data-mot-ok>{{ ui.icon('check_circle') }} {{ 'mot_history.settings.status.ok'|trans }}</p>
             {% endif %}
-            {% for row in providers %}
-                {% if row.credentials is not empty and false not in row.credentials %}
-                    <form method="post" action="{{ url_for('settings.mot_history.test') }}">
-                        {{ ui.csrf(csrf) }}
-                        <input type="hidden" name="provider" value="{{ row.provider.code() }}">
-                        <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'mot_history.settings.test.button'|trans({provider: row.provider.nameKey()|trans}) }}</button>
-                        <p class="field__hint">{{ 'mot_history.settings.test.hint'|trans }}</p>
-                    </form>
-                {% endif %}
-            {% endfor %}
+            {% if enabled %}
+                <form method="post" action="{{ url_for('settings.mot_history.test') }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'mot_history.settings.test.button'|trans({provider: enabled.nameKey()|trans}) }}</button>
+                    <p class="field__hint">{{ 'mot_history.settings.test.hint'|trans }}</p>
+                </form>
+            {% endif %}
             {{ fp.attribution(enabled) }}
         </section>
 

@@ -17,7 +17,8 @@ use Slim\Exception\HttpNotFoundException;
 /**
  * POST /settings/mot-history/test — *Test* (spec.md §7.38, #327): signs in
  * with the saved credentials and makes the call that sends no vehicle, so
- * the client credentials and the API key are both checked. The outcome is
+ * the client credentials and the API key are both checked. Only while the
+ * provider is enabled. The outcome is
  * the page's last call.
  */
 final readonly class TestMotHistoryAction
@@ -36,10 +37,14 @@ final readonly class TestMotHistoryAction
             throw new HttpNotFoundException($request);
         }
         $session = RequestContext::session($request);
-        $form = RequestContext::form($request);
-        $code = is_string($form['provider'] ?? null) ? $form['provider'] : '';
-        $provider = $this->config->registry()->get($code === '' ? $this->config->providerCode() : $code);
-        if ($provider === null || !$this->secrets->complete($provider)) {
+        // Only the enabled provider: with it off nothing is sent (spec.md §7.38).
+        $provider = $this->config->provider();
+        if ($provider === null) {
+            $session->flash('error', 'mot_history.settings.test.off');
+
+            return $this->redirect->toRoute('settings.mot_history');
+        }
+        if (!$this->secrets->complete($provider)) {
             $session->flash('error', 'mot_history.settings.test.incomplete');
 
             return $this->redirect->toRoute('settings.mot_history');

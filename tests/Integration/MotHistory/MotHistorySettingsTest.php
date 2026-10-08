@@ -174,16 +174,20 @@ final class MotHistorySettingsTest extends AppTestCase
         self::assertStringNotContainsString('the-real-api-key-5678', $page);
     }
 
-    public function testTestNeedsEveryCredential(): void
+    public function testTestSendsNothingWhileTheProviderIsOff(): void
     {
         $app = $this->app();
+        $this->saveCredentials($app);
         $browser = $this->browserFor($app, 'owner');
+        self::assertSame(303, $browser->post('/settings/mot-history', ['provider' => ''])->getStatusCode());
 
+        $off = (string) $browser->get('/settings/mot-history')->getBody();
+        self::assertStringNotContainsString('settings/mot-history/test', $off, 'no Test button');
         $browser->post('/settings/mot-history/test', ['provider' => DvsaProvider::CODE]);
 
-        self::assertSame([], $this->requests);
+        self::assertSame([], $this->requests, 'nothing was sent with the provider off');
         $page = (string) $browser->get('/settings/mot-history')->getBody();
-        self::assertStringContainsString('Save all four credentials first.', $page);
+        self::assertStringContainsString('with MOT history off nothing is sent', $page);
 
         $this->createMember($app);
         self::assertSame(404, $this->browserFor($app, 'partner')->post('/settings/mot-history/test', [])->getStatusCode());

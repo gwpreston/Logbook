@@ -108,8 +108,8 @@ and the decisions below win. In short:
 - **Mileage:** every read odometer a `mot` reading (#322), checked like
   any other, with the "Your reading … the MOT …" wording.
 - **Review card:** passed tests as `inspection` documents, DVSA's first
-  MOT due date, defects as issues (`advisory`, `minor`, `user_entered`
-  watching with *Look again* at that test's expiry less 30 days; the
+  MOT due date, defects as issues (`advisory`, `minor`, `user_entered`,
+  `non_specific` and `system_generated` watching with *Look again* at that test's expiry less 30 days; the
   rest open; `dangerous` and `major` *Affects safety*), repeats as
   updates, *Not now*.
 - **Recalls** (#325, #329), ***Look up*** on the add form (#326, #330),
