@@ -132,3 +132,8 @@ This sub-phase's questions (#282–#284, #287, #288) were decided on
   sending only one of volume, price per unit and total keeps the other
   two as stored, as the edit form does; nothing is re-derived. spec
   §7.20 *Conventions*.
+- **#299** (found while building, decided 2026-10-08): `POST
+  …/payments` takes `missed`, `paid_late` and `extra`, as the page;
+  `settlement` answers 422, because a settlement is recorded by
+  `…/end` with outcome `settled`, which also ends the agreement. spec
+  §7.20 *Writes, edits and deletes*.

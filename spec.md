@@ -5082,7 +5082,8 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   and *one active agreement* rule (409 `finance_active_exists`); the
   agreement number is accepted but **never returned**. `POST
   …/agreements/{agreement}/payments` (kind `missed`, `paid_late`,
-  `extra`, `settlement`) and `POST …/agreements/{agreement}/quotes`, with
+  `extra`, as the page; `settlement` is 422: a settlement is recorded by
+  `…/end` with outcome `settled`, decided 2026-10-08, #299) and `POST …/agreements/{agreement}/quotes`, with
   `DELETE` for each. `POST …/agreements/{agreement}/end` is the page's
   *End* for an agreement that ends while the vehicle stays (settled
   early, completed); an ending with the vehicle leaving goes through

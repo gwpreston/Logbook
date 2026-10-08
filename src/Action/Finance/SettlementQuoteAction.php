@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Finance;
 
+use Logbook\Service\Finance\FinanceEvents;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
-use Logbook\Support\Validation\Validator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -21,6 +21,7 @@ final readonly class SettlementQuoteAction
 {
     public function __construct(
         private FinanceService $finance,
+        private FinanceEvents $events,
         private Redirector $redirect,
     ) {
     }
@@ -46,17 +47,11 @@ final readonly class SettlementQuoteAction
             return $back;
         }
 
-        $validator = new Validator(RequestContext::form($request), $user->preferences->locale);
-        $quotedOn = $validator->date('quoted_on', true);
-        $amount = $validator->decimal('quote_amount', true, 2, '0', null, 11);
-        $validUntil = $validator->date('valid_until', true);
-        $notes = $validator->string('quote_notes', false, 500);
-        if ($quotedOn === null || $amount === null || $validUntil === null || $validUntil < $quotedOn) {
+        if ($this->events->quote($user, $vehicle, $agreement, RequestContext::form($request)) !== null) {
             $session->flash('error', 'finance.error.quote');
 
             return $back;
         }
-        $this->finance->addQuote($user, $vehicle, $agreement, $quotedOn, $amount, $validUntil, $notes);
         $session->flash('success', 'finance.quote_added');
 
         return $back;

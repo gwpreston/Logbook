@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Logbook\Action\Finance;
 
 use Logbook\Domain\Finance\PaymentEventKind;
+use Logbook\Service\Finance\FinanceEvents;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
-use Logbook\Support\Validation\Validator;
+use Logbook\Support\Validation\ValidationErrors;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -24,6 +25,7 @@ final readonly class FinancePaymentAction
 {
     public function __construct(
         private FinanceService $finance,
+        private FinanceEvents $events,
         private Redirector $redirect,
     ) {
     }
@@ -41,47 +43,22 @@ final readonly class FinancePaymentAction
         }
         $back = $this->redirect->toRoute('finance.show', ['id' => (string) $vehicle->id, 'agreement' => (string) $agreement->id]);
         $session = RequestContext::session($request);
-        $validator = new Validator(RequestContext::form($request), $user->preferences->locale);
-        $kind = $validator->enum('kind', PaymentEventKind::class, true);
-        $today = $this->finance->ownerToday($user, $vehicle);
-
-        if ($kind === PaymentEventKind::Extra) {
-            $amount = $validator->decimal('amount', true, 2, '0.01', null, 11);
-            $paidOn = $validator->date('paid_on', true);
-            $notes = $validator->string('notes', false, 500);
-            if ($amount === null || $paidOn === null || $paidOn > $today) {
-                $session->flash('error', 'finance.error.extra');
-
-                return $back;
+        $input = RequestContext::form($request);
+        $done = $this->events->payment($user, $vehicle, $agreement, $input);
+        if ($done instanceof ValidationErrors) {
+            if ($done->has('kind')) {
+                throw new HttpNotFoundException($request);
             }
-            $this->finance->addExtraPayment($user, $vehicle, $agreement, $amount, $paidOn, $notes);
-            $session->flash('success', 'finance.extra_added');
+            $extra = ($input['kind'] ?? '') === PaymentEventKind::Extra->value;
+            $session->flash('error', $extra ? 'finance.error.extra' : 'finance.error.mark');
 
             return $back;
         }
-
-        if ($kind !== PaymentEventKind::Missed && $kind !== PaymentEventKind::PaidLate) {
-            throw new HttpNotFoundException($request);
-        }
-        $dueOn = $validator->date('due_on', true);
-        $paidOn = $kind === PaymentEventKind::PaidLate ? $validator->date('paid_on') : null;
-        $payment = null;
-        foreach ($this->finance->view($user, $vehicle, $agreement)->figures->schedule->payments as $candidate) {
-            if ($dueOn !== null && $candidate->dueOn == $dueOn) {
-                $payment = $candidate;
-            }
-        }
-        $allowed = $payment !== null && match ($kind) {
-            PaymentEventKind::Missed => $payment->status->value === 'paid',
-            PaymentEventKind::PaidLate => $payment->status->value === 'missed',
-        };
-        if (!$allowed || $dueOn === null || ($paidOn !== null && ($paidOn < $dueOn || $paidOn > $today))) {
-            $session->flash('error', 'finance.error.mark');
-
-            return $back;
-        }
-        $this->finance->markPayment($user, $vehicle, $agreement, $kind, $dueOn, $paidOn);
-        $session->flash('success', $kind === PaymentEventKind::Missed ? 'finance.marked_missed' : 'finance.marked_paid_late');
+        $session->flash('success', match ($done) {
+            PaymentEventKind::Extra => 'finance.extra_added',
+            PaymentEventKind::Missed => 'finance.marked_missed',
+            default => 'finance.marked_paid_late',
+        });
 
         return $back;
     }
