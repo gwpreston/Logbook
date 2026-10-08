@@ -63,7 +63,9 @@ Phase 27.1's incident-photo rules (#104).
       secret shown once (`Cache-Control: no-store`), status, *Send test*,
       *Pause*, *Delete* (confirmation page), *Needs a new secret*; works
       without JS.
-- [ ] Backups: `webhooks` in without `secret`, restored paused
+- [ ] The "webhook paused" notice through the user's channels (per
+      #294), translated.
+- [ ] Backups (§7.19): `webhooks` in without `secret`, restored paused
       (`restored`); deliveries out.
 
 ### 39.3.3 OpenAPI, docs, translations
@@ -97,7 +99,10 @@ Phase 27.1's incident-photo rules (#104).
 - [ ] `CHANGELOG.md`: *Added*, the endpoints by area (39.1–39.3) and
       webhooks; *Upgrade notes*, the migration, `WEBHOOKS_ENABLED`, CORS
       now allowing `PUT`, `PATCH`, `DELETE` and `If-Match`.
-- [ ] `.env.example` for `WEBHOOKS_ENABLED`.
+- [ ] `.env.example`, `docs/configuration.md` (`WEBHOOKS_ENABLED`; the
+      `API_CORS_ORIGINS` row's methods and `If-Match`), the compose files'
+      pass-through, `docs/deployment.md` (the job's cadence, per #291),
+      `docs/demo-mode.md` (webhooks off).
 - [ ] README and `ROADMAP.md` rows for 39.1–39.3 ✅; tag once merged.
 
 ---
@@ -125,3 +130,21 @@ This sub-phase's questions (#285, #286, #288, #289) were decided on
   and attachments may not be history kinds. Options: (1) the history
   feed's kinds only; (2) everything 39.2 can write, with new kinds where
   the feed has none; (3) (2) without attachments.
+- **#291 How often does the `webhooks` job run?** A pass is every 15
+  minutes by default, so the 1- and 5-minute retries (#288) can't hold.
+  Options: (1) every pass, the intervals as minimums rounded up to the
+  next pass; (2) its own 1-minute interval, with a cron note in
+  `docs/deployment.md`; (3) the shortest retry becomes 15 minutes.
+- **#292 How does a paused or restored webhook come back?** Options:
+  *Resume* only; *Resume* and *New secret* (shown once); an *Edit* page
+  (name, URL, events, new secret) with *Resume*. And does resuming reset
+  the failure count?
+- **#293 What counts toward the 50 failures?** Options: each failed
+  attempt; each delivery given up after its retries; each attempt, reset
+  by any success. And what happens to queued deliveries when paused?
+- **#294 Where does the "webhook paused" notice go?** Options: every
+  channel the user has on; the channels that receive reminders, under
+  quiet hours; only on the Webhooks page and dashboard.
+- **#295 Are events queued for a user without *Can see costs* on cost
+  entries** (expenses, valuations, finance)? Options: yes, ids and kind
+  only; no, those kinds are skipped for them. Related to #290.

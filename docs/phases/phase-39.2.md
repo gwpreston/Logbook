@@ -73,8 +73,8 @@ nested routes, entry guard and `ETag`).
       (create, edit, delete, the form's limits); attention hide and
       unhide (idempotent).
 - [ ] Finance: agreements (create with the one-active rule, edit; the
-      number never returned), payment events, settlement quotes (create,
-      delete), *End*.
+      number never returned), payment events and settlement quotes
+      (create and delete for each), *End*.
 
 ### 39.2.4 OpenAPI, docs, translations
 - [ ] `docs/api/openapi.json`: every operation, schema and error code of

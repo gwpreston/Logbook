@@ -29,8 +29,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §6
 first.
 
 **Prerequisites:** [Phase 38](phase-38.md) complete and green. Independent
-of [Phase 39](phase-39.1.md); if 39 is built first, issues get its edit,
-delete and attachment endpoints too.
+of Phases [39.1](phase-39.1.md) to [39.3](phase-39.3.md); if they are built first, issues get
+[39.2](phase-39.2.md)'s edit and delete and [39.3](phase-39.3.md)'s attachment endpoints too.
 
 ---
 

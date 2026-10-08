@@ -96,7 +96,8 @@ found while starting it) were answered on 2026-10-08, before Phase 39.1
 started; the phase was split into 39.1, 39.2 and 39.3. #221, #279 and
 #280 were reviewed the same day and carried as they are: none of them
 changes Phase 39. #290 was found while starting Phase 39.1 and waits
-for a decision before Phase 39.3.
+for a decision before Phase 39.3; the spec review of the same day
+raised #291–#295, also for 39.3.
 
 | # | Phase | Question | Status | Decision or where answered | Date |
 |---|---|---|---|---|---|
@@ -390,6 +391,11 @@ for a decision before Phase 39.3.
 | 288 | [39.3](phase-39.3.md) | H. The proposed numbers | Scheduled | Kept and written into spec §7.20 as tested values: pause a webhook after 50 consecutive failures; delivery rows kept 7 days; retries after 1 min, 5 min, 30 min, 2 h and 6 h; a 10-minute duplicate window for vehicle create (39.2). | 2026-10-08 |
 | 289 | [39.3](phase-39.3.md) | Is a webhook's signing secret in backups? (found while starting) | Scheduled | No, as channel secrets (#227): the webhook is backed up without it; a restored webhook is paused and shows *Needs a new secret* until the user makes one. Built in [39.3](phase-39.3.md). spec §6 Webhook, §7.20. | 2026-10-08 |
 | 290 | [39.3](phase-39.3.md) | Which entries fire webhooks, and with which `kind`? Schedules, valuations, tyre changes and sets, finance events and attachments may not be history kinds (found while starting 39.1) | Needs a decision | Options: the history feed's kinds only; everything 39.2 can write, with new kinds; the same without attachments. Before 39.3 starts. | — |
+| 291 | [39.3](phase-39.3.md) | How often does the `webhooks` job run, given a 15-minute pass and 1- and 5-minute retries? (found by the spec review) | Needs a decision | Options: every pass, intervals as minimums; its own 1-minute interval; shortest retry 15 minutes. Before 39.3. | — |
+| 292 | [39.3](phase-39.3.md) | How does a paused or restored webhook come back, and does resuming reset its failures? (found by the spec review) | Needs a decision | Options: *Resume* only; *Resume* and *New secret*; an *Edit* page with both. Before 39.3. | — |
+| 293 | [39.3](phase-39.3.md) | What counts toward a webhook's 50 failures, and what happens to queued deliveries when it pauses? (found by the spec review) | Needs a decision | Options: each failed attempt; each delivery given up; each attempt, reset by a success. Before 39.3. | — |
+| 294 | [39.3](phase-39.3.md) | Where does the "webhook paused" notice go, and do quiet hours apply? (found by the spec review) | Needs a decision | Options: every channel on; the reminder channels under quiet hours; the Webhooks page and dashboard only. Before 39.3. | — |
+| 295 | [39.3](phase-39.3.md) | Queue events on cost entries for a user without *Can see costs*? (found by the spec review) | Needs a decision | Options: yes, ids and kind only; no, skip those kinds for them. Related to #290. Before 39.3. | — |
 
 ## Other loose ends found in the review
 

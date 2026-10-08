@@ -327,6 +327,7 @@ disagree):
     | `update_check` | daily at the install's own minute, while *Check for updates* is on (Phase 28.2, §7.31) | asks GitHub for the latest release; registered only while `UPDATE_CHECK_ALLOWED` is on |
     | `fuel_prices` | every 30, 60 or 120 minutes while a price provider is enabled; never otherwise (Phase 30.2, §7.34) | syncs provider stations and listed prices, records tracked stations' price changes, refreshes linked stations and checks price alerts |
     | `ai_insights` | hourly while Ask is set up; never otherwise (Phase 33.4, §7.26 *AI insights*) | makes the day's AI insights for each active user with AI on, with a session in the last 30 days and no set for their today yet; up to 300 seconds a run, the rest left for the next; a user whose AI is busy waits for the next run |
+    | `webhooks` | every pass, after `reminders` (Phase 39.3; how the retry intervals map onto passes is open, #291) | sends the entry-webhook deliveries that are due and removes delivery rows older than 7 days (§7.20 *Webhooks*) |
     | `demo_reset` | every `DEMO_RESET_HOURS` (default 24), listed only while the demo is active; never run from a page visit (Phase 35.1, §7.36) | puts the sample data back |
 
     A job is due when its interval is `0`, or when its last finished run
@@ -3761,7 +3762,10 @@ vehicles; a disabled module cannot be imported).
   onto any supported engine: SQLite → PostgreSQL works) and `uploads/…`
   (every file under `UPLOAD_PATH`: photos and attachments). Sessions and
   invitation links are not included (Phase 19: a link is for this install,
-  now), nor are job runs (Phase 28.1).
+  now), nor are job runs (Phase 28.1), nor webhook deliveries (Phase
+  39.3). Webhooks are included without their `secret` column; a restore
+  sets each one's secret to null and pauses it (`restored`), as §7.20
+  *Webhooks* says, and a backup without the column restores as one.
 - **Scheduled backups** (Phase 28.1, §7.30) are the same archive, written
   to `BACKUP_PATH` by the `backup` job as `logbook-scheduled-…zip`. The
   Backup page lists them, newest first, with size and *Download*
@@ -4928,9 +4932,9 @@ stays `v1`, and existing responses don't change.
 - **Modules** apply as before: a switched-off module's paths answer 404.
 - **Amounts** follow `EntryAccess::canSeeAmount` on every new read and
   are omitted, not zeroed.
-- **CORS:** from Phase 39 the preflight allows `GET, POST, PUT, PATCH,
-  DELETE` and the `If-Match` header for the allowed origins, and
-  responses expose `ETag`.
+- **CORS:** from Phase 39 the API's preflight allows `GET, POST, PUT,
+  PATCH, DELETE` and the `If-Match` header for the allowed origins, and
+  responses expose `ETag`. The MCP endpoint's preflight is unchanged.
 - **OpenAPI:** every new operation, schema and error code, with the
   tests validating every response against it. `info.version` moves one
   minor version, once, in Phase 39.1 (each later sub-phase adds
@@ -5081,7 +5085,8 @@ notification channel and unrelated.
   same classes, the same always-refused ranges, resolved and pinned on
   save, test and every send, and an admin's own webhooks unrestricted, as
   their channels. No new rules.
-- **What triggers it:** any create, edit or delete of an entry on a
+- **What triggers it** (which entries, and their `kind`, open: #290;
+  who is told about cost entries, open: #295): any create, edit or delete of an entry on a
   vehicle the webhook's user can `View`, by any path (form, import, API,
   Ask draft, MCP). `reminder.changed` covers status changes (due,
   overdue, done, dismissed, reopened).
@@ -5096,9 +5101,11 @@ notification channel and unrelated.
 - **Delivery:** queued in the transaction that changes the entry and sent
   by the job scheduler (§7.30), never in the request. A failed delivery
   is retried after **1 minute, 5 minutes, 30 minutes, 2 hours and 6
-  hours**, then given up. After **50 consecutive failed deliveries** the
-  webhook is paused and the user is told through their notification
-  channels. Delivered or given up, a delivery row is removed after **7
+  hours**, then given up (how these map onto the scheduler's passes is
+  open, #291). After **50 consecutive failures** (what counts as one is
+  open, #293) the webhook is paused and the user is told through their
+  notification channels (which ones, and quiet hours, open: #294). How a
+  paused or restored webhook comes back is open (#292). Delivered or given up, a delivery row is removed after **7
   days**.
 - **Switches:** `API_ENABLED=false` stops deliveries (queued ones wait).
   `WEBHOOKS_ENABLED` (default `true`, §9) switches only this feature off:
@@ -7900,8 +7907,8 @@ owner. Decided 2026-10-06 (#212–#217).
   - changing the password, the email address or the avatar, and linking
     single sign-on;
   - sending anything **out**: reminder and digest notifications, test
-    notifications, email and every channel are switched off (the reminder
-    job records "demo: not sent"), and the app makes no outbound request
+    notifications, email, every channel and (Phase 39.3) entry webhooks
+    are switched off (the reminder job records "demo: not sent"), and the app makes no outbound request
     except to the sample provider's own generator;
   - creating a calendar feed;
   - **uploading a file** (#214): the file fields are not offered and a
@@ -8063,7 +8070,8 @@ owner. Decided 2026-10-06 (#212–#217).
     trips and mileage claims (trips on), places (fuel stations on); absent
     when none is on.
   - **Your data** (`#data`, fuel on): import from another app.
-  - **Developers** (`#developers`): API keys (and MCP, which uses them).
+  - **Developers** (`#developers`): API keys (and MCP, which uses them)
+    and, from Phase 39.3, Webhooks.
   - **Administration** (`#admin`, admins): users, modules, AI
     connections, fuel prices, **Delivery** (Phase 36.1: the
     installation-wide places notifications leave the server from; the
