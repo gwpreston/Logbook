@@ -169,6 +169,25 @@ final class JsonInput
         'purpose' => 'purpose_default',
     ];
 
+    /** API field → form field, for the valuation form (Phase 39.2). */
+    public const array VALUATION_FIELDS = [
+        'valued_on' => 'valued_on',
+        'amount' => 'amount',
+        'source' => 'source',
+        'notes' => 'notes',
+    ];
+
+    /** API field → form field, for the schedule form (Phase 39.2); distances reach it in km. */
+    public const array SCHEDULE_FIELDS = [
+        'category' => 'category',
+        'title' => 'title',
+        'interval_km' => 'interval_distance',
+        'interval_distance' => 'interval_distance',
+        'interval_months' => 'interval_months',
+        'baseline_done_on' => 'last_done_on',
+        'baseline_odometer' => 'last_done_odometer',
+    ];
+
     /** A price alert's fields (Phase 39.2, spec.md §7.34). */
     public const array PRICE_ALERT_FIELDS = ['station_id', 'grade', 'below', 'volume_unit'];
 
@@ -573,6 +592,65 @@ final class JsonInput
             'is_return_default' => self::flag($body, 'is_return', $errors),
             'is_business_default' => self::flag($body, 'is_business', $errors, true),
             'purpose_default' => self::text($body, 'purpose', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, DistanceUnit::Kilometre, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A valuation body as the valuation form's input (Phase 39.2): the date
+     * defaults to today in the owner's time zone.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function valuation(array $body, DisplayPreferences $owner, DateTimeImmutable $today): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, array_keys(self::VALUATION_FIELDS), $errors);
+
+        $input = [
+            'valued_on' => self::text($body, 'valued_on', $errors, $today->format('Y-m-d')),
+            'amount' => self::decimal($body, 'amount', $errors),
+            'source' => self::text($body, 'source', $errors),
+            'notes' => self::text($body, 'notes', $errors),
+        ];
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $owner->distanceUnit, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A schedule body as the schedule form's input (Phase 39.2), parsed in
+     * km: `interval_km` is km; `interval_distance` and `baseline_odometer`
+     * are in `distance_unit` (the owner's when left out) and converted here.
+     * One interval field or the other, not both.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function schedule(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::SCHEDULE_FIELDS), 'distance_unit'], $errors);
+        $unit = self::distanceUnit($body, $owner, $errors);
+        $toKm = static fn (string $value): string => $value === '' ? '' : Decimal::trim($unit->toKmDecimal($value, 3));
+
+        $km = self::decimal($body, 'interval_km', $errors);
+        $distance = self::decimal($body, 'interval_distance', $errors);
+        if (($body['interval_km'] ?? null) !== null && ($body['interval_distance'] ?? null) !== null) {
+            $errors->add('interval_distance', 'api.validation.interval_km_or_distance');
+        }
+        $input = [
+            'category' => self::text($body, 'category', $errors),
+            'title' => self::text($body, 'title', $errors),
+            'interval_distance' => $km !== '' ? $km : $toKm($distance),
+            'interval_months' => self::decimal($body, 'interval_months', $errors),
+            'last_done_on' => self::text($body, 'baseline_done_on', $errors),
+            'last_done_odometer' => $toKm(self::decimal($body, 'baseline_odometer', $errors)),
         ];
 
         return $errors->isEmpty()

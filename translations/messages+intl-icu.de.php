@@ -3515,6 +3515,7 @@ return [
             'no_tyre_at_position' => 'An dieser Position ist kein Reifen montiert.',
             'station_or_id' => 'Sende station_id oder station, nicht beides.',
             'station_unknown' => 'Diese Tankstelle gibt es nicht.',
+            'interval_km_or_distance' => 'Sende interval_km oder interval_distance, nicht beides.',
         ],
     ],
     'backup' => [

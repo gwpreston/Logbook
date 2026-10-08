@@ -3518,6 +3518,7 @@ return [
             'no_tyre_at_position' => 'No tyre is fitted at this position.',
             'station_or_id' => 'Send station_id or station, not both.',
             'station_unknown' => 'No such station.',
+            'interval_km_or_distance' => 'Send interval_km or interval_distance, not both.',
         ],
     ],
     'backup' => [

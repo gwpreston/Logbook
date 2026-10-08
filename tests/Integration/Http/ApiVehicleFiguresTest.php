@@ -18,6 +18,7 @@ use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -171,5 +172,83 @@ final class ApiVehicleFiguresTest extends AppTestCase
         self::assertSame(403, $theirs->get($base . '/valuations/' . $valuation)->getStatusCode());
         self::assertSame(403, $theirs->get($base . '/ownership')->getStatusCode());
         self::assertSame(200, $theirs->get($base . '/schedules')->getStatusCode(), 'schedules have no amounts');
+    }
+
+    public function testAValuationIsAddedEditedAndDeletedAsThePagesDo(): void
+    {
+        $path = '/vehicles/' . $this->golf->id . '/valuations';
+
+        $created = $this->api->post($path, ['amount' => 12500, 'source' => 'Dealer quote']);
+        self::assertSame(201, $created->getStatusCode(), self::body($created));
+        $entry = ApiClient::json($created)->doc('entry');
+        self::assertSame('2026-09-30', $entry->get('valued_on'), 'today in the owner\'s zone');
+        self::assertSame('12500.000', $entry->get('amount'));
+        $id = $entry->int('id');
+        $again = $this->api->post($path, ['amount' => '12500.0', 'source' => 'dealer quote', 'valued_on' => '2026-09-30']);
+        self::assertSame(200, $again->getStatusCode());
+        self::assertTrue(ApiClient::json($again)->get('duplicate'));
+        self::assertSame($id, ApiClient::json($again)->int('entry', 'id'));
+
+        foreach ([['valued_on' => '2026-10-01'], ['valued_on' => '2024-09-01'], ['amount' => '-1']] as $bad) {
+            self::assertSame(422, $this->api->post($path, $bad + ['amount' => '1'])->getStatusCode(), (string) json_encode($bad));
+        }
+
+        $tag = $this->api->get($path . '/' . $id)->getHeaderLine('ETag');
+        $edited = $this->api->patch($path . '/' . $id, ['amount' => '12000', 'notes' => 'After the MOT'], ['If-Match' => $tag]);
+        self::assertSame(200, $edited->getStatusCode(), self::body($edited));
+        self::assertSame('12000.000', ApiClient::json($edited)->get('entry', 'amount'));
+        self::assertSame('Dealer quote', ApiClient::json($edited)->get('entry', 'source'), 'unsent fields stay');
+        self::assertSame(412, $this->api->patch($path . '/' . $id, ['amount' => '1'], ['If-Match' => $tag])->getStatusCode());
+
+        $logger = $this->createMember($this->app, 'logger');
+        $this->service($this->app, VehicleShareRepository::class)
+            ->insert($this->golf->id, $logger->id, ShareLevel::Log, true, false, new DateTimeImmutable('2026-09-01T00:00:00Z'));
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $logger));
+        self::assertSame(403, $theirs->post($path, ['amount' => '1'])->getStatusCode(), 'Manage, as the page');
+        self::assertSame(403, $theirs->delete($path . '/' . $id)->getStatusCode());
+
+        $this->service($this->app, VehicleService::class)->archive($this->owner, $this->golf);
+        $scrap = $this->api->post($path, ['amount' => '350', 'source' => 'Scrap yard']);
+        self::assertSame(201, $scrap->getStatusCode(), 'the one write an archived vehicle takes');
+        self::assertSame(204, $this->api->delete($path . '/' . $id)->getStatusCode());
+        self::assertSame(404, $this->api->get($path . '/' . $id)->getStatusCode());
+    }
+
+    public function testAScheduleIsAddedEditedAndDeletedAsThePagesDo(): void
+    {
+        $path = '/vehicles/' . $this->golf->id . '/schedules';
+        $body = ['category' => 'oil', 'title' => 'Oil change', 'interval_distance' => 6000, 'interval_months' => 12];
+
+        $created = $this->api->post($path, $body);
+        self::assertSame(201, $created->getStatusCode(), self::body($created));
+        $entry = ApiClient::json($created)->doc('entry');
+        self::assertSame('9656.064', $entry->get('interval_km'), '6,000 mi, the owner\'s unit');
+        $id = $entry->int('id');
+        $again = $this->api->post($path, ['interval_km' => '9656.064'] + array_diff_key($body, ['interval_distance' => 1]));
+        self::assertSame(200, $again->getStatusCode(), 'the same intervals');
+        self::assertTrue(ApiClient::json($again)->get('duplicate'));
+
+        $both = $this->api->post($path, ['interval_km' => '10000'] + $body);
+        $key = ApiClient::json($both)->get('errors', 'interval_distance', 'key');
+        self::assertSame('api.validation.interval_km_or_distance', $key);
+        $none = $this->api->post($path, ['category' => 'oil', 'title' => 'No interval']);
+        self::assertSame('maintenance.schedule.need_interval', ApiClient::json($none)->get('errors', 'interval_km', 'key'));
+
+        $edited = ApiClient::json($this->api->patch($path . '/' . $id, ['title' => 'Oil and filter']));
+        self::assertSame('Oil and filter', $edited->get('entry', 'title'));
+        self::assertSame('9656.064', $edited->get('entry', 'interval_km'), 'exactly as stored');
+        $months = ApiClient::json($this->api->patch($path . '/' . $id, ['interval_distance' => null]));
+        self::assertNull($months->get('entry', 'interval_km'));
+        $none = $this->api->patch($path . '/' . $id, ['interval_months' => null]);
+        self::assertSame(422, $none->getStatusCode(), 'one interval at least');
+
+        $this->maintenance($this->app, $this->golf, '2026-09-01', 'Oil change', '60', '20000');
+        $record = $this->service($this->app, MaintenanceService::class)->history($this->golf)->entries[0];
+        self::assertSame(204, $this->api->delete($path . '/' . $id)->getStatusCode());
+        $kept = $this->api->get('/vehicles/' . $this->golf->id . '/maintenance/' . $record->id);
+        self::assertSame(200, $kept->getStatusCode(), 'records stay');
+
+        $this->service($this->app, VehicleService::class)->archive($this->owner, $this->golf);
+        self::assertSame('vehicle_archived', ApiClient::json($this->api->post($path, $body))->get('code'));
     }
 }

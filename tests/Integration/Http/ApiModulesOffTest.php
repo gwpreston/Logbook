@@ -72,7 +72,13 @@ final class ApiModulesOffTest extends AppTestCase
         // Phase 39.2: edits, deletes and the new writes.
         $paths = [
             Feature::Fuel->value => [['PATCH', $base . '/fuel/1'], ['DELETE', $base . '/fuel/1']],
-            Feature::Maintenance->value => [['PATCH', $base . '/maintenance/1'], ['DELETE', $base . '/maintenance/1']],
+            Feature::Maintenance->value => [
+                ['PATCH', $base . '/maintenance/1'],
+                ['DELETE', $base . '/maintenance/1'],
+                ['POST', $base . '/schedules'],
+                ['PATCH', $base . '/schedules/1'],
+                ['DELETE', $base . '/schedules/1'],
+            ],
             Feature::Compliance->value => [['PATCH', $base . '/documents/1'], ['DELETE', $base . '/documents/1']],
             Feature::Trips->value => [
                 ['PATCH', $base . '/trips/1'],

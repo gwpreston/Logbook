@@ -1095,6 +1095,69 @@
             "$ref": "#/components/responses/TooMany"
           }
         }
+      },
+      "post": {
+        "operationId": "createSchedule",
+        "summary": "Add a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). One with the same category, title and intervals as a stored one is not written again: it comes back with duplicate true (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/schedules/{entry}": {
@@ -1136,6 +1199,112 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editSchedule",
+        "summary": "Edit a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). Through the edit form (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchedulePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSchedule",
+        "summary": "Delete a maintenance schedule",
+        "description": "Needs Manage; module maintenance. Refused on an archived vehicle (409). Records that completed it are kept. (Phase 39.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -1748,6 +1917,69 @@
             "$ref": "#/components/responses/BadParameter"
           }
         }
+      },
+      "post": {
+        "operationId": "createValuation",
+        "summary": "Add a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). One with the same date, amount and source as a stored one is not written again: it comes back with duplicate true (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already there (duplicate: true)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationWrite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
       }
     },
     "/vehicles/{id}/valuations/{entry}": {
@@ -1789,6 +2021,112 @@
           },
           "429": {
             "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editValuation",
+        "summary": "Edit a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). Through the edit form (Phase 39.2).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteValuation",
+        "summary": "Delete a valuation",
+        "description": "Needs Manage. Accepted on an archived vehicle within the sale-date rule (a scrapped car's scrap value). (Phase 39.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
           }
         }
       }
@@ -13707,6 +14045,328 @@
         "properties": {
           "entry": {
             "$ref": "#/components/schemas/PriceAlert"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ValuationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amount"
+        ],
+        "description": "The valuation form: not after today, not before the purchase date, not after the sale date; amount zero or more. A figure someone quoted: Logbook never fetches one.",
+        "properties": {
+          "valued_on": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Default: today in the key user's time zone."
+          },
+          "amount": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        }
+      },
+      "ValuationPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "valued_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ValuationWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Valuation"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ValuationEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Valuation"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ScheduleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "title"
+        ],
+        "description": "The schedule form: at least one interval. interval_km is in km; interval_distance and baseline_odometer are in distance_unit. Next due is computed and stored as by the form.",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "interval_km": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "interval_distance": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ],
+            "description": "Default: the owner's."
+          },
+          "interval_months": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "baseline_done_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "baseline_odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          }
+        }
+      },
+      "SchedulePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283); null clears an optional field.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "service",
+                  "oil",
+                  "tyres",
+                  "brakes",
+                  "battery",
+                  "repair",
+                  "bodywork",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_km": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_distance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "km",
+                  "mi"
+                ],
+                "description": "Default: the owner's."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_done_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ScheduleWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Schedule"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "duplicate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ScheduleEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Schedule"
           },
           "warnings": {
             "type": "array",

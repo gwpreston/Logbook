@@ -59,6 +59,7 @@ use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\EditEntryAction as ApiEditEntryAction;
 use Logbook\Action\Api\EditReminderAction as ApiEditReminderAction;
 use Logbook\Action\Api\UserWriteAction as ApiUserWriteAction;
+use Logbook\Action\Api\FigureWriteAction as ApiFigureWriteAction;
 use Logbook\Action\Api\DeleteEntryAction as ApiDeleteEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
 use Logbook\Action\Api\FinanceAction as ApiFinanceAction;
@@ -422,6 +423,14 @@ return static function (App $app): void {
                     ->setName('api.valuations.show')
                     ->setArgument('list', 'valuations')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // Phase 39.2: Manage, as the valuation pages; allowed on an archived vehicle (ApiFigureWrites).
+                $keyed->post('/vehicles/{id:[0-9]+}/valuations', ApiFigureWriteAction::class)->setName('api.valuations.create')
+                    ->setArgument('list', 'valuations')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
+                $keyed->map(['PATCH', 'DELETE'], '/vehicles/{id:[0-9]+}/valuations/{entry:[0-9]+}', ApiFigureWriteAction::class)
+                    ->setName('api.valuations.edit')
+                    ->setArgument('list', 'valuations')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $keyed->get('/vehicles/{id:[0-9]+}/ownership', ApiOwnershipAction::class)->setName('api.ownership')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
                 // True cost (Phase 32, spec.md §7.35): core, costs only.
@@ -489,6 +498,16 @@ return static function (App $app): void {
                     ->setName('api.schedules.show')
                     ->setArgument('list', 'schedules')
                     ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Maintenance));
+                // Phase 39.2: Manage, as the schedule pages.
+                $keyed->post('/vehicles/{id:[0-9]+}/schedules', ApiFigureWriteAction::class)->setName('api.schedules.create')
+                    ->setArgument('list', 'schedules')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->map(['PATCH', 'DELETE'], '/vehicles/{id:[0-9]+}/schedules/{entry:[0-9]+}', ApiFigureWriteAction::class)
+                    ->setName('api.schedules.edit')
+                    ->setArgument('list', 'schedules')
+                    ->setArgument($ability, VehicleAbility::Manage->value)
                     ->add($module(Feature::Maintenance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)

@@ -5028,7 +5028,9 @@ the default, `ytd`, `all`, `custom` with `from` / `to`), `vehicle`
   `distance_unit`, `interval_months` (at least one interval),
   `baseline_done_on`, `baseline_odometer`; next due is computed and
   stored as by the form. Duplicate key: same category, title and
-  intervals. `PATCH` and `DELETE …/schedules/{schedule}`; deleting keeps
+  intervals. `interval_km` and `interval_distance` can't both be sent
+  (`api.validation.interval_km_or_distance`); `baseline_odometer` is in
+  `distance_unit`. `PATCH` and `DELETE …/schedules/{schedule}`; deleting keeps
   the records that completed it (§7.4).
 - **Tyres** (module `tyres`): `POST /vehicles/{id}/tyres/changes` (`Log`)
   with `kind` (`existing`, `fit`, `swap`, `rotate`, `repair`, `remove`),

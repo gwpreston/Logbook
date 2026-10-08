@@ -70,9 +70,9 @@ nested routes, entry guard and `ETag`).
 ### 39.2.3 New writes
 - [ ] Vehicles: create (duplicate key over 10 minutes), edit, archive
       (each disposal, through the archive page's service), restore.
-- [ ] Valuations: create, edit, delete; allowed on an archived vehicle
+- [x] Valuations: create, edit, delete; allowed on an archived vehicle
       within the sale-date rule.
-- [ ] Schedules: create (duplicate key), edit, delete (records kept).
+- [x] Schedules: create (duplicate key), edit, delete (records kept).
 - [ ] Tyre changes: create (replayed, every kind), edit, delete (replay,
       409 where the page refuses); tyre details edit.
 - [x] Journeys: create, edit, delete (trips kept).
