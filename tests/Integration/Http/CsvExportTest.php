@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Support\Date\LocalTime;
+use Logbook\Domain\Issue\IssueStatus;
+use Logbook\Domain\Issue\IssueData;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
@@ -147,6 +150,43 @@ final class CsvExportTest extends AppTestCase
         // An archived vehicle's data still exports.
         $this->service($app, VehicleService::class)->archive($this->owner($app), $golf);
         self::assertSame(200, $browser->get($base . 'expenses.csv')->getStatusCode());
+    }
+
+    public function testIssuesExportWithWhatFixedThem(): void
+    {
+        // Phase 40.2 (spec.md §7.13 *Issues*): safety first, the issue's own mileage, what fixed it.
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $zone = new \DateTimeZone('Europe/London');
+        $issues = $this->service($app, \Logbook\Service\Issue\IssueService::class);
+        $day = static fn (string $date): \DateTimeImmutable => LocalTime::parseDate($date) ?? throw new \LogicException($date);
+        $record = $this->maintenance($app, $golf, '2026-09-14', 'Front pads', '120', '1609.344');
+        $knock = $issues->create($golf, new IssueData($day('2026-08-12'), 'Knock, front left', odometerKm: '1609.344'), $zone);
+        $issues->fixWith($golf, $knock, [$record->id]);
+        $issues->create($golf, new IssueData($day('2026-09-01'), 'Brake pipes', IssueStatus::Watching, affectsSafety: true), $zone);
+        $squeak = $issues->create($golf, new IssueData($day('2026-07-01'), 'Squeak', description: 'Cold mornings'), $zone);
+        $issues->fixWithoutRecord($golf, $squeak, $day('2026-07-20'), null);
+
+        $rows = self::rows(self::body($browser->get('/vehicles/' . $golf->id . '/export/issues.csv')));
+        self::assertSame(
+            ['Noticed on', 'Odometer (Miles)', 'Title', 'Description', 'Category', 'Status', 'Affects safety', 'Fixed on', 'Fixed by'],
+            $rows[0],
+        );
+        self::assertSame(['2026-09-01', '', 'Brake pipes', '', '', 'Watching', 'yes', '', ''], $rows[1], 'safety first');
+        self::assertSame(['2026-08-12', '1000', 'Knock, front left', '', '', 'Fixed', 'no', '2026-09-14', '2026-09-14 Front pads'], $rows[2]);
+        self::assertSame(['2026-07-01', '', 'Squeak', 'Cold mornings', '', 'Fixed', 'no', '2026-07-20', 'Fixed without a record'], $rows[3]);
+
+        $html = self::body($browser->get('/vehicles/' . $golf->id . '/issues'));
+        self::assertStringContainsString('href="/vehicles/' . $golf->id . '/export/issues.csv"', $html);
+
+        $toggles = $this->service($app, \Logbook\Service\Feature\FeatureToggles::class);
+        $toggles->save(array_values(array_filter(
+            \Logbook\Domain\Feature\Feature::cases(),
+            static fn (\Logbook\Domain\Feature\Feature $f): bool => $f !== \Logbook\Domain\Feature\Feature::Issues,
+        )));
+        self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/export/issues.csv')->getStatusCode());
     }
 
     public function testTabsLinkToTheirExport(): void

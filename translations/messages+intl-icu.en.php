@@ -1942,6 +1942,11 @@ return [
     ],
     // Phase 27.1: incidents, damage and insurance claims (spec.md §7.29).
     'issue' => [
+        'column' => [
+            'noticed_on' => 'Noticed on',
+            'fixed_on' => 'Fixed on',
+            'fixed_by' => 'Fixed by',
+        ],
         'view_all' => 'All issues →',
         'title' => 'Issues',
         'add' => 'Add issue',

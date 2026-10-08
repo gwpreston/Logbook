@@ -1940,6 +1940,11 @@ return [
     ],
     // Phase 27.1: Schäden und Versicherungsfälle (spec.md §7.29).
     'issue' => [
+        'column' => [
+            'noticed_on' => 'Bemerkt am',
+            'fixed_on' => 'Behoben am',
+            'fixed_by' => 'Behoben durch',
+        ],
         'view_all' => 'Alle Mängel →',
         'title' => 'Mängel',
         'add' => 'Mangel hinzufügen',

@@ -1055,7 +1055,7 @@ return static function (App $app): void {
 
             // Export and import check the module's toggle themselves (one route, several modules).
             $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips|incidents'
-                . '|finance}';
+                . '|finance|issues}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
                 ->setArgument($ability, VehicleAbility::Manage->value);
