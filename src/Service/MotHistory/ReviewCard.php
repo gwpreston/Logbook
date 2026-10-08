@@ -30,16 +30,4 @@ final readonly class ReviewCard
     {
         return count(array_filter($this->tests, static fn (ReviewTest $test): bool => $test->documentOffered));
     }
-
-    public function issuesOffered(): int
-    {
-        $count = 0;
-        foreach ($this->tests as $test) {
-            foreach ($test->defects as $defect) {
-                $count += $defect->offered() ? 1 : 0;
-            }
-        }
-
-        return $count;
-    }
 }

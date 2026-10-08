@@ -165,14 +165,14 @@ and the decisions below win. In short:
       migration, backups, demo block and job-log redaction.)
 
 ### 41.2 Fetch and store
-- [ ] Fetch, VIN fallback, mismatch refusal, upsert, readings, *Stop and
+- [x] Fetch, VIN fallback, mismatch refusal, upsert, readings, *Stop and
       remove*. (The migration, reversible on every engine, landed in
       41.1 with the secrets table it needs.)
-- [ ] MOT history page; review card (documents, first MOT due,
+- [x] MOT history page; review card (documents, first MOT due,
       advisories and defects to issues, repeats, *Not now*).
-- [ ] Recall state stored, shown and its *Needs attention* item (#325).
-- [ ] *Look up* on the add-vehicle form, with and without JS (#326).
-- [ ] Sample provider for development (#335) and MOT history in
+- [x] Recall state stored, shown and its *Needs attention* item (#325).
+- [x] *Look up* on the add-vehicle form, with and without JS (#326).
+- [x] Sample provider for development (#335) and MOT history in
       `--with-sample-data` (`DemoDataSeeder`); README's flag text.
 
 ### 41.3 Refresh and elsewhere

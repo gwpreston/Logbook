@@ -24,9 +24,4 @@ final readonly class FetchOutcome
         public ?string $modelAs = null,
     ) {
     }
-
-    public function stored(): bool
-    {
-        return $this->found && $this->refusedAs === null;
-    }
 }
