@@ -46,6 +46,9 @@ use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
 use Logbook\Action\Api\ListStationsAction as ApiStationsAction;
+use Logbook\Action\Api\ListSchedulesAction as ApiSchedulesAction;
+use Logbook\Action\Api\ListValuationsAction as ApiValuationsAction;
+use Logbook\Action\Api\OwnershipAction as ApiOwnershipAction;
 use Logbook\Action\Api\ReminderActionAction as ApiReminderActionAction;
 use Logbook\Action\Api\ShowEntryAction as ApiShowEntryAction;
 use Logbook\Action\Api\ShowStationAction as ApiStationAction;
@@ -362,6 +365,15 @@ return static function (App $app): void {
                     ->setName('api.expenses.show')
                     ->setArgument('list', 'expenses')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                // Valuations and ownership (Phase 39.1, spec.md §7.20): core, costs only.
+                $keyed->get('/vehicles/{id:[0-9]+}/valuations', ApiValuationsAction::class)->setName('api.valuations.index')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/valuations/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.valuations.show')
+                    ->setArgument('list', 'valuations')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
+                $keyed->get('/vehicles/{id:[0-9]+}/ownership', ApiOwnershipAction::class)->setName('api.ownership')
+                    ->setArgument($ability, VehicleAbility::ViewCosts->value);
                 // True cost (Phase 32, spec.md §7.35): core, costs only.
                 $keyed->get('/vehicles/{id:[0-9]+}/true-cost', ApiTrueCostAction::class)->setName('api.true_cost')
                     ->setArgument($ability, VehicleAbility::ViewCosts->value);
@@ -405,6 +417,15 @@ return static function (App $app): void {
                     ->setArgument('list', 'documents')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Compliance));
+                // Schedules (Phase 39.1, spec.md §7.4, §7.20): with the Maintenance module.
+                $keyed->get('/vehicles/{id:[0-9]+}/schedules', ApiSchedulesAction::class)->setName('api.schedules.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Maintenance));
+                $keyed->get('/vehicles/{id:[0-9]+}/schedules/{entry:[0-9]+}', ApiShowEntryAction::class)
+                    ->setName('api.schedules.show')
+                    ->setArgument('list', 'schedules')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Maintenance));
                 $keyed->get('/vehicles/{id:[0-9]+}/tyres', ApiTyresAction::class)->setName('api.tyres.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Tyres));

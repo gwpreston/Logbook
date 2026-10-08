@@ -35,7 +35,9 @@ use Logbook\Support\Api\Serializer;
 final readonly class ApiEntries
 {
     /** The lists that have a single-entry read, as their path segment. */
-    public const array LISTS = ['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents'];
+    public const array LISTS = [
+        'fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'schedules', 'valuations',
+    ];
 
     public function __construct(
         private ApiReader $reader,
@@ -47,6 +49,7 @@ final readonly class ApiEntries
         private ExpenseService $expenses,
         private TripService $trips,
         private IncidentService $incidents,
+        private ApiVehicleFigures $figures,
     ) {
     }
 
@@ -56,6 +59,12 @@ final readonly class ApiEntries
      */
     public function read(string $list, User $user, Vehicle $vehicle, int $id): ApiEntry
     {
+        if ($list === 'schedules') {
+            return $this->figures->schedule($user, $vehicle, $id);
+        }
+        if ($list === 'valuations') {
+            return $this->figures->valuation($user, $vehicle, $id);
+        }
         try {
             return match ($list) {
                 'fuel' => $this->entry(

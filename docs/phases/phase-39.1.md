@@ -171,9 +171,9 @@ read one with `ETag`, modules, amounts, the minor `info.version` bump),
       expenses, trips and incidents, each exactly as its list returns it.
 - [x] List filters: maintenance `?category=` and `?q=`; documents `?type=`
       and `?current=1` (in force today in the key user's time zone).
-- [ ] Schedules (list and one), with status and the projected date of the
+- [x] Schedules (list and one), with status and the projected date of the
       distance limit.
-- [ ] Valuations (list, paged, and one); ownership (`ViewCosts`, 403
+- [x] Valuations (list, paged, and one); ownership (`ViewCosts`, 403
       without), with `display` strings.
 - [ ] History: per vehicle and fleet, `?kinds=`, `?since=`, `?until=`,
       cursor paging, amounts per `canSeeAmount`.

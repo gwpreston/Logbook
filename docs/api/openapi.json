@@ -665,6 +665,84 @@
         }
       }
     },
+    "/vehicles/{id}/schedules": {
+      "get": {
+        "operationId": "listSchedules",
+        "summary": "Maintenance schedules with their due state, most urgent first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/schedules/{entry}": {
+      "get": {
+        "operationId": "getSchedule",
+        "summary": "One schedule, as the list returns it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Schedule"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/documents": {
       "get": {
         "operationId": "listDocuments",
@@ -988,6 +1066,134 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/valuations": {
+      "get": {
+        "operationId": "listValuations",
+        "summary": "Valuations, newest first (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/valuations/{entry}": {
+      "get": {
+        "operationId": "getValuation",
+        "summary": "One valuation (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Valuation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/ownership": {
+      "get": {
+        "operationId": "getOwnership",
+        "summary": "Cost of ownership and depreciation (needs ViewCosts)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ownership"
                 }
               }
             }
@@ -3861,15 +4067,7 @@
             "type": "integer"
           },
           "closed_at": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Instant"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "When it was marked done or dismissed; null while open (Phase 39.1)."
+            "$ref": "#/components/schemas/NullableInstant"
           },
           "created_at": {
             "$ref": "#/components/schemas/Instant"
@@ -7758,15 +7956,7 @@
             "type": "integer"
           },
           "closed_at": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Instant"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "When it was marked done or dismissed; null while open (Phase 39.1)."
+            "$ref": "#/components/schemas/NullableInstant"
           },
           "created_at": {
             "$ref": "#/components/schemas/Instant"
@@ -7780,6 +7970,437 @@
           }
         },
         "description": "A reminder after an action, as GET /reminders lists it, and whether anything changed."
+      },
+      "Schedule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "category",
+          "title",
+          "interval_km",
+          "interval_months",
+          "baseline_done_on",
+          "baseline_odometer",
+          "last_done_on",
+          "last_done_odometer",
+          "next_due_on",
+          "next_due_odometer",
+          "distance_unit",
+          "status",
+          "trigger",
+          "due_on",
+          "due_on_projected",
+          "days_left",
+          "distance_left",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "service",
+              "oil",
+              "tyres",
+              "brakes",
+              "battery",
+              "repair",
+              "bodywork",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "interval_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "interval_months": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "baseline_done_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "baseline_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "last_done_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "last_done_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "next_due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "next_due_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "soon",
+              "overdue",
+              "unknown"
+            ],
+            "description": "As the Maintenance tab shows it, in the owner's lead times."
+          },
+          "trigger": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "date",
+              "distance",
+              null
+            ],
+            "description": "The limit that applies (the sooner one)."
+          },
+          "due_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "The date limit, or the day the distance limit is projected to be reached (due_on_projected)."
+          },
+          "due_on_projected": {
+            "type": "boolean"
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "distance_left": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A maintenance schedule with its due state (Phase 39.1)."
+      },
+      "ScheduleList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Schedule"
+            }
+          }
+        }
+      },
+      "Valuation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "vehicle_id",
+          "valued_on",
+          "amount",
+          "currency",
+          "source",
+          "notes",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "valued_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        },
+        "description": "A valuation someone quoted (Phase 39.1)."
+      },
+      "ValuationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Valuation"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "Ownership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "currency",
+          "since",
+          "distance_km",
+          "distance_unit",
+          "running_costs",
+          "running_costs_entries",
+          "purchase_price",
+          "purchase_date",
+          "current_value",
+          "depreciation",
+          "valuation_stale_months",
+          "total",
+          "per_km",
+          "per_km_is_running_only",
+          "per_month",
+          "per_month_is_running_only",
+          "display"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "since": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "distance_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "const": "km"
+          },
+          "running_costs": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "running_costs_entries": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "purchase_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "purchase_date": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "current_value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "amount",
+                  "on",
+                  "kind",
+                  "source"
+                ],
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/Decimal"
+                  },
+                  "on": {
+                    "$ref": "#/components/schemas/Date"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "bought",
+                      "valuation",
+                      "sold"
+                    ]
+                  },
+                  "source": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "depreciation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "change",
+              "fraction",
+              "per_year",
+              "per_km"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "no_purchase_price",
+                  "no_value",
+                  "ready"
+                ]
+              },
+              "change": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "fraction": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "per_year": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "per_km": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              }
+            }
+          },
+          "valuation_stale_months": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "total": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_km": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_km_is_running_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "per_month": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "per_month_is_running_only": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "display": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "running_costs",
+              "current_value",
+              "depreciation",
+              "depreciation_percent",
+              "per_distance",
+              "per_month"
+            ],
+            "properties": {
+              "running_costs": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "current_value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "depreciation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "depreciation_percent": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "per_distance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "per_month": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "description": "Cost of ownership and depreciation (Phase 14.2), as the overview's card works them out. change is current value − purchase price (negative is a loss)."
       }
     }
   }
