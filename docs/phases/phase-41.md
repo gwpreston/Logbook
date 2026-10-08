@@ -29,11 +29,9 @@ pattern this copies) and [Phase 40.1](phase-40.1.md) first.
 
 **Prerequisites:** [Phase 40.2](phase-40.2.md) complete and green (v3.6.0, the issues it writes through).
 
-**Before building:** confirm an individual running a self-hosted install
-can get credentials. DVSA approves applications and asks for the
-organisation and intended use; Fuel Finder's *Information Recipient*
-route worked for 30.2, but this is a different scheme. If individuals
-can't get access, this phase waits (open question A).
+**Credentials:** individuals can apply (open question A, answered
+2026-10-08). DVSA asks for a name, email and postal address and answers
+within about 5 working days.
 
 ---
 
@@ -46,8 +44,18 @@ can't get access, this phase waits (open question A).
   whether it was read, test number, and defects (text and type:
   advisory, minor, major, dangerous, fail, PRS, user-entered).
 - **Auth:** OAuth 2 client credentials (client ID and secret, scope
-  `https://tapi.dvsa.gov.uk/.default`, the token URL DVSA issues) plus an
-  `x-api-key` header. DVSA throttles per key.
+  `https://tapi.dvsa.gov.uk/.default`, the token URL DVSA issues, a
+  Microsoft `login.microsoftonline.com/{tenant}/oauth2/v2.0/token` URL)
+  plus an `X-API-Key` header. The client secret expires every 2 years
+  (DVSA emails the holder); a key unused for 90 days is revoked (#327).
+- **Quotas:** 500,000 requests a day, 15 a second on average, a burst of
+  10; over them, `429`, and a key over its daily quota is blocked for
+  24 hours.
+- `GET /v1/trade/vehicles/bulk-download` answers links to the whole-
+  country files and sends nothing about a vehicle: Logbook uses it only
+  as *Test* and as the keep-alive (#327), never downloading the files.
+- **Recalls:** the vehicle's `hasOutstandingRecall` is `Yes`, `No`,
+  `Unknown` or `Unavailable` (#325).
 - **Coverage:** cars, motorcycles and vans in Great Britain since 2005 and
   Northern Ireland since 2017.
 - **Licence:** Open Government Licence v3.0, with the same attribution
@@ -75,13 +83,8 @@ can't get access, this phase waits (open question A).
 
 ## Not in scope
 
-- **Vehicle lookup on add** (make, model, colour from the registration).
-  The API answers it, but it is §12's *registration lookup*, a separate
-  decision (open question G).
-- **Recalls.** The vehicle answer may say whether a recall is
-  outstanding; showing it is open question F.
-- The bulk download endpoints (whole-country files). Logbook asks per
-  vehicle.
+- Downloading the bulk files (whole-country). Logbook asks per vehicle;
+  the bulk endpoint is called only for *Test* and the keep-alive (#327).
 - Any other country's inspection records. The provider interface allows
   them later.
 
@@ -101,15 +104,16 @@ can't get access, this phase waits (open question A).
   *Saved* / *Not set*, sealed or `env:NAME` as §7.25's secrets (table
   `mot_history_secrets`); the statement "Sends the registration (or VIN)
   of vehicles whose owners choose to fetch their MOT history to DVSA.
-  Nothing else is sent."; the licence; *Test* (a token request, no
-  vehicle sent); and the last call's time, status and error (redacted).
+  Nothing else is sent."; the licence; *Test* (a token request and a
+  bulk-download call, which checks the key too; no vehicle sent, #327);
+  and the last call's time, status and error (redacted).
 - **Module:** part of `compliance`. With compliance off, or the provider
   off, nothing below appears or runs.
 
 ### Fetching
 
-- **Who:** `Manage` on the vehicle (it sends the vehicle's registration
-  to a third party, an owner-level choice; open question B). The vehicle
+- **Who:** `Own` on the vehicle (it sends the vehicle's registration
+  to a third party, an owner-level choice; #321). The vehicle
   needs a registration or a VIN.
 - **Where:** on the vehicle's Documents tab and overview *Ownership*
   card: *Fetch MOT history*, with the statement above before the first
@@ -210,10 +214,39 @@ duplicated, and DVSA's text replaces the stored text.
   fetched in the last 7 days, so a new test appears within a week
   without polling every vehicle every day. Never for archived vehicles.
   A run stops at the provider's throttle and carries on the next day.
+- **Keep-alive (#327):** when the last successful call is more than 80
+  days old, the job makes one bulk-download call (no vehicle sent), so
+  DVSA doesn't revoke an unused key. A failure shows on Settings → MOT
+  history like any other call.
 - Anything new from a scheduled refresh shows the review card's link on
   the overview ("New MOT result: passed 14 Feb 2026"), and, with
   reminders on, closes the MOT reminder as done when a new pass is added
   as a document.
+
+### Recalls (#325)
+
+- Each fetch stores the vehicle's recall state (`mot_recall_state`:
+  `yes` | `no` | `unknown` | `unavailable`, with `mot_recall_checked_at`).
+- The MOT history page states it in words: "An outstanding recall"
+  (with "Check with the manufacturer or a dealer"), "Recalls, all
+  fixed", "No recalls found", "Recall status unavailable".
+- `yes` raises a *Check* item in *Needs attention* ("Outstanding recall
+  on AB12 CDE"), until a later fetch says otherwise or *Stop and
+  remove*. The others raise nothing.
+
+### Look up on add (#326)
+
+- While the provider is on, the add-vehicle form shows *Look up* beside
+  the registration (JS: a request that fills the form; without JS, a
+  submit that redraws it filled). Anyone who can add a vehicle may use
+  it; the statement "Sends this registration to DVSA" sits beside the
+  button, and the click is the choice.
+- It fills only blank fields: make, model, fuel, colour, first
+  registration and, for a vehicle with no tests, *First MOT due*. The
+  owner reviews and saves; nothing is stored until then, and the lookup
+  does not enable MOT history for the new vehicle.
+- Errors and "No DVSA record for AB12 CDE" show beside the button; the
+  form still saves without a lookup.
 
 ### Pages and elsewhere
 
@@ -257,7 +290,9 @@ duplicated, and DVSA's text replaces the stored text.
 ## Tasks
 
 ### 41.0 Spec first
-- [ ] Credentials question (A) answered from DVSA before anything else.
+- [x] Credentials question (A) answered from DVSA before anything else
+      (2026-10-08: individuals can apply).
+- [x] B–H decided (2026-10-08, #320–#327).
 - [ ] §4 (endpoints, auth, quotas from DVSA's documentation), §6 (MotTest,
       MotDefect, reading source `mot`, vehicle `mot_history_enabled_at`,
       `mot_history_secrets`), §7.38, §7.2, §7.24 wording, §7.16, §7.19,
@@ -273,9 +308,12 @@ duplicated, and DVSA's text replaces the stored text.
       remove*; migration (reversible on every engine).
 - [ ] MOT history page; review card (documents, first MOT due,
       advisories and defects to issues, repeats, *Not now*).
+- [ ] Recall state stored, shown and its *Needs attention* item (#325).
+- [ ] *Look up* on the add-vehicle form, with and without JS (#326).
 
 ### 41.3 Refresh and elsewhere
-- [ ] `mot_history` job; overview notice; reminder closing.
+- [ ] `mot_history` job; keep-alive (#327); overview notice; reminder
+      closing.
 - [ ] History, Ask tool, API, CSV, backups, export-user, sale pack.
 - [ ] Translations (every shipped locale); attribution everywhere data
       shows.
@@ -295,7 +333,10 @@ duplicated, and DVSA's text replaces the stored text.
       issues created with the right status and look-again; repeats
       become updates; *Not now* sticks.
 - [ ] Job selects only vehicles in the window and not fetched in 7 days;
-      stops on throttling.
+      stops on throttling; keep-alive after 80 days only.
+- [ ] Recall states each worded; `yes` raises the item, the rest don't.
+- [ ] *Look up* fills only blank fields, stores nothing, needs the
+      provider on; works without JS.
 - [ ] Nothing is sent with the provider off, compliance off, or before
       the owner's confirmation; access matrix; suite green on every
       engine; coverage at or above the floor.
@@ -318,38 +359,46 @@ duplicated, and DVSA's text replaces the stored text.
 4. Advisories and defects become issues in one tap, with sensible
    statuses, and repeats don't duplicate.
 5. A new MOT appears within a week of the old one expiring, without
-   polling every vehicle daily.
-6. Definition of done (CLAUDE.md §11) holds.
+   polling every vehicle daily, and an idle key isn't revoked.
+6. An outstanding recall is stated and raises a *Check* item; *Look up*
+   fills a new vehicle's blank fields from DVSA.
+7. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Logged as #320–#327 in [`open-questions.md`](open-questions.md). A was
+answered from DVSA's documentation; the owner decided B–G and the
+question found while starting on 2026-10-08, before the phase started.
 
-- **A. Can individuals get credentials?** To be answered from DVSA's
-  application process before the phase starts. If only organisations
-  are approved: (1) wait; (2) build the provider so an admin with
-  credentials can use it, documenting that approval isn't assured.
-  *Recommendation:* find out first; (2) only if some self-hosters have
-  been approved.
-- **B. Who may fetch?** Options: (1) `Manage`, as drafted; (2) `Own`
-  only. *Recommendation:* (2): sending the registration to a third party
-  is the owner's call, as sharing and transfer are.
-- **C. Readings from failed tests?** Options: (1) yes, every read
-  odometer; (2) passes only. *Recommendation:* (1): the mileage was read
-  either way.
-- **D. The refresh window.** 14 days before to 60 days after the latest
-  expiry, at most weekly, are proposals. *Recommendation:* keep them and
-  record them in §7.38.
-- **E. Advisories as *watching* by default?** Options: (1) as drafted;
-  (2) every defect *open*, owner moves them. *Recommendation:* (1); an
-  owner with ten advisories doesn't need ten *Now* items the day of a
-  pass.
-- **F. Recalls.** Options: (1) not shown; (2) the vehicle's recall state
-  on the MOT history page and as a *Check* item when outstanding.
-  *Recommendation:* (2) once the field's meaning is confirmed against
-  DVSA's documentation; (1) in this phase otherwise.
-- **G. Vehicle lookup on add.** The same call could fill make, model,
-  fuel and colour on the add form. Options: (1) out of scope, as drafted;
-  (2) a *Look up* button on the add form when the provider is on.
-  *Recommendation:* (1) here; a separate small phase if wanted, since it
-  sends a registration before the vehicle even exists.
+- **A. Can individuals get credentials?** *Answered 2026-10-08.* Yes:
+  DVSA's [registration page](https://documentation.history.mot.api.gov.uk/mot-history-api/register)
+  accepts organisations, businesses and individuals, asks for a name,
+  email and postal address, and answers within about 5 working days.
+  `docs/mot-history.md` says so. (#320)
+- **B. Who may fetch?** *Decided 2026-10-08:* `Own` only, not `Manage`
+  as first drafted: sending the registration to a third party is the
+  owner's call, as sharing and transfer are. (#321)
+- **C. Readings from failed tests?** *Decided 2026-10-08:* yes, every
+  read odometer, pass or fail. (#322)
+- **D. The refresh window.** *Decided 2026-10-08:* kept: latest expiry
+  between 14 days before and 60 days after the owner's today, at most
+  weekly; recorded in §7.38. (#323)
+- **E. Advisories as *watching* by default?** *Decided 2026-10-08:* yes,
+  as drafted: `advisory` and `minor` *watching*, the rest *open*. (#324)
+- **F. Recalls.** *Decided 2026-10-08:* shown. DVSA's
+  `hasOutstandingRecall` is `Yes` (at least one recall not yet fixed),
+  `No` (recalls, all fixed), `Unknown` (none found) or `Unavailable`
+  (the recalls service failed), per its OpenAPI specification. The MOT
+  history page states it in words; `Yes` raises a *Check* item in *Needs
+  attention*; the others raise nothing. (#325)
+- **G. Vehicle lookup on add.** *Decided 2026-10-08:* in this phase: a
+  *Look up* button on the add-vehicle form while the provider is on.
+  (#326)
+- **H. DVSA revokes an API key unused for 90 days, and a token-only
+  *Test* passes a wrong or revoked key** (found while starting).
+  *Decided 2026-10-08:* use `GET /v1/trade/vehicles/bulk-download`,
+  which sends no vehicle and answers only file links: *Test* calls it
+  (token and key together), and the daily job calls it when the last
+  successful call is more than 80 days old. Checked against a real key
+  before it is built; if the endpoint refuses ordinary keys, the owner
+  is asked again. (#327)
