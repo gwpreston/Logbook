@@ -26,7 +26,7 @@
                 <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
                 <h1 class="page-header__title">{{ data.title }}</h1>
                 <p class="page-header__lead">{{ issues_ui.meta(issue) }}</p>
-                <p class="btn-row">{{ issues_ui.safety_pill(issue) }}{{ issues_ui.status_pill(issue) }}</p>
+                <p class="btn-row issue-pills">{{ issues_ui.safety_pill(issue) }}{{ issues_ui.status_pill(issue) }}</p>
             </div>
             {% if can_log or can_change %}
                 <div class="btn-row">
@@ -70,7 +70,7 @@
                 {% if data.category %}<div><dt>{{ 'issue.field.category'|trans }}</dt><dd>{{ ('maintenance.category.' ~ data.category.value)|trans }}</dd></div>{% endif %}
                 <div><dt>{{ 'issue.field.status'|trans }}</dt><dd>{{ issue.status().labelKey()|trans }}</dd></div>
                 {% if status == 'watching' %}
-                    <div><dt>{{ 'issue.field.look_again'|trans }}</dt><dd>{{ issues_ui.look_again(issue)|trim ?: 'issue.look_again_none'|trans }}</dd></div>
+                    <div><dt>{{ 'issue.field.look_again'|trans }}</dt><dd>{{ [issue.data.lookAgainOn ? issue.data.lookAgainOn|local_date : null, issue.data.lookAgainKm is not null ? issue.data.lookAgainKm|distance(0) : null]|filter(v => v)|join(' · ') ?: 'issue.look_again_none'|trans }}</dd></div>
                 {% endif %}
                 {% if issue.fixedOn %}<div><dt>{{ 'issue.field.fixed_on'|trans }}</dt><dd>{{ issue.fixedOn|local_date }}</dd></div>{% endif %}
             </dl>

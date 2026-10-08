@@ -185,6 +185,25 @@ Issue, IssueFix and IssueUpdate. In short:
       suite green on every engine; coverage at or above the floor.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; subpath).
 
+### Design review (2026-10-08)
+
+At 375, 768 and 1280 px, light and dark, JS off for add, edit, watch, mark
+fixed and add update, JS modals on desktop, German at 375 px, and behind
+`/logbook`: every issues page works without JS and under the subpath,
+*Affects safety* is red and in words everywhere, focus outlines and 44 px
+targets hold. Fixed:
+
+- MEDIUM: a long issue title on the *Fixes* checklist made the service form
+  scroll sideways at 375 px; the chips now wrap.
+- MEDIUM: the count on the current filter chip was pale on blue; it now
+  takes the chip's own colour.
+- LOW: the issue page's *Look again* value repeated its label in lower
+  case; it is the date and/or mileage. The pills sit a step below the lead
+  line. Earlier: "Noticed"/"Fixed" capitalised, a note's edit and delete
+  side by side.
+- Left as is (LOW): *Mark fixed*'s three choices are cards on the page and
+  plain sections in the desktop dialog, as other dialogs render cards.
+
 ---
 
 ## Acceptance criteria

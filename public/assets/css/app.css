@@ -1225,6 +1225,23 @@ label.chip:hover {
 }
 
 button.chip[aria-pressed="true"]:hover,
+/* Phase 40.1: the *Fixes* checklist names issues in the owner's words, which can be long. */
+.issue-fixes .chip {
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+    padding-block: 6px;
+}
+
+.issue-pills {
+    margin-top: var(--space-2);
+}
+
+/* A filter chip's count reads in the chip's own colour when it is the current one. */
+.chip[aria-current] .chip__count {
+    color: inherit;
+}
+
 label.chip:has(input:checked):hover {
     background: color-mix(in oklab, var(--accent) 88%, var(--text));
 }

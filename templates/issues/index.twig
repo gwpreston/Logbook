@@ -35,7 +35,7 @@
                 <nav class="chip-row" aria-label="{{ 'issue.filter_label'|trans }}">
                     {% for option in filters %}
                         <a class="chip" href="{{ url_for('issues.index', {id: vehicle.id}, option == 'open' ? {} : {status: option}) }}"{% if filter == option %} aria-current="true"{% endif %}>
-                            {{- ('issue.filter.' ~ option)|trans }} <span class="muted tabular">{{ counts[option] }}</span>
+                            {{- ('issue.filter.' ~ option)|trans }} <span class="chip__count muted tabular">{{ counts[option] }}</span>
                         </a>
                     {% endfor %}
                 </nav>
