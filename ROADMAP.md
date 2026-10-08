@@ -1058,7 +1058,7 @@ list of choices in Settings.*
   look-again point, appear in *Needs attention*, and the look-again point
   raises a reminder.
 - An Issues tab and overview card, History, print and the sale pack's
-  *Include open issues*. No AI diagnosis, in any form (decided
+  *Include open issues*; backups and `bin/export-user.php`. No AI diagnosis, in any form (decided
   2026-10-08).
 - Phase 40 planned as one, split in two (#318); open questions A–F and
   six found while starting (#307–#318) decided 2026-10-08. Ships with
@@ -1076,7 +1076,7 @@ entries go.*
   as issues*.
 - Issues in the API (with edit, delete, attachments and `issue`
   webhooks), Ask (a read tool, a draft tool, and a system line that never
-  suggests a cause), MCP, CSV and backups. Release v3.6.0.
+  suggests a cause), MCP and CSV. Release v3.6.0.
 
 → [`phase-40.2.md`](docs/phases/phase-40.2.md)
 

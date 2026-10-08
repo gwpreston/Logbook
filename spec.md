@@ -9327,15 +9327,16 @@ task breakdowns live in the per-phase files; this is the map.
   one; an updates timeline; the Issues tab, overview card, issue page,
   fleet `/issues` and chooser entry; *Needs attention* *Open issue* and
   *Look again*; History kinds, print and the sale pack's *Include open
-  issues*; module `issues`; demo seed. No AI diagnosis (§6, §7.4, §7.6,
+  issues*; module `issues`; backups and `bin/export-user.php`; demo
+  seed. No AI diagnosis (§6, §7.4, §7.6,
   §7.10, §7.16, §7.19, §7.24, §7.37; #307–#312, #315–#318). One
   migration. Ships with Phase 40.2 as v3.6.0.
 - **Phase 40.2 — Issues everywhere + v3.6 release.** The recommended-work
   card's *Add as issue*, *Watch* and *Add all as issues*; the API (list,
   read, create, `PATCH`, `DELETE`, updates, fix, reopen, attachments) and
   `issue` webhooks; Ask's `issues` and `draft_issue` with the no-cause
-  system line; MCP; CSV; backups and `bin/export-user.php` (§7.13,
-  §7.20, §7.26, §7.27, §7.28, §7.37; #313, #314, #317). No migration.
+  system line; MCP; CSV (§7.13, §7.20, §7.26, §7.27, §7.28, §7.37;
+  #313, #314, #317). No migration.
   Release v3.6.0 (Phases 40.1 and 40.2).
 ---
 

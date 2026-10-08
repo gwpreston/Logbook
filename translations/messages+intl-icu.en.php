@@ -2066,6 +2066,7 @@ return [
             ],
         ],
         'error' => [
+            'fixed' => 'This issue is fixed. Use “It’s back” to reopen it.',
             'future' => 'Can\'t be after today.',
             'look_again_watching' => 'A look-again point is only kept while watching.',
             'look_again_before' => 'Can\'t be before the issue was noticed.',

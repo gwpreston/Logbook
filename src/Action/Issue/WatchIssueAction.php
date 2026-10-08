@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Issue;
 
+use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Issue\IssueForm;
 use Logbook\Service\Issue\IssueService;
 use Logbook\Support\Date\LocalTime;
@@ -42,6 +44,12 @@ final readonly class WatchIssueAction
             return $refused;
         }
         $zone = $user->preferences->timeZone();
+        // A fixed issue is reopened with *It's back*, not watched (spec.md §7.37).
+        if ($issue->isFixed()) {
+            RequestContext::session($request)->flash('error', 'issue.error.fixed');
+
+            return $this->redirect->toRoute('issues.show', ['id' => (string) $vehicle->id, 'issue' => (string) $issue->id]);
+        }
 
         if ($request->getMethod() !== 'POST') {
             return $this->render($request, $response, $vehicle, $issue, IssueForm::values($issue, $user->preferences), null);
@@ -67,8 +75,8 @@ final readonly class WatchIssueAction
     private function render(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        \Logbook\Domain\Vehicle\Vehicle $vehicle,
-        \Logbook\Domain\Issue\Issue $issue,
+        Vehicle $vehicle,
+        Issue $issue,
         array $values,
         ?ValidationErrors $errors,
         int $status = 200,

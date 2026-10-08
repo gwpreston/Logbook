@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Service\Issue\IssueService;
+use Logbook\Domain\Issue\IssueUpdateData;
+use Logbook\Domain\Issue\IssueData;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceType;
@@ -66,6 +69,40 @@ final class ApiReadTest extends AppTestCase
     {
         self::clearThrottle();
         parent::tearDown();
+    }
+
+    public function testIssuesShowInTheirOpenApiShapeWhereverTheyAppear(): void
+    {
+        // Phase 40.1: a look-again reminder (source `issue`), the issue's readings,
+        // its History lines and its Needs attention item, each checked against openapi.json.
+        $issues = $this->service($this->app, IssueService::class);
+        $zone = new DateTimeZone('Europe/London');
+        $open = $issues->create($this->golf, new IssueData(
+            noticedOn: new DateTimeImmutable('2026-09-01', new DateTimeZone('UTC')),
+            title: 'Knock',
+            odometerKm: '48000.000',
+        ), $zone);
+        $issues->addUpdate($this->golf, $open, new IssueUpdateData(
+            new DateTimeImmutable('2026-09-02', new DateTimeZone('UTC')),
+            'Still there',
+            '48100.000',
+        ), $zone);
+        $watched = $issues->create($this->golf, new IssueData(
+            noticedOn: new DateTimeImmutable('2026-09-01', new DateTimeZone('UTC')),
+            title: 'Pipes',
+        ), $zone);
+        $issues->watch($this->golf, $watched, new DateTimeImmutable('2026-09-30', new DateTimeZone('UTC')), null, $zone);
+
+        $reminders = ApiClient::json($this->api->get('/reminders'))->doc('items')->toArray();
+        self::assertContains('issue', array_column($reminders, 'source'));
+        $readings = ApiClient::json($this->api->get('/vehicles/' . $this->golf->id . '/odometer'))->doc('items')->toArray();
+        $sources = array_column($readings, 'source');
+        self::assertContains('issue', $sources);
+        self::assertContains('issue_update', $sources);
+        $history = ApiClient::json($this->api->get('/vehicles/' . $this->golf->id . '/history'))->doc('items')->toArray();
+        self::assertContains('issue_noticed', array_column($history, 'kind'));
+        $attention = ApiClient::json($this->api->get('/attention'))->doc('items')->toArray();
+        self::assertContains('issue_open', array_column($attention, 'kind'));
     }
 
     /**

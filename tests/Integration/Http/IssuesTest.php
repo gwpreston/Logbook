@@ -197,6 +197,35 @@ final class IssuesTest extends AppTestCase
         self::assertSame(IssueStatus::Open, $this->only($app, $golf)->status(), 'unticked: reopened');
     }
 
+    public function testAfterItsBackTheRecordFormShowsItUntickedAndSavingKeepsItOpen(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $browser->post('/vehicles/' . $golf->id . '/issues/new', self::form());
+        $issue = $this->only($app, $golf);
+        $record = ['category' => 'brakes', 'title' => 'Pads', 'performed_on' => '2026-09-20', 'cost' => '0'];
+        $ticked = $record + ['fixes_sent' => '1', 'fixes' => [(string) $issue->id]];
+        $browser->post('/vehicles/' . $golf->id . '/maintenance/new', $ticked);
+        $at = '/vehicles/' . $golf->id . '/issues/' . $issue->id;
+        $browser->post($at . '/reopen', []);
+        $entries = $this->service($app, MaintenanceEntryRepository::class)->listForVehicle($golf->id);
+        $edit = '/vehicles/' . $golf->id . '/maintenance/' . $entries[0]->id . '/edit';
+
+        $form = self::body($browser->get($edit));
+        self::assertMatchesRegularExpression('/name="fixes\[\]" value="' . $issue->id . '">/', $form, 'unticked');
+        $browser->post($edit, $record + ['fixes_sent' => '1']);
+        self::assertSame(IssueStatus::Open, $this->only($app, $golf)->status());
+
+        // Watch and a status change are refused on a fixed issue.
+        $browser->post($at . '/fix', ['how' => 'none', 'fixed_on' => '2026-09-25']);
+        self::assertSame(303, $browser->post($at . '/watch', [])->getStatusCode());
+        self::assertSame(IssueStatus::Fixed, $this->only($app, $golf)->status());
+        $change = $browser->post($at . '/updates/new', ['noted_on' => '2026-09-26', 'note' => 'x', 'status' => 'open']);
+        self::assertSame(422, $change->getStatusCode());
+    }
+
     public function testLinkAnExistingRecordAndFixedWithoutARecord(): void
     {
         $app = $this->createApp();

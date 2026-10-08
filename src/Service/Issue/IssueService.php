@@ -179,11 +179,12 @@ final readonly class IssueService
      */
     public function watch(Vehicle $vehicle, Issue $issue, ?DateTimeImmutable $on, ?string $km, DateTimeZone $zone): Issue
     {
+        // A fixed issue is reopened with *It's back*, never watched.
+        if ($issue->isFixed()) {
+            return $issue;
+        }
         $this->transaction->run(function () use ($vehicle, $issue, $on, $km, $zone): void {
             $this->issues->update($vehicle->id, $issue->id, $issue->data->watching($on, $km), $this->clock->now());
-            if ($issue->isFixed()) {
-                $this->issues->setFixed($vehicle->id, $issue->id, null, null, $this->clock->now());
-            }
             $this->automatic($issue, $issue->status(), IssueStatus::Watching, IssueUpdateReason::Watch, $zone);
         });
 
@@ -298,21 +299,21 @@ final readonly class IssueService
      * Make a service record fix exactly these issues of its vehicle (the
      * *Fixes* checklist on save): ticked ones are linked and fixed on the
      * record's date, unticked ones unlinked, and the others' fixed date
-     * follows the record; an unlink is dated the owner's today. Call inside
-     * the record's transaction.
+     * follows the record; an unlink is dated the owner's today. A link to an
+     * issue that is no longer fixed is history and left alone unless ticked
+     * again. Call inside the record's transaction.
      *
      * @param list<int> $issueIds
      */
     public function setFixesOf(Vehicle $vehicle, MaintenanceEntry $record, array $issueIds, DateTimeZone $zone): void
     {
         $today = LocalTime::today($this->clock, $zone);
-        $current = $this->issues->fixedBy($record->id);
-        foreach ($current as $issueId) {
-            if (!in_array($issueId, $issueIds, true)) {
-                $issue = $this->issues->find($vehicle->id, $issueId);
-                if ($issue !== null) {
-                    $this->unlink($vehicle, $issue, $record->id, IssueUpdateReason::RecordUnlinked, $today);
-                }
+        foreach ($this->issues->fixedBy($record->id) as $issueId) {
+            $issue = $this->issues->find($vehicle->id, $issueId);
+            // A link to an issue that is back (*It's back*) is history: the
+            // checklist shows it unticked, and leaving it so keeps it.
+            if ($issue !== null && $issue->isFixed() && !in_array($issueId, $issueIds, true)) {
+                $this->unlink($vehicle, $issue, $record->id, IssueUpdateReason::RecordUnlinked, $today);
             }
         }
         foreach (array_unique($issueIds) as $issueId) {
@@ -321,6 +322,35 @@ final readonly class IssueService
                 $this->link($vehicle, $issue, $record);
             }
         }
+    }
+
+    /**
+     * A service record saved without the checklist (the API, a draft): the
+     * issues it fixes follow its date; its links change in no other way.
+     * Call inside the record's transaction.
+     */
+    public function recordSaved(Vehicle $vehicle, MaintenanceEntry $record): void
+    {
+        foreach ($this->issues->fixedBy($record->id) as $issueId) {
+            $issue = $this->issues->find($vehicle->id, $issueId);
+            if ($issue !== null && $issue->isFixed()) {
+                $this->refreshFixedOn($vehicle, $issue);
+            }
+        }
+    }
+
+    /**
+     * The issues a record fixes now: linked and still fixed (the checklist's
+     * ticks). A link to an issue that is back is history, not ticked.
+     *
+     * @return list<int>
+     */
+    public function fixingNow(Vehicle $vehicle, int $recordId): array
+    {
+        return array_values(array_filter(
+            $this->issues->fixedBy($recordId),
+            fn (int $id): bool => $this->issues->find($vehicle->id, $id)?->isFixed() ?? false,
+        ));
     }
 
     /**
@@ -435,15 +465,13 @@ final readonly class IssueService
         $id = $this->transaction->run(function () use ($vehicle, $issue, $data, $zone): int {
             $now = $this->clock->now();
             $to = $data->status;
-            $changed = $to !== null && $to !== IssueStatus::Fixed && $to !== $issue->status();
+            // A fixed issue changes status only by *It's back* (the form refuses it too).
+            $changed = $to !== null && $to !== IssueStatus::Fixed && !$issue->isFixed() && $to !== $issue->status();
             if ($changed) {
                 $next = $to === IssueStatus::Watching
                     ? $issue->data->watching($data->lookAgainOn, $data->lookAgainKm)
                     : $issue->data->withStatus($to);
                 $this->issues->update($vehicle->id, $issue->id, $next, $now);
-                if ($issue->isFixed()) {
-                    $this->issues->setFixed($vehicle->id, $issue->id, null, null, $now);
-                }
             }
             $id = $this->issues->insertUpdate(
                 $issue->id,

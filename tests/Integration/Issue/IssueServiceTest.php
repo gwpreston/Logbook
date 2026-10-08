@@ -269,6 +269,42 @@ final class IssueServiceTest extends AppTestCase
         self::assertSame(['fixed', 'back'], $this->reasons($back));
     }
 
+    public function testSavingTheOldRecordAfterItsBackNeverFixesItAgain(): void
+    {
+        $knock = $this->log();
+        $record = $this->record('2026-09-01', [$knock->id]);
+        $this->issues()->reopen($this->golf, $this->issues()->get($this->golf, $knock->id), self::zone());
+        $maintenance = $this->service($this->app, MaintenanceService::class);
+
+        // Saved without the checklist (the API, a draft): links and status untouched.
+        $maintenance->update($this->golf, $record, $record->data, self::zone());
+        self::assertSame(IssueStatus::Open, $this->issues()->get($this->golf, $knock->id)->status());
+
+        // The form shows it unticked; saving it so keeps the link as history.
+        self::assertSame([], $this->issues()->fixingNow($this->golf, $record->id));
+        $maintenance->update($this->golf, $record, $record->data, self::zone(), fixes: []);
+        self::assertSame(IssueStatus::Open, $this->issues()->get($this->golf, $knock->id)->status());
+        self::assertSame([$knock->id], $this->issues()->fixedBy($record->id), 'the earlier fix is history');
+
+        // Ticking it again is a deliberate fix.
+        $maintenance->update($this->golf, $record, $record->data, self::zone(), fixes: [$knock->id]);
+        self::assertSame(IssueStatus::Fixed, $this->issues()->get($this->golf, $knock->id)->status());
+    }
+
+    public function testAFixedIssueIsNeverWatchedOrChangedByAnUpdate(): void
+    {
+        $fixed = $this->issues()->fixWithoutRecord($this->golf, $this->log(), self::day('2026-09-02'), null);
+
+        self::assertSame(IssueStatus::Fixed, $this->issues()->watch($this->golf, $fixed, null, null, self::zone())->status());
+        $this->issues()->addUpdate(
+            $this->golf,
+            $fixed,
+            new IssueUpdateData(self::day('2026-09-03'), 'Checked', status: IssueStatus::Open),
+            self::zone(),
+        );
+        self::assertSame(IssueStatus::Fixed, $this->issues()->get($this->golf, $fixed->id)->status());
+    }
+
     public function testLinkableRecordsAreThoseSinceTheIssueWasNoticed(): void
     {
         $knock = $this->log(date: '2026-08-12');

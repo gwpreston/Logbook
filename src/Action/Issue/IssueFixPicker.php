@@ -45,7 +45,7 @@ final readonly class IssueFixPicker
 
         return [
             'fix_options' => $this->offered($vehicle, $entry),
-            'fix_ticked' => $ticked ?? ($entry === null ? [] : $this->issues->fixedBy($entry->id)),
+            'fix_ticked' => $ticked ?? ($entry === null ? [] : $this->issues->fixingNow($vehicle, $entry->id)),
         ];
     }
 

@@ -66,7 +66,7 @@ and §7.28.
 ## Acceptance criteria
 
 1. Recommended work becomes issues in one tap.
-2. Issues are in the API, webhooks, Ask, MCP, CSV and backups.
+2. Issues are in the API, webhooks, Ask, MCP and CSV (backups since 40.1).
 3. Nowhere does Logbook suggest what a fault is.
 4. Definition of done (CLAUDE.md §11) holds.
 

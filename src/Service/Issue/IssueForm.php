@@ -163,6 +163,9 @@ final class IssueForm
         if ($notedOn !== null && $notedOn < $issue->data->noticedOn) {
             $validator->addError('noted_on', 'issue.error.before_noticed');
         }
+        if ($changes && $issue->isFixed()) {
+            $validator->addError('status', 'issue.error.fixed');
+        }
         if ($note === null && !$changes) {
             $validator->addError('note', 'issue.error.note_required');
         }

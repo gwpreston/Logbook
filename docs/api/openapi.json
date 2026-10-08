@@ -8676,7 +8676,8 @@
               "first_inspection",
               "manual",
               "finance",
-              "finance_end"
+              "finance_end",
+              "issue"
             ]
           },
           "title": {
@@ -12571,7 +12572,8 @@
               "first_inspection",
               "manual",
               "finance",
-              "finance_end"
+              "finance_end",
+              "issue"
             ]
           },
           "title": {

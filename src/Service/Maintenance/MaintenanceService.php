@@ -124,8 +124,12 @@ final readonly class MaintenanceService
             $this->tyres->followServiceRecord($vehicle, $this->get($vehicle, $entry->id), $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $entry->id, $stored);
             // The issues it fixes follow its date, whether or not the checklist was sent.
-            $fixes ??= $this->issues->fixedBy($entry->id);
-            $this->issues->setFixesOf($vehicle, $this->get($vehicle, $entry->id), $fixes, $zone);
+            $saved = $this->get($vehicle, $entry->id);
+            if ($fixes === null) {
+                $this->issues->recordSaved($vehicle, $saved);
+            } else {
+                $this->issues->setFixesOf($vehicle, $saved, $fixes, $zone);
+            }
             $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Maintenance, $entry->id);
         });
 

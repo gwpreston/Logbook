@@ -2064,6 +2064,7 @@ return [
             ],
         ],
         'error' => [
+            'fixed' => 'Dieser Mangel ist behoben. Mit „Ist wieder da“ öffnest du ihn wieder.',
             'future' => 'Darf nicht nach heute liegen.',
             'look_again_watching' => 'Ein Prüftermin gilt nur, solange der Mangel beobachtet wird.',
             'look_again_before' => 'Darf nicht vor dem Bemerken liegen.',
