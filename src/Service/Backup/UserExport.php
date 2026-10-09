@@ -103,6 +103,10 @@ final class UserExport
             $keep('issue_updates', static fn (array $row): bool => in_array($row['issue_id'], $issues, true)),
         );
         $out['issue_fixes'] = $keep('issue_fixes', static fn (array $row): bool => in_array($row['issue_id'], $issues, true));
+        // Phase 41: the MOT tests their `mot` readings belong to, and the tests' defects.
+        $out['mot_tests'] = $keep('mot_tests', static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true));
+        $tests = array_column($out['mot_tests'], 'id');
+        $out['mot_defects'] = $keep('mot_defects', static fn (array $row): bool => in_array($row['mot_test_id'], $tests, true));
         $changes = array_column($out['tyre_changes'], 'id');
         $out['tyre_change_lines'] = $keep(
             'tyre_change_lines',
