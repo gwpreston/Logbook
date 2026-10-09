@@ -18,6 +18,8 @@ final readonly class Insight
      * @param array<string, string|int> $routeParams
      * @param array<string, string|int> $query the link's query string
      * @param int|null $vehicleId the vehicle it is about, if one (AI insights' no-repeats filter, #358)
+     * @param array<string, string|int|null> $figures the raw values behind it, canonical decimals
+     *        (`computed_insights`, spec.md §7.26); empty for the kinds that show another page's figure
      */
     public function __construct(
         public InsightKind $kind,
@@ -30,6 +32,7 @@ final readonly class Insight
         public array $routeParams = [],
         public array $query = [],
         public ?int $vehicleId = null,
+        public array $figures = [],
     ) {
     }
 

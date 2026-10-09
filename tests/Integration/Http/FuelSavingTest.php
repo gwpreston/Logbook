@@ -13,6 +13,8 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\VehicleShareRepository;
+use Logbook\Service\Ai\Ask\ToolRegistry;
+use Logbook\Service\Ai\Provider\ToolCall;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\FuelPrices\EffectiveCost;
 use Logbook\Service\FuelPrices\FuelPriceConfig;
@@ -85,6 +87,31 @@ final class FuelSavingTest extends FuelPricesTestCase
             '/stations/near?vehicle=' . $golf->id . '&amp;grade=e10_95&amp;from=place%3A',
             $html,
         );
+    }
+
+    public function testAskAnswersFromTheComputedFigure(): void
+    {
+        $golf = $this->scene();
+        $this->fortnightly($golf, $this->shell, 26, '2025-10-17', '60', '900');
+        $figure = $this->only($golf);
+
+        $run = $this->service($this->app, ToolRegistry::class)
+            ->run($this->owner, new ToolCall('t1', 'computed_insights', []));
+        self::assertNull($run->error);
+        $data = $run->result->data ?? [];
+        $rows = is_array($data['insights'] ?? null) ? $data['insights'] : [];
+        $saving = null;
+        foreach ($rows as $row) {
+            if (is_array($row) && ($row['kind'] ?? null) === 'fuel_saving') {
+                $saving = $row;
+            }
+        }
+        self::assertIsArray($saving);
+        self::assertSame('Could save about £27 a year on fuel', $saving['title'] ?? null, 'the same words as the page');
+        $figures = is_array($saving['figures'] ?? null) ? $saving['figures'] : [];
+        self::assertSame($figure->yearlySaving, $figures['yearly_saving'] ?? null, 'worked out by Logbook');
+        self::assertSame('1.379', $figures['usual_price_per_litre'] ?? null);
+        self::assertStringContainsString('£27', $run->content(), 'Ask can quote it, grounded');
     }
 
     public function testNotShownWhenTheCheapestIsTheUsualStation(): void

@@ -169,6 +169,18 @@ final readonly class InsightsService
                 'from' => 'place:' . $figure->place->id,
             ],
             $figure->vehicle->id,
+            [
+                'currency' => $figure->currency,
+                'grade' => $figure->grade->value,
+                'yearly_saving' => $figure->yearlySaving,
+                'yearly_litres' => $figure->yearlyLitres,
+                'scaled_from_months' => $figure->scaledFromMonths,
+                'usual_price_per_litre' => $figure->usualPrice,
+                'usual_price_is_30_day_average' => $figure->usualFromAverage ? 1 : 0,
+                'usual_station' => $figure->usualName,
+                'cheapest_effective_price_per_litre' => $figure->cheapestPerUnit,
+                'cheapest_station' => $figure->cheapestName,
+            ],
         );
     }
 

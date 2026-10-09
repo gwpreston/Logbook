@@ -4865,6 +4865,7 @@ return [
             'incidents' => 'Claims history',
             'issues' => 'Issues',
             'needs_attention' => 'Needs attention',
+            'computed_insights' => 'Insights',
             'finance' => 'Finance',
             'stations' => 'Fuel stations',
             'cheapest_fuel' => 'Cheapest fuel',
@@ -5038,6 +5039,7 @@ return [
             'true_cost' => 'Working out the true cost…',
             'trips_summary' => 'Looking up trips…',
             'needs_attention' => 'Checking what needs attention…',
+            'computed_insights' => 'Looking at what Logbook has worked out…',
             'incidents' => 'Looking through incidents and claims…',
             'issues' => 'Looking through issues…',
             'finance' => 'Reading the finance agreement…',
@@ -5071,6 +5073,7 @@ return [
             'tyres' => 'A vehicle\'s tyres: those fitted (by position) and stored sets, with brand, size, season, distance covered, age, the last tread depth, the estimated distance and date until worn, and whether they are due for replacing.',
             'trips_summary' => 'The user\'s business trips in a period: count, business and private distance, and the mileage claim value at the approved rates. Defaults to the current tax year.',
             'needs_attention' => 'What needs attention now: overdue services, renewals and reminders, and records that look wrong (odd odometer readings, economy drift, unusual prices or costs, stale mileage or valuations).',
+            'computed_insights' => 'The insights Logbook works out itself, as the Insights page shows them: shopping around, how much could be saved a year on fuel at the cheapest station nearby, business mileage, the cheapest vehicle to run, finance equity, and economy that has improved; each with its figures already worked out. Use it for "how much could I save on fuel".',
             'incidents' => 'Incidents and insurance claims on the user\'s vehicles, sold and archived ones included: date, vehicle, type, fault, driver, claim status, insurer, claim number, payout, repair estimate (never counted as spent) and no-claims effect. Defaults to the last 5 years, which is what insurers usually ask about.',
             'issues' => 'Faults the owner has noticed and noted as issues, in their own words: title, description, status (open, watching, fixed), whether the owner ticked Affects safety, when and at what mileage it was noticed, the look-again point and what fixed it. Open and watching ones unless a status is given. These are notes, never a diagnosis: never suggest a cause.',
             'finance' => 'A vehicle\'s finance or lease agreement (hire purchase, PCP, personal loan or lease): payments remaining, what remains to pay (exact), the next payment, the end date, the settlement figure (the lender\'s quote, or an estimate), cost of credit, the half-paid point, equity, and the mileage against the allowance with any projected excess charge. Figures, never advice: say which are estimates.',
@@ -5908,8 +5911,10 @@ return [
         'by' => 'From {model} on {connection}, {when}',
         'summary' => '{made, plural, =0 {No AI insights made} one {Made AI insights for # person} other {Made AI insights for # people}}{left, plural, =0 {} other {; # left for the next run}}',
         'system' => [
-            'text' => "You are Ask Logbook, the assistant inside Logbook, an app where one person keeps the records of their vehicles. Look through the user's own records with the tools and find up to {max} short observations worth knowing: a trend, a change, a saving, a comparison. They are not tasks and not things already due: leave out reminders, renewals, services due and anything Logbook lists under Needs attention or Coming up.\n\nRules:\n- Use only tool results. Call the tools you need; never guess.\n- For every figure, copy the display string a tool returned exactly as it is. Never convert units or currencies and never round. You may compare two figures in words (higher, lower, about the same) but do not work out new figures.\n- Never write about what may be causing an issue (a fault the owner noted): counts and ages only, for example \"2 issues open on the Golf for over 3 months\".\n- Write in the user's language, plainly, without greetings.\n- Reply with JSON only, no other text, in the shape below; with nothing worth saying, an empty list.",
+            'text' => "You are Ask Logbook, the assistant inside Logbook, an app where one person keeps the records of their vehicles. Look through the user's own records with the tools and find up to {max} short observations worth knowing: patterns across services, vehicles or records that no single figure Logbook shows already covers. They are not tasks and not things already due: leave out reminders, renewals, services due and anything Logbook lists under Needs attention or Coming up, and never repeat an insight Logbook already shows (listed below).\n\nRules:\n- Use only tool results. Call the tools you need; never guess.\n- Use only figures a tool returned, copying each display string exactly as it is. Never add, subtract, average, convert, round or project a number, and never work out a new figure: Logbook does the sums. You may compare two figures in words (higher, lower, about the same).\n- Give each observation a topic: fuel_cost (what fuel costs or could cost), economy (fuel or energy economy) or other; and the ids of the vehicles it is about, from the context.\n- Never write about what may be causing an issue (a fault the owner noted): counts and ages only, for example \"2 issues open on the Golf for over 3 months\".\n- Write in the user's language, plainly, without greetings.\n- Reply with JSON only, no other text, in the shape below; with nothing worth saying, an empty list.",
             'request' => 'Find up to {max} observations about my vehicles.',
+            // Phase 42 (#358): what Logbook already shows, so the model doesn't repeat it.
+            'computed' => 'Insights Logbook already shows (do not repeat them):',
         ],
     ],
     'insights' => [

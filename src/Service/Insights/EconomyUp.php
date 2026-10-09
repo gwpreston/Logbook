@@ -96,6 +96,15 @@ final readonly class EconomyUp
             'fuel.index',
             ['id' => $vehicle->id],
             vehicleId: $vehicle->id,
+            figures: [
+                'series' => $finding->kind->value,
+                'tanks' => $finding->tanks,
+                'recent_distance_km' => $finding->recentDistanceKm,
+                'recent_volume' => $finding->recentVolume,
+                'baseline_distance_km' => $finding->baselineDistanceKm,
+                'baseline_volume' => $finding->baselineVolume,
+                'percent' => $percent,
+            ],
         );
     }
 
