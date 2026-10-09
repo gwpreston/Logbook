@@ -36,6 +36,7 @@ use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\FirstInspectionPrompt;
 use Logbook\Service\Vehicle\VehicleAge;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
@@ -90,6 +91,7 @@ final readonly class ShowVehicleAction
         private IssueService $issues,
         private MotHistoryConfig $motHistory,
         private MotReview $motReview,
+        private VehicleDataPrimer $primer,
     ) {
     }
 
@@ -101,6 +103,8 @@ final readonly class ShowVehicleAction
         $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        // The cards below read this vehicle's tables, and the reminder sync the garage's: once each.
+        $this->primer->prime([$vehicle, ...$this->vehicles->listFleet($user)]);
         $odometer = $this->odometer->history($vehicle);
         // The owner's lead times, as the vehicle's reminders use (Phase 19).
         $lead = $this->reminderSettings->reminderPreferences($vehicle->userId);

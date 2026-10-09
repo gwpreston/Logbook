@@ -9,9 +9,11 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Logbook\Domain\Setting\SettingScope;
 use Logbook\Repository\SettingRepository;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\MutableClock;
+use Logbook\Tests\Support\QueryCounter;
 
 /**
  * Round-trips through DBAL on whichever engine TEST_DB_* selects; CI runs this
@@ -22,13 +24,86 @@ final class SettingRepositoryTest extends AppTestCase
     private Connection $connection;
     private MutableClock $clock;
     private SettingRepository $repository;
+    private RequestReads $reads;
+    private QueryCounter $counter;
 
     protected function setUp(): void
     {
-        $this->connection = $this->connection($this->createApp());
+        $app = $this->createApp();
+        $this->counter = QueryCounter::install($app);
+        $this->connection = $this->connection($app);
         $this->connection->executeStatement('DELETE FROM settings');
         $this->clock = new MutableClock(new DateTimeImmutable('2026-07-01 09:30:00', new DateTimeZone('Europe/London')));
-        $this->repository = new SettingRepository($this->connection, $this->clock);
+        // The app's own RequestReads, which its connection tells about every write.
+        $this->reads = $this->service($app, RequestReads::class);
+        $this->repository = new SettingRepository($this->connection, $this->clock, $this->reads);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->reads->end();
+    }
+
+    /**
+     * Phase 41.7: during a page request all of an owner's settings are one query.
+     */
+    public function testAPageRequestReadsAnOwnersSettingsOnce(): void
+    {
+        $this->repository->save('a', 1);
+        $this->repository->save('b', 2);
+        $this->repository->save('c', 3, SettingScope::User, 7);
+
+        $this->reads->begin();
+        $queries = $this->counter->during(function (): void {
+            self::assertSame(1, $this->value('a'));
+            self::assertSame(2, $this->value('b'));
+            self::assertNull($this->repository->find('missing'));
+            self::assertSame(3, $this->value('c', SettingScope::User, 7));
+            $this->value('c', SettingScope::User, 7);
+            $this->value('a');
+        });
+
+        self::assertSame(2, $queries, 'one for the global settings, one for the user\'s');
+    }
+
+    public function testOutsideAPageRequestEveryReadGoesToTheDatabase(): void
+    {
+        $this->repository->save('a', 1);
+
+        $queries = $this->counter->during(function (): void {
+            $this->repository->find('a');
+            $this->repository->find('a');
+        });
+
+        self::assertSame(2, $queries);
+    }
+
+    public function testAWriteDuringARequestIsSeenByTheNextRead(): void
+    {
+        $this->repository->save('a', 1);
+        $this->reads->begin();
+        self::assertSame(1, $this->value('a'));
+
+        $this->repository->save('a', 2);
+        self::assertSame(2, $this->value('a'), 'saved through the repository');
+
+        $this->connection->executeStatement("UPDATE settings SET value = '3' WHERE name = 'a'");
+        self::assertSame(3, $this->value('a'), 'written by anything else on the connection');
+
+        $this->repository->delete('a');
+        self::assertNull($this->value('a'));
+    }
+
+    public function testARolledBackWriteIsNotRemembered(): void
+    {
+        $this->reads->begin();
+        $this->connection->beginTransaction();
+        $this->repository->save('x', 1);
+        self::assertSame(1, $this->value('x'));
+
+        $this->connection->rollBack();
+
+        self::assertNull($this->value('x'));
     }
 
     public function testMissingSettingIsNull(): void
@@ -130,6 +205,11 @@ final class SettingRepositoryTest extends AppTestCase
         $this->repository->save('held', ['backup' => 2], SettingScope::User, 7);
         self::assertFalse($this->repository->deleteIfUnchanged($read), 'saved again since it was read');
         self::assertSame(['backup' => 2], $this->repository->find('held', SettingScope::User, 7)?->value);
+    }
+
+    private function value(string $name, SettingScope $scope = SettingScope::Global, int $ownerId = 0): mixed
+    {
+        return $this->repository->find($name, $scope, $ownerId)?->value;
     }
 
     private function countSettings(): int

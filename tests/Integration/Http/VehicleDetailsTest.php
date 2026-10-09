@@ -17,6 +17,7 @@ use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Webhook\WebhookEvents;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Transaction;
 use Logbook\Tests\Support\AppTestCase;
 use Psr\Clock\ClockInterface;
@@ -113,7 +114,7 @@ final class VehicleDetailsTest extends AppTestCase
         $container = $app->getContainer();
         self::assertInstanceOf(Container::class, $container);
         $container->set(OdometerService::class, new OdometerService(
-            new OdometerReadingRepository($broken),
+            new OdometerReadingRepository($broken, $this->service($app, RequestReads::class)),
             $this->service($app, AttachmentService::class),
             $this->service($app, ClockInterface::class),
             $this->service($app, AccessContext::class),

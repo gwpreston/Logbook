@@ -23,6 +23,7 @@ use Logbook\Domain\Tyre\TyreSeason;
 use Logbook\Domain\Tyre\TyreSet;
 use Logbook\Domain\Tyre\TyreSetData;
 use Logbook\Domain\Tyre\TyreStatus;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Units\DepthUnit;
@@ -41,7 +42,7 @@ final readonly class TyreRepository
     private const string LINES = 'tyre_change_lines';
     private const int KM_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -52,7 +53,29 @@ final readonly class TyreRepository
      */
     public function listTyres(int $vehicleId): array
     {
-        return $this->listTyresOf([$vehicleId]);
+        return $this->reads->remember(self::TYRES, $vehicleId, fn (): array => $this->listTyresOf([$vehicleId]));
+    }
+
+    /**
+     * Read the tyres and tyre changes of these vehicles in two queries (and
+     * the changes' lines in a third), so the page's later listTyres() and
+     * listChanges() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TYRES, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listTyresOf($ids),
+            static fn (Tyre $tyre): int => $tyre->vehicleId,
+        ), []);
+        $this->reads->prime(self::CHANGES . '+' . self::LINES, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->withLines($this->changes()
+                ->where('vehicle_id IN (:vehicles)')
+                ->setParameter('vehicles', $ids, ArrayParameterType::INTEGER)
+                ->fetchAllAssociative()),
+            static fn (TyreChange $change): int => $change->vehicleId,
+        ), []);
     }
 
     /**
@@ -264,10 +287,12 @@ final readonly class TyreRepository
      */
     public function listChanges(int $vehicleId): array
     {
-        return $this->withLines($this->changes()
+        $group = self::CHANGES . '+' . self::LINES;
+
+        return $this->reads->remember($group, $vehicleId, fn (): array => $this->withLines($this->changes()
             ->where('vehicle_id = :vehicle')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->fetchAllAssociative());
+            ->fetchAllAssociative()));
     }
 
     /**

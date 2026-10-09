@@ -12,6 +12,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use LogicException;
@@ -25,7 +26,7 @@ final readonly class OdometerReadingRepository
     private const string TABLE = 'odometer_readings';
     private const int KM_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -34,15 +35,41 @@ final readonly class OdometerReadingRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('recorded_at')
-            ->addOrderBy('reading_km')
-            ->addOrderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('recorded_at')
+                ->addOrderBy('reading_km')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every reading of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, function (array $ids): array {
+            $rows = $this->select()
+                ->where('vehicle_id IN (:vehicles)')
+                ->setParameter('vehicles', $ids, ArrayParameterType::INTEGER)
+                ->orderBy('recorded_at')
+                ->addOrderBy('reading_km')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
+
+            return RequestReads::groupBy(
+                array_values(array_map($this->hydrate(...), $rows)),
+                static fn (OdometerReading $reading): int => $reading->vehicleId,
+            );
+        }, []);
     }
 
     /**

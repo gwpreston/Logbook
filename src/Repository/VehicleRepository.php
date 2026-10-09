@@ -16,6 +16,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -30,7 +31,7 @@ final readonly class VehicleRepository
     private const int CAPACITY_SCALE = 3;
     private const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection, private StoredGrade $grades)
+    public function __construct(private Connection $connection, private StoredGrade $grades, private RequestReads $reads)
     {
     }
 
@@ -66,6 +67,21 @@ final readonly class VehicleRepository
             return [];
         }
 
+        if ($this->reads->isActive()) {
+            $ids = array_values(array_unique($ids));
+            sort($ids);
+            $this->readMissing($ids);
+            $vehicles = [];
+            foreach ($ids as $id) {
+                $vehicle = $this->findById($id);
+                if ($vehicle !== null) {
+                    $vehicles[] = $vehicle;
+                }
+            }
+
+            return $vehicles;
+        }
+
         $rows = $this->select()
             ->where('id IN (:ids)')
             ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
@@ -81,12 +97,37 @@ final readonly class VehicleRepository
      */
     public function findById(int $id): ?Vehicle
     {
-        $row = $this->select()
-            ->where('id = :id')
-            ->setParameter('id', $id, ParameterType::INTEGER)
-            ->fetchAssociative();
+        return $this->reads->remember(self::TABLE, $id, function () use ($id): ?Vehicle {
+            $row = $this->select()
+                ->where('id = :id')
+                ->setParameter('id', $id, ParameterType::INTEGER)
+                ->fetchAssociative();
 
-        return $row === false ? null : $this->hydrate($row);
+            return $row === false ? null : $this->hydrate($row);
+        });
+    }
+
+    /**
+     * Read the vehicles a page hasn't looked at yet in one query (a missing
+     * id is remembered as missing).
+     *
+     * @param list<int> $ids
+     */
+    private function readMissing(array $ids): void
+    {
+        $this->reads->prime(self::TABLE, $ids, function (array $missing): array {
+            $rows = $this->select()
+                ->where('id IN (:ids)')
+                ->setParameter('ids', $missing, ArrayParameterType::INTEGER)
+                ->fetchAllAssociative();
+            $found = [];
+            foreach ($rows as $row) {
+                $vehicle = $this->hydrate($row);
+                $found[$vehicle->id] = $vehicle;
+            }
+
+            return $found;
+        }, null);
     }
 
     public function insert(int $userId, VehicleData $data, DateTimeImmutable $now): int

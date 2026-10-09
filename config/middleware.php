@@ -9,6 +9,7 @@ use Logbook\Middleware\DemoGuardMiddleware;
 use Logbook\Middleware\DemoMiddleware;
 use Logbook\Middleware\LocaleMiddleware;
 use Logbook\Middleware\ModalMiddleware;
+use Logbook\Middleware\RequestReadsMiddleware;
 use Logbook\Middleware\SessionMiddleware;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\ErrorHandler;
@@ -23,7 +24,8 @@ use Slim\Middleware\ErrorMiddleware;
  * inner → outer. Resulting order (outer → inner), per spec.md §5:
  *
  *   demo start path and robots header (DEMO_MODE only) → API CORS (API
- *   paths only) → error handling → base path → session
+ *   paths only) → error handling → base path → page-request reads
+ *   (GET and HEAD) → session
  *   → current user → locale + display preferences → modal redirects
  *   → routing → body parsing
  *   → [route groups, config/routes.php: header sign-in → auth guard → CSRF
@@ -48,6 +50,7 @@ return static function (App $app): void {
     $app->add(LocaleMiddleware::class);
     $app->add(CurrentUserMiddleware::class);
     $app->add(SessionMiddleware::class);
+    $app->add(RequestReadsMiddleware::class);
     $app->add(BasePathMiddleware::class);
 
     $errorHandler = new ErrorHandler($app->getCallableResolver(), $app->getResponseFactory(), $logger, $settings->basePath);

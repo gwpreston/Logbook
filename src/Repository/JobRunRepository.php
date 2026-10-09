@@ -12,6 +12,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Job\JobStatus;
 use Logbook\Domain\Job\JobTrigger;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -23,7 +24,7 @@ final readonly class JobRunRepository
 {
     private const string TABLE = 'job_runs';
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -188,10 +189,10 @@ final readonly class JobRunRepository
      */
     public function lastPass(): ?JobRun
     {
-        return $this->first($this->select()
+        return $this->reads->remember('job_runs+users', 'lastPass', fn (): ?JobRun => $this->first($this->select()
             ->where('r.trigger_kind <> :manual', 'r.status <> :running')
             ->setParameter('manual', JobTrigger::Manual->value)
-            ->setParameter('running', JobStatus::Running->value));
+            ->setParameter('running', JobStatus::Running->value)));
     }
 
     /**

@@ -16,6 +16,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\Finance\SettlementQuote;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Units\DistanceUnit;
@@ -35,7 +36,7 @@ final readonly class FinanceAgreementRepository
     private const string QUOTES = 'settlement_quotes';
     public const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -44,7 +45,21 @@ final readonly class FinanceAgreementRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        return $this->listForVehicles([$vehicleId]);
+        return $this->reads->remember(self::TABLE, $vehicleId, fn (): array => $this->readForVehicles([$vehicleId]));
+    }
+
+    /**
+     * Read every agreement of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->readForVehicles($ids),
+            static fn (FinanceAgreement $agreement): int => $agreement->vehicleId,
+        ), []);
     }
 
     /**
@@ -56,15 +71,40 @@ final readonly class FinanceAgreementRepository
         if ($vehicleIds === []) {
             return [];
         }
+
+        if ($this->reads->isActive()) {
+            $this->prime($vehicleIds);
+            $agreements = [];
+            foreach (array_unique($vehicleIds) as $vehicleId) {
+                array_push($agreements, ...$this->listForVehicle($vehicleId));
+            }
+            usort($agreements, self::activeFirstThenNewest(...));
+
+            return $agreements;
+        }
+
+        return $this->readForVehicles($vehicleIds);
+    }
+
+    private static function activeFirstThenNewest(FinanceAgreement $a, FinanceAgreement $b): int
+    {
+        return ($b->status->isActive() <=> $a->status->isActive())
+            ?: ($b->data->startedOn <=> $a->data->startedOn)
+            ?: $b->id <=> $a->id;
+    }
+
+    /**
+     * @param list<int> $vehicleIds
+     * @return list<FinanceAgreement> active ones first, then newest first
+     */
+    private function readForVehicles(array $vehicleIds): array
+    {
         $rows = $this->select()
             ->where('vehicle_id IN (:vehicles)')
             ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
             ->fetchAllAssociative();
         $agreements = array_values(array_map($this->hydrate(...), $rows));
-        usort($agreements, static fn (FinanceAgreement $a, FinanceAgreement $b): int =>
-            ($b->status->isActive() <=> $a->status->isActive())
-            ?: ($b->data->startedOn <=> $a->data->startedOn)
-            ?: $b->id <=> $a->id);
+        usort($agreements, self::activeFirstThenNewest(...));
 
         return $agreements;
     }
@@ -82,6 +122,18 @@ final readonly class FinanceAgreementRepository
 
     public function activeFor(int $vehicleId): ?FinanceAgreement
     {
+        if ($this->reads->isActive()) {
+            // The lowest id of the active ones, from the vehicle's list a page has read once.
+            $active = null;
+            foreach ($this->listForVehicle($vehicleId) as $agreement) {
+                if ($agreement->status->isActive() && ($active === null || $agreement->id < $active->id)) {
+                    $active = $agreement;
+                }
+            }
+
+            return $active;
+        }
+
         $row = $this->select()
             ->where('vehicle_id = :vehicle', 'status = :status')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)

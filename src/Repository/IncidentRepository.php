@@ -21,6 +21,7 @@ use Logbook\Domain\Incident\LinkKind;
 use Logbook\Domain\Incident\NcdEffect;
 use Logbook\Domain\Incident\Severity;
 use Logbook\Domain\Incident\WriteOffCategory;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use UnexpectedValueException;
@@ -35,7 +36,7 @@ final readonly class IncidentRepository
     private const string TABLE = 'incidents';
     public const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -44,11 +45,46 @@ final readonly class IncidentRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->fetchAllAssociative();
-        $incidents = array_values(array_map($this->hydrate(...), $rows));
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->fetchAllAssociative();
+
+            return self::openFirstThenNewest(array_values(array_map($this->hydrate(...), $rows)));
+        });
+    }
+
+    /**
+     * Read every incident of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, function (array $ids): array {
+            $rows = $this->select()
+                ->where('vehicle_id IN (:vehicles)')
+                ->setParameter('vehicles', $ids, ArrayParameterType::INTEGER)
+                ->fetchAllAssociative();
+
+            return array_map(
+                self::openFirstThenNewest(...),
+                RequestReads::groupBy(
+                    array_values(array_map($this->hydrate(...), $rows)),
+                    static fn (Incident $incident): int => $incident->vehicleId,
+                ),
+            );
+        }, []);
+    }
+
+    /**
+     * @param list<Incident> $incidents
+     * @return list<Incident> open ones first, then newest first
+     */
+    private static function openFirstThenNewest(array $incidents): array
+    {
         usort($incidents, static fn (Incident $a, Incident $b): int => self::openFirst($a, $b) ?: self::newestFirst($a, $b));
 
         return $incidents;

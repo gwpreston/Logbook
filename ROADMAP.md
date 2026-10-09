@@ -93,7 +93,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | ✅ |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
 | [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | ✅ |
-| [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | 📋 |
+| [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | ✅ |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
 
@@ -1131,9 +1131,12 @@ couldn't prove.*
 - The HIGH finding, already on master: 813 queries (9.4 s) on the
   dashboard and 344 on an overview for a 10-vehicle household, from
   per-vehicle reads repeated inside loops.
-- Measure, batch the repeated reads across vehicles, and hold it with
-  query-count tests that don't grow with the number of vehicles; nothing
-  shown changes. Page budgets in the spec are #350. Patch release.
+- Measured, then batched: a page request remembers what its
+  repositories read and reads each table once for every vehicle on the
+  page. The dashboard went from 812 queries to 59 and an overview from
+  274 to 59 with ten vehicles, the same count as with one; nothing
+  shown changes. The budget in the spec (§8) is 60 queries (#350); 30 is
+  parked (#351). Released as v3.7.2.
 
 → [`phase-41.7.md`](docs/phases/phase-41.7.md)
 

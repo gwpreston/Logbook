@@ -11,6 +11,7 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Valuation\VehicleValuationData;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use UnexpectedValueException;
@@ -24,7 +25,7 @@ final readonly class ValuationRepository
     private const string TABLE = 'vehicle_valuations';
     public const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -33,14 +34,30 @@ final readonly class ValuationRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('valued_on')
-            ->addOrderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('valued_on')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every valuation of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listForVehiclesBetween($ids, null, null),
+            static fn (VehicleValuation $valuation): int => $valuation->vehicleId,
+        ), []);
     }
 
     /**

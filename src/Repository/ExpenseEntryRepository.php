@@ -12,6 +12,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Expense\ExpenseEntryData;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use UnexpectedValueException;
@@ -25,7 +26,7 @@ final readonly class ExpenseEntryRepository
     private const string TABLE = 'expense_entries';
     public const int MONEY_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -34,14 +35,30 @@ final readonly class ExpenseEntryRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('spent_on')
-            ->addOrderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('spent_on')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every expense of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listForVehiclesBetween($ids, null, null),
+            static fn (ExpenseEntry $entry): int => $entry->vehicleId,
+        ), []);
     }
 
     /**

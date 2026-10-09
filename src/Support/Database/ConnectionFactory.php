@@ -7,6 +7,7 @@ namespace Logbook\Support\Database;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Config\DatabaseConfig;
 use Logbook\Support\Config\DatabaseDriver;
 
@@ -16,10 +17,18 @@ use Logbook\Support\Config\DatabaseDriver;
  */
 final class ConnectionFactory
 {
-    public static function create(DatabaseConfig $config): Connection
+    /**
+     * @param RequestReads|null $reads the app's page-request reads, which a write
+     *                                 must make forget what it changed; null for a
+     *                                 connection that has none (a command)
+     */
+    public static function create(DatabaseConfig $config, ?RequestReads $reads = null): Connection
     {
-        $configuration = (new Configuration())
-            ->setMiddlewares([new SessionInitMiddleware($config->driver)]);
+        $middlewares = [new SessionInitMiddleware($config->driver)];
+        if ($reads !== null) {
+            $middlewares[] = new ForgetWrittenReadsMiddleware($reads);
+        }
+        $configuration = (new Configuration())->setMiddlewares($middlewares);
 
         $params = match ($config->driver) {
             DatabaseDriver::Sqlite => $config->name === ':memory:'

@@ -6,6 +6,29 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.7.2] — 2026-10-09
+
+Phase 41.7: **a patch release**. The dashboard and a vehicle's overview read
+each table once for all your vehicles, not once per vehicle per widget.
+
+### Changed
+- **A much faster dashboard and vehicle overview.** With ten vehicles the
+  dashboard sent 812 database queries and an overview 274; both now send
+  59, the same as with one vehicle, and the count no longer grows with the
+  number of vehicles or entries. A page request remembers what it has read
+  (settings, and each vehicle's fill-ups, readings, services, documents,
+  expenses, valuations, finance agreements, incidents and tyres) and a
+  write drops what it changed. Nothing any page shows has changed
+  (compared page for page in a test); only GET and HEAD requests do this,
+  so saving, jobs and imports read the database exactly as before.
+- **Page budgets** are now part of the spec (§8) and held by a test: the
+  dashboard and an overview run at most 60 queries, whatever the number
+  of vehicles.
+
+### Upgrade notes
+- Pull and restart. No migration, no configuration change and no change
+  to the backup format.
+
 ## [3.7.1] — 2026-10-09
 
 Phase 41.6: **a patch release**. The small things Phase 41's merge review
