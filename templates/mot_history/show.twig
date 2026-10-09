@@ -109,6 +109,11 @@
                         </li>
                     {% endfor %}
                 </ol>
+                {% if can_vehicle(vehicle, 'manage') %}
+                    <div class="btn-row">
+                        <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'mot-tests'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                    </div>
+                {% endif %}
             {% endif %}
             {{ mot.attribution(provider) }}
         </section>

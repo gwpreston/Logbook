@@ -204,6 +204,7 @@ final readonly class ImportField
             ExportModule::Valuations,
             ExportModule::Incidents,
             ExportModule::Issues,
+            ExportModule::MotTests,
             ExportModule::Finance => [],
         };
     }

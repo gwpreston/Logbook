@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\MotHistory;
 
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\MotTestRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Tests\Support\ApiClient;
 use Logbook\Tests\Support\ApiFixtures;
@@ -97,6 +98,39 @@ final class MotElsewhereTest extends MotHistoryTestCase
         // Off: no MOT lines at all.
         $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
         self::assertSame([], $this->motLines($golf, 2026));
+    }
+
+    public function testTheCsvHasOneRowPerDefect(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $path = '/vehicles/' . $golf->id . '/export/mot-tests.csv';
+
+        $page = (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody();
+        self::assertStringContainsString($path, $page);
+        $response = $browser->get($path);
+        self::assertSame(200, $response->getStatusCode());
+        $lines = array_map(
+            static fn (string $line): array => str_getcsv($line, ',', '"', ''),
+            array_values(array_filter(explode("\n", ltrim((string) $response->getBody(), "\xEF\xBB\xBF")))),
+        );
+        self::assertSame(
+            ['Date and time (Europe/London)', 'Test number', 'Result', 'Expires', 'Odometer (Miles)', 'Tested in',
+                'Defect type', 'Defect', 'Dangerous'],
+            array_map(static fn (?string $cell): string => trim((string) $cell), $lines[0]),
+        );
+        $tests = $this->service($this->app, MotTestRepository::class)->listForVehicle($golf->id);
+        $expected = 0;
+        foreach ($tests as $test) {
+            $expected += max(1, count($test->defects));
+        }
+        self::assertCount($expected + 1, $lines);
+        self::assertSame('323456789012', $lines[1][1]);
+        self::assertStringNotContainsString('Open Government', (string) $response->getBody(), '#341');
+
+        $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
+        self::assertSame(404, $browser->get($path)->getStatusCode());
     }
 
     public function testPrintLeavesThemOut(): void

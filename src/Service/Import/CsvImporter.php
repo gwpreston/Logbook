@@ -369,6 +369,7 @@ final readonly class CsvImporter
             ExportModule::Valuations,
             ExportModule::Incidents,
             ExportModule::Issues,
+            ExportModule::MotTests,
             ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };
@@ -442,6 +443,7 @@ final readonly class CsvImporter
             ExportModule::Valuations,
             ExportModule::Incidents,
             ExportModule::Issues,
+            ExportModule::MotTests,
             ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };

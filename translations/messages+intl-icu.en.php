@@ -6248,6 +6248,15 @@ return [
         ],
     ],
     'mot_history' => [
+        'column' => [
+            'test_number' => 'Test number',
+            'result' => 'Result',
+            'expires_on' => 'Expires',
+            'tested_in' => 'Tested in',
+            'defect_type' => 'Defect type',
+            'defect' => 'Defect',
+            'dangerous' => 'Dangerous',
+        ],
         'new_result' => [
             'passed' => 'New MOT result: passed {date}.',
             'failed' => 'New MOT result: failed {date}.',

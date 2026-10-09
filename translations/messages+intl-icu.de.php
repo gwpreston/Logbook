@@ -6245,6 +6245,15 @@ return [
         ],
     ],
     'mot_history' => [
+        'column' => [
+            'test_number' => 'Prüfnummer',
+            'result' => 'Ergebnis',
+            'expires_on' => 'Gültig bis',
+            'tested_in' => 'Geprüft in',
+            'defect_type' => 'Mangelart',
+            'defect' => 'Mangel',
+            'dangerous' => 'Gefährlich',
+        ],
         'new_result' => [
             'passed' => 'Neues MOT-Ergebnis: bestanden am {date}.',
             'failed' => 'Neues MOT-Ergebnis: nicht bestanden am {date}.',
