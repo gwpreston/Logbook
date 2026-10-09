@@ -51,6 +51,7 @@ final readonly class PrintOptions
      * must not carry the seller's own valuations. Never trips (§7.22):
      * they are where someone went. Never an issue's *noticed* line (Phase
      * 40.1, §7.37): a fixed issue prints with its fix, an open one not at all.
+     * Never an MOT test's line (Phase 41, §7.38): the sale pack summarises them.
      *
      * @return list<ActivityKind>
      */
@@ -65,7 +66,7 @@ final readonly class PrintOptions
             $kinds,
             static fn (ActivityKind $kind): bool => !in_array(
                 $kind,
-                [ActivityKind::Valuation, ActivityKind::Trip, ActivityKind::IssueNoticed],
+                [ActivityKind::Valuation, ActivityKind::Trip, ActivityKind::IssueNoticed, ActivityKind::MotTest],
                 true,
             ),
         ));

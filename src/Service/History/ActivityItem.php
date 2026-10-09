@@ -79,6 +79,8 @@ final readonly class ActivityItem
         /** On a linked record: its incident's type (translation key) and date. */
         public ?string $partOfKey = null,
         public ?DateTimeImmutable $partOfDate = null,
+        /** An MOT test's number of defects and advisories (Phase 41). */
+        public int $defects = 0,
     ) {
     }
 

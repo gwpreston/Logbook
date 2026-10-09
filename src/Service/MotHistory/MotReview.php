@@ -319,13 +319,19 @@ final readonly class MotReview
     }
 
     /**
+     * The `inspection` document a test became: its number as reference, or
+     * its date as start (spec.md §7.38 "Already logged"). Other types never match.
+     *
      * @param list<ComplianceDocument> $inspections
      */
-    private static function match(array $inspections, MotTest $test): ?int
+    public static function match(array $inspections, MotTest $test): ?int
     {
         $day = $test->completedAt->format('Y-m-d');
         $reference = $test->reference();
         foreach ($inspections as $document) {
+            if ($document->vehicleId !== $test->vehicleId || $document->data->type !== ComplianceType::Inspection) {
+                continue;
+            }
             if (
                 ($reference !== null && $document->data->reference === $reference)
                 || $document->data->startOn?->format('Y-m-d') === $day

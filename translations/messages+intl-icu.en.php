@@ -593,8 +593,11 @@ return [
         'empty_title' => 'Nothing logged yet',
         'empty_body' => 'Fill-ups, services, documents, expenses and readings appear here as you log them.',
         'expires' => 'expires {date}',
+        'mot_defects' => '{count, plural, one {# defect or advisory} other {# defects or advisories}}',
         'valued_at' => 'Valued at {price}',
         'kind' => [
+            'mot_passed' => 'MOT passed',
+            'mot_failed' => 'MOT failed',
             'fill_up' => 'Fill-up',
             'charge' => 'Charge',
             'reading' => 'Odometer reading',

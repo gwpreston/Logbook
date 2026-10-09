@@ -592,8 +592,11 @@ return [
         'empty_title' => 'Noch nichts erfasst',
         'empty_body' => 'Tankvorgänge, Wartungen, Dokumente, Ausgaben und Kilometerstände erscheinen hier, sobald du sie erfasst.',
         'expires' => 'läuft ab am {date}',
+        'mot_defects' => '{count, plural, one {# Mangel oder Hinweis} other {# Mängel oder Hinweise}}',
         'valued_at' => 'Bewertet mit {price}',
         'kind' => [
+            'mot_passed' => 'MOT bestanden',
+            'mot_failed' => 'MOT nicht bestanden',
             'fill_up' => 'Tankfüllung',
             'charge' => 'Ladevorgang',
             'reading' => 'Kilometerstand',

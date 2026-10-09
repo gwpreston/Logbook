@@ -67,7 +67,7 @@ enum HistoryChip: string
             self::Service => [ActivityKind::Maintenance],
             self::Fuel => [ActivityKind::Fuel],
             self::Tyres => [ActivityKind::Tyre],
-            self::Documents => [ActivityKind::Document],
+            self::Documents => [ActivityKind::Document, ActivityKind::MotTest],
             self::Expenses => [ActivityKind::Expense],
             self::Mileage => [ActivityKind::Odometer],
             self::Trips => [ActivityKind::Trip],

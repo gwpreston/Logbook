@@ -13742,6 +13742,7 @@
               "incident",
               "issue_noticed",
               "issue_fixed",
+              "mot_test",
               "milestone"
             ]
           },

@@ -40,6 +40,9 @@
     {%- elseif item.kind.value in ['issue_noticed', 'issue_fixed'] -%}
         {#- The note is a translation key: "Affects safety". -#}
         {%- set parts = [item.labelKey|trans]|merge(item.note ? [item.note|trans] : []) -%}
+    {%- elseif item.kind.value == 'mot_test' -%}
+        {%- if item.defects > 0 %}{% set parts = parts|merge(['history.mot_defects'|trans({count: item.defects})]) %}{% endif -%}
+        {%- if item.expiresOn %}{% set parts = parts|merge(['history.expires'|trans({date: item.expiresOn|local_date})]) %}{% endif -%}
     {%- elseif item.kind.value == 'document' -%}
         {%- if item.label != '' %}{% set parts = parts|merge([item.labelKey|trans]) %}{% endif -%}
         {%- if item.expiresOn %}{% set parts = parts|merge(['history.expires'|trans({date: item.expiresOn|local_date})]) %}{% endif -%}
@@ -71,8 +74,8 @@
     {% set summary = history.summary(item) %}
     {# A milestone opens the vehicle, a valuation its page: both Manage; entries their own rule (spec.md §7.21). #}
     {# An incident opens its page, which anyone who can view the vehicle may see (spec.md §7.29). #}
-    {# An issue opens its page too (spec.md §7.37). #}
-    {% set opens_page = item.kind.value in ['incident', 'issue_noticed', 'issue_fixed'] %}
+    {# An issue opens its page too (spec.md §7.37), and an MOT test the MOT history page (§7.38). #}
+    {% set opens_page = item.kind.value in ['incident', 'issue_noticed', 'issue_fixed', 'mot_test'] %}
     {% set editable = opens_page or (item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy)) %}
     {% set tag = (opts.link ?? true) and editable ? 'a' : 'div' %}
     <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}"{% if not opens_page %} data-modal{% endif %}{% endif %}>

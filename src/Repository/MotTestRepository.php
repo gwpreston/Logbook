@@ -41,13 +41,25 @@ final readonly class MotTestRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
+        return $this->listForVehicles([$vehicleId]);
+    }
+
+    /**
+     * @param list<int> $vehicleIds
+     * @return list<MotTest> newest first, each with its defects
+     */
+    public function listForVehicles(array $vehicleIds): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
         $rows = $this->connection->createQueryBuilder()
             ->select('*')
             ->from('mot_tests')
-            ->where('vehicle_id = :vehicle')
+            ->where('vehicle_id IN (:vehicles)')
             ->orderBy('completed_at', 'DESC')
             ->addOrderBy('id', 'DESC')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
             ->fetchAllAssociative();
         $ids = [];
         foreach ($rows as $row) {
