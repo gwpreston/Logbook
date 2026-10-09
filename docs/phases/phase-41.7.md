@@ -2,7 +2,7 @@
 
 *The dashboard reads each vehicle once, not once per widget.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Phase 41's merge review measured the pages with a 10-vehicle household
 (1,500 fill-ups, 200 readings, 150 services and 20 documents per
@@ -54,9 +54,10 @@ two computed insights to the same pages.
 
 ## Spec changes
 
-- §8 (or §7.8): the page budgets, **if** the owner decides #350 that
-  way: for example "the dashboard and an overview run a bounded number
-  of queries, not one per vehicle per widget", with the numbers.
+- §8 *Page budgets* (written, #350): the dashboard and an overview run
+  at most 30 queries on a 10-vehicle household, the same count for 1
+  vehicle as for 10, held by a test; 200 ms typical and 500 ms at most
+  are review targets. §13 lists the phase.
 
 ## Decisions (and why)
 
@@ -92,7 +93,7 @@ two computed insights to the same pages.
       after, on SQLite, PostgreSQL, MySQL and MariaDB.
 
 ### 41.7.3 Release
-- [ ] `VERSION` → next patch; `CHANGELOG.md` (*Changed*: faster
+- [ ] `VERSION` → 3.7.2; `CHANGELOG.md` (*Changed*: faster
       dashboard and vehicle overview); `ROADMAP.md` row ✅.
 
 ---
@@ -108,8 +109,10 @@ two computed insights to the same pages.
 
 ## Open questions
 
-- **#350 — Page budgets in the spec?** Options: write the budgets (30
-  queries, 200/500 ms) into §8 and enforce them in tests; or keep them
-  as review targets only. Recommendation: write them in, for the
-  dashboard and the overview at least, so a test holds them. Logged in
-  [`open-questions.md`](open-questions.md); decide before 41.7.2.
+- **#350 — Page budgets in the spec?** *Decided 2026-10-09:* write them
+  into §8 (30 queries; 200/500 ms as review targets) and hold the query
+  count by a test, for the dashboard and the overview. Logged in
+  [`open-questions.md`](open-questions.md).
+- **#280 — Batch the Insights page too?** *Carried 2026-10-09:* only
+  where it shares a service this phase batches (it is then measured);
+  nothing Insights-specific is added, and #280 stays open.

@@ -8763,6 +8763,16 @@ overview while any test is unreviewed. A test is reviewed
   `DateTimeImmutable`, explicit tests. (Primary defence against wrong totals.)
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
+- **Page budgets** (Phase 41.7, decided 2026-10-09, #350): the dashboard
+  and a vehicle's overview run a bounded number of queries, **not one per
+  vehicle per widget**: at most 30 queries each on a 10-vehicle household
+  (1,500 fill-ups, 200 readings, 150 services and 20 documents per
+  vehicle), and the count is the same for 1 vehicle as for 10. A test
+  holds both (`QueryCounter`), so the repeated per-vehicle read can't
+  creep back. Time is a review target, not a test: 200 ms typical and
+  500 ms at most for either page on that household. The services behind
+  the pages read a table once per request for every vehicle they show
+  (`listForVehicles`-style `IN (…)` reads) and pass the lists on.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
@@ -9801,6 +9811,12 @@ task breakdowns live in the per-phase files; this is the map.
   the registration or VIN; a refresh matches a test's defects by text,
   not position; only a later test advises an issue again (§7.38). No
   migration. Release v3.7.1.
+- **Phase 41.7 — Dashboard and overview query batching + patch release.**
+  The dashboard and the vehicle overview read each table once per request
+  for every vehicle they show, not once per vehicle per widget; page
+  budgets in §8 (#350) and query-count tests that don't grow with the
+  number of vehicles. Nothing any page shows changes. No migration.
+  Release v3.7.2.
 ---
 
 ## 14. Definition of done
