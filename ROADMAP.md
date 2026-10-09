@@ -92,6 +92,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [40.1](docs/phases/phase-40.1.md) | Issues log | ✅ |
 | [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | ✅ |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
+| [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | 📋 |
+| [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
 
@@ -1102,6 +1104,37 @@ record.*
   **v3.7.0**.
 
 → [`phase-41.md`](docs/phases/phase-41.md)
+
+---
+
+## Phase 41.6 — MOT history follow-ups + patch release
+*The small things Phase 41's merge review found, and the edge cases it
+couldn't prove.*
+
+- The LOW findings: Settings → MOT history at 375 px (the *Test* button,
+  the *Sends* hint's icon); History counting defects instead of loading
+  them; *Add all as issues* reading once per call, not per defect (362
+  queries → under 80); one status word in the phase file and the log.
+- The unconfirmed edge cases, each proved and fixed or closed with a
+  test: a registration in the stored error, defects reordered by DVSA,
+  an "advised again" note dated too early. Open questions #346–#349 stay
+  with the owner. Release v3.7.1.
+
+→ [`phase-41.6.md`](docs/phases/phase-41.6.md)
+
+---
+
+## Phase 41.7 — Dashboard and overview query batching + patch release
+*The dashboard reads each vehicle once, not once per widget.*
+
+- The HIGH finding, already on master: 813 queries (9.4 s) on the
+  dashboard and 344 on an overview for a 10-vehicle household, from
+  per-vehicle reads repeated inside loops.
+- Measure, batch the repeated reads across vehicles, and hold it with
+  query-count tests that don't grow with the number of vehicles; nothing
+  shown changes. Page budgets in the spec are #350. Patch release.
+
+→ [`phase-41.7.md`](docs/phases/phase-41.7.md)
 
 ---
 
