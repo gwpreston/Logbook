@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\MotHistory;
 
+use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\UserRepository;
+use Logbook\Tests\Support\ApiClient;
+use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\History\ActivityItem;
 use Logbook\Service\History\ActivityKind;
@@ -19,6 +23,46 @@ use Logbook\Service\MotHistory\MotHistoryConfig;
  */
 final class MotElsewhereTest extends MotHistoryTestCase
 {
+    use ApiFixtures;
+
+    protected function tearDown(): void
+    {
+        self::clearThrottle();
+        parent::tearDown();
+    }
+
+    public function testTheApiReadsTheStoredTestsWithTheAttribution(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $api = $this->api($this->app, $this->apiKey($this->app, $this->owner));
+        $path = '/vehicles/' . $golf->id . '/mot-tests';
+
+        $empty = ApiClient::json($api->get($path));
+        self::assertFalse($empty->get('enabled'));
+        self::assertSame([], $empty->get('items'));
+
+        $this->fetch($golf);
+        $this->requests = [];
+        $response = $api->get($path);
+        self::assertSame(200, $response->getStatusCode());
+        $body = ApiClient::json($response);
+        self::assertSame([], $this->requests, 'never fetches');
+        self::assertSame('yes', $body->get('recall'));
+        self::assertCount(5, $body->column('id', 'items'));
+        self::assertSame('passed', $body->get('items', 0, 'result'));
+        self::assertSame('mi', $body->get('items', 0, 'tested_in'));
+        self::assertStringContainsString('Open Government Licence', $body->string('provider', 'attribution'));
+
+        $this->shareWith($golf, ShareLevel::View);
+        $member = $this->service($this->app, UserRepository::class)->findByUsername('partner');
+        self::assertNotNull($member);
+        self::assertSame(200, $this->api($this->app, $this->apiKey($this->app, $member))->get($path)->getStatusCode());
+
+        $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
+        self::assertSame(404, $api->get($path)->getStatusCode());
+    }
+
     public function testHistoryListsEachTestUnlessItBecameADocument(): void
     {
         $this->start();

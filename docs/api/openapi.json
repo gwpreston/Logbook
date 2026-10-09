@@ -1572,6 +1572,41 @@
         }
       }
     },
+    "/vehicles/{id}/mot-tests": {
+      "get": {
+        "operationId": "getMotTests",
+        "summary": "The vehicle's stored MOT history from DVSA (404 while MOT history is off; never fetches)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MotHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/vehicles/{id}/documents/{entry}": {
       "get": {
         "operationId": "getDocument",
@@ -19496,6 +19531,218 @@
           "note": {
             "type": "string",
             "maxLength": 1000
+          }
+        }
+      },
+      "MotHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicle_id",
+          "enabled",
+          "fetched_at",
+          "recall",
+          "first_due_on",
+          "provider",
+          "distance_unit",
+          "items"
+        ],
+        "properties": {
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "The owner has confirmed fetching for this vehicle."
+          },
+          "fetched_at": {
+            "$ref": "#/components/schemas/NullableInstant"
+          },
+          "recall": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "yes",
+              "no",
+              "unknown",
+              "unavailable",
+              null
+            ]
+          },
+          "first_due_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "provider": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "name",
+              "attribution",
+              "licence_url"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "attribution": {
+                "type": "string"
+              },
+              "licence_url": {
+                "type": "string"
+              }
+            }
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MotTest"
+            }
+          }
+        }
+      },
+      "MotTest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "test_number",
+          "completed_at",
+          "result",
+          "expires_on",
+          "odometer",
+          "odometer_state",
+          "tested_in",
+          "registration_at_test",
+          "data_source",
+          "reviewed",
+          "document_id",
+          "defects"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "test_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for a test DVSA gave no number."
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed"
+            ]
+          },
+          "expires_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "odometer_state": {
+            "type": "string",
+            "enum": [
+              "read",
+              "unreadable",
+              "none"
+            ]
+          },
+          "tested_in": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "km",
+              "mi",
+              null
+            ]
+          },
+          "registration_at_test": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data_source": {
+            "type": "string",
+            "enum": [
+              "dvsa",
+              "dva_ni",
+              "cvs"
+            ]
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "defects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "text",
+                "dangerous",
+                "issue_id",
+                "not_now"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "advisory",
+                    "minor",
+                    "major",
+                    "dangerous",
+                    "fail",
+                    "user_entered",
+                    "non_specific",
+                    "system_generated"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "dangerous": {
+                  "type": "boolean"
+                },
+                "issue_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "not_now": {
+                  "type": "boolean"
+                }
+              }
+            }
           }
         }
       }

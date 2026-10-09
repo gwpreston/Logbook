@@ -48,6 +48,7 @@ use Logbook\Action\Settings\Jobs\JobTriggersAction;
 use Logbook\Action\Settings\Jobs\JobUrlTokenAction;
 use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
+use Logbook\Action\Api\MotTestsAction as ApiMotTestsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
@@ -560,6 +561,10 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Maintenance));
                 $keyed->get('/vehicles/{id:[0-9]+}/documents', ApiDocumentsAction::class)->setName('api.documents.index')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Compliance));
+                // MOT history (spec.md §7.38): a 404 while it is off; never fetches.
+                $keyed->get('/vehicles/{id:[0-9]+}/mot-tests', ApiMotTestsAction::class)->setName('api.mot_tests')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Compliance));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance/{entry:[0-9]+}', ApiShowEntryAction::class)

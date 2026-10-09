@@ -122,6 +122,7 @@ user prefers, so automations can compare and chart them:
 | `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |
 | `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged; `?type=`, and `?current=1` for those in force today) |
 | `POST /vehicles/{id}/documents` | add a document (read and write key) |
+| `GET /vehicles/{id}/mot-tests` | the MOT history fetched from DVSA (Phase 41): tests newest first with their mileage (km), the unit tested in, defects and what was made from them, the recall state (`yes`, `no`, `unknown`, `unavailable`) and the provider's attribution. Never fetches; `404` while MOT history is off ([docs/mot-history.md](mot-history.md)) |
 | `GET /vehicles/{id}/expenses` | expenses (paged; needs cost access) |
 | `POST /vehicles/{id}/expenses` | add an expense (read and write key; cost access not needed) |
 | `GET /vehicles/{id}/tyres` | tyres: fitted, stored, retired, with tread and what is due |
