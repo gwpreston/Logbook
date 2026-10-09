@@ -154,6 +154,23 @@ final class MotHistorySettingsTest extends AppTestCase
         self::assertStringContainsString('The last call worked.', $page);
     }
 
+    public function testALongProviderNameWrapsAndTheSendsHintKeepsItsIconBesideTheText(): void
+    {
+        $app = $this->app();
+        $this->saveCredentials($app);
+        $page = (string) $this->browserFor($app, 'owner')->get('/settings/mot-history')->getBody();
+
+        // 375 px: the Test button may wrap (never past the card), and the shield shares a row with the hint.
+        self::assertMatchesRegularExpression(
+            '#<button type="submit" class="btn btn--wrap">[^<]*<svg[^>]*>.*?</svg>Test #s',
+            $page,
+        );
+        self::assertStringContainsString('class="toggle__hint toggle__hint--icon" data-sends', $page);
+        $css = (string) file_get_contents(__DIR__ . '/../../../assets/css/app.css');
+        self::assertStringContainsString('.btn--wrap {', $css);
+        self::assertStringContainsString('.toggle__hint--icon {', $css);
+    }
+
     public function testAFailedTestShowsTheReasonWithoutTheSecrets(): void
     {
         $app = $this->app();

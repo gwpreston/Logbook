@@ -38,7 +38,7 @@
             {% if enabled %}
                 <form method="post" action="{{ url_for('settings.mot_history.test') }}">
                     {{ ui.csrf(csrf) }}
-                    <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'mot_history.settings.test.button'|trans({provider: enabled.nameKey()|trans}) }}</button>
+                    <button type="submit" class="btn btn--wrap">{{ ui.icon('sync') }}{{ 'mot_history.settings.test.button'|trans({provider: enabled.nameKey()|trans}) }}</button>
                     <p class="field__hint">{{ 'mot_history.settings.test.hint'|trans }}</p>
                 </form>
             {% endif %}
@@ -63,7 +63,7 @@
                         <span class="toggle__text">
                             <span class="toggle__title">{{ provider.nameKey()|trans }}</span>
                             <span class="toggle__hint">{{ provider.descriptionKey()|trans }}</span>
-                            <span class="toggle__hint" data-sends>{{ ui.icon('shield') }} {{ provider.sendsKey()|trans }}</span>
+                            <span class="toggle__hint toggle__hint--icon" data-sends>{{ ui.icon('shield') }} {{ provider.sendsKey()|trans }}</span>
                             <span class="toggle__hint">{{ 'mot_history.settings.provider.licence'|trans({licence: provider.licence().name}) }}</span>
                         </span>
                     </label>

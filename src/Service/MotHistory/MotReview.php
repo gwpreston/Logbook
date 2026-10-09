@@ -105,15 +105,17 @@ final readonly class MotReview
         // A defect whose issue still exists but lost its link (a rolled-back migration, or
         // *Stop and remove* and a new fetch) is linked again, never offered twice.
         $made = $this->madeIssues($vehicle);
+        $relinked = [];
         foreach ($this->tests->listForVehicle($vehicle->id) as $test) {
             foreach ($test->defects as $defect) {
                 $issue = $defect->settled() ? null : ($made[self::madeKey($test->number, $defect->text)] ?? null);
                 if ($issue !== null) {
                     $this->tests->linkIssue($defect->id, $issue->id);
-                    $this->settle($vehicle, $test->id);
+                    $relinked[] = $test->id;
                 }
             }
         }
+        $this->settleAll($vehicle, $relinked, $zone);
         $all = $this->tests->listForVehicle($vehicle->id);
         $live = [];
         foreach ($this->issues->list($vehicle, [IssueStatus::Open, IssueStatus::Watching]) as $issue) {
@@ -121,10 +123,15 @@ final readonly class MotReview
         }
         // The text of every live issue made from an MOT defect (#338).
         $byKey = [];
+        // The earliest test each live issue came from: only a later test advises it again.
+        $cameFrom = [];
         foreach ($all as $test) {
             foreach ($test->defects as $defect) {
                 if ($defect->issueId !== null && isset($live[$defect->issueId])) {
                     $byKey[$defect->key()] ??= $live[$defect->issueId];
+                    if (!isset($cameFrom[$defect->issueId]) || $test->completedAt <= $cameFrom[$defect->issueId]) {
+                        $cameFrom[$defect->issueId] = $test->completedAt;
+                    }
                 }
             }
         }
@@ -132,7 +139,7 @@ final readonly class MotReview
         foreach (array_reverse($all) as $test) {
             foreach ($test->defects as $defect) {
                 $issue = $defect->settled() ? null : ($byKey[$defect->key()] ?? null);
-                if ($issue === null) {
+                if ($issue === null || $test->completedAt <= ($cameFrom[$issue->id] ?? $test->completedAt)) {
                     continue;
                 }
                 $this->issues->addUpdate($vehicle, $issue, new IssueUpdateData(
@@ -157,10 +164,44 @@ final readonly class MotReview
     public function addDocument(Vehicle $vehicle, MotTest $test): bool
     {
         $zone = $this->zone($vehicle);
-        if (!$test->passed() || $this->logged($vehicle, $test)) {
+        $inspections = $this->inspections($vehicle);
+        if (!$this->makeDocument($vehicle, $test, $zone, $inspections)) {
             return false;
         }
-        $this->compliance->create($vehicle, new ComplianceDocumentData(
+        $this->settleAll($vehicle, [$test->id], $zone);
+
+        return true;
+    }
+
+    /**
+     * *Add all*: every offered pass, oldest first, so the latest drives the
+     * MOT reminder (§7.5, §7.6). The documents are read once; each test is
+     * settled once at the end.
+     */
+    public function addAllDocuments(Vehicle $vehicle): int
+    {
+        $zone = $this->zone($vehicle);
+        $inspections = $this->inspections($vehicle);
+        $added = [];
+        foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
+            if ($test->reviewedAt === null && $this->makeDocument($vehicle, $test, $zone, $inspections)) {
+                $added[] = $test->id;
+            }
+        }
+        $this->settleAll($vehicle, $added, $zone);
+
+        return count($added);
+    }
+
+    /**
+     * @param list<ComplianceDocument> $inspections the vehicle's `inspection` documents; the new one is added
+     */
+    private function makeDocument(Vehicle $vehicle, MotTest $test, DateTimeZone $zone, array &$inspections): bool
+    {
+        if (!$test->passed() || self::match($inspections, $test, $zone) !== null) {
+            return false;
+        }
+        $inspections[] = $this->compliance->create($vehicle, new ComplianceDocumentData(
             ComplianceType::Inspection,
             null,
             self::PROVIDER,
@@ -172,25 +213,8 @@ final readonly class MotReview
             // The test's `mot` reading is the reading.
             null,
         ), $zone);
-        $this->settle($vehicle, $test->id);
 
         return true;
-    }
-
-    /**
-     * *Add all*: every offered pass, oldest first, so the latest drives the
-     * MOT reminder (§7.5, §7.6).
-     */
-    public function addAllDocuments(Vehicle $vehicle): int
-    {
-        $added = 0;
-        foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
-            if ($test->reviewedAt === null && $this->addDocument($vehicle, $test)) {
-                $added++;
-            }
-        }
-
-        return $added;
     }
 
     public function useFirstDue(User $user, Vehicle $vehicle): bool
@@ -206,21 +230,79 @@ final readonly class MotReview
 
     public function addIssue(Vehicle $vehicle, MotTest $test, MotDefect $defect): bool
     {
+        $zone = $this->zone($vehicle);
+        $made = $this->madeIssues($vehicle);
+        $added = $this->makeIssue(
+            $vehicle,
+            $test,
+            $defect,
+            $zone,
+            $made,
+            $this->lookAgain($this->tests->listForVehicle($vehicle->id), $zone),
+        );
+        if ($added !== null) {
+            $this->settleAll($vehicle, [$test->id], $zone);
+        }
+
+        return $added === true;
+    }
+
+    /**
+     * @return int issues added
+     */
+    public function addAllIssues(Vehicle $vehicle, ?MotTest $only): int
+    {
+        // Read once for the whole call: the zone, the tests, the issues already made, the look-again date.
+        $zone = $this->zone($vehicle);
+        $all = $this->tests->listForVehicle($vehicle->id);
+        $made = $this->madeIssues($vehicle);
+        $lookAgain = $this->lookAgain($all, $zone);
+        $added = 0;
+        $touched = [];
+        foreach (array_reverse($all) as $test) {
+            if ($test->reviewedAt !== null || ($only !== null && $only->id !== $test->id)) {
+                continue;
+            }
+            foreach ($test->defects as $defect) {
+                $result = $this->makeIssue($vehicle, $test, $defect, $zone, $made, $lookAgain);
+                if ($result !== null) {
+                    $touched[] = $test->id;
+                }
+                $added += $result === true ? 1 : 0;
+            }
+        }
+        $this->settleAll($vehicle, $touched, $zone);
+
+        return $added;
+    }
+
+    /**
+     * One defect taken: made into an issue, or linked to the issue it
+     * already became (no second one). The test is settled by the caller.
+     *
+     * @param array<string, Issue> $made the vehicle's issues made from MOT defects; this one is added
+     * @return bool|null true if an issue was added, false if linked to one, null if there was nothing to offer
+     */
+    private function makeIssue(
+        Vehicle $vehicle,
+        MotTest $test,
+        MotDefect $defect,
+        DateTimeZone $zone,
+        array &$made,
+        ?DateTimeImmutable $lookAgain,
+    ): ?bool {
         if ($defect->settled()) {
-            return false;
+            return null;
         }
         // Already made into an issue whose link was lost: link it, add nothing.
-        $made = $this->madeIssues($vehicle)[self::madeKey($test->number, $defect->text)] ?? null;
-        if ($made !== null) {
-            $this->tests->linkIssue($defect->id, $made->id);
-            $this->settle($vehicle, $test->id);
+        $key = self::madeKey($test->number, $defect->text);
+        if (isset($made[$key])) {
+            $this->tests->linkIssue($defect->id, $made[$key]->id);
 
             return false;
         }
-        $zone = $this->zone($vehicle);
         $title = mb_substr($defect->text, 0, IssueForm::TITLE_MAX);
         $watching = !$defect->type->opensIssue();
-        $lookAgain = $watching ? $this->lookAgain($vehicle, $zone) : null;
         $data = new IssueData(
             $this->day($test, $zone),
             $title,
@@ -229,32 +311,14 @@ final readonly class MotReview
             mb_strlen($defect->text) > IssueForm::TITLE_MAX ? $defect->text : null,
             null,
             $defect->dangerous || in_array($defect->type, [MotDefectType::Dangerous, MotDefectType::Major], true),
-            $lookAgain,
+            $watching ? $lookAgain : null,
             null,
         );
         $issue = $this->issues->create($vehicle, $data, $zone, source: IssueSource::MotAdvisory, sourceRef: $test->number);
         $this->tests->linkIssue($defect->id, $issue->id);
-        $this->settle($vehicle, $test->id);
+        $made[$key] = $issue;
 
         return true;
-    }
-
-    /**
-     * @return int issues added
-     */
-    public function addAllIssues(Vehicle $vehicle, ?MotTest $only): int
-    {
-        $added = 0;
-        foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
-            if ($test->reviewedAt !== null || ($only !== null && $only->id !== $test->id)) {
-                continue;
-            }
-            foreach ($test->defects as $defect) {
-                $added += $this->addIssue($vehicle, $test, $defect) ? 1 : 0;
-            }
-        }
-
-        return $added;
     }
 
     public function notNow(Vehicle $vehicle, MotTest $test, MotDefect $defect): void
@@ -262,7 +326,7 @@ final readonly class MotReview
         if (!$defect->settled()) {
             $this->tests->dismiss($defect->id, $this->clock->now());
         }
-        $this->settle($vehicle, $test->id);
+        $this->settleAll($vehicle, [$test->id], $this->zone($vehicle));
     }
 
     /**
@@ -373,33 +437,49 @@ final readonly class MotReview
     }
 
     /**
-     * Marks the test reviewed once nothing on it is left to decide.
+     * Marks each of these tests reviewed once nothing on it is left to
+     * decide: one read of the vehicle's tests and, if a pass is among them,
+     * of its documents, however many tests a bulk action touched.
+     *
+     * @param list<int> $testIds
      */
-    private function settle(Vehicle $vehicle, int $testId): void
+    private function settleAll(Vehicle $vehicle, array $testIds, DateTimeZone $zone): void
     {
-        $test = $this->tests->find($vehicle->id, $testId);
-        if ($test === null || $test->reviewedAt !== null) {
+        $testIds = array_values(array_unique($testIds));
+        if ($testIds === []) {
             return;
         }
-        if ($test->passed() && !$this->logged($vehicle, $test)) {
-            return;
-        }
-        foreach ($test->defects as $defect) {
-            if (!$defect->settled()) {
-                return;
+        $inspections = null;
+        $now = $this->clock->now();
+        foreach ($this->tests->listForVehicle($vehicle->id) as $test) {
+            if (!in_array($test->id, $testIds, true) || $test->reviewedAt !== null) {
+                continue;
             }
+            if ($test->passed()) {
+                $inspections ??= $this->inspections($vehicle);
+                if (self::match($inspections, $test, $zone) === null) {
+                    continue;
+                }
+            }
+            foreach ($test->defects as $defect) {
+                if (!$defect->settled()) {
+                    continue 2;
+                }
+            }
+            $this->tests->markReviewed($test->id, $now);
         }
-        $this->tests->markReviewed($test->id, $this->clock->now());
     }
 
     /**
      * *Look again* (#337): 30 days before the latest stored test's expiry,
      * so before the next MOT whichever test the defect is from; none when
      * that is already past in the owner's today.
+     *
+     * @param list<MotTest> $all newest first
      */
-    private function lookAgain(Vehicle $vehicle, DateTimeZone $zone): ?DateTimeImmutable
+    private function lookAgain(array $all, DateTimeZone $zone): ?DateTimeImmutable
     {
-        foreach ($this->tests->listForVehicle($vehicle->id) as $test) {
+        foreach ($all as $test) {
             if ($test->expiryOn === null) {
                 continue;
             }

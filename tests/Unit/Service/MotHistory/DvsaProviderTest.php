@@ -207,6 +207,26 @@ final class DvsaProviderTest extends TestCase
         self::assertSame(['reason' => 'no route'], $failure->parameters);
     }
 
+    public function testATransportErrorNeverCarriesTheRegistrationOrTheVin(): void
+    {
+        $message = static fn (string $url): string => 'Could not resolve host for "' . $url . '?x=1": timed out, GET ' . $url;
+        $registration = $this->provider($this->answers(vehicle: static fn (): ResponseInterface => throw new TransportException(
+            $message('https://history.mot.api.gov.uk/v1/trade/vehicles/registration/AB12CDE'),
+        )))->connect($this->credentials());
+        $failure = $this->expectFailure(MotHistoryErrorCode::Network, static fn () => $registration->byRegistration('ab12 cde'));
+        $reason = $failure->parameters['reason'] ?? '';
+        self::assertStringNotContainsString('AB12CDE', $reason);
+        self::assertStringNotContainsString('/registration/', $reason);
+        self::assertStringContainsString('history.mot.api.gov.uk', $reason, 'the host stays: it is what an admin needs');
+        self::assertStringNotContainsString('AB12CDE', $failure->getMessage());
+
+        $vin = $this->provider($this->answers(vehicle: static fn (): ResponseInterface => throw new TransportException(
+            $message('https://history.mot.api.gov.uk/v1/trade/vehicles/vin/WVWZZZ1KZAW123456'),
+        )))->connect($this->credentials());
+        $failure = $this->expectFailure(MotHistoryErrorCode::Network, static fn () => $vin->byVin('WVWZZZ1KZAW123456'));
+        self::assertStringNotContainsString('WVWZZZ1KZAW123456', $failure->parameters['reason'] ?? '');
+    }
+
     public function testUnreadableAndOversizedAnswers(): void
     {
         $garbled = $this->provider($this->answers(vehicle: static fn (): ResponseInterface => new MockResponse('<html>')))

@@ -26,11 +26,13 @@ use Logbook\Support\Units\DistanceUnit;
 /**
  * Stored MOT tests and their defects (`mot_tests`, `mot_defects`), and a
  * vehicle's MOT history columns (spec.md §6, §7.38). Tests are upserted by
- * number, so a refresh never duplicates one; defects by their position.
+ * number, so a refresh never duplicates one; defects by their text.
  */
 final readonly class MotTestRepository
 {
     private const int KM_SCALE = 3;
+    /** Added to a test's defect positions while they are reordered, clear of any real position. */
+    private const int PARK = 1000000;
 
     public function __construct(private Connection $connection)
     {
@@ -50,17 +52,7 @@ final readonly class MotTestRepository
      */
     public function listForVehicles(array $vehicleIds): array
     {
-        if ($vehicleIds === []) {
-            return [];
-        }
-        $rows = $this->connection->createQueryBuilder()
-            ->select('*')
-            ->from('mot_tests')
-            ->where('vehicle_id IN (:vehicles)')
-            ->orderBy('completed_at', 'DESC')
-            ->addOrderBy('id', 'DESC')
-            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER)
-            ->fetchAllAssociative();
+        $rows = $this->testRows($vehicleIds, false);
         $ids = [];
         foreach ($rows as $row) {
             $ids[] = Row::int($row, 'id');
@@ -72,6 +64,44 @@ final readonly class MotTestRepository
         }
 
         return $tests;
+    }
+
+    /**
+     * The same tests without their defects, each knowing how many it has
+     * (one query, one count per test): for a list that only shows the number.
+     *
+     * @param list<int> $vehicleIds
+     * @return list<MotTest> newest first; `defects` is empty, `defectCount()` is not
+     */
+    public function summariesForVehicles(array $vehicleIds): array
+    {
+        return array_map(
+            fn (array $row): MotTest => $this->hydrate($row, [], Row::int($row, 'defect_count')),
+            $this->testRows($vehicleIds, true),
+        );
+    }
+
+    /**
+     * @param list<int> $vehicleIds
+     * @return list<array<string, mixed>>
+     */
+    private function testRows(array $vehicleIds, bool $counted): array
+    {
+        if ($vehicleIds === []) {
+            return [];
+        }
+        $query = $this->connection->createQueryBuilder()
+            ->select('mot_tests.*')
+            ->from('mot_tests')
+            ->where('vehicle_id IN (:vehicles)')
+            ->orderBy('completed_at', 'DESC')
+            ->addOrderBy('id', 'DESC')
+            ->setParameter('vehicles', $vehicleIds, ArrayParameterType::INTEGER);
+        if ($counted) {
+            $query->addSelect('(SELECT COUNT(*) FROM mot_defects WHERE mot_defects.mot_test_id = mot_tests.id) AS defect_count');
+        }
+
+        return array_values($query->fetchAllAssociative());
     }
 
     public function find(int $vehicleId, int $testId): ?MotTest
@@ -87,9 +117,9 @@ final readonly class MotTestRepository
 
     /**
      * Adds a test, or brings a stored one up to DVSA's answer (spec.md §7.38
-     * *Upsert by test number*). Its defects are matched by position: text
-     * and type are DVSA's, the issue and *Not now* are kept; ones DVSA no
-     * longer lists go.
+     * *Upsert by test number*). Its defects are matched by text (see
+     * upsertDefects()): text and type are DVSA's, the issue and *Not now*
+     * are kept; ones DVSA no longer lists go.
      *
      * @return array{0: int, 1: bool} the test's id, and whether it is new
      */
@@ -135,17 +165,77 @@ final readonly class MotTestRepository
     }
 
     /**
+     * Brings a test's stored defects up to DVSA's list. A defect keeps its
+     * row (and so its issue and *Not now*) when the same text is still
+     * listed, wherever DVSA now puts it; a text DVSA corrected in place
+     * keeps the row at that position. The rest go, and new ones are added
+     * (spec.md §7.38 *Upsert by test number*).
+     *
      * @param list<MotDefectRecord> $defects
      */
     private function upsertDefects(int $testId, array $defects, string $stamp): void
     {
-        $stored = $this->connection->createQueryBuilder()
-            ->select('position')
-            ->from('mot_defects')
-            ->where('mot_test_id = :test')
-            ->setParameter('test', $testId, ParameterType::INTEGER)
-            ->fetchFirstColumn();
-        $stored = self::ints($stored);
+        $stored = $this->defectsFor([$testId])[$testId] ?? [];
+        /** @var array<int, MotDefect> $matched the stored defect for each new position */
+        $matched = [];
+        /** @var array<int, true> $taken stored ids */
+        $taken = [];
+        foreach ($defects as $position => $defect) {
+            $key = MotDefect::textKey($defect->text);
+            $found = null;
+            foreach ($stored as $candidate) {
+                if (isset($taken[$candidate->id]) || $candidate->key() !== $key) {
+                    continue;
+                }
+                $found ??= $candidate;
+                if ($candidate->position === $position) {
+                    $found = $candidate;
+                    break;
+                }
+            }
+            if ($found !== null) {
+                $matched[$position] = $found;
+                $taken[$found->id] = true;
+            }
+        }
+        // A text DVSA corrected: nothing else matches it, and the row at its place is free.
+        foreach ($defects as $position => $defect) {
+            if (isset($matched[$position])) {
+                continue;
+            }
+            foreach ($stored as $candidate) {
+                if ($candidate->position === $position && !isset($taken[$candidate->id])) {
+                    $matched[$position] = $candidate;
+                    $taken[$candidate->id] = true;
+                    break;
+                }
+            }
+        }
+
+        $gone = array_values(array_map(
+            static fn (MotDefect $defect): int => $defect->id,
+            array_filter($stored, static fn (MotDefect $defect): bool => !isset($taken[$defect->id])),
+        ));
+        if ($gone !== []) {
+            $this->connection->createQueryBuilder()
+                ->delete('mot_defects')
+                ->where('id IN (:ids)')
+                ->setParameter('ids', $gone, ArrayParameterType::INTEGER)
+                ->executeStatement();
+        }
+        // (mot_test_id, position) is unique: park the rows that move out of the way first.
+        foreach ($matched as $position => $row) {
+            if ($row->position !== $position) {
+                $this->connection->createQueryBuilder()
+                    ->update('mot_defects')
+                    ->set('position', 'position + :offset')
+                    ->where('mot_test_id = :test')
+                    ->setParameter('offset', self::PARK, ParameterType::INTEGER)
+                    ->setParameter('test', $testId, ParameterType::INTEGER)
+                    ->executeStatement();
+                break;
+            }
+        }
         foreach ($defects as $position => $defect) {
             $columns = [
                 'type' => $defect->type->value,
@@ -153,16 +243,18 @@ final readonly class MotTestRepository
                 'dangerous' => $defect->dangerous,
                 'updated_at' => $stamp,
             ];
-            if (in_array($position, $stored, true)) {
+            $types = [
+                'dangerous' => ParameterType::BOOLEAN,
+                'mot_test_id' => ParameterType::INTEGER,
+                'position' => ParameterType::INTEGER,
+            ];
+            $row = $matched[$position] ?? null;
+            if ($row !== null) {
                 $this->connection->update(
                     'mot_defects',
-                    $columns,
-                    ['mot_test_id' => $testId, 'position' => $position],
-                    [
-                        'dangerous' => ParameterType::BOOLEAN,
-                        'mot_test_id' => ParameterType::INTEGER,
-                        'position' => ParameterType::INTEGER,
-                    ],
+                    ['position' => $position] + $columns,
+                    ['id' => $row->id],
+                    $types + ['id' => ParameterType::INTEGER],
                 );
                 continue;
             }
@@ -170,19 +262,8 @@ final readonly class MotTestRepository
                 'mot_test_id' => $testId,
                 'position' => $position,
                 'created_at' => $stamp,
-            ] + $columns, [
-                'mot_test_id' => ParameterType::INTEGER,
-                'position' => ParameterType::INTEGER,
-                'dangerous' => ParameterType::BOOLEAN,
-            ]);
+            ] + $columns, $types);
         }
-        $this->connection->createQueryBuilder()
-            ->delete('mot_defects')
-            ->where('mot_test_id = :test')
-            ->andWhere('position >= :count')
-            ->setParameter('test', $testId, ParameterType::INTEGER)
-            ->setParameter('count', count($defects), ParameterType::INTEGER)
-            ->executeStatement();
     }
 
     /**
@@ -427,7 +508,7 @@ final readonly class MotTestRepository
      * @param array<string, mixed> $row
      * @param list<MotDefect> $defects
      */
-    private function hydrate(array $row, array $defects): MotTest
+    private function hydrate(array $row, array $defects, ?int $defectCount = null): MotTest
     {
         $platform = $this->connection->getDatabasePlatform();
 
@@ -446,6 +527,7 @@ final readonly class MotTestRepository
             ($row['reviewed_at'] ?? null) === null ? null : UtcDateTime::fromDatabase($row['reviewed_at'], $platform),
             UtcDateTime::fromDatabase($row['fetched_at'] ?? null, $platform),
             $defects,
+            $defectCount,
         );
     }
 

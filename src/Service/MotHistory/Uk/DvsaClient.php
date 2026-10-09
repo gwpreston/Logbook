@@ -115,8 +115,24 @@ final readonly class DvsaClient implements MotHistoryClient
         } catch (TimeoutExceptionInterface) {
             throw new MotHistoryFailure(MotHistoryErrorCode::Timeout);
         } catch (TransportExceptionInterface $e) {
-            throw new MotHistoryFailure(MotHistoryErrorCode::Network, ['reason' => mb_substr($e->getMessage(), 0, 200)]);
+            throw new MotHistoryFailure(MotHistoryErrorCode::Network, ['reason' => self::reason($e->getMessage(), $url)]);
         }
+    }
+
+    /**
+     * A transport error's message without the vehicle: the request URL
+     * (whose last segment is the registration or VIN) is cut to its host,
+     * and any `/registration/…` or `/vin/…` path left is dropped (spec.md
+     * §7.38 *Requests*). The stored status and the job output never carry
+     * a plate.
+     */
+    private static function reason(string $message, string $url): string
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        $message = str_replace($url, is_string($host) ? $host : '', $message);
+        $message = (string) preg_replace('#/(?:registration|vin)/[^\s"\'<>?&]*#i', '/…', $message);
+
+        return mb_substr($message, 0, 200);
     }
 
     private function body(ResponseInterface $response): string
