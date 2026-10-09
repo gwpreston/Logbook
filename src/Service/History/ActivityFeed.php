@@ -145,7 +145,12 @@ final readonly class ActivityFeed
      */
     public function latest(User $user, array $vehicles, int $limit = self::LATEST): array
     {
-        $query = $this->enabledOnly(new ActivityQuery($vehicles, ActivityKind::entries()));
+        // Not MOT tests (spec.md §7.38): DVSA's data shows with its attribution, on History.
+        $kinds = array_values(array_filter(
+            ActivityKind::entries(),
+            static fn (ActivityKind $kind): bool => $kind !== ActivityKind::MotTest,
+        ));
+        $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
         $documents = $this->documentsOf($query);
         $tests = $this->motTestsOf($query);
         $zone = $user->preferences->timeZone();

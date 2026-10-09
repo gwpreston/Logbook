@@ -8685,8 +8685,9 @@ overview while any test is unreviewed. A test is reviewed
   the test in the owner's zone, with its result and mileage, opening the
   MOT history page, unless the test became a document (an `inspection`
   with its number as reference, or its date as start), whose row carries
-  it (never listed twice). Not in print or the sale pack's history,
-  which have their own summary below.
+  it (never listed twice), with the attribution under the list and no
+  *Added by*. Not in *Recent activity*, print or the sale pack's history,
+  which has its own summary below.
 - **Ask** (§7.26): read tool `mot_history(vehicle)` (tests, mileages,
   defects, recall state, links). **API** (§7.20): `GET
   /vehicles/{id}/mot-tests` (`View`; the recall state as Logbook's

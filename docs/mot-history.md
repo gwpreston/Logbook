@@ -160,7 +160,7 @@ for the next day), and makes the keep-alive call when needed.
 
 - **History**: each test is a line under *Documents* (passed or failed,
   mileage, defects), unless it became a document, whose line carries it.
-  Not in the printable service history.
+  Not in *Recent activity* or the printable service history.
 - **Sale pack**: a summary of the tests (date, result, mileage), beside the
   printed link to DVSA's own MOT history checker.
 - **CSV**: *Export CSV* on the MOT history page gives

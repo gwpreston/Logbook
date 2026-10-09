@@ -60,6 +60,14 @@ final class MotElsewhereTest extends MotHistoryTestCase
         self::assertNotNull($member);
         self::assertSame(200, $this->api($this->app, $this->apiKey($this->app, $member))->get($path)->getStatusCode());
 
+        // No access: a 404, as every vehicle route; the CSV needs Manage.
+        $this->createMember($this->app, 'stranger');
+        $stranger = $this->service($this->app, UserRepository::class)->findByUsername('stranger');
+        self::assertNotNull($stranger);
+        self::assertSame(404, $this->api($this->app, $this->apiKey($this->app, $stranger))->get($path)->getStatusCode());
+        $logger = $this->shareWith($golf, ShareLevel::Log, 'logger');
+        self::assertContains($logger->get('/vehicles/' . $golf->id . '/export/mot-tests.csv')->getStatusCode(), [403, 404]);
+
         $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
         self::assertSame(404, $api->get($path)->getStatusCode());
     }
@@ -80,6 +88,16 @@ final class MotElsewhereTest extends MotHistoryTestCase
         self::assertSame(2019, $this->feed()->year($this->owner, [$golf], HistoryChip::Documents->kinds(), 2019)->year);
 
         $page = (string) $browser->get('/vehicles/' . $golf->id . '/history?kind=documents')->getBody();
+        // DVSA's lines were added by no one, even on a shared vehicle.
+        $viewer = $this->shareWith($golf, ShareLevel::View);
+        $shared = (string) $viewer->get('/vehicles/' . $golf->id . '/history?kind=documents')->getBody();
+        self::assertStringContainsString('MOT passed', $shared);
+        self::assertStringNotContainsString('added-by', $this->between($shared, 'MOT passed', '</a>'));
+        // Not in Recent activity, which shows no attribution.
+        self::assertSame([], array_filter(
+            $this->feed()->latest($this->owner, [$golf], 50),
+            static fn (ActivityItem $item): bool => $item->kind === ActivityKind::MotTest,
+        ));
         self::assertStringContainsString('MOT passed', $page);
         self::assertStringContainsString('data-attribution', $page);
         self::assertMatchesRegularExpression('/MOT failed.*?\d+ defects or advisories/s', $page);

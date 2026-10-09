@@ -96,7 +96,8 @@
             {%- if item.partOfKey and (opts.part_of ?? true) %}
                 <span class="list__meta history-row__tyres">{{ ui.icon('car_crash') }}{{ (item.milestone and item.milestone.value == 'written_off' ? 'history.written_off_by' : 'history.part_of')|trans({incident: 'incident.name'|trans({type: item.partOfKey|trans, date: item.partOfDate|local_date})}) }}</span>
             {%- endif %}
-            {%- if item.kind.value != 'milestone' and (opts.link ?? true) %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}
+            {#- A milestone and an MOT test (DVSA's, spec.md §7.38) were added by no one. -#}
+            {%- if item.kind.value not in ['milestone', 'mot_test'] and (opts.link ?? true) %}{{ ui.added_by(item.vehicle, item.createdBy) }}{% endif %}
         </span>
         <span class="list__end">
             {% if item.odometerKm is not null %}<span class="list__delta tabular">{{ item.odometerKm|distance }}</span>{% endif %}
