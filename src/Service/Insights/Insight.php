@@ -16,6 +16,8 @@ final readonly class Insight
      * @param array<string, string|int> $titleParams
      * @param array<string, string|int> $bodyParams
      * @param array<string, string|int> $routeParams
+     * @param array<string, string|int> $query the link's query string
+     * @param int|null $vehicleId the vehicle it is about, if one (AI insights' no-repeats filter, #358)
      */
     public function __construct(
         public InsightKind $kind,
@@ -26,6 +28,8 @@ final readonly class Insight
         public array $bodyParams,
         public string $route,
         public array $routeParams = [],
+        public array $query = [],
+        public ?int $vehicleId = null,
     ) {
     }
 

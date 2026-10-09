@@ -78,7 +78,8 @@ final class InsightsQueryBudgetTest extends FuelPricesTestCase
         }
         $browser = $this->browserFor($app, 'owner');
         $browser->get('/');
-        $browser->get('/insights');
+        $page = self::body($browser->get('/insights'));
+        self::assertStringContainsString('data-insight="fuel_saving"', $page, 'the work is done');
 
         return [
             'dashboard' => $counter->during(static fn () => $browser->get('/')),
@@ -87,7 +88,9 @@ final class InsightsQueryBudgetTest extends FuelPricesTestCase
     }
 
     /**
-     * Twelve fill-ups at the usual Tesco a fortnight apart, then three at Shell.
+     * Twelve fill-ups of 60 L at the usual Shell a fortnight apart, then
+     * three at Tesco (the cheapest nearby): *Shopping around* compares the
+     * three, and *Fuel saving* has a figure.
      *
      * @param App<ContainerInterface> $app
      */
@@ -95,14 +98,14 @@ final class InsightsQueryBudgetTest extends FuelPricesTestCase
     {
         for ($n = 0; $n < 15; $n++) {
             $at = (new DateTimeImmutable('2026-03-01T08:00:00Z'))->modify(sprintf('+%d days', 14 * $n));
-            $station = $n < 12 ? $tesco : $shell;
+            $station = $n < 12 ? $shell : $tesco;
             $entry = $this->fillUp(
                 $app,
                 $vehicle,
                 $at->format('Y-m-d\TH:i:s\Z'),
-                (string) (10000 + 600 * $n),
-                '40',
-                '55.96',
+                (string) (10000 + 900 * $n),
+                '60',
+                '83.94',
                 pricePerLitre: '1.399',
                 grade: FuelGrade::E10_95,
             );

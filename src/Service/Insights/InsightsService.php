@@ -9,6 +9,7 @@ use IntlDateFormatter;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Finance\AgreementType;
+use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
@@ -30,10 +31,12 @@ use Logbook\Support\Number\Decimal;
 /**
  * The dashboard's *Insights* (spec.md §7.8): short observations worked out
  * from figures other pages already show, never by a model. In order:
- * shopping around (the Fuel tab's figure), business mileage (the claim
- * report), cheapest to run (the reports' cost per distance over the last
- * 12 months) and equity (the Finance tab). Each appears only when its
- * module is on and the viewer may see the figure where it is shown.
+ * shopping around (the Fuel tab's figure), fuel saving (*Cheapest near
+ * me*'s figures, Phase 42), business mileage (the claim report), cheapest
+ * to run (the reports' cost per distance over the last 12 months), equity
+ * (the Finance tab) and economy up (the drift check judged for an
+ * improvement, Phase 42). Each appears only when its module is on and the
+ * viewer may see the figure where it is shown.
  */
 final readonly class InsightsService
 {
@@ -49,6 +52,8 @@ final readonly class InsightsService
         private ReportService $reports,
         private FinanceService $finance,
         private DisplayFormatter $formatter,
+        private FuelSaving $fuelSaving,
+        private EconomyUp $economyUp,
     ) {
     }
 
@@ -73,9 +78,11 @@ final readonly class InsightsService
     ): array {
         $kinds = [
             fn (): array => $this->shoppingAround($user, $vehicles),
+            fn (): array => array_map($this->fuelSavingInsight(...), $this->fuelSaving->forVehicles($user, $vehicles)),
             fn (): array => $this->businessMileage($user, $vehicles, $allVehicles, $today, $claim),
             fn (): array => $allVehicles ? $this->cheapestToRun($user, $vehicles, $today) : [],
             fn (): array => $this->equity($user, $vehicles, $agreements),
+            fn (): array => $this->economyUp->forVehicles($user, $vehicles),
         ];
         $insights = [];
         foreach ($kinds as $kind) {
@@ -118,10 +125,51 @@ final readonly class InsightsService
                 ['count' => $shopping->fillUps, 'vehicle' => $vehicle->name()],
                 'fuel.index',
                 ['id' => $vehicle->id],
+                vehicleId: $vehicle->id,
             );
         }
 
         return $insights;
+    }
+
+    /**
+     * "Could save about £46 a year on fuel" (spec.md §7.8, Phase 42), linking
+     * to *Cheapest near me* for the vehicle, grade and place.
+     */
+    private function fuelSavingInsight(FuelSavingFigure $figure): Insight
+    {
+        $price = fn (string $perUnit): string
+            => $this->formatter->unitPrice($perUnit, $figure->currency, EnergyKind::Liquid, true);
+
+        return new Insight(
+            InsightKind::FuelSaving,
+            InsightTone::Good,
+            'insights.fuel_saving.title',
+            ['amount' => $this->formatter->money($figure->yearlySaving, $figure->currency, 0)],
+            'insights.fuel_saving.body',
+            [
+                'vehicle' => $figure->vehicle->name(),
+                'cheapest' => $figure->cheapestName,
+                'usual' => $figure->usualName ?? '',
+                'has_usual' => $figure->usualName === null ? 'no' : 'yes',
+                'cheapest_price' => $price($figure->cheapestPerUnit),
+                'usual_price' => $price($figure->usualPrice),
+                'basis' => $figure->usualFromAverage ? 'average' : 'listed',
+                'detour' => $figure->detourCounted ? 'yes' : 'no',
+                'litres' => $this->formatter->volume($figure->yearlyLitres, 0),
+                'scaled' => $figure->scaledFromMonths === null ? 'no' : 'yes',
+                'months' => $figure->scaledFromMonths ?? 0,
+                'assumed' => $figure->fillAssumed ? 'yes' : 'no',
+            ],
+            'stations.near',
+            [],
+            [
+                'vehicle' => $figure->vehicle->id,
+                'grade' => $figure->grade->value,
+                'from' => 'place:' . $figure->place->id,
+            ],
+            $figure->vehicle->id,
+        );
     }
 
     /**

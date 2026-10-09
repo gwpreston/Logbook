@@ -241,17 +241,21 @@ final readonly class ProviderStationRepository
      */
     public function lastSynced(string $provider): ?DateTimeImmutable
     {
-        $value = $this->connection->createQueryBuilder()
-            ->select('MAX(p.synced_at)')
-            ->from(self::PRICES, 'p')
-            ->innerJoin('p', self::STATIONS, 's', 's.id = p.provider_station_id')
-            ->where('s.provider = :provider')
-            ->setParameter('provider', $provider)
-            ->fetchOne();
+        $load = function () use ($provider): ?DateTimeImmutable {
+            $value = $this->connection->createQueryBuilder()
+                ->select('MAX(p.synced_at)')
+                ->from(self::PRICES, 'p')
+                ->innerJoin('p', self::STATIONS, 's', 's.id = p.provider_station_id')
+                ->where('s.provider = :provider')
+                ->setParameter('provider', $provider)
+                ->fetchOne();
 
-        return is_string($value) && $value !== ''
-            ? UtcDateTime::fromDatabase($value, $this->connection->getDatabasePlatform())
-            : null;
+            return is_string($value) && $value !== ''
+                ? UtcDateTime::fromDatabase($value, $this->connection->getDatabasePlatform())
+                : null;
+        };
+
+        return $this->reads->remember(self::PRICES . '+' . self::STATIONS, 'synced|' . $provider, $load);
     }
 
     public function findByRef(string $provider, string $ref): ?ProviderStation

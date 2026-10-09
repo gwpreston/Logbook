@@ -5923,6 +5923,8 @@ return [
             'business_mileage' => 'Abrechnung ansehen',
             'cheapest_to_run' => 'Berichte ansehen',
             'equity' => 'Finanzierung ansehen',
+            'fuel_saving' => 'Günstigste in der Nähe ansehen',
+            'economy_up' => 'Kraftstoff ansehen',
         ],
         'shopping_around' => [
             'title' => 'Etwa {amount} besser dank Preisvergleich',
@@ -5942,6 +5944,15 @@ return [
             'title_negative' => '{vehicle}: etwa {amount} negatives Eigenkapital',
             'body' => 'Bewertet mit {value}, gegenüber einem geschätzten Ablösebetrag von {settlement}.',
             'body_quote' => 'Bewertet mit {value}, gegenüber dem Ablöseangebot des Kreditgebers von {settlement}.',
+        ],
+        'fuel_saving' => [
+            'title' => 'Etwa {amount} im Jahr beim Tanken sparen',
+            'body' => '{vehicle}: bei {cheapest} statt {has_usual, select, yes {an deiner üblichen Tankstelle {usual}} other {dort, wo du sonst tankst}}: {cheapest_price}{detour, select, yes { mit der Fahrt dorthin} other {}}, gegenüber {basis, select, average {den {usual_price}, die du in den letzten 30 Tagen im Schnitt gezahlt hast} other {{usual_price}}}, bei {scaled, select, yes {etwa {litres} im Jahr aus deinen letzten {months, plural, one {# Monat} other {# Monaten}}} other {deinen {litres} im Jahr}}. Heutige Preise.{assumed, select, yes { Deine übliche Tankmenge ist angenommen (40 L).} other {}}{detour, select, no { Die Fahrt dorthin ist ohne Verbrauchswert nicht eingerechnet.} other {}}',
+        ],
+        'economy_up' => [
+            'title' => 'Verbrauch etwa {percent} % besser',
+            'body' => '{vehicle}: {recent} über {electric, select, yes {{tanks, plural, one {den letzten Ladevorgang} other {die letzten # Ladevorgänge}}} other {{tanks, plural, one {die letzte Tankfüllung} other {die letzten # Tankfüllungen}}}}, gegenüber deinem 12-Monats-Schnitt von {baseline}.{extra}',
+            'long_tanks' => 'Längere Tankfüllungen als üblich bedeuten oft mehr Autobahn.',
         ],
     ],
     'fuel_prices' => [

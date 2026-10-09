@@ -27,7 +27,9 @@ use Logbook\Support\Number\Decimal;
  * MIN_RECENT); *baseline* the segments that ended in the 12 months before
  * the first recent one ended (at least MIN_BASELINE). Both are weighted as
  * the averages are (total volume × 100 ÷ total distance) and compared
- * exactly. An improvement is never flagged.
+ * exactly. judge() gives both outcomes of the one test (Phase 42): worse
+ * for *Needs attention*, better for the *Economy up* insight (spec.md §7.8),
+ * so the two can never disagree; of() keeps only the worse.
  *
  * Pure: "now", the time zone and the facts from other modules are passed in.
  */
@@ -49,6 +51,29 @@ final class EconomyDrift
      * @param bool $serviceOverdue a service schedule is overdue (maintenance on)
      */
     public static function of(
+        FuelHistory $history,
+        EnergyKind $kind,
+        int $percent,
+        DateTimeImmutable $now,
+        DateTimeZone $zone,
+        ?Closure $tyreFits = null,
+        bool $serviceOverdue = false,
+    ): ?DriftFinding {
+        $finding = self::judge($history, $kind, $percent, $now, $zone, $tyreFits, $serviceOverdue);
+
+        return $finding === null || $finding->improved ? null : $finding;
+    }
+
+    /**
+     * The drift test with both outcomes: the recent tanks at least $percent
+     * worse than the baseline (and than last year's months, when there
+     * are enough), or at least $percent better by the same test with the
+     * sign flipped (baseline ≥ recent × (1 + percent), in distance per unit
+     * the recent figure at least that much higher). Null when neither.
+     *
+     * @param (Closure(): list<DateTimeImmutable>)|null $tyreFits
+     */
+    public static function judge(
         FuelHistory $history,
         EnergyKind $kind,
         int $percent,
@@ -86,12 +111,20 @@ final class EconomyDrift
         [$baseKm, $baseVolume] = self::totals($baseline);
         $factor = Decimal::divide((string) (100 + $percent), '100', 2);
         $recentFigure = self::per100Km($recentVolume, $recentKm);
-        if (!self::isWorse($recentFigure, self::per100Km($baseVolume, $baseKm), $factor)) {
+        $baseFigure = self::per100Km($baseVolume, $baseKm);
+        if (self::isWorse($recentFigure, $baseFigure, $factor)) {
+            $improved = false;
+        } elseif (self::isWorse($baseFigure, $recentFigure, $factor)) {
+            $improved = true;
+        } else {
             return null;
         }
 
         $lastYear = self::lastYear($fills, $recent, $zone);
-        if ($lastYear !== null && !self::isWorse($recentFigure, $lastYear, $factor)) {
+        if (
+            $lastYear !== null
+            && !($improved ? self::isWorse($lastYear, $recentFigure, $factor) : self::isWorse($recentFigure, $lastYear, $factor))
+        ) {
             return null;
         }
 
@@ -111,9 +144,12 @@ final class EconomyDrift
             gradeFrom: $differ ? $gradeFrom : null,
             gradeTo: $differ ? $gradeTo : null,
             tyresFittedOn: $tyreFits === null ? null : self::tyresFitted($recent, $tyreFits(), $zone),
-            winter: self::allWinter($recent, $zone) && !self::allWinter($baseline, $zone),
-            serviceOverdue: $serviceOverdue,
-            shortTanks: self::shortTanks($recent, $baseline, $recentKm),
+            // Winter, an overdue service and short tanks only explain a fall.
+            winter: !$improved && self::allWinter($recent, $zone) && !self::allWinter($baseline, $zone),
+            serviceOverdue: !$improved && $serviceOverdue,
+            shortTanks: !$improved && self::shortTanks($recent, $baseline, $recentKm),
+            improved: $improved,
+            longTanks: $improved && self::longTanks($recent, $baseline, $recentKm),
         );
     }
 
@@ -278,6 +314,20 @@ final class EconomyDrift
         $median = Outlier::median(array_map(static fn (FillEconomy $f): string => self::segment($f)->distanceKm, $baseline));
 
         return Decimal::compare(Decimal::multiply($mean, '2', 6), $median) < 0;
+    }
+
+    /**
+     * The recent mean distance over twice the baseline median (Phase 42).
+     *
+     * @param list<FillEconomy> $recent
+     * @param non-empty-list<FillEconomy> $baseline
+     */
+    private static function longTanks(array $recent, array $baseline, string $recentKm): bool
+    {
+        $mean = Decimal::divide($recentKm, (string) count($recent), 6);
+        $median = Outlier::median(array_map(static fn (FillEconomy $f): string => self::segment($f)->distanceKm, $baseline));
+
+        return Decimal::compare($mean, Decimal::multiply($median, '2', 6)) > 0;
     }
 
     private static function segment(FillEconomy $fill): EconomySegment

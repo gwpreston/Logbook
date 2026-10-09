@@ -5926,6 +5926,9 @@ return [
             'business_mileage' => 'See the claim',
             'cheapest_to_run' => 'See reports',
             'equity' => 'See finance',
+            // Phase 42 (spec.md §7.8).
+            'fuel_saving' => 'See cheapest near you',
+            'economy_up' => 'See the Fuel tab',
         ],
         'shopping_around' => [
             'title' => 'About {amount} better off from shopping around',
@@ -5945,6 +5948,16 @@ return [
             'title_negative' => '{vehicle} is about {amount} in negative equity',
             'body' => 'Valued at {value} against an estimated settlement of {settlement}.',
             'body_quote' => 'Valued at {value} against the lender\'s settlement quote of {settlement}.',
+        ],
+        // Phase 42 (spec.md §7.8): computed from figures Logbook already has.
+        'fuel_saving' => [
+            'title' => 'Could save about {amount} a year on fuel',
+            'body' => '{vehicle}: filling at {cheapest} instead of {has_usual, select, yes {your usual {usual}} other {where you usually fill}}: {cheapest_price}{detour, select, yes { counting the drive there} other {}}, against {basis, select, average {the {usual_price} you’ve paid on average in the last 30 days} other {{usual_price}}}, at {scaled, select, yes {about {litres} a year from your last {months, plural, one {# month} other {# months}}} other {your {litres} a year}}. Today’s prices.{assumed, select, yes { Your usual fill is assumed (40 L).} other {}}{detour, select, no { The drive there isn’t counted without an economy.} other {}}',
+        ],
+        'economy_up' => [
+            'title' => 'Economy is up about {percent}%',
+            'body' => '{vehicle}: {recent} over the last {electric, select, yes {{tanks, plural, one {# charge} other {# charges}}} other {{tanks, plural, one {# tank} other {# tanks}}}}, against your 12-month average of {baseline}.{extra}',
+            'long_tanks' => 'Longer tanks than usual often mean more motorway driving.',
         ],
     ],
     'fuel_prices' => [

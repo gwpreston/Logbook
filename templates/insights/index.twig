@@ -95,7 +95,7 @@
                                 <h3 class="insight-card__title">{{ insight.title|trans(insight.titleParams) }}</h3>
                             </div>
                             <p class="insight-card__body">{{ insight.body|trans(insight.bodyParams) }}</p>
-                            <a class="insight-card__action" href="{{ url_for(insight.route, insight.routeParams) }}">{{ ('insights.action.' ~ insight.kind.value)|trans }}{{ ui.icon('arrow_forward') }}</a>
+                            <a class="insight-card__action" href="{{ url_for(insight.route, insight.routeParams, insight.query) }}">{{ ('insights.action.' ~ insight.kind.value)|trans }}{{ ui.icon('arrow_forward') }}</a>
                         </li>
                     {% endfor %}
                 </ul>

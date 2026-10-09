@@ -351,13 +351,16 @@ final readonly class StationRepository
      */
     public function linked(string $provider): array
     {
-        $rows = $this->select()
-            ->where('merged_into IS NULL', 'provider = :provider', 'provider_ref IS NOT NULL')
-            ->setParameter('provider', $provider)
-            ->orderBy('id')
-            ->fetchAllAssociative();
+        // Every vehicle's *Cheapest near me* on a page asks (spec.md §8 *Page budgets*).
+        return $this->reads->remember(self::TABLE, 'linked|' . $provider, function () use ($provider): array {
+            $rows = $this->select()
+                ->where('merged_into IS NULL', 'provider = :provider', 'provider_ref IS NOT NULL')
+                ->setParameter('provider', $provider)
+                ->orderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
     }
 
     /**
