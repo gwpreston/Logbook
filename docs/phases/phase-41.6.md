@@ -3,7 +3,7 @@
 *The small things Phase 41's merge review found, and the edge cases it
 couldn't prove.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Phase 41's merge review (2026-10-09, at c14d588) passed with MERGE. Its
 four MEDIUM findings were fixed before the PR (#343–#345). This phase
@@ -85,7 +85,7 @@ Only if a task's proof changes behaviour:
 ## Tasks
 
 ### 41.6.0 Spec first
-- [ ] Any §7.38 wording the proofs below require, before the code.
+- [x] §7.38 wording for the proofs below (*Upsert by test number*, *Repeats*, *Requests*, *Review card*, *History*) and §13, before the code.
 
 ### 41.6.1 Phone layout (findings 1, 2)
 - [ ] The *Test* button wraps (or reads *Test connection*, with the

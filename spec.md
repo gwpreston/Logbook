@@ -8514,7 +8514,10 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
     Switching the provider off keeps stored tests.
 - **Requests.** Made in the request that asked (a fetch, *Look up*,
   *Test*) or by the job, each limited to 10 s, the error shown redacted
-  on failure. *Look up* and *Fetch* together are limited per person to
+  on failure: credentials are masked, and a network error's message is
+  cut to DVSA's host, never carrying the request URL, so the stored last
+  call (`mot_history.status`) and the job output hold no registration or
+  VIN (Phase 41.6). *Look up* and *Fetch* together are limited per person to
   20 in 10 minutes and 200 a day (#343, `MotHistoryLimit`), so nobody uses
   up the install's shared quota; over it, nothing is sent and the person
   is told "You've asked DVSA a lot in a short time; try again later" (not
@@ -8557,7 +8560,12 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
   (possible for heavy vehicles) can't be dated and is skipped, and the
   fetch's message counts it ("1 test without a date was not stored").
 - **Upsert by test number:** tests and defects are never duplicated;
-  DVSA's values and text replace the stored ones. A test no longer in
+  DVSA's values and text replace the stored ones. A test's defects are
+  matched by their text (case-folded, whitespace collapsed; the same
+  comparison as *Repeats*), not by position, so when DVSA lists them in
+  another order each defect keeps its own issue link and *Not now*; a
+  text DVSA corrected at the same place keeps its row, and a defect DVSA
+  no longer lists goes (Phase 41.6). A test no longer in
   DVSA's answer is kept, with what was made from it (#331). Each fetch sets `mot_history_fetched_at`,
   `mot_recall_state` and, for a vehicle with no tests, `mot_first_due_on`.
 
@@ -8594,6 +8602,10 @@ overview while any test is unreviewed. A test is reviewed
   reference = the test number, provider "DVSA MOT", no cost, no odometer
   of its own (the `mot` reading is the reading). *Add all* adds them
   oldest first, so the latest pass drives the MOT reminder (§7.5, §7.6).
+  A bulk action (*Add all* for documents or issues) reads the vehicle's
+  tests, documents, issues already made and the owner's zone once per
+  call, and settles each test once at the end, so its cost is the
+  creates themselves, not a handful of reads per defect (Phase 41.6).
 - **First MOT due:** a vehicle with no tests, a `mot_first_due_on` and a
   blank *First MOT due* (§7.1) is offered it ("DVSA: first MOT due 14
   Mar 2027 · Use this date"). Never filled on its own.
@@ -8618,7 +8630,10 @@ overview while any test is unreviewed. A test is reviewed
   whose issue is still open or watching is not offered; after each fetch
   that issue gets an update instead ("Advised again at the MOT on 14 Feb
   2026, 43,950 mi") and the defect links to it. A retest in between
-  changes nothing.
+  changes nothing. Only a defect on a test **after** the earliest one the
+  issue came from counts: an older test with the same text, never
+  reviewed, is not "advised again" and gets no update dated before the
+  issue (Phase 41.6).
 - **Not seen again** (#338): an issue from a defect that is not on the
   next *pass* is never closed by Logbook; that pass's card notes "not
   advised at the following MOT" beside it, for the owner. A fail and its
@@ -8696,7 +8711,9 @@ overview while any test is unreviewed. A test is reviewed
   with its number as reference, or its date as start), whose row carries
   it (never listed twice), with the attribution under the list and no
   *Added by*. Not in *Recent activity*, print or the sale pack's history,
-  which has its own summary below.
+  which has its own summary below. Its defect count comes from the
+  query that lists the tests, not from loading every defect's text
+  (Phase 41.6).
 - **Ask** (§7.26): read tool `mot_history(vehicle)` (tests, mileages,
   defects, recall state, links). **API** (§7.20): `GET
   /vehicles/{id}/mot-tests` (`View`; the recall state as Logbook's
@@ -9776,6 +9793,14 @@ task breakdowns live in the per-phase files; this is the map.
   job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
   §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#350 open). One migration.
   Release v3.7.0.
+- **Phase 41.6 — MOT history follow-ups + patch release.** The LOW and
+  unconfirmed findings of Phase 41's merge review: Settings → MOT history
+  fits a phone (the *Test* button wraps; the "Sends …" hint keeps its
+  icon beside its text); History counts defects in the tests query and
+  *Add all* reads once per call (§7.38); a transport error never carries
+  the registration or VIN; a refresh matches a test's defects by text,
+  not position; only a later test advises an issue again (§7.38). No
+  migration. Release v3.7.1.
 ---
 
 ## 14. Definition of done
