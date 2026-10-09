@@ -94,8 +94,9 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
 | [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | ✅ |
 | [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | ✅ |
-| [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
+| [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 🚧 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
+| [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1150,8 +1151,10 @@ see.*
   nearby effective price), from figures *Cheapest near me* already has.
 - **Economy up:** Phase 25's drift check judged for an improvement.
 - AI insights no longer asked for these or to work out any figure, and
-  kept from repeating a computed insight; an Ask tool for the computed
-  insights. Partly replaces #174. Release.
+  kept from repeating a computed insight (a topic per AI insight, #358)
+  and dropped when a figure is unmatched (#354); an Ask tool for the
+  computed insights; the Insights page joins the 60-query budget (#280).
+  Partly replaces #174. Release.
 
 → [`phase-42.md`](docs/phases/phase-42.md)
 
@@ -1169,6 +1172,18 @@ and what Logbook spotted.*
 - A user choice of what the digest includes; delivery unchanged. Release.
 
 → [`phase-43.md`](docs/phases/phase-43.md)
+
+---
+
+## Phase 44 — A *Next 3 months* total on *Coming up* + release
+*What the next three months will probably cost, where the items already
+are.*
+
+- The prototype's 3-month outlook, not an insight (#355): a total on the
+  *Coming up* page and widget from the costs it already shows, and in
+  Ask's `coming_up` tool. Release.
+
+→ [`phase-44.md`](docs/phases/phase-44.md)
 
 ---
 

@@ -2465,11 +2465,52 @@ toggles.
      Fuel tab's 12-month figure (§7.34) when it is better off: "About
      £18.40 better off from shopping around" — "23 fill-ups away from your
      usual station in the BMW 320d over the last 12 months." → the Fuel tab.
-  2. **Business mileage** (`trips` on): the signed-in user's business
+  2. **Fuel saving** (Phase 42, #352, #353, #357; `fuel_saving`;
+     `ViewCosts`; Fuel stations on and a price provider enabled; liquid
+     fuel only, so never an EV or a plug-in hybrid's electric series): per
+     vehicle, what filling at the cheapest station nearby instead of the
+     usual one would save in a year, from figures §7.34 already has:
+     - the **grade**: the vehicle's reference grade (§7.3);
+     - the **yearly volume**: the vehicle's litres of that grade over the
+       last 12 months, from at least **6** fill-ups of it at least **90
+       days** apart (first to last). When the vehicle's first fill-up of
+       a liquid fuel is less than 12 months old, it is **scaled to a
+       year**: the litres of every fill-up after the first ÷ the days
+       from the first to the last × 365 (#357);
+     - the **usual price**: the listed price for the grade, fresh (48
+       hours, §7.34), at the **usual station** (the most visited station
+       in the last 12 months, ties to the latest visit, as §7.34 *After a
+       fill-up*). Without one (the usual station isn't linked, or has no
+       fresh price) the vehicle's **average price paid** for the grade
+       over the last 30 days (total cost ÷ volume, at least one fill-up),
+       and the body says so; with neither, nothing (#352). Today's price
+       against today's cheapest, so a year of price movement never counts
+       as a saving;
+     - the **cheapest**: *Cheapest near me* (§7.34) for the vehicle and
+       grade around the viewer's first place (by its order; normally
+       *Home*), at the default radius, by effective cost; its **effective
+       price per unit** = its effective cost ÷ the usual fill, so the
+       detour is counted;
+     - **figure**: yearly saving = yearly volume × (usual price − the
+       cheapest's effective price per unit), exact decimals, rounded only
+       when shown.
+     Shown when the cheapest is not the usual station, the saving is at
+     least **20 in the currency's major unit** a year (a fixed threshold,
+     not a setting, #353), and the vehicle's currency is the provider's
+     (never converted). "Could save about £46 a year on fuel" — "Filling
+     the Golf at Asda Antrim instead of your usual Tesco Antrim: £1.329/L
+     counting the drive there, against £1.369/L, at your 1,150 L a year.
+     Today's prices." With the 30-day average: "… against the £1.369/L
+     you've paid on average in the last 30 days …"; scaled: "… at about
+     1,150 L a year from your last 5 months …"; with an assumed usual fill
+     or a detour that can't be costed, the body adds *Cheapest near me*'s
+     own words for it. → *Cheapest near me* for that vehicle and grade.
+     Without a place, nothing (the widget `cheapest_fuel` asks for one).
+  3. **Business mileage** (`trips` on): the signed-in user's business
      distance this tax year and its claim value (§7.23), when above 0:
      "£412.20 claimable in business mileage" — "916 mi of business trips
      since 6 Apr 2026, at your mileage rates." → the claim report.
-  3. **Cheapest to run** (`ViewCosts`; *All vehicles* only): among active
+  4. **Cheapest to run** (`ViewCosts`; *All vehicles* only): among active
      vehicles in one currency that each drove at least 500 km in the last
      12 months, the lowest running cost per distance (§7.7, the last 12
      months) against the highest: "The Yaris is your cheapest to run" —
@@ -2477,12 +2518,33 @@ toggles.
      Running costs only." → Reports. Currencies are never converted:
      with vehicles in several currencies it compares only within the
      currency of the most vehicles (ties: the owner's currency).
-  4. **Equity** (`finance` on; Manage and `ViewCosts`, as §7.32): per
+  5. **Equity** (`finance` on; Manage and `ViewCosts`, as §7.32): per
      vehicle with an active HP or PCP agreement and a current equity
      figure (a valuation from the last 12 months; never an estimate):
      "The BMW 320d has about £2,150 of equity" or "… is about £800 in
      negative equity" — "Valued at £14,000 against an estimated
      settlement of £11,850." → the Finance tab.
+  6. **Economy up** (Phase 42; `economy_up`; `fuel` on): per vehicle and
+     series, *Needs attention*'s economy drift (§7.24 item 7) judged for
+     an **improvement**: the same recent and baseline windows, the same
+     weighting, the same seasonal test and the owner's same drift
+     threshold, with the sign flipped: flagged when the recent distance
+     per unit is at least the threshold **better** than the baseline's
+     (baseline consumption ≥ recent × (1 + threshold)) and, when the same
+     months a year earlier hold at least 3 segments, also than those. One
+     judgement with two outcomes, so the drift item and this insight can
+     never disagree, and a series never shows both. "Economy is up about
+     12%" (worked out from the two figures as shown, as the drift item) —
+     "50.1 mpg over the last 5 tanks, against your 12-month average of
+     44.7 mpg." followed by the likely causes that make sense for an
+     improvement, each only when its fact holds: the drift item's grade
+     switch and tyres-fitted sentences, and a new one, "Longer tanks than
+     usual often mean more motorway driving." (the recent mean distance
+     over twice the baseline median); and, without last year's months, the drift item's
+     "This may include the time of year: there's no data for these months
+     last year." → the Fuel tab.
+  The order is #356's: *Fuel saving* second, beside *Shopping around*
+  (future against past), *Economy up* last.
   The widget shows the first **two**, as the prototype; with none,
   "Nothing stands out right now." From Phase 33.4 its title links to the
   Insights page (*All insights*) and AI insights join it (§7.26 *AI
@@ -6153,6 +6215,7 @@ request to any model service.
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
   | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
   | `cheapest_fuel(vehicle?, grade?, near, radius?, lat?, lng?)` | *Cheapest near me* (Phase 30.2, §7.34, a price provider enabled) | the cheapest stations by effective cost with each row's sum and the attribution; a position is used and never stored |
+  | `computed_insights(vehicles?)` | *Insights* (Phase 42, §7.8) | every computed insight the user would see for those vehicles (all, not the widget's two), in order: kind, vehicle, title and body as shown, and the figures behind them as raw values and display strings (for *Fuel saving*: the yearly saving, yearly volume, usual and cheapest prices and stations; for *Economy up*: the two figures and the percentage). "How much could I save on fuel?" is answered from it; the AI insights request uses the same list for *No repeats* |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -6401,20 +6464,33 @@ has no page of its own and lives on Insights.
 - **Ask features the existing tools can't support** (#194): none; the
   prototype's Ask uses only what Ask already has.
 
-#### AI insights (Phase 33.4, decided 2026-10-05, #174)
+#### AI insights (Phase 33.4, decided 2026-10-05, #174; partly replaced by Phase 42)
 
-Insights the app has no computed figure for (the prototype's *economy up*,
-*about £x due in the next 3 months*, *save about £x a year on fuel*, and
-any other pattern) are found by the model:
+Patterns across services or vehicles that no single computed insight
+covers are found by the model. From Phase 42 the prototype's *economy up*
+and *save about £x a year on fuel* are computed insights (§7.8 *Fuel
+saving*, *Economy up*), and *about £x due in the next 3 months* is not an
+insight (#355; a total on *Coming up*, Phase 44):
 
 - **Only with AI on:** an assigned *Ask* task, the AI module on and the
   user's *Use AI features* switch on (§7.25). Otherwise nothing changes:
   the Insights widget shows the computed insights only (§7.8).
 - **How:** the model is given the *Ask* tools (§7.26 *Tools*, as the user,
   through the §7.21 access policy) and asked for up to four short
-  observations about the user's vehicles, each with a title, a body and
-  the tool result it came from; it works the figures out itself. They are
-  not tasks and not repeats of *Needs attention* or *Coming up*. Never
+  observations about the user's vehicles, each with a title, a body,
+  the tool result it came from, a **topic** (`fuel_cost`, `economy` or
+  `other`) and the **vehicles** it is about (ids from the context; #358).
+  **No arithmetic** (Phase 42), as Ask's system text: only figures tools
+  return, their display strings unchanged, and never adding, subtracting,
+  averaging, converting or projecting a number. They are not tasks and
+  not repeats of *Needs attention*, *Coming up* or the computed insights.
+- **No repeats** (Phase 42): the computed insights the user would see
+  (§7.8, all of them; their kind, title and vehicle) are in the request,
+  with the instruction not to repeat them. The rule is **enforced on
+  reading**: an AI insight with topic `fuel_cost` for a vehicle showing
+  *Fuel saving*, or `economy` for a vehicle showing *Economy up*, is
+  dropped, on the page and in the widget. An insight without a topic
+  (sets made before Phase 42) counts as `other`. Never
   about what may be causing an issue (§7.37, Phase 40.2): counts and ages
   only ("2 issues open on the Golf for over 3 months").
 - **When:** once a day per user (the `ai_insights` job, §5 *Jobs*, or the
@@ -6431,9 +6507,12 @@ any other pattern) are found by the model:
   name the tool results it came from, or it is left out; a cached insight
   whose sources are about a vehicle the user can no longer see is dropped
   on reading, as a thread's history is.
-- **Grounding:** the check of *Ask* applies to every number: unmatched
-  numbers are highlighted with "Logbook didn't provide this figure. Check
-  it against the sources." Each AI insight is marked as one (an
+- **Grounding:** the check of *Ask* applies to every number. An AI
+  insight with a figure no tool returned is **dropped** when it is read
+  (Phase 42, #354): an insight is unasked-for, so it meets a higher bar
+  than an answer (Ask's answers keep highlighting unmatched numbers with
+  "Logbook didn't provide this figure. Check it against the sources.").
+  Each AI insight is marked as one (an
   `auto_awesome` icon and "AI"), with its sources and the model.
 - **Where:** after the computed insights on the Insights page (with the
   model, its connection and when) and in the dashboard widget's list, up to
@@ -8764,7 +8843,8 @@ overview while any test is unreviewed. A test is reviewed
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Page budgets** (Phase 41.7, decided 2026-10-09, #350): the dashboard
-  and a vehicle's overview run a bounded number of queries, **not one per
+  and a vehicle's overview (and, from Phase 42, the Insights page, #280)
+  run a bounded number of queries, **not one per
   vehicle per widget**: at most 60 queries each (the measured floor is
   59; the owner set 60 on 2026-10-09 after the first target of 30 proved
   out of reach without reworking the reminder sync and the activity
@@ -9827,6 +9907,23 @@ task breakdowns live in the per-phase files; this is the map.
   budgets in §8 (#350) and query-count tests that don't grow with the
   number of vehicles. Nothing any page shows changes. No migration.
   Release v3.7.2.
+- **Phase 42 — Fuel saving and economy up as computed insights +
+  release.** Two computed insights (§7.8): *Fuel saving*, the yearly
+  volume × (the usual station's listed price, else the 30-day average
+  paid − the cheapest nearby effective price per unit), shown from 20 a
+  year; and *Economy up*, the drift check (§7.24 item 7) judged for an
+  improvement. AI insights get a topic and vehicles, are told the
+  computed insights and kept from repeating them on reading, are dropped
+  when a figure is unmatched, and never work out figures; a
+  `computed_insights` tool for Ask and MCP. The Insights page joins the
+  page budgets (#280). Partly replaces #174. No migration. Release
+  v3.8.0.
+- **Phase 43 — The monthly briefing + release.** See
+  [`phase-43.md`](docs/phases/phase-43.md).
+- **Phase 44 — A *Next 3 months* total on *Coming up* + release.** The
+  prototype's 3-month outlook as a total on the *Coming up* page and
+  widget, not an insight (#355). See
+  [`phase-44.md`](docs/phases/phase-44.md).
 ---
 
 ## 14. Definition of done
