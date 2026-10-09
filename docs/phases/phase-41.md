@@ -3,7 +3,7 @@
 *Past MOT tests, their mileages and advisories, from the official UK
 record.*
 
-Status: ✅ complete (v3.7.0; tag once merged) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.7.0** · file lives in `docs/phases/`
 
 **Reopens #7** (parked 2026-09-30: "sits with registration lookup in §12",
 for keeping data local). Phase 30.2 has since set the precedent: an
@@ -228,7 +228,8 @@ export in `MotBackupTest`; the sample data in `DemoMotHistoryTest`.
 - [x] `docs/mot-history.md` (applying to DVSA, settings, what is sent);
       README; `ROADMAP.md` row ✅. The printed and linked URLs (gov.uk
       MOT checker, OGL v3.0, DVSA's registration page) checked
-      2026-10-09. Tag once merged.
+      2026-10-09.
+- [x] Tag `v3.7.0` once merged.
 - [ ] Still open after release: run `bin/record-mot-history.php` with
       real credentials once DVSA issues them, so `DvsaRecordedTest`
       checks the adapter against DVSA's real answers.
