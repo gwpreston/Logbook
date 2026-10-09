@@ -198,7 +198,10 @@ final readonly class ActivityFeed
         }
         $documents = $this->documents->listForVehicles($query->vehicleIds());
 
-        return array_values(array_filter($tests, static fn (MotTest $test): bool => MotReview::match($documents, $test) === null));
+        return array_values(array_filter(
+            $tests,
+            static fn (MotTest $test): bool => MotReview::match($documents, $test) === null,
+        ));
     }
 
     /**
