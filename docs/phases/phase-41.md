@@ -3,7 +3,7 @@
 *Past MOT tests, their mileages and advisories, from the official UK
 record.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete (v3.7.0; tag once merged) · file lives in `docs/phases/`
 
 **Reopens #7** (parked 2026-09-30: "sits with registration lookup in §12",
 for keeping data local). Phase 30.2 has since set the precedent: an
@@ -222,11 +222,16 @@ wording in `MotAttentionTest`; the card, notice and reminder closing in
 export in `MotBackupTest`; the sample data in `DemoMotHistoryTest`.
 
 ### 41.5 Release
-- [ ] `VERSION` → next minor; `CHANGELOG.md` (*Added* — MOT history from
+- [x] `VERSION` → 3.7.0; `CHANGELOG.md` (*Added* — MOT history from
       DVSA, off until an admin enables it; *Upgrade notes* — one
-      migration, how to apply for credentials).
-- [ ] `docs/mot-history.md` (applying to DVSA, settings, what is sent);
-      README; `ROADMAP.md` row ✅. Tag once merged.
+      migration, how to apply for credentials); OpenAPI 1.24.0.
+- [x] `docs/mot-history.md` (applying to DVSA, settings, what is sent);
+      README; `ROADMAP.md` row ✅. The printed and linked URLs (gov.uk
+      MOT checker, OGL v3.0, DVSA's registration page) checked
+      2026-10-09. Tag once merged.
+- [ ] Still open after release: run `bin/record-mot-history.php` with
+      real credentials once DVSA issues them, so `DvsaRecordedTest`
+      checks the adapter against DVSA's real answers.
 
 ---
 
