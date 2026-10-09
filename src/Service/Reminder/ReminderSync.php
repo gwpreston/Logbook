@@ -22,6 +22,9 @@ use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
+use Logbook\Service\Compliance\DocumentStatus;
+use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Service\MotHistory\MotReview;
 use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Maintenance\ScheduleService;
@@ -123,6 +126,7 @@ final readonly class ReminderSync
             if ($withDocuments) {
                 $documents = $this->compliance->states($vehicle, $today, $preferences->documentDays);
                 $wanted = [...$wanted, ...ReminderGenerator::fromDocuments($vehicle->id, $documents, $today, $preferences)];
+                $this->closeReplacedByMot($existing, $vehicle->id, $documents);
                 $list = array_map(static fn (DocumentState $s) => $s->document, $documents);
                 $firstDue = FirstInspection::pending($vehicle, $list);
                 if ($firstDue !== null) {
@@ -244,6 +248,45 @@ final readonly class ReminderSync
         if ($stored->status !== ReminderStatus::Done) {
             $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
             $this->told($vehicleId, $stored->id, ReminderStatus::Done);
+        }
+    }
+
+    /**
+     * A pass added as a document from the MOT review card closes the
+     * reminder of the inspection document it replaced as done, kept rather
+     * than deleted as a replaced document's is (spec.md §7.38 *Refresh*).
+     * Manual renewals are unchanged.
+     *
+     * @param array<string, Reminder> $existing taken out of, so they are not deleted
+     * @param list<DocumentState> $documents
+     */
+    private function closeReplacedByMot(array &$existing, int $vehicleId, array $documents): void
+    {
+        $fromMot = false;
+        foreach ($documents as $state) {
+            $data = $state->document->data;
+            $inspection = $data->type === ComplianceType::Inspection;
+            if ($state->status->isCurrent() && $inspection && $data->provider === MotReview::PROVIDER) {
+                $fromMot = true;
+            }
+        }
+        if (!$fromMot) {
+            return;
+        }
+        foreach ($documents as $state) {
+            if ($state->status !== DocumentStatus::Replaced || $state->document->data->type !== ComplianceType::Inspection) {
+                continue;
+            }
+            $key = GeneratedReminder::keyOf($vehicleId, ReminderSource::Compliance, $state->document->id);
+            $stored = $existing[$key] ?? null;
+            if ($stored === null) {
+                continue;
+            }
+            unset($existing[$key]);
+            if ($stored->status->isOpen()) {
+                $this->reminders->setStatus($stored->id, ReminderStatus::Done, $this->clock->now());
+                $this->told($vehicleId, $stored->id, ReminderStatus::Done);
+            }
         }
     }
 
