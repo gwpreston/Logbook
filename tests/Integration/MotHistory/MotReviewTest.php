@@ -478,6 +478,43 @@ final class MotReviewTest extends MotHistoryTestCase
         ), 'positions follow DVSA\'s order');
     }
 
+    public function testACorrectedTextKeepsItsRowAndADroppedDefectGoes(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $headlamp = $this->defectWithText($golf, 'Headlamp aim too high');
+        $browser->post($this->url($golf), ['do' => 'issue', 'defect' => (string) $headlamp->id]);
+        $before = count($this->tests($golf)[1]->defects);
+
+        // DVSA corrects the headlamp's wording in place and no longer lists one defect.
+        $this->answer = fn (): MockResponse => $this->withFailDefects(
+            static function (array $defects) use ($headlamp): array {
+                $kept = [];
+                foreach ($defects as $defect) {
+                    if (($defect['text'] ?? null) === 'A type DVSA added later') {
+                        continue;
+                    }
+                    if (($defect['text'] ?? null) === $headlamp->text) {
+                        $defect['text'] = 'Headlamp aim too high (corrected)';
+                    }
+                    $kept[] = $defect;
+                }
+
+                return $kept;
+            },
+        );
+        $this->fetch($golf, $browser);
+
+        $defects = $this->tests($golf)[1]->defects;
+        self::assertCount($before - 1, $defects, 'one dropped');
+        $texts = array_map(static fn (MotDefect $defect): string => $defect->text, $defects);
+        self::assertNotContains('A type DVSA added later', $texts, 'DVSA\'s last defect is gone');
+        $corrected = $this->defectWithText($golf, 'Headlamp aim too high (corrected)');
+        self::assertSame($headlamp->id, $corrected->id, 'the same row, so its issue stays linked');
+        self::assertNotNull($corrected->issueId);
+    }
+
     public function testAnOlderTestNeverReviewedIsNotAdvisedAgainAfterTheIssueItBecame(): void
     {
         $this->start();
@@ -566,6 +603,34 @@ final class MotReviewTest extends MotHistoryTestCase
             'dataSource' => 'DVSA',
             'defects' => [['text' => $text, 'type' => 'ADVISORY', 'dangerous' => false]],
         ]);
+        $data['motTests'] = $tests;
+
+        return new MockResponse((string) json_encode($data));
+    }
+
+    /**
+     * The fixture with the 2026 fail's defects changed by $change.
+     *
+     * @param callable(list<array<mixed>>): list<array<mixed>> $change
+     */
+    private function withFailDefects(callable $change): MockResponse
+    {
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        $tests = $data['motTests'] ?? null;
+        self::assertIsArray($tests);
+        $fail = $tests[1] ?? null;
+        self::assertIsArray($fail);
+        $defects = $fail['defects'] ?? null;
+        self::assertIsArray($defects);
+        $list = [];
+        foreach ($defects as $defect) {
+            self::assertIsArray($defect);
+            $list[] = $defect;
+        }
+        $fail['defects'] = $change($list);
+        $tests[1] = $fail;
         $data['motTests'] = $tests;
 
         return new MockResponse((string) json_encode($data));
