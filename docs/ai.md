@@ -247,8 +247,10 @@ and up to two join the dashboard's *Insights* widget.
 
 Logbook works out *Could save about £x a year on fuel* and *Economy is up
 about x%* itself, with or without AI (see the Insights page); Ask answers
-"How much could I save on fuel?" from the same figure. Nothing is made for you while your *Use AI features* is
-off, or if you haven't signed in for 30 days, and nothing is ever drafted.
+"How much could I save on fuel?" from the same figure.
+
+Nothing is made for you while your *Use AI features* is off, or if you
+haven't signed in for 30 days, and nothing is ever drafted.
 
 **What it can answer.** Anything Logbook already shows: costs by period,
 category, month or vehicle; running cost per mile or km; fuel economy,

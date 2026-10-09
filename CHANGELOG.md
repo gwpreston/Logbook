@@ -52,9 +52,10 @@ single figure covers.
 
 ### Upgrade notes
 - Pull and restart. No migration, no configuration change and no change
-  to the backup format. AI insights made earlier today keep showing until
-  the next set is made; they have no topic, so none is left out as a
-  repeat.
+  to the backup format. Of the AI insights made earlier today, any with a
+  highlighted figure stop showing at once; the rest keep showing until
+  the next set is made (they have no topic, so none is left out as a
+  repeat).
 
 ## [3.7.2] — 2026-10-09
 

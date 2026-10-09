@@ -1043,7 +1043,9 @@ MySQL only.
 - id, user_id (`ON DELETE CASCADE`; unique: one set per user, replaced
   each day), day (the user's local date it was made for, `YYYY-MM-DD`),
   insights (optional JSON: each title, body, the indexes of the tool runs
-  it came from, and its unmatched figures), tool_calls (optional JSON, as
+  it came from, its unmatched figures and, from Phase 42 (#358), its
+  topic (`fuel_cost` | `economy` | `other`; absent in older sets, read as
+  `other`) and the ids of the vehicles it is about), tool_calls (optional JSON, as
   AiMessage's), connection_name, location, model, error_code (optional),
   created_at (UTC). **Not in backups** or exports: it is made again.
 
@@ -2528,7 +2530,7 @@ toggles.
      negative equity" — "Valued at £14,000 against an estimated
      settlement of £11,850." → the Finance tab.
   6. **Economy up** (Phase 42; `economy_up`; `fuel` on): per vehicle and
-     series, *Needs attention*'s economy drift (§7.24 item 7) judged for
+     series (every series item 7 checks: liquid, electric and gas), *Needs attention*'s economy drift (§7.24 item 7) judged for
      an **improvement**: the same recent and baseline windows, the same
      weighting, the same seasonal test and the owner's same drift
      threshold, with the sign flipped: flagged when the recent distance
@@ -2539,12 +2541,12 @@ toggles.
      never disagree, and a series never shows both. "Economy is up about
      12%" (worked out from the two figures as shown, as the drift item) —
      "Volkswagen Golf: 50.1 mpg over the last 5 tanks, against your
-     12-month average of 44.7 mpg." (charges for electricity) followed by the likely causes that make sense for an
-     improvement, each only when its fact holds: the drift item's grade
+     12-month average of 44.7 mpg." ("charges" for electricity), then
+     the likely causes that make sense for an improvement, each only when its fact holds: the drift item's grade
      switch and tyres-fitted sentences, and a new one, "Longer tanks than
      usual often mean more motorway driving." (the recent mean distance
-     over twice the baseline median); and, without last year's months, the drift item's
-     "This may include the time of year: there's no data for these months
+     over twice the baseline median); and, without last year's months,
+     the drift item's "This may include the time of year: there's no data for these months
      last year." → the Fuel tab.
   The order is #356's: *Fuel saving* second, beside *Shopping around*
   (future against past), *Economy up* last.
@@ -6218,7 +6220,7 @@ request to any model service.
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
   | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
   | `cheapest_fuel(vehicle?, grade?, near, radius?, lat?, lng?)` | *Cheapest near me* (Phase 30.2, §7.34, a price provider enabled) | the cheapest stations by effective cost with each row's sum and the attribution; a position is used and never stored |
-  | `computed_insights(vehicles?)` | *Insights* (Phase 42, §7.8) | every computed insight the user would see for those vehicles (all, not the widget's two), in order: kind, vehicle, title and body as shown, and the figures behind them as raw values and display strings (for *Fuel saving*: the yearly saving, yearly volume, usual and cheapest prices and stations; for *Economy up*: the two figures and the percentage). "How much could I save on fuel?" is answered from it; the AI insights request uses the same list for *No repeats* |
+  | `computed_insights(vehicles?)` | *Insights* (Phase 42, §7.8) | every computed insight the user would see for those vehicles' active ones (all, not the widget's two; capped at 50 like every list), in order: kind, vehicle, title and body as shown, and the figures behind them as raw values and display strings (for *Fuel saving*: the yearly saving, yearly volume, usual and cheapest prices and stations; for *Economy up*: the two figures and the percentage). "How much could I save on fuel?" is answered from it; the AI insights request uses the same list for *No repeats* |
 
   Every tool returns **both** the raw values (decimal strings, canonical
   units) and **display strings** in the user's units, locale and currency
@@ -6493,7 +6495,8 @@ insight (#355; a total on *Coming up*, Phase 44):
   reading**: an AI insight with topic `fuel_cost` for a vehicle showing
   *Fuel saving*, or `economy` for a vehicle showing *Economy up*, is
   dropped, on the page and in the widget. An insight without a topic
-  (sets made before Phase 42) counts as `other`. Never
+  (sets made before Phase 42) counts as `other`, and one naming no
+  vehicle is never taken for a repeat. Never
   about what may be causing an issue (§7.37, Phase 40.2): counts and ages
   only ("2 issues open on the Golf for over 3 months").
 - **When:** once a day per user (the `ai_insights` job, §5 *Jobs*, or the

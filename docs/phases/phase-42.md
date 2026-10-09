@@ -3,7 +3,7 @@
 *Sums done by Logbook; the model keeps only what no single service can
 see.*
 
-Status: ✅ complete (2026-10-09), released as v3.8.0 · file lives in `docs/phases/`
+Status: ✅ complete (2026-10-09), v3.8.0 to be tagged once merged · file lives in `docs/phases/`
 
 Phase 33.4 (#174) handed three of the prototype's insights to the model,
 because the app had no figure for them: *save about £x a year on fuel*,
@@ -101,7 +101,7 @@ price provider enabled; liquid fuel only). Per vehicle:
   doesn't count as a saving.
 
 **6. Economy up** (`economy_up`; `fuel` on). Per vehicle and per series
-(liquid, electric), exactly §7.24 item 7's test **with the sign flipped**:
+(as item 7: liquid, electric and gas), exactly §7.24 item 7's test **with the sign flipped**:
 
 - the same *recent* (last 5 checkable segments ending within 120 days, at
   least 3) and *baseline* (the 12 months before, at least 8) windows,
@@ -199,8 +199,9 @@ price provider enabled; liquid fuel only). Per vehicle:
 - [x] Reading filters: computed-insight repeats (#358) and unmatched
       figures (#354), on the page and in the widget.
 - [x] `computed_insights` tool for Ask and MCP.
-- [x] `bin/ai-eval.php`: fixtures checking AI insights carry no figure
-      absent from their tool results.
+- [x] `bin/ai-eval.php --insights`: a live-model run listing any AI
+      insight figure absent from its tool results (the CI check is
+      `AiInsightsTest`, with a scripted model).
 
 ### 42.3 Tests
 - [x] **Fuel saving:** the worked example above to the penny; not shown
