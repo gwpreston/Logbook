@@ -106,13 +106,13 @@ final readonly class MotReviewAction
 
         switch ($do) {
             case 'document':
-                if ($test !== null && $this->review->addDocument($vehicle, $test, $zone)) {
+                if ($test !== null && $this->review->addDocument($vehicle, $test)) {
                     $session->flash('success', 'mot_history.review.documents_added', ['count' => 1]);
                 }
                 break;
             case 'documents':
                 $session->flash('success', 'mot_history.review.documents_added', [
-                    'count' => $this->review->addAllDocuments($vehicle, $zone),
+                    'count' => $this->review->addAllDocuments($vehicle),
                 ]);
                 break;
             case 'first_due':
@@ -123,7 +123,7 @@ final readonly class MotReviewAction
             case 'issue':
                 if (
                     $issuesOn && $defect !== null && $defectTest !== null
-                    && $this->review->addIssue($vehicle, $defectTest, $defect, $zone)
+                    && $this->review->addIssue($vehicle, $defectTest, $defect)
                 ) {
                     $session->flash('success', 'mot_history.review.issues_added', ['count' => 1]);
                 }
@@ -131,7 +131,7 @@ final readonly class MotReviewAction
             case 'issues':
                 if ($issuesOn) {
                     $session->flash('success', 'mot_history.review.issues_added', [
-                        'count' => $this->review->addAllIssues($vehicle, $test, $zone),
+                        'count' => $this->review->addAllIssues($vehicle, $test),
                     ]);
                 }
                 break;

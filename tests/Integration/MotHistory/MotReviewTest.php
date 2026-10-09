@@ -255,7 +255,12 @@ final class MotReviewTest extends MotHistoryTestCase
         );
         self::assertContains('Advised again at the MOT on 14 Feb 2026, 43,950 mi', $notes);
         $page = (string) $browser->get($this->url($golf))->getBody();
-        self::assertStringContainsString('Advised again: added to Nearside Front Tyre', $page);
+        self::assertStringContainsString('Advised again</span>', $page, 'a short pill');
+        self::assertMatchesRegularExpression(
+            '#Added to the issue: <a href="[^"]*/issues/' . $issues[0]->id . '">Nearside Front Tyre#',
+            $page,
+            'the title wraps as a link, outside the pill',
+        );
     }
 
     public function testAnIssueNotAdvisedAgainIsNotedButNotClosed(): void
@@ -385,6 +390,56 @@ final class MotReviewTest extends MotHistoryTestCase
         }
 
         return null;
+    }
+
+    public function testANumberlessPassLateAtNightIsLoggedOnceOnTheOwnersDay(): void
+    {
+        $this->start();
+        // A Northern Ireland pass with no number, at 00:30 BST on 1 July (23:30 UTC on 30 June).
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $this->answer = static fn (): MockResponse => new MockResponse(
+            str_replace('2019-03-01T08:00:00.000Z', '2019-06-30T23:30:00.000Z', $json),
+        );
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+
+        $browser->post($this->url($golf), ['do' => 'documents']);
+        $browser->post($this->url($golf), ['do' => 'documents']);
+        $numberless = array_values(array_filter(
+            $this->tests($golf),
+            static fn (MotTest $test): bool => $test->reference() === null,
+        ))[0];
+        $documents = array_values(array_filter(
+            $this->service($this->app, ComplianceDocumentRepository::class)->listForVehicle($golf->id),
+            static fn ($document): bool => $document->data->reference === null,
+        ));
+
+        self::assertCount(1, $documents, 'never added twice');
+        self::assertSame('2019-07-01', $documents[0]->data->startOn?->format('Y-m-d'), 'the owner\'s day');
+        self::assertNotNull($numberless->reviewedAt, 'seen as logged, so the card lets it go');
+    }
+
+    public function testIssuesMadeBeforeStopAndRemoveAreNotOfferedAgain(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $browser->post($this->url($golf), ['do' => 'issues']);
+        $made = count($this->issues($golf));
+        self::assertGreaterThan(0, $made);
+
+        $browser->post('/vehicles/' . $golf->id . '/mot-history/stop', []);
+        $this->fetch($golf, $browser);
+        $card = (string) $browser->get($this->url($golf))->getBody();
+        $browser->post($this->url($golf), ['do' => 'issues']);
+
+        self::assertCount($made, $this->issues($golf), 'linked again, not duplicated');
+        self::assertStringNotContainsString('Add all as issues', $card);
+        foreach ($this->tests($golf) as $test) {
+            foreach ($test->defects as $defect) {
+                self::assertTrue($defect->settled(), $defect->text . ' is linked again or put off');
+            }
+        }
     }
 
     private function url(Vehicle $vehicle): string

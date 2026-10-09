@@ -8514,7 +8514,11 @@ Reopens #7 (parked 2026-09-30); decisions #320–#327 (2026-10-08).
     Switching the provider off keeps stored tests.
 - **Requests.** Made in the request that asked (a fetch, *Look up*,
   *Test*) or by the job, each limited to 10 s, the error shown redacted
-  on failure. A token is fetched per fetch (one per job run) and never
+  on failure. *Look up* and *Fetch* together are limited per person to
+  20 in 10 minutes and 200 a day (#343, `MotHistoryLimit`), so nobody uses
+  up the install's shared quota; over it, nothing is sent and the person
+  is told "You've asked DVSA a lot in a short time; try again later" (not
+  recorded as the last call). The job isn't counted. A token is fetched per fetch (one per job run) and never
   stored. `404` = "No DVSA record for AB12 CDE"; `429` = "DVSA is busy;
   try again later" (the job stops there); `401`/`403` = "DVSA refused
   Logbook's credentials" (shown to admins on Settings, to owners as
@@ -8585,7 +8589,8 @@ overview while any test is unreviewed. A test is reviewed
 
 - **Documents:** each **passed** test not already logged as an
   `inspection` document (one with that test number as its reference, or
-  with that start date) is offered: start = the test date, expiry,
+  starting on the test's day in the vehicle owner's time zone, #344) is
+  offered: start = the test date, expiry,
   reference = the test number, provider "DVSA MOT", no cost, no odometer
   of its own (the `mot` reading is the reading). *Add all* adds them
   oldest first, so the latest pass drives the MOT reminder (§7.5, §7.6).
@@ -8604,6 +8609,10 @@ overview while any test is unreviewed. A test is reviewed
     expiry, whichever test the defect is from, so before the next MOT;
     none when that is already past in the owner's today (#337);
   - `dangerous` (type or flag) and `major` set *Affects safety* (#310).
+- **Made before** (#345): after every fetch, a defect whose issue still
+  exists (`mot_advisory`, its test number as `source_ref`, the same text)
+  but lost its link (*Stop and remove* and a new fetch, or a rolled-back
+  migration) is linked to it again, never offered twice.
 - **Repeats** (#338): a defect whose text matches (case-folded,
   whitespace collapsed) that of a defect on any of the vehicle's tests
   whose issue is still open or watching is not offered; after each fetch
@@ -9765,7 +9774,7 @@ task breakdowns live in the per-phase files; this is the map.
   issues, repeats as updates); the recall state and its *Needs
   attention* item; *Look up* on the add-vehicle form; the `mot_history`
   job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
-  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#342). One migration.
+  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#350 open). One migration.
   Release v3.7.0.
 ---
 

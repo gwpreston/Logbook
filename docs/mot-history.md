@@ -188,8 +188,12 @@ stores their history: passes, a fail, advisories that became issues, a new
 car with only a first MOT due date and one outstanding recall. It is never
 offered in production or in demo mode.
 
-`bin/record-mot-history.php` checks real credentials from the environment
-and records scrubbed DVSA answers for the test fixtures.
+`bin/record-mot-history.php` (maintainers only; the app never runs it)
+checks real credentials and records scrubbed DVSA answers for the test
+fixtures. It reads `DVSA_CLIENT_ID`, `DVSA_CLIENT_SECRET`, `DVSA_API_KEY`
+and `DVSA_TOKEN_URL` from the environment and takes the registrations to
+record as arguments; it exits 0 when recorded, 1 when DVSA couldn't be
+read and 3 on wrong usage. See `tests/Fixtures/mot-history/README.md`.
 
 ## Troubleshooting
 
@@ -197,5 +201,6 @@ and records scrubbed DVSA answers for the test fixtures.
 |---|---|
 | "DVSA refused Logbook's credentials" | Check the client ID, secret and API key in Settings and press *Test*. The secret expires every 2 years. |
 | "DVSA is busy; try again later" | DVSA's limits were reached. Fetch again later; the job carries on the next day. |
+| "You've asked DVSA a lot in a short time" | Each person may look up or fetch 20 times in 10 minutes and 200 times a day, so the install's shared quota lasts. Wait a few minutes. |
 | "No DVSA record for AB12 CDE" | Check the registration. Vehicles first registered recently, or not tested in Great Britain since 2005 or Northern Ireland since 2017, may have none. |
 | "MOT history isn't available right now" (owners) | An admin should look at Settings → MOT history. |

@@ -51,8 +51,15 @@ owner chooses whether to fetch, since it sends their registration. See
 ### Upgrade notes
 - One migration (`mot_tests`, `mot_defects`, `mot_history_secrets`, four
   columns on `vehicles` and `odometer_readings.mot_test_id`). Nothing to
-  do: MOT history stays off until an admin enables it. Rolling it back
-  deletes the MOT tests and their readings.
+  do: MOT history stays off until an admin enables it.
+- Rolling the migration back deletes the MOT tests, their defects and
+  their *MOT* mileage readings, so mileage figures return to what they
+  were before the fetch; issues and MOT documents made from them stay, as
+  your own entries, and are linked again after upgrading and fetching
+  once more. It also drops the DVSA credentials: the provider setting
+  stays, so enter them again in Settings → MOT history after upgrading
+  again. A 3.6.0 backup restores only into 3.6.0; restore it there, then
+  upgrade.
 - To use it, apply for DVSA's free MOT history API credentials (about 5
   working days), then enter them in Settings → MOT history; see
   [docs/mot-history.md](docs/mot-history.md#getting-credentials-from-dvsa).

@@ -11,6 +11,7 @@ use Logbook\Repository\MotTestRepository;
 use Logbook\Domain\MotHistory\MotTest;
 use Logbook\Service\MotHistory\MotHistoryConfig;
 use Logbook\Service\MotHistory\MotReview;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
@@ -91,6 +92,7 @@ final readonly class ActivityFeed
         private IssueRepository $issues,
         private MotTestRepository $motTests,
         private MotHistoryConfig $motHistory,
+        private UserDirectory $users,
     ) {
     }
 
@@ -102,7 +104,7 @@ final readonly class ActivityFeed
         $query = $this->enabledOnly($query);
         $documents = $this->documentsOf($query);
 
-        return $this->read($user, $query, $documents, $this->motTestsOf($query));
+        return $this->read($user, $query, $documents, $this->motTestsOf($query, $documents));
     }
 
     /**
@@ -116,7 +118,7 @@ final readonly class ActivityFeed
     {
         $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
         $documents = $this->documentsOf($query);
-        $tests = $this->motTestsOf($query);
+        $tests = $this->motTestsOf($query, $documents);
         $zone = $user->preferences->timeZone();
         [$first, $newest] = $this->span($query, $documents, $tests, $zone);
         if ($first === null || $newest === null) {
@@ -152,7 +154,7 @@ final readonly class ActivityFeed
         ));
         $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
         $documents = $this->documentsOf($query);
-        $tests = $this->motTestsOf($query);
+        $tests = $this->motTestsOf($query, $documents);
         $zone = $user->preferences->timeZone();
         $year = $this->span($query, $documents, $tests, $zone)[1];
 
@@ -190,9 +192,10 @@ final readonly class ActivityFeed
      * while MOT history is off, and never one that became an `inspection`
      * document, whose line carries it.
      *
+     * @param list<ComplianceDocument> $documents the page's documents, when it lists them
      * @return list<MotTest>
      */
-    private function motTestsOf(ActivityQuery $query): array
+    private function motTestsOf(ActivityQuery $query, array $documents = []): array
     {
         if (!$query->includes(ActivityKind::MotTest) || !$this->motHistory->enabled()) {
             return [];
@@ -201,11 +204,17 @@ final readonly class ActivityFeed
         if ($tests === []) {
             return [];
         }
-        $documents = $this->documents->listForVehicles($query->vehicleIds());
+        // The documents already read for the page when they are listed too.
+        $documents = $documents !== [] ? $documents : $this->documents->listForVehicles($query->vehicleIds());
+        // "Became a document" is judged on the owner's calendar, as the review card dates it.
+        $zones = [];
+        foreach ($query->vehicles as $vehicle) {
+            $zones[$vehicle->id] = $this->users->find($vehicle->userId)?->preferences->timeZone() ?? new DateTimeZone('UTC');
+        }
 
         return array_values(array_filter(
             $tests,
-            static fn (MotTest $test): bool => MotReview::match($documents, $test) === null,
+            static fn (MotTest $test): bool => MotReview::match($documents, $test, $zones[$test->vehicleId]) === null,
         ));
     }
 

@@ -21,6 +21,8 @@ enum MotHistoryErrorCode: string
     case TooLarge = 'too_large';
     case InvalidResponse = 'invalid_response';
     case InvalidIdentifier = 'invalid_identifier';
+    /** Logbook's own per-person limit (MotHistoryLimit), before anything is sent. */
+    case TooMany = 'too_many';
 
     public function messageKey(): string
     {

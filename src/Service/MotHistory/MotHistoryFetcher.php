@@ -28,6 +28,7 @@ final readonly class MotHistoryFetcher
         private OdometerService $odometer,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private MotHistoryLimit $limit,
     ) {
     }
 
@@ -50,6 +51,10 @@ final readonly class MotHistoryFetcher
     {
         $provider = $this->config->provider() ?? throw new MotHistoryUnavailable('off');
         [$plate, $vin] = $this->identifiers($vehicle);
+        // Only the owner fetches (#321), so the limit is theirs.
+        if (!$this->limit->allow($vehicle->userId)) {
+            throw new MotHistoryFailure(MotHistoryErrorCode::TooMany);
+        }
         $record = $this->calls->run(
             $provider,
             static fn (MotHistoryClient $client): ?MotVehicleRecord => self::lookUp($client, $plate, $vin),

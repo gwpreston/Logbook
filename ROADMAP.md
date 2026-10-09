@@ -1097,7 +1097,8 @@ record.*
   and its *Needs attention* item; *Look up* on the add-vehicle form; a
   weekly refresh around each MOT with a keep-alive; History, the sale
   pack, Ask, MCP, API, CSV and backups. Individuals can get credentials
-  (#320). Open questions #320–#342 decided 2026-10-08/09. Released as
+  (#320). Open questions #320–#345 decided 2026-10-08/09; #346–#350,
+  from the merge review, left open. Released as
   **v3.7.0**.
 
 → [`phase-41.md`](docs/phases/phase-41.md)

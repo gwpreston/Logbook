@@ -24,6 +24,8 @@ use Logbook\Service\Issue\IssueForm;
 use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Issue\Issue;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Support\Display\DisplayFormatter;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -49,6 +51,7 @@ final readonly class MotReview
         private TranslatorInterface $translator,
         private DisplayFormatter $formatter,
         private ClockInterface $clock,
+        private UserDirectory $users,
     ) {
     }
 
@@ -63,6 +66,7 @@ final readonly class MotReview
         $all = $this->tests->listForVehicle($vehicle->id);
         $oldestFirst = array_reverse($all);
         $inspections = $this->inspections($vehicle);
+        $zone = $this->zone($vehicle);
         $tests = [];
         foreach ($oldestFirst as $index => $test) {
             if ($test->reviewedAt !== null) {
@@ -70,7 +74,7 @@ final readonly class MotReview
             }
             $review = new ReviewTest(
                 $test,
-                $test->passed() && self::match($inspections, $test) === null,
+                $test->passed() && self::match($inspections, $test, $zone) === null,
                 $issuesOn ? array_map(
                     fn (MotDefect $defect): ReviewDefect => new ReviewDefect($defect, $this->isRepeat($defect, $all)),
                     $test->defects,
@@ -95,8 +99,21 @@ final readonly class MotReview
      * not offered; that issue gets an update and the defect links to it.
      * Run after a fetch, with the `issues` module on.
      */
-    public function applyRepeats(Vehicle $vehicle, DateTimeZone $zone): int
+    public function applyRepeats(Vehicle $vehicle): int
     {
+        $zone = $this->zone($vehicle);
+        // A defect whose issue still exists but lost its link (a rolled-back migration, or
+        // *Stop and remove* and a new fetch) is linked again, never offered twice.
+        $made = $this->madeIssues($vehicle);
+        foreach ($this->tests->listForVehicle($vehicle->id) as $test) {
+            foreach ($test->defects as $defect) {
+                $issue = $defect->settled() ? null : ($made[self::madeKey($test->number, $defect->text)] ?? null);
+                if ($issue !== null) {
+                    $this->tests->linkIssue($defect->id, $issue->id);
+                    $this->settle($vehicle, $test->id);
+                }
+            }
+        }
         $all = $this->tests->listForVehicle($vehicle->id);
         $live = [];
         foreach ($this->issues->list($vehicle, [IssueStatus::Open, IssueStatus::Watching]) as $issue) {
@@ -137,8 +154,9 @@ final readonly class MotReview
         return $count;
     }
 
-    public function addDocument(Vehicle $vehicle, MotTest $test, DateTimeZone $zone): bool
+    public function addDocument(Vehicle $vehicle, MotTest $test): bool
     {
+        $zone = $this->zone($vehicle);
         if (!$test->passed() || $this->logged($vehicle, $test)) {
             return false;
         }
@@ -163,11 +181,11 @@ final readonly class MotReview
      * *Add all*: every offered pass, oldest first, so the latest drives the
      * MOT reminder (§7.5, §7.6).
      */
-    public function addAllDocuments(Vehicle $vehicle, DateTimeZone $zone): int
+    public function addAllDocuments(Vehicle $vehicle): int
     {
         $added = 0;
         foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
-            if ($test->reviewedAt === null && $this->addDocument($vehicle, $test, $zone)) {
+            if ($test->reviewedAt === null && $this->addDocument($vehicle, $test)) {
                 $added++;
             }
         }
@@ -186,11 +204,20 @@ final readonly class MotReview
         return true;
     }
 
-    public function addIssue(Vehicle $vehicle, MotTest $test, MotDefect $defect, DateTimeZone $zone): bool
+    public function addIssue(Vehicle $vehicle, MotTest $test, MotDefect $defect): bool
     {
         if ($defect->settled()) {
             return false;
         }
+        // Already made into an issue whose link was lost: link it, add nothing.
+        $made = $this->madeIssues($vehicle)[self::madeKey($test->number, $defect->text)] ?? null;
+        if ($made !== null) {
+            $this->tests->linkIssue($defect->id, $made->id);
+            $this->settle($vehicle, $test->id);
+
+            return false;
+        }
+        $zone = $this->zone($vehicle);
         $title = mb_substr($defect->text, 0, IssueForm::TITLE_MAX);
         $watching = !$defect->type->opensIssue();
         $lookAgain = $watching ? $this->lookAgain($vehicle, $zone) : null;
@@ -215,7 +242,7 @@ final readonly class MotReview
     /**
      * @return int issues added
      */
-    public function addAllIssues(Vehicle $vehicle, ?MotTest $only, DateTimeZone $zone): int
+    public function addAllIssues(Vehicle $vehicle, ?MotTest $only): int
     {
         $added = 0;
         foreach (array_reverse($this->tests->listForVehicle($vehicle->id)) as $test) {
@@ -223,7 +250,7 @@ final readonly class MotReview
                 continue;
             }
             foreach ($test->defects as $defect) {
-                $added += $this->addIssue($vehicle, $test, $defect, $zone) ? 1 : 0;
+                $added += $this->addIssue($vehicle, $test, $defect) ? 1 : 0;
             }
         }
 
@@ -264,7 +291,7 @@ final readonly class MotReview
 
     public function documentFor(Vehicle $vehicle, MotTest $test): ?int
     {
-        return self::match($this->inspections($vehicle), $test);
+        return self::match($this->inspections($vehicle), $test, $this->zone($vehicle));
     }
 
     /**
@@ -276,9 +303,10 @@ final readonly class MotReview
     public function documentsFor(Vehicle $vehicle, array $tests): array
     {
         $inspections = $this->inspections($vehicle);
+        $zone = $this->zone($vehicle);
         $found = [];
         foreach ($tests as $test) {
-            $found[$test->id] = self::match($inspections, $test);
+            $found[$test->id] = self::match($inspections, $test, $zone);
         }
 
         return $found;
@@ -297,7 +325,7 @@ final readonly class MotReview
         }
         $review = new ReviewTest(
             $newest,
-            $newest->passed() && self::match($this->inspections($vehicle), $newest) === null,
+            $newest->passed() && self::match($this->inspections($vehicle), $newest, $this->zone($vehicle)) === null,
             $issuesOn ? array_map(
                 fn (MotDefect $defect): ReviewDefect => new ReviewDefect($defect, $this->isRepeat($defect, $all)),
                 $newest->defects,
@@ -320,13 +348,14 @@ final readonly class MotReview
 
     /**
      * The `inspection` document a test became: its number as reference, or
-     * its date as start (spec.md §7.38 "Already logged"). Other types never match.
+     * its day as start, in the owner's time zone as the card dates it
+     * (spec.md §7.38 "Already logged"). Other types never match.
      *
      * @param list<ComplianceDocument> $inspections
      */
-    public static function match(array $inspections, MotTest $test): ?int
+    public static function match(array $inspections, MotTest $test, DateTimeZone $zone): ?int
     {
-        $day = $test->completedAt->format('Y-m-d');
+        $day = $test->completedAt->setTimezone($zone)->format('Y-m-d');
         $reference = $test->reference();
         foreach ($inspections as $document) {
             if ($document->vehicleId !== $test->vehicleId || $document->data->type !== ComplianceType::Inspection) {
@@ -432,6 +461,38 @@ final readonly class MotReview
         }
 
         return array_values(array_unique($ids));
+    }
+
+    /**
+     * The vehicle owner's time zone: the card's dates, *Look again* and
+     * "already logged" are all judged on the owner's calendar.
+     */
+    public function zone(Vehicle $vehicle): DateTimeZone
+    {
+        return $this->users->find($vehicle->userId)?->preferences->timeZone() ?? new DateTimeZone('UTC');
+    }
+
+    /**
+     * Issues made from MOT defects, by the test they came from and their
+     * text (the full text is the description when the title was cut).
+     *
+     * @return array<string, Issue>
+     */
+    private function madeIssues(Vehicle $vehicle): array
+    {
+        $made = [];
+        foreach ($this->issues->list($vehicle) as $issue) {
+            if ($issue->source === IssueSource::MotAdvisory && $issue->sourceRef !== null) {
+                $made[self::madeKey($issue->sourceRef, $issue->data->description ?? $issue->data->title)] ??= $issue;
+            }
+        }
+
+        return $made;
+    }
+
+    private static function madeKey(string $testNumber, string $text): string
+    {
+        return $testNumber . '|' . MotDefect::textKey($text);
     }
 
     /**

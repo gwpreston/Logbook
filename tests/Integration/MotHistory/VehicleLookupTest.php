@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\MotHistory;
 
+use DateTimeImmutable;
+use Logbook\Service\MotHistory\MotHistoryConfig;
+use Logbook\Service\MotHistory\MotHistoryLimit;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Service\MotHistory\VehicleLookup;
 use Dom\HTMLDocument;
@@ -123,6 +126,38 @@ final class VehicleLookupTest extends MotHistoryTestCase
 
         self::assertStringContainsString('isn\'t available right now', html_entity_decode($body, ENT_QUOTES));
         self::assertStringNotContainsString('client ID', $body);
+    }
+
+    public function testLookUpsAndFetchesAreLimitedPerPerson(): void
+    {
+        $this->start();
+        $browser = $this->browserFor($this->app, 'owner');
+        $form = ['registration' => 'AB12 CDE', 'lookup' => '1'];
+        for ($i = 0; $i < MotHistoryLimit::SHORT_MAX; $i++) {
+            $browser->post('/vehicles/new', $form, [], true, ['X-Lookup' => '1']);
+        }
+        $sent = count($this->vehicleRequests());
+
+        $refused = (string) $browser->post('/vehicles/new', $form, [], true, ['X-Lookup' => '1'])->getBody();
+        self::assertStringContainsString('a lot in a short time', html_entity_decode($refused, ENT_QUOTES));
+        $golf = $this->golf();
+        $this->fetch($golf, $browser);
+        self::assertSame($sent, count($this->vehicleRequests()), 'nothing more is sent, for Look up or Fetch');
+        self::assertNull(
+            $this->service($this->app, MotHistoryConfig::class)->status()->error,
+            'not DVSA\'s failure, so not on Settings',
+        );
+
+        // Someone else still can.
+        $this->createMember($this->app);
+        $partner = $this->browserFor($this->app, 'partner');
+        $partner->post('/vehicles/new', $form, [], true, ['X-Lookup' => '1']);
+        self::assertSame($sent + 1, count($this->vehicleRequests()));
+
+        // Ten minutes on, the owner can again.
+        $this->clock->set(new DateTimeImmutable(self::NOW . ' +601 seconds'));
+        $this->browserFor($this->app, 'owner')->post('/vehicles/new', $form, [], true, ['X-Lookup' => '1']);
+        self::assertSame($sent + 2, count($this->vehicleRequests()));
     }
 
     public function testSavingAfterALookUpEnablesNothing(): void

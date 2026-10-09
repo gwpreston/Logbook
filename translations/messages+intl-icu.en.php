@@ -6333,6 +6333,7 @@ return [
             ],
         ],
         'error' => [
+            'too_many' => 'You\'ve asked DVSA a lot in a short time; try again later.',
             'not_available' => 'MOT history isn\'t available right now. An admin can check it on Settings → MOT history.',
             'credentials' => 'The MOT history credentials are missing or could not be read. Enter them again on Settings → MOT history.',
             'token_url' => 'The token URL is not Microsoft\'s sign-in address. Check it on Settings → MOT history.',
@@ -6413,7 +6414,8 @@ return [
             'add_all_issues' => 'Add all as issues',
             'issues_added' => '{count, plural, =0 {No issues added.} one {# issue added.} other {# issues added.}}',
             'added_issue' => 'Added as an issue',
-            'repeat' => 'Advised again: added to {title}',
+            'repeat' => 'Advised again',
+            'repeat_added' => 'Added to the issue:',
             'not_now' => 'Not now',
             'not_now_done' => 'Not now',
             'not_seen_again' => 'not advised at the following MOT',

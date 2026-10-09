@@ -80,7 +80,7 @@ final readonly class FetchMotHistoryAction
             return $this->redirect->toRoute('mot_history.show', $back);
         }
         if ($this->features->isEnabled(Feature::Issues)) {
-            $this->review->applyRepeats($vehicle, $user->preferences->timeZone());
+            $this->review->applyRepeats($vehicle);
         }
         $session->flash('success', 'mot_history.fetch.done', ['added' => $outcome->added, 'updated' => $outcome->updated]);
         if ($outcome->knownAs !== null) {

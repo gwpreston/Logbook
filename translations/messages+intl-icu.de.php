@@ -6330,6 +6330,7 @@ return [
             ],
         ],
         'error' => [
+            'too_many' => 'Du hast die DVSA in kurzer Zeit oft gefragt; versuche es später noch einmal.',
             'not_available' => 'Die MOT-Historie ist gerade nicht verfügbar. Ein Admin kann sie unter Einstellungen → MOT-Historie prüfen.',
             'credentials' => 'Die Zugangsdaten für die MOT-Historie fehlen oder konnten nicht gelesen werden. Gib sie unter Einstellungen → MOT-Historie erneut ein.',
             'token_url' => 'Die Token-URL ist nicht die Anmeldeadresse von Microsoft. Prüfe sie unter Einstellungen → MOT-Historie.',
@@ -6410,7 +6411,8 @@ return [
             'add_all_issues' => 'Alle als Mängel hinzufügen',
             'issues_added' => '{count, plural, =0 {Keine Mängel hinzugefügt.} one {# Mangel hinzugefügt.} other {# Mängel hinzugefügt.}}',
             'added_issue' => 'Als Mangel hinzugefügt',
-            'repeat' => 'Erneut vermerkt: zu {title} hinzugefügt',
+            'repeat' => 'Erneut vermerkt',
+            'repeat_added' => 'Zum Problem hinzugefügt:',
             'not_now' => 'Nicht jetzt',
             'not_now_done' => 'Nicht jetzt',
             'not_seen_again' => 'beim folgenden MOT nicht mehr vermerkt',

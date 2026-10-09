@@ -115,7 +115,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
-| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update) (paged) |
+| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update, and from 3.7 `mot`: a DVSA MOT test's odometer) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
 | `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `issues`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
 | `GET /vehicles/{id}/maintenance` | service records (paged; `?category=`, and `?q=` for words in the title, vendor or description) |

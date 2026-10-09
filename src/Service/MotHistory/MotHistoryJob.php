@@ -160,7 +160,7 @@ final readonly class MotHistoryJob implements Job
         $counts['added'] += $outcome->added;
         if ($this->features->isEnabled(Feature::Issues)) {
             // "Advised again at the MOT on …" in the owner's language and units.
-            $this->scope->run($owner, fn (): int => $this->review->applyRepeats($vehicle, $owner->preferences->timeZone()));
+            $this->scope->run($owner, fn (): int => $this->review->applyRepeats($vehicle));
         }
         $context->logger->info('Vehicle {id}: {added} new test(s), {updated} brought up to date.', [
             'id' => $vehicle->id,

@@ -13,6 +13,7 @@ use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Kernel;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\MotHistory\MotHistoryConfig;
 use Logbook\Service\MotHistory\MotHistorySecrets;
@@ -48,11 +49,29 @@ abstract class MotHistoryTestCase extends AppTestCase
     protected MutableClock $clock;
     protected User $owner;
 
+    protected function tearDown(): void
+    {
+        self::clearLimits();
+        parent::tearDown();
+    }
+
+    /**
+     * Forget MotHistoryLimit's counts (files under var/cache/rate-limit), so
+     * one test's fetches never count against the next's.
+     */
+    protected static function clearLimits(): void
+    {
+        foreach (glob(Kernel::rootDir() . '/var/cache/rate-limit/*.json') ?: [] as $file) {
+            unlink($file);
+        }
+    }
+
     /**
      * @param bool $enable switch the DVSA provider on
      */
     protected function start(bool $enable = true): void
     {
+        self::clearLimits();
         $this->app = $this->createApp(['SESSION_SECRET' => 'a-session-secret-for-sealing-credentials-in-tests']);
         $this->resetDatabase($this->app);
         $this->clock = $this->pinClock($this->app, self::NOW);

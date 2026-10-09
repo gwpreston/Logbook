@@ -21,6 +21,7 @@ final readonly class VehicleLookup
     public function __construct(
         private MotHistoryConfig $config,
         private MotHistoryCalls $calls,
+        private MotHistoryLimit $limit,
     ) {
     }
 
@@ -31,10 +32,11 @@ final readonly class VehicleLookup
 
     /**
      * @param array<string, string> $values the form as posted
+     * @param int $userId who asks, for their limit (MotHistoryLimit)
      * @return array{fields: array<string, string>, message: string, params: array<string, string>}
      *   what to fill, and a message key with its parameters
      */
-    public function lookUp(array $values): array
+    public function lookUp(array $values, int $userId): array
     {
         $provider = $this->config->provider();
         $raw = $values['registration'] ?? '';
@@ -44,6 +46,9 @@ final readonly class VehicleLookup
         }
         if ($plate === null) {
             return ['fields' => [], 'message' => 'mot_history.lookup.no_registration', 'params' => []];
+        }
+        if (!$this->limit->allow($userId)) {
+            return ['fields' => [], 'message' => MotHistoryErrorCode::TooMany->messageKey(), 'params' => []];
         }
         try {
             $record = $this->calls->run(

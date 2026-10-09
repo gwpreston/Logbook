@@ -119,7 +119,7 @@ final readonly class CreateVehicleAction
     {
         $values = RequestContext::formValues($request);
         unset($values['lookup']);
-        $result = $this->lookup->lookUp($values);
+        $result = $this->lookup->lookUp($values, RequestContext::requireUser($request)->id);
         if ($request->getHeaderLine('X-Lookup') === '1') {
             $response->getBody()->write((string) json_encode([
                 'fields' => $result['fields'],

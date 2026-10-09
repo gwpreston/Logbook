@@ -65,9 +65,13 @@
                                     <span class="list__meta">{{ mot.defect_type(defect) }}
                                         {% if row.offered() %} · {{ (defect.type.opensIssue() ? 'mot_history.review.as_open' : 'mot_history.review.as_watching')|trans }}{% endif %}
                                     </span>
+                                    {% if row.repeat and issue_titles[defect.issueId] is defined %}
+                                        {# The issue's title wraps here, never inside the pill (375 px). #}
+                                        <span class="list__meta">{{ 'mot_history.review.repeat_added'|trans }} <a href="{{ url_for('issues.show', {id: vehicle.id, issue: defect.issueId}) }}">{{ issue_titles[defect.issueId] }}</a></span>
+                                    {% endif %}
                                 </div>
                                 {% if row.repeat %}
-                                    <span class="pill pill--accent">{{ ui.icon('history') }}{{ 'mot_history.review.repeat'|trans({title: issue_titles[defect.issueId] ?? ''}) }}</span>
+                                    <span class="pill pill--accent">{{ ui.icon('history') }}{{ 'mot_history.review.repeat'|trans }}</span>
                                 {% elseif defect.issueId %}
                                     <span class="pill pill--valid">{{ ui.icon('check') }}{{ 'mot_history.review.added_issue'|trans }}</span>
                                 {% elseif defect.dismissedAt %}

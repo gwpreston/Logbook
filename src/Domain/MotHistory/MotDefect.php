@@ -36,6 +36,14 @@ final readonly class MotDefect
      */
     public function key(): string
     {
-        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $this->text)));
+        return self::textKey($this->text);
+    }
+
+    /**
+     * The same comparison for any text: an issue's, to find the defect it was made from.
+     */
+    public static function textKey(string $text): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $text)));
     }
 }

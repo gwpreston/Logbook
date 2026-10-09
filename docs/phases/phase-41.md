@@ -251,7 +251,7 @@ export in `MotBackupTest`; the sample data in `DemoMotHistoryTest`.
 
 ## Open questions
 
-Logged as #320–#342 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#350 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -338,6 +338,13 @@ Found while starting, decided by the owner on 2026-10-08:
     API, Ask and the sale pack carry it (#341);
   - the keep-alive treats "never succeeded" as too old, so it calls
     (#342).
+- Found by the merge review (2026-10-09) and fixed before the PR, at the
+  owner's go-ahead: a per-person limit on *Look up* and *Fetch* (#343);
+  "already logged" judged on the owner's day (#344); defects linked again
+  to the issues made from them after a new fetch (#345). Left open for
+  the owner: distance before the purchase date (#346), who may use *Look
+  up* (#347), the settings on rollback (#348), recorded answers in git
+  (#349) and page query budgets (#350).
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.
