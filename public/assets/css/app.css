@@ -1139,6 +1139,14 @@ a.list__item:hover {
     width: 100%;
 }
 
+/* A button whose label can be long (a provider's name): it wraps inside its card rather than past the edge. */
+.btn--wrap {
+    max-width: 100%;
+    padding-block: var(--space-2);
+    white-space: normal;
+    text-align: left;
+}
+
 .btn--lg {
     min-height: var(--input-h);
 }
@@ -2764,6 +2772,19 @@ a.segmented__option {
     display: block;
     color: var(--muted);
     font-size: var(--fs-sm);
+}
+
+/* A hint that opens with an icon: the icon and the first line share a row, and the text wraps beside it. */
+.toggle__hint--icon {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+}
+
+.toggle__hint--icon .icon {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.125rem;
 }
 
 .disclosure__summary {
