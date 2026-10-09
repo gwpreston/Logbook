@@ -3,7 +3,7 @@
 *Sums done by Logbook; the model keeps only what no single service can
 see.*
 
-Status: ✅ complete (2026-10-09), v3.8.0 to be tagged once merged · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.8.0** (2026-10-09) · file lives in `docs/phases/`
 
 Phase 33.4 (#174) handed three of the prototype's insights to the model,
 because the app had no figure for them: *save about £x a year on fuel*,
@@ -230,7 +230,7 @@ price provider enabled; liquid fuel only). Per vehicle:
       economy up insights; *Changed* — AI insights no longer work out
       figures or repeat computed insights). No migration.
 - [x] README, `docs/ai.md`, `docs/mcp.md`; `ROADMAP.md` row ✅.
-- [ ] Tag `v3.8.0` once merged.
+- [x] Tag `v3.8.0` once merged.
 
 ---
 
