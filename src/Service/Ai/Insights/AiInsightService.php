@@ -9,6 +9,7 @@ use Logbook\Domain\Ai\Ask\ToolRun;
 use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Domain\Ai\Insights\AiInsight;
 use Logbook\Domain\Ai\Insights\AiInsightSet;
+use Logbook\Domain\Ai\Insights\AiInsightTopic;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\AiInsightRepository;
@@ -23,6 +24,12 @@ use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Ai\Provider\ChatMessage;
 use Logbook\Service\Ai\Provider\ChatRequest;
 use Logbook\Service\Ai\Provider\ToolDefinition;
+use Logbook\Service\Insights\EconomyUp;
+use Logbook\Service\Insights\FuelSaving;
+use Logbook\Service\Insights\FuelSavingFigure;
+use Logbook\Service\Insights\Insight;
+use Logbook\Service\Insights\InsightsService;
+use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\UserDisplayScope;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -33,6 +40,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * once a day and cached for it. Only while Ask is available to the user;
  * every number goes through Ask's grounding check. Reading the cache never
  * calls a model; only generate() does, under the user's AI lock.
+ *
+ * Phase 42: the model is told the computed insights (§7.8) and tags each
+ * of its own with a topic and vehicles (#358). Reading drops an insight
+ * with a figure no tool returned (#354), and a `fuel_cost` or `economy`
+ * one for a vehicle showing *Fuel saving* or *Economy up*: the instruction
+ * saves a slot, the filter is the guarantee.
  */
 final readonly class AiInsightService
 {
@@ -40,7 +53,8 @@ final readonly class AiInsightService
     private const int MAX_TITLE = 120;
     private const int MAX_BODY = 400;
     /** The answer's shape, after the translated rules (braces would be placeholders in a message). */
-    private const string SHAPE = '{"insights": [{"title": "…", "body": "…", "sources": ["tool_name"]}]}';
+    private const string SHAPE = '{"insights": [{"title": "…", "body": "…", "sources": ["tool_name"], '
+        . '"topic": "fuel_cost|economy|other", "vehicles": [1]}]}';
 
     public function __construct(
         private AskAvailability $availability,
@@ -52,6 +66,10 @@ final readonly class AiInsightService
         private UserDisplayScope $display,
         private TranslatorInterface $translator,
         private ClockInterface $clock,
+        private VehicleService $vehicles,
+        private InsightsService $computed,
+        private FuelSaving $fuelSaving,
+        private EconomyUp $economyUp,
     ) {
     }
 
@@ -82,7 +100,7 @@ final readonly class AiInsightService
             return null;
         }
 
-        return $set->visibleTo(array_map(static fn (Vehicle $v): int => $v->id, $this->kit->fleet($user)));
+        return $this->shown($user, $set);
     }
 
     /**
@@ -118,14 +136,46 @@ final readonly class AiInsightService
         ));
         $this->repository->save($user->id, $set);
 
-        return $set->visibleTo(array_map(static fn (Vehicle $v): int => $v->id, $this->kit->fleet($user)));
+        return $this->shown($user, $set);
+    }
+
+    /**
+     * What may be shown of a set: insights about vehicles the user can
+     * still see, every figure matched (#354), and no repeat of a computed
+     * insight (#358). The computed ones are worked out only when an
+     * insight's topic could repeat one.
+     */
+    private function shown(User $user, AiInsightSet $set): AiInsightSet
+    {
+        $set = $set->visibleTo(array_map(static fn (Vehicle $v): int => $v->id, $this->kit->fleet($user)))
+            ->kept(static fn (AiInsight $insight): bool => $insight->isGrounded());
+        $topics = array_map(static fn (AiInsight $i): AiInsightTopic => $i->topic, $set->insights);
+        if (!in_array(AiInsightTopic::FuelCost, $topics, true) && !in_array(AiInsightTopic::Economy, $topics, true)) {
+            return $set;
+        }
+        $fleet = $this->vehicles->listFleet($user);
+        $showing = [
+            AiInsightTopic::FuelCost->value => in_array(AiInsightTopic::FuelCost, $topics, true)
+                ? array_map(
+                    static fn (FuelSavingFigure $f): int => $f->vehicle->id,
+                    $this->fuelSaving->forVehicles($user, $fleet),
+                )
+                : [],
+            AiInsightTopic::Economy->value => in_array(AiInsightTopic::Economy, $topics, true)
+                ? array_map(static fn (Insight $i): ?int => $i->vehicleId, $this->economyUp->forVehicles($user, $fleet))
+                : [],
+        ];
+
+        return $set->kept(static fn (AiInsight $insight): bool
+            => array_intersect($insight->vehicles, $showing[$insight->topic->value] ?? []) === []);
     }
 
     private function find(User $user, AiSession $session): AiInsightSet
     {
         $context = $this->context($user);
         $system = $this->translator->trans('ai_insights.system.text', ['max' => self::MAX_INSIGHTS]) . "\n" . self::SHAPE . "\n\n"
-            . $this->translator->trans('ask.system.context') . "\n" . $context;
+            . $this->translator->trans('ask.system.context') . "\n" . $context . "\n\n"
+            . $this->translator->trans('ai_insights.system.computed') . "\n" . $this->computedList($user);
         $definitions = $this->tools->readDefinitions($user);
         $offered = array_map(static fn (ToolDefinition $d): string => $d->name, $definitions);
         $messages = [ChatMessage::user($this->translator->trans('ai_insights.system.request', ['max' => self::MAX_INSIGHTS]))];
@@ -206,6 +256,7 @@ final readonly class AiInsightService
             return null;
         }
 
+        $fleet = array_map(static fn (Vehicle $v): int => $v->id, $this->kit->fleet($user));
         $insights = [];
         foreach ($decoded['insights'] as $item) {
             if (count($insights) >= self::MAX_INSIGHTS) {
@@ -229,15 +280,41 @@ final readonly class AiInsightService
             }
             $title = mb_substr($title, 0, self::MAX_TITLE);
             $body = mb_substr($body, 0, self::MAX_BODY);
+            // Only the user's own vehicles, whatever ids the model sent.
+            $named = is_array($item['vehicles'] ?? null) ? $item['vehicles'] : [];
+            $vehicles = array_values(array_intersect(
+                array_map(intval(...), array_filter($named, is_numeric(...))),
+                $fleet,
+            ));
             $insights[] = new AiInsight(
                 $title,
                 $body,
                 $cited,
                 $this->grounding->ungrounded($title . "\n" . $body, $sources, $user->preferences->locale),
+                AiInsightTopic::read($item['topic'] ?? null),
+                $vehicles,
             );
         }
 
         return $insights;
+    }
+
+    /**
+     * The computed insights the user would see (§7.8, all of them), as the
+     * model is told them so it doesn't repeat one: kind, vehicle and title.
+     */
+    private function computedList(User $user): string
+    {
+        $rows = array_map(fn (Insight $insight): array => [
+            'kind' => $insight->kind->value,
+            'vehicle' => $insight->vehicleId,
+            'title' => $this->translator->trans($insight->title, $insight->titleParams),
+        ], $this->computed->forVehicles($user, $this->vehicles->listFleet($user), true, $this->kit->today($user)));
+
+        return json_encode(
+            $rows,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
+        );
     }
 
     /**

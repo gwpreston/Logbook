@@ -4863,6 +4863,7 @@ return [
             'issues' => 'Mängel',
             'finance' => 'Finanzierung',
             'needs_attention' => 'Braucht Aufmerksamkeit',
+            'computed_insights' => 'Einblicke',
             'stations' => 'Tankstellen',
             'cheapest_fuel' => 'Günstigster Kraftstoff',
             'draft' => 'Entwurf',
@@ -5024,6 +5025,7 @@ return [
             'true_cost' => 'Berechne die echten Kosten…',
             'trips_summary' => 'Suche die Fahrten heraus…',
             'needs_attention' => 'Prüfe, was Aufmerksamkeit braucht…',
+            'computed_insights' => 'Schaue nach, was Logbook berechnet hat…',
             'incidents' => 'Schäden und Versicherungsfälle werden durchgesehen…',
             'issues' => 'Mängel werden durchgesehen…',
             'finance' => 'Der Finanzierungsvertrag wird gelesen…',
@@ -5068,6 +5070,7 @@ return [
             'tyres' => 'Die Reifen eines Fahrzeugs: montierte (nach Position) und eingelagerte Sätze, mit Marke, Größe, Saison, Laufleistung, Alter, letzter Profiltiefe, geschätzter Reststrecke und Datum bis zur Verschleißgrenze und ob sie zu ersetzen sind.',
             'trips_summary' => 'Die Dienstfahrten des Nutzers in einem Zeitraum: Anzahl, dienstliche und private Strecke und der Erstattungsbetrag zu den amtlichen Sätzen. Standard ist das laufende Steuerjahr.',
             'needs_attention' => 'Was jetzt Aufmerksamkeit braucht: überfällige Wartung, Dokumente und Erinnerungen und Einträge, die falsch aussehen (seltsame Kilometerstände, Verbrauchsabweichung, ungewöhnliche Preise oder Kosten, veraltete Kilometerstände oder Werte).',
+            'computed_insights' => 'Die Einblicke, die Logbook selbst berechnet, wie die Seite Einblicke sie zeigt: Preisvergleich, wie viel sich im Jahr an der günstigsten Tankstelle in der Nähe sparen ließe, Dienstfahrten, das im Unterhalt günstigste Fahrzeug, Eigenkapital bei Finanzierungen und ein besserer Verbrauch; jeweils mit den schon berechneten Zahlen. Nutze es für »wie viel könnte ich beim Tanken sparen«.',
             'incidents' => 'Schäden und Versicherungsfälle an den Fahrzeugen des Nutzers, auch verkaufte und archivierte: Datum, Fahrzeug, Art, Schuld, Fahrer, Stand, Versicherer, Schadennummer, Zahlung, Kostenvoranschlag (nie als Ausgabe gezählt) und Auswirkung auf den Schadenfreiheitsrabatt. Standardmäßig die letzten 5 Jahre, nach denen Versicherer meist fragen.',
             'issues' => 'Mängel, die der Person aufgefallen sind, in ihren eigenen Worten: Titel, Beschreibung, Status (offen, beobachtet, behoben), ob sie »Sicherheitsrelevant« angehakt hat, wann und bei welchem Kilometerstand er bemerkt wurde, der Zeitpunkt zum erneuten Ansehen und was ihn behoben hat. Offene und beobachtete, wenn kein Status angegeben ist. Das sind Notizen, nie eine Diagnose: Vermute nie eine Ursache.',
             'finance' => 'Der Finanzierungs- oder Leasingvertrag eines Fahrzeugs (Ratenkauf, PCP, Privatkredit oder Leasing): offene Raten, Restbetrag (exakt), nächste Rate, Enddatum, Ablösebetrag (Angebot des Kreditgebers oder Schätzung), Kreditkosten, Halbzeit der Zahlungen, Eigenkapital und die Kilometer gegenüber dem Kontingent mit möglichen Mehrkilometerkosten. Zahlen, nie Beratung: sag, welche geschätzt sind.',
@@ -5905,8 +5908,9 @@ return [
         'by' => 'Von {model} auf {connection}, {when}',
         'summary' => '{made, plural, =0 {Keine KI-Einblicke erstellt} one {KI-Einblicke für # Person erstellt} other {KI-Einblicke für # Personen erstellt}}{left, plural, =0 {} other {; # für den nächsten Lauf}}',
         'system' => [
-            'text' => "Du bist Ask Logbook, der Assistent in Logbook, einer App, in der eine Person die Aufzeichnungen ihrer Fahrzeuge führt. Sieh die Aufzeichnungen der Person mit den Werkzeugen durch und finde bis zu {max} kurze, wissenswerte Beobachtungen: einen Trend, eine Veränderung, eine Ersparnis, einen Vergleich. Es sind keine Aufgaben und nichts, was schon fällig ist: Lass Erinnerungen, Verlängerungen, fällige Wartungen und alles weg, was Logbook unter Handlungsbedarf oder Demnächst zeigt.\n\nRegeln:\n- Nutze nur Werkzeugergebnisse. Ruf die nötigen Werkzeuge auf; rate nie.\n- Übernimm jede Zahl genau so, wie ein Werkzeug sie als Anzeigetext geliefert hat. Rechne nie Einheiten oder Währungen um und runde nie. Du darfst zwei Zahlen in Worten vergleichen (höher, niedriger, etwa gleich), aber keine neuen Zahlen ausrechnen.\n- Schreib nie darüber, was einen Mangel (einen von der Person notierten Fehler) verursachen könnte: nur Anzahl und Alter, zum Beispiel »2 Mängel am Golf seit über 3 Monaten offen«.\n- Schreib in der Sprache der Person, schlicht, ohne Begrüßung.\n- Antworte nur mit JSON, ohne anderen Text, in der Form unten; wenn nichts erwähnenswert ist, mit einer leeren Liste.",
+            'text' => "Du bist Ask Logbook, der Assistent in Logbook, einer App, in der eine Person die Aufzeichnungen ihrer Fahrzeuge führt. Sieh die Aufzeichnungen der Person mit den Werkzeugen durch und finde bis zu {max} kurze, wissenswerte Beobachtungen: Muster über Wartungen, Fahrzeuge oder Aufzeichnungen hinweg, die keine einzelne Zahl abdeckt, die Logbook schon zeigt. Es sind keine Aufgaben und nichts, was schon fällig ist: Lass Erinnerungen, Verlängerungen, fällige Wartungen und alles weg, was Logbook unter Handlungsbedarf oder Demnächst zeigt, und wiederhole nie einen Einblick, den Logbook schon zeigt (unten aufgeführt).\n\nRegeln:\n- Nutze nur Werkzeugergebnisse. Ruf die nötigen Werkzeuge auf; rate nie.\n- Nutze nur Zahlen, die ein Werkzeug geliefert hat, und übernimm jeden Anzeigetext genau so. Addiere, subtrahiere, mittle, rechne um, runde oder schätze nie eine Zahl hoch und rechne nie eine neue Zahl aus: Logbook rechnet. Du darfst zwei Zahlen in Worten vergleichen (höher, niedriger, etwa gleich).\n- Gib jeder Beobachtung ein Thema: fuel_cost (was Kraftstoff kostet oder kosten könnte), economy (Verbrauch) oder other; und die IDs der Fahrzeuge, um die es geht, aus dem Kontext.\n- Schreib nie darüber, was einen Mangel (einen von der Person notierten Fehler) verursachen könnte: nur Anzahl und Alter, zum Beispiel »2 Mängel am Golf seit über 3 Monaten offen«.\n- Schreib in der Sprache der Person, schlicht, ohne Begrüßung.\n- Antworte nur mit JSON, ohne anderen Text, in der Form unten; wenn nichts erwähnenswert ist, mit einer leeren Liste.",
             'request' => 'Finde bis zu {max} Beobachtungen zu meinen Fahrzeugen.',
+            'computed' => 'Einblicke, die Logbook schon zeigt (nicht wiederholen):',
         ],
     ],
     'insights' => [
@@ -5923,6 +5927,8 @@ return [
             'business_mileage' => 'Abrechnung ansehen',
             'cheapest_to_run' => 'Berichte ansehen',
             'equity' => 'Finanzierung ansehen',
+            'fuel_saving' => 'Günstigste in der Nähe ansehen',
+            'economy_up' => 'Kraftstoff ansehen',
         ],
         'shopping_around' => [
             'title' => 'Etwa {amount} besser dank Preisvergleich',
@@ -5942,6 +5948,15 @@ return [
             'title_negative' => '{vehicle}: etwa {amount} negatives Eigenkapital',
             'body' => 'Bewertet mit {value}, gegenüber einem geschätzten Ablösebetrag von {settlement}.',
             'body_quote' => 'Bewertet mit {value}, gegenüber dem Ablöseangebot des Kreditgebers von {settlement}.',
+        ],
+        'fuel_saving' => [
+            'title' => 'Etwa {amount} im Jahr beim Tanken sparen',
+            'body' => '{vehicle}: bei {cheapest} statt {has_usual, select, yes {an deiner üblichen Tankstelle {usual}} other {dort, wo du sonst tankst}}: {cheapest_price}{detour, select, yes { mit der Fahrt dorthin} other {}}, gegenüber {basis, select, average {den {usual_price}, die du in den letzten 30 Tagen im Schnitt gezahlt hast} other {{usual_price}}}, bei {scaled, select, yes {etwa {litres} im Jahr aus deinen letzten {months, plural, one {# Monat} other {# Monaten}}} other {deinen {litres} im Jahr}}. Heutige Preise.{assumed, select, yes { Deine übliche Tankmenge ist angenommen (40 L).} other {}}{detour, select, no { Die Fahrt dorthin ist ohne Verbrauchswert nicht eingerechnet.} other {}}',
+        ],
+        'economy_up' => [
+            'title' => 'Verbrauch etwa {percent} % besser',
+            'body' => '{vehicle}: {recent} über {electric, select, yes {{tanks, plural, one {den letzten Ladevorgang} other {die letzten # Ladevorgänge}}} other {{tanks, plural, one {die letzte Tankfüllung} other {die letzten # Tankfüllungen}}}}, gegenüber deinem 12-Monats-Schnitt von {baseline}.{extra}',
+            'long_tanks' => 'Längere Tankfüllungen als üblich bedeuten oft mehr Autobahn.',
         ],
     ],
     'fuel_prices' => [

@@ -151,7 +151,7 @@ final class McpResourcesTest extends AppTestCase
         $this->vehicle($app);
         $tools = McpClient::result((new McpClient($app, $this->apiKey($app, $owner)))->modern('tools/list'))->doc('tools');
 
-        self::assertCount(27, $tools);
+        self::assertCount(28, $tools);
         foreach ($tools->keys() as $index) {
             $name = $tools->string($index, 'name');
             self::assertNotSame('mcp.tool.' . $name, $tools->get($index, 'description'), $name);

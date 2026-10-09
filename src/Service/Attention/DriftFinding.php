@@ -9,7 +9,8 @@ use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelGrade;
 
 /**
- * A sustained economy change on one series (EconomyDrift), with the facts
+ * A sustained economy change on one series (EconomyDrift), worse or (for
+ * *Economy up*) better, with the facts
  * behind its likely causes. Quantities are canonical decimals (km, litres
  * or kWh); a figure is volume × 100 ÷ distance, worded in the viewer's unit.
  */
@@ -41,6 +42,10 @@ final readonly class DriftFinding
         public bool $serviceOverdue = false,
         /** The recent segments' mean distance is under half the baseline median. */
         public bool $shortTanks = false,
+        /** Better, not worse: the *Economy up* insight (Phase 42, spec.md §7.8). */
+        public bool $improved = false,
+        /** Improved only: the recent mean distance is over twice the baseline median. */
+        public bool $longTanks = false,
     ) {
     }
 

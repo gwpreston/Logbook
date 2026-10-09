@@ -12,7 +12,7 @@
     <ul class="insights">
         {% for insight in insights %}
             <li>
-                <a class="insight" href="{{ url_for(insight.route, insight.routeParams) }}" data-insight="{{ insight.kind.value }}">
+                <a class="insight" href="{{ url_for(insight.route, insight.routeParams, insight.query) }}" data-insight="{{ insight.kind.value }}">
                     <span class="insight__tile insight__tile--{{ insight.tone.value }}">{{ ui.icon(insight.icon()) }}</span>
                     <span class="insight__text">
                         <span class="insight__title">{{ insight.title|trans(insight.titleParams) }}</span>

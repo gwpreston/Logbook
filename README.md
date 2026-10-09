@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.7.2.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.8.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -54,7 +54,9 @@ your own server.
 > Grafana and Node-RED can read your garage and log fill-ups and other entries; optional AI with
 > the model you choose, on this server, your network or a cloud provider
 > (off until an admin connects one): an *Insights* page of patterns worked out
-> from your figures and, with AI on, a few the model finds each day, with
+> from your figures (among them what filling at the cheapest station nearby
+> would save a year, and economy that has improved) and, with AI on, a few
+> the model finds each day without working out any figure itself, with
 > *Ask Logbook* at the top, which answers questions in plain
 > words from your own records, through read-only tools, with a source and a
 > link for every figure and a check that flags any number Logbook didn't

@@ -30,7 +30,8 @@ key's user sees. `spec.md` §7.28 has the rules.
 `cost_per_distance`, `maintenance`, `vehicle_summary`, `fuel_stats`,
 `last_done`, `mileage`, `ownership`, `coming_up`, `documents`, `tyres`,
 `trips_summary`, `incidents`, `issues`, `finance`, `stations`,
-`cheapest_fuel`, `needs_attention` and, while MOT history is on,
+`cheapest_fuel`, `needs_attention`, `computed_insights` (the insights
+Logbook works out, with their figures) and, while MOT history is on,
 `mot_history` ([MOT history](mot-history.md)). Each
 returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.

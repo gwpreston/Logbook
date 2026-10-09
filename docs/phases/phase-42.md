@@ -3,7 +3,7 @@
 *Sums done by Logbook; the model keeps only what no single service can
 see.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ complete (2026-10-09), v3.8.0 to be tagged once merged · file lives in `docs/phases/`
 
 Phase 33.4 (#174) handed three of the prototype's insights to the model,
 because the app had no figure for them: *save about £x a year on fuel*,
@@ -29,8 +29,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.3
 *effective cost*, *usual station*), and [Phase 38](phase-38.md) (insight
 topics) first.
 
-**Prerequisites:** [Phase 38](phase-38.md) complete and green (the AI
-insight topics are used below). Independent of Phases 39–41.
+**Prerequisites:** [Phase 38](phase-38.md) complete and green.
+Independent of Phases 39–41. (Phase 38 added no insight topics or
+dismissals; this phase adds the topics, #358.)
 
 ---
 
@@ -55,6 +56,9 @@ insight topics are used below). Independent of Phases 39–41.
 
 ## Spec changes
 
+Written into `spec.md` on 2026-10-09 (42.0), with the decisions below
+(#352–#358, #280); where this section and the spec differ, the spec wins.
+
 ### §7.8 *Insights*: two new computed insights
 
 Appended to the list in this order (open question E), each only when its
@@ -68,9 +72,13 @@ price provider enabled; liquid fuel only). Per vehicle:
   - **yearly volume**: the vehicle's litres of that grade over the last 12
     months (from fill-ups; needs at least 6 fill-ups and 90 days between
     the first and last, so a new car isn't extrapolated from a week);
+    scaled to a year when the vehicle's fill-ups start less than 12
+    months ago (#357);
   - the **usual station**: as §7.34 *After a fill-up* defines it, the most
     visited linked station in the last 12 months; and its **listed price**
-    for the grade, fresh (no older than 48 hours, §7.34);
+    for the grade, fresh (no older than 48 hours, §7.34); without one,
+    the vehicle's average price paid for the grade over the last 30 days
+    (#352); with neither, no insight;
   - the **cheapest nearby**: §7.34's *Cheapest near me* for this vehicle
     and grade around the user's first place (normally *Home*), at the
     default radius, ordered by effective cost; its **effective price per
@@ -80,8 +88,7 @@ price provider enabled; liquid fuel only). Per vehicle:
   price − cheapest effective price per unit), decimal arithmetic, rounded
   for display only.
 - **Shown when** the cheapest is not the usual station and the yearly
-  saving is at least the threshold (open question B, proposed £20 or the
-  same in the currency's major unit), and the usual station and the
+  saving is at least 20 in the currency's major unit (fixed, #353), and the usual station and the
   cheapest are in the vehicle's currency (never converted).
 - **Wording:** "Could save about £46 a year on fuel" — "Filling the Golf
   at Asda Antrim instead of your usual Tesco Antrim: £1.329/L counting the
@@ -90,11 +97,11 @@ price provider enabled; liquid fuel only). Per vehicle:
   assumed (§7.34's 40 L) or the detour can't be costed, the body says so,
   as *Cheapest near me* does.
 - **Why the usual station's listed price, not the average paid** (open
-  question A): both sides are today's prices, so a year of price movement
+  question A, #352): both sides are today's prices, so a year of price movement
   doesn't count as a saving.
 
 **6. Economy up** (`economy_up`; `fuel` on). Per vehicle and per series
-(liquid, electric), exactly §7.24 item 7's test **with the sign flipped**:
+(as item 7: liquid, electric and gas), exactly §7.24 item 7's test **with the sign flipped**:
 
 - the same *recent* (last 5 checkable segments ending within 120 days, at
   least 3) and *baseline* (the 12 months before, at least 8) windows,
@@ -127,11 +134,21 @@ price provider enabled; liquid fuel only). Per vehicle:
   works the figures out itself" is removed.
 - **No repeats:** the computed insights for the user's vehicles are given
   to the model (their titles and vehicles) with an instruction not to
-  repeat them, and are **enforced on reading** as Phase 38's dismissals
-  are: an AI insight with topic `fuel_cost` for a vehicle showing *Fuel
+  repeat them, and are **enforced on reading**: the model tags each AI
+  insight with a topic (`fuel_cost`, `economy`, `other`) and its vehicles
+  (#358), and an AI insight with topic `fuel_cost` for a vehicle showing *Fuel
   saving*, or `economy` for a vehicle showing *Economy up*, is dropped.
 - **What it's for**, in the instructions: patterns across services or
   vehicles that no single computed insight covers.
+- **Unmatched figures** (#354): an AI insight with a figure no tool
+  returned is dropped on reading; Ask's answers keep the highlight.
+
+### §8 *Page budgets*
+
+- The Insights page joins the dashboard and the overview: at most 60
+  queries, the same for 1 vehicle as for 10 (#280). *Fuel saving* reads
+  the stations and prices around the place once for every vehicle, not a
+  search per vehicle, so the dashboard stays within its 60 too.
 
 ### §7.26 *Tools*
 
@@ -160,43 +177,60 @@ price provider enabled; liquid fuel only). Per vehicle:
 ## Tasks
 
 ### 42.0 Spec first
-- [ ] §7.8, §7.26 (*AI insights*, *Tools*), §13; #174 marked as partly
-      replaced by Phase 42; open questions A–E decided; `ROADMAP.md` row.
+- [x] §7.8, §7.26 (*AI insights*, *Tools*), §8, §13; #174 marked as
+      partly replaced by Phase 42; open questions A–E decided (#352–#356)
+      with #357–#358 found while starting, and #280; `ROADMAP.md` row;
+      [Phase 44](phase-44.md) written for the 3-month outlook (#355).
 
 ### 42.1 Computed insights
-- [ ] `Service\Insight\FuelSaving` on the existing *Cheapest near me*,
-      usual-station and volume services.
-- [ ] The drift judgement returns both outcomes; `economy_up` reads the
+- [x] `Service\Insights\FuelSaving` on the existing *Cheapest near me*,
+      usual-station and volume services; the 30-day average fallback
+      (#352); the yearly volume scaled under 12 months (#357); the
+      nearby stations and prices read once per page for every vehicle.
+- [x] The drift judgement returns both outcomes; `economy_up` reads the
       improvement; the *Needs attention* item is unchanged.
-- [ ] Widget and Insights page cards, icons, tones, links; translations
+- [x] Widget and Insights page cards, icons, tones, links; translations
       (every shipped locale, ICU plurals and currency).
 
 ### 42.2 AI insights
-- [ ] Instructions: no arithmetic, the computed-insight list, the new
-      purpose; the old three removed.
-- [ ] Reading filter for computed-insight repeats.
-- [ ] `computed_insights` tool for Ask and MCP.
-- [ ] `bin/ai-eval.php`: fixtures checking AI insights carry no figure
-      absent from their tool results.
+- [x] Instructions: no arithmetic, the computed-insight list, the new
+      purpose, `topic` and `vehicles` in the asked shape (#358); the old
+      three removed.
+- [x] Reading filters: computed-insight repeats (#358) and unmatched
+      figures (#354), on the page and in the widget.
+- [x] `computed_insights` tool for Ask and MCP.
+- [x] `bin/ai-eval.php --insights`: a live-model run listing any AI
+      insight figure absent from its tool results (the CI check is
+      `AiInsightsTest`, with a scripted model).
 
 ### 42.3 Tests
-- [ ] **Fuel saving:** the worked example above to the penny; not shown
+- [x] **Fuel saving:** the worked example above to the penny; not shown
       when the cheapest is the usual station, below the threshold, with a
       stale usual price, under 6 fill-ups or 90 days, without a place,
       without `ViewCosts`, for an EV, with currencies differing, with
       the provider off; assumed fill and uncostable detour wording.
-- [ ] **Economy up:** mirrors every drift test with the sign flipped; a
-      vehicle never shows both; the seasonal sentence; causes.
-- [ ] **AI:** a returned `fuel_cost` or `economy` insight for a vehicle
-      with the computed one is dropped; the instructions contain the
-      no-arithmetic text; `computed_insights` matches the widget.
-- [ ] Suite green on every engine; coverage at or above the floor.
+- [x] **Economy up:** mirrors every drift test with the sign flipped; a
+      series never shows both (a plug-in hybrid's petrol can drift while
+      its electricity improves); the seasonal sentence; causes; the
+      owner's threshold decides for every viewer.
+- [x] **Fuel saving extras:** the 30-day-average fallback and its
+      wording; scaling under 12 months.
+- [x] **AI:** a returned `fuel_cost` or `economy` insight for a vehicle
+      with the computed one is dropped; one with an unmatched figure is
+      dropped; an untagged (older) one is kept as `other`; the
+      instructions contain the no-arithmetic text; `computed_insights`
+      matches the widget.
+- [x] **Budgets:** the Insights page within 60 queries, the same for 1
+      and 10 vehicles; the dashboard within 60 on a default install and
+      80 with every module and prices on (#359), the same for 1 and 10.
+- [x] Suite green on every engine; coverage at or above the floor.
 
 ### 42.4 Release
-- [ ] `VERSION` → next minor; `CHANGELOG.md` (*Added* — fuel saving and
+- [x] `VERSION` → next minor; `CHANGELOG.md` (*Added* — fuel saving and
       economy up insights; *Changed* — AI insights no longer work out
       figures or repeat computed insights). No migration.
-- [ ] README, `docs/ai.md`; `ROADMAP.md` row ✅. Tag once merged.
+- [x] README, `docs/ai.md`, `docs/mcp.md`; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.8.0` once merged.
 
 ---
 
@@ -211,29 +245,34 @@ price provider enabled; liquid fuel only). Per vehicle:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+All decided by the owner on 2026-10-09, before the phase was built;
+logged in [`open-questions.md`](open-questions.md).
 
-- **A. Which "price you usually pay"?** Options: (1) the usual station's
-  current listed price, as drafted; (2) the vehicle's average price paid
-  over 12 months; (3) the average paid over the last 30 days.
-  *Recommendation:* (1), for the reason under *Decisions*; (3) as the
-  fallback when the usual station has no fresh listed price.
-- **B. The threshold.** Proposed: at least 20 major currency units a
-  year. Options: a fixed amount, a user setting beside the *Needs
-  attention* thresholds, or none. *Recommendation:* fixed, recorded in
-  §7.8, so a 60p-a-year saving never takes a widget slot.
-- **C. Unmatched figures in AI insights.** With the no-arithmetic rule,
-  an unmatched figure is a rule broken. Options: (1) highlight it, as
-  today; (2) drop that insight. *Recommendation:* (2): an insight is
-  unasked-for, so it should meet a higher bar than an answer the user
-  asked for.
-- **D. The 3-month outlook.** §7.8 says insights never repeat *Coming
-  up* ("amounts due"), and the outlook is a sum of *Coming up*'s
-  last-time costs. Options: (1) not an insight; a *Next 3 months* total
-  on the *Coming up* page and widget instead; (2) a computed insight
-  despite the rule. *Recommendation:* (1); it removes the overlap rather
-  than bending the rule.
-- **E. Order in the widget**, which shows the first two. Options: after
-  the existing four, as drafted; or *Fuel saving* first (the most
-  actionable). *Recommendation:* *Fuel saving* second, after *Shopping
-  around*, which it complements (past against future); *Economy up* last.
+- **A (#352) — Which "price you usually pay"?** *Decided:* the usual
+  station's current listed price (1); when it has no fresh listed price,
+  the vehicle's average paid for the grade over the last 30 days (3),
+  said in the body.
+- **B (#353) — The threshold.** *Decided:* fixed, at least 20 major
+  currency units a year, recorded in §7.8.
+- **C (#354) — Unmatched figures in AI insights.** *Decided:* (2), drop
+  that insight. Ask's answers keep the highlight.
+- **D (#355) — The 3-month outlook.** *Decided:* (1), not an insight; a
+  *Next 3 months* total on the *Coming up* page and widget, in its own
+  later phase, [Phase 44](phase-44.md).
+- **E (#356) — Order in the widget.** *Decided:* *Fuel saving* second,
+  after *Shopping around*; *Economy up* last.
+- **#357 — Yearly volume under 12 months** (found while starting).
+  *Decided:* scaled to a year (litres after the first fill-up ÷ the days
+  from the first to the last × 365), and the body says so.
+- **#358 — AI insight topics** (found while starting: Phase 38 added no
+  topics or dismissals). *Decided:* the model tags each insight with a
+  `topic` and its `vehicles`, stored with the set; the no-repeat filter
+  matches on them; untagged ones count as `other`.
+- **#280 — An Insights page budget** (Phase 38). *Decided:* the page
+  joins §8's budgets at 60 queries, built here.
+- **#359 — The dashboard with every module on** (found while measuring:
+  109 queries for 1 vehicle and 469 for 10 on master with prices synced;
+  74 for either after this phase's batching). *Decided:* 60 stays for a
+  default install; at most 80 with every module on and prices synced;
+  both held by tests.
+- **Carried:** #221, #279 and #346–#349 change nothing in this phase.

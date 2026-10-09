@@ -56,7 +56,7 @@ final readonly class AiInsightSet
      */
     public function visibleTo(array $visible): self
     {
-        $insights = array_values(array_filter($this->insights, function (AiInsight $insight) use ($visible): bool {
+        $kept = $this->kept(function (AiInsight $insight) use ($visible): bool {
             foreach ($this->sourcesOf($insight) as $run) {
                 if (array_diff($run->vehicleIds, $visible) !== []) {
                     return false;
@@ -64,11 +64,36 @@ final readonly class AiInsightSet
             }
 
             return true;
-        }));
+        });
+        // The vehicles the model named, only those still in sight.
+        $insights = array_map(
+            static fn (AiInsight $i): AiInsight => $i->withVehicles(array_values(array_intersect($i->vehicles, $visible))),
+            $kept->insights,
+        );
 
         return new self(
             $this->day,
             $insights,
+            $this->runs,
+            $this->connectionName,
+            $this->location,
+            $this->model,
+            $this->error,
+            $this->createdAt,
+        );
+    }
+
+    /**
+     * The set with only the insights $keep accepts (the reading filters,
+     * spec.md §7.26: no repeats of a computed insight, no unmatched figure).
+     *
+     * @param callable(AiInsight): bool $keep
+     */
+    public function kept(callable $keep): self
+    {
+        return new self(
+            $this->day,
+            array_values(array_filter($this->insights, $keep)),
             $this->runs,
             $this->connectionName,
             $this->location,

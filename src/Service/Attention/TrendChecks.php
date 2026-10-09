@@ -81,12 +81,77 @@ final readonly class TrendChecks
     }
 
     /**
+     * *Economy up* (Phase 42, spec.md §7.8): the series whose drift test
+     * came out better, judged exactly as item 7 (the owner's thresholds and
+     * time zone), so the insight and the item never disagree.
+     *
+     * @param array<string, bool> $enabled module toggles
+     * @return list<DriftFinding>
+     */
+    public function improvements(
+        Vehicle $vehicle,
+        FuelHistory $history,
+        AttentionThresholds $thresholds,
+        array $enabled,
+        DateTimeImmutable $now,
+        DateTimeZone $zone,
+    ): array {
+        if ($history->isEmpty()) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->judged($vehicle, $history, $thresholds, $enabled, false, $now, $zone),
+            static fn (DriftFinding $finding): bool => $finding->improved,
+        ));
+    }
+
+    /**
      * Item 7, one per series that drifted.
      *
      * @param array<string, bool> $enabled
      * @return list<AttentionItem>
      */
     private function drift(
+        Vehicle $vehicle,
+        FuelHistory $history,
+        AttentionThresholds $thresholds,
+        array $enabled,
+        bool $serviceOverdue,
+        DateTimeImmutable $now,
+        DateTimeZone $zone,
+    ): array {
+        $items = [];
+        foreach ($this->judged($vehicle, $history, $thresholds, $enabled, $serviceOverdue, $now, $zone) as $finding) {
+            if ($finding->improved) {
+                continue;
+            }
+            $items[] = new AttentionItem(
+                kind: match ($finding->kind) {
+                    EnergyKind::Liquid => AttentionKind::DriftLiquid,
+                    EnergyKind::Electric => AttentionKind::DriftElectric,
+                    EnergyKind::Gas => AttentionKind::DriftGas,
+                },
+                vehicle: $vehicle,
+                subjectId: $vehicle->id,
+                icon: 'trending_up',
+                drift: $finding,
+                fingerprint: Fingerprint::drift($finding),
+                canAct: true,
+                canHide: true,
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * The drift test of every series, both outcomes (EconomyDrift::judge).
+     *
+     * @param array<string, bool> $enabled
+     * @return list<DriftFinding>
+     */
+    private function judged(
         Vehicle $vehicle,
         FuelHistory $history,
         AttentionThresholds $thresholds,
@@ -110,41 +175,26 @@ final readonly class TrendChecks
             };
         }
 
-        $items = [];
+        $findings = [];
         foreach (EnergyKind::cases() as $kind) {
             if ($history->summary($kind) === null) {
                 continue;
             }
-            $electric = $kind === EnergyKind::Electric;
-            $finding = EconomyDrift::of(
+            $finding = EconomyDrift::judge(
                 $history,
                 $kind,
-                $electric ? $thresholds->driftPercentElectric : $thresholds->driftPercent,
+                $kind === EnergyKind::Electric ? $thresholds->driftPercentElectric : $thresholds->driftPercent,
                 $now,
                 $zone,
                 $fits,
                 $serviceOverdue,
             );
-            if ($finding === null) {
-                continue;
+            if ($finding !== null) {
+                $findings[] = $finding;
             }
-            $items[] = new AttentionItem(
-                kind: match ($kind) {
-                    EnergyKind::Liquid => AttentionKind::DriftLiquid,
-                    EnergyKind::Electric => AttentionKind::DriftElectric,
-                    EnergyKind::Gas => AttentionKind::DriftGas,
-                },
-                vehicle: $vehicle,
-                subjectId: $vehicle->id,
-                icon: 'trending_up',
-                drift: $finding,
-                fingerprint: Fingerprint::drift($finding),
-                canAct: true,
-                canHide: true,
-            );
         }
 
-        return $items;
+        return $findings;
     }
 
     /**

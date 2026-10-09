@@ -34,10 +34,21 @@ declare(strict_types=1);
  *
  *   php bin/ai-eval.php --scans [--user=demo] [--only=1,15] [--verbose]
  *
+ * With --insights (Phase 42, spec.md §7.26 *AI insights*) it makes the
+ * user's AI insights --runs times (3 by default) with the configured `ask`
+ * model, as the daily job does, and reports each insight's topic and
+ * vehicles and every figure in it that no tool result carried: with the
+ * no-arithmetic rule such an insight is never shown (#354), so the count
+ * should be 0. It replaces the user's set for today, as *Refresh* does.
+ *
+ *   php bin/ai-eval.php --insights [--user=demo] [--runs=3] [--verbose]
+ *
  * Exit code: 0 ran, 1 could not run, 2 usage.
  */
 
 use Logbook\Domain\Ai\Ask\ToolRun;
+use Logbook\Repository\AiInsightRepository;
+use Logbook\Service\Ai\Insights\AiInsightService;
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Kernel;
@@ -63,9 +74,9 @@ use Logbook\Support\Number\Decimal;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'help']);
+$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'insights', 'runs:', 'help']);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans] [--user=demo] [--only=1,5,12] [--verbose]\n");
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans|--insights [--runs=3]] [--user=demo] [--only=1,5,12] [--verbose]\n");
     exit(0);
 }
 $username = is_string($options['user'] ?? null) ? $options['user'] : 'demo';
@@ -91,6 +102,10 @@ if (!$user instanceof User) {
 }
 if (isset($options['scans'])) {
     exit(evaluateScans($get, $user, $only, $verbose));
+}
+if (isset($options['insights'])) {
+    $runs = is_string($options['runs'] ?? null) ? max(1, (int) $options['runs']) : 3;
+    exit(evaluateInsights($get, $user, $runs, $verbose));
 }
 $availability = $get(AskAvailability::class);
 assert($availability instanceof AskAvailability);
@@ -395,6 +410,74 @@ exit(0);
 function normalise(string $text): string
 {
     return str_replace(["\u{00A0}", "\u{202F}"], ' ', $text);
+}
+
+/**
+ * AI insights against the configured model (--insights): every figure
+ * should come from a tool result (spec.md §7.26, #354).
+ *
+ * @param Closure(class-string): object $get
+ */
+function evaluateInsights(Closure $get, User $user, int $runs, bool $verbose): int
+{
+    $service = $get(AiInsightService::class);
+    $repository = $get(AiInsightRepository::class);
+    assert($service instanceof AiInsightService && $repository instanceof AiInsightRepository);
+    if (!$service->isAvailable($user)) {
+        fwrite(STDERR, "AI insights are not available to that user: set a model for Ask in Settings → AI.\n");
+
+        return 1;
+    }
+
+    $made = 0;
+    $unmatched = 0;
+    $untagged = 0;
+    $failed = 0;
+    for ($run = 1; $run <= $runs; $run++) {
+        $started = hrtime(true);
+        try {
+            $service->generate($user);
+        } catch (AiFailure $failure) {
+            printf("Run %d: %s\n", $run, $failure->error->value);
+            $failed++;
+            continue;
+        }
+        // The set as kept, before the reading filters: what the model wrote.
+        $set = $repository->find($user->id);
+        $seconds = (hrtime(true) - $started) / 1e9;
+        if ($set === null || $set->error !== null) {
+            printf("Run %d: %s (%.1f s)\n", $run, $set?->error->value ?? 'nothing kept', $seconds);
+            $failed++;
+            continue;
+        }
+        printf("Run %d: %d insights from %s (%.1f s)\n", $run, count($set->insights), $set->model ?? '?', $seconds);
+        foreach ($set->insights as $insight) {
+            $made++;
+            $unmatched += $insight->isGrounded() ? 0 : 1;
+            $untagged += $insight->topic->value === 'other' && $insight->vehicles === [] ? 1 : 0;
+            printf(
+                "  %s [%s; vehicles %s]%s\n",
+                $insight->isGrounded() ? 'ok  ' : 'DROP',
+                $insight->topic->value,
+                $insight->vehicles === [] ? '-' : implode(',', $insight->vehicles),
+                $insight->isGrounded() ? '' : ' unmatched: ' . implode(', ', $insight->ungrounded),
+            );
+            if ($verbose || !$insight->isGrounded()) {
+                printf("       %s — %s\n", $insight->title, $insight->body);
+            }
+        }
+    }
+
+    printf(
+        "\n%d runs, %d failed; %d insights, %d with a figure no tool returned (never shown), %d without a topic or vehicle\n",
+        $runs,
+        $failed,
+        $made,
+        $unmatched,
+        $untagged,
+    );
+
+    return 0;
 }
 
 /**

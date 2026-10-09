@@ -70,6 +70,8 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['trips_summary', ['period' => 'all_time']],
             ['trips_summary', []],
             ['needs_attention', []],
+            ['computed_insights', []],
+            ['computed_insights', ['vehicles' => [$golf->id]]],
             ['mot_history', ['vehicle' => $golf->id]],
             ['incidents', []],
             ['incidents', ['years' => 10, 'claims_only' => true]],
@@ -106,7 +108,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             $drafts,
             'a card for each draft but the tread check (no tyres fitted)',
         );
-        self::assertCount(30, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
+        self::assertCount(31, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Ai\Insights;
 
+use DateTimeImmutable;
+use Logbook\Domain\Ai\Insights\AiInsight;
+use Logbook\Domain\Ai\Insights\AiInsightSet;
+use Logbook\Domain\Ai\Insights\AiInsightTopic;
 use Logbook\Domain\Vehicle\FuelType;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\AiInsightRepository;
 use Logbook\Service\Ai\Insights\AiInsightsJob;
 use Logbook\Service\Jobs\JobContext;
@@ -20,8 +25,10 @@ use Psr\Log\NullLogger;
  */
 final class AiInsightsTest extends AskTestCase
 {
+    /** Two insights: the second has a figure no tool returned, so it is never shown (Phase 42, #354). */
     private const string ANSWER = '{"insights": [{"title": "Fuel came to £70.25 in 2025",'
-        . ' "body": "That is about £999 a year more than you think.", "sources": ["costs"]}]}';
+        . ' "body": "All of it in one fill-up.", "sources": ["costs"], "topic": "other", "vehicles": [1]},'
+        . ' {"title": "Fuel is dear", "body": "That is about £999 a year more than you think.", "sources": ["costs"]}]}';
 
     public function testNothingIsMadeOrShownWithAiOff(): void
     {
@@ -70,13 +77,16 @@ final class AiInsightsTest extends AskTestCase
         $system = (string) json_encode($messages[0] ?? null, JSON_UNESCAPED_UNICODE);
         $rule = 'Never write about what may be causing an issue';
         self::assertStringContainsString($rule, $system, 'counts, never a cause (§7.37)');
+        self::assertStringContainsString('Never add, subtract, average, convert, round or project a number', $system);
+        self::assertStringContainsString('Insights Logbook already shows (do not repeat them):', $system);
+        self::assertStringContainsString('fuel_cost|economy|other', $system, 'the asked shape has a topic');
 
         $page = (string) $browser->get('/insights')->getBody();
         self::assertStringNotContainsString('data-ai-insights-auto', $page);
         self::assertStringContainsString('Fuel came to £70.25 in 2025', $page);
-        self::assertStringContainsString('<mark class="ask-unverified"', $page, '£999 did not come from Logbook');
-        self::assertMatchesRegularExpression('/£<mark class="ask-unverified"[^>]*>999<\/mark>/', $page);
-        self::assertStringNotContainsString('>70.25</mark>', $page, 'the tool’s own figure is not marked');
+        self::assertStringNotContainsString('999', $page, '£999 did not come from Logbook: that insight is dropped');
+        self::assertStringNotContainsString('Fuel is dear', $page);
+        self::assertStringNotContainsString('<mark class="ask-unverified"', $page, 'nothing unmatched is shown');
         self::assertStringContainsString('Costs · All vehicles · 1 Jan 2025 – 31 Dec 2025', $page, 'its source');
         self::assertStringContainsString('<span class="pill insight-card__ai">AI</span>', $page);
         self::assertStringContainsString('From llama3.2:3b on Ollama on the desktop', $page);
@@ -133,6 +143,66 @@ final class AiInsightsTest extends AskTestCase
         self::assertSame(['made' => 1, 'left' => 0, 'failed' => 0], $this->job($app)->run($context)->counts);
         self::assertSame(['made' => 0, 'left' => 0, 'failed' => 0], $this->job($app)->run($context)->counts, 'once a day');
         self::assertCount(1, $this->provider->requests);
+    }
+
+    public function testAnInsightRepeatingAComputedOneIsDroppedOnReading(): void
+    {
+        [$app] = $this->askApp();
+        $browser = $this->browserFor($app, 'owner');
+        // The Golf's economy is up 15% (*Economy up*, §7.8); the Polo's is steady.
+        $golf = $this->vehicle($app);
+        $this->tanks($app, $golf, '5.75', '5.0');
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $this->tanks($app, $polo, '5.0', '5.0');
+        $this->service($app, AiInsightRepository::class)->save($this->owner($app)->id, new AiInsightSet(
+            day: '2026-10-15',
+            insights: [
+                new AiInsight('Golf economy better', 'B', topic: AiInsightTopic::Economy, vehicles: [$golf->id]),
+                new AiInsight('Polo economy steady', 'B', topic: AiInsightTopic::Economy, vehicles: [$polo->id]),
+                new AiInsight('Golf fuel cost', 'B', topic: AiInsightTopic::FuelCost, vehicles: [$golf->id]),
+                new AiInsight('Golf something else', 'B', vehicles: [$golf->id]),
+            ],
+            runs: [],
+            connectionName: 'Ollama on the desktop',
+            location: null,
+            model: 'llama3.2:3b',
+            error: null,
+            createdAt: new DateTimeImmutable('2026-10-15T06:00:00Z'),
+        ));
+
+        $page = (string) $browser->get('/insights')->getBody();
+        self::assertStringContainsString('Economy is up about 15%', $page, 'the computed one');
+        self::assertStringNotContainsString('Golf economy better', $page, 'it repeats *Economy up* for the Golf');
+        self::assertStringContainsString('Polo economy steady', $page, 'no computed one for the Polo');
+        self::assertStringContainsString('Golf fuel cost', $page, 'no *Fuel saving* for the Golf');
+        self::assertStringContainsString('Golf something else', $page);
+        $home = (string) $browser->get('/')->getBody();
+        self::assertStringNotContainsString('Golf economy better', $home, 'the widget reads the same filter');
+    }
+
+    /**
+     * Eight 600 km tanks at $before L/100 km from Nov 2025, then five at $after from July.
+     *
+     * @param \Slim\App<\Psr\Container\ContainerInterface> $app
+     */
+    private function tanks(\Slim\App $app, Vehicle $vehicle, string $before, string $after): void
+    {
+        $at = new DateTimeImmutable('2025-11-01T09:00:00Z');
+        $km = 10000;
+        $this->fillUp($app, $vehicle, $at->modify('-28 days')->format('Y-m-d\\TH:i:s\\Z'), (string) $km, '40', '56.00');
+        $plan = [];
+        for ($i = 0; $i < 8; $i++) {
+            $plan[] = [$at->modify(sprintf('+%d days', 28 * $i)), $before];
+        }
+        $recent = new DateTimeImmutable('2026-07-01T09:00:00Z');
+        for ($i = 0; $i < 5; $i++) {
+            $plan[] = [$recent->modify(sprintf('+%d days', 18 * $i)), $after];
+        }
+        foreach ($plan as [$when, $per100]) {
+            $km += 600;
+            $litres = number_format((float) $per100 * 6, 3, '.', '');
+            $this->fillUp($app, $vehicle, $when->format('Y-m-d\\TH:i:s\\Z'), (string) $km, $litres, '50.00');
+        }
     }
 
     /**

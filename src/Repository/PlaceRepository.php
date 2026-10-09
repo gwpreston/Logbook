@@ -10,6 +10,7 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Station\Place;
 use Logbook\Domain\Station\PlaceData;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -22,7 +23,7 @@ final readonly class PlaceRepository
     private const string TABLE = 'places';
     public const int POSITION_SCALE = 6;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -31,14 +32,16 @@ final readonly class PlaceRepository
      */
     public function listForUser(int $userId): array
     {
-        $rows = $this->select()
-            ->where('user_id = :user')
-            ->setParameter('user', $userId, ParameterType::INTEGER)
-            ->orderBy('sort_order')
-            ->addOrderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $userId, function () use ($userId): array {
+            $rows = $this->select()
+                ->where('user_id = :user')
+                ->setParameter('user', $userId, ParameterType::INTEGER)
+                ->orderBy('sort_order')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
     }
 
     public function find(int $userId, int $id): ?Place

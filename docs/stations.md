@@ -487,6 +487,20 @@ months: "Shopping around: about £18.40 better off from 23 fill-ups away
 from your usual station in the last 12 months." It shows only once at
 least 3 fill-ups were compared, and only to people who may see costs.
 
+**Could save about £x a year on fuel** (the Insights page and the
+dashboard's *Insights* widget, since v3.8): what filling at the cheapest
+station near your first place (normally *Home*), by effective cost at the
+default radius, would save in a year against your usual station's listed
+price today. Your usual station is the one you filled at most in the last
+12 months; without a fresh listed price there (48 hours), it compares
+with what you paid on average for the grade in the last 30 days. The
+year's litres are your vehicle's grade over the last 12 months, from at
+least 6 fill-ups over 90 days, scaled to a year when its fill-ups start
+less than 12 months ago. It shows from 20 a year in your currency, only
+when the cheapest isn't your usual station, the vehicle's currency is the
+feed's, the fuel is liquid, and you may see the vehicle's costs; it links
+to *Cheapest near me* for that vehicle and grade.
+
 All of these are worked out when shown and never stored. They are
 estimates: listed prices, straight-line distances × 1.3 and your usual
 economy.

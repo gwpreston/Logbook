@@ -34,10 +34,15 @@ final readonly class MileageSplit
      */
     public function forVehicle(User $user, Vehicle $vehicle, DateTimeImmutable $from, DateTimeImmutable $to): SplitFigures
     {
-        $business = $this->trips->listForVehiclesBetween([$vehicle->id], $from, $to->modify('+1 day'), null, true);
+        $first = $from->format('Y-m-d');
+        $last = $to->format('Y-m-d');
         $businessKm = '0';
         $others = false;
-        foreach ($business as $trip) {
+        foreach ($this->trips->businessForVehicle($vehicle->id) as $trip) {
+            $day = $trip->data->travelledOn->format('Y-m-d');
+            if ($day < $first || $day > $last) {
+                continue;
+            }
             $businessKm = Decimal::add($businessKm, $trip->data->distanceKm);
             $others = $others || $trip->createdBy !== $user->id;
         }
@@ -49,6 +54,16 @@ final readonly class MileageSplit
         );
 
         return self::split($businessKm, $total, $others && !$this->access->seesEveryone($user, $vehicle));
+    }
+
+    /**
+     * Read the business trips of these vehicles once for the page.
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->trips->primeBusiness($vehicleIds);
     }
 
     public static function split(string $businessKm, ?string $totalKm, bool $totalOnly = false): SplitFigures

@@ -11,6 +11,7 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Trip\Trip;
 use Logbook\Domain\Trip\TripData;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use UnexpectedValueException;
@@ -25,8 +26,37 @@ final readonly class TripRepository
     private const string TABLE = 'trips';
     public const int DISTANCE_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
+    }
+
+    /**
+     * A vehicle's business trips, everyone's, oldest first; remembered for
+     * the page (spec.md §8 *Page budgets*).
+     *
+     * @return list<Trip>
+     */
+    public function businessForVehicle(int $vehicleId): array
+    {
+        return $this->reads->remember(
+            self::TABLE,
+            $vehicleId,
+            fn (): array => $this->listForVehiclesBetween([$vehicleId], null, null, null, true),
+        );
+    }
+
+    /**
+     * Read the business trips of these vehicles in one query, so the page's
+     * later businessForVehicle() calls for them cost nothing.
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function primeBusiness(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listForVehiclesBetween($ids, null, null, null, true),
+            static fn (Trip $trip): int => $trip->vehicleId,
+        ), []);
     }
 
     /**

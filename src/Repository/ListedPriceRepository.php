@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\FuelPrices\PriceChange;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -22,7 +23,7 @@ final readonly class ListedPriceRepository
     private const string TABLE = 'listed_price_changes';
     private const int PRICE_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -105,6 +106,23 @@ final readonly class ListedPriceRepository
      */
     public function priceAt(string $provider, string $ref, FuelGrade $grade, DateTimeImmutable $at): ?PriceChange
     {
+        if ($this->reads->isActive()) {
+            // A page compares many fill-ups at one station: its history is read once (spec.md §8 *Page budgets*).
+            $found = null;
+            $changes = $this->reads->remember(
+                self::TABLE,
+                $provider . '|' . $ref,
+                fn (): array => $this->changes($provider, $ref),
+            );
+            foreach ($changes as $change) {
+                // Oldest first (then by id), so the last one at or before $at wins, as the query's order.
+                if ($change->grade === $grade && $change->reportedAt <= $at) {
+                    $found = $change;
+                }
+            }
+
+            return $found;
+        }
         $platform = $this->connection->getDatabasePlatform();
         $row = $this->connection->createQueryBuilder()
             ->select('price', 'reported_at')

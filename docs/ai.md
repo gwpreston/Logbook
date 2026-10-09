@@ -236,11 +236,21 @@ short observations the model finds in your records, made once a day (by
 the hourly `ai_insights` job, or on your first visit of the day) and kept
 for that day. *Refresh* makes them again now. The model uses only Ask's
 read-only tools, as you, and must name the results each observation came
-from; every figure goes through the same check as an answer, and one
-Logbook didn't provide is highlighted. Each is marked *AI*, with its
-sources and the model that wrote it, and up to two join the dashboard's
-*Insights* widget. Nothing is made for you while your *Use AI features* is
-off, or if you haven't signed in for 30 days, and nothing is ever drafted.
+from. They are for patterns across services or vehicles that no single
+figure covers: the model is told never to work out a figure itself
+(Logbook does the sums) and not to repeat the insights Logbook already
+works out. Since v3.8 an observation with a figure no tool returned is
+**not shown** (an answer you asked for still highlights one), and one
+that repeats *Fuel saving* or *Economy up* for the same vehicle is left
+out. Each is marked *AI*, with its sources and the model that wrote it,
+and up to two join the dashboard's *Insights* widget.
+
+Logbook works out *Could save about £x a year on fuel* and *Economy is up
+about x%* itself, with or without AI (see the Insights page); Ask answers
+"How much could I save on fuel?" from the same figure.
+
+Nothing is made for you while your *Use AI features* is off, or if you
+haven't signed in for 30 days, and nothing is ever drafted.
 
 **What it can answer.** Anything Logbook already shows: costs by period,
 category, month or vehicle; running cost per mile or km; fuel economy,
@@ -307,7 +317,11 @@ the expected figures appear, whether a question about what causes a fault
 is answered with a mechanic rather than a guess, how many answers had a
 flagged figure, and the
 time. It also checks that no entry was written without *Add*. It sends
-real requests, so it is never run automatically.
+real requests, so it is never run automatically. `php bin/ai-eval.php
+--insights [--runs=3]` makes the day's AI insights a few times and lists,
+per insight, its topic, its vehicles and any figure no tool returned (such
+an insight is never shown, so the count should be 0); it replaces your
+set for the day, as *Refresh* does.
 
 ## Adding entries by message
 
