@@ -331,6 +331,11 @@ only records what you noted, and a qualified mechanic is the one to ask.
 AI insights may count issues ("2 open on the Golf for over 3 months"),
 never suggest a cause.
 
+**MOT history.** While an admin has enabled [MOT history](mot-history.md),
+*Ask* can read a vehicle's fetched MOT tests ("What did the Golf's last
+MOT advise?"): dates, results, mileages, defects, the recall state, and
+DVSA's attribution with the answer. It never fetches anything itself.
+
 **How it works.** The model only passes on your words and numbers.
 Logbook does everything else:
 - It resolves the vehicle, asking which one when two match, and the fuel

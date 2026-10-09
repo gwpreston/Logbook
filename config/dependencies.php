@@ -409,6 +409,7 @@ return [
         get(Tool\TripsSummary::class),
         get(Tool\Incidents::class),
         get(Tool\Issues::class),
+        get(Tool\MotHistory::class),
         get(Tool\Finance::class),
         get(Tool\Stations::class),
         get(Tool\CheapestFuel::class),
