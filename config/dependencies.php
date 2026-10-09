@@ -86,6 +86,7 @@ use Logbook\Service\Jobs\DigestJob;
 use Logbook\Service\Jobs\Job;
 use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
 use Logbook\Service\FuelPrices\FuelPricesJob;
+use Logbook\Service\MotHistory\MotHistoryJob;
 use Logbook\Service\FuelPrices\FuelPricesTwigExtension;
 use Logbook\Service\FuelPrices\Pause;
 use Logbook\Service\FuelPrices\ProviderRegistry;
@@ -200,6 +201,8 @@ return [
             ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
             // Never due while no price provider is enabled (spec.md §7.34).
             FuelPricesJob::class,
+            // Never due while MOT history is off (spec.md §7.38 *Refresh*).
+            MotHistoryJob::class,
             // The day's AI insights for those with AI on (spec.md §7.26, Phase 33.4).
             AiInsightsJob::class,
             // Listed only while the demo is active (spec.md §7.36).

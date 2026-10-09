@@ -18,6 +18,7 @@ use Logbook\Domain\MotHistory\MotTestResult;
 use Logbook\Domain\MotHistory\MotVehicleState;
 use Logbook\Domain\MotHistory\OdometerState;
 use Logbook\Domain\MotHistory\RecallState;
+use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Units\DistanceUnit;
@@ -279,6 +280,63 @@ final readonly class MotTestRepository
         }
 
         return $states;
+    }
+
+    /**
+     * The `mot_history` job's candidates (spec.md §7.38 *Refresh*): active
+     * vehicles with MOT history enabled and not fetched since $fetchedBefore,
+     * each with the date the window keys on: its latest stored expiry or,
+     * with no tests, DVSA's first MOT due date (#339). The window itself is
+     * judged by the caller in the owner's today.
+     *
+     * @return array<int, DateTimeImmutable> by vehicle id; vehicles with no such date are left out
+     */
+    public function refreshCandidates(DateTimeImmutable $fetchedBefore): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('id', 'mot_first_due_on')
+            ->from('vehicles')
+            ->where('mot_history_enabled_at IS NOT NULL')
+            ->andWhere('status = :active')
+            ->andWhere('(mot_history_fetched_at IS NULL OR mot_history_fetched_at < :before)')
+            ->setParameter('active', VehicleStatus::Active->value)
+            ->setParameter('before', $this->instant($fetchedBefore))
+            ->orderBy('id')
+            ->fetchAllAssociative();
+        if ($rows === []) {
+            return [];
+        }
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[] = Row::int($row, 'id');
+        }
+        $latest = [];
+        $tested = [];
+        $tests = $this->connection->createQueryBuilder()
+            ->select('vehicle_id', 'MAX(expiry_on) AS expiry', 'COUNT(*) AS tests')
+            ->from('mot_tests')
+            ->where('vehicle_id IN (:ids)')
+            ->groupBy('vehicle_id')
+            ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+            ->fetchAllAssociative();
+        foreach ($tests as $row) {
+            $vehicleId = Row::int($row, 'vehicle_id');
+            $tested[$vehicleId] = true;
+            $expiry = Row::nullableDate($row, 'expiry');
+            if ($expiry !== null) {
+                $latest[$vehicleId] = $expiry;
+            }
+        }
+        $dates = [];
+        foreach ($rows as $row) {
+            $vehicleId = Row::int($row, 'id');
+            $date = isset($tested[$vehicleId]) ? ($latest[$vehicleId] ?? null) : Row::nullableDate($row, 'mot_first_due_on');
+            if ($date !== null) {
+                $dates[$vehicleId] = $date;
+            }
+        }
+
+        return $dates;
     }
 
     public function enable(int $vehicleId, DateTimeImmutable $at): void

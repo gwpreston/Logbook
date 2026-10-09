@@ -49,6 +49,36 @@ final readonly class MotHistoryFetcher
     public function fetch(Vehicle $vehicle): FetchOutcome
     {
         $provider = $this->config->provider() ?? throw new MotHistoryUnavailable('off');
+        [$plate, $vin] = $this->identifiers($vehicle);
+        $record = $this->calls->run(
+            $provider,
+            static fn (MotHistoryClient $client): ?MotVehicleRecord => self::lookUp($client, $plate, $vin),
+        );
+
+        return $this->outcome($vehicle, $record, $plate);
+    }
+
+    /**
+     * The `mot_history` job's fetch, with the client it signed in once per
+     * run (spec.md §7.38 *Refresh*); the caller runs it inside
+     * MotHistoryCalls::run(), so the run's outcome is recorded there.
+     *
+     * @throws MotHistoryUnavailable before the owner's confirmation, or with no registration or VIN
+     * @throws MotHistoryFailure when the provider can't be asked
+     */
+    public function refresh(MotHistoryClient $client, Vehicle $vehicle): FetchOutcome
+    {
+        [$plate, $vin] = $this->identifiers($vehicle);
+
+        return $this->outcome($vehicle, self::lookUp($client, $plate, $vin), $plate);
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string} the registration and VIN, at least one set
+     * @throws MotHistoryUnavailable
+     */
+    private function identifiers(Vehicle $vehicle): array
+    {
         if (!$this->tests->state($vehicle->id)->enabled()) {
             throw new MotHistoryUnavailable('unconfirmed');
         }
@@ -58,11 +88,18 @@ final readonly class MotHistoryFetcher
             throw new MotHistoryUnavailable('no_identifier');
         }
 
-        $record = $this->calls->run($provider, static function (MotHistoryClient $client) use ($plate, $vin): ?MotVehicleRecord {
-            $record = $plate === null ? null : $client->byRegistration($plate);
+        return [$plate, $vin];
+    }
 
-            return $record ?? ($vin === null ? null : $client->byVin($vin));
-        });
+    private static function lookUp(MotHistoryClient $client, ?string $plate, ?string $vin): ?MotVehicleRecord
+    {
+        $record = $plate === null ? null : $client->byRegistration($plate);
+
+        return $record ?? ($vin === null ? null : $client->byVin($vin));
+    }
+
+    private function outcome(Vehicle $vehicle, ?MotVehicleRecord $record, ?string $plate): FetchOutcome
+    {
         if ($record === null) {
             return new FetchOutcome(false);
         }

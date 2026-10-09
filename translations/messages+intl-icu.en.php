@@ -5190,6 +5190,10 @@ return [
                 'title' => 'Fuel prices',
                 'description' => 'Downloads listed fuel prices from the provider on Settings → Fuel prices, while one is enabled.',
             ],
+            'mot_history' => [
+                'title' => 'MOT history',
+                'description' => 'Refreshes the MOT history of vehicles whose MOT is due soon or recently passed, once a week each, and keeps DVSA’s key in use, while MOT history is enabled.',
+            ],
             'demo_reset' => [
                 'title' => 'Demo reset',
                 'description' => 'Puts the demo back to its sample data, with its dates moved to today. Only while this is a demo.',
@@ -6241,6 +6245,10 @@ return [
         ],
     ],
     'mot_history' => [
+        'job' => [
+            'off' => 'MOT history is off; nothing sent.',
+            'summary' => '{due, plural, =0 {No vehicles due} one {# vehicle due} other {# vehicles due}}: {refreshed} refreshed, {added, plural, =0 {no new tests} one {# new test} other {# new tests}}{skipped, plural, =0 {} other {, # skipped}}{pinged, plural, =0 {} other {; kept the key in use}}.',
+        ],
         'attribution' => 'Contains public sector information licensed under the',
         'provider' => [
             'sample' => [

@@ -5187,6 +5187,10 @@ return [
                 'title' => 'Kraftstoffpreise',
                 'description' => 'Lädt gemeldete Kraftstoffpreise vom Anbieter unter Einstellungen → Kraftstoffpreise herunter, solange einer eingeschaltet ist.',
             ],
+            'mot_history' => [
+                'title' => 'MOT-Historie',
+                'description' => 'Aktualisiert die MOT-Historie der Fahrzeuge, deren MOT bald fällig ist oder kürzlich war, je einmal pro Woche, und hält den DVSA-Schlüssel in Gebrauch, solange die MOT-Historie aktiviert ist.',
+            ],
             'demo_reset' => [
                 'title' => 'Demo zurücksetzen',
                 'description' => 'Setzt die Demo auf ihre Beispieldaten zurück, mit auf heute verschobenen Daten. Nur solange dies eine Demo ist.',
@@ -6238,6 +6242,10 @@ return [
         ],
     ],
     'mot_history' => [
+        'job' => [
+            'off' => 'Die MOT-Historie ist aus; nichts gesendet.',
+            'summary' => '{due, plural, =0 {Keine Fahrzeuge fällig} one {# Fahrzeug fällig} other {# Fahrzeuge fällig}}: {refreshed} aktualisiert, {added, plural, =0 {keine neuen Prüfungen} one {# neue Prüfung} other {# neue Prüfungen}}{skipped, plural, =0 {} other {, # übersprungen}}{pinged, plural, =0 {} other {; Schlüssel in Gebrauch gehalten}}.',
+        ],
         'attribution' => 'Enthält Informationen des öffentlichen Sektors, lizenziert unter der',
         'provider' => [
             'sample' => [
