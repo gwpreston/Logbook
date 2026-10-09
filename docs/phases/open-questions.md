@@ -450,7 +450,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 347 | [41](phase-41.md) | Who may use *Look up*: #330 lets anyone adding a vehicle send any registration, while #321 treats sending one as the owner's call (found by the merge review) | Open | Options: keep it (now rate-limited, #343); restrict it to admins or to users who own a vehicle; keep it and say so in the docs. | 2026-10-09 |
 | 348 | [41](phase-41.md) | Should rolling back the MOT migration also delete the `mot_history` settings, so it comes back off rather than on without credentials? (found by the merge review) | Open | Options: leave them (today; the upgrade notes say so); delete them in `down()`. | 2026-10-09 |
 | 349 | [41](phase-41.md) | Should recorded DVSA answers (`tests/Fixtures/mot-history/recorded-*.json`, scrubbed) be committed or git-ignored? (found by the merge review) | Open | Options: commit them (the recorded test runs in CI); ignore them (kept on the maintainer's machine only). | 2026-10-09 |
-| 350 | [41](phase-41.md) | Should page query budgets (30 queries, 200/500 ms) be written into the spec? The dashboard runs about 813 queries on a 10-vehicle household, on master too (found by the merge review) | Open | Options: write the budgets into §8 and open a ticket to batch the dashboard; leave them as review targets. | 2026-10-09 |
+| 350 | [41.7](phase-41.7.md) | Should page query budgets (30 queries, 200/500 ms) be written into the spec? The dashboard runs about 813 queries on a 10-vehicle household, on master too (found by the merge review) | Open | Options: write the budgets into §8 and open a ticket to batch the dashboard; leave them as review targets. | 2026-10-09 |
 
 ## Other loose ends found in the review
 
