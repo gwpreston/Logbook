@@ -187,28 +187,39 @@ and the decisions below win. In short:
       drafted early so the API, Ask and MCP docs can link it).
 
 ### 41.4 Tests
-- [ ] Adapter against recorded responses: passes, fails, unreadable
+- [x] Adapter against recorded responses: passes, fails, unreadable
       odometers, km tests, a new vehicle with only a first-due date,
       defects of every type, 404, 429, auth failure.
-- [ ] Mismatch refused and nothing stored; VIN fallback; plate change
+- [x] Mismatch refused and nothing stored; VIN fallback; plate change
       noticed.
-- [ ] Refresh upserts without duplicates; *Stop and remove* removes
+- [x] Refresh upserts without duplicates; *Stop and remove* removes
       tests and readings only.
-- [ ] Readings: written per read test; implausible-reading item fires
+- [x] Readings: written per read test; implausible-reading item fires
       against an owner's reading with the new wording, *Fix* to the
       owner's.
-- [ ] Review card: documents not duplicated (reference and date match);
+- [x] Review card: documents not duplicated (reference and date match);
       issues created with the right status and look-again; repeats
       become updates; *Not now* sticks.
-- [ ] Job selects only vehicles in the window and not fetched in 7 days;
+- [x] Job selects only vehicles in the window and not fetched in 7 days;
       stops on throttling; keep-alive after 80 days only.
-- [ ] Recall states each worded; `yes` raises the *Now* item, the rest
+- [x] Recall states each worded; `yes` raises the *Now* item, the rest
       don't.
-- [ ] *Look up* fills only blank fields, stores nothing, needs the
+- [x] *Look up* fills only blank fields, stores nothing, needs the
       provider on; works without JS.
-- [ ] Nothing is sent with the provider off, compliance off, or before
+- [x] Nothing is sent with the provider off, compliance off, or before
       the owner's confirmation; access matrix; suite green on every
       engine; coverage at or above the floor.
+
+Where each is tested: the adapter in `tests/Unit/Service/MotHistory`
+(`DvsaParserTest`, `DvsaProviderTest`, `DvsaRecordedTest` once DVSA's
+answers are recorded); fetching, mismatch, VIN, upsert (a changed
+answer, #331), *Stop and remove* and compliance off in
+`MotHistoryFetchTest`; readings, recalls (each state) and the reading
+wording in `MotAttentionTest`; the card, notice and reminder closing in
+`MotReviewTest`; the job in `MotHistoryJobTest`; *Look up* in
+`VehicleLookupTest`; History, API, CSV, sale pack and access in
+`MotElsewhereTest`; Ask in `MotHistoryToolTest`; backups and the user
+export in `MotBackupTest`; the sample data in `DemoMotHistoryTest`.
 
 ### 41.5 Release
 - [ ] `VERSION` → next minor; `CHANGELOG.md` (*Added* — MOT history from

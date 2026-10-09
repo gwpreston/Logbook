@@ -12,6 +12,7 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Odometer\OdometerService;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
 /**
@@ -40,6 +41,28 @@ final class MotAttentionTest extends MotHistoryTestCase
         $this->answer = fn (): MockResponse => $this->withRecall('No');
         $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', []);
 
+        self::assertStringNotContainsString('Outstanding recall', (string) $browser->get('/vehicles/' . $golf->id)->getBody());
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function quietRecallStates(): iterable
+    {
+        yield 'no' => ['No', 'Recalls, all fixed'];
+        yield 'unknown' => ['Unknown', 'No recalls found'];
+        yield 'unavailable' => ['Unavailable', 'Recall status unavailable'];
+    }
+
+    #[DataProvider('quietRecallStates')]
+    public function testEveryOtherRecallStateIsWordedAndRaisesNothing(string $dvsa, string $words): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $this->answer = fn (): MockResponse => $this->withRecall($dvsa);
+        $browser = $this->fetch($golf);
+
+        self::assertStringContainsString($words, (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody());
         self::assertStringNotContainsString('Outstanding recall', (string) $browser->get('/vehicles/' . $golf->id)->getBody());
     }
 

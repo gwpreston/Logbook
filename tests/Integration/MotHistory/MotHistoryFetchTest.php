@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\MotHistory;
 
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Feature\Feature;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Jobs\JobContext;
+use Logbook\Service\MotHistory\MotHistoryJob;
+use Psr\Log\NullLogger;
 use Logbook\Domain\MotHistory\RecallState;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Repository\MotTestRepository;
@@ -240,5 +245,73 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
 
         self::assertStringContainsString('MOT history isn&#039;t available right now', $page);
         self::assertStringNotContainsString('client ID', $page);
+    }
+
+    public function testARefreshTakesDvsasChangesAndKeepsWhatItNoLongerLists(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $tests = $this->service($this->app, MotTestRepository::class);
+        $before = $tests->listForVehicle($golf->id);
+        $changed = $before[1];
+        self::assertGreaterThan(1, count($changed->defects));
+
+        // DVSA corrects a defect's text, drops another, and no longer lists the oldest test (#331).
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        self::assertIsArray($data['motTests']);
+        foreach ($data['motTests'] as $index => $test) {
+            self::assertIsArray($test);
+            if (($test['motTestNumber'] ?? null) === $changed->number) {
+                self::assertIsArray($test['defects']);
+                $test['defects'] = array_slice($test['defects'], 0, count($changed->defects) - 1);
+                self::assertIsArray($test['defects'][0]);
+                $test['defects'][0]['text'] = 'Corrected by DVSA';
+                $data['motTests'][$index] = $test;
+            }
+        }
+        $oldest = end($before);
+        self::assertNotFalse($oldest);
+        $data['motTests'] = array_values(array_filter(
+            $data['motTests'],
+            static fn (mixed $test): bool => !is_array($test) || ($test['motTestNumber'] ?? null) !== $oldest->number,
+        ));
+        $this->answer = static fn (): MockResponse => new MockResponse((string) json_encode($data));
+        $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', []);
+
+        $after = $tests->listForVehicle($golf->id);
+        self::assertCount(count($before), $after, 'nothing duplicated, nothing lost');
+        $refreshed = $tests->find($golf->id, $changed->id);
+        self::assertNotNull($refreshed, 'the same row, by its number');
+        self::assertCount(count($changed->defects) - 1, $refreshed->defects);
+        self::assertSame('Corrected by DVSA', $refreshed->defects[0]->text);
+        self::assertNotNull($tests->find($golf->id, $oldest->id), 'a test DVSA no longer lists is kept');
+        $readings = array_filter(
+            $this->service($this->app, OdometerReadingRepository::class)->listForVehicle($golf->id),
+            static fn ($reading): bool => $reading->source === OdometerSource::Mot,
+        );
+        self::assertCount(4, $readings, 'one reading per read test, still');
+    }
+
+    public function testWithComplianceOffNothingAppearsOrIsSent(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $this->requests = [];
+        $this->service($this->app, FeatureToggles::class)->save(array_values(array_filter(
+            Feature::cases(),
+            static fn (Feature $f): bool => $f !== Feature::Compliance,
+        )));
+
+        self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/mot-history')->getStatusCode());
+        self::assertSame(404, $browser->post('/vehicles/' . $golf->id . '/mot-history/fetch', [])->getStatusCode());
+        self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/export/mot-tests.csv')->getStatusCode());
+        self::assertStringNotContainsString('data-vehicle-lookup', (string) $browser->get('/vehicles/new')->getBody());
+        self::assertNull($this->service($this->app, MotHistoryJob::class)->interval());
+        $this->service($this->app, MotHistoryJob::class)->run(new JobContext(new NullLogger(), static fn (): bool => false));
+        self::assertSame([], $this->requests);
     }
 }
