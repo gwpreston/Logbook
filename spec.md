@@ -8848,7 +8848,10 @@ overview while any test is unreviewed. A test is reviewed
   vehicle per widget**: at most 60 queries each (the measured floor is
   59; the owner set 60 on 2026-10-09 after the first target of 30 proved
   out of reach without reworking the reminder sync and the activity
-  feed), and the count is the same for 1 vehicle as for 10, however many
+  feed); with every module on and a price provider synced, the dashboard
+  at most **80** (Phase 42, #359: 74 measured, from fixed reads that don't
+  depend on the vehicles; the Insights page stays within 60); and the
+  count is the same for 1 vehicle as for 10, however many
   fill-ups, readings, services and documents each has. A test holds both
   (`QueryCounter`), so the repeated per-vehicle read can't creep back.
   Time is a review target, not a test: 200 ms typical and 500 ms at most

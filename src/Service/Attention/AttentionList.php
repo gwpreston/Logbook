@@ -155,6 +155,11 @@ final readonly class AttentionList
             }
         }
 
+        // Each vehicle's business trips, for the trips check, in one query.
+        if ($enabled[Feature::Trips->value]) {
+            $this->split->prime($ids);
+        }
+
         $items = [];
         foreach ($vehicles as $vehicle) {
             $canLog = $this->access->can($user, VehicleAbility::Log, $vehicle);

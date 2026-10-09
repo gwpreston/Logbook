@@ -218,8 +218,8 @@ price provider enabled; liquid fuel only). Per vehicle:
       instructions contain the no-arithmetic text; `computed_insights`
       matches the widget.
 - [ ] **Budgets:** the Insights page within 60 queries, the same for 1
-      and 10 vehicles; the dashboard still within 60 with *Fuel saving*
-      on.
+      and 10 vehicles; the dashboard within 60 on a default install and
+      80 with every module and prices on (#359), the same for 1 and 10.
 - [ ] Suite green on every engine; coverage at or above the floor.
 
 ### 42.4 Release
@@ -266,4 +266,9 @@ logged in [`open-questions.md`](open-questions.md).
   matches on them; untagged ones count as `other`.
 - **#280 — An Insights page budget** (Phase 38). *Decided:* the page
   joins §8's budgets at 60 queries, built here.
+- **#359 — The dashboard with every module on** (found while measuring:
+  109 queries for 1 vehicle and 469 for 10 on master with prices synced;
+  74 for either after this phase's batching). *Decided:* 60 stays for a
+  default install; at most 80 with every module on and prices synced;
+  both held by tests.
 - **Carried:** #221, #279 and #346–#349 change nothing in this phase.

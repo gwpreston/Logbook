@@ -14,6 +14,7 @@ use Logbook\Domain\FuelPrices\StationLink;
 use Logbook\Domain\Station\Station;
 use Logbook\Domain\Station\StationData;
 use Logbook\Domain\Station\StationName;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Geo\Haversine;
@@ -35,18 +36,21 @@ final readonly class StationRepository
     /** How far merged_into is followed before giving up (a cycle is never written). */
     private const int MAX_MERGE_HOPS = 16;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
     public function find(int $id): ?Station
     {
-        $row = $this->select()
-            ->where('id = :id')
-            ->setParameter('id', $id, ParameterType::INTEGER)
-            ->fetchAssociative();
+        // A page compares many fill-ups at the same few stations (spec.md §8 *Page budgets*).
+        return $this->reads->remember(self::TABLE, $id, function () use ($id): ?Station {
+            $row = $this->select()
+                ->where('id = :id')
+                ->setParameter('id', $id, ParameterType::INTEGER)
+                ->fetchAssociative();
 
-        return $row === false ? null : $this->hydrate($row);
+            return $row === false ? null : $this->hydrate($row);
+        });
     }
 
     /**

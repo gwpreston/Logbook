@@ -76,8 +76,9 @@ final class RequestReads
      * $load, which returns the values keyed by id; an id it leaves out gets
      * $empty. Does nothing outside a request.
      *
-     * @param list<int> $ids
-     * @param callable(list<int>): array<int, mixed> $load
+     * @template K of int|string
+     * @param list<K> $ids
+     * @param callable(list<K>): array<K, mixed> $load
      */
     public function prime(string $group, array $ids, callable $load, mixed $empty): void
     {

@@ -10,6 +10,7 @@ use Logbook\Service\Ai\Ask\AskPage;
 use Logbook\Service\Ai\Draft\DraftCards;
 use Logbook\Service\Ai\Draft\DraftStore;
 use Logbook\Service\Ai\Insights\AiInsightService;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -25,6 +26,7 @@ final readonly class InsightsPage
 {
     public function __construct(
         private VehicleService $vehicles,
+        private VehicleDataPrimer $primer,
         private InsightsService $insights,
         private AskAvailability $ask,
         private AskPage $askPage,
@@ -44,9 +46,12 @@ final readonly class InsightsPage
     {
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $ask = $this->ask->isAvailable($user);
+        $fleet = $this->vehicles->listFleet($user);
+        // Every vehicle's records in one query per table (spec.md §8 *Page budgets*, #280).
+        $this->primer->prime($fleet);
 
         return [
-            'insights' => $this->insights->forVehicles($user, $this->vehicles->listFleet($user), true, $today),
+            'insights' => $this->insights->forVehicles($user, $fleet, true, $today),
             'ask_on' => $ask,
             'progress_token' => $ask ? bin2hex(random_bytes(16)) : null,
             'question' => $ask ? $question : '',

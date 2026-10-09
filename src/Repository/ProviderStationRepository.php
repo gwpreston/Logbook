@@ -14,6 +14,7 @@ use Logbook\Domain\FuelPrices\FeedPrice;
 use Logbook\Domain\FuelPrices\FeedStation;
 use Logbook\Domain\FuelPrices\ListedPrice;
 use Logbook\Domain\FuelPrices\ProviderStation;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Geo\Haversine;
@@ -33,7 +34,7 @@ final readonly class ProviderStationRepository
     /** Rows per IN (...) list: well inside every engine's parameter limit. */
     private const int CHUNK = 500;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -264,6 +265,41 @@ final readonly class ProviderStationRepository
      */
     public function findByRefs(string $provider, array $refs): array
     {
+        if (!$this->reads->isActive()) {
+            return $this->readByRefs($provider, $refs);
+        }
+        // Remembered per ref for the page (spec.md §8 *Page budgets*).
+        $keys = array_map(static fn (string $ref): string => $provider . '|' . $ref, $refs);
+        $this->reads->prime(self::STATIONS, $keys, function (array $missing) use ($provider): array {
+            $byKey = [];
+            $refs = array_map(static fn (string $key): string => substr($key, strlen($provider) + 1), $missing);
+            foreach ($this->readByRefs($provider, $refs) as $ref => $station) {
+                $byKey[$provider . '|' . $ref] = $station;
+            }
+
+            return $byKey;
+        }, null);
+        $found = [];
+        foreach ($refs as $ref) {
+            $station = $this->reads->remember(
+                self::STATIONS,
+                $provider . '|' . $ref,
+                fn (): ?ProviderStation => $this->readByRefs($provider, [$ref])[$ref] ?? null,
+            );
+            if ($station !== null) {
+                $found[$ref] = $station;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * @param list<string> $refs
+     * @return array<string, ProviderStation> by ref
+     */
+    private function readByRefs(string $provider, array $refs): array
+    {
         $found = [];
         foreach (array_chunk(array_values(array_unique($refs)), self::CHUNK) as $chunk) {
             $rows = $this->select()
@@ -287,6 +323,21 @@ final readonly class ProviderStationRepository
      * @return list<array{station: ProviderStation, km: float}> nearest first
      */
     public function nearby(string $provider, float $latitude, float $longitude, float $km, bool $includeRemoved = false): array
+    {
+        // Every vehicle on a page searches around the same place (spec.md §8 *Page budgets*).
+        $key = implode('|', [$provider, $latitude, $longitude, $km, $includeRemoved ? 1 : 0]);
+
+        return $this->reads->remember(
+            self::STATIONS,
+            'nearby|' . $key,
+            fn (): array => $this->readNearby($provider, $latitude, $longitude, $km, $includeRemoved),
+        );
+    }
+
+    /**
+     * @return list<array{station: ProviderStation, km: float}> nearest first
+     */
+    private function readNearby(string $provider, float $latitude, float $longitude, float $km, bool $includeRemoved): array
     {
         [$dLat, $dLon] = Haversine::box($latitude, $km);
         $query = $this->select()
@@ -384,6 +435,34 @@ final readonly class ProviderStationRepository
      * @return array<int, array<string, ListedPrice>>
      */
     public function prices(array $stationIds, ?FuelGrade $grade = null): array
+    {
+        if (!$this->reads->isActive()) {
+            return $this->readPrices($stationIds, $grade);
+        }
+        // Every grade of a station is remembered for the page; a grade is picked here.
+        $this->reads->prime(
+            self::PRICES,
+            $stationIds,
+            fn (array $ids): array => $this->readPrices($ids, null),
+            [],
+        );
+        $prices = [];
+        foreach (array_unique($stationIds) as $id) {
+            $all = $this->reads->remember(self::PRICES, $id, fn (): array => $this->readPrices([$id], null)[$id] ?? []);
+            $kept = $grade === null ? $all : array_intersect_key($all, [$grade->value => true]);
+            if ($kept !== []) {
+                $prices[$id] = $kept;
+            }
+        }
+
+        return $prices;
+    }
+
+    /**
+     * @param list<int> $stationIds
+     * @return array<int, array<string, ListedPrice>>
+     */
+    private function readPrices(array $stationIds, ?FuelGrade $grade): array
     {
         $platform = $this->connection->getDatabasePlatform();
         $prices = [];
