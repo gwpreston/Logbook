@@ -112,6 +112,19 @@ final class VehicleLookupTest extends MotHistoryTestCase
         self::assertSame([], $this->requests);
     }
 
+    public function testACredentialsProblemIsTheAdminsToFix(): void
+    {
+        $this->start();
+        $this->answer = static fn (): MockResponse => new MockResponse('{}', ['http_code' => 401]);
+        $browser = $this->browserFor($this->app, 'owner');
+
+        $form = ['registration' => 'AB12 CDE', 'lookup' => '1'];
+        $body = (string) $browser->post('/vehicles/new', $form, [], true, ['X-Lookup' => '1'])->getBody();
+
+        self::assertStringContainsString('isn\'t available right now', html_entity_decode($body, ENT_QUOTES));
+        self::assertStringNotContainsString('client ID', $body);
+    }
+
     public function testSavingAfterALookUpEnablesNothing(): void
     {
         $this->start();
