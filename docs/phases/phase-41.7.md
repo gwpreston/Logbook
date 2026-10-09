@@ -2,7 +2,7 @@
 
 *The dashboard reads each vehicle once, not once per widget.*
 
-Status: ✅ complete · releases **v3.7.2** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.7.2** · file lives in `docs/phases/`
 
 Phase 41's merge review measured the pages with a 10-vehicle household
 (1,500 fill-ups, 200 readings, 150 services and 20 documents per
@@ -133,7 +133,7 @@ sync run for every vehicle in the garage, not just the one shown.
 ### 41.7.3 Release
 - [x] `VERSION` → 3.7.2; `CHANGELOG.md` (*Changed*: faster
       dashboard and vehicle overview); `ROADMAP.md` row ✅.
-- [ ] Tag v3.7.2 once merged.
+- [x] Tag v3.7.2 once merged.
 
 ---
 
