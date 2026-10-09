@@ -200,7 +200,8 @@ final readonly class ActivityFeed
         if (!$query->includes(ActivityKind::MotTest) || !$this->motHistory->enabled()) {
             return [];
         }
-        $tests = $this->motTests->listForVehicles($query->vehicleIds());
+        // History shows how many defects a test had, not what they said.
+        $tests = $this->motTests->summariesForVehicles($query->vehicleIds());
         if ($tests === []) {
             return [];
         }
@@ -598,7 +599,7 @@ final readonly class ActivityFeed
                 icon: 'fact_check',
                 odometerKm: $test->odometerKm,
                 expiresOn: $test->expiryOn,
-                defects: count($test->defects),
+                defects: $test->defectCount(),
             );
         }
 

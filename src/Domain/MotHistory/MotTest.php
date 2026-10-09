@@ -30,7 +30,17 @@ final readonly class MotTest
         public ?DateTimeImmutable $reviewedAt,
         public DateTimeImmutable $fetchedAt,
         public array $defects = [],
+        private ?int $counted = null,
     ) {
+    }
+
+    /**
+     * How many defects the test has: counted by the database when the test
+     * was read without them (a list that only shows the number).
+     */
+    public function defectCount(): int
+    {
+        return $this->counted ?? count($this->defects);
     }
 
     public function passed(): bool

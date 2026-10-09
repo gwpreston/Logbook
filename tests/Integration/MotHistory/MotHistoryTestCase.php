@@ -21,6 +21,7 @@ use Logbook\Service\MotHistory\Uk\DvsaProvider;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\MutableClock;
+use Logbook\Tests\Support\QueryCounter;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -48,6 +49,9 @@ abstract class MotHistoryTestCase extends AppTestCase
     protected App $app;
     protected MutableClock $clock;
     protected User $owner;
+    /** Set before start() to count the app's queries in $counter. */
+    protected bool $countQueries = false;
+    protected ?QueryCounter $counter = null;
 
     protected function tearDown(): void
     {
@@ -73,6 +77,9 @@ abstract class MotHistoryTestCase extends AppTestCase
     {
         self::clearLimits();
         $this->app = $this->createApp(['SESSION_SECRET' => 'a-session-secret-for-sealing-credentials-in-tests']);
+        if ($this->countQueries) {
+            $this->counter = QueryCounter::install($this->app);
+        }
         $this->resetDatabase($this->app);
         $this->clock = $this->pinClock($this->app, self::NOW);
         $this->owner = $this->createOwner($this->app);
