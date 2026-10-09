@@ -8653,16 +8653,25 @@ overview while any test is unreviewed. A test is reviewed
 
 - Job `mot_history` (§7.30), registered always, due daily while the
   provider is enabled: for each vehicle with MOT history enabled, not
-  archived, whose latest stored expiry is between 14 days before and 60
-  days after its owner's today, and not fetched in the last 7 days
-  (#323). A run stops at a `429` and carries on the next day.
+  archived, with a registration or VIN, whose latest stored expiry (for
+  a vehicle with no tests, DVSA's first MOT due date, #339) is between
+  14 days after and 60 days before its owner's today (so from 14 days
+  before it falls due until 60 days after), and not fetched in the last
+  7 days (#323). One token per run. A run stops at a `429` (partial; the
+  rest wait for the next day) and fails on refused credentials; any
+  other vehicle's failure is logged and the run goes on. Repeats are
+  applied as after a fetch, in the owner's language and units.
 - **Keep-alive (#327):** when the last successful call is more than 80
-  days old, the job makes one `bulk-download` call (no vehicle sent), so
-  DVSA doesn't revoke an unused key. Its result shows on Settings.
-- A refresh that brings a new test shows on the overview ("New MOT
-  result: passed 14 Feb 2026", linking to the review card), and, with
-  reminders on, a pass added as a document closes the MOT reminder as
-  done (§7.6).
+  days old, or there has never been one (#342), the job makes one
+  `bulk-download` call after its fetches (no vehicle sent), so DVSA
+  doesn't revoke an unused key. Its result shows on Settings.
+- A refresh that brings a new test shows on the overview's *Documents*
+  card ("New MOT result: passed 14 Feb 2026", linking to the review
+  card) to those with `Log`, while the newest test still has something
+  on the card. A pass added as a document from the card closes the
+  reminder of the inspection document it replaces as *done* (kept, not
+  deleted as a replaced document's is, §7.6); manual renewals are
+  unchanged.
 
 #### Pages and elsewhere
 
@@ -8672,12 +8681,21 @@ overview while any test is unreviewed. A test is reviewed
   different, defects with their type as text and an icon, never colour
   alone), links to issues and documents made from it, the attribution,
   and when it was fetched.
-- **History** (§7.16): kind *MOT test*, dated by the test, unless the
-  test became a document, whose row carries it (never listed twice).
+- **History** (§7.16): kind *MOT test* (under *Documents*), dated by
+  the test in the owner's zone, with its result and mileage, opening the
+  MOT history page, unless the test became a document (an `inspection`
+  with its number as reference, or its date as start), whose row carries
+  it (never listed twice). Not in print or the sale pack's history,
+  which have their own summary below.
 - **Ask** (§7.26): read tool `mot_history(vehicle)` (tests, mileages,
   defects, recall state, links). **API** (§7.20): `GET
   /vehicles/{id}/mot-tests` (`View`; the recall state as Logbook's
-  lower-case codes, `yes` | `no` | `unknown` | `unavailable`). **CSV:** `mot-tests.csv`.
+  lower-case codes, `yes` | `no` | `unknown` | `unavailable`, and the
+  attribution). **CSV:** `/vehicles/{id}/export/mot-tests.csv` (#340),
+  one row per defect: test date, test number, result, expiry, mileage
+  (owner's unit), unit tested in, defect type, defect text, dangerous;
+  a test with no defects is one row with the defect columns blank. No
+  attribution in the file (#341): `docs/mot-history.md` states it.
   **Backups:** `mot_tests` and `mot_defects`; `mot_history_secrets`
   never, as no secret table is (#332). `bin/export-user.php` includes the tests.
 - **Sale pack** (§7.19): the printed DVSA link stays; with history

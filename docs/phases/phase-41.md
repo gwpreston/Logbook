@@ -231,7 +231,7 @@ and the decisions below win. In short:
 
 ## Open questions
 
-Logged as #320–#338 in [`open-questions.md`](open-questions.md). A was
+Logged as #320–#342 in [`open-questions.md`](open-questions.md). A was
 answered from DVSA's documentation; the owner decided B–G and the
 question found while starting on 2026-10-08, before the phase started.
 
@@ -306,6 +306,18 @@ Found while starting, decided by the owner on 2026-10-08:
 - Repeats match any open or watching issue made from a defect with the
   same text, and "not advised again" is judged at the next pass, so a
   retest after a fail breaks neither (found while building 41.2). (#338)
+- Asked when starting 41.3 (2026-10-09), decided by the owner:
+  - a vehicle with no tests is in the refresh window by DVSA's first
+    MOT due date, as if it were the expiry, so a new car's first MOT
+    arrives on its own (#339);
+  - `mot-tests.csv` has one row per defect, with the test's columns
+    repeated; a test with no defects is one row with the defect columns
+    blank (#340);
+  - the CSV carries no attribution: it is pure data, and
+    `docs/mot-history.md` states it; the page, the review card, the
+    API, Ask and the sale pack carry it (#341);
+  - the keep-alive treats "never succeeded" as too old, so it calls
+    (#342).
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.
