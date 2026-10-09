@@ -6,6 +6,7 @@ namespace Logbook\Service\MotHistory;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Issue\IssueData;
@@ -61,6 +62,7 @@ final readonly class MotReview
     {
         $all = $this->tests->listForVehicle($vehicle->id);
         $oldestFirst = array_reverse($all);
+        $inspections = $this->inspections($vehicle);
         $tests = [];
         foreach ($oldestFirst as $index => $test) {
             if ($test->reviewedAt !== null) {
@@ -68,7 +70,7 @@ final readonly class MotReview
             }
             $review = new ReviewTest(
                 $test,
-                $test->passed() && !$this->logged($vehicle, $test),
+                $test->passed() && self::match($inspections, $test) === null,
                 $issuesOn ? array_map(
                     fn (MotDefect $defect): ReviewDefect => new ReviewDefect($defect, $this->isRepeat($defect, $all)),
                     $test->defects,
@@ -262,12 +264,68 @@ final readonly class MotReview
 
     public function documentFor(Vehicle $vehicle, MotTest $test): ?int
     {
+        return self::match($this->inspections($vehicle), $test);
+    }
+
+    /**
+     * The document each test became, from one read of the vehicle's documents.
+     *
+     * @param list<MotTest> $tests
+     * @return array<int, int|null> by test id
+     */
+    public function documentsFor(Vehicle $vehicle, array $tests): array
+    {
+        $inspections = $this->inspections($vehicle);
+        $found = [];
+        foreach ($tests as $test) {
+            $found[$test->id] = self::match($inspections, $test);
+        }
+
+        return $found;
+    }
+
+    /**
+     * The overview's notice (spec.md §7.38 *Refresh*): the newest test,
+     * while it still has something on the review card.
+     */
+    public function newResult(Vehicle $vehicle, bool $issuesOn): ?MotTest
+    {
+        $all = $this->tests->listForVehicle($vehicle->id);
+        $newest = $all[0] ?? null;
+        if ($newest === null || $newest->reviewedAt !== null) {
+            return null;
+        }
+        $review = new ReviewTest(
+            $newest,
+            $newest->passed() && self::match($this->inspections($vehicle), $newest) === null,
+            $issuesOn ? array_map(
+                fn (MotDefect $defect): ReviewDefect => new ReviewDefect($defect, $this->isRepeat($defect, $all)),
+                $newest->defects,
+            ) : [],
+        );
+
+        return $review->anythingOffered() ? $newest : null;
+    }
+
+    /**
+     * @return list<ComplianceDocument>
+     */
+    private function inspections(Vehicle $vehicle): array
+    {
+        return array_values(array_filter(
+            $this->documents->listForVehicle($vehicle->id),
+            static fn (ComplianceDocument $document): bool => $document->data->type === ComplianceType::Inspection,
+        ));
+    }
+
+    /**
+     * @param list<ComplianceDocument> $inspections
+     */
+    private static function match(array $inspections, MotTest $test): ?int
+    {
         $day = $test->completedAt->format('Y-m-d');
-        foreach ($this->documents->listForVehicle($vehicle->id) as $document) {
-            if ($document->data->type !== ComplianceType::Inspection) {
-                continue;
-            }
-            $reference = $test->reference();
+        $reference = $test->reference();
+        foreach ($inspections as $document) {
             if (
                 ($reference !== null && $document->data->reference === $reference)
                 || $document->data->startOn?->format('Y-m-d') === $day

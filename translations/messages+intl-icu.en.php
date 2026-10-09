@@ -6245,6 +6245,11 @@ return [
         ],
     ],
     'mot_history' => [
+        'new_result' => [
+            'passed' => 'New MOT result: passed {date}.',
+            'failed' => 'New MOT result: failed {date}.',
+            'review' => 'Review',
+        ],
         'job' => [
             'off' => 'MOT history is off; nothing sent.',
             'summary' => '{due, plural, =0 {No vehicles due} one {# vehicle due} other {# vehicles due}}: {refreshed} refreshed, {added, plural, =0 {no new tests} one {# new test} other {# new tests}}{skipped, plural, =0 {} other {, # skipped}}{pinged, plural, =0 {} other {; kept the key in use}}.',

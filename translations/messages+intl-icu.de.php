@@ -6242,6 +6242,11 @@ return [
         ],
     ],
     'mot_history' => [
+        'new_result' => [
+            'passed' => 'Neues MOT-Ergebnis: bestanden am {date}.',
+            'failed' => 'Neues MOT-Ergebnis: nicht bestanden am {date}.',
+            'review' => 'Ansehen',
+        ],
         'job' => [
             'off' => 'Die MOT-Historie ist aus; nichts gesendet.',
             'summary' => '{due, plural, =0 {Keine Fahrzeuge fällig} one {# Fahrzeug fällig} other {# Fahrzeuge fällig}}: {refreshed} aktualisiert, {added, plural, =0 {keine neuen Prüfungen} one {# neue Prüfung} other {# neue Prüfungen}}{skipped, plural, =0 {} other {, # übersprungen}}{pinged, plural, =0 {} other {; Schlüssel in Gebrauch gehalten}}.',

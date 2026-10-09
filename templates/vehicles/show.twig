@@ -185,6 +185,16 @@
                         </span>
                     </form>
                 {% endif %}
+                {% if mot_result and can_vehicle(vehicle, 'log') %}
+                    {# A refresh brought a test with something to decide (spec.md §7.38 *Refresh*). #}
+                    <div class="alert alert--info prompt-bar" data-mot-result>
+                        {{ ui.icon('fact_check') }}
+                        <span>{{ ('mot_history.new_result.' ~ (mot_result.passed() ? 'passed' : 'failed'))|trans({date: mot_result.completedAt|instant_date}) }}</span>
+                        <span class="prompt-bar__actions">
+                            <a class="btn btn--primary" href="{{ url_for('mot_history.review', {id: vehicle.id}) }}">{{ 'mot_history.new_result.review'|trans }}</a>
+                        </span>
+                    </div>
+                {% endif %}
                 {% if documents is empty and first_inspection is null %}
                     <div class="empty">
                         {{ ui.icon('verified_user') }}

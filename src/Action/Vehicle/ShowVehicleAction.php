@@ -9,6 +9,8 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Issue\IssueService;
+use Logbook\Service\MotHistory\MotHistoryConfig;
+use Logbook\Service\MotHistory\MotReview;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Attention\AttentionSettingsStore;
@@ -86,6 +88,8 @@ final readonly class ShowVehicleAction
         private TrueCostService $trueCosts,
         private TrueCostWording $trueCostWording,
         private IssueService $issues,
+        private MotHistoryConfig $motHistory,
+        private MotReview $motReview,
     ) {
     }
 
@@ -140,6 +144,10 @@ final readonly class ShowVehicleAction
             'documents' => array_values($documents),
             'first_inspection' => $compliance ? $this->firstInspection->due($vehicle, $today, $lead->documentDays) : null,
             'first_inspection_prompt' => $this->firstInspectionPrompt->suggestion($user, $vehicle, $today),
+            // A new MOT result still to review (spec.md §7.38 *Refresh*).
+            'mot_result' => $compliance && !$vehicle->isArchived() && $this->motHistory->enabled()
+                ? $this->motReview->newResult($vehicle, $this->features->isEnabled(Feature::Issues))
+                : null,
             'age' => VehicleAge::of($vehicle, $today),
             'paperwork' => $this->attachments->countsFor([$vehicle->id], [
                 AttachmentOwner::Purchase->value => [$vehicle->id],

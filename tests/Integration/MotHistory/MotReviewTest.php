@@ -5,6 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\MotHistory;
 
 use DateTimeImmutable;
+use DateTimeZone;
+use Logbook\Domain\Compliance\ComplianceDocumentData;
+use Logbook\Domain\Reminder\Reminder;
+use Logbook\Domain\Reminder\ReminderSource;
+use Logbook\Domain\Reminder\ReminderStatus;
+use Logbook\Repository\ReminderRepository;
+use Logbook\Service\Compliance\ComplianceService;
+use Logbook\Service\Reminder\ReminderSync;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
@@ -299,6 +307,84 @@ final class MotReviewTest extends MotHistoryTestCase
 
         self::assertContains($viewer->get($this->url($golf))->getStatusCode(), [403, 404]);
         self::assertSame(200, $viewer->get('/vehicles/' . $golf->id . '/mot-history')->getStatusCode());
+    }
+
+    public function testTheOverviewNoticesANewResultUntilItIsReviewed(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $viewer = $this->shareWith($golf, ShareLevel::View);
+
+        $overview = (string) $browser->get('/vehicles/' . $golf->id)->getBody();
+        self::assertStringContainsString('data-mot-result', $overview);
+        self::assertStringContainsString('New MOT result: passed 15 Feb 2026.', $overview);
+        self::assertStringContainsString($this->url($golf), $overview);
+        self::assertStringNotContainsString('data-mot-result', (string) $viewer->get('/vehicles/' . $golf->id)->getBody());
+
+        // Only the newest test counts: once it is done, the notice goes, whatever is left on older ones.
+        $browser->post($this->url($golf), ['do' => 'done', 'test' => (string) $this->tests($golf)[0]->id]);
+        self::assertStringNotContainsString('data-mot-result', (string) $browser->get('/vehicles/' . $golf->id)->getBody());
+    }
+
+    public function testAPassAddedFromTheCardClosesTheReplacedMotReminderAsDone(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $old = $this->service($this->app, ComplianceService::class)->create($golf, new ComplianceDocumentData(
+            ComplianceType::Inspection,
+            startOn: new DateTimeImmutable('2025-03-01'),
+            expiryOn: new DateTimeImmutable('2026-02-28'),
+        ), new DateTimeZone('Europe/London'));
+        $sync = $this->service($this->app, ReminderSync::class);
+        $sync->sync($this->owner);
+        $reminder = $this->reminderFor($old->id);
+        self::assertNotNull($reminder);
+        self::assertTrue($reminder->status->isOpen());
+
+        $browser = $this->fetch($golf);
+        $browser->post($this->url($golf), ['do' => 'documents']);
+        $sync->sync($this->owner);
+
+        $closed = $this->reminderFor($old->id);
+        self::assertNotNull($closed, 'kept, not deleted as a replaced document\'s is');
+        self::assertSame(ReminderStatus::Done, $closed->status);
+    }
+
+    public function testAManualRenewalStillDropsTheReplacedReminder(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $compliance = $this->service($this->app, ComplianceService::class);
+        $zone = new DateTimeZone('Europe/London');
+        $old = $compliance->create($golf, new ComplianceDocumentData(
+            ComplianceType::Inspection,
+            startOn: new DateTimeImmutable('2025-03-01'),
+            expiryOn: new DateTimeImmutable('2026-02-28'),
+        ), $zone);
+        $sync = $this->service($this->app, ReminderSync::class);
+        $sync->sync($this->owner);
+        $compliance->create($golf, new ComplianceDocumentData(
+            ComplianceType::Inspection,
+            provider: 'Kwik MOT',
+            startOn: new DateTimeImmutable('2026-02-20'),
+            expiryOn: new DateTimeImmutable('2027-02-19'),
+        ), $zone);
+        $sync->sync($this->owner);
+
+        self::assertNull($this->reminderFor($old->id));
+    }
+
+    private function reminderFor(int $documentId): ?Reminder
+    {
+        $vehicleIds = array_map(static fn (Vehicle $v): int => $v->id, $this->ownedVehicles($this->app, $this->owner->id));
+        foreach ($this->service($this->app, ReminderRepository::class)->listGeneratedForVehicles($vehicleIds) as $reminder) {
+            if ($reminder->source === ReminderSource::Compliance && $reminder->sourceId === $documentId) {
+                return $reminder;
+            }
+        }
+
+        return null;
     }
 
     private function url(Vehicle $vehicle): string

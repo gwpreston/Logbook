@@ -45,10 +45,7 @@ final readonly class MotHistoryAction
         $vehicle = RequestContext::vehicle($request);
         $user = RequestContext::requireUser($request);
         $tests = $this->tests->listForVehicle($vehicle->id);
-        $documents = [];
-        foreach ($tests as $test) {
-            $documents[$test->id] = $this->review->documentFor($vehicle, $test);
-        }
+        $documents = $this->review->documentsFor($vehicle, $tests);
         $issuesOn = $this->features->isEnabled(Feature::Issues);
 
         return $this->view->render($request, $response, 'mot_history/show.twig', [
