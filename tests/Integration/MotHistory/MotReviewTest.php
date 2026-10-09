@@ -442,6 +442,68 @@ final class MotReviewTest extends MotHistoryTestCase
         }
     }
 
+    public function testReorderedDefectsKeepTheirOwnIssueAndNotNow(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $fail = $this->tests($golf)[1];
+        $headlamp = $this->defectWithText($golf, 'Headlamp aim too high');
+        $wiper = $this->defectWithText($golf, 'Customer advised of wiper wear');
+        $browser->post($this->url($golf), ['do' => 'issue', 'defect' => (string) $headlamp->id]);
+        $browser->post($this->url($golf), ['do' => 'not_now', 'defect' => (string) $wiper->id]);
+        $issueId = $this->issues($golf)[0]->id;
+
+        // DVSA answers again with the same defects in the opposite order.
+        $this->answer = fn (): MockResponse => $this->withFailDefectsReversed();
+        $this->fetch($golf, $browser);
+
+        $after = $this->defectWithText($golf, 'Headlamp aim too high');
+        self::assertSame($fail->id, $after->motTestId);
+        self::assertSame($issueId, $after->issueId, 'the issue stays with its own text');
+        self::assertNull($after->dismissedAt);
+        $wiperAfter = $this->defectWithText($golf, 'Customer advised of wiper wear');
+        self::assertNull($wiperAfter->issueId);
+        self::assertNotNull($wiperAfter->dismissedAt, 'Not now stays with its own text');
+        $defects = $this->tests($golf)[1]->defects;
+        foreach ($defects as $defect) {
+            if (!in_array($defect->text, ['Headlamp aim too high', 'Customer advised of wiper wear'], true)) {
+                self::assertNull($defect->issueId, $defect->text . ' got nothing it was not given');
+                self::assertNull($defect->dismissedAt, $defect->text . ' was not put off');
+            }
+        }
+        self::assertSame(range(0, count($defects) - 1), array_map(
+            static fn (MotDefect $defect): int => $defect->position,
+            $defects,
+        ), 'positions follow DVSA\'s order');
+    }
+
+    public function testAnOlderTestNeverReviewedIsNotAdvisedAgainAfterTheIssueItBecame(): void
+    {
+        $this->start();
+        $oil = 'Oil leak, but not excessive (8.4.1 (a) (i))';
+        $this->answer = fn (): MockResponse => $this->withNextTest($oil);
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        // The 2025 pass (never reviewed) has the same text as the 2027 advisory the owner makes an issue of.
+        $latest = $this->tests($golf)[0];
+        $browser->post($this->url($golf), ['do' => 'issue', 'defect' => (string) $latest->defects[0]->id]);
+
+        $this->fetch($golf, $browser);
+
+        $issue = $this->issues($golf)[0];
+        $notes = $this->connection($this->app)->fetchFirstColumn(
+            'SELECT note FROM issue_updates WHERE issue_id = ?',
+            [$issue->id],
+        );
+        self::assertSame([], $notes, 'no "advised again" for a test before the one the issue came from');
+        $older = array_values(array_filter(
+            $this->tests($golf),
+            static fn (MotTest $test): bool => $test->completedAt->format('Y') === '2025',
+        ))[0];
+        self::assertNull($older->defects[2]->issueId, 'the older defect is not tied to the later issue');
+    }
+
     private function url(Vehicle $vehicle): string
     {
         return '/vehicles/' . $vehicle->id . '/mot-history/review';
@@ -504,6 +566,27 @@ final class MotReviewTest extends MotHistoryTestCase
             'dataSource' => 'DVSA',
             'defects' => [['text' => $text, 'type' => 'ADVISORY', 'dangerous' => false]],
         ]);
+        $data['motTests'] = $tests;
+
+        return new MockResponse((string) json_encode($data));
+    }
+
+    /**
+     * The fixture with the 2026 fail's defects in the opposite order.
+     */
+    private function withFailDefectsReversed(): MockResponse
+    {
+        $json = (string) file_get_contents(self::FIXTURES . 'vehicle-with-tests.json');
+        $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        $tests = $data['motTests'] ?? null;
+        self::assertIsArray($tests);
+        $fail = $tests[1] ?? null;
+        self::assertIsArray($fail);
+        $defects = $fail['defects'] ?? null;
+        self::assertIsArray($defects);
+        $fail['defects'] = array_reverse($defects);
+        $tests[1] = $fail;
         $data['motTests'] = $tests;
 
         return new MockResponse((string) json_encode($data));
