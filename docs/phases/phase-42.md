@@ -3,7 +3,7 @@
 *Sums done by Logbook; the model keeps only what no single service can
 see.*
 
-Status: 🚧 in progress (started 2026-10-09) · file lives in `docs/phases/`
+Status: ✅ complete (2026-10-09), released as v3.8.0 · file lives in `docs/phases/`
 
 Phase 33.4 (#174) handed three of the prototype's insights to the model,
 because the app had no figure for them: *save about £x a year on fuel*,
@@ -183,50 +183,53 @@ price provider enabled; liquid fuel only). Per vehicle:
       [Phase 44](phase-44.md) written for the 3-month outlook (#355).
 
 ### 42.1 Computed insights
-- [ ] `Service\Insights\FuelSaving` on the existing *Cheapest near me*,
+- [x] `Service\Insights\FuelSaving` on the existing *Cheapest near me*,
       usual-station and volume services; the 30-day average fallback
       (#352); the yearly volume scaled under 12 months (#357); the
       nearby stations and prices read once per page for every vehicle.
-- [ ] The drift judgement returns both outcomes; `economy_up` reads the
+- [x] The drift judgement returns both outcomes; `economy_up` reads the
       improvement; the *Needs attention* item is unchanged.
-- [ ] Widget and Insights page cards, icons, tones, links; translations
+- [x] Widget and Insights page cards, icons, tones, links; translations
       (every shipped locale, ICU plurals and currency).
 
 ### 42.2 AI insights
-- [ ] Instructions: no arithmetic, the computed-insight list, the new
+- [x] Instructions: no arithmetic, the computed-insight list, the new
       purpose, `topic` and `vehicles` in the asked shape (#358); the old
       three removed.
-- [ ] Reading filters: computed-insight repeats (#358) and unmatched
+- [x] Reading filters: computed-insight repeats (#358) and unmatched
       figures (#354), on the page and in the widget.
-- [ ] `computed_insights` tool for Ask and MCP.
-- [ ] `bin/ai-eval.php`: fixtures checking AI insights carry no figure
+- [x] `computed_insights` tool for Ask and MCP.
+- [x] `bin/ai-eval.php`: fixtures checking AI insights carry no figure
       absent from their tool results.
 
 ### 42.3 Tests
-- [ ] **Fuel saving:** the worked example above to the penny; not shown
+- [x] **Fuel saving:** the worked example above to the penny; not shown
       when the cheapest is the usual station, below the threshold, with a
       stale usual price, under 6 fill-ups or 90 days, without a place,
       without `ViewCosts`, for an EV, with currencies differing, with
       the provider off; assumed fill and uncostable detour wording.
-- [ ] **Economy up:** mirrors every drift test with the sign flipped; a
-      vehicle never shows both; the seasonal sentence; causes.
-- [ ] **Fuel saving extras:** the 30-day-average fallback and its
+- [x] **Economy up:** mirrors every drift test with the sign flipped; a
+      series never shows both (a plug-in hybrid's petrol can drift while
+      its electricity improves); the seasonal sentence; causes; the
+      owner's threshold decides for every viewer.
+- [x] **Fuel saving extras:** the 30-day-average fallback and its
       wording; scaling under 12 months.
-- [ ] **AI:** a returned `fuel_cost` or `economy` insight for a vehicle
+- [x] **AI:** a returned `fuel_cost` or `economy` insight for a vehicle
       with the computed one is dropped; one with an unmatched figure is
       dropped; an untagged (older) one is kept as `other`; the
       instructions contain the no-arithmetic text; `computed_insights`
       matches the widget.
-- [ ] **Budgets:** the Insights page within 60 queries, the same for 1
+- [x] **Budgets:** the Insights page within 60 queries, the same for 1
       and 10 vehicles; the dashboard within 60 on a default install and
       80 with every module and prices on (#359), the same for 1 and 10.
-- [ ] Suite green on every engine; coverage at or above the floor.
+- [x] Suite green on every engine; coverage at or above the floor.
 
 ### 42.4 Release
-- [ ] `VERSION` → next minor; `CHANGELOG.md` (*Added* — fuel saving and
+- [x] `VERSION` → next minor; `CHANGELOG.md` (*Added* — fuel saving and
       economy up insights; *Changed* — AI insights no longer work out
       figures or repeat computed insights). No migration.
-- [ ] README, `docs/ai.md`; `ROADMAP.md` row ✅. Tag once merged.
+- [x] README, `docs/ai.md`, `docs/mcp.md`; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.8.0` once merged.
 
 ---
 

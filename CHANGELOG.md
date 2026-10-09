@@ -6,6 +6,56 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.8.0] — 2026-10-09
+
+Phase 42: **fuel saving and economy up, worked out by Logbook**. Two
+insights the AI used to be asked to work out are now computed from
+Logbook's own figures, with or without AI, and AI insights keep to what no
+single figure covers.
+
+### Added
+- **Could save about £x a year on fuel** (Insights page and dashboard
+  widget): what filling at the cheapest station near your first place,
+  counting the drive there, would save against your usual station's
+  listed price today, at the litres you use a year. Without a fresh listed
+  price it compares with what you've paid on average in the last 30 days;
+  with under a year of fill-ups it scales what there is to a year. Shown
+  from 20 a year in your currency, with Fuel stations and a price provider
+  on, to people who may see the vehicle's costs; never for an electric
+  car, and never in another currency. Links to *Cheapest near me*.
+- **Economy is up about x%**: the *Needs attention* economy drift check,
+  judged for an improvement (the same windows, threshold and seasonal
+  test, by the vehicle owner's threshold), with the likely causes: a grade
+  switch, new tyres, longer tanks. The two can never disagree.
+- **`computed_insights`** for Ask and MCP: every computed insight with the
+  figures behind it, so "How much could I save on fuel?" is answered from
+  Logbook's own sum.
+- `bin/ai-eval.php --insights` reports, per run, any AI insight figure no
+  tool returned.
+
+### Changed
+- **AI insights no longer work out figures or repeat a computed insight.**
+  The model is told the insights Logbook already shows and never to add,
+  average, convert or project a number; it tags each observation with a
+  topic and its vehicles. An AI insight with a figure no tool returned is
+  now left out rather than highlighted (answers to your own questions
+  still highlight one), and one repeating *Fuel saving* or *Economy up*
+  for the same vehicle is left out.
+- **Insights order:** *Shopping around*, *Fuel saving*, *Business
+  mileage*, *Cheapest to run*, *Equity*, *Economy up*.
+- **Faster pages with fuel prices on.** With every module on and a price
+  provider synced, the dashboard sent 109 queries for one vehicle and 469
+  for ten, and the Insights page 52 and 452; now 74 and 28, whatever the
+  number of vehicles (stations, listed prices, places and trips are read
+  once per page). The Insights page joins the page budgets at 60 queries,
+  and the dashboard with every module on is held to 80.
+
+### Upgrade notes
+- Pull and restart. No migration, no configuration change and no change
+  to the backup format. AI insights made earlier today keep showing until
+  the next set is made; they have no topic, so none is left out as a
+  repeat.
+
 ## [3.7.2] — 2026-10-09
 
 Phase 41.7: **a patch release**. The dashboard and a vehicle's overview read
@@ -2804,7 +2854,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.7.2...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.8.0...HEAD
+[3.8.0]: https://github.com/gwpreston16/Logbook/compare/v3.7.2...v3.8.0
 [3.7.2]: https://github.com/gwpreston16/Logbook/compare/v3.7.1...v3.7.2
 [3.7.1]: https://github.com/gwpreston16/Logbook/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/gwpreston16/Logbook/compare/v3.6.0...v3.7.0

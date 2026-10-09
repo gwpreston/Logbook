@@ -2497,15 +2497,18 @@ toggles.
      Shown when the cheapest is not the usual station, the saving is at
      least **20 in the currency's major unit** a year (a fixed threshold,
      not a setting, #353), and the vehicle's currency is the provider's
-     (never converted). "Could save about £46 a year on fuel" — "Filling
-     the Golf at Asda Antrim instead of your usual Tesco Antrim: £1.329/L
-     counting the drive there, against £1.369/L, at your 1,150 L a year.
-     Today's prices." With the 30-day average: "… against the £1.369/L
-     you've paid on average in the last 30 days …"; scaled: "… at about
-     1,150 L a year from your last 5 months …"; with an assumed usual fill
-     or a detour that can't be costed, the body adds *Cheapest near me*'s
-     own words for it. → *Cheapest near me* for that vehicle and grade.
-     Without a place, nothing (the widget `cheapest_fuel` asks for one).
+     (never converted). "Could save about £46 a year on fuel" —
+     "Volkswagen Golf: filling at Asda Antrim instead of your usual Tesco
+     Antrim: £1.329/L counting the drive there, against £1.369/L, at your
+     1,150 L a year. Today's prices." Without a usual station, "… instead
+     of where you usually fill …"; with the 30-day average, "… against the
+     £1.369/L you've paid on average in the last 30 days …"; scaled, "… at
+     about 1,150 L a year from your last 5 months."; with an assumed usual
+     fill, "Your usual fill is assumed (40 L)."; and without an economy
+     (the drive can't be costed, so the price is the listed one), "The
+     drive there isn't counted without an economy." → *Cheapest near me*
+     for that vehicle, grade and place ("See cheapest near you"). Without
+     a place, nothing (the widget `cheapest_fuel` asks for one).
   3. **Business mileage** (`trips` on): the signed-in user's business
      distance this tax year and its claim value (§7.23), when above 0:
      "£412.20 claimable in business mileage" — "916 mi of business trips
@@ -2535,8 +2538,8 @@ toggles.
      judgement with two outcomes, so the drift item and this insight can
      never disagree, and a series never shows both. "Economy is up about
      12%" (worked out from the two figures as shown, as the drift item) —
-     "50.1 mpg over the last 5 tanks, against your 12-month average of
-     44.7 mpg." followed by the likely causes that make sense for an
+     "Volkswagen Golf: 50.1 mpg over the last 5 tanks, against your
+     12-month average of 44.7 mpg." (charges for electricity) followed by the likely causes that make sense for an
      improvement, each only when its fact holds: the drift item's grade
      switch and tyres-fitted sentences, and a new one, "Longer tanks than
      usual often mean more motorway driving." (the recent mean distance

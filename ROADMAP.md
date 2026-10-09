@@ -94,7 +94,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
 | [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | ✅ |
 | [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | ✅ |
-| [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 🚧 |
+| [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | 📋 |
 
@@ -1153,8 +1153,10 @@ see.*
 - AI insights no longer asked for these or to work out any figure, and
   kept from repeating a computed insight (a topic per AI insight, #358)
   and dropped when a figure is unmatched (#354); an Ask tool for the
-  computed insights; the Insights page joins the 60-query budget (#280).
-  Partly replaces #174. Release.
+  computed insights; the Insights page joins the 60-query budget (#280),
+  and the dashboard with every module and prices on is held to 80 (#359:
+  it was 109 queries for one vehicle and 469 for ten; now 74 for either).
+  Partly replaces #174. Released as v3.8.0.
 
 → [`phase-42.md`](docs/phases/phase-42.md)
 
