@@ -7,6 +7,8 @@ namespace Logbook\Service\SalePack;
 use Logbook\Domain\Incident\Incident;
 use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\MotTestRepository;
+use Logbook\Service\MotHistory\MotHistoryConfig;
 use Logbook\Domain\Issue\IssueStatus;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
@@ -72,6 +74,8 @@ final readonly class SalePackBuilder
         private ClockInterface $clock,
         private IncidentRepository $incidents,
         private IssueRepository $issues,
+        private MotHistoryConfig $motHistory,
+        private MotTestRepository $motTests,
     ) {
     }
 
@@ -126,6 +130,10 @@ final readonly class SalePackBuilder
             ? $this->incidents($vehicle, $options, $entries)
             : [null, null];
 
+        // MOT history (Phase 41, spec.md §7.38): a summary of the fetched tests while it is on.
+        $motTests = $complianceOn && $this->motHistory->enabled() ? $this->motTests->listForVehicle($vehicle->id) : [];
+        $motTests = $motTests === [] ? null : $motTests;
+
         return new SalePack(
             vehicle: $vehicle,
             options: $options,
@@ -167,6 +175,8 @@ final readonly class SalePackBuilder
             openIssues: $enabled[Feature::Issues->value] && $options->openIssues
                 ? $this->issues->listForVehicle($vehicle->id, [IssueStatus::Open, IssueStatus::Watching])
                 : null,
+            motTests: $motTests,
+            motProvider: $motTests === null ? null : $this->motHistory->provider(),
         );
     }
 

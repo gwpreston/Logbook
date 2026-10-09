@@ -58,7 +58,8 @@ final readonly class FetchMotHistoryAction
 
             return $this->redirect->toRoute('mot_history.show', $back);
         } catch (MotHistoryFailure $failure) {
-            $session->flash('error', $failure->error->messageKey(), $failure->parameters);
+            $error = $failure->error;
+            $session->flash('error', $error->userMessageKey(), $error->isCredentials() ? [] : $failure->parameters);
 
             return $this->redirect->toRoute('mot_history.show', $back);
         }

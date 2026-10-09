@@ -3942,6 +3942,7 @@ return [
             'photo_missing' => 'Füge auf der Bearbeiten-Seite des Fahrzeugs ein Foto hinzu',
         ],
         'summary' => [
+            'mot_tests' => 'MOT-Historie',
             'model_year' => 'Modelljahr',
             'ownership' => 'Besitz',
             'owned_since' => 'Im Besitz seit {from}',
@@ -6329,6 +6330,7 @@ return [
             ],
         ],
         'error' => [
+            'not_available' => 'Die MOT-Historie ist gerade nicht verfügbar. Ein Admin kann sie unter Einstellungen → MOT-Historie prüfen.',
             'credentials' => 'Die Zugangsdaten für die MOT-Historie fehlen oder konnten nicht gelesen werden. Gib sie unter Einstellungen → MOT-Historie erneut ein.',
             'token_url' => 'Die Token-URL ist nicht die Anmeldeadresse von Microsoft. Prüfe sie unter Einstellungen → MOT-Historie.',
             'unauthorised' => 'Die DVSA hat die Zugangsdaten von Logbook abgelehnt. Prüfe Client-ID, Client-Secret und API-Schlüssel.',

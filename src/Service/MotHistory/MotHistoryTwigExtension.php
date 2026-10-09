@@ -9,7 +9,7 @@ use Twig\TwigFunction;
 
 /**
  * MOT history in templates (spec.md §7.38): whether Settings → MOT history
- * is offered, and whether a provider is on.
+ * is offered, whether a provider is on, and which.
  */
 final class MotHistoryTwigExtension extends AbstractExtension
 {
@@ -22,6 +22,8 @@ final class MotHistoryTwigExtension extends AbstractExtension
         return [
             new TwigFunction('mot_history_available', $this->config->available(...)),
             new TwigFunction('mot_history_enabled', $this->config->enabled(...)),
+            // For the attribution wherever its data shows (History's MOT lines).
+            new TwigFunction('mot_history_provider', $this->config->provider(...)),
         ];
     }
 }

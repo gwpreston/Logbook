@@ -51,7 +51,11 @@ final readonly class VehicleLookup
                 static fn (MotHistoryClient $client): ?MotVehicleRecord => $client->byRegistration($plate),
             );
         } catch (MotHistoryFailure $failure) {
-            return ['fields' => [], 'message' => $failure->error->messageKey(), 'params' => $failure->parameters];
+            return [
+                'fields' => [],
+                'message' => $failure->error->userMessageKey(),
+                'params' => $failure->error->isCredentials() ? [] : $failure->parameters,
+            ];
         }
         if ($record === null) {
             return ['fields' => [], 'message' => 'mot_history.fetch.not_found', 'params' => ['registration' => trim($raw)]];

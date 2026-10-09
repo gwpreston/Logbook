@@ -116,6 +116,9 @@ final class ApiAccessTest extends AppTestCase
             } elseif ($route->getName() === 'api.vehicles.photo') {
                 // Phase 39.3: View reaches the photo, and the fixture has none.
                 self::assertSame(404, $status, $route->getPattern());
+            } elseif ($route->getName() === 'api.mot_tests') {
+                // Phase 41: MOT history is off in the fixture (spec.md §7.38); View reaches it once on (MotElsewhereTest).
+                self::assertSame(404, $status, $route->getPattern());
             } elseif ($needs === VehicleAbility::View) {
                 self::assertSame(200, $status, $route->getPattern());
             } else {

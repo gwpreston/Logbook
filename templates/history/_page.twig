@@ -50,5 +50,9 @@
                 {% endfor %}
             </ol>
         {% endfor %}
+        {% if page.items|filter(i => i.kind.value == 'mot_test') is not empty %}
+            {% import 'macros/mot_history.twig' as mot %}
+            {{ mot.attribution(mot_history_provider()) }}
+        {% endif %}
     </section>
 {% endif %}

@@ -78,6 +78,19 @@
             </dd></div>
         {% endif %}
 
+        {% if pack.motTests %}
+            {# The fetched MOT tests (spec.md §7.38 *Sale pack*), with DVSA's attribution. #}
+            {% set licence = pack.motProvider ? pack.motProvider.licence() : null %}
+            <div data-sale-pack-mot><dt>{{ 'sale_pack.summary.mot_tests'|trans }}</dt><dd>
+                <ul class="plain-list">
+                    {% for test in pack.motTests %}
+                        <li>{{ test.completedAt|instant_date }} · {{ test.result.labelKey()|trans }} · {{ test.odometerKm is not null ? test.odometerKm|distance : 'mot_history.not_read'|trans }}</li>
+                    {% endfor %}
+                </ul>
+                {% if licence %}<p class="muted">{{ licence.attributionKey|trans }} {{ licence.name }} ({{ licence.url|replace({'https://www.': '', 'https://': ''}) }}).</p>{% endif %}
+            </dd></div>
+        {% endif %}
+
         {% include 'history/_print_tyres.twig' with {tyres: pack.tyres} %}
 
         {% if pack.dueNext is not null %}

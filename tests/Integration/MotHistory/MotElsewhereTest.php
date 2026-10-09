@@ -81,6 +81,7 @@ final class MotElsewhereTest extends MotHistoryTestCase
 
         $page = (string) $browser->get('/vehicles/' . $golf->id . '/history?kind=documents')->getBody();
         self::assertStringContainsString('MOT passed', $page);
+        self::assertStringContainsString('data-attribution', $page);
         self::assertMatchesRegularExpression('/MOT failed.*?\d+ defects or advisories/s', $page);
         self::assertStringContainsString('/vehicles/' . $golf->id . '/mot-history', $page);
 
@@ -131,6 +132,34 @@ final class MotElsewhereTest extends MotHistoryTestCase
 
         $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
         self::assertSame(404, $browser->get($path)->getStatusCode());
+    }
+
+    public function testTheSalePackSummarisesTheTestsWithTheAttribution(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $browser = $this->fetch($golf);
+        $path = '/vehicles/' . $golf->id . '/sale-pack';
+
+        $pack = (string) $browser->get($path)->getBody();
+        self::assertStringContainsString('data-sale-pack-mot', $pack);
+        self::assertMatchesRegularExpression('/15 Feb 2026 · Passed · 43,961(\.\d+)? mi/u', $pack);
+        self::assertStringContainsString('Odometer not read', $pack);
+        self::assertStringContainsString('Open Government Licence', $pack);
+        self::assertStringContainsString('gov.uk/check-mot-history', $pack, 'the printed DVSA link stays');
+        self::assertStringNotContainsString('history-row', $this->between($pack, 'data-sale-pack-mot', '</dd>'));
+
+        $this->service($this->app, MotHistoryConfig::class)->saveProvider(null);
+        self::assertStringNotContainsString('data-sale-pack-mot', (string) $browser->get($path)->getBody());
+    }
+
+    private function between(string $html, string $from, string $to): string
+    {
+        $start = strpos($html, $from);
+        self::assertNotFalse($start);
+        $end = strpos($html, $to, $start);
+
+        return substr($html, $start, ($end === false ? strlen($html) : $end) - $start);
     }
 
     public function testPrintLeavesThemOut(): void

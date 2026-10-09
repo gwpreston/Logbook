@@ -6,6 +6,8 @@ namespace Logbook\Service\SalePack;
 
 use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\MotHistory\MotTest;
+use Logbook\Service\MotHistory\MotHistoryProvider;
 use DateTimeImmutable;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -79,6 +81,15 @@ final readonly class SalePack
          * @var list<Issue>|null
          */
         public ?array $openIssues = null,
+        /**
+         * The MOT tests fetched from DVSA, newest first (Phase 41, spec.md
+         * §7.38): date, result and mileage, with the provider's attribution;
+         * null while MOT history is off or nothing is fetched.
+         *
+         * @var list<MotTest>|null
+         */
+        public ?array $motTests = null,
+        public ?MotHistoryProvider $motProvider = null,
     ) {
     }
 

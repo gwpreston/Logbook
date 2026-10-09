@@ -228,4 +228,17 @@ final class MotHistoryFetchTest extends MotHistoryTestCase
             $connection->fetchOne('SELECT COUNT(*) FROM compliance_documents WHERE vehicle_id = ?', [$golf->id]),
         );
     }
+
+    public function testOwnersAreNotToldAboutLogbooksCredentials(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+        $this->answer = static fn (string $url): MockResponse => new MockResponse('{}', ['http_code' => 403]);
+
+        $browser = $this->fetch($golf);
+        $page = (string) $browser->get('/vehicles/' . $golf->id . '/mot-history')->getBody();
+
+        self::assertStringContainsString('MOT history isn&#039;t available right now', $page);
+        self::assertStringNotContainsString('client ID', $page);
+    }
 }

@@ -26,4 +26,19 @@ enum MotHistoryErrorCode: string
     {
         return 'mot_history.error.' . $this->value;
     }
+
+    /**
+     * What an owner or someone adding a vehicle is told (spec.md §7.38
+     * *Requests*): a problem with Logbook's credentials is the admin's to
+     * fix, on Settings, so they get "MOT history isn't available right now".
+     */
+    public function userMessageKey(): string
+    {
+        return $this->isCredentials() ? 'mot_history.error.not_available' : $this->messageKey();
+    }
+
+    public function isCredentials(): bool
+    {
+        return in_array($this, [self::Credentials, self::TokenUrl, self::Unauthorised], true);
+    }
 }
