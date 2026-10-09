@@ -176,11 +176,15 @@ and the decisions below win. In short:
       `--with-sample-data` (`DemoDataSeeder`); README's flag text.
 
 ### 41.3 Refresh and elsewhere
-- [ ] `mot_history` job; keep-alive (#327); overview notice; reminder
-      closing.
-- [ ] History, Ask tool, API, CSV, backups, export-user, sale pack.
-- [ ] Translations (every shipped locale); attribution everywhere data
-      shows.
+- [x] `mot_history` job; keep-alive (#327, #342); a new car by its
+      first MOT due date (#339); overview notice; reminder closing.
+- [x] History, Ask tool, API, CSV (#340, #341), backups, export-user
+      (it lacked the tests its `mot` readings point at), sale pack.
+- [x] Translations (en, de: every shipped locale); attribution on the
+      page, card, History, sale pack, API and Ask. Owners get "MOT
+      history isn't available right now" for a credentials problem (a
+      41.2 gap found while writing `docs/mot-history.md`, which is
+      drafted early so the API, Ask and MCP docs can link it).
 
 ### 41.4 Tests
 - [ ] Adapter against recorded responses: passes, fails, unreadable

@@ -4891,7 +4891,7 @@ parameter answers 400 (`invalid_parameter`).
 | `GET /vehicles/{id}/summary` | current odometer and its time, average economy (per series: liquid and electric), last fill-up, running cost per distance over the last 12 months (as Reports counts it) and, from Phase 32, the true cost per distance (§7.35), next due item (a *First MOT* item can be it, source `first_inspection`), open reminder counts (the reminders are brought up to date first, as the Reminders page does), current documents' expiry, tyre status |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with its segment economy when it closes one and its economy-check flag |
 | `GET /vehicles/{id}/odometer` | readings with source |
-| `GET /vehicles/{id}/mot-tests` | Phase 41 (§7.38; `compliance` on, provider on): the stored MOT tests, newest first, each with its defects (type, text, dangerous, issue id), mileage, expiry, and the vehicle's recall state; 404 while the module or provider is off |
+| `GET /vehicles/{id}/mot-tests` | Phase 41 (§7.38; `compliance` on, provider on): the stored MOT tests, newest first, each with its defects (type, text, dangerous, issue id), mileage (km) and the unit tested in, expiry, the document each became, whether the owner has confirmed, the vehicle's recall state and the provider's attribution; never fetches; 404 while the module or provider is off |
 | `GET /vehicles/{id}/maintenance` | service records |
 | `GET /vehicles/{id}/documents` | compliance documents |
 | `GET /vehicles/{id}/expenses` | ad-hoc expenses (needs `ViewCosts`, like the Expenses tab) |
@@ -9764,7 +9764,7 @@ task breakdowns live in the per-phase files; this is the map.
   issues, repeats as updates); the recall state and its *Needs
   attention* item; *Look up* on the add-vehicle form; the `mot_history`
   job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
-  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#327). One migration.
+  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#342). One migration.
   Release v3.7.0.
 ---
 
