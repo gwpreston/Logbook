@@ -38,6 +38,8 @@ final readonly class OdometerReading
         public ?int $issueId = null,
         /** The issue update whose odometer this is (Phase 40.1). */
         public ?int $issueUpdateId = null,
+        /** The DVSA MOT test whose odometer this is (Phase 41). */
+        public ?int $motTestId = null,
     ) {
     }
 

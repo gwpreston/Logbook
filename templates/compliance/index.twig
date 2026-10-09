@@ -13,6 +13,11 @@
 
         {% include 'vehicles/_list_toolbar.twig' with {title: 'compliance.title'|trans, module: 'documents', add: {route: 'compliance.create', label: 'compliance.add'|trans}} %}
 
+        {# MOT history (spec.md §7.38), while a provider is on. #}
+        {% if mot_history_enabled() %}
+            <p><a class="btn btn--soft" href="{{ url_for('mot_history.show', {id: vehicle.id}) }}" data-mot-history-link>{{ ui.icon('fact_check') }}{{ 'mot_history.page.link'|trans }}</a></p>
+        {% endif %}
+
         <section class="card" aria-labelledby="current-heading">
             <h2 id="current-heading" class="card__title">{{ 'compliance.current'|trans }}</h2>
             {% if current is empty and first_inspection is null %}

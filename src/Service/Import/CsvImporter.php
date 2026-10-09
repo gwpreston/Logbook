@@ -300,6 +300,8 @@ final readonly class CsvImporter
                         OdometerSource::Purchase->value,
                         OdometerSource::Issue->value,
                         OdometerSource::IssueUpdate->value,
+                        // MOT tests are fetched, not imported (Phase 41).
+                        OdometerSource::Mot->value,
                     ];
                     if ($source !== null && !in_array($source, $owned, true)) {
                         return ImportRowStatus::Implied;
@@ -367,6 +369,7 @@ final readonly class CsvImporter
             ExportModule::Valuations,
             ExportModule::Incidents,
             ExportModule::Issues,
+            ExportModule::MotTests,
             ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };
@@ -440,6 +443,7 @@ final readonly class CsvImporter
             ExportModule::Valuations,
             ExportModule::Incidents,
             ExportModule::Issues,
+            ExportModule::MotTests,
             ExportModule::Finance
                 => throw new LogicException($module->value . ' are not imported.'),
         };

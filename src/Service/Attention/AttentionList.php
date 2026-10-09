@@ -6,6 +6,10 @@ namespace Logbook\Service\Attention;
 
 use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\IssueRepository;
+use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\MotHistory\RecallState;
+use Logbook\Repository\MotTestRepository;
+use Logbook\Service\MotHistory\MotHistoryConfig;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Service\Incident\IncidentAccess;
@@ -88,6 +92,8 @@ final readonly class AttentionList
         private IncidentAccess $incidentAccess,
         private FinanceService $finance,
         private IssueRepository $issues,
+        private MotHistoryConfig $motHistory,
+        private MotTestRepository $motTests,
     ) {
     }
 
@@ -139,9 +145,28 @@ final readonly class AttentionList
             }
         }
 
+        // Phase 41: an outstanding recall DVSA reported (§7.38, #325), one query.
+        $recalls = [];
+        if ($enabled[Feature::Compliance->value] && $this->motHistory->enabled()) {
+            foreach ($this->motTests->statesFor($ids) as $vehicleId => $state) {
+                if ($state->recall === RecallState::Yes) {
+                    $recalls[$vehicleId] = true;
+                }
+            }
+        }
+
         $items = [];
         foreach ($vehicles as $vehicle) {
             $canLog = $this->access->can($user, VehicleAbility::Log, $vehicle);
+            if (isset($recalls[$vehicle->id])) {
+                $items[] = new AttentionItem(
+                    kind: AttentionKind::MotRecall,
+                    vehicle: $vehicle,
+                    subjectId: $vehicle->id,
+                    icon: 'warning',
+                    canAct: true,
+                );
+            }
             foreach ($overdue[$vehicle->id] ?? [] as $forecast) {
                 $item = $this->overdue($vehicle, $forecast, $stored, $withReminders, $canLog, $today);
                 if ($item !== null) {
@@ -350,16 +375,30 @@ final readonly class AttentionList
         $items = [];
         foreach ($readings as $i => $reading) {
             $warning = $history->warnings[$reading->id] ?? null;
-            if ($warning === null || !($manage || EntryAccess::isOwn($user, $authors[$reading->id] ?? null))) {
+            if ($warning === null) {
+                continue;
+            }
+            // Phase 41 (§7.38 *Mileage*): with an MOT's reading in the pair, the item is about
+            // the owner's, and *Fix* goes there, never to the MOT's.
+            $subject = $reading;
+            $pair = null;
+            $previous = $warning->previous;
+            if ($reading->source === OdometerSource::Mot && $previous->source !== OdometerSource::Mot) {
+                [$subject, $pair] = [$previous, 'before'];
+            } elseif ($reading->source !== OdometerSource::Mot && $previous->source === OdometerSource::Mot) {
+                $pair = 'after';
+            }
+            if (!($manage || EntryAccess::isOwn($user, $authors[$subject->id] ?? null))) {
                 continue;
             }
             $items[] = new AttentionItem(
                 kind: AttentionKind::Reading,
                 vehicle: $vehicle,
-                subjectId: $reading->id,
+                subjectId: $subject->id,
                 icon: 'warning',
                 reading: $reading,
                 warning: $warning,
+                motPair: $pair,
                 fingerprint: Fingerprint::reading($readings[$i - 1] ?? null, $reading, $readings[$i + 1] ?? null),
                 canAct: true,
                 canHide: true,

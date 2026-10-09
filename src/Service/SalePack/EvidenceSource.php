@@ -34,7 +34,8 @@ enum EvidenceSource: string
             // An incident is not the buyer's evidence (spec.md §7.29: only its repairs are), and
             // the mileage when bought is the owner's own statement.
             OdometerSource::Fuel, OdometerSource::Incident, OdometerSource::Purchase,
-            OdometerSource::Issue, OdometerSource::IssueUpdate => null,
+            // An MOT's mileage is printed with its test (spec.md §7.19, §7.38).
+            OdometerSource::Issue, OdometerSource::IssueUpdate, OdometerSource::Mot => null,
         };
     }
 

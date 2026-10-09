@@ -400,6 +400,8 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
         self::assertSame([
             'settings.modules' => InstanceAbility::ManageModules,
             'settings.fuel_prices' => InstanceAbility::ManageFuelPrices,
+            'settings.mot_history' => InstanceAbility::ManageMotHistory,
+            'settings.mot_history.test' => InstanceAbility::ManageMotHistory,
             'backup.index' => InstanceAbility::Backup,
             'backup.download' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,

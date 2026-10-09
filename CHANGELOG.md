@@ -4,6 +4,70 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [3.7.0] — 2026-10-09
+
+Phase 41: **MOT history from DVSA**. A UK vehicle's official MOT record
+in Logbook: every past test, its mileage, advisories and defects, and
+whether a recall is outstanding. Off until an admin enables it; then each
+owner chooses whether to fetch, since it sends their registration. See
+[docs/mot-history.md](docs/mot-history.md).
+
+### Added
+- **Settings → MOT history** (admins): the **DVSA (UK)** provider with
+  its four credentials (stored encrypted, or `env:NAME`, never shown
+  back), *Test*, and the last call's result. Credentials are free to
+  individuals from DVSA.
+- **Fetch MOT history** on a vehicle's Documents tab and overview, for its
+  owner, after a one-time confirmation of what is sent. *Refresh* and
+  *Stop and remove*. A record for a different make is refused; a VIN is
+  tried when the registration has no record, and a private plate is
+  named.
+- The **MOT history** page: each test with its result, expiry, mileage
+  and defects (type in words and an icon), what you made from it, the
+  recall status and DVSA's attribution. *Export CSV*
+  (`mot-tests.csv`, one row per defect).
+- Every read MOT odometer becomes a **mileage reading** (source *MOT*),
+  checked like any other. When yours and an MOT's disagree, *Needs
+  attention* says which is which and *Fix* opens yours.
+- A **review card** after a fetch: passed tests as MOT documents (never
+  twice; *Add all*, oldest first), a new car's first MOT due date,
+  defects as issues (fails, major and dangerous open; advisories and
+  minor ones watched until 30 days before the MOT expires), an advisory
+  that comes back as a note on its issue, *Not now* and *Done*. A pass
+  added there closes the old MOT reminder as done.
+- An outstanding **recall** is a *Now* item in *Needs attention*.
+- **Look up** beside the registration when adding a vehicle fills its
+  blank fields from DVSA, with or without JavaScript.
+- The **`mot_history` job** refreshes vehicles around their MOT (from 14
+  days before it falls due to 60 days after, a new car by its first MOT
+  due date) once a week each, and keeps DVSA's key in use. The overview
+  notices a new result.
+- MOT tests in **History** (under *Documents*), the **sale pack** (date,
+  result, mileage), the **API** (`GET /vehicles/{id}/mot-tests`), **Ask**
+  and **MCP** (`mot_history`), backups and `bin/export-user.php`.
+- `bin/dev-setup.sh --with-sample-data` includes MOT history from a
+  sample provider that sends nothing (development only).
+
+### Upgrade notes
+- One migration (`mot_tests`, `mot_defects`, `mot_history_secrets`, four
+  columns on `vehicles` and `odometer_readings.mot_test_id`). Nothing to
+  do: MOT history stays off until an admin enables it.
+- Rolling the migration back deletes the MOT tests, their defects and
+  their *MOT* mileage readings, so mileage figures return to what they
+  were before the fetch; issues and MOT documents made from them stay, as
+  your own entries, and are linked again after upgrading and fetching
+  once more. It also drops the DVSA credentials: the provider setting
+  stays, so enter them again in Settings → MOT history after upgrading
+  again. A 3.6.0 backup restores only into 3.6.0; restore it there, then
+  upgrade.
+- To use it, apply for DVSA's free MOT history API credentials (about 5
+  working days), then enter them in Settings → MOT history; see
+  [docs/mot-history.md](docs/mot-history.md#getting-credentials-from-dvsa).
+  The credentials are never in a backup.
+- `docs/api/openapi.json` 1.24.0 adds the MOT history operation and the
+  `mot_test` history kind, the `mot` reading source and the `mot_recall`
+  *Needs attention* kind.
+
 ## [3.6.0] — 2026-10-08
 
 Phase 40: **the issues log**, for the fault you've noticed and haven't

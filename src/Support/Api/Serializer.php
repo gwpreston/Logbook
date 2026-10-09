@@ -293,6 +293,7 @@ final class Serializer
                 OdometerSource::Incident => $reading->incidentId,
                 OdometerSource::Issue => $reading->issueId,
                 OdometerSource::IssueUpdate => $reading->issueUpdateId,
+                OdometerSource::Mot => $reading->motTestId,
             },
             'note' => $reading->note,
             'created_at' => self::instant($reading->createdAt),

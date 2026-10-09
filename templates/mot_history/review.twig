@@ -1,0 +1,110 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/mot_history.twig' as mot %}
+{% import _self as self %}
+
+{#
+ # The MOT review card (spec.md §7.38 *Review card*): for each test not yet
+ # reviewed, oldest first, the pass as an inspection document, its defects
+ # as issues (open for fail, dangerous and major; watching otherwise), and
+ # the earlier issues not advised again. DVSA's first MOT due date for a new
+ # vehicle. Nothing is added without a press; every form works without JS.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'mot_history.review.title'|trans %}
+
+{% macro post(csrf, vehicle, fields, label, icon, class = 'btn btn--sm', hidden = '') %}
+    {% import 'macros/ui.twig' as ui %}
+    <form method="post" action="{{ url_for('mot_history.review', {id: vehicle.id}) }}">
+        {{ ui.csrf(csrf) }}
+        {% for name, value in fields %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <button type="submit" class="{{ class }}">{{ ui.icon(icon) }}{{ label }}{% if hidden %}<span class="visually-hidden">: {{ hidden }}</span>{% endif %}</button>
+    </form>
+{% endmacro %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'mot_history.review.lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% if card.firstDueOffered %}
+            <section class="card" data-first-due>
+                <p>{{ 'mot_history.review.first_due'|trans({date: card.firstDueOffered|local_date}) }}</p>
+                {% if can_manage %}{{ self.post(csrf, vehicle, {do: 'first_due'}, 'mot_history.review.use_date'|trans, 'calendar_month') }}{% endif %}
+            </section>
+        {% endif %}
+
+        {% if card.documentsOffered() > 1 %}
+            <div class="btn-row">{{ self.post(csrf, vehicle, {do: 'documents'}, 'mot_history.review.add_all_documents'|trans({count: card.documentsOffered()}), 'verified_user', 'btn') }}</div>
+        {% endif %}
+
+        {% for item in card.tests %}
+            {% set test = item.test %}
+            <section class="card" aria-labelledby="test-{{ test.id }}" data-review-test="{{ test.number }}">
+                <h2 id="test-{{ test.id }}" class="card__title">{{ 'mot_history.review.test_heading'|trans({date: test.completedAt|instant_date}) }} {{ mot.result(test) }}</h2>
+                <p class="field__hint">{{ mot.mileage(test) }}{% if test.expiryOn %} · {{ 'mot_history.page.expires'|trans({date: test.expiryOn|local_date}) }}{% endif %}</p>
+
+                {% if item.documentOffered %}
+                    <div class="btn-row">{{ self.post(csrf, vehicle, {do: 'document', test: test.id}, 'mot_history.review.add_document'|trans, 'verified_user') }}</div>
+                {% endif %}
+
+                {% if item.defects is not empty %}
+                    <ul class="list scan-offers">
+                        {% for row in item.defects %}
+                            {% set defect = row.defect %}
+                            <li class="list__item scan-offer" data-defect="{{ defect.type.value }}">
+                                <div class="list__body">
+                                    <span class="list__title">{{ defect.text }}</span>
+                                    <span class="list__meta">{{ mot.defect_type(defect) }}
+                                        {% if row.offered() %} · {{ (defect.type.opensIssue() ? 'mot_history.review.as_open' : 'mot_history.review.as_watching')|trans }}{% endif %}
+                                    </span>
+                                    {% if row.repeat and issue_titles[defect.issueId] is defined %}
+                                        {# The issue's title wraps here, never inside the pill (375 px). #}
+                                        <span class="list__meta">{{ 'mot_history.review.repeat_added'|trans }} <a href="{{ url_for('issues.show', {id: vehicle.id, issue: defect.issueId}) }}">{{ issue_titles[defect.issueId] }}</a></span>
+                                    {% endif %}
+                                </div>
+                                {% if row.repeat %}
+                                    <span class="pill pill--accent">{{ ui.icon('history') }}{{ 'mot_history.review.repeat'|trans }}</span>
+                                {% elseif defect.issueId %}
+                                    <span class="pill pill--valid">{{ ui.icon('check') }}{{ 'mot_history.review.added_issue'|trans }}</span>
+                                {% elseif defect.dismissedAt %}
+                                    <span class="pill">{{ 'mot_history.review.not_now_done'|trans }}</span>
+                                {% else %}
+                                    <div class="btn-row scan-offer__actions">
+                                        {{ self.post(csrf, vehicle, {do: 'issue', defect: defect.id}, 'mot_history.review.add_issue'|trans, 'report', 'btn btn--sm', defect.text) }}
+                                        {{ self.post(csrf, vehicle, {do: 'not_now', defect: defect.id}, 'mot_history.review.not_now'|trans, 'visibility_off', 'btn btn--sm btn--soft', defect.text) }}
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if item.notSeenAgain is not empty %}
+                    <ul class="list">
+                        {% for issueId in item.notSeenAgain %}
+                            <li class="list__item"><span class="list__body">{{ ui.icon('info') }} <a href="{{ url_for('issues.show', {id: vehicle.id, issue: issueId}) }}">{{ issue_titles[issueId] ?? '' }}</a>: {{ 'mot_history.review.not_seen_again'|trans }}</span></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                <div class="btn-row">
+                    {% if issues_on and item.defects|filter(r => r.offered()) is not empty %}
+                        {{ self.post(csrf, vehicle, {do: 'issues', test: test.id}, 'mot_history.review.add_all_issues'|trans, 'report') }}
+                    {% endif %}
+                    {{ self.post(csrf, vehicle, {do: 'done', test: test.id}, 'mot_history.review.done'|trans, 'check', 'btn btn--sm btn--soft') }}
+                </div>
+            </section>
+        {% endfor %}
+
+        <p><a href="{{ url_for('mot_history.show', {id: vehicle.id}) }}">{{ 'mot_history.review.back'|trans }}</a></p>
+        {{ mot.attribution(provider) }}
+    </div>
+{% endblock %}

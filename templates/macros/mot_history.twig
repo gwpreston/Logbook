@@ -1,0 +1,34 @@
+{# A test's result as text and an icon, never colour alone (spec.md §7.38). #}
+{% macro result(test) -%}
+    {%- import 'macros/ui.twig' as ui -%}
+    <span class="pill {{ test.passed() ? 'pill--valid' : 'pill--overdue' }}">{{ ui.icon(test.passed() ? 'check_circle' : 'error') }}{{ test.result.labelKey()|trans }}</span>
+{%- endmacro %}
+
+{# A defect's type as text and an icon. #}
+{% macro defect_type(defect) -%}
+    {%- import 'macros/ui.twig' as ui -%}
+    {%- set serious = defect.type.opensIssue() or defect.dangerous -%}
+    <span class="pill {{ serious ? 'pill--overdue' : 'pill--soon' }}">{{ ui.icon(serious ? 'warning' : 'info') }}{{ defect.type.labelKey()|trans }}{% if defect.dangerous and defect.type.value != 'dangerous' %} · {{ 'mot_history.defect.dangerous'|trans }}{% endif %}</span>
+{%- endmacro %}
+
+{# "43,950 mi", with the tested unit when the owner's differs. #}
+{% macro mileage(test) -%}
+    {%- import 'macros/ui.twig' as ui -%}
+    {%- if test.odometerKm is not null -%}
+        {{ test.odometerKm|distance }}
+        {%- if test.odometerUnit and test.odometerUnit.value != prefs().distanceUnit.value %} {{ 'mot_history.tested_in'|trans({unit: ('units.symbol.' ~ test.odometerUnit.value)|trans}) }}{% endif -%}
+    {%- else -%}
+        {{ 'mot_history.not_read'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# DVSA's licence line wherever its data shows. #}
+{% macro attribution(provider) -%}
+    {%- import 'macros/ui.twig' as ui -%}
+    {%- if provider -%}
+        {%- set licence = provider.licence() -%}
+        <p class="field__hint" data-attribution>
+            {{- licence.attributionKey|trans }} <a href="{{ licence.url }}" rel="noopener noreferrer license" target="_blank">{{ licence.name }}<span class="visually-hidden"> {{ 'notices.new_tab'|trans }}</span></a>.
+        </p>
+    {%- endif -%}
+{%- endmacro %}

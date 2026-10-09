@@ -1,0 +1,6 @@
+{
+  "bulk": [
+    {"filename": "bulk-light-vehicle_00-00-0000.json.gz", "downloadUrl": "https://example.invalid/bulk", "fileSize": 1, "fileCreatedOn": "2026-10-04"}
+  ],
+  "delta": []
+}

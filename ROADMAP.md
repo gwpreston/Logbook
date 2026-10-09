@@ -91,7 +91,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [39.3](docs/phases/phase-39.3.md) | API attachments and entry webhooks + v3.5 release | ✅ |
 | [40.1](docs/phases/phase-40.1.md) | Issues log | ✅ |
 | [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | ✅ |
-| [41](docs/phases/phase-41.md) | DVSA MOT history + release | 📋 |
+| [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
 
@@ -1093,8 +1093,13 @@ record.*
   defects stored; test mileages join the mileage log and its plausibility
   checks; passed tests can become inspection documents and fill *First
   MOT due*.
-- Advisories and defects offered as Phase 40.1 issues; History, Ask, API
-  and backups. Waits if individuals can't get DVSA credentials. Release.
+- Advisories and defects offered as Phase 40.1 issues; the recall state
+  and its *Needs attention* item; *Look up* on the add-vehicle form; a
+  weekly refresh around each MOT with a keep-alive; History, the sale
+  pack, Ask, MCP, API, CSV and backups. Individuals can get credentials
+  (#320). Open questions #320–#345 decided 2026-10-08/09; #346–#350,
+  from the merge review, left open. Released as
+  **v3.7.0**.
 
 → [`phase-41.md`](docs/phases/phase-41.md)
 

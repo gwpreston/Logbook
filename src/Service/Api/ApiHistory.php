@@ -124,6 +124,8 @@ final readonly class ApiHistory
             ActivityKind::Trip => 'trips',
             ActivityKind::Incident => 'incidents',
             ActivityKind::IssueNoticed, ActivityKind::IssueFixed => 'issues',
+            // The vehicle's tests are read together (spec.md §7.38).
+            ActivityKind::MotTest => 'mot-tests',
             ActivityKind::Milestone => '',
             ActivityKind::Tyre => null,
         };
@@ -131,6 +133,7 @@ final readonly class ApiHistory
         return match ($list) {
             null => null,
             '' => '/vehicles/' . $item->vehicle->id,
+            'mot-tests' => '/vehicles/' . $item->vehicle->id . '/mot-tests',
             default => '/vehicles/' . $item->vehicle->id . '/' . $list . '/' . $item->entryId,
         };
     }

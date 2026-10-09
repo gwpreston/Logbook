@@ -76,6 +76,7 @@ final readonly class ApiAttention
             AttentionKind::FinanceMissed, AttentionKind::FinanceMileage => $vehicle . '/finance/agreements',
             AttentionKind::Overdue => '/reminders?vehicle=' . $item->vehicle->id,
             AttentionKind::IssueOpen, AttentionKind::IssueLookAgain => $vehicle . '/issues/' . $item->subjectId,
+            AttentionKind::MotRecall => $vehicle . '/mot-tests',
         };
     }
 }

@@ -86,11 +86,16 @@ use Logbook\Service\Jobs\DigestJob;
 use Logbook\Service\Jobs\Job;
 use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
 use Logbook\Service\FuelPrices\FuelPricesJob;
+use Logbook\Service\MotHistory\MotHistoryJob;
 use Logbook\Service\FuelPrices\FuelPricesTwigExtension;
 use Logbook\Service\FuelPrices\Pause;
 use Logbook\Service\FuelPrices\ProviderRegistry;
 use Logbook\Service\FuelPrices\SystemPause;
 use Logbook\Service\FuelPrices\Uk\FuelFinderProvider;
+use Logbook\Service\MotHistory\MotHistoryRegistry;
+use Logbook\Service\MotHistory\MotHistoryTwigExtension;
+use Logbook\Service\MotHistory\Sample\SampleMotProvider;
+use Logbook\Service\MotHistory\Uk\DvsaProvider;
 use Logbook\Service\Jobs\JobRegistry;
 use Logbook\Service\Jobs\JobsTwigExtension;
 use Logbook\Service\Jobs\RemindersJob;
@@ -196,6 +201,8 @@ return [
             ...($settingsOf($c)->updateCheckAllowed ? [UpdateCheckJob::class] : []),
             // Never due while no price provider is enabled (spec.md §7.34).
             FuelPricesJob::class,
+            // Never due while MOT history is off (spec.md §7.38 *Refresh*).
+            MotHistoryJob::class,
             // The day's AI insights for those with AI on (spec.md §7.26, Phase 33.4).
             AiInsightsJob::class,
             // Listed only while the demo is active (spec.md §7.36).
@@ -203,6 +210,18 @@ return [
         ],
     )),
     // Live fuel price providers (Phase 30.2, spec.md §7.34); one adapter per country.
+    // MOT history providers (spec.md §7.38): DVSA (UK), and the sample one in development.
+    MotHistoryRegistry::class => static function (ContainerInterface $c) use ($settingsOf): MotHistoryRegistry {
+        $dvsa = $c->get(DvsaProvider::class);
+        assert($dvsa instanceof DvsaProvider);
+        $providers = [$dvsa];
+        // Sample answers for the sample data, outside production and never in the demo (#335).
+        if (!$settingsOf($c)->isProduction() && !$settingsOf($c)->demo->enabled) {
+            $providers[] = new SampleMotProvider();
+        }
+
+        return new MotHistoryRegistry($providers);
+    },
     ProviderRegistry::class => static function (ContainerInterface $c) use ($settingsOf): ProviderRegistry {
         $ukFuelFinder = $c->get(FuelFinderProvider::class);
         assert($ukFuelFinder instanceof FuelFinderProvider);
@@ -307,6 +326,9 @@ return [
         $finance = $c->get(FinanceTwigExtension::class);
         assert($finance instanceof FinanceTwigExtension);
         $twig->addExtension($finance);
+        $motHistory = $c->get(MotHistoryTwigExtension::class);
+        assert($motHistory instanceof MotHistoryTwigExtension);
+        $twig->addExtension($motHistory);
         $fuelPrices = $c->get(FuelPricesTwigExtension::class);
         assert($fuelPrices instanceof FuelPricesTwigExtension);
         $twig->addExtension($fuelPrices);
@@ -387,6 +409,7 @@ return [
         get(Tool\TripsSummary::class),
         get(Tool\Incidents::class),
         get(Tool\Issues::class),
+        get(Tool\MotHistory::class),
         get(Tool\Finance::class),
         get(Tool\Stations::class),
         get(Tool\CheapestFuel::class),

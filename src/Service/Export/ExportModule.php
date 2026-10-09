@@ -29,12 +29,14 @@ enum ExportModule: string
     case Finance = 'finance';
     /** Export only (Phase 40.2, spec.md §7.13 *Issues*). */
     case Issues = 'issues';
+    /** Export only (Phase 41, spec.md §7.38, #340): one row per defect; only while MOT history is on. */
+    case MotTests = 'mot-tests';
 
     public function isImportable(): bool
     {
         return !in_array(
             $this,
-            [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues],
+            [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues, self::MotTests],
             true,
         );
     }
@@ -47,7 +49,7 @@ enum ExportModule: string
         return match ($this) {
             self::Fuel => Feature::Fuel,
             self::Maintenance => Feature::Maintenance,
-            self::Documents => Feature::Compliance,
+            self::Documents, self::MotTests => Feature::Compliance,
             self::Tyres, self::TyreChanges => Feature::Tyres,
             self::Trips => Feature::Trips,
             self::Incidents => Feature::Incidents,
@@ -74,6 +76,7 @@ enum ExportModule: string
             self::Incidents => 'incidents.index',
             self::Finance => 'finance.index',
             self::Issues => 'issues.index',
+            self::MotTests => 'mot_history.show',
         };
     }
 }

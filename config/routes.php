@@ -18,6 +18,12 @@ use Logbook\Action\Settings\Notifications\NotificationsAction;
 use Logbook\Action\Settings\Notifications\RemoveChannelAction;
 use Logbook\Action\Settings\Notifications\SwitchChannelAction;
 use Logbook\Action\Settings\FuelPrices\FuelPricesAction;
+use Logbook\Action\MotHistory\FetchMotHistoryAction;
+use Logbook\Action\MotHistory\MotHistoryAction;
+use Logbook\Action\MotHistory\MotReviewAction;
+use Logbook\Action\MotHistory\StopMotHistoryAction;
+use Logbook\Action\Settings\MotHistory\MotHistorySettingsAction;
+use Logbook\Action\Settings\MotHistory\TestMotHistoryAction;
 use Logbook\Action\Station\CreateStationAction;
 use Logbook\Action\Station\DuplicatesAction as StationDuplicatesAction;
 use Logbook\Action\Station\EditStationAction;
@@ -42,6 +48,7 @@ use Logbook\Action\Settings\Jobs\JobTriggersAction;
 use Logbook\Action\Settings\Jobs\JobUrlTokenAction;
 use Logbook\Action\Settings\Jobs\RunJobAction;
 use Logbook\Action\Api\ListDocumentsAction as ApiDocumentsAction;
+use Logbook\Action\Api\MotTestsAction as ApiMotTestsAction;
 use Logbook\Action\Api\ListExpensesAction as ApiExpensesAction;
 use Logbook\Action\Api\TrueCostAction as ApiTrueCostAction;
 use Logbook\Action\Api\ListFuelAction as ApiFuelAction;
@@ -556,6 +563,10 @@ return static function (App $app): void {
                 $keyed->get('/vehicles/{id:[0-9]+}/documents', ApiDocumentsAction::class)->setName('api.documents.index')
                     ->setArgument($ability, VehicleAbility::View->value)
                     ->add($module(Feature::Compliance));
+                // MOT history (spec.md §7.38): a 404 while it is off; never fetches.
+                $keyed->get('/vehicles/{id:[0-9]+}/mot-tests', ApiMotTestsAction::class)->setName('api.mot_tests')
+                    ->setArgument($ability, VehicleAbility::View->value)
+                    ->add($module(Feature::Compliance));
                 $keyed->get('/vehicles/{id:[0-9]+}/maintenance/{entry:[0-9]+}', ApiShowEntryAction::class)
                     ->setName('api.maintenance.show')
                     ->setArgument('list', 'maintenance')
@@ -1025,6 +1036,19 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Log->value);
             })->add($module(Feature::Compliance));
 
+            // MOT history (spec.md §7.38): a 404 while the provider is off; fetching sends the
+            // registration out, so it is the owner's (#321).
+            $vehicle->group('', function (Group $mot) use ($ability): void {
+                $mot->get('/mot-history', MotHistoryAction::class)->setName('mot_history.show')
+                    ->setArgument($ability, VehicleAbility::View->value);
+                $mot->post('/mot-history/fetch', FetchMotHistoryAction::class)->setName('mot_history.fetch')
+                    ->setArgument($ability, VehicleAbility::Own->value);
+                $mot->post('/mot-history/stop', StopMotHistoryAction::class)->setName('mot_history.stop')
+                    ->setArgument($ability, VehicleAbility::Own->value);
+                $mot->map(['GET', 'POST'], '/mot-history/review', MotReviewAction::class)->setName('mot_history.review')
+                    ->setArgument($ability, VehicleAbility::Log->value);
+            })->add($module(Feature::Compliance));
+
             // Without ViewCosts the tab lists the ad-hoc expenses only (spec.md §7.21).
             $vehicle->get('/expenses', VehicleExpensesAction::class)->setName('expenses.index')
                 ->setArgument($ability, VehicleAbility::View->value);
@@ -1055,7 +1079,7 @@ return static function (App $app): void {
 
             // Export and import check the module's toggle themselves (one route, several modules).
             $exportModule = '{module:fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations|trips|incidents'
-                . '|finance|issues}';
+                . '|finance|issues|mot-tests}';
             $vehicle->get('/export/' . $exportModule . '.csv', ExportModuleAction::class)
                 ->setName('export.module')
                 ->setArgument($ability, VehicleAbility::Manage->value);
@@ -1152,6 +1176,16 @@ return static function (App $app): void {
             $stations->post('/settings/places/{place:[0-9]+}/delete', PlaceDeleteAction::class)
                 ->setName('settings.places.delete');
         })->add($module(Feature::Stations));
+
+        // Settings → MOT history (spec.md §7.38): admins only, 404 to others; part of `compliance`.
+        $group->group('', function (Group $mot) use ($instance): void {
+            $mot->map(['GET', 'POST'], '/settings/mot-history', MotHistorySettingsAction::class)
+                ->setName('settings.mot_history')
+                ->setArgument($instance, InstanceAbility::ManageMotHistory->value);
+            $mot->post('/settings/mot-history/test', TestMotHistoryAction::class)
+                ->setName('settings.mot_history.test')
+                ->setArgument($instance, InstanceAbility::ManageMotHistory->value);
+        })->add($module(Feature::Compliance));
 
         // Every visible vehicle's open and watching issues (spec.md §7.37 *Fleet*).
         $group->get('/issues', FleetIssuesAction::class)->setName('issues.fleet')->add($module(Feature::Issues));

@@ -1,0 +1,121 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/mot_history.twig' as mot %}
+
+{#
+ # MOT history (spec.md §7.38 *Pages*): the recall state, each test newest
+ # first with its defects and what was made from it, and for the owner
+ # Fetch (after the one-time statement), Refresh and Stop and remove.
+ #}
+{% set active_nav = 'garage' %}
+
+{% block title %}{{ 'mot_history.page.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'compliance'} %}
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'mot_history.page.title'|trans }}</h1>
+                <p class="page-header__lead">
+                    {% if state.fetchedAt %}
+                        {{ 'mot_history.page.fetched'|trans({when: state.fetchedAt|local_datetime, provider: provider.nameKey()|trans}) }}
+                    {% else %}
+                        {{ 'mot_history.page.lead'|trans }}
+                    {% endif %}
+                </p>
+            </div>
+        </header>
+
+        {% if review_pending and can_review %}
+            <div class="alert alert--info" role="status" data-review-link>{{ ui.icon('fact_check') }}<span>{{ 'mot_history.page.review_pending'|trans }} <a href="{{ url_for('mot_history.review', {id: vehicle.id}) }}">{{ 'mot_history.page.review'|trans }}</a></span></div>
+        {% endif %}
+
+        {% if state.recall %}
+            <section class="card" aria-labelledby="recall-heading" data-recall="{{ state.recall.value }}">
+                <h2 id="recall-heading" class="card__title">{{ ui.icon(state.recall.value == 'yes' ? 'warning' : 'verified_user') }}{{ 'mot_history.recall.heading'|trans }}</h2>
+                <p>{{ state.recall.labelKey()|trans }}</p>
+                {% if state.fetchedAt %}<p class="field__hint">{{ 'mot_history.recall.as_of'|trans({date: state.fetchedAt|instant_date}) }}</p>{% endif %}
+            </section>
+        {% endif %}
+
+        {% if can_fetch %}
+            <section class="card" aria-labelledby="fetch-heading">
+                <h2 id="fetch-heading" class="card__title">{{ ui.icon('sync') }}{{ (state.enabled() ? 'mot_history.fetch.refresh_heading' : 'mot_history.fetch.heading')|trans }}</h2>
+                {% if not has_identifier %}
+                    <p>{{ 'mot_history.unavailable.no_identifier'|trans }}</p>
+                {% elseif state.enabled() %}
+                    <form method="post" action="{{ url_for('mot_history.fetch', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <button type="submit" class="btn">{{ ui.icon('sync') }}{{ 'mot_history.fetch.refresh'|trans }}</button>
+                    </form>
+                    <details class="disclosure">
+                        <summary class="disclosure__summary">{{ 'mot_history.stop.button'|trans }}</summary>
+                        <form method="post" action="{{ url_for('mot_history.stop', {id: vehicle.id}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <p>{{ 'mot_history.stop.hint'|trans }}</p>
+                            <button type="submit" class="btn btn--danger">{{ ui.icon('delete') }}{{ 'mot_history.stop.button'|trans }}</button>
+                        </form>
+                    </details>
+                {% else %}
+                    <form method="post" action="{{ url_for('mot_history.fetch', {id: vehicle.id}) }}">
+                        {{ ui.csrf(csrf) }}
+                        <p data-statement>{{ 'mot_history.fetch.statement'|trans({provider: provider.nameKey()|trans}) }}</p>
+                        <label class="toggle">
+                            <input type="checkbox" name="confirm" value="1" required>
+                            <span class="toggle__text"><span class="toggle__title">{{ 'mot_history.fetch.confirm'|trans }}</span></span>
+                        </label>
+                        <div class="btn-row">
+                            <button type="submit" class="btn btn--primary">{{ ui.icon('fact_check') }}{{ 'mot_history.fetch.button'|trans }}</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="tests-heading">
+            <h2 id="tests-heading" class="card__title">{{ ui.icon('fact_check') }}{{ 'mot_history.page.tests'|trans }}</h2>
+            {% if tests is empty %}
+                <div class="empty">
+                    {{ ui.icon('fact_check') }}
+                    <p class="empty__title">{{ 'mot_history.page.empty_title'|trans }}</p>
+                    <p>{{ (state.firstDueOn ? 'mot_history.page.first_due' : 'mot_history.page.empty_body')|trans({date: state.firstDueOn ? state.firstDueOn|local_date : ''}) }}</p>
+                </div>
+            {% else %}
+                <ol class="list mot-tests">
+                    {% for test in tests %}
+                        <li class="list__item mot-test" data-test="{{ test.number }}">
+                            <div class="list__body">
+                                <span class="list__title">{{ test.completedAt|instant_date }} {{ mot.result(test) }}</span>
+                                <span class="list__meta">
+                                    {{ mot.mileage(test) }}
+                                    {% if test.expiryOn %} · {{ 'mot_history.page.expires'|trans({date: test.expiryOn|local_date}) }}{% endif %}
+                                    {% if test.reference() %} · {{ 'mot_history.page.number'|trans({number: test.reference()}) }}{% endif %}
+                                    {% if test.registrationAtTest and test.registrationAtTest|replace({' ': ''}) != (vehicle.data.registration ?? '')|replace({' ': ''})|upper %} · {{ 'mot_history.page.tested_as'|trans({registration: test.registrationAtTest}) }}{% endif %}
+                                    {% if documents[test.id] %} · <a href="{{ url_for('compliance.edit', {id: vehicle.id, document: documents[test.id]}) }}">{{ 'mot_history.page.document'|trans }}</a>{% endif %}
+                                </span>
+                                {% if test.defects is not empty %}
+                                    <ul class="list mot-defects">
+                                        {% for defect in test.defects %}
+                                            <li class="mot-defect">
+                                                {{ mot.defect_type(defect) }} {{ defect.text }}
+                                                {%- if defect.issueId and issues_on %} · <a href="{{ url_for('issues.show', {id: vehicle.id, issue: defect.issueId}) }}">{{ 'mot_history.page.issue'|trans }}</a>{% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ol>
+                {% if can_vehicle(vehicle, 'manage') %}
+                    <div class="btn-row">
+                        <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'mot-tests'}) }}" download>{{ ui.icon('download') }}{{ 'export.csv'|trans }}</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {{ mot.attribution(provider) }}
+        </section>
+    </div>
+{% endblock %}

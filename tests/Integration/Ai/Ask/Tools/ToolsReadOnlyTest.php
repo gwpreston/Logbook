@@ -14,6 +14,9 @@ use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
 use Logbook\Service\FuelPrices\FuelPriceConfig;
 use Logbook\Service\FuelPrices\FuelPriceSettings;
+use Logbook\Service\MotHistory\MotHistoryConfig;
+use Logbook\Service\MotHistory\MotHistoryRegistry;
+use Logbook\Service\MotHistory\Sample\SampleMotProvider;
 use Logbook\Service\Station\PlaceService;
 use Logbook\Service\Trip\TripService;
 use Psr\Container\ContainerInterface;
@@ -42,6 +45,9 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
         $this->reading($app, $golf, '20500', '2026-09-20T09:00:00Z');
         $this->service($app, FuelPriceConfig::class)->save(new FuelPriceSettings(DemoPriceProvider::CODE));
         $this->service($app, PlaceService::class)->create($owner, new PlaceData('Home', '54.716000', '-6.208000'));
+        // Phase 41: MOT history on, with the sample provider (it sends nothing).
+        $this->service($app, MotHistoryConfig::class)
+            ->saveProvider($this->service($app, MotHistoryRegistry::class)->get(SampleMotProvider::CODE));
         $before = $this->counts($app);
 
         $calls = [
@@ -64,6 +70,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['trips_summary', ['period' => 'all_time']],
             ['trips_summary', []],
             ['needs_attention', []],
+            ['mot_history', ['vehicle' => $golf->id]],
             ['incidents', []],
             ['incidents', ['years' => 10, 'claims_only' => true]],
             ['issues', []],
@@ -99,7 +106,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             $drafts,
             'a card for each draft but the tread check (no tyres fitted)',
         );
-        self::assertCount(29, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
+        self::assertCount(30, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

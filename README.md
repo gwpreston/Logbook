@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.6.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.7.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -71,7 +71,9 @@ your own server.
 > for faults you've noticed and not fixed yet, in your own words, open,
 > watched or fixed by the service record that fixed it, with recommended
 > work from an invoice or MOT added in one tap (Logbook never guesses a
-> cause); background jobs
+> cause); a UK vehicle's MOT history from DVSA (off until an admin
+> enables it), its mileages checked with yours, passes as MOT documents,
+> advisories as issues and an outstanding recall flagged; background jobs
 > you can see and run from Settings, with a warning when they stop and ways
 > to run them without cron, and scheduled backups; an optional check for new
 > versions (off until you switch it on); hire purchase, PCP, loan and lease
@@ -145,6 +147,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/stations.md](docs/stations.md) | Fuel stations: your station names as stations, choosing one on a fill-up with what you paid last time, what you paid at each, favourites, your private places and straight-line distances, merging duplicates, chargers, who sees and changes what; live fuel prices (UK Fuel Finder), Cheapest near me and effective cost, Was it worth it?, price alerts, adding a provider adapter |
 | [docs/incidents.md](docs/incidents.md) | Incidents, damage and insurance claims: logging, photos kept as taken, linking repairs so costs count once, the claim and repair estimates, reading insurer letters, archiving a car as written off, the claims history for insurance quotes and what the sale pack shows |
 | [docs/issues.md](docs/issues.md) | Issues: faults you've noticed and not fixed yet, open, watching and fixed, fixing from either side, look-again reminders, recommended work, the API, Ask and CSV |
+| [docs/mot-history.md](docs/mot-history.md) | MOT history from DVSA: getting free credentials, enabling it, what is sent, fetching, the review card, mileage and recalls, *Look up*, the weekly refresh and keep-alive, licence and attribution |
 | [docs/demo-mode.md](docs/demo-mode.md) | Running a public demo that resets itself: seeding an empty database, the reset schedule, what visitors can and cannot do, why it cannot wipe a real instance, stopping being a demo |
 | [docs/notification-channels.md](docs/notification-channels.md) | Email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost, Slack and webhooks; adding a channel |
 | [docs/translations.md](docs/translations.md) | Adding or improving a language |
@@ -216,7 +219,7 @@ start if something else already holds the app port. On Windows run it from
 
 | Option | What it does |
 |---|---|
-| `--with-sample-data` | Add sample data: a demo owner (`demo`, an admin, `demo@example.test`, UK units, GBP) and seven vehicles — six active (petrol, self-charging hybrid, plug-in hybrid with a personalised registration, electric, a motorbike, and an off-road trail bike with no registration) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (the Golf's going back to 2021, one a month, with a valuation each spring, for its true cost trend; including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; and a member (`partner`, `partner@example.test`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Both get **new random passwords on every run**, printed in the summary and kept in `var/dev-credentials` (mode 600, git-ignored; `--status` prints it). On a database that already has them, only the passwords change; on one with other accounts nothing is added. |
+| `--with-sample-data` | Add sample data: a demo owner (`demo`, an admin, `demo@example.test`, UK units, GBP) and seven vehicles — six active (petrol, self-charging hybrid, plug-in hybrid with a personalised registration, electric, a motorbike, and an off-road trail bike with no registration) and one sold and archived, with its sale receipt, a valuation and nine years of services and mileage so it shows exact lifetime cost-of-ownership figures; the electric car is leased, with monthly payments — with a year of fill-ups (the Golf's going back to 2021, one a month, with a valuation each spring, for its true cost trend; including partial fills, a missed fill-up, EV charges, a mistyped odometer the economy check flags and a thirsty winter tank confirmed as right) and monthly odometer readings, and a year of tyres: the Golf's summers, winters fitted in November and stored as *Winter wheels* in March, worn fronts replaced (linked to their service record), a repair, a rotation and a damaged tyre replaced, with tread depths and three checks so the fronts show a wear estimate and a *due* tyre reminder; the motorbike's rear replaced once and checked since; MOT history from a built-in sample provider (development only; it sends nothing): the Golf's six tests with an outstanding recall and a tyre advisory watched and advised again, the other cars' tests waiting on the review card, and the electric car's first MOT due date; and a member (`partner`, `partner@example.test`) with Log access to the self-charging hybrid without costs, whose recent fill-ups they logged, and View access to the Golf. Both get **new random passwords on every run**, printed in the summary and kept in `var/dev-credentials` (mode 600, git-ignored; `--status` prints it). On a database that already has them, only the passwords change; on one with other accounts nothing is added. |
 | `--postgres`, `--mysql`, `--mariadb`, `--sqlite` | Which database engine to run. PostgreSQL is the default. Each engine keeps its own data and photos, so you can switch back and forth. |
 | `--reset` | Empty the chosen engine's database (full rollback + migrate) and delete its uploads. With `--stop`, delete every dev database, the uploads and the `vendor/` volume instead. Asks first unless `--yes`. |
 | `--stop`, `--down` | Stop the containers instead of starting them. |

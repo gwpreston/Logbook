@@ -43,6 +43,8 @@
         {{ url_for('incidents.show', {id: id, incident: item.subjectId}) }}
     {%- elseif item.kind.value in ['finance_missed', 'finance_mileage'] -%}
         {{ url_for('finance.show', {id: id, agreement: item.subjectId}) }}
+    {%- elseif item.kind.value == 'mot_recall' -%}
+        {{ url_for('mot_history.show', {id: id}) }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -57,6 +59,7 @@
     {%- elseif item.kind.value in ['fuel_price', 'maintenance_cost'] -%}{{ 'attention.action.fix'|trans }}
     {%- elseif item.kind.value == 'stalled_claim' -%}{{ 'attention.action.open_claim'|trans }}
     {%- elseif item.kind.value in ['finance_missed', 'finance_mileage'] -%}{{ 'attention.action.open_agreement'|trans }}
+    {%- elseif item.kind.value == 'mot_recall' -%}{{ 'attention.action.mot_history'|trans }}
     {%- else -%}{{ 'attention.action.add_valuation'|trans }}
     {%- endif -%}
 {%- endmacro %}

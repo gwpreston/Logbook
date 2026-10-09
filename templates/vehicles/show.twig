@@ -185,6 +185,16 @@
                         </span>
                     </form>
                 {% endif %}
+                {% if mot_result and can_vehicle(vehicle, 'log') %}
+                    {# A refresh brought a test with something to decide (spec.md §7.38 *Refresh*). #}
+                    <div class="alert alert--info prompt-bar" data-mot-result>
+                        {{ ui.icon('fact_check') }}
+                        <span>{{ ('mot_history.new_result.' ~ (mot_result.passed() ? 'passed' : 'failed'))|trans({date: mot_result.completedAt|instant_date}) }}</span>
+                        <span class="prompt-bar__actions">
+                            <a class="btn btn--primary" href="{{ url_for('mot_history.review', {id: vehicle.id}) }}">{{ 'mot_history.new_result.review'|trans }}</a>
+                        </span>
+                    </div>
+                {% endif %}
                 {% if documents is empty and first_inspection is null %}
                     <div class="empty">
                         {{ ui.icon('verified_user') }}
@@ -209,9 +219,15 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
-                {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                {% if (not vehicle.isArchived() and can_vehicle(vehicle, 'log')) or mot_history_enabled() %}
                     <div class="btn-row">
-                        <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                        {% if not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+                            <a class="btn" href="{{ url_for('compliance.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'compliance.add'|trans }}</a>
+                        {% endif %}
+                        {# MOT history (spec.md §7.38): fetched by the owner, seen by anyone with View. #}
+                        {% if mot_history_enabled() %}
+                            <a class="btn btn--soft" href="{{ url_for('mot_history.show', {id: vehicle.id}) }}" data-mot-history-link>{{ ui.icon('fact_check') }}{{ (can_vehicle(vehicle, 'own') ? 'mot_history.fetch.button' : 'mot_history.page.link')|trans }}</a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </section>

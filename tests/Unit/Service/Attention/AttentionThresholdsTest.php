@@ -147,7 +147,15 @@ final class AttentionThresholdsTest extends TestCase
         self::assertSame(AttentionSeverity::Now, AttentionKind::Overdue->severity());
         self::assertSame(AttentionSeverity::Now, AttentionKind::FinanceMissed->severity(), 'a missed payment is Now');
         // Phase 40.1: an open fault is real work, like an overdue service (spec.md §7.37).
-        $now = [AttentionKind::Overdue, AttentionKind::FinanceMissed, AttentionKind::IssueOpen, AttentionKind::IssueLookAgain];
+        // Phase 41: an outstanding recall is work to do too (#329).
+        $now = [
+            AttentionKind::Overdue,
+            AttentionKind::FinanceMissed,
+            AttentionKind::IssueOpen,
+            AttentionKind::IssueLookAgain,
+            AttentionKind::MotRecall,
+        ];
+        self::assertFalse(AttentionKind::MotRecall->isHideable());
         self::assertSame(AttentionSeverity::Now, AttentionKind::IssueOpen->severity());
         self::assertSame(AttentionSeverity::Now, AttentionKind::IssueLookAgain->severity());
         foreach (AttentionKind::cases() as $kind) {

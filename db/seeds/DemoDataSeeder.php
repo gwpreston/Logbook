@@ -10,6 +10,7 @@ use Logbook\Domain\Tyre\TyreLineAction;
 use Logbook\Domain\Tyre\TyrePosition;
 use Logbook\Kernel;
 use Logbook\Service\FuelPrices\Demo\DemoPriceProvider;
+use Logbook\Service\MotHistory\Sample\SampleMotProvider;
 use Logbook\Service\Tyre\TyreReplay;
 use Logbook\Service\Tyre\TyreReplayResult;
 use Logbook\Support\Date\LocalTime;
@@ -281,6 +282,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedFinance($now, $userId);
         $this->seedStations($now, $userId);
         $this->seedFuelPrices($now, $userId);
+        $this->seedMotHistory($now, $userId);
 
         if ($this->demo) {
             // One account (spec.md §7.36): the partner's fill-ups become the owner's.
@@ -1785,6 +1787,116 @@ final class DemoDataSeeder extends AbstractSeed
      * watched, looked at again in three months; and grinding brakes fixed by
      * the June brake pads.
      */
+    /**
+     * MOT history (spec.md §7.38, #335), outside the demo only: the sample
+     * provider switched on, and each sample vehicle's tests stored as a
+     * fetch would store them, with a reading per read odometer. The Golf's
+     * tyre advisory became a watched issue in 2025 and was advised again in
+     * 2026 (a repeat); its 2024 fail was dealt with. The rest wait on the
+     * review card.
+     */
+    private function seedMotHistory(string $now, int $userId): void
+    {
+        if ($this->demo) {
+            return;
+        }
+        $this->table('settings')->insert([
+            'scope' => 'global',
+            'owner_id' => 0,
+            'name' => 'mot_history',
+            'value' => json_encode(['provider' => SampleMotProvider::CODE], JSON_THROW_ON_ERROR),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->saveData();
+
+        $byPlate = [];
+        foreach ($this->vehicleIds() as $registration => $id) {
+            $byPlate[str_replace(' ', '', $registration)] = $id;
+        }
+        foreach (SampleMotProvider::registrations() as $plate) {
+            $vehicle = $byPlate[$plate] ?? null;
+            $record = SampleMotProvider::record($plate);
+            if ($vehicle === null || $record === null) {
+                continue;
+            }
+            $this->execute(
+                'UPDATE vehicles SET mot_history_enabled_at = ?, mot_history_fetched_at = ?, mot_recall_state = ?,'
+                . ' mot_first_due_on = ? WHERE id = ?',
+                [
+                    $now,
+                    $now,
+                    $record->recall->value,
+                    $record->tests === [] ? $record->firstDueOn?->format('Y-m-d') : null,
+                    $vehicle,
+                ],
+            );
+            $tyreDefects = [];
+            foreach ($record->tests as $test) {
+                $completed = $test->completedAt->format('Y-m-d H:i:s');
+                $testId = $this->insertRow('mot_tests', [
+                    'vehicle_id' => $vehicle,
+                    'test_number' => $test->number,
+                    'completed_at' => $completed,
+                    'result' => $test->result->value,
+                    'expiry_on' => $test->expiryOn?->format('Y-m-d'),
+                    'odometer_km' => $test->odometerKm,
+                    'odometer_unit' => $test->odometerUnit?->value,
+                    'odometer_state' => $test->odometerState->value,
+                    'registration_at_test' => $test->registrationAtTest,
+                    'data_source' => $test->source->value,
+                    // The Golf's 2024 fail and 2025 pass were dealt with; the rest wait on the card.
+                    'reviewed_at' => in_array($test->number, ['330424030601', '440325030601'], true) ? $now : null,
+                    'fetched_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                foreach ($test->defects as $position => $defect) {
+                    $defectId = $this->insertRow('mot_defects', [
+                        'mot_test_id' => $testId,
+                        'position' => $position,
+                        'type' => $defect->type->value,
+                        'text' => $defect->text,
+                        'dangerous' => $defect->dangerous,
+                        'issue_id' => null,
+                        'dismissed_at' => $test->number === '330424030601' ? $now : null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                    if (str_starts_with($defect->text, 'Nearside Front Tyre')) {
+                        $tyreDefects[] = $defectId;
+                    }
+                }
+                if ($test->odometerKm !== null) {
+                    $this->table('odometer_readings')->insert([
+                        'vehicle_id' => $vehicle, 'reading_km' => $test->odometerKm, 'recorded_at' => $completed,
+                        'source' => 'mot', 'mot_test_id' => $testId, 'created_at' => $now, 'updated_at' => $now,
+                    ])->saveData();
+                }
+            }
+            if ($plate !== 'LB19KTR') {
+                continue;
+            }
+            // The tyre advisory: watched from the 2025 MOT, advised again in 2026.
+            $tyre = $this->issueRow($vehicle, $now, $userId, [
+                'noticed_on' => '2025-03-06',
+                'odometer_km' => '57797.980',
+                'title' => 'Nearside Front Tyre worn close to legal limit/worn on edge (5.2.3 (e))',
+                'status' => 'watching',
+                // Moved on to before the next MOT when it was advised again.
+                'look_again_on' => '2027-02-02',
+                'source' => 'mot_advisory',
+                'source_ref' => '440325030601',
+            ]);
+            $this->issueLine($now, $userId, $tyre, '2026-03-05', [
+                'odometer_km' => '69048.904',
+                'note' => 'Advised again at the MOT on 5 Mar 2026, 42,905 mi',
+            ]);
+            foreach ($tyreDefects as $defectId) {
+                $this->execute('UPDATE mot_defects SET issue_id = ? WHERE id = ?', [$tyre, $defectId]);
+            }
+        }
+    }
+
     private function seedIssues(string $now, int $userId): void
     {
         $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');

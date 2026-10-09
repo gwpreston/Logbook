@@ -1,0 +1,97 @@
+{
+  "registration": "AB12CDE",
+  "make": "VOLKSWAGEN",
+  "model": "GOLF MATCH TSI",
+  "firstUsedDate": "2012-03-14",
+  "fuelType": "Petrol",
+  "primaryColour": "Silver",
+  "registrationDate": "2012-03-14",
+  "manufactureDate": "2012-03-01",
+  "engineSize": "1395",
+  "hasOutstandingRecall": "Yes",
+  "motTests": [
+    {
+      "completedDate": "2025-02-14T10:31:07.000Z",
+      "testResult": "PASSED",
+      "expiryDate": "2026-03-13",
+      "odometerValue": "41950",
+      "odometerUnit": "MI",
+      "odometerResultType": "READ",
+      "motTestNumber": "123456789012",
+      "registrationAtTimeOfTest": "AB12CDE",
+      "dataSource": "DVSA",
+      "defects": [
+        {"text": "Nearside Front Tyre worn close to legal limit/worn on edge (5.2.3 (e))", "type": "ADVISORY", "dangerous": false},
+        {"text": "Offside Rear   Brake pipe slightly corroded (1.1.11 (c))", "type": "ADVISORY", "dangerous": false},
+        {"text": "Oil leak, but not excessive (8.4.1 (a) (i))", "type": "MINOR", "dangerous": false}
+      ]
+    },
+    {
+      "completedDate": "2026-02-14T09:17:46.000Z",
+      "testResult": "FAILED",
+      "expiryDate": null,
+      "odometerValue": "43950",
+      "odometerUnit": "MI",
+      "odometerResultType": "READ",
+      "motTestNumber": "223456789012",
+      "registrationAtTimeOfTest": "AB12CDE",
+      "dataSource": "DVSA",
+      "defects": [
+        {"text": "Nearside Front Tyre tread depth below requirements of 1.6mm (5.2.3 (e))", "type": "DANGEROUS", "dangerous": true},
+        {"text": "Offside Rear Brake pipe excessively corroded (1.1.11 (c))", "type": "MAJOR", "dangerous": false},
+        {"text": "Headlamp aim too high", "type": "FAIL", "dangerous": false},
+        {"text": "Customer advised of wiper wear", "type": "USER ENTERED", "dangerous": false},
+        {"text": "Test station note", "type": "SYSTEM GENERATED"},
+        {"text": "Corrosion noted", "type": "NON SPECIFIC", "dangerous": null},
+        {"text": "No type given", "type": null},
+        {"text": "A type DVSA added later", "type": "PRS"},
+        {"text": null, "type": "ADVISORY"}
+      ]
+    },
+    {
+      "completedDate": "2026-02-15T11:02:00.000Z",
+      "testResult": "PASSED",
+      "expiryDate": "2027-03-13",
+      "odometerValue": "43961",
+      "odometerUnit": "MI",
+      "odometerResultType": "READ",
+      "motTestNumber": "323456789012",
+      "registrationAtTimeOfTest": "AB12CDE",
+      "dataSource": "DVSA",
+      "defects": []
+    },
+    {
+      "completedDate": "2019-03-01T08:00:00.000Z",
+      "testResult": "PASSED",
+      "expiryDate": "2020-03-13",
+      "odometerValue": "50123",
+      "odometerUnit": "KM",
+      "odometerResultType": "READ",
+      "motTestNumber": null,
+      "registrationAtTimeOfTest": null,
+      "dataSource": "DVA NI"
+    },
+    {
+      "completedDate": "2018-03-02T08:00:00.000Z",
+      "testResult": "PASSED",
+      "expiryDate": "2019-03-13",
+      "odometerValue": null,
+      "odometerUnit": null,
+      "odometerResultType": "UNREADABLE",
+      "motTestNumber": "423456789012",
+      "dataSource": "DVSA",
+      "defects": null
+    },
+    {
+      "completedDate": null,
+      "testResult": "PASSED",
+      "expiryDate": "2017-03-13",
+      "odometerValue": "1000",
+      "odometerUnit": "KM",
+      "odometerResultType": "READ",
+      "motTestNumber": "CVS1",
+      "location": "Some ATF",
+      "dataSource": "CVS"
+    }
+  ]
+}

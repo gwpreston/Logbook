@@ -38,6 +38,12 @@ enum ActivityKind: string
      */
     case IssueNoticed = 'issue_noticed';
     case IssueFixed = 'issue_fixed';
+    /**
+     * A DVSA MOT test (Phase 41, spec.md §7.38): under *Documents*, unless it
+     * became an `inspection` document, whose line carries it. Never in print
+     * or the sale pack's history, which summarise the tests themselves.
+     */
+    case MotTest = 'mot_test';
     case Milestone = 'milestone';
 
     /**
@@ -58,6 +64,7 @@ enum ActivityKind: string
             self::Incident,
             self::IssueNoticed,
             self::IssueFixed,
+            self::MotTest,
         ];
     }
 
@@ -81,6 +88,8 @@ enum ActivityKind: string
             // The incident page, where its photos and linked records are.
             self::Incident => ['incidents.show', 'incident'],
             self::IssueNoticed, self::IssueFixed => ['issues.show', 'issue'],
+            // The vehicle's MOT history page, which anyone who can view it may see.
+            self::MotTest => ['mot_history.show', null],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -98,6 +107,7 @@ enum ActivityKind: string
             self::Trip => Feature::Trips,
             self::Incident => Feature::Incidents,
             self::IssueNoticed, self::IssueFixed => Feature::Issues,
+            self::MotTest => Feature::Compliance,
             self::Odometer, self::Expense, self::Valuation, self::Milestone => null,
         };
     }
@@ -119,7 +129,7 @@ enum ActivityKind: string
             self::Incident => AttachmentOwner::Incident,
             self::IssueNoticed => AttachmentOwner::Issue,
             // Its files are counted once, on the noticed line.
-            self::Tyre, self::Milestone, self::IssueFixed => null,
+            self::Tyre, self::Milestone, self::IssueFixed, self::MotTest => null,
         };
     }
 
@@ -140,7 +150,7 @@ enum ActivityKind: string
             self::Incident => DatedSource::Incident,
             self::IssueNoticed => DatedSource::IssueNoticed,
             self::IssueFixed => DatedSource::IssueFixed,
-            self::Document, self::Milestone => null,
+            self::Document, self::Milestone, self::MotTest => null,
         };
     }
 
@@ -153,7 +163,7 @@ enum ActivityKind: string
             self::Fuel => 'c-fuel',
             self::Odometer, self::Valuation, self::Milestone, self::Trip => 'muted',
             self::Maintenance, self::Tyre => 'c-maint',
-            self::Document => 'c-ins',
+            self::Document, self::MotTest => 'c-ins',
             self::Expense, self::Incident, self::IssueNoticed, self::IssueFixed => 'c-other',
         };
     }

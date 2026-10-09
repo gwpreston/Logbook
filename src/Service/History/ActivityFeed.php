@@ -7,6 +7,11 @@ namespace Logbook\Service\History;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\Incident;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\MotTestRepository;
+use Logbook\Domain\MotHistory\MotTest;
+use Logbook\Service\MotHistory\MotHistoryConfig;
+use Logbook\Service\MotHistory\MotReview;
+use Logbook\Service\User\UserDirectory;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Repository\IncidentRepository;
 use DateTimeImmutable;
@@ -85,6 +90,9 @@ final readonly class ActivityFeed
         private VehicleAccess $access,
         private IncidentRepository $incidents,
         private IssueRepository $issues,
+        private MotTestRepository $motTests,
+        private MotHistoryConfig $motHistory,
+        private UserDirectory $users,
     ) {
     }
 
@@ -94,8 +102,9 @@ final readonly class ActivityFeed
     public function items(User $user, ActivityQuery $query): array
     {
         $query = $this->enabledOnly($query);
+        $documents = $this->documentsOf($query);
 
-        return $this->read($user, $query, $this->documentsOf($query));
+        return $this->read($user, $query, $documents, $this->motTestsOf($query, $documents));
     }
 
     /**
@@ -109,8 +118,9 @@ final readonly class ActivityFeed
     {
         $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
         $documents = $this->documentsOf($query);
+        $tests = $this->motTestsOf($query, $documents);
         $zone = $user->preferences->timeZone();
-        [$first, $newest] = $this->span($query, $documents, $zone);
+        [$first, $newest] = $this->span($query, $documents, $tests, $zone);
         if ($first === null || $newest === null) {
             return new FeedYear(null);
         }
@@ -120,9 +130,9 @@ final readonly class ActivityFeed
 
         return new FeedYear(
             $year,
-            $this->read($user, $page, $documents),
-            $this->newer($query, $documents, $zone, $year),
-            $this->older($query, $documents, $zone, $year),
+            $this->read($user, $page, $documents, $tests),
+            $this->newer($query, $documents, $tests, $zone, $year),
+            $this->older($query, $documents, $tests, $zone, $year),
             $first,
             $newest,
         );
@@ -137,16 +147,22 @@ final readonly class ActivityFeed
      */
     public function latest(User $user, array $vehicles, int $limit = self::LATEST): array
     {
-        $query = $this->enabledOnly(new ActivityQuery($vehicles, ActivityKind::entries()));
+        // Not MOT tests (spec.md §7.38): DVSA's data shows with its attribution, on History.
+        $kinds = array_values(array_filter(
+            ActivityKind::entries(),
+            static fn (ActivityKind $kind): bool => $kind !== ActivityKind::MotTest,
+        ));
+        $query = $this->enabledOnly(new ActivityQuery($vehicles, $kinds));
         $documents = $this->documentsOf($query);
+        $tests = $this->motTestsOf($query, $documents);
         $zone = $user->preferences->timeZone();
-        $year = $this->span($query, $documents, $zone)[1];
+        $year = $this->span($query, $documents, $tests, $zone)[1];
 
         $items = [];
         while ($year !== null && count($items) < $limit) {
             $page = ActivityQuery::year($query->vehicles, $query->kinds, $year);
-            array_push($items, ...$this->read($user, $page, $documents));
-            $year = $this->older($query, $documents, $zone, $year);
+            array_push($items, ...$this->read($user, $page, $documents, $tests));
+            $year = $this->older($query, $documents, $tests, $zone, $year);
         }
 
         return array_slice($items, 0, $limit);
@@ -172,10 +188,42 @@ final readonly class ActivityFeed
     }
 
     /**
+     * The MOT tests listed on their own (spec.md §7.38 *History*): none
+     * while MOT history is off, and never one that became an `inspection`
+     * document, whose line carries it.
+     *
+     * @param list<ComplianceDocument> $documents the page's documents, when it lists them
+     * @return list<MotTest>
+     */
+    private function motTestsOf(ActivityQuery $query, array $documents = []): array
+    {
+        if (!$query->includes(ActivityKind::MotTest) || !$this->motHistory->enabled()) {
+            return [];
+        }
+        $tests = $this->motTests->listForVehicles($query->vehicleIds());
+        if ($tests === []) {
+            return [];
+        }
+        // The documents already read for the page when they are listed too.
+        $documents = $documents !== [] ? $documents : $this->documents->listForVehicles($query->vehicleIds());
+        // "Became a document" is judged on the owner's calendar, as the review card dates it.
+        $zones = [];
+        foreach ($query->vehicles as $vehicle) {
+            $zones[$vehicle->id] = $this->users->find($vehicle->userId)?->preferences->timeZone() ?? new DateTimeZone('UTC');
+        }
+
+        return array_values(array_filter(
+            $tests,
+            static fn (MotTest $test): bool => MotReview::match($documents, $test, $zones[$test->vehicleId]) === null,
+        ));
+    }
+
+    /**
      * @param list<ComplianceDocument> $documents every document of the query's vehicles
+     * @param list<MotTest> $tests the MOT tests listed on their own
      * @return list<ActivityItem> newest first
      */
-    private function read(User $user, ActivityQuery $query, array $documents): array
+    private function read(User $user, ActivityQuery $query, array $documents, array $tests): array
     {
         $zone = $user->preferences->timeZone();
         $ids = $query->vehicleIds();
@@ -214,6 +262,10 @@ final readonly class ActivityFeed
         $documents = array_values(array_filter(
             $documents,
             static fn (ComplianceDocument $d): bool => $query->covers(self::documentDate($d, $zone)),
+        ));
+        $tests = array_values(array_filter(
+            $tests,
+            static fn (MotTest $test): bool => $query->covers(LocalTime::dateOf($test->completedAt, $zone)),
         ));
         $valuations = $query->includes(ActivityKind::Valuation)
             ? $this->valuations->listForVehiclesBetween($ids, $query->from, $query->until)
@@ -534,6 +586,22 @@ final readonly class ActivityFeed
             );
         }
 
+        foreach ($tests as $test) {
+            $items[] = new ActivityItem(
+                kind: ActivityKind::MotTest,
+                vehicle: $vehicles[$test->vehicleId],
+                entryId: $test->id,
+                date: LocalTime::dateOf($test->completedAt, $zone),
+                createdAt: $test->completedAt,
+                label: '',
+                labelKey: $test->passed() ? 'history.kind.mot_passed' : 'history.kind.mot_failed',
+                icon: 'fact_check',
+                odometerKm: $test->odometerKm,
+                expiresOn: $test->expiryOn,
+                defects: count($test->defects),
+            );
+        }
+
         usort($items, ActivityItem::compare(...));
 
         return $query->limit === null ? $items : array_slice($items, 0, $query->limit);
@@ -598,11 +666,12 @@ final readonly class ActivityFeed
      * The first and newest years with anything of the query's kinds.
      *
      * @param list<ComplianceDocument> $documents
+     * @param list<MotTest> $tests
      * @return array{0: ?int, 1: ?int}
      */
-    private function span(ActivityQuery $query, array $documents, DateTimeZone $zone): array
+    private function span(ActivityQuery $query, array $documents, array $tests, DateTimeZone $zone): array
     {
-        $years = $this->placedYears($query, $documents, $zone);
+        $years = $this->placedYears($query, $documents, $tests, $zone);
         foreach ($this->datedSources($query) as $source) {
             foreach ($this->dates->span($source, $query->vehicleIds()) as $date) {
                 if ($date !== null) {
@@ -618,10 +687,12 @@ final readonly class ActivityFeed
      * The nearest later year with anything, or null.
      *
      * @param list<ComplianceDocument> $documents
+     * @param list<MotTest> $tests
      */
-    private function newer(ActivityQuery $query, array $documents, DateTimeZone $zone, int $year): ?int
+    private function newer(ActivityQuery $query, array $documents, array $tests, DateTimeZone $zone, int $year): ?int
     {
-        $years = array_filter($this->placedYears($query, $documents, $zone), static fn (int $y): bool => $y > $year);
+        $placed = $this->placedYears($query, $documents, $tests, $zone);
+        $years = array_filter($placed, static fn (int $y): bool => $y > $year);
         foreach ($this->datedSources($query) as $source) {
             $date = $this->dates->earliestFrom($source, $query->vehicleIds(), self::bound($source, $year + 1, $zone));
             if ($date !== null) {
@@ -636,10 +707,12 @@ final readonly class ActivityFeed
      * The nearest earlier year with anything, or null.
      *
      * @param list<ComplianceDocument> $documents
+     * @param list<MotTest> $tests
      */
-    private function older(ActivityQuery $query, array $documents, DateTimeZone $zone, int $year): ?int
+    private function older(ActivityQuery $query, array $documents, array $tests, DateTimeZone $zone, int $year): ?int
     {
-        $years = array_filter($this->placedYears($query, $documents, $zone), static fn (int $y): bool => $y < $year);
+        $placed = $this->placedYears($query, $documents, $tests, $zone);
+        $years = array_filter($placed, static fn (int $y): bool => $y < $year);
         foreach ($this->datedSources($query) as $source) {
             $date = $this->dates->latestBefore($source, $query->vehicleIds(), self::bound($source, $year, $zone));
             if ($date !== null) {
@@ -651,17 +724,21 @@ final readonly class ActivityFeed
     }
 
     /**
-     * Years of the lines placed in PHP: documents and milestones.
+     * Years of the lines placed in PHP: documents, MOT tests and milestones.
      *
      * @param list<ComplianceDocument> $documents
+     * @param list<MotTest> $tests
      * @return list<int>
      */
-    private function placedYears(ActivityQuery $query, array $documents, DateTimeZone $zone): array
+    private function placedYears(ActivityQuery $query, array $documents, array $tests, DateTimeZone $zone): array
     {
         $years = array_map(
             static fn (ComplianceDocument $d): int => (int) self::documentDate($d, $zone)->format('Y'),
             $documents,
         );
+        foreach ($tests as $test) {
+            $years[] = (int) LocalTime::fromUtc($test->completedAt, $zone)->format('Y');
+        }
         if ($query->includes(ActivityKind::Milestone)) {
             foreach ($query->vehicles as $vehicle) {
                 foreach (self::milestones($vehicle) as [, $date]) {

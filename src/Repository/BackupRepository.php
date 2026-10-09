@@ -48,6 +48,10 @@ final readonly class BackupRepository
         'issues',
         'issue_updates',
         'issue_fixes',
+        // Phase 41: DVSA's MOT tests before the readings they own, their defects after the
+        // issues they link.
+        'mot_tests',
+        'mot_defects',
         // Tyres (Phase 11.1): a change refers to its service record, and a
         // change's odometer reading to the change, so they come before the readings.
         'tyre_sets',
@@ -122,7 +126,8 @@ final readonly class BackupRepository
      * Ask Logbook's threads, progress lines and feedback counts (Phase 26.2),
      * nor its drafted entries (Phase 26.3), nor scanned files waiting for
      * their entry (Phase 26.4; their files are left out by FileStorage::all()),
-     * nor fuel price providers' data and credentials (Phase 30.2).
+     * nor fuel price providers' data and credentials (Phase 30.2), nor the
+     * MOT history provider's credentials (Phase 41).
      */
     public const array EXCLUDED = [
         'sessions',
@@ -149,6 +154,8 @@ final readonly class BackupRepository
         // Phase 36.1: the email server's password (its settings are in `settings`), never carried:
         // the Delivery page asks for it again.
         'notification_secrets',
+        // Phase 41: the MOT history provider's credentials, never carried.
+        'mot_history_secrets',
         // Phase 39.3: queued webhook deliveries are this install's, and old within 7 days.
         'webhook_deliveries',
     ];

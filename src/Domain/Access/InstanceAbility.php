@@ -23,15 +23,21 @@ enum InstanceAbility: string
     case RunJobs = 'run_jobs';
     /** Settings → Fuel prices: the provider and its credentials (Phase 30.2). */
     case ManageFuelPrices = 'manage_fuel_prices';
+    /** Settings → MOT history: the provider and its credentials (Phase 41). */
+    case ManageMotHistory = 'manage_mot_history';
 
     /**
      * Whether a user without the ability gets 404 rather than 403, so the
      * page's existence is not revealed (Settings → AI, spec.md §7.25,
-     * Settings → Jobs, §7.30, Settings → Fuel prices, §7.34, and Settings →
-     * Delivery, §7.11).
+     * Settings → Jobs, §7.30, Settings → Fuel prices, §7.34, Settings →
+     * Delivery, §7.11, and Settings → MOT history, §7.38).
      */
     public function isHidden(): bool
     {
-        return in_array($this, [self::ManageAi, self::RunJobs, self::ManageFuelPrices, self::ManageNotifications], true);
+        return in_array(
+            $this,
+            [self::ManageAi, self::RunJobs, self::ManageFuelPrices, self::ManageNotifications, self::ManageMotHistory],
+            true,
+        );
     }
 }

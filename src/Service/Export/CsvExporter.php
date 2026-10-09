@@ -23,6 +23,7 @@ use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Incident\ClaimsHistoryReport;
 use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\MotTestRepository;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\Forecast\ForecastItem;
@@ -73,6 +74,7 @@ final readonly class CsvExporter
         private UserDirectory $directory,
         private FinanceCsv $finance,
         private IssueRepository $issues,
+        private MotTestRepository $motTests,
     ) {
     }
 
@@ -91,6 +93,7 @@ final readonly class CsvExporter
             ExportModule::Incidents => $this->incidentsTable($user, $vehicle),
             ExportModule::Finance => $this->finance->vehicleTable($user, $vehicle),
             ExportModule::Issues => $this->issuesTable($user, $vehicle),
+            ExportModule::MotTests => $this->motTestsTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -759,6 +762,53 @@ final readonly class CsvExporter
             'issue.affects_safety',
             'issue.column.fixed_on',
             'issue.column.fixed_by',
+        ]), $rows];
+    }
+
+    /**
+     * MOT tests (Phase 41, spec.md §7.38, #340): one row per defect, newest
+     * test first, the test's columns repeated; a test with no defects is one
+     * row with the defect columns blank. The mileage is in the owner's unit,
+     * with the unit it was tested in. No attribution in the file (#341).
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function motTestsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $rows = [];
+        foreach ($this->motTests->listForVehicle($vehicle->id) as $test) {
+            $columns = [
+                $this->localDateTime($test->completedAt, $user),
+                $test->reference(),
+                $this->t('mot_history.result.' . $test->result->value),
+                $test->expiryOn?->format('Y-m-d'),
+                $test->odometerKm === null ? null : Decimal::trim($unit->fromKmDecimal($test->odometerKm, 3)),
+                $test->odometerUnit === null ? null : $this->t('units.name.' . $test->odometerUnit->value),
+            ];
+            if ($test->defects === []) {
+                $rows[] = [...$columns, null, null, null];
+            }
+            foreach ($test->defects as $defect) {
+                $rows[] = [
+                    ...$columns,
+                    $this->t('mot_history.defect.' . $defect->type->value),
+                    $defect->text,
+                    $this->yesNo($defect->dangerous),
+                ];
+            }
+        }
+
+        return [$this->headers([
+            ['export.column.date_time', ['zone' => $user->preferences->timezone]],
+            'mot_history.column.test_number',
+            'mot_history.column.result',
+            'mot_history.column.expires_on',
+            ['export.column.odometer', ['unit' => $this->t('units.name.' . $unit->value)]],
+            'mot_history.column.tested_in',
+            'mot_history.column.defect_type',
+            'mot_history.column.defect',
+            'mot_history.column.dangerous',
         ]), $rows];
     }
 
