@@ -3,7 +3,7 @@
 *The small things Phase 41's merge review found, and the edge cases it
 couldn't prove.*
 
-Status: ✅ complete · releases **v3.7.1** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.7.1** · file lives in `docs/phases/`
 
 Phase 41's merge review (2026-10-09, at c14d588) passed with MERGE. Its
 four MEDIUM findings were fixed before the PR (#343–#345). This phase
@@ -135,7 +135,7 @@ Only if a task's proof changes behaviour:
 
 ### 41.6.5 Release
 - [x] `VERSION` → 3.7.1; `CHANGELOG.md` (*Fixed*); `ROADMAP.md` row ✅.
-- [ ] Tag v3.7.1 once merged.
+- [x] Tag v3.7.1 once merged.
 
 ---
 
