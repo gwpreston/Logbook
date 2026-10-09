@@ -10,6 +10,7 @@ use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Logbook\Domain\Setting\Setting;
 use Logbook\Domain\Setting\SettingScope;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Psr\Clock\ClockInterface;
@@ -20,14 +21,56 @@ use Psr\Clock\ClockInterface;
 final readonly class SettingRepository
 {
     private const string TABLE = 'settings';
+    private const string GROUP = 'settings';
 
     public function __construct(
         private Connection $connection,
         private ClockInterface $clock,
+        private RequestReads $reads,
     ) {
     }
 
     public function find(string $name, SettingScope $scope = SettingScope::Global, int $ownerId = 0): ?Setting
+    {
+        if (!$this->reads->isActive()) {
+            return $this->findOne($name, $scope, $ownerId);
+        }
+
+        // A page asks for many settings of one owner: read them all once.
+        $all = $this->reads->remember(
+            self::GROUP,
+            $scope->value . ':' . $ownerId,
+            fn (): array => $this->allOf($scope, $ownerId),
+        );
+
+        return $all[$name] ?? null;
+    }
+
+    /**
+     * Every setting of one scope and owner, by name.
+     *
+     * @return array<string, Setting>
+     */
+    private function allOf(SettingScope $scope, int $ownerId): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('name', 'scope', 'owner_id', 'value', 'created_at', 'updated_at')
+            ->from(self::TABLE)
+            ->where('scope = :scope', 'owner_id = :owner')
+            ->setParameter('scope', $scope->value)
+            ->setParameter('owner', $ownerId, ParameterType::INTEGER)
+            ->fetchAllAssociative();
+
+        $all = [];
+        foreach ($rows as $row) {
+            $setting = $this->hydrate($row);
+            $all[$setting->name] = $setting;
+        }
+
+        return $all;
+    }
+
+    private function findOne(string $name, SettingScope $scope, int $ownerId): ?Setting
     {
         $row = $this->connection->createQueryBuilder()
             ->select('name', 'scope', 'owner_id', 'value', 'created_at', 'updated_at')

@@ -27,6 +27,66 @@ final class QueryCounter implements Middleware
     public int $count = 0;
 
     /**
+     * Every statement sent, in order (for finding which query repeats).
+     *
+     * @var list<string>
+     */
+    public array $statements = [];
+
+    /**
+     * Who sent each statement, by its first words: "Class::method" of the
+     * nearest two callers outside the repositories (set before measuring).
+     *
+     * @var array<string, array<string, int>>
+     */
+    public array $callers = [];
+
+    public bool $traceCallers = false;
+
+    public function record(string $sql): void
+    {
+        $this->count++;
+        $this->statements[] = $sql;
+        if (!$this->traceCallers) {
+            return;
+        }
+
+        $sites = [];
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+            $class = $frame['class'] ?? '';
+            $ours = str_starts_with($class, 'Logbook\\')
+                && !str_contains($class, '\\Repository\\')
+                && !str_contains($class, 'Tests\\')
+                && !str_contains($class, '\\Support\\');
+            if (!$ours) {
+                continue;
+            }
+            $sites[] = substr($class, (int) strrpos($class, '\\') + 1) . '::' . $frame['function'];
+            if (count($sites) === 3) {
+                break;
+            }
+        }
+        $key = substr($sql, 0, 90);
+        $site = implode(' < ', $sites);
+        $this->callers[$key][$site] = ($this->callers[$key][$site] ?? 0) + 1;
+    }
+
+    /**
+     * The statements sent while $run ran, how often each, most repeated first.
+     *
+     * @return array<string, int>
+     */
+    public function histogram(callable $run): array
+    {
+        $from = count($this->statements);
+        $run();
+        $counts = array_count_values(array_slice($this->statements, $from));
+        arsort($counts);
+
+        return $counts;
+    }
+
+    /**
      * Count the app's queries from now on: its one connection's driver is
      * wrapped in place (no second connection, which SQLite would lock out).
      * Call before anything uses the database.
@@ -80,21 +140,21 @@ final class QueryCounter implements Middleware
 
                     public function prepare(string $sql): Statement
                     {
-                        $this->counter->count++;
+                        $this->counter->record($sql);
 
                         return parent::prepare($sql);
                     }
 
                     public function query(string $sql): Result
                     {
-                        $this->counter->count++;
+                        $this->counter->record($sql);
 
                         return parent::query($sql);
                     }
 
                     public function exec(string $sql): int|string
                     {
-                        $this->counter->count++;
+                        $this->counter->record($sql);
 
                         return parent::exec($sql);
                     }

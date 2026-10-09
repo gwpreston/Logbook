@@ -32,6 +32,7 @@ use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Tyre\TyreReminderTitle;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\User\UserDirectory;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Date\LocalTime;
@@ -69,6 +70,7 @@ final readonly class ReminderSync
         private DisplayFormatter $formatter,
         private WebhookEvents $webhooks,
         private IssueRepository $issues,
+        private VehicleDataPrimer $primer,
     ) {
     }
 
@@ -106,7 +108,9 @@ final readonly class ReminderSync
         // Archived vehicles raise nothing, so their reminders fall out below.
         $owners = [];
         $vehicles = [];
-        foreach ($this->vehicles->listByIds($active) as $vehicle) {
+        $activeVehicles = $this->vehicles->listByIds($active);
+        $this->primer->prime($activeVehicles);
+        foreach ($activeVehicles as $vehicle) {
             $vehicles[$vehicle->id] = $vehicle;
             $owner = $vehicle->userId === $user->id ? $user : $this->directory->find($vehicle->userId) ?? $user;
             $owners[$vehicle->id] = $owner;

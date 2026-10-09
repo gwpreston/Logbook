@@ -12,6 +12,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -25,7 +26,7 @@ final readonly class ComplianceDocumentRepository
     private const int MONEY_SCALE = 3;
     private const int KM_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -34,13 +35,29 @@ final readonly class ComplianceDocumentRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every document of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listForVehicles($ids),
+            static fn (ComplianceDocument $document): int => $document->vehicleId,
+        ), []);
     }
 
     /**

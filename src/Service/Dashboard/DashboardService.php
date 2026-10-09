@@ -41,6 +41,7 @@ use Logbook\Service\Report\ReportService;
 use Logbook\Service\Report\TrueCostRange;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Report\TrueCostWidget;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Service\Vehicle\VehicleSnapshot;
 use Logbook\Service\Vehicle\VehicleSnapshots;
@@ -84,6 +85,7 @@ final readonly class DashboardService
         private TrueCostService $trueCosts,
         private InsightsService $insights,
         private AiInsightService $aiInsights,
+        private VehicleDataPrimer $primer,
     ) {
     }
 
@@ -111,6 +113,8 @@ final readonly class DashboardService
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $active = $this->vehicles->listFleet($user);
+        // Every widget below reads these vehicles' tables: once, not per widget.
+        $this->primer->prime($active);
         $selected = self::find($active, $vehicleId);
         $scope = $selected !== null ? [$selected] : $active;
         $show = static fn (DashboardWidget $w): bool => in_array($w, $available, true)

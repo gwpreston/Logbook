@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Logbook\Domain\Ai\AiTaskAssignment;
 use Logbook\Domain\Ai\AiTaskName;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -20,7 +21,7 @@ final readonly class AiTaskRepository
 {
     private const string TABLE = 'ai_tasks';
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -28,6 +29,14 @@ final readonly class AiTaskRepository
      * @return array<string, AiTaskAssignment> keyed by task value
      */
     public function all(): array
+    {
+        return $this->reads->remember(self::TABLE, 'all', fn (): array => $this->readAll());
+    }
+
+    /**
+     * @return array<string, AiTaskAssignment> keyed by task value
+     */
+    private function readAll(): array
     {
         $rows = $this->connection->createQueryBuilder()
             ->select('task', 'model_id', 'temperature', 'max_output_tokens')

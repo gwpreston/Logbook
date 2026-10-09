@@ -12,6 +12,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -22,12 +23,13 @@ use Logbook\Support\Database\UtcDateTime;
 final readonly class FuelEntryRepository
 {
     private const string TABLE = 'fuel_entries';
+    private const string READS = 'fuel_entries+stations';
     public const int QUANTITY_SCALE = 3;
     public const int PRICE_SCALE = 6;
     public const int MONEY_SCALE = 3;
     public const int CONSUMPTION_SCALE = 6;
 
-    public function __construct(private Connection $connection, private StoredGrade $grades)
+    public function __construct(private Connection $connection, private StoredGrade $grades, private RequestReads $reads)
     {
     }
 
@@ -36,15 +38,31 @@ final readonly class FuelEntryRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('filled_at')
-            ->addOrderBy('odometer_km')
-            ->addOrderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::READS, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('filled_at')
+                ->addOrderBy('odometer_km')
+                ->addOrderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every fill-up of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::READS, $vehicleIds, fn (array $ids): array => RequestReads::groupBy(
+            $this->listForVehiclesBetween($ids, null, null),
+            static fn (FuelEntry $entry): int => $entry->vehicleId,
+        ), []);
     }
 
     /**

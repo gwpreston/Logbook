@@ -77,7 +77,8 @@ final class AttentionQueryCountTest extends AppTestCase
             $this->fillUp($app, $vehicle, '2026-02-01T08:00:00Z', '12000', '35', '56.00', grade: FuelGrade::E5_98);
         }
         $one = $this->cost($browser, $counter);
-        self::assertSame(3, $one['dashboard'] - $none['dashboard'], 'their vehicles, the vehicles, their fill-ups: once');
+        // Their vehicles' ids and their fill-ups, once (the vehicles themselves are the page's, read already: Phase 41.7).
+        self::assertSame(2, $one['dashboard'] - $none['dashboard'], 'their vehicles, their fill-ups: once');
     }
 
     /**

@@ -55,6 +55,7 @@ use Logbook\Service\Notification\Personal\TelegramSender;
 use Logbook\Service\Notification\Personal\UserChannels;
 use Logbook\Service\Notification\Personal\WebhookSender;
 use Logbook\Service\Notification\SwitchOffNotice;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Clock\Sleeper;
 use Logbook\Support\Clock\SystemSleeper;
 use Logbook\Support\Clock\UtcClock;
@@ -238,8 +239,12 @@ return [
     Pause::class => autowire(SystemPause::class),
     InstalledVersion::class => static fn (): InstalledVersion => new InstalledVersion(Kernel::version()),
 
-    Connection::class => static fn (ContainerInterface $c): Connection
-        => ConnectionFactory::create($settingsOf($c)->database),
+    Connection::class => static function (ContainerInterface $c) use ($settingsOf): Connection {
+        $reads = $c->get(RequestReads::class);
+        assert($reads instanceof RequestReads);
+
+        return ConnectionFactory::create($settingsOf($c)->database, $reads);
+    },
 
     AvailableLocales::class => static fn (ContainerInterface $c): AvailableLocales
         => AvailableLocales::fromDirectory($settingsOf($c)->rootDir . '/translations'),

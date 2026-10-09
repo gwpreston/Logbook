@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Repository;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -13,6 +14,7 @@ use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceSchedule;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Maintenance\NextDue;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -26,7 +28,7 @@ final readonly class MaintenanceScheduleRepository
     private const string TABLE = 'maintenance_schedules';
     private const int KM_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -35,13 +37,37 @@ final readonly class MaintenanceScheduleRepository
      */
     public function listForVehicle(int $vehicleId): array
     {
-        $rows = $this->select()
-            ->where('vehicle_id = :vehicle')
-            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
-            ->orderBy('id')
-            ->fetchAllAssociative();
+        return $this->reads->remember(self::TABLE, $vehicleId, function () use ($vehicleId): array {
+            $rows = $this->select()
+                ->where('vehicle_id = :vehicle')
+                ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+                ->orderBy('id')
+                ->fetchAllAssociative();
 
-        return array_values(array_map($this->hydrate(...), $rows));
+            return array_values(array_map($this->hydrate(...), $rows));
+        });
+    }
+
+    /**
+     * Read every schedule of these vehicles in one query, so the page's later
+     * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
+     *
+     * @param list<int> $vehicleIds
+     */
+    public function prime(array $vehicleIds): void
+    {
+        $this->reads->prime(self::TABLE, $vehicleIds, function (array $ids): array {
+            $rows = $this->select()
+                ->where('vehicle_id IN (:vehicles)')
+                ->setParameter('vehicles', $ids, ArrayParameterType::INTEGER)
+                ->orderBy('id')
+                ->fetchAllAssociative();
+
+            return RequestReads::groupBy(
+                array_values(array_map($this->hydrate(...), $rows)),
+                static fn (MaintenanceSchedule $schedule): int => $schedule->vehicleId,
+            );
+        }, []);
     }
 
     public function find(int $vehicleId, int $id): ?MaintenanceSchedule

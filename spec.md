@@ -8765,14 +8765,21 @@ overview while any test is unreviewed. A test is reviewed
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Page budgets** (Phase 41.7, decided 2026-10-09, #350): the dashboard
   and a vehicle's overview run a bounded number of queries, **not one per
-  vehicle per widget**: at most 30 queries each on a 10-vehicle household
-  (1,500 fill-ups, 200 readings, 150 services and 20 documents per
-  vehicle), and the count is the same for 1 vehicle as for 10. A test
-  holds both (`QueryCounter`), so the repeated per-vehicle read can't
-  creep back. Time is a review target, not a test: 200 ms typical and
-  500 ms at most for either page on that household. The services behind
-  the pages read a table once per request for every vehicle they show
-  (`listForVehicles`-style `IN (…)` reads) and pass the lists on.
+  vehicle per widget**: at most 60 queries each (the measured floor is
+  59; the owner set 60 on 2026-10-09 after the first target of 30 proved
+  out of reach without reworking the reminder sync and the activity
+  feed), and the count is the same for 1 vehicle as for 10, however many
+  fill-ups, readings, services and documents each has. A test holds both
+  (`QueryCounter`), so the repeated per-vehicle read can't creep back.
+  Time is a review target, not a test: 200 ms typical and 500 ms at most
+  for either page on a 10-vehicle household (1,500 fill-ups, 200
+  readings, 150 services and 20 documents per vehicle). A page request
+  (GET or HEAD) remembers what its repositories read (`RequestReads`):
+  one query per table for every vehicle on the page (`VehicleDataPrimer`),
+  all the settings of an owner in one, and the rest of the page's
+  per-vehicle reads find them already read. A write to a table, seen at
+  the connection, makes the request forget what came from it. Anything
+  else (a POST, a job, a command) reads the database as before.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
@@ -9280,6 +9287,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Registration plates (Phase 34.1, #200): styles for other countries,
   Germany's white plate with a blue EU band and "D" first. Every region
   but GB gets the neutral plate meanwhile.
+- Page budgets (Phase 41.7, #351): bring the dashboard and the overview
+  from 60 queries to 30, by serving the reminder sync's and the activity
+  feed's own reads from the lists a page has already read.
 
 ---
 
