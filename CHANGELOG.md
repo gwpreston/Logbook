@@ -4,6 +4,38 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
+## [3.7.1] — 2026-10-09
+
+Phase 41.6: **a patch release**. The small things Phase 41's merge review
+found in MOT history, and three edge cases it could not prove.
+
+### Fixed
+- **Settings → MOT history** fits a phone: the *Test* button wraps inside
+  its card instead of reaching the edge, and the "Sends …" hint keeps its
+  shield beside the text.
+- **A network error no longer carries the registration.** DVSA's request
+  address ends in the registration or VIN; a transport error that quoted
+  it was stored in the last call (shown to admins) and printed in the job
+  output. The message is cut to DVSA's host.
+- **A refresh keeps each defect with its own text.** When DVSA listed a
+  test's defects in a different order, an issue link or *Not now* could
+  land on another defect. Defects are matched by their text, not their
+  position.
+- **"Advised again" is never dated before the issue.** An older test, not
+  yet reviewed, with the same text as an issue made from a later test no
+  longer adds a note to it.
+- **Fewer queries.** *Add all as issues* read the vehicle's tests, issues
+  and documents again for every defect (11 queries a defect, 330 for 15
+  tests and 30 defects); it now reads them once per call (213, of which
+  180 are the issues' own creates). History counts a test's defects in
+  the query that lists the tests instead of loading their text.
+
+### Upgrade notes
+- Pull and restart. No migration, no configuration change and no change
+  to the backup format.
+
 ## [3.7.0] — 2026-10-09
 
 Phase 41: **MOT history from DVSA**. A UK vehicle's official MOT record

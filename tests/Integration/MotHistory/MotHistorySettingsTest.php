@@ -161,7 +161,10 @@ final class MotHistorySettingsTest extends AppTestCase
         $page = (string) $this->browserFor($app, 'owner')->get('/settings/mot-history')->getBody();
 
         // 375 px: the Test button may wrap (never past the card), and the shield shares a row with the hint.
-        self::assertMatchesRegularExpression('#<button type="submit" class="btn btn--wrap">[^<]*<svg[^>]*>.*?</svg>Test #s', $page);
+        self::assertMatchesRegularExpression(
+            '#<button type="submit" class="btn btn--wrap">[^<]*<svg[^>]*>.*?</svg>Test #s',
+            $page,
+        );
         self::assertStringContainsString('class="toggle__hint toggle__hint--icon" data-sends', $page);
         $css = (string) file_get_contents(__DIR__ . '/../../../assets/css/app.css');
         self::assertStringContainsString('.btn--wrap {', $css);

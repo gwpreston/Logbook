@@ -7,7 +7,9 @@ this before starting a phase ([`CLAUDE.md`](../../CLAUDE.md) §12).
   choice in the spec or pinned by a test. The last column says where.
 - **Parked:** recorded as future work in [`spec.md`](../../spec.md) §12, not
   scheduled.
-- **Scheduled:** decided, with the work in a later phase.
+- **Scheduled:** decided, with the work in a later phase, or built in the
+  phase that decided it (that phase's file then says *Decided*, as
+  Phase 41's does for #320–#345).
 - **Decided:** the owner answered, and nothing needs building (or the
   answer is "no").
 - **Needs a decision:** still open, and an answer would change the app. The

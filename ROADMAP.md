@@ -92,7 +92,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [40.1](docs/phases/phase-40.1.md) | Issues log | ✅ |
 | [40.2](docs/phases/phase-40.2.md) | Issues everywhere + v3.6 release | ✅ |
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
-| [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | 🚧 |
+| [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | ✅ |
 | [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + release | 📋 |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | 📋 |
@@ -1113,8 +1113,9 @@ couldn't prove.*
 
 - The LOW findings: Settings → MOT history at 375 px (the *Test* button,
   the *Sends* hint's icon); History counting defects instead of loading
-  them; *Add all as issues* reading once per call, not per defect (362
-  queries → under 80); one status word in the phase file and the log.
+  them; *Add all as issues* reading once per call, not per defect (330
+  queries → 213 for 15 tests and 30 defects, 180 of them the issues'
+  own creates); one status word in the phase file and the log.
 - The unconfirmed edge cases, each proved and fixed or closed with a
   test: a registration in the stored error, defects reordered by DVSA,
   an "advised again" note dated too early. Open questions #346–#349 stay
