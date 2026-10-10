@@ -391,7 +391,8 @@ the page or the migrations changes:
    address and refuse redirects on every send. A
    `Notification` is already translated and formatted for the recipient:
    `title`, `message` (plain text), `url` (absolute link), `urgent`
-   (something is overdue), `items` and `attention`. Report failure with
+   (something is overdue), `items` and `attention`, and from 3.9.0 the
+   digest's `lastMonth`, `fleet`, `issues` and `insights`. Report failure with
    `DeliveryResult::failed()`; the error is redacted of the channel's
    secrets before it is stored or shown, exceptions are caught by the
    dispatcher, and one failing channel never stops another.
@@ -478,7 +479,8 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
 - From 3.9.0 the monthly digest is a **briefing**. After what's due and
   *Needs attention* (which now also has a line per vehicle with open
   issues, "Golf: 2 open issues"), it gives **last month**: for each
-  vehicle you get reminders for that was driven or had costs, the
+  vehicle you get reminders for that was driven or had costs (while the
+  reports module is on; the open-issues line needs the issues module), the
   distance, the spend and the running cost per distance, each against
   its monthly average over the 12 months before ("about 10% more than
   your monthly average"), and a line for all vehicles together (spend
@@ -494,7 +496,7 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   characters) keeps what's due; the rest is cut at a line with "…and N
   more" and the link. A month with only last month's figures or insights
   now sends a digest too. Choose what it includes under Settings →
-  Reminders → *Include*: *Needs attention*, *Last month* and *Insights*
+  Reminders → *Include*: *Needs attention and open issues*, *Last month* and *Insights*
   (all on until you choose; what's due is always included).
 - The webhook's JSON gains `last_month` (per vehicle: `vehicle_id`,
   `vehicle`, `month`, `distance` and `distance_average` in kilometres,

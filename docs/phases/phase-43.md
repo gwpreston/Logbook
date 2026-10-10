@@ -76,7 +76,8 @@ decides what a short channel keeps:
 
 For the previous calendar month in the user's time zone, per recipient
 vehicle the user can view (as the digest's vehicles today), active and
-with any reading or entry in the 13 months:
+with a distance or (with `ViewCosts`) a spend in that month (as built;
+spec §7.11; the averages still look back 12 months):
 
 - **Distance:** the month's *distance driven* (§7.7), against the
   average of the 12 months before it (each measured the same way; months
@@ -142,7 +143,9 @@ with any reading or entry in the 13 months:
   raw (canonical units and decimal strings, as the REST API) with a
   `display` string; amounts omitted without `ViewCosts`), `fleet`,
   `issues` (counts per vehicle), and `insights` (`kind`, `source`
-  `computed` | `ai`, `vehicle_ids`, `title`, `body`).
+  `computed` | `ai`, `vehicle_ids`, `title`, `body`). As built, rows also
+  carry `month` and `currency`; spec §7.11 *Webhook JSON* has the full
+  shapes of `fleet` and `issues`.
 
 ---
 
@@ -168,36 +171,36 @@ with any reading or entry in the 13 months:
       `ROADMAP.md` row.
 
 ### 43.1 Content
-- [ ] `Service\Notify\DigestSummary`: last month's figures and averages
+- [x] `Service\Notification\Digest\DigestSummary` (worded by `DigestWording`): last month's figures and averages
       per vehicle and the fleet line, from the report services; the
       named large entry.
-- [ ] Insights section from §7.8's service and the kept AI set, with the
+- [x] Insights section from §7.8's service and the kept AI set, with the
       dismissal and unmatched-figure filters.
-- [ ] Open issues line (with `issues` on).
-- [ ] Section order; every channel's text; the webhook JSON.
+- [x] Open issues line (with `issues` on).
+- [x] Section order; every channel's text; the webhook JSON.
 
 ### 43.2 Settings
-- [ ] *Include* on the digest card (works without JS); `digest_include`,
+- [x] *Include* on the digest card (works without JS); `digest_include`,
       absent reading as all.
 
 ### 43.3 Tests
-- [ ] Figures equal the Reports page's for the month, for every demo
+- [x] Figures equal the Reports page's for the month, for every demo
       vehicle; averages skip empty months; fewer than 3 months drops the
       comparison; under 100 km gives "—"; currencies never mixed.
-- [ ] `ViewCosts`: spend and cost per distance omitted for a View share
+- [x] `ViewCosts`: spend and cost per distance omitted for a View share
       without it, in text and JSON.
-- [ ] Large entry named only above half the month's spend.
-- [ ] Insights: computed listed; AI only from today's or yesterday's set,
+- [x] Large entry named only above half the month's spend.
+- [x] Insights: computed listed; AI only from today's or yesterday's set,
       never dismissed kinds, never one with an unmatched figure; the job
       makes no model call (asserted with a failing model fake).
-- [ ] Cutting: a Pushover-length message keeps *Due* and *Needs
+- [x] Cutting: a Pushover-length message keeps *Due* and *Needs
       attention* and ends with "…and N more" and the link.
-- [ ] *Include* choices; no `digest_include` reads as all; sending rules
+- [x] *Include* choices; no `digest_include` reads as all; sending rules
       (A); quiet hours unchanged.
 - [ ] Suite green on every engine; coverage at or above the floor.
 
 ### 43.4 Release
-- [ ] `VERSION` → next minor; `CHANGELOG.md` (*Changed* — the monthly
+- [x] `VERSION` → next minor (3.9.0); `CHANGELOG.md` (*Changed* — the monthly
       digest includes last month's figures and insights; choose what it
       includes in Settings → Reminders). No migration.
 - [ ] README; `ROADMAP.md` row ✅. Tag once merged.

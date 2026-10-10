@@ -170,7 +170,7 @@ final readonly class DigestWording
                 ];
             }
             $row['display'] = implode("\n", array_map(
-                static fn (string $l): string => ltrim($l, '• '),
+                self::unbulleted(...),
                 $this->vehicleLines($line),
             ));
             $out[] = $row;
@@ -196,8 +196,17 @@ final readonly class DigestWording
                 static fn (Money $m): string => $m->toDecimal(Serializer::QUANTITY_SCALE),
                 $lastMonth->fleetSpend,
             ),
-            'display' => ltrim($this->fleetLine($lastMonth), '• '),
+            'display' => self::unbulleted($this->fleetLine($lastMonth)),
         ];
+    }
+
+    /**
+     * A line without its leading "• " (a prefix, not a character mask: a
+     * name may start with a byte of the bullet, as "€" does).
+     */
+    private static function unbulleted(string $line): string
+    {
+        return str_starts_with($line, '• ') ? substr($line, strlen('• ')) : $line;
     }
 
     /**

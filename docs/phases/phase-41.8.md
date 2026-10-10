@@ -5,6 +5,9 @@ merge review and Phase 38's performance review left open.*
 
 Status: 📋 planned · file lives in `docs/phases/`
 
+Numbered after 41.7 because its questions came from Phases 38 and 41;
+it ships after Phase 43's v3.9.0, as a patch release (v3.9.1 or later).
+
 Five questions stayed open through Phases 41.6 to 42 (#279, #346–#349).
 The owner decided them on 2026-10-10, when Phase 43 started, and chose to
 build them in this phase rather than inside Phase 43's release: #346

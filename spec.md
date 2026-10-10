@@ -3286,8 +3286,8 @@ Extensible channel interface so more can be added.
   before 2.1.0, and users restored from an older backup, keep what they
   had and nobody starts getting a digest they didn't choose. No migration.
   The card's hint says it is sent only when a channel is set up and
-  something is due, needs attention or (Phase 43) there is something to
-  report for last month):
+  there is something to report (from Phase 43: something due, needing
+  attention, last month's figures or insights)):
   on the first run of each
   month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
   of that month, overdue ones included, then (Phase 24) a *Needs
@@ -3358,7 +3358,8 @@ Extensible channel interface so more can be added.
     done.
   - **What the user chooses**: the digest card on Settings → Reminders
     gains **Include**: *What's due* (always, not a box), *Needs
-    attention*, *Last month* and *Insights*, each on by default. Stored as
+    attention and open issues*, *Last month* and *Insights*, each on by
+    default. Stored as
     `digest_include` beside `digest` in the `notifications` preference
     (§6, #363): a list of `attention`, `last_month`, `insights`; absent
     means all three. `digest` stays a boolean, so rolling back to an
@@ -6004,7 +6005,9 @@ wrong.
     items.
   - **Dashboard** widget `needs_attention` (§7.8), and a marker on the
     garage cards (§7.1) and the *your vehicles* tiles.
-  - **Monthly digest** (§7.11): the *Check* items.
+  - **Monthly digest** (§7.11): the *Check* items, then (Phase 43) a
+    line per vehicle with open issues, unless *Needs attention and open
+    issues* is unticked under *Include*.
   - Each item has an icon, its *Now* or *Check* label as text (never
     colour alone), the title and its action links.
   - Not in History, print, the sale pack, other notifications or the API.
@@ -9991,7 +9994,7 @@ task breakdowns live in the per-phase files; this is the map.
   issues, repeats as updates); the recall state and its *Needs
   attention* item; *Look up* on the add-vehicle form; the `mot_history`
   job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
-  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#350 open). One migration.
+  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#349 decided 2026-10-10 and built in 41.8, #350 in 41.7). One migration.
   Release v3.7.0.
 - **Phase 41.6 — MOT history follow-ups + patch release.** The LOW and
   unconfirmed findings of Phase 41's merge review: Settings → MOT history
