@@ -198,7 +198,7 @@ spec §7.11; the averages still look back 12 months):
 - [x] *Include* choices; no `digest_include` reads as all; sending rules
       (A); quiet hours unchanged.
 - [x] Suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB:
-      3,827 tests each); coverage 94.99%, floor 94%.
+      3,837 tests each, after the review fixes); coverage 95.00%, floor 94%.
 
 ### 43.4 Release
 - [x] `VERSION` → next minor (3.9.0); `CHANGELOG.md` (*Changed* — the monthly
