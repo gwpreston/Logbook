@@ -1152,7 +1152,8 @@ couldn't prove.*
   a vehicle, now documented (#347); rolling back the MOT migration
   deletes its settings (#348); recorded DVSA answers are git-ignored
   (#349); the Insights page shows the latest 5 MCP drafts with *Show
-  all* (#279).
+  all* (#279); Discord escapes Markdown, so an AI insight in the digest
+  can't mask a link (#378).
 
 → [`phase-41.8.md`](docs/phases/phase-41.8.md)
 

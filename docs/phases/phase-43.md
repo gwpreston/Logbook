@@ -269,6 +269,11 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     the vehicles whose costs are visible (#375); the 12-month cost per
     distance when costs predate the readings (#376); distances and open
     issues on the server's webhook (#377).
+  - **Decided the same day, built in Phase 41.8 (found by the security
+    review, low):** Discord rendered Markdown in the digest's AI insight
+    text, so a model's `[words](url)` showed as a masked link; the owner
+    asked for it to be escaped, in [Phase 41.8](phase-41.8.md) rather
+    than in this release (#378).
   - The carried #279 and #346–#349 were decided the same day and moved
     to [Phase 41.8](phase-41.8.md), at the owner's choice, rather than
     built in this release.
