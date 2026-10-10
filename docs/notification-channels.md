@@ -391,7 +391,8 @@ the page or the migrations changes:
    address and refuse redirects on every send. A
    `Notification` is already translated and formatted for the recipient:
    `title`, `message` (plain text), `url` (absolute link), `urgent`
-   (something is overdue), `items` and `attention`. Report failure with
+   (something is overdue), `items` and `attention`, and from 3.9.0 the
+   digest's `lastMonth`, `fleet`, `issues` and `insights`. Report failure with
    `DeliveryResult::failed()`; the error is redacted of the channel's
    secrets before it is stored or shown, exceptions are caught by the
    dispatcher, and one failing channel never stops another.
@@ -475,3 +476,39 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   towards switching it off. What wasn't delivered anywhere is retried on
   the next run. Tests and checks on saving are never skipped; email isn't
   covered.
+- From 3.9.0 the monthly digest is a **briefing**. After what's due and
+  *Needs attention* (which now also has a line per vehicle with open
+  issues, "Golf: 2 open issues"), it gives **last month**: for each
+  vehicle you get reminders for that was driven or had costs (while the
+  reports module is on; the open-issues line needs the issues module), the
+  distance, the spend and the running cost per distance, each against
+  its monthly average over the 12 months before ("about 10% more than
+  your monthly average"), and a line for all vehicles together (spend
+  per currency, never converted). The figures are the Reports page's for
+  that month. Spend and cost per distance appear only to people who may
+  see the vehicle's costs; cost per distance needs at least 100 km in
+  the month; an average needs 3 months to compare with. When one entry
+  is more than half of the month's spend it is named ("including
+  Insurance £412"). Then come the **insights**: the computed ones, and,
+  with AI on, the AI insights made for that day or the day before,
+  marked "AI:". The digest never asks a model for anything.
+- The sections are in that order so a short channel (Pushover's 1,024
+  characters) keeps what's due; the rest is cut at a line with "…and N
+  more" and the link. A month with only last month's figures or insights
+  now sends a digest too. Choose what it includes under Settings →
+  Reminders → *Include*: *Needs attention and open issues*, *Last month* and *Insights*
+  (all on until you choose; what's due is always included).
+- The webhook's JSON gains `last_month` (per vehicle: `vehicle_id`,
+  `vehicle`, `month`, `distance` and `distance_average` in kilometres,
+  and with cost access `currency`, `spend`, `spend_average`,
+  `cost_per_distance` and `cost_per_distance_average` per kilometre, as
+  decimal strings or null, plus `display`), `fleet` (`distance`, `spend`
+  per currency, `display`, or null), `issues` (`vehicle_id`, `vehicle`,
+  `open`) and `insights` (`kind`, `source` `computed` or `ai`,
+  `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
+  other event; `items` and `attention` keep their shape.
+- The server's webhook (`WEBHOOK_URL`) receives every member's digest,
+  so from 3.9.0 its copy leaves out spend, cost per distance and the
+  insights (in the text and the JSON); distances and open issues stay.
+  A member's own channels, their personal webhook included, get the
+  whole digest.

@@ -23,6 +23,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final readonly class WebhookChannel implements NotificationChannel
 {
     public const string VARIABLE = 'WEBHOOK_URL';
+    public const string KEY = 'webhook';
 
     private ?string $url;
 
@@ -34,7 +35,7 @@ final readonly class WebhookChannel implements NotificationChannel
 
     public function key(): string
     {
-        return 'webhook';
+        return self::KEY;
     }
 
     public function label(): string

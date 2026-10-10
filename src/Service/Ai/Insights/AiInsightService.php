@@ -104,6 +104,28 @@ final readonly class AiInsightService
     }
 
     /**
+     * The kept set when it was made for the user's today or yesterday, as
+     * far as they may still see it (spec.md §7.11 *The monthly briefing*,
+     * #362): the monthly digest runs early on the 1st, often before the
+     * day's set. Never calls a model; null with AI off for them.
+     */
+    public function recent(User $user): ?AiInsightSet
+    {
+        if (!$this->isAvailable($user)) {
+            return null;
+        }
+        $set = $this->repository->find($user->id);
+        $today = $this->kit->today($user);
+        $fresh = $set !== null
+            && ($set->isFor($today->format('Y-m-d')) || $set->isFor($today->modify('-1 day')->format('Y-m-d')));
+        if (!$fresh) {
+            return null;
+        }
+
+        return $this->shown($user, $set);
+    }
+
+    /**
      * Whether today's set is still to be made (the page then asks for it).
      */
     public function isDue(User $user): bool

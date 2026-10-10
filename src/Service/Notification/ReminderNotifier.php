@@ -12,6 +12,8 @@ use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Notification\Channel\WebhookChannel;
+use Logbook\Service\Notification\Digest\DigestSummary;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
@@ -56,6 +58,7 @@ final readonly class ReminderNotifier
         private VehicleAccess $access,
         private AttentionList $attention,
         private VehicleRepository $vehicles,
+        private DigestSummary $summary,
     ) {
     }
 
@@ -205,8 +208,10 @@ final readonly class ReminderNotifier
     /**
      * The monthly digest, on the first run of a month in the user's time
      * zone, of the vehicles they receive reminders for: what is due, then
-     * the *Needs attention* checks they would see there (Phase 24). A month
-     * with nothing due and nothing to check counts as done; one whose digest
+     * the *Needs attention* checks they would see there (Phase 24) and,
+     * from Phase 43, open issues, last month and the insights, as far as
+     * the user includes them (spec.md §7.11 *The monthly briefing*). A
+     * month with nothing in any of them counts as done; one whose digest
      * could not be delivered is retried on the next run.
      */
     private function sendDigest(
@@ -226,20 +231,26 @@ final readonly class ReminderNotifier
             static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue
                 || ($e->reminder->dueOn !== null && $e->reminder->dueOn <= $endOfMonth),
         ));
+        $vehicles = $this->vehicles->listByIds($this->access->recipientVehicleIds($user));
         // The reminders were synced at the start of the run.
-        $checks = $this->attention->forVehicles(
-            $user,
-            $this->vehicles->listByIds($this->access->recipientVehicleIds($user)),
-            sync: false,
-        )->checks();
-        if ($entries === [] && $checks === []) {
+        $checks = $preferences->digestIncludes(DigestSection::Attention)
+            ? $this->attention->forVehicles($user, $vehicles, sync: false)->checks()
+            : [];
+        $content = $this->summary->build($user, $vehicles, $today, $preferences);
+        if ($entries === [] && $checks === [] && $content->isEmpty()) {
             $this->settings->markDigestSent($user->id, $month);
 
             return false;
         }
 
-        $digest = $this->composer->digest($user, $entries, $today, $checks);
-        $report = $this->dispatcher->dispatch($digest, $recipient, $preferences);
+        $digest = $this->composer->digest($user, $entries, $today, $checks, $content);
+        // The server's webhook gets no amounts or insights (#366), and nothing
+        // when that leaves nothing to say.
+        $withheld = $content->withoutAmounts();
+        $server = $entries === [] && $checks === [] && $withheld->isEmpty()
+            ? null
+            : $this->composer->digest($user, $entries, $today, $checks, $withheld);
+        $report = $this->dispatcher->dispatch($digest, $recipient, $preferences, [WebhookChannel::KEY => $server]);
         if (!$report->anyDelivered()) {
             return false;
         }

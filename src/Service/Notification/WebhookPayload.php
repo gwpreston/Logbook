@@ -14,6 +14,13 @@ namespace Logbook\Service\Notification;
  *    "items": [{"reminder_id", "title", "detail", "status", "due_on"}],
  *    "attention": [{"vehicle_id", "vehicle", "kind", "title"}] (the
  *    digest's checks, Phase 24; else empty),
+ *    "last_month": [{"vehicle_id", "vehicle", "month", "distance",
+ *    "distance_average", "currency", "spend", "spend_average",
+ *    "cost_per_distance", "cost_per_distance_average", "display"}],
+ *    "fleet": {"distance", "spend": {currency: amount}, "display"}|null,
+ *    "issues": [{"vehicle_id", "vehicle", "open"}],
+ *    "insights": [{"kind", "source", "vehicle_ids", "title", "body"}]
+ *    (the digest's briefing, Phase 43; else empty),
  *    "user": {"id", "username", "display_name"}}
  */
 final class WebhookPayload
@@ -31,6 +38,10 @@ final class WebhookPayload
             'urgent' => $notification->urgent,
             'items' => array_map(static fn (NotificationItem $i): array => $i->toArray(), $notification->items),
             'attention' => $notification->attention,
+            'last_month' => $notification->lastMonth,
+            'fleet' => $notification->fleet,
+            'issues' => $notification->issues,
+            'insights' => $notification->insights,
             'user' => ['id' => $recipient->userId, 'username' => $recipient->username, 'display_name' => $recipient->name],
         ];
     }

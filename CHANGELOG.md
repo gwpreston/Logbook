@@ -6,6 +6,47 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.9.0] — 2026-10-10
+
+Phase 43: **the monthly briefing**. The monthly digest now covers last
+month and what Logbook spotted, as well as what's due.
+
+### Changed
+- **The monthly digest includes last month's figures and insights.**
+  After what's due and *Needs attention*, it gives each vehicle's distance,
+  spend and running cost per distance for last month, against its monthly
+  average over the 12 months before ("about 10% more than your monthly
+  average"), with a line for all vehicles (spend per currency, never
+  converted); a month with nothing spent says so. The figures are the Reports page's for that month; spend and
+  cost per distance only for people who may see the costs; one entry over
+  half the month's spend is named. Then the computed insights and, with AI
+  on, the AI insights made that day or the day before, marked "AI:"
+  (never one with an unbacked figure; the digest never calls a model).
+  *Needs attention* gains a line per vehicle with open issues.
+- Ordered so a short channel such as Pushover keeps what's due first. A
+  month with only last month's figures or insights now sends a digest.
+- **Choose what it includes** in Settings → Reminders → *Include*: *Needs
+  attention and open issues*, *Last month* and *Insights*, all on until you choose (stored
+  as `digest_include` beside `digest`, so rolling back keeps the digest).
+- The webhook's JSON gains `last_month`, `fleet`, `issues` and `insights`
+  (empty on other events); `items` and `attention` are unchanged.
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change.
+- Everyone with the monthly digest on gets the briefing from the next
+  1st, until they untick sections under *Include*. A month that used to
+  send nothing can now send one, and a short channel such as Pushover
+  may cut it with "…and N more" (what's due always comes first).
+- Webhook consumers receive four new keys; existing ones are unchanged.
+  The server's webhook (`WEBHOOK_URL`) gets the digest without spend,
+  cost per distance or insights, since it receives every member's
+  messages; personal webhooks get everything.
+- Rolling back to 3.8 keeps the digest as it was (`digest` is still a
+  boolean; 3.8 ignores `digest_include`). Saving reminder or notification
+  settings while on 3.8 forgets that person's *Include* choices: after
+  upgrading again their digest includes every section until they untick
+  them.
+
 ## [3.8.0] — 2026-10-09
 
 Phase 42: **fuel saving and economy up, worked out by Logbook**. Two

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Service\Sharing;
 
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Access\VehicleShare;
 use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Repository\AiInsightRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Repository\VehicleShareRepository;
@@ -33,6 +35,7 @@ final readonly class SharingService
         private UserDirectory $directory,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private AiInsightRepository $insights,
     ) {
     }
 
@@ -106,11 +109,18 @@ final readonly class SharingService
      */
     public function update(Vehicle $vehicle, int $userId, ShareLevel $level, bool $canSeeCosts, bool $notify): bool
     {
-        if ($this->shares->find($vehicle->id, $userId) === null) {
+        $share = $this->shares->find($vehicle->id, $userId);
+        if ($share === null) {
             return false;
         }
         $this->shares->update($vehicle->id, $userId, $level, $canSeeCosts, $notify, $this->clock->now());
         $this->access->forget();
+        // Their kept AI insights may quote this vehicle's costs (#373): made
+        // again without them, never shown or sent from the old set.
+        $hadCosts = in_array(VehicleAbility::ViewCosts, $share->abilities(), true);
+        if ($hadCosts && !$canSeeCosts && !in_array(VehicleAbility::ViewCosts, $level->abilities(), true)) {
+            $this->insights->delete($userId);
+        }
 
         return true;
     }

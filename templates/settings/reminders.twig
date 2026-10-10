@@ -80,6 +80,20 @@
                         <span class="toggle__hint">{{ 'reminders.settings.digest_hint'|trans }}</span>
                     </span>
                 </label>
+                {# *Include* (Phase 43, spec.md §7.11 *The monthly briefing*): what's due is always sent. #}
+                <fieldset class="field fieldset" aria-describedby="f-digest-include-hint">
+                    <legend class="field__label">{{ 'reminders.settings.digest_include'|trans }}</legend>
+                    <input type="hidden" name="digest_include_shown" value="1">
+                    <div class="chip-row">
+                        {% for section in digest_sections %}
+                            <label class="chip">
+                                <input type="checkbox" name="digest_include[]" value="{{ section.value }}"{% if section.value in digest_include %} checked{% endif %}>
+                                <span>{{ ('reminders.settings.digest_include_' ~ section.value)|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="field__hint" id="f-digest-include-hint">{{ 'reminders.settings.digest_include_due'|trans }}</p>
+                </fieldset>
                 <p class="field__hint">{{ 'reminders.settings.when_sent'|trans }}</p>
             </section>
             {% endif %}
