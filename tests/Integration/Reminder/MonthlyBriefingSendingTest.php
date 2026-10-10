@@ -11,12 +11,16 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Issue\IssueData;
 use Logbook\Domain\Issue\IssueStatus;
+use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Domain\Vehicle\VehicleData;
+use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Notification\QuietHours;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Sharing\SharingService;
+use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\BriefingTestCase;
 
 /**
@@ -26,6 +30,69 @@ use Logbook\Tests\Support\BriefingTestCase;
  */
 final class MonthlyBriefingSendingTest extends BriefingTestCase
 {
+    public function testTheServerWebhookGetsNoAmountsOrInsights(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $this->reading($golf, '10000', '2026-08-20');
+        $this->reading($golf, '10400', '2026-09-10');
+        $this->spend($golf, '2026-09-05', '30');
+
+        $this->runTasks();
+
+        // #366: an admin's endpoint the member never chose gets distances, not money.
+        $server = $this->digestJson('owner', server: true);
+        $row = self::row($server);
+        self::assertSame('400.000', $row['distance']);
+        foreach (['spend', 'spend_average', 'currency', 'cost_per_distance', 'cost_per_distance_average'] as $key) {
+            self::assertArrayNotHasKey($key, $row);
+        }
+        self::assertSame([], $server['insights']);
+        self::assertStringNotContainsString('£', self::text($server['message']));
+        self::assertStringContainsString('249 mi driven', self::text($server['message']));
+
+        // Their own channels get everything.
+        self::assertSame('30.000', self::row($this->digestJson())['spend']);
+        self::assertStringContainsString('£30.00 spent', $this->digestText());
+    }
+
+    public function testAMonthWithNothingSpentSaysSoWithoutAComparison(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        foreach (['2026-05', '2026-06', '2026-07', '2026-08'] as $i => $month) {
+            $this->reading($golf, (string) (10000 + 500 * $i), $month . '-10');
+            $this->spend($golf, $month . '-12', '40');
+        }
+        $this->reading($golf, '12500', '2026-09-10');
+
+        $this->runTasks();
+
+        // #367: no "about 100% less", and no cost per distance from nothing.
+        $text = $this->digestText();
+        self::assertStringContainsString('• Volkswagen Golf: nothing spent', $text);
+        self::assertStringContainsString('• Volkswagen Golf: running cost —', $text);
+        self::assertStringNotContainsString('100% less', $text);
+        $row = self::row($this->digestJson());
+        self::assertSame('0.000', $row['spend']);
+        self::assertNull($row['cost_per_distance']);
+    }
+
+    public function testAVehicleNameStartingWithAByteOfTheBulletKeepsItInTheWebhook(): void
+    {
+        $this->start();
+        $car = $this->service($this->app, VehicleService::class)->create(
+            $this->owner($this->app),
+            new VehicleData(VehicleType::Car, '€uro', 'Golf', FuelType::Petrol),
+        );
+        $this->reading($car, '10000', '2026-08-20');
+        $this->reading($car, '10400', '2026-09-10');
+
+        $this->runTasks();
+
+        self::assertStringStartsWith('€uro Golf: 249 mi driven', self::text(self::row($this->digestJson())['display']));
+    }
+
     public function testAViewShareWithoutViewCostsGetsTheDistanceButNoMoney(): void
     {
         $this->start();
@@ -222,7 +289,7 @@ final class MonthlyBriefingSendingTest extends BriefingTestCase
 
         $mails = $this->digestMails();
         self::assertCount(1, $mails);
-        self::assertSame('October 2026: your monthly briefing', $mails[0]->getSubject());
+        self::assertSame('October 2026: your monthly digest', $mails[0]->getSubject());
         $text = (string) $mails[0]->getTextBody();
         self::assertStringStartsWith('Nothing is due in October 2026.', $text);
         self::assertStringContainsString('• Volkswagen Golf: £30.00 spent', $text);

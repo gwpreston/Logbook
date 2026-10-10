@@ -251,6 +251,16 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   - **"Dismissed kinds (Phase 38)".** Answered from the code: Phase 38
     added no dismissals (Phase 42 says so) and §7.8's computed insights
     have none, so there is nothing to filter. (#365)
+  - **Found while building it (2026-10-10), decided by the owner the
+    same day:** the server's `WEBHOOK_URL`, which receives every
+    member's notifications, gets the digest without spend, cost per
+    distance or insights (#366); a month with no spending reads "nothing
+    spent", with no comparison and cost per distance "—" (#367); *Last
+    month* only while the reports module is on (#368); a vehicle is
+    listed with a distance or a spend in the month, not "any record in
+    13 months" (#369); AI insights tied only to non-recipient vehicles
+    are left out (#370); the *Needs attention* heading counts lines
+    (#371).
   - The carried #279 and #346–#349 were decided the same day and moved
     to [Phase 41.8](phase-41.8.md), at the owner's choice, rather than
     built in this release.

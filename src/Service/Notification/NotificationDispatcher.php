@@ -36,15 +36,21 @@ final readonly class NotificationDispatcher
     ) {
     }
 
+    /**
+     * @param array<string, Notification> $variants channel key → the message
+     *        that channel gets instead (the server's webhook gets the digest
+     *        without amounts, spec.md §7.11 *The monthly briefing*, #366)
+     */
     public function dispatch(
         Notification $notification,
         Recipient $recipient,
         NotificationPreferences $preferences,
+        array $variants = [],
     ): DispatchReport {
         $category = NotificationCategory::forKind($notification->kind);
         $sends = [];
         foreach ($this->channels->active($preferences, $recipient, $category) as $channel) {
-            $sends[] = [$channel, $notification, $category === null ? [] : [$category]];
+            $sends[] = [$channel, $variants[$channel->key()] ?? $notification, $category === null ? [] : [$category]];
         }
 
         return $this->deliver($sends, $recipient, $preferences);

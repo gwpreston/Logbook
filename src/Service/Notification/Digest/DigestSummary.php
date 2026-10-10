@@ -247,11 +247,12 @@ final readonly class DigestSummary
         }
         $named = $largest instanceof CostItem && $largest->amount->micros * 2 > $section->total->micros ? $largest : null;
 
+        // Nothing spent: no cost per distance to compare (#367).
         return new VehicleSpend(
             $currency,
             $section->total,
             $average,
-            self::perKm($section),
+            $section->total->isZero() ? null : self::perKm($section),
             self::perKm($this->section($year, $currency)),
             $named,
         );

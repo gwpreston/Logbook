@@ -3254,7 +3254,11 @@ Extensible channel interface so more can be added.
   can see. The scheduled task runs once per active user: each run covers
   only their recipient vehicles, in their language, units and time zone.
   A recipient without `ViewCosts` on a vehicle never gets its amounts
-  (a reminder carries none today; *Coming up* costs are not sent).
+  (a reminder carries none; *Coming up* costs are not sent). From Phase
+  43 the monthly digest carries last month's spend and cost per distance
+  to recipients with `ViewCosts`, through their own channels only: the
+  server's webhook (`WEBHOOK_URL`) gets the digest without amounts or
+  insights (#366, *The monthly briefing*).
 - **Channels per user** (Phase 19, Phase 36.2): email goes to the user's
   confirmed address (Phase 33.1, §6 User `email`, set on Profile; the
   *Default recipient for admins*, Settings → Delivery, is the default for
@@ -3308,11 +3312,13 @@ Extensible channel interface so more can be added.
     attention**: the *Check* items, then, while the `issues` module is on,
     one line per recipient vehicle with open issues (§7.37) that the user
     may see, "Golf: 2 open issues" (open issues aren't reminders, so they
-    would otherwise be missed); (3) **Last month**; (4) **Insights**;
+    would otherwise be missed); the heading counts the lines, checks and
+    vehicles (#371); (3) **Last month**; (4) **Insights**;
     (5) the link.
-  - **Last month** (while the reports module is on): the previous
+  - **Last month** (while the reports module is on, #368): the previous
     calendar month in the user's time zone, for each active recipient
-    vehicle with a distance or (with `ViewCosts`) a spend in that month;
+    vehicle with a distance or (with `ViewCosts`) a spend in that month
+    (#369);
     the averages still look back over the 12 months before it:
     - *Distance*: the month's distance driven (§7.7, `PeriodDistance`),
       against the average of the 12 months before it, each measured the
@@ -3333,6 +3339,9 @@ Extensible channel interface so more can be added.
       the same 100 km floor.
     - *Fleet line* (two or more vehicles listed): distance summed; spend
       summed **per currency**, never converted.
+    - *Nothing spent* (#367): a month with a distance and no spending
+      reads "nothing spent", with no comparison, and its cost per
+      distance is "—" (null in the JSON).
     - *Wording*: each comparison is a fixed translated sentence, "about N%
       more" or "about N% less" from the figures shown, and "about the same"
       within ±5%.
@@ -3346,7 +3355,7 @@ Extensible channel interface so more can be added.
     "AI:", the AI insights (§7.26) of the user's kept set when it was made
     for their today or yesterday (#362) and AI is available to them, as the
     Insights page would show them, leaving out any the model tied only to
-    vehicles that aren't recipient vehicles: any with a figure no tool returned is
+    vehicles that aren't recipient vehicles (#370): any with a figure no tool returned is
     already dropped (#354), so a text message never carries an unbacked
     figure, and so is any that repeats a computed insight (#358). Computed
     insights have no dismissal (§7.8), so none is filtered for that
@@ -3366,6 +3375,11 @@ Extensible channel interface so more can be added.
     earlier version keeps the digest as it was. With none ticked, the
     digest is the one from before Phase 43 without its *Needs attention*
     section.
+  - **The server's webhook** (#366): `WEBHOOK_URL` is an admin's endpoint
+    that receives every member's notifications, so its copy of the digest
+    leaves out spend, cost per distance and insights (text and JSON);
+    distances and open issues stay. Each member's own channels, personal
+    webhooks included, get the whole digest.
   - **Webhook JSON**: beside `items` and `attention` (unchanged), every
     event carries `last_month`, `fleet`, `issues` and `insights` (empty
     except on the digest): `last_month` is a list per vehicle of

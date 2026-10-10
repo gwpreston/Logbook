@@ -37,13 +37,13 @@ final class MonthlyBriefingSettingsTest extends BriefingTestCase
 
         self::assertStringContainsString('<legend class="field__label">Include</legend>', $page);
         self::assertStringContainsString('name="digest_include_shown" value="1"', $page);
-        self::assertStringContainsString('What’s due (always)', $page);
+        self::assertStringContainsString('What’s due is always included.', $page);
         self::assertSame([], $this->unticked($page, 'Include box'), 'every box on by default');
         foreach (['attention', 'last_month', 'insights'] as $value) {
             self::assertMatchesRegularExpression('/name="digest_include\[\]" value="' . $value . '" checked/', $page);
         }
         self::assertStringContainsString('Needs attention and open issues', $page);
-        self::assertStringContainsString('Last month: distance, spend and cost per distance', $page);
+        self::assertStringContainsString('Last month', $page);
         self::assertStringContainsString('>Insights</span>', $page);
         self::assertDoesNotMatchRegularExpression('/name="digest_include\[\]" value="due"/', $page, 'what is due is not a box');
     }

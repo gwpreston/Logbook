@@ -27,6 +27,16 @@ final readonly class DigestContent
         return new self();
     }
 
+    /**
+     * For the server's webhook (#366): an admin's endpoint the member never
+     * chose gets no money and no insight text, only distances and open
+     * issues.
+     */
+    public function withoutAmounts(): self
+    {
+        return new self($this->issues, $this->lastMonth?->withoutAmounts(), []);
+    }
+
     public function isEmpty(): bool
     {
         return $this->issues === [] && $this->lastMonth === null && $this->insights === [];

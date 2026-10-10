@@ -6,6 +6,7 @@ namespace Logbook\Service\Notification\Digest;
 
 use DateTimeImmutable;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Number\Decimal;
 
 /**
  * The digest's *Last month* section (spec.md §7.11 *The monthly
@@ -26,6 +27,31 @@ final readonly class LastMonth
         public ?string $fleetDistanceKm,
         public array $fleetSpend,
     ) {
+    }
+
+    /**
+     * Without spend or cost per distance (#366): vehicles left with no
+     * distance drop out; null when none is left.
+     */
+    public function withoutAmounts(): ?self
+    {
+        $lines = [];
+        foreach ($this->lines as $line) {
+            if ($line->distanceKm !== null) {
+                $lines[] = new LastMonthLine($line->vehicle, $line->distanceKm, $line->distanceAverageKm, null);
+            }
+        }
+        if ($lines === []) {
+            return null;
+        }
+        $km = null;
+        if (count($lines) > 1) {
+            foreach ($lines as $line) {
+                $km = Decimal::add($km ?? '0', (string) $line->distanceKm);
+            }
+        }
+
+        return new self($this->month, $lines, $km, []);
     }
 
     public function hasFleet(): bool

@@ -97,7 +97,10 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
                 Decimal::compare($section->total->toDecimal(3), $line->costs->spend->toDecimal(3)),
                 $vehicle->name() . ' spend',
             );
-            if ($section->distanceKm !== null && Decimal::compare($section->distanceKm, '100') >= 0) {
+            if ($section->total->isZero()) {
+                // Nothing spent: no cost per distance (#367).
+                self::assertNull($line->costs->costPerKm, $vehicle->name() . ' nothing spent');
+            } elseif ($section->distanceKm !== null && Decimal::compare($section->distanceKm, '100') >= 0) {
                 self::assertSame($section->costPerKm, $line->costs->costPerKm, $vehicle->name() . ' cost per distance');
                 self::assertSame($section->distanceKm, $line->distanceKm, $vehicle->name() . ' distance');
             } else {

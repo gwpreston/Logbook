@@ -17,7 +17,7 @@ month and what Logbook spotted, as well as what's due.
   spend and running cost per distance for last month, against its monthly
   average over the 12 months before ("about 10% more than your monthly
   average"), with a line for all vehicles (spend per currency, never
-  converted). The figures are the Reports page's for that month; spend and
+  converted); a month with nothing spent says so. The figures are the Reports page's for that month; spend and
   cost per distance only for people who may see the costs; one entry over
   half the month's spend is named. Then the computed insights and, with AI
   on, the AI insights made that day or the day before, marked "AI:"
@@ -38,6 +38,9 @@ month and what Logbook spotted, as well as what's due.
   send nothing can now send one, and a short channel such as Pushover
   may cut it with "…and N more" (what's due always comes first).
 - Webhook consumers receive four new keys; existing ones are unchanged.
+  The server's webhook (`WEBHOOK_URL`) gets the digest without spend,
+  cost per distance or insights, since it receives every member's
+  messages; personal webhooks get everything.
 - Rolling back to 3.8 keeps the digest as it was (`digest` is still a
   boolean; 3.8 ignores `digest_include`).
 

@@ -507,3 +507,8 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   `open`) and `insights` (`kind`, `source` `computed` or `ai`,
   `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
   other event; `items` and `attention` keep their shape.
+- The server's webhook (`WEBHOOK_URL`) receives every member's digest,
+  so from 3.9.0 its copy leaves out spend, cost per distance and the
+  insights (in the text and the JSON); distances and open issues stay.
+  A member's own channels, their personal webhook included, get the
+  whole digest.

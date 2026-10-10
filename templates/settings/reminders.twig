@@ -84,7 +84,6 @@
                 <fieldset class="field fieldset" aria-describedby="f-digest-include-hint">
                     <legend class="field__label">{{ 'reminders.settings.digest_include'|trans }}</legend>
                     <input type="hidden" name="digest_include_shown" value="1">
-                    <p class="field__hint" id="f-digest-include-hint">{{ 'reminders.settings.digest_include_due'|trans }}</p>
                     <div class="chip-row">
                         {% for section in digest_sections %}
                             <label class="chip">
@@ -93,6 +92,7 @@
                             </label>
                         {% endfor %}
                     </div>
+                    <p class="field__hint" id="f-digest-include-hint">{{ 'reminders.settings.digest_include_due'|trans }}</p>
                 </fieldset>
                 <p class="field__hint">{{ 'reminders.settings.when_sent'|trans }}</p>
             </section>

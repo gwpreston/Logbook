@@ -81,7 +81,10 @@ final readonly class DigestWording
             return $lines;
         }
         $average = $costs->average?->toDecimal(Money::SCALE);
-        $lines[] = $this->translator->trans('notifications.digest.spend', [
+        // A month with nothing spent says so, without a comparison (#367).
+        $lines[] = $costs->spend->isZero()
+            ? $this->translator->trans('notifications.digest.spend_none', ['vehicle' => $vehicle])
+            : $this->translator->trans('notifications.digest.spend', [
             'vehicle' => $vehicle,
             'amount' => $this->formatter->money($costs->spend),
             'largest' => $costs->largest === null ? 'none' : 'named',

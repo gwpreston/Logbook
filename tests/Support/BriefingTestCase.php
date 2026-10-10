@@ -59,6 +59,8 @@ abstract class BriefingTestCase extends ReminderTestCase
         $user = $this->service($this->app, UserRepository::class)->findByUsername($username);
         self::assertNotNull($user);
         $this->withEmail($this->app, $user, $email);
+        // A personal webhook gets the whole briefing; the server's gets no amounts (#366).
+        $this->giveChannel($this->app, $user, 'personal-webhook', ['url' => 'https://hooks.test/' . $username]);
         $browser->get('/settings/reminders');
         $response = $browser->post('/settings/reminders', $extra + [
             'schedule_days' => '30',
@@ -121,7 +123,7 @@ abstract class BriefingTestCase extends ReminderTestCase
             $this->mail->sent,
             static fn (Email $e): bool => ($to === null || $e->getTo()[0]->getAddress() === $to)
                 && (str_starts_with((string) $e->getSubject(), 'Due in')
-                    || str_contains((string) $e->getSubject(), 'monthly briefing')
+                    || str_contains((string) $e->getSubject(), 'monthly digest')
                     || str_contains((string) $e->getSubject(), 'need')),
         ));
     }
@@ -135,13 +137,18 @@ abstract class BriefingTestCase extends ReminderTestCase
     }
 
     /**
-     * The digest webhook's JSON for one user.
+     * The digest's JSON for one user from their personal webhook, or with
+     * $server from the server's (`WEBHOOK_URL`).
      *
      * @return array<string, mixed>
      */
-    protected function digestJson(string $username = 'owner'): array
+    protected function digestJson(string $username = 'owner', bool $server = false): array
     {
+        $url = $server ? 'https://hooks.test/logbook' : 'https://hooks.test/' . $username;
         foreach ($this->http->to('https://hooks.test') as $request) {
+            if ($request['url'] !== $url) {
+                continue;
+            }
             /** @var array<string, mixed> $json */
             $json = $request['json'];
             $user = $json['user'] ?? null;
