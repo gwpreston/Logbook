@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.8.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.9.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -23,7 +23,7 @@ your own server.
 > replacing; and reminders for all of it, with
 > lead times you choose, sent by email, ntfy, Gotify, Telegram, Discord,
 > Pushover, Mattermost, Slack or a webhook when they come due, as a list or
-> a month calendar, plus an optional monthly digest and a calendar feed; every cost
+> a month calendar, plus an optional monthly digest (what is due, last month's distance and spend against your averages, and insights) and a calendar feed; every cost
 > rolled up into per-vehicle and fleet reports (by category, per month, per
 > mile or km, any date range) with CSV export and a clean printout (or PDF)
 > of every report, charts in black and grey beside their tables; valuations, depreciation and

@@ -3325,7 +3325,7 @@ Extensible channel interface so more can be added.
       ledger line (#364), at most 12; a month after that with nothing
       spent counts as zero; with fewer than 3 such months, the comparison
       is left out. When one ledger line is more than half of the month's
-      spend, it is named: "£604, including insurance £412".
+      spend, it is named by its kind as listed (no change of case, which some languages need): "£604 spent, including Insurance £412".
     - *Cost per distance* (`ViewCosts` only): the month's spend ÷ its
       distance, only when that distance is at least 100 km (as §7.35);
       otherwise "—". Its average is the 12 months' spend ÷ their distance
@@ -10032,8 +10032,8 @@ task breakdowns live in the per-phase files; this is the map.
   *Insights* (computed, and the kept AI set from today or yesterday,
   never a model call) and an open-issues line, ordered so a short channel
   keeps what's due; *Include* choices on Settings → Reminders, stored as
-  `digest_include` (§6, §7.11; #360–#365). No migration. See
-  [`phase-43.md`](docs/phases/phase-43.md).
+  `digest_include` (§6, §7.11; #360–#365). No migration. Release
+  v3.9.0. See [`phase-43.md`](docs/phases/phase-43.md).
 - **Phase 44 — A *Next 3 months* total on *Coming up* + release.** The
   prototype's 3-month outlook as a total on the *Coming up* page and
   widget, not an insight (#355). See

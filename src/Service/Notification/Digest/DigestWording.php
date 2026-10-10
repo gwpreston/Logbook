@@ -85,7 +85,7 @@ final readonly class DigestWording
             'vehicle' => $vehicle,
             'amount' => $this->formatter->money($costs->spend),
             'largest' => $costs->largest === null ? 'none' : 'named',
-            'entry' => $costs->largest === null ? '' : mb_strtolower($this->translator->trans($costs->largest->kindKey)),
+            'entry' => $costs->largest === null ? '' : $this->translator->trans($costs->largest->kindKey),
             'entry_amount' => $costs->largest === null ? '' : $this->formatter->money($costs->largest->amount),
             'average' => $costs->average === null ? '' : $this->formatter->money($costs->average),
         ] + self::trend($costs->spend->toDecimal(Money::SCALE), $average));

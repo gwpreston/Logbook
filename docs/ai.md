@@ -245,6 +245,13 @@ that repeats *Fuel saving* or *Economy up* for the same vehicle is left
 out. Each is marked *AI*, with its sources and the model that wrote it,
 and up to two join the dashboard's *Insights* widget.
 
+Since v3.9 the **monthly digest** lists them too, marked "AI:", after
+Logbook's own insights: the set made that day or the day before, as the
+Insights page shows it (so never one with an unbacked figure). The digest
+never asks a model for anything; with no recent set it simply leaves them
+out. Untick *Insights* under Settings → Reminders → *Include* to drop
+them.
+
 Logbook works out *Could save about £x a year on fuel* and *Economy is up
 about x%* itself, with or without AI (see the Insights page); Ask answers
 "How much could I save on fuel?" from the same figure.
