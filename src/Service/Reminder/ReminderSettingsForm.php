@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Reminder;
 
 use Logbook\Service\Attention\AttentionThresholds;
+use Logbook\Service\Notification\DigestSection;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\ValidationErrors;
@@ -42,6 +43,23 @@ final class ReminderSettingsForm
             'cost_multiple' => (string) $attention->costMultiple,
             'cost_floor' => (string) $attention->costFloor,
         ];
+    }
+
+    /**
+     * The digest's *Include* boxes (spec.md §7.11 *The monthly briefing*):
+     * the ticked sections, or null when the form had no boxes (the reminders
+     * module off), which keeps what was saved.
+     *
+     * @param array<array-key, mixed> $input
+     * @return list<DigestSection>|null
+     */
+    public static function digestSections(array $input): ?array
+    {
+        if (($input['digest_include_shown'] ?? null) !== '1') {
+            return null;
+        }
+
+        return DigestSection::fromStored(is_array($input['digest_include'] ?? null) ? $input['digest_include'] : []);
     }
 
     /**

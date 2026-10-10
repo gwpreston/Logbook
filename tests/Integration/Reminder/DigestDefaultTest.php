@@ -34,7 +34,7 @@ final class DigestDefaultTest extends ReminderTestCase
         $card = self::body($browser->get('/settings/reminders'));
         self::assertMatchesRegularExpression('/name="digest" value="1" checked/', $card);
         self::assertStringContainsString(
-            'It is sent only when a channel is set up and something is due or needs attention.',
+            'It is sent only when a channel is set up and there is something to report.',
             $card,
         );
 

@@ -95,6 +95,11 @@ final class NotificationDeliveryTest extends ReminderTestCase
                 'due_on' => '2026-10-09',
             ]],
             'attention' => [],
+            // Phase 43: the digest's briefing, empty on every other event.
+            'last_month' => [],
+            'fleet' => null,
+            'issues' => [],
+            'insights' => [],
             'user' => ['id' => $this->owner($app)->id, 'username' => 'owner', 'display_name' => 'Pat Owner'],
         ], $hook[0]['json']);
 

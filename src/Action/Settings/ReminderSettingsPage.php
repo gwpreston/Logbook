@@ -6,6 +6,7 @@ namespace Logbook\Action\Settings;
 
 use Logbook\Service\Attention\AttentionSettingsStore;
 use Logbook\Service\Notification\ChannelRegistry;
+use Logbook\Service\Notification\DigestSection;
 use Logbook\Service\Notification\Recipient;
 use Logbook\Service\Notification\NotificationChannel;
 use Logbook\Service\Reminder\CalendarFeed;
@@ -64,6 +65,12 @@ final readonly class ReminderSettingsPage
                 $this->attention->thresholds($user->id),
             ),
             'digest' => $values === null ? $notifications->digest : ($values['digest'] ?? '') !== '',
+            'digest_sections' => DigestSection::cases(),
+            'digest_include' => array_map(
+                static fn (DigestSection $s): string => $s->value,
+                ($values === null ? null : ReminderSettingsForm::digestSections(RequestContext::form($request)))
+                    ?? array_values(array_filter(DigestSection::cases(), $notifications->digestIncludes(...))),
+            ),
             'errors' => $errors?->all() ?? [],
             'sent_to' => $sentTo,
             'any_active' => $active !== [],

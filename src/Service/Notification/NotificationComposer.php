@@ -15,6 +15,10 @@ use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
 use Logbook\Service\Attention\AttentionItem;
 use Logbook\Service\Attention\AttentionWording;
+use Logbook\Service\Notification\Digest\DigestContent;
+use Logbook\Service\Notification\Digest\DigestInsight;
+use Logbook\Service\Notification\Digest\DigestWording;
+use Logbook\Service\Notification\Digest\OpenIssues;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderWording;
 use Logbook\Support\Display\DisplayFormatter;
@@ -36,6 +40,7 @@ final readonly class NotificationComposer
         private AbsoluteUrl $urls,
         private AttentionWording $attention,
         private DisplayFormatter $formatter,
+        private DigestWording $briefing,
     ) {
     }
 
@@ -101,15 +106,25 @@ final readonly class NotificationComposer
     /**
      * "What's due this month": open reminders due by the end of the month,
      * overdue ones included, then (Phase 24) the *Needs attention* checks
-     * on the same vehicles. Either list may be empty, not both.
+     * on the same vehicles and (Phase 43) the open issues, then last month
+     * and the insights (spec.md §7.11 *The monthly briefing*), in that
+     * order so a short channel keeps what's due. Not everything may be
+     * empty.
      *
      * @param list<ReminderEntry> $entries
      * @param list<AttentionItem> $checks
      * @param DateTimeImmutable $today the owner's calendar date
      */
-    public function digest(User $user, array $entries, DateTimeImmutable $today, array $checks = []): Notification
-    {
-        return $this->scope->run($user, function () use ($entries, $today, $checks): Notification {
+    public function digest(
+        User $user,
+        array $entries,
+        DateTimeImmutable $today,
+        array $checks = [],
+        ?DigestContent $content = null,
+    ): Notification {
+        $content ??= DigestContent::none();
+
+        return $this->scope->run($user, function () use ($entries, $today, $checks, $content): Notification {
             // Stand-alone month name ("October 2026"); the date is a calendar date, so UTC.
             $formatter = new IntlDateFormatter(
                 $this->translator->getLocale(),
@@ -124,24 +139,36 @@ final readonly class NotificationComposer
             $message = $items === []
                 ? $this->translator->trans('notifications.digest.nothing_due', ['month' => $month])
                 : $this->lines($items, 'notifications.digest.intro', ['count' => count($items), 'month' => $month]);
-            if ($checks !== []) {
-                $lines = ['', $this->translator->trans('notifications.digest.attention', ['count' => count($checks)]), ''];
+            $attention = count($checks) + count($content->issues);
+            if ($attention > 0) {
+                $lines = ['', $this->translator->trans('notifications.digest.attention', ['count' => $attention]), ''];
                 foreach ($checks as $check) {
                     $lines[] = $this->translator->trans('notifications.attention_line', [
                         'line' => $this->attention->line($check),
                     ]);
                 }
+                array_push($lines, ...$this->briefing->issueLines($content->issues));
                 $message .= "\n" . implode("\n", $lines);
             }
+            if ($content->lastMonth !== null) {
+                $message .= "\n\n" . implode("\n", $this->briefing->lastMonthLines($content->lastMonth));
+            }
+            if ($content->insights !== []) {
+                $message .= "\n\n" . implode("\n", $this->briefing->insightLines($content->insights));
+            }
+
+            $title = match (true) {
+                $items !== [] => $this->translator->trans('notifications.digest.title', ['month' => $month]),
+                $attention > 0 => $this->translator->trans('notifications.digest.title_checks', [
+                    'month' => $month,
+                    'count' => $attention,
+                ]),
+                default => $this->translator->trans('notifications.digest.title_briefing', ['month' => $month]),
+            };
 
             return new Notification(
                 kind: NotificationKind::Digest,
-                title: $items === []
-                    ? $this->translator->trans('notifications.digest.title_checks', [
-                        'month' => $month,
-                        'count' => count($checks),
-                    ])
-                    : $this->translator->trans('notifications.digest.title', ['month' => $month]),
+                title: $title,
                 message: $message,
                 url: $this->urls->route('reminders.index'),
                 urgent: false,
@@ -153,6 +180,14 @@ final readonly class NotificationComposer
                     'title' => $this->attention->title($c),
                 ], $checks),
                 locale: $this->translator->getLocale(),
+                lastMonth: $content->lastMonth === null ? [] : $this->briefing->lastMonthJson($content->lastMonth),
+                fleet: $content->lastMonth === null ? null : $this->briefing->fleetJson($content->lastMonth),
+                issues: array_map(static fn (OpenIssues $i): array => [
+                    'vehicle_id' => $i->vehicle->id,
+                    'vehicle' => $i->vehicle->name(),
+                    'open' => $i->count,
+                ], $content->issues),
+                insights: array_map(static fn (DigestInsight $i): array => $i->toArray(), $content->insights),
             );
         });
     }

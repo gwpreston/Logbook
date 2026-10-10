@@ -3310,9 +3310,10 @@ Extensible channel interface so more can be added.
     may see, "Golf: 2 open issues" (open issues aren't reminders, so they
     would otherwise be missed); (3) **Last month**; (4) **Insights**;
     (5) the link.
-  - **Last month**: the previous calendar month in the user's time zone,
-    for each recipient vehicle the user can view that is active and has
-    any reading or ledger line in the 13 months to its end:
+  - **Last month** (while the reports module is on): the previous
+    calendar month in the user's time zone, for each active recipient
+    vehicle with a distance or (with `ViewCosts`) a spend in that month;
+    the averages still look back over the 12 months before it:
     - *Distance*: the month's distance driven (§7.7, `PeriodDistance`),
       against the average of the 12 months before it, each measured the
       same way. Months with no measurable distance are left out of the
@@ -3344,7 +3345,8 @@ Extensible channel interface so more can be added.
     vehicles that are active, all of them, in §7.8's order; then, marked
     "AI:", the AI insights (§7.26) of the user's kept set when it was made
     for their today or yesterday (#362) and AI is available to them, as the
-    Insights page would show them: any with a figure no tool returned is
+    Insights page would show them, leaving out any the model tied only to
+    vehicles that aren't recipient vehicles: any with a figure no tool returned is
     already dropped (#354), so a text message never carries an unbacked
     figure, and so is any that repeats a computed insight (#358). Computed
     insights have no dismissal (§7.8), so none is filtered for that
@@ -3370,7 +3372,8 @@ Extensible channel interface so more can be added.
     `distance_average` (kilometres as decimal strings, null when not
     measured), `spend` and `spend_average` (decimal strings), `currency`,
     `cost_per_distance` and `cost_per_distance_average` (per kilometre,
-    decimal strings or null), and `display` (the line as sent); the
+    decimal strings or null), and `display` (the vehicle's lines as
+    sent, without the bullets); the
     amounts and `currency` are absent without `ViewCosts`. `fleet` is
     `{"distance", "spend": {currency: amount}, "display"}` or null; `issues`
     is a list of `{"vehicle_id", "vehicle", "open"}`; `insights` a list of

@@ -16,6 +16,11 @@ final readonly class Notification
      * @param list<NotificationItem> $items
      * @param list<array{vehicle_id: int, vehicle: string, kind: string, title: string}> $attention the digest's
      *        *Needs attention* checks (Phase 24, spec.md §7.11)
+     * @param list<array<string, mixed>> $lastMonth the digest's *Last month*, per vehicle (Phase 43)
+     * @param array<string, mixed>|null $fleet the digest's fleet line, with two or more vehicles (Phase 43)
+     * @param list<array{vehicle_id: int, vehicle: string, open: int}> $issues open issues per vehicle (Phase 43)
+     * @param list<array{kind: string, source: string, vehicle_ids: list<int>, title: string, body: string}> $insights
+     *        the digest's insights (Phase 43)
      */
     public function __construct(
         public NotificationKind $kind,
@@ -31,6 +36,10 @@ final readonly class Notification
         public array $attention = [],
         /** The recipient's locale it was written in, for a sender's own words ("…and 3 more"). */
         public ?string $locale = null,
+        public array $lastMonth = [],
+        public ?array $fleet = null,
+        public array $issues = [],
+        public array $insights = [],
     ) {
     }
 

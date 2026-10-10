@@ -32,7 +32,22 @@ final readonly class NotificationPreferences
         public ?ChannelCategories $emailCategories = null,
         /** Null when off (Phase 36.4). */
         public ?QuietHours $quiet = null,
+        /**
+         * @var list<DigestSection>|null the digest's sections the user
+         *      ticked (Phase 43, stored as `digest_include`); null until
+         *      they choose, meaning all
+         */
+        public ?array $digestSections = null,
     ) {
+    }
+
+    /**
+     * Whether the digest includes $section (spec.md §7.11 *The monthly
+     * briefing*): every one until the user chooses.
+     */
+    public function digestIncludes(DigestSection $section): bool
+    {
+        return $this->digestSections === null || in_array($section, $this->digestSections, true);
     }
 
     public function emailCategories(): ChannelCategories
@@ -62,27 +77,77 @@ final readonly class NotificationPreferences
             $channels[] = $channelKey;
         }
 
-        return new self($channels, $this->digest, $this->legacyGotifyToken, $this->emailCategories, $this->quiet);
+        return new self(
+            $channels,
+            $this->digest,
+            $this->legacyGotifyToken,
+            $this->emailCategories,
+            $this->quiet,
+            $this->digestSections,
+        );
     }
 
     public function withDigest(bool $digest): self
     {
-        return new self($this->channels, $digest, $this->legacyGotifyToken, $this->emailCategories, $this->quiet);
+        return new self(
+            $this->channels,
+            $digest,
+            $this->legacyGotifyToken,
+            $this->emailCategories,
+            $this->quiet,
+            $this->digestSections,
+        );
     }
 
     public function withoutLegacyGotifyToken(): self
     {
-        return new self($this->channels, $this->digest, null, $this->emailCategories, $this->quiet);
+        return new self(
+            $this->channels,
+            $this->digest,
+            null,
+            $this->emailCategories,
+            $this->quiet,
+            $this->digestSections,
+        );
     }
 
     public function withEmailCategories(ChannelCategories $categories): self
     {
-        return new self($this->channels, $this->digest, $this->legacyGotifyToken, $categories, $this->quiet);
+        return new self(
+            $this->channels,
+            $this->digest,
+            $this->legacyGotifyToken,
+            $categories,
+            $this->quiet,
+            $this->digestSections,
+        );
     }
 
     public function withQuiet(?QuietHours $quiet): self
     {
-        return new self($this->channels, $this->digest, $this->legacyGotifyToken, $this->emailCategories, $quiet);
+        return new self(
+            $this->channels,
+            $this->digest,
+            $this->legacyGotifyToken,
+            $this->emailCategories,
+            $quiet,
+            $this->digestSections,
+        );
+    }
+
+    /**
+     * @param list<DigestSection> $sections
+     */
+    public function withDigestSections(array $sections): self
+    {
+        return new self(
+            $this->channels,
+            $this->digest,
+            $this->legacyGotifyToken,
+            $this->emailCategories,
+            $this->quiet,
+            DigestSection::fromStored(array_map(static fn (DigestSection $s): string => $s->value, $sections)),
+        );
     }
 
     public static function fromArray(mixed $value): self
@@ -97,6 +162,7 @@ final readonly class NotificationPreferences
             is_string($token) && $token !== '' ? $token : null,
             isset($value['email_categories']) ? ChannelCategories::fromStored($value['email_categories']) : null,
             QuietHours::fromStored($value['quiet'] ?? null),
+            DigestSection::fromStored($value['digest_include'] ?? null),
         );
     }
 
@@ -107,6 +173,7 @@ final readonly class NotificationPreferences
      *     gotify_token?: string,
      *     email_categories?: string,
      *     quiet?: array{start: string, end: string},
+     *     digest_include?: list<string>,
      * }
      */
     public function toArray(): array
@@ -121,6 +188,9 @@ final readonly class NotificationPreferences
         }
         if ($this->quiet !== null) {
             $array['quiet'] = $this->quiet->toStored();
+        }
+        if ($this->digestSections !== null) {
+            $array['digest_include'] = array_map(static fn (DigestSection $s): string => $s->value, $this->digestSections);
         }
 
         return $array;

@@ -52,7 +52,12 @@ final readonly class ReminderSettingsAction
         $this->attention->saveThresholds($user->id, $attention);
         if ($this->features->isEnabled(Feature::Reminders)) {
             $notifications = $this->settings->notificationPreferences($user->id);
-            $this->settings->saveNotificationPreferences($user->id, $notifications->withDigest($digest));
+            $notifications = $notifications->withDigest($digest);
+            $sections = ReminderSettingsForm::digestSections($input);
+            if ($sections !== null) {
+                $notifications = $notifications->withDigestSections($sections);
+            }
+            $this->settings->saveNotificationPreferences($user->id, $notifications);
         }
         RequestContext::session($request)->flash('success', 'reminders.settings.saved');
 
