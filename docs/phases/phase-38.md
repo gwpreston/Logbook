@@ -278,3 +278,6 @@ D and E, found while starting, as below (#272–#276).*
   is the thread's title) and #278 (with AI off a thread's old address is
   302, not 301) built in this phase; #279 (cap MCP drafts) and #280 (an
   Insights query budget) logged in `open-questions.md` for a decision.
+  #280 was decided in Phase 42. #279 *Decided 2026-10-10*: no cap; the
+  Insights page shows the latest 5 drafts with *Show all (N)*, built in
+  [Phase 41.8](phase-41.8.md).

@@ -789,7 +789,9 @@ MySQL only.
 - Upgrading to 3.7.0 creates both tables, the vehicle columns, the
   reading link (`odometer_readings.mot_test_id`, `ON DELETE CASCADE`) and
   `mot_history_secrets`. Rolling it back deletes `mot` readings, drops
-  the tables, the link and the columns; issues and documents made from
+  the tables, the link and the columns, and (Phase 41.8, #348) deletes the
+  `mot_history` settings, so upgrading again finds the provider off rather
+  than on without credentials; issues and documents made from
   tests stay, as the owner's own entries (`mot_advisory` issues keep their
   source).
 - In backups and `bin/export-user.php` (the user's vehicles' rows).
@@ -1254,8 +1256,10 @@ are. The schema version moves.
   (its `channels` list, which also keeps `webhook`); email's last result
   is the user setting `notifications.email_result`. From Phase 36.4 the
   `notifications` preference also holds `email_categories` (as
-  `categories` above, absent meaning all) and `quiet` (`{"start", "end"}`,
-  absent when off); an admin's held job failures are the user setting
+  `categories` above, absent meaning all), `quiet` (`{"start", "end"}`,
+  absent when off) and, from Phase 43, `digest_include` (a list of
+  `attention`, `last_month`, `insights`; absent meaning all, §7.11 *The
+  monthly briefing*; `digest` stays a boolean); an admin's held job failures are the user setting
   `jobs.held_failures`. Global setting
   `notifications.member_destinations`: `internet` | `network` (default) |
   `server` (§7.11).
@@ -2225,7 +2229,11 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   for *all time* the period starts at the earliest cost.
 - **Distance driven** comes from the mileage log: the last reading in the
   period minus the last reading before it (or the first reading in it when
-  there is none before). Only vehicles with costs in the period count
+  there is none before). From Phase 41.8 (#346, decided 2026-10-10) a
+  vehicle's readings dated before its purchase date (the owner's calendar
+  day) are left out, wherever a distance is measured this way: MOT history
+  brings in an earlier owner's mileages, and they are not this owner's
+  driving. They stay in History and on the odometer list. Only vehicles with costs in the period count
   towards the fleet's distance (miles from a vehicle whose costs were never
   logged would make the fleet look cheaper to run than any of its vehicles).
   Cost per distance = spend ÷ distance, shown only when some distance was
@@ -3278,7 +3286,8 @@ Extensible channel interface so more can be added.
   before 2.1.0, and users restored from an older backup, keep what they
   had and nobody starts getting a digest they didn't choose. No migration.
   The card's hint says it is sent only when a channel is set up and
-  something is due or needs attention):
+  something is due, needs attention or (Phase 43) there is something to
+  report for last month):
   on the first run of each
   month in the user's time zone, covering their recipient vehicles, one summary of every open reminder due by the end
   of that month, overdue ones included, then (Phase 24) a *Needs
@@ -3291,6 +3300,81 @@ Extensible channel interface so more can be added.
   JSON gains an `attention` list (`vehicle_id`, `vehicle`, `kind`,
   `title`) beside `items`, which is unchanged; other channels get the
   section as text.
+- **The monthly briefing** (Phase 43, decided 2026-10-10, #360–#365):
+  the digest also covers **last month** and Logbook's **insights**.
+  - **Sections, in this order.** Each channel's message is cut at a line
+    boundary as before (*Limits*), so the order decides what a short
+    channel such as Pushover keeps: (1) **Due this month**; (2) **Needs
+    attention**: the *Check* items, then, while the `issues` module is on,
+    one line per recipient vehicle with open issues (§7.37) that the user
+    may see, "Golf: 2 open issues" (open issues aren't reminders, so they
+    would otherwise be missed); (3) **Last month**; (4) **Insights**;
+    (5) the link.
+  - **Last month**: the previous calendar month in the user's time zone,
+    for each recipient vehicle the user can view that is active and has
+    any reading or ledger line in the 13 months to its end:
+    - *Distance*: the month's distance driven (§7.7, `PeriodDistance`),
+      against the average of the 12 months before it, each measured the
+      same way. Months with no measurable distance are left out of the
+      average; with fewer than 3 left, the comparison is left out.
+    - *Spend* (`ViewCosts` only, else left out): the month's ledger total
+      as the Reports page counts it for that month (§7.7), in the vehicle's
+      currency, against the monthly average of the 12 months before it.
+      The average divides by the months from the vehicle's first reading or
+      ledger line (#364), at most 12; a month after that with nothing
+      spent counts as zero; with fewer than 3 such months, the comparison
+      is left out. When one ledger line is more than half of the month's
+      spend, it is named: "£604, including insurance £412".
+    - *Cost per distance* (`ViewCosts` only): the month's spend ÷ its
+      distance, only when that distance is at least 100 km (as §7.35);
+      otherwise "—". Its average is the 12 months' spend ÷ their distance
+      (a ratio of totals, as the Reports page gives for that range), with
+      the same 100 km floor.
+    - *Fleet line* (two or more vehicles listed): distance summed; spend
+      summed **per currency**, never converted.
+    - *Wording*: each comparison is a fixed translated sentence, "about N%
+      more" or "about N% less" from the figures shown, and "about the same"
+      within ±5%.
+    - All figures come from the report code (`ReportService`,
+      `PeriodDistance`): the digest never shows a number the Reports page
+      disagrees with for that month.
+    - Running costs, not true cost (#361): depreciation is interpolated
+      between valuations, so one month's true cost would be an estimate.
+  - **Insights**: the computed insights (§7.8) for the user's recipient
+    vehicles that are active, all of them, in §7.8's order; then, marked
+    "AI:", the AI insights (§7.26) of the user's kept set when it was made
+    for their today or yesterday (#362) and AI is available to them, as the
+    Insights page would show them: any with a figure no tool returned is
+    already dropped (#354), so a text message never carries an unbacked
+    figure, and so is any that repeats a computed insight (#358). Computed
+    insights have no dismissal (§7.8), so none is filtered for that
+    (#365). The digest job **never calls a model**: with no recent set,
+    the AI part is left out.
+  - **When it is sent**: when something is due, needs attention, or (#360)
+    any included section has content (a figure for last month, an
+    insight). A month with nothing at all sends nothing and counts as
+    done.
+  - **What the user chooses**: the digest card on Settings → Reminders
+    gains **Include**: *What's due* (always, not a box), *Needs
+    attention*, *Last month* and *Insights*, each on by default. Stored as
+    `digest_include` beside `digest` in the `notifications` preference
+    (§6, #363): a list of `attention`, `last_month`, `insights`; absent
+    means all three. `digest` stays a boolean, so rolling back to an
+    earlier version keeps the digest as it was. With none ticked, the
+    digest is the one from before Phase 43 without its *Needs attention*
+    section.
+  - **Webhook JSON**: beside `items` and `attention` (unchanged), every
+    event carries `last_month`, `fleet`, `issues` and `insights` (empty
+    except on the digest): `last_month` is a list per vehicle of
+    `vehicle_id`, `vehicle`, `month` (`YYYY-MM`), `distance` and
+    `distance_average` (kilometres as decimal strings, null when not
+    measured), `spend` and `spend_average` (decimal strings), `currency`,
+    `cost_per_distance` and `cost_per_distance_average` (per kilometre,
+    decimal strings or null), and `display` (the line as sent); the
+    amounts and `currency` are absent without `ViewCosts`. `fleet` is
+    `{"distance", "spend": {currency: amount}, "display"}` or null; `issues`
+    is a list of `{"vehicle_id", "vehicle", "open"}`; `insights` a list of
+    `{"kind", "source": "computed"|"ai", "vehicle_ids", "title", "body"}`.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
@@ -6844,7 +6928,10 @@ with its own model. No connection in Settings → AI is needed or used.
 - **Drafts to review:** waiting MCP drafts are listed on the dashboard
   (*Drafts to review*, above the widgets, while there are any) and on
   the Insights page (after the *Ask Logbook* card and before *Your
-  questions*, while there are any, with or without Ask; Phase 38), each as the §7.26 draft card with *Add*,
+  questions*, while there are any, with or without Ask; Phase 38), the
+  latest **5** shown and the rest under *Show all (N)*, a disclosure that
+  works without JS, as *Your questions* (Phase 41.8, #279; there is no
+  cap on making drafts), each as the §7.26 draft card with *Add*,
   *Edit* and *Discard*, and *Undo* for 10 seconds after *Add*. Their
   buttons work without Ask (only the draft's own user); an Ask draft
   still needs Ask. Expired MCP drafts are deleted by the scheduled task
@@ -8745,7 +8832,8 @@ overview while any test is unreviewed. A test is reviewed
 
 - While the provider is on, the add-vehicle form (§7.1) shows *Look up*
   beside the registration, for anyone who may add a vehicle (they become
-  its owner, #330), with "Sends
+  its owner, #330; kept so, rate-limited by *Requests*, and stated in
+  `docs/mot-history.md`, #347), with "Sends
   this registration to DVSA" beside it; the click is the choice. With JS
   the form is filled in place; without it, a submit redraws the form
   filled.
@@ -9916,6 +10004,14 @@ task breakdowns live in the per-phase files; this is the map.
   budgets in §8 (#350) and query-count tests that don't grow with the
   number of vehicles. Nothing any page shows changes. No migration.
   Release v3.7.2.
+- **Phase 41.8 — Decisions carried from Phases 38 and 41 + patch
+  release.** Reports and every distance measured as a report's leave out
+  readings before the purchase date (§7.7, #346); *Look up* stays open to
+  anyone adding a vehicle, documented (#347); rolling back the MOT
+  migration deletes its settings (#348); recorded DVSA answers are
+  git-ignored (#349); the Insights page shows the latest 5 MCP drafts
+  with *Show all* (#279). See
+  [`phase-41.8.md`](docs/phases/phase-41.8.md).
 - **Phase 42 — Fuel saving and economy up as computed insights +
   release.** Two computed insights (§7.8): *Fuel saving*, the yearly
   volume × (the usual station's listed price, else the 30-day average
@@ -9927,7 +10023,13 @@ task breakdowns live in the per-phase files; this is the map.
   `computed_insights` tool for Ask and MCP. The Insights page joins the
   page budgets (#280). Partly replaces #174. No migration. Release
   v3.8.0.
-- **Phase 43 — The monthly briefing + release.** See
+- **Phase 43 — The monthly briefing + release.** The monthly digest
+  gains *Last month* (distance, spend and cost per distance per vehicle
+  against its monthly average, and a fleet line, from the report code),
+  *Insights* (computed, and the kept AI set from today or yesterday,
+  never a model call) and an open-issues line, ordered so a short channel
+  keeps what's due; *Include* choices on Settings → Reminders, stored as
+  `digest_include` (§6, §7.11; #360–#365). No migration. See
   [`phase-43.md`](docs/phases/phase-43.md).
 - **Phase 44 — A *Next 3 months* total on *Coming up* + release.** The
   prototype's 3-month outlook as a total on the *Coming up* page and

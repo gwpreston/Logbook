@@ -3,7 +3,7 @@
 *Last month in one message: what's due, how far you drove, what it cost,
 and what Logbook spotted.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 The monthly digest (§7.11) lists what is due this month and, since Phase
 24, the *Check* items. This phase adds **last month**: distance, spend and
@@ -47,11 +47,16 @@ without it when 40 hasn't shipped).
 - Charts or HTML layouts beyond what each channel already sends.
 - Generating AI insights for the digest. It reads the kept set; it never
   calls a model.
-- True cost (depreciation) in the monthly figures (open question B).
+- True cost (depreciation) in the monthly figures (B, #361).
 
 ---
 
 ## Spec changes (§7.11 *Digest*)
+
+Written into `spec.md` §7.11 *The monthly briefing* and §6 on
+2026-10-10, with the decisions below; the spec is the source of truth
+where this draft differs (the preference shape, the spend average,
+dismissals).
 
 ### Sections, in this order
 
@@ -80,7 +85,9 @@ with any reading or entry in the 13 months:
   your monthly average (738 mi)."
 - **Spend** (`ViewCosts`, or omitted): the month's running costs as the
   Reports page counts them (§7.7), against the 12 months before's
-  monthly average, in the vehicle's currency. When one entry is more than
+  monthly average, in the vehicle's currency. The average divides by the
+  months from the vehicle's first reading or ledger line, at most 12,
+  and with fewer than 3 the comparison is left out (#364). When one entry is more than
   half of the month's spend, it is named, since an annual payment
   otherwise reads as an alarming month: "£604, including insurance
   £412".
@@ -102,27 +109,30 @@ with any reading or entry in the 13 months:
 - The **AI insights** of the user's most recent kept set, when it was made
   for today or yesterday (their time zone) and AI is on for them, marked
   "AI:", after the computed ones. Dismissed kinds (Phase 38) are left
-  out, and so is **any AI insight with an unmatched figure**: a text
+  out (there are none: Phase 38 added no dismissals, and computed
+  insights have none, #365), and so is **any AI insight with an unmatched figure**: a text
   channel can't show the grounding mark, so an unbacked figure would
-  arrive looking as trustworthy as Logbook's own. (If Phase 42's open
-  question C dropped them already, this is a no-op.)
+  arrive looking as trustworthy as Logbook's own. (Phase 42's C,
+  #354, dropped them already: the digest reads the set as the Insights
+  page shows it.)
 - **No model call**, ever, from the digest job; with no recent set, the
   AI part is left out.
 
 ### When it is sent
 
 - Today: only when something is due or needs attention. From this phase:
-  also when last month has any figure (open question A). A month with
+  also when an included section has content (A, #360). A month with
   nothing at all still sends nothing.
 
 ### What the user chooses
 
 - Settings → Reminders, the digest card gains **Include**: *What's due*
   (always), *Needs attention*, *Last month*, *Insights*, each on by
-  default, stored in the digest preference (`digest: {"on": true,
-  "include": [...]}`; a stored `true` reads as all on, so upgrading
-  changes nothing but the content). An empty choice beyond *What's due*
-  gives today's digest.
+  default, stored as `digest_include` (a list of `attention`,
+  `last_month`, `insights`; absent means all) beside the boolean
+  `digest` in the `notifications` preference (#363), so rolling back
+  keeps the digest on. An empty choice gives the digest of what's due
+  alone.
 
 ### Webhook JSON
 
@@ -153,8 +163,9 @@ with any reading or entry in the 13 months:
 ## Tasks
 
 ### 43.0 Spec first
-- [ ] §7.11 *Digest* as above; §6 the digest preference shape; §13;
-      open questions A–C; `ROADMAP.md` row.
+- [x] §7.11 *The monthly briefing*; §6 `digest_include`; §13; open
+      questions A–C and #363–#365 decided (2026-10-10) and logged;
+      `ROADMAP.md` row.
 
 ### 43.1 Content
 - [ ] `Service\Notify\DigestSummary`: last month's figures and averages
@@ -166,8 +177,8 @@ with any reading or entry in the 13 months:
 - [ ] Section order; every channel's text; the webhook JSON.
 
 ### 43.2 Settings
-- [ ] *Include* on the digest card (works without JS); preference shape
-      with the `true` reading.
+- [ ] *Include* on the digest card (works without JS); `digest_include`,
+      absent reading as all.
 
 ### 43.3 Tests
 - [ ] Figures equal the Reports page's for the month, for every demo
@@ -181,8 +192,8 @@ with any reading or entry in the 13 months:
       makes no model call (asserted with a failing model fake).
 - [ ] Cutting: a Pushover-length message keeps *Due* and *Needs
       attention* and ends with "…and N more" and the link.
-- [ ] *Include* choices; stored `true` reads as all; sending rules (A);
-      quiet hours unchanged.
+- [ ] *Include* choices; no `digest_include` reads as all; sending rules
+      (A); quiet hours unchanged.
 - [ ] Suite green on every engine; coverage at or above the floor.
 
 ### 43.4 Release
@@ -211,13 +222,30 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   no, keep today's rule (only when something is due or needs attention).
   *Recommendation:* (1): a briefing that skips quiet months loses its
   point. Users who don't want it untick *Last month*.
+  *Decided 2026-10-10:* (1). (#360)
 - **B. Running cost or true cost per distance?** Options: (1) running
   costs (Reports), as drafted; (2) Phase 32's true cost, depreciation
   included. *Recommendation:* (1): depreciation is interpolated between
   valuations, which makes one month's figure an estimate; true cost
-  stays a 12-month figure.
+  stays a 12-month figure. *Decided 2026-10-10:* (1). (#361)
 - **C. AI insights from yesterday?** The digest goes on the first run of
   the month, often before the day's AI insights are made. Options: (1)
   today's or yesterday's set, as drafted; (2) today's only; (3) the
   digest job waits for today's set up to a few hours. *Recommendation:*
   (1): yesterday's are still fresh, and the job never waits on a model.
+  *Decided 2026-10-10:* (1). (#362)
+- **Found while starting it (2026-10-10):**
+  - **The preference shape.** The drafted `digest: {"on", "include"}`
+    object would read as *off* in v3.8 after a rollback. Options: (1) a
+    separate `digest_include` key beside the boolean; (2) the object,
+    with an upgrade note. *Decided:* (1). (#363)
+  - **The spend average for a vehicle in use under 12 months.** Options:
+    (1) divide by the months since its first reading or ledger line,
+    fewer than 3 dropping the comparison; (2) always 12, as the Reports
+    page's monthly average. *Decided:* (1). (#364)
+  - **"Dismissed kinds (Phase 38)".** Answered from the code: Phase 38
+    added no dismissals (Phase 42 says so) and §7.8's computed insights
+    have none, so there is nothing to filter. (#365)
+  - The carried #279 and #346–#349 were decided the same day and moved
+    to [Phase 41.8](phase-41.8.md), at the owner's choice, rather than
+    built in this release.

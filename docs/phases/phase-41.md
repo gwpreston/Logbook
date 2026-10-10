@@ -346,6 +346,11 @@ Found while starting, decided by the owner on 2026-10-08:
   the owner: distance before the purchase date (#346), who may use *Look
   up* (#347), the settings on rollback (#348), recorded answers in git
   (#349) and page query budgets (#350).
+  *Decided 2026-10-10* (when Phase 43 started), built in
+  [Phase 41.8](phase-41.8.md): #346 reports ignore readings before the
+  purchase date; #347 *Look up* kept for anyone adding a vehicle, and
+  documented; #348 rolling back deletes the `mot_history` settings; #349
+  recorded answers git-ignored. (#350 was decided in Phase 41.7.)
 - Answered from the spec: `mot_history_secrets` is never in backups, as
   §6's AiSecret, NotificationSecret and FuelPriceSecret aren't; the
   *Spec addition* draft's "the secrets sealed as others" means that.
