@@ -96,7 +96,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | ✅ |
 | [41.8](docs/phases/phase-41.8.md) | Decisions carried from Phases 38 and 41 + patch release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
-| [43](docs/phases/phase-43.md) | The monthly briefing + release | 🚧 |
+| [43](docs/phases/phase-43.md) | The monthly briefing + release | ✅ |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | 📋 |
 
 *Update the status column as each phase lands.*

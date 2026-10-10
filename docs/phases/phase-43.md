@@ -3,7 +3,7 @@
 *Last month in one message: what's due, how far you drove, what it cost,
 and what Logbook spotted.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · release **v3.9.0** once merged · file lives in `docs/phases/`
 
 The monthly digest (§7.11) lists what is due this month and, since Phase
 24, the *Check* items. This phase adds **last month**: distance, spend and
@@ -197,13 +197,15 @@ spec §7.11; the averages still look back 12 months):
       attention* and ends with "…and N more" and the link.
 - [x] *Include* choices; no `digest_include` reads as all; sending rules
       (A); quiet hours unchanged.
-- [ ] Suite green on every engine; coverage at or above the floor.
+- [x] Suite green on every engine (SQLite, PostgreSQL, MySQL, MariaDB:
+      3,827 tests each); coverage 94.99%, floor 94%.
 
 ### 43.4 Release
 - [x] `VERSION` → next minor (3.9.0); `CHANGELOG.md` (*Changed* — the monthly
       digest includes last month's figures and insights; choose what it
       includes in Settings → Reminders). No migration.
-- [ ] README; `ROADMAP.md` row ✅. Tag once merged.
+- [x] README; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.9.0` once merged.
 
 ---
 
