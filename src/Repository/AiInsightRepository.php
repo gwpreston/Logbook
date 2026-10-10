@@ -52,6 +52,15 @@ final readonly class AiInsightRepository
         return $days;
     }
 
+    /**
+     * Forget a user's kept set (spec.md §7.26, #373): the next visit or the
+     * hourly job makes a new one.
+     */
+    public function delete(int $userId): void
+    {
+        $this->connection->delete(self::TABLE, ['user_id' => $userId], ['user_id' => ParameterType::INTEGER]);
+    }
+
     public function save(int $userId, AiInsightSet $set): void
     {
         $values = [

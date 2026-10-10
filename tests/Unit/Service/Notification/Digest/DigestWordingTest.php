@@ -38,4 +38,19 @@ final class DigestWordingTest extends TestCase
     {
         self::assertSame(['trend' => $trend, 'percent' => $percent], DigestWording::trend($value, $average));
     }
+
+    /** Within ±5% means the exact difference, not the rounded percentage (bug hunt). */
+    public function testFivePointFourPercentIsNotTheSame(): void
+    {
+        self::assertSame('more', DigestWording::trend('105.4', '100', 1)['trend']);
+        self::assertSame('less', DigestWording::trend('94.6', '100', 1)['trend']);
+        self::assertSame(5, DigestWording::trend('105.4', '100', 1)['percent']);
+    }
+
+    /** The figures are compared as shown: an average that rounds to zero gives no comparison. */
+    public function testAnAverageShownAsZeroIsNotCompared(): void
+    {
+        self::assertSame(['trend' => 'none', 'percent' => 0], DigestWording::trend('50', '0.004', 2));
+        self::assertSame('same', DigestWording::trend('100.004', '99.996', 2)['trend']);
+    }
 }

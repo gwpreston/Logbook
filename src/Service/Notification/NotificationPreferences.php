@@ -136,17 +136,22 @@ final readonly class NotificationPreferences
     }
 
     /**
+     * Every section ticked is stored as "all" (null), so a section added in
+     * a later release reaches the user too (as `ChannelCategories`, #268, #372).
+     *
      * @param list<DigestSection> $sections
      */
     public function withDigestSections(array $sections): self
     {
+        $sections = DigestSection::fromStored(array_map(static fn (DigestSection $s): string => $s->value, $sections)) ?? [];
+
         return new self(
             $this->channels,
             $this->digest,
             $this->legacyGotifyToken,
             $this->emailCategories,
             $this->quiet,
-            DigestSection::fromStored(array_map(static fn (DigestSection $s): string => $s->value, $sections)),
+            count($sections) === count(DigestSection::cases()) ? null : $sections,
         );
     }
 

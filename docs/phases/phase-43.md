@@ -260,7 +260,15 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     listed with a distance or a spend in the month, not "any record in
     13 months" (#369); AI insights tied only to non-recipient vehicles
     are left out (#370); the *Needs attention* heading counts lines
-    (#371).
+    (#371). The upgrade review found that every box ticked was stored as
+    the full list; it is stored as "all", as #268 decided (#372). The
+    security review found that a kept AI set could quote costs after a
+    share lost cost access; that now forgets the member's set (#373).
+  - **Open, for the owner (found by the reviews, 2026-10-10):** vehicles
+    archived during last month (#374); the fleet line's spend over only
+    the vehicles whose costs are visible (#375); the 12-month cost per
+    distance when costs predate the readings (#376); distances and open
+    issues on the server's webhook (#377).
   - The carried #279 and #346–#349 were decided the same day and moved
     to [Phase 41.8](phase-41.8.md), at the owner's choice, rather than
     built in this release.

@@ -3371,10 +3371,17 @@ Extensible channel interface so more can be added.
     default. Stored as
     `digest_include` beside `digest` in the `notifications` preference
     (§6, #363): a list of `attention`, `last_month`, `insights`; absent
-    means all three. `digest` stays a boolean, so rolling back to an
-    earlier version keeps the digest as it was. With none ticked, the
+    means all three, and every box ticked is stored as absent, so a
+    section added later reaches everyone who hadn't unticked one (#372,
+    as #268). `digest` stays a boolean, so rolling back to an earlier
+    version keeps the digest as it was (saving there drops
+    `digest_include`). With none ticked, the
     digest is the one from before Phase 43 without its *Needs attention*
     section.
+  - **Kept AI insights and cost access** (#373): when a share's cost
+    access is turned off, the member's kept AI insight set is forgotten
+    (it may quote that vehicle's costs); the next one is made without
+    them.
   - **The server's webhook** (#366): `WEBHOOK_URL` is an admin's endpoint
     that receives every member's notifications, so its copy of the digest
     leaves out spend, cost per distance and insights (text and JSON);

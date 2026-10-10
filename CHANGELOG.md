@@ -42,7 +42,10 @@ month and what Logbook spotted, as well as what's due.
   cost per distance or insights, since it receives every member's
   messages; personal webhooks get everything.
 - Rolling back to 3.8 keeps the digest as it was (`digest` is still a
-  boolean; 3.8 ignores `digest_include`).
+  boolean; 3.8 ignores `digest_include`). Saving reminder or notification
+  settings while on 3.8 forgets that person's *Include* choices: after
+  upgrading again their digest includes every section until they untick
+  them.
 
 ## [3.8.0] — 2026-10-09
 

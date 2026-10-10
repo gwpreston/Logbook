@@ -6,6 +6,7 @@ namespace Logbook\Service\Notification\Digest;
 
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Display\DisplayFormatter;
+use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -91,14 +92,14 @@ final readonly class DigestWording
             'entry' => $costs->largest === null ? '' : $this->translator->trans($costs->largest->kindKey),
             'entry_amount' => $costs->largest === null ? '' : $this->formatter->money($costs->largest->amount),
             'average' => $costs->average === null ? '' : $this->formatter->money($costs->average),
-        ] + self::trend($costs->spend->toDecimal(Money::SCALE), $average));
+        ] + self::trend($costs->spend->toDecimal(Money::SCALE), $average, Currency::fractionDigits($costs->currency)));
         $lines[] = $this->translator->trans('notifications.digest.cost_per_distance', [
             'vehicle' => $vehicle,
             'cost' => $costs->costPerKm === null ? '—' : $this->formatter->perDistance($costs->costPerKm, $costs->currency),
             'average' => $costs->costPerKmAverage === null
                 ? ''
                 : $this->formatter->perDistance($costs->costPerKmAverage, $costs->currency),
-        ] + self::trend($costs->costPerKm, $costs->costPerKmAverage));
+        ] + self::trend($costs->costPerKm, $costs->costPerKmAverage, Currency::fractionDigits($costs->currency) + 1));
 
         return $lines;
     }
@@ -213,21 +214,30 @@ final readonly class DigestWording
     }
 
     /**
-     * A comparison as ICU parameters: `trend` is `more`, `less`, `same`, or
-     * `none` without an average; `percent` is from the figures shown.
+     * A comparison as ICU parameters: `trend` is `more`, `less`, `same`
+     * (within ±5%, exactly), or `none` without an average or with one that
+     * shows as zero; `percent` is from the figures as shown, both rounded
+     * to $places first. In decimals throughout: these are money.
      *
      * @return array{trend: string, percent: int}
      */
-    public static function trend(?string $value, ?string $average): array
+    public static function trend(?string $value, ?string $average, int $places = 0): array
     {
-        if ($value === null || $average === null || Decimal::compare($average, '0') <= 0) {
+        if ($value === null || $average === null) {
             return ['trend' => 'none', 'percent' => 0];
         }
-        $percent = (int) round(abs(((float) $value - (float) $average) / (float) $average * 100));
-        if ($percent <= self::SAME_WITHIN) {
+        $value = Decimal::round($value, $places);
+        $average = Decimal::round($average, $places);
+        if (Decimal::compare($average, '0') <= 0) {
+            return ['trend' => 'none', 'percent' => 0];
+        }
+        $difference = Decimal::divide(Decimal::multiply(Decimal::subtract($value, $average), '100', 6), $average, 6);
+        $size = Decimal::compare($difference, '0') < 0 ? Decimal::subtract('0', $difference) : $difference;
+        $percent = (int) Decimal::round($size, 0);
+        if (Decimal::compare($size, (string) self::SAME_WITHIN) <= 0) {
             return ['trend' => 'same', 'percent' => $percent];
         }
 
-        return ['trend' => Decimal::compare($value, $average) > 0 ? 'more' : 'less', 'percent' => $percent];
+        return ['trend' => Decimal::compare($difference, '0') > 0 ? 'more' : 'less', 'percent' => $percent];
     }
 }

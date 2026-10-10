@@ -244,8 +244,12 @@ final readonly class ReminderNotifier
         }
 
         $digest = $this->composer->digest($user, $entries, $today, $checks, $content);
-        // The server's webhook gets no amounts or insights (#366).
-        $server = $this->composer->digest($user, $entries, $today, $checks, $content->withoutAmounts());
+        // The server's webhook gets no amounts or insights (#366), and nothing
+        // when that leaves nothing to say.
+        $withheld = $content->withoutAmounts();
+        $server = $entries === [] && $checks === [] && $withheld->isEmpty()
+            ? null
+            : $this->composer->digest($user, $entries, $today, $checks, $withheld);
         $report = $this->dispatcher->dispatch($digest, $recipient, $preferences, [WebhookChannel::KEY => $server]);
         if (!$report->anyDelivered()) {
             return false;
