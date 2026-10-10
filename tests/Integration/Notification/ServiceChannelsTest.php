@@ -98,11 +98,53 @@ final class ServiceChannelsTest extends ReminderTestCase
         $request = $this->http->requests[0];
         self::assertSame(self::DISCORD_URL, $request['url']);
         self::assertSame([
-            'content' => "MOT: due\n\nThese need your attention:\n\n• MOT — @everyone *Golf*: due\n\n" . self::LINK,
+            'content' => "MOT: due\n\nThese need your attention:\n\n• MOT — @everyone \\*Golf\\*: due\n\n" . self::LINK,
             'username' => 'Logbook',
             'allowed_mentions' => ['parse' => []],
             'flags' => 4,
         ], $request['json']);
+    }
+
+    public function testDiscordEscapesMarkdownSoAnInsightCannotMaskALink(): void
+    {
+        $app = $this->app();
+        $this->http->status = 204;
+        $digest = new Notification(
+            NotificationKind::Digest,
+            'Your **October** briefing',
+            "Insights:\n\n• [Renew here](https://example.test/a)\n# Logbook says\n> pay now <@123>",
+            self::LINK,
+        );
+
+        $this->sender($app, DiscordSender::class)
+            ->send($digest, $this->recipient($app), new ChannelSettings([], ['url' => self::DISCORD_URL]), false);
+
+        $content = $this->http->requests[0]['json']['content'] ?? null;
+        self::assertSame(
+            "Your \\*\\*October\\*\\* briefing\n\nInsights:\n\n• \\[Renew here\\]\\(https://example.test/a\\)\n"
+            . "\\# Logbook says\n\\> pay now \\<@123\\>\n\n" . self::LINK,
+            $content,
+            'the title and body escaped; the link as it is, so it still opens Logbook',
+        );
+    }
+
+    public function testDiscordCountsTheEscapesAgainstTheLimit(): void
+    {
+        $app = $this->app();
+        $lines = [];
+        for ($i = 1; $i <= 150; $i++) {
+            $lines[] = '• [x](y) **' . $i . '** ||z|| <@1>';
+        }
+        $digest = new Notification(NotificationKind::Digest, '**Due**', implode("\n", $lines), self::LINK);
+
+        $this->sender($app, DiscordSender::class)
+            ->send($digest, $this->recipient($app), new ChannelSettings([], ['url' => self::DISCORD_URL]), false);
+
+        $content = $this->http->requests[0]['json']['content'] ?? null;
+        self::assertIsString($content);
+        self::assertLessThanOrEqual(DiscordSender::LIMIT, mb_strlen($content));
+        self::assertStringStartsWith('\\*\\*Due\\*\\*', $content);
+        self::assertMatchesRegularExpression('/\n…and \d+ more\n\n' . preg_quote(self::LINK, '/') . '$/u', $content);
     }
 
     public function testPushoverSendsAFormWithPriorityAndTheLink(): void

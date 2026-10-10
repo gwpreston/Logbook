@@ -6,6 +6,15 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Security
+- **Discord messages escape Markdown** (#378, Phase 43's security
+  review, low). Since v3.9.0 the monthly digest carries AI insight text,
+  and Discord rendered Markdown in it, so a model's
+  `[Renew here](https://…)` showed as a link that looked like Logbook's
+  own. The title, body and "…and n more" line are now escaped as
+  Mattermost's are; mentions still ping nobody, and the link to Logbook
+  still opens.
+
 ## [3.9.0] — 2026-10-10
 
 Phase 43: **the monthly briefing**. The monthly digest now covers last

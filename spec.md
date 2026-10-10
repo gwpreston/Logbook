@@ -3633,10 +3633,15 @@ go only to those hosts (the policy check still runs).
   final line "…and {n} more" and the link, never mid-line and never over
   the limit. A single line longer than the limit is cut with an ellipsis.
 - **No pings, no injected formatting.** Vehicle names, titles and notes
-  are text other users typed: Telegram is plain text, Discord sends
-  `allowed_mentions` with an empty `parse`, Mattermost escapes Markdown
-  and neutralises mentions, Slack escapes `&`, `<` and `>` and sends no
-  `link_names`. Link previews are switched off where a service has them.
+  are text other users typed, and from Phase 43 the digest carries AI
+  insight text a model wrote: Telegram is plain text, Discord escapes
+  Markdown (Phase 41.8, #378) and sends `allowed_mentions` with an empty
+  `parse`, Mattermost escapes Markdown and neutralises mentions, Slack
+  escapes `&`, `<` and `>` and sends no `link_names`. So no text can
+  format the message or hide a link behind words; a bare URL in the text
+  may still show as a link, with its address visible. Logbook's own link
+  is sent as it is. Link previews are switched off where a service has
+  them.
 - **Third-party notice** (#240) on the Telegram, Discord, Pushover and
   Slack cards: "This sends your reminders through {service}'s servers."
   Mattermost is the user's own server and has none.
@@ -3698,6 +3703,14 @@ go only to those hosts (the policy check still runs).
   (so `@everyone`, `@here`, role and user mentions ping nobody) and
   `flags` `4` (`SUPPRESS_EMBEDS`: no link preview). The title is the
   first line. Success is 204.
+- Markdown escaped (Phase 41.8, #378) in the title, the body and the
+  "…and {n} more" line, before the 2000-character limit is counted: a
+  backslash before `\`, `` ` ``, `*`, `_`, `~`, `|`, `[`, `]`, `(`, `)`,
+  `<` and `>` anywhere (bold, italics, underline, strikethrough,
+  spoilers, code, masked links `[words](url)`, and `<@…>`, `<#…>` and
+  `<t:…>`), and before `#`, `>`, `-`, `+` or `1.` starting a line
+  (headings, `-#` subtext, quotes, lists). `@` is left as typed. The
+  link to Logbook at the end is not escaped, so it still opens.
 - Errors in words: *That webhook no longer exists* (404, 401); *Discord
   asked us to wait {n} seconds* (429, `retry_after`); *Discord refused
   the message* (400).
@@ -10037,8 +10050,9 @@ task breakdowns live in the per-phase files; this is the map.
   anyone adding a vehicle, documented (#347); rolling back the MOT
   migration deletes its settings (#348); recorded DVSA answers are
   git-ignored (#349); the Insights page shows the latest 5 MCP drafts
-  with *Show all* (#279). See
-  [`phase-41.8.md`](docs/phases/phase-41.8.md).
+  with *Show all* (#279); Discord's Markdown escaped, so an AI insight in
+  the digest can't mask a link (§7.11, #378, from Phase 43's security
+  review). See [`phase-41.8.md`](docs/phases/phase-41.8.md).
 - **Phase 42 — Fuel saving and economy up as computed insights +
   release.** Two computed insights (§7.8): *Fuel saving*, the yearly
   volume × (the usual station's listed price, else the 30-day average

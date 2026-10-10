@@ -35,6 +35,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
 4. Recorded DVSA answers stay off git (#349).
 5. The Insights page shows the latest 5 MCP drafts with *Show all*
    (#279).
+6. Discord escapes Markdown, so an AI insight in the digest can't mask a
+   link (#378).
 
 ## Not in scope
 
@@ -58,6 +60,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
 - **#349: git-ignore `recorded-*.json`.** They hold a real vehicle's
   registration and history, scrubbed or not; CI uses the hand-written
   fixtures already committed.
+- **#378: escape Discord's Markdown** (found by Phase 43's security
+  review, low; the owner asked for the fix on 2026-10-10). Since Phase
+  43 the digest carries AI insight text, and Discord rendered
+  `[words](url)` in it as a masked link that looked like Logbook's own.
+  Escaped as Mattermost's is; Logbook's own link stays as it is, so it
+  still opens.
 - **#279: latest 5 + *Show all*.** The list stays short without refusing
   drafts an assistant has already made; the same disclosure as *Your
   questions* (#276).
@@ -93,7 +101,16 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
 - [ ] The latest 5 drafts, the rest under *Show all (N)* (works without
       JS); a test with 7 drafts.
 
-### 41.8.4 Release
+### 41.8.4 Discord Markdown (#378)
+- [x] `DiscordSender::escape`: the title, body and "…and n more" line
+      escaped before the limit is counted; the link not; spec §7.11,
+      `docs/notification-channels.md`, `CHANGELOG.md`.
+- [x] Tests: masked links, emphasis, spoilers, code, `<@…>` and
+      timestamps, line-start headings, subtext, quotes and lists (also
+      after a newline), the backslash; a digest with an AI insight's
+      link; escapes counted against the 2000 limit.
+
+### 41.8.5 Release
 - [ ] `VERSION` → next patch; `CHANGELOG.md`; `ROADMAP.md` row ✅. Tag
       once merged.
 
@@ -107,9 +124,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
    off.
 3. `git status` never shows a recorded DVSA answer.
 4. The Insights page shows at most 5 drafts before *Show all*.
-5. Definition of done (CLAUDE.md §11) holds.
+5. A digest insight `[Renew here](https://example.test/a)` reaches
+   Discord as those characters, not a link; the link to Logbook opens.
+6. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
-None open. #279 and #346–#349 were decided on 2026-10-10 (see
+None open. #279, #346–#349 and #378 were decided on 2026-10-10 (see
 [`open-questions.md`](open-questions.md)).

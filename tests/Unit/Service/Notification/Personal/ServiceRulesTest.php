@@ -163,6 +163,34 @@ final class ServiceRulesTest extends TestCase
         self::assertFalse(ChannelForm::stillValid(self::sender(SlackSender::class), $noToken), 'a required secret is missing');
     }
 
+    public function testDiscordTextCannotFormatOrMaskALink(): void
+    {
+        self::assertSame(
+            '\\[Renew here\\]\\(https://example.test/a\\)',
+            DiscordSender::escape('[Renew here](https://example.test/a)'),
+        );
+        self::assertSame(
+            '\\*\\*bold\\*\\* \\_it\\_ \\_\\_under\\_\\_ \\~\\~struck\\~\\~ \\|\\|spoiler\\|\\| \\`code\\`',
+            DiscordSender::escape('**bold** _it_ __under__ ~~struck~~ ||spoiler|| `code`'),
+        );
+        self::assertSame(
+            '\\<@123\\> \\<#456\\> \\<t:1700000000:R\\> \\<https://example.test\\>',
+            DiscordSender::escape('<@123> <#456> <t:1700000000:R> <https://example.test>'),
+        );
+        self::assertSame('a \\\\ b', DiscordSender::escape('a \\ b'), 'the backslash itself');
+        self::assertSame('@everyone', DiscordSender::escape('@everyone'), 'allowed_mentions stops the ping; no ZWSP');
+
+        $starts = ['# heading', '## heading', '-# subtext', '> quote', '>>> quote', '- list', '+ list', '* list', '1. list'];
+        foreach ($starts as $line) {
+            $escaped = DiscordSender::escape($line);
+            self::assertStringStartsWith('\\', ltrim($escaped, '0123456789'), $line);
+            self::assertSame("x\n" . $escaped, DiscordSender::escape("x\n" . $line), 'after a newline too: ' . $line);
+        }
+        self::assertSame('1\\. list', DiscordSender::escape('1. list'));
+        $plain = 'Diesel at 139.9p — £12.50 # a';
+        self::assertSame($plain, DiscordSender::escape($plain), 'plain text stays readable');
+    }
+
     public function testMattermostTextCannotMentionOrFormat(): void
     {
         $escaped = MattermostSender::escape('@everyone @here @channel @all @sam <!channel> **bold** [link](x) `code` # heading');

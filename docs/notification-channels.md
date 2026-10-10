@@ -192,8 +192,10 @@ What all five have in common:
   middle of one.
 - **Nothing can ping anyone or inject formatting.** Vehicle names, titles
   and notes are text other people may have typed: Telegram and Slack get
-  plain text, Discord is told to allow no mentions, and Mattermost's
-  Markdown and mentions are escaped.
+  plain text, Discord's Markdown is escaped and it is told to allow no
+  mentions, and Mattermost's Markdown and mentions are escaped. So an AI
+  insight in the monthly digest can't dress up a link as Logbook's own:
+  `[Renew here](https://…)` arrives as those characters, not as a link.
 - **Tokens never appear in an error.** Several of these services put the
   token in the URL; errors are reduced to words ("Telegram rejected the bot
   token", "The service did not answer in time"), shown in your language.

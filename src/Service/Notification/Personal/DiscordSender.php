@@ -14,8 +14,9 @@ use SensitiveParameter;
 /**
  * Discord (spec.md §7.11): a channel's webhook URL, a secret because its
  * token is in the path. Only Discord's own hosts are accepted. Mentions in
- * the text ping nobody (`allowed_mentions` with an empty `parse`), and
- * link previews are suppressed.
+ * the text ping nobody (`allowed_mentions` with an empty `parse`), its
+ * Markdown is escaped so text other people (or a model) wrote can't format
+ * the message or mask a link, and link previews are suppressed.
  */
 final readonly class DiscordSender implements PersonalSender
 {
@@ -78,6 +79,24 @@ final readonly class DiscordSender implements PersonalSender
             && preg_match('#^/api/webhooks/\d{1,25}/[A-Za-z0-9_-]{1,200}$#', $parts['path'] ?? '') === 1;
     }
 
+    /**
+     * $text with Discord's Markdown escaped (spec.md §7.11): a backslash
+     * before every character that formats or links (bold, italics,
+     * underline, strikethrough, spoilers, code, masked links, `<@…>`
+     * mentions, channels and timestamps), and before a heading, subtext,
+     * quote or list marker at the start of a line. `@` is left alone:
+     * `allowed_mentions` already pings nobody.
+     */
+    public static function escape(string $text): string
+    {
+        $text = (string) preg_replace('/([\\\\`*_~|\[\]()<>])/u', '\\\\$1', $text);
+
+        // A line can't start a heading, subtext, quote or list.
+        $text = (string) preg_replace('/^(\s*)([#>+-])/mu', '$1\\\\$2', $text);
+
+        return (string) preg_replace('/^(\s*\d+)\.(\s)/mu', '$1\\.$2', $text);
+    }
+
     public function send(
         Notification $notification,
         Recipient $recipient,
@@ -89,12 +108,14 @@ final readonly class DiscordSender implements PersonalSender
             return DeliveryResult::failed(self::KEY, ReplyWords::of('needs_setup'));
         }
 
+        $more = $this->text->more($notification);
         $payload = [
             'content' => MessageText::fit(
-                ServiceText::plainLines($notification),
+                array_map(self::escape(...), ServiceText::plainLines($notification)),
                 self::LIMIT,
+                // Logbook's own link, as it is: a backslash would break it.
                 $notification->url,
-                $this->text->more($notification),
+                static fn (int $count): string => self::escape($more($count)),
             ),
             'username' => 'Logbook',
             'allowed_mentions' => ['parse' => []],
