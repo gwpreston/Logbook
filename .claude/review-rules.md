@@ -79,14 +79,17 @@ of a finding, so it isn't counted twice.
 
 | Area | Owner |
 |---|---|
-| Numbers, money, rounding, units, dates and time zones, cross-database SQL in code, modules switched off, `null` handling, job idempotency, import duplicates | **bug-hunter** |
+| Numbers, money, rounding, units, dates and time zones, cross-database SQL in code, modules switched off, `null` handling, job idempotency | **bug-hunter** |
 | Sign-in, sessions, SSO, access to records (IDOR), sharing levels, **costs hidden from members**, private places, CSRF, XSS, injection, CSV formula injection, uploads and EXIF, archives, SSRF, secrets, dependency CVEs, security headers, what is reachable over HTTP, prompt injection | **security-scanner** |
 | Speed, query counts, indexes, query plans, memory, data growth and retention, caching, front-end weight | **performance-auditor** |
 | Look and layout against `design-import/`, tokens, themes and accents, **icons in the sprite**, **literal text in templates**, accessibility, responsive layout, **flows with JS disabled**, print | **design-reviewer** |
 | `spec.md`, phase files, `ROADMAP.md`, open questions, `.env.example` and `docs/`, `CHANGELOG.md` and upgrade notes, **translation catalogues** complete | **spec-keeper** |
 | Migrations with data, rollback, **backup and restore completeness** and across versions, the meaning of stored data across an upgrade | **upgrade-tester** |
+| The **shape** of what integrations see: REST API and its OpenAPI contract, MCP tools and protocol versions, webhook payloads, the calendar feed, CSV export columns; breaking changes | **api-contract-checker** |
+| Whether AI features give the **right result**: Ask Logbook tools and answers, the grounding check, drafting, document reading | **ai-evaluator** |
+| Whether **imported data is right**: CSV and other-app imports, re-imports, dry runs, preview vs result, own-CSV round trip | **import-tester** |
 | Installs (Docker, bare PHP), proxies and **subpaths end to end**, PHP versions, cron and job triggers, the entrypoint, **runtime settings matching the docs** (OPcache, non-root, web configs), built assets current | **deploy-checker** |
-| Regression tests, coverage, the shared review dataset | **test-writer** |
+| Regression tests, coverage, the shared review dataset, committing the AI evaluation set and import fixtures | **test-writer** |
 
 ## 6. Severity
 
