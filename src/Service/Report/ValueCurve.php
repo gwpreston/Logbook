@@ -121,7 +121,11 @@ final readonly class ValueCurve
         $startValue = $this->valueOn($start);
         $stopValue = $this->valueOn($stop);
         assert($startValue !== null && $stopValue !== null);
-        $loss = $startValue->minus($stopValue)->toScale(Money::SCALE, RoundingMode::HalfUp)->toString();
+        // Each value is rounded once, before the subtraction, so the losses of
+        // adjacent periods add up exactly to the loss over both (spec §7.35).
+        $loss = $startValue->toScale(Money::SCALE, RoundingMode::HalfUp)
+            ->minus($stopValue->toScale(Money::SCALE, RoundingMode::HalfUp))
+            ->toString();
 
         return new PeriodDepreciation(
             Money::of($loss, $currency),

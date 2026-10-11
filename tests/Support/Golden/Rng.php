@@ -18,13 +18,21 @@ final class Rng
         $this->state = $seed === 0 ? 0x2545F491 : $seed;
     }
 
-    /** A whole number from $min to $max, both inclusive. */
+    /**
+     * A whole number from $min to $max, both inclusive.
+     *
+     * @phpstan-impure
+     */
     public function between(int $min, int $max): int
     {
         return $min + $this->next() % ($max - $min + 1);
     }
 
-    /** True about once in $n draws. */
+    /**
+     * True about once in $n draws.
+     *
+     * @phpstan-impure
+     */
     public function oneIn(int $n): bool
     {
         return $this->between(1, $n) === 1;
