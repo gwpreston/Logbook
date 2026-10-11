@@ -1,0 +1,96 @@
+name: Property tests (nightly)
+
+# The money properties of Phase 45.1 (tests/Integration/Property) run on
+# every push with fixed seeds, as part of `composer test`. Here they run each
+# night with fresh seeds, on SQLite, PostgreSQL and MySQL. The seeds are in
+# the run's summary; replay a failure with
+#   PROPERTY_SEEDS=<seed> vendor/bin/phpunit --group property
+# or with "Run workflow" and the seed.
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Comma-separated seeds (empty: 25 fresh ones)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  properties:
+    name: Properties (${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { db: sqlite, driver: sqlite, image: "",            port: 0,    health: "" }
+          - { db: pgsql,  driver: pgsql,  image: "postgres:17", port: 5432, health: "pg_isready -U logbook -d logbook_test" }
+          - { db: mysql,  driver: mysql,  image: "mysql:8.4",   port: 3306, health: "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook" }
+    services:
+      db:
+        # An empty image (the sqlite row) skips the service container.
+        image: ${{ matrix.image }}
+        env:
+          POSTGRES_DB: logbook_test
+          POSTGRES_USER: logbook
+          POSTGRES_PASSWORD: logbook
+          MYSQL_DATABASE: logbook_test
+          MYSQL_USER: logbook
+          MYSQL_PASSWORD: logbook
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 5432:5432
+          - 3306:3306
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      TEST_DB_DRIVER: ${{ matrix.driver }}
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: ${{ matrix.port }}
+      TEST_DB_NAME: ${{ matrix.driver == 'sqlite' && 'var/testing.sqlite' || 'logbook_test' }}
+      TEST_DB_USER: logbook
+      TEST_DB_PASSWORD: logbook
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: vendor/bin/phinx migrate -e testing
+      - name: Choose the seeds
+        id: seeds
+        env:
+          GIVEN: ${{ github.event.inputs.seeds }}
+        run: |
+          if [ -n "$GIVEN" ]; then
+            seeds="$GIVEN"
+          else
+            seeds=$(shuf -i 1-2147483647 -n 25 | paste -sd, -)
+          fi
+          echo "seeds=$seeds" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Seeds (${{ matrix.db }})"
+            echo
+            echo "\`$seeds\`"
+            echo
+            echo "Replay one: \`PROPERTY_SEEDS=<seed> vendor/bin/phpunit --group property\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Run the properties
+        env:
+          PROPERTY_SEEDS: ${{ steps.seeds.outputs.seeds }}
+        run: vendor/bin/phpunit --group property

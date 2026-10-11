@@ -74,6 +74,11 @@ For each restricted persona, render:
 - the API's list endpoints;
 - Ask's and MCP's tool results for every read tool.
 
+Carried from Phase 45.1's *hidden means hidden* property, which covers the
+services behind Reports, ownership, true cost, *Coming up*, the digest,
+finance and incidents: the fuel tab's cost per distance and segment
+costs, station stats, and the Ask tools must be in this sweep by name.
+
 Then assert that none of them contains:
 
 - an amount, unless it is on that persona's own entry;

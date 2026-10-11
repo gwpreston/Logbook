@@ -98,7 +98,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | ✅ |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | ✅ |
-| [45.1](docs/phases/phase-45.1.md) | Hardening: proving the money | 📋 |
+| [45.1](docs/phases/phase-45.1.md) | Hardening: proving the money | 🚧 |
 | [45.2](docs/phases/phase-45.2.md) | Hardening: households and backups | 📋 |
 | [45.3](docs/phases/phase-45.3.md) | Hardening: phones and real people + release | 📋 |
 | [46](docs/phases/phase-46.md) | The licence | 📋 |

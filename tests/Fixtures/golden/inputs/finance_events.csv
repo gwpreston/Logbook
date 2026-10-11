@@ -1,0 +1,4 @@
+vehicle,agreement,kind,date,due_on,amount,note
+ev,ev-hp,missed,,2025-01-10,,"Direct debit failed"
+ev,ev-hp,paid_late,2025-01-24,2025-01-10,,"Paid by card"
+golf,golf-pcp,settled,2026-05-15,,8812.62,"Settled early: the lender's quote, balloon included"

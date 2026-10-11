@@ -55,7 +55,23 @@ final class ValueCurveTest extends TestCase
             $sum = Decimal::add($sum, $loss->amount->toDecimal(6));
         }
 
-        self::assertEqualsWithDelta(5200.0, (float) $sum, 0.000002, 'no day lost between 31 Dec and 1 Jan');
+        self::assertSame('5200.000000', $sum, 'no day lost between 31 Dec and 1 Jan, and nothing lost to rounding');
+    }
+
+    public function testAdjacentPeriodsAddUpExactlyWhenTheValuesAreRecurring(): void
+    {
+        // £100 to £0 over 3 days: each day loses £33.33… The values are rounded once,
+        // so the days lose 33.333333, 33.333334 and 33.333333 (Phase 45.1, a property-test find).
+        $curve = ValueCurve::of(self::vehicle('2023-01-01', '100.000'), [self::valuation('2023-01-04', '0.000')]);
+
+        $sum = '0';
+        foreach (['2023-01-01', '2023-01-02', '2023-01-03'] as $day) {
+            $loss = $curve->depreciation(self::date($day), self::date($day), 'GBP');
+            self::assertNotNull($loss);
+            $sum = Decimal::add($sum, $loss->amount->toDecimal(6));
+        }
+
+        self::assertSame('100.000000', $sum);
     }
 
     public function testAPeriodPastTheLatestPointStopsThereAndSaysSo(): void

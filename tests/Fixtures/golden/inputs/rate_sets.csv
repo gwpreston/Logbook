@@ -1,0 +1,3 @@
+user,effective_from,distance_unit,currency,car_rate,car_threshold,car_rate_after,source
+alex,2023-04-06,mi,GBP,0.45,10000,0.25,"HMRC AMAP"
+alex,2025-10-01,mi,GBP,0.50,10000,0.30,"Employer, from October 2025"

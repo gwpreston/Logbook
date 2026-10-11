@@ -1,0 +1,3 @@
+vehicle,agreement,type,lender,started_on,first_payment_on,number_of_payments,first_payment,regular_payment,final_payment,final_payment_on,cash_price,customer_deposit,dealer_contribution,amount_of_credit,apr,documentation_fee,option_to_purchase_fee,annual_mileage_allowance,mileage_unit,excess_mileage_charge,start_odometer_km,count_in_costs
+ev,ev-hp,hp,"Greenline Finance",2024-02-10,2024-03-10,48,,549.17,,,27500.00,4000.00,0.00,23500.00,5.9,,,,mi,,,yes
+golf,golf-pcp,pcp,"Northway Motor Finance",2023-10-07,2023-11-07,36,,284.85,7650.00,2026-11-07,17995.00,2000.00,500.00,15495.00,6.9,,10.00,15000,mi,0.0800,38412.000,yes

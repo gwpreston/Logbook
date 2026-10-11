@@ -1,0 +1,4 @@
+vehicle,category,title,interval_km,interval_months,baseline_done_on,baseline_done_km
+corolla,service,"Toyota service",15000.000,12,2025-11-18,85698.900
+ev,service,"Annual EV health check",,12,2026-02-26,29047.200
+golf,service,"Annual service",24140.000,12,2025-03-20,71684.200

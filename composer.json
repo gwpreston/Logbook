@@ -69,6 +69,7 @@
         "test": "phpunit",
         "test:unit": "phpunit --testsuite unit",
         "test:integration": "phpunit --testsuite integration",
+        "test:properties": "phpunit --group property",
         "test:js": "node --test tests/js/*.test.js",
         "test:coverage": [
             "Composer\\Config::disableProcessTimeout",
@@ -91,6 +92,7 @@
     "scripts-descriptions": {
         "start": "Run the PHP built-in dev server on http://localhost:8090",
         "test": "Run the PHPUnit suite (TEST_DB_* selects the database; default SQLite)",
+        "test:properties": "Run the money property tests (Phase 45.1); PROPERTY_SEEDS=1,2,3 picks the seeds",
         "test:js": "Run the JavaScript unit tests with Node (maintainers and CI only; not needed to run Logbook)",
         "test:coverage": "Run PHPUnit with line coverage (needs pcov or Xdebug); reports in var/coverage/",
         "coverage:check": "Fail if overall line coverage is below tests/coverage-floor.txt",
