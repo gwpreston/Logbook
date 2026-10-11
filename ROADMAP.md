@@ -98,13 +98,19 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | ✅ |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | ✅ |
-| [45.1](docs/phases/phase-45.1.md) | Parts and modifications | 📋 |
-| [45.2](docs/phases/phase-45.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
+| [45.1](docs/phases/phase-45.1.md) | Hardening: proving the money | 📋 |
+| [45.2](docs/phases/phase-45.2.md) | Hardening: households and backups | 📋 |
+| [45.3](docs/phases/phase-45.3.md) | Hardening: phones and real people + release | 📋 |
 | [46](docs/phases/phase-46.md) | The licence | 📋 |
 | [47](docs/phases/phase-47.md) | What a share allows, in plain words + release | 📋 |
 | [48](docs/phases/phase-48.md) | How old is the last backup? + release | 📋 |
-| [49](docs/phases/phase-49.md) | "As of" dates on estimates and value-based figures + release | 📋 |
-| [50](docs/phases/phase-50.md) | Import from Tracktor + release | 📋 |
+| [49.1](docs/phases/phase-49.1.md) | Show the working: "as of" dates | 📋 |
+| [49.2](docs/phases/phase-49.2.md) | Show the working: *How it's worked out* + release | 📋 |
+| [50](docs/phases/phase-50.md) | Getting started and household defaults + release | 📋 |
+| [51.1](docs/phases/phase-51.1.md) | Parts and modifications | 📋 |
+| [51.2](docs/phases/phase-51.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
+| [52](docs/phases/phase-52.md) | Import from Tracktor + release | 📋 |
+| [53](docs/phases/phase-53.md) | Import from ABRP + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1212,35 +1218,47 @@ are.*
 
 ---
 
-## Phase 45.1 — Parts and modifications
-*What was fitted, what came off, and what the build has cost, kept apart
-from what the car costs to run.*
+## Phase 45.1 — Hardening: proving the money
+*Every headline figure checked against a source that isn't the code that
+produced it.*
 
-- **Parts:** fitted and removed at a date and mileage, more than once,
-  with what happened to them when they came off, the receipt, warranty
-  terms and distance on the vehicle.
-- **Modifications:** add, edit, delete and *Revert*, fitting parts and
-  recording what came off in the same form; a service record can fit
-  parts too.
-- A *Modifications* cost group: in spend, the Expenses tab, Reports and
-  cost of ownership, but out of every running cost per distance. A
-  *Parts* tab, overview card, History, print, backups and the demo seed.
+- **The golden household:** two users and four vehicles over three
+  years, built from scripted inputs, with the expected figures from the
+  owner's spreadsheet; a golden test compares every one to the penny,
+  through the services the pages use, on every engine.
+- Property tests for the ledger's invariants, and an edge-case catalogue
+  in the spec with each answer decided and tested. Every mismatch is
+  settled in the code or the spec.
 
 → [`phase-45.1.md`](docs/phases/phase-45.1.md)
 
 ---
 
-## Phase 45.2 — Warranties, the insurer's list and parts everywhere + release
-*A reminder before a warranty runs out, a list of modifications to read to
-an insurer, and parts wherever entries go.*
+## Phase 45.2 — Hardening: households and backups
+*Prove that a shared vehicle shows each person only what they should
+see, and that a backup really restores.*
 
-- Warranty reminders for the parts the owner chooses; *For your
-  insurer*, a printable list of current modifications and when each was
-  declared; *Include modifications* in the sale pack.
-- A scanned invoice's parts lines offered as parts; parts and
-  modifications in the API, webhooks, Ask, MCP and CSV. Release.
+- Journey tests per persona through the HTTP layer, and a leak sweep of
+  every GET route and other output as each restricted persona.
+- A restore matrix (the golden household backed up on each engine and
+  restored on every other), the upgrade path from the previous release,
+  failure paths that change nothing, and a restore drill in the docs.
 
 → [`phase-45.2.md`](docs/phases/phase-45.2.md)
+
+---
+
+## Phase 45.3 — Hardening: phones and real people + release
+*Logging a fill-up at the pump works on a real phone, for someone who
+has never seen Logbook.*
+
+- Automated mobile journeys in WebKit and Chromium on a throttled
+  connection; a device pass on real phones against a checklist.
+- Usability sessions with three to five newcomers; blockers fixed, the
+  rest filed as phase candidates (Phase 50 starts from them). The
+  hardening report (`docs/research/hardening-2026.md`) and release.
+
+→ [`phase-45.3.md`](docs/phases/phase-45.3.md)
 
 ---
 
@@ -1284,20 +1302,82 @@ it.*
 
 ---
 
-## Phase 49 — "As of" dates on estimates and value-based figures + release
+## Phase 49.1 — Show the working: "as of" dates
 *Every figure built on an old input says how old.*
 
 - An inventory in the spec of every figure that depends on a dated input
   or is an estimate; a `Support\AsOf` value carried by those results, so
   pages, print, CSV, the API and Ask show the same date.
 - One `ui.as_of()` macro, styled as stale once the input passes its
-  threshold. Release.
+  threshold. Released with 49.2.
 
-→ [`phase-49.md`](docs/phases/phase-49.md)
+→ [`phase-49.1.md`](docs/phases/phase-49.1.md)
 
 ---
 
-## Phase 50 — Import from Tracktor + release
+## Phase 49.2 — Show the working: *How it's worked out* + release
+*Every headline figure can be opened to show its inputs and its sum in
+plain words.*
+
+- A `Working` result (inputs, steps and notes) beside each figure in the
+  inventory, built from the same values, shown by one `ui.working()`
+  macro and worded per figure, checked against the golden household.
+- The working in print, the API (`working` on request) and Ask.
+  Release.
+
+→ [`phase-49.2.md`](docs/phases/phase-49.2.md)
+
+---
+
+## Phase 50 — Getting started and household defaults + release
+*From an empty garage to a vehicle with its mileage and its essential
+reminders in about two minutes.*
+
+- **Set up your first vehicle:** five skippable, resumable steps
+  (vehicle, mileage now, key dates with reminders, servicing interval,
+  what's next), using *Look up* when MOT history is set up; a
+  getting-started card on the overview until done or dismissed.
+- A *Household* dashboard layout as the default for new users, fewer
+  modules on new installs, and a shared user's first visit that says what
+  the share allows. Existing users and installs unchanged. Release.
+
+→ [`phase-50.md`](docs/phases/phase-50.md)
+
+---
+
+## Phase 51.1 — Parts and modifications
+*What was fitted, what came off, and what the build has cost, kept apart
+from what the car costs to run.*
+
+- **Parts:** fitted and removed at a date and mileage, more than once,
+  with what happened to them when they came off, the receipt, warranty
+  terms and distance on the vehicle.
+- **Modifications:** add, edit, delete and *Revert*, fitting parts and
+  recording what came off in the same form; a service record can fit
+  parts too.
+- A *Modifications* cost group: in spend, the Expenses tab, Reports and
+  cost of ownership, but out of every running cost per distance. A
+  *Parts* tab, overview card, History, print, backups and the demo seed.
+
+→ [`phase-51.1.md`](docs/phases/phase-51.1.md)
+
+---
+
+## Phase 51.2 — Warranties, the insurer's list and parts everywhere + release
+*A reminder before a warranty runs out, a list of modifications to read to
+an insurer, and parts wherever entries go.*
+
+- Warranty reminders for the parts the owner chooses; *For your
+  insurer*, a printable list of current modifications and when each was
+  declared; *Include modifications* in the sale pack.
+- A scanned invoice's parts lines offered as parts; parts and
+  modifications in the API, webhooks, Ask, MCP and CSV. Release.
+
+→ [`phase-51.2.md`](docs/phases/phase-51.2.md)
+
+---
+
+## Phase 52 — Import from Tracktor + release
 *Bring a whole Tracktor garage across: vehicles, fill-ups, services,
 documents and reminders.*
 
@@ -1308,7 +1388,22 @@ documents and reminders.*
 - A preview, one transaction, and a newer export adding only what's new;
   `docs/import-tracktor.md`, fixtures and release.
 
-→ [`phase-50.md`](docs/phases/phase-50.md)
+→ [`phase-52.md`](docs/phases/phase-52.md)
+
+---
+
+## Phase 53 — Import from ABRP + release
+*Your EV's charging sessions, mileage and drives from A Better
+Routeplanner, without typing them in.*
+
+- An ABRP reader for the app importer, on the web and in
+  `bin/import-app.php`: charging sessions as EV fill-ups, odometer
+  readings thinned so the log isn't flooded, and drives as private trips
+  only if the owner chooses.
+- A preview, one transaction, re-imports adding only new activities;
+  `docs/import-abrp.md`, fixtures and release.
+
+→ [`phase-53.md`](docs/phases/phase-53.md)
 
 ---
 
@@ -1323,9 +1418,8 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
   OBD-II / vehicle-API mileage import (through the REST API, Phase 18.2).
 - More imports, as further readers on Phase 31's app importer: Drivvo
   (CSV exports, whose headers and values are translated into the phone's
-  language), Tesla (charging history and mileage, from the owner's data
-  export or the Tesla API) and ABRP (A Better Routeplanner: driven trips,
-  charging stops and consumption).
+  language) and Tesla (charging history and mileage, from the owner's data
+  export or the Tesla API). ABRP is Phase 53.
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation

@@ -30,8 +30,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §5 (the
 access policy and abilities), §7.21 and §7.9 (*Users and invitations*)
 first.
 
-**Prerequisites:** [Phase 44](phase-44.md) complete and green.
-Independent of Phases 45 and 46.
+**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it).
+Independent of Phase 46.
 
 ---
 

@@ -28,7 +28,7 @@ too (open question D).
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §4
 (dependencies and their licences) first.
 
-**Prerequisites:** none. This can be done before Phase 45.
+**Prerequisites:** none. No app change, so it can run alongside the hardening in Phase 45.
 
 ---
 

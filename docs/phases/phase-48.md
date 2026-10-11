@@ -27,8 +27,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 pattern for an admin-only dashboard banner), §7.36 (demo mode) and §7.11
 (admin categories) first.
 
-**Prerequisites:** [Phase 44](phase-44.md) complete and green.
-Independent of Phases 45 to 47.
+**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it). Phase 45.2 proves backup and restore; this phase makes sure someone actually takes one.
+Independent of Phases 46 and 47.
 
 ---
 

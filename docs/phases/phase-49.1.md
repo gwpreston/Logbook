@@ -1,4 +1,4 @@
-# Phase 49 — "As of" dates on estimates and value-based figures + release
+# Phase 49.1 — Show the working: "as of" dates
 
 *Every figure built on an old input says how old.*
 
@@ -27,15 +27,24 @@ object and one macro:
 
 An estimate also names what it is projected from.
 
+Phase 49 makes the numbers easy to understand and verify, in two parts:
+
+- **49.1 (this part):** the dates.
+- **[49.2](phase-49.2.md):** *How it's worked out* on every headline
+  figure, then the release.
+
+Both use Phase 45.1's golden household as their check: a date or a sum
+shown in the working must match the figure it explains.
+
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.1
 (valuations, depreciation, stale value), §7.7 (cost of ownership), §7.17
 (wear estimate), §7.18 (*Coming up* costs and fuel), §7.32 (settlement,
 equity), §7.34 (listed prices), §7.35 (true cost), §7.26 (Ask) and §7.20
 (API) first.
 
-**Prerequisites:** [Phase 44](phase-44.md) complete and green.
-Independent of Phases 45 to 48. If Phase 45 lands first, its warranty
-and part figures follow the same rule.
+**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it).
+Independent of Phases 46 to 48. Phase 51's warranty and build figures
+follow the same rule when they are built.
 
 ---
 
@@ -50,7 +59,7 @@ and part figures follow the same rule.
    everywhere, with the stale style once the input passes its threshold.
 4. Every figure in the inventory shows it. Figures from today's data
    don't.
-5. Release.
+5. Release comes with [49.2](phase-49.2.md).
 
 ## Not in scope
 
@@ -83,19 +92,19 @@ and part figures follow the same rule.
 
 ## Tasks
 
-### 49.0 Spec first
+### 49.1.0 Spec first
 - [ ] The inventory completed against the code, and added to §8 as a
-      cross-cutting rule with the table.
+      cross-cutting rule with the table (49.2 uses the same inventory).
 - [ ] Open questions A–D decided by the owner and logged; §13;
       `ROADMAP.md` row.
 
-### 49.1 The value and the macro
+### 49.1.1 The value and the macro
 - [ ] `Support\AsOf` (date, kind: `valuation` | `quote` | `measurement`
       | `last_time` | `prices` | `window`, and an optional basis
       string), with stale states from the existing thresholds.
 - [ ] `ui.as_of()`: text, never colour alone; print styles.
 
-### 49.2 Applied
+### 49.1.2 Applied
 - [ ] Each service in the inventory returns `AsOf` with its figure.
 - [ ] Every page, widget and print view in the inventory uses the macro.
 - [ ] API: an `as_of` object beside each such figure (additive; the API
@@ -105,7 +114,7 @@ and part figures follow the same rule.
       grounding check accepts it.
 - [ ] Translations (every shipped locale).
 
-### 49.3 Tests and release
+### 49.1.3 Tests
 - [ ] Each inventory row: date shown when the input isn't today, hidden
       when it is, stale style past its threshold, the owner's time zone
       at the edges.
@@ -113,8 +122,7 @@ and part figures follow the same rule.
       without its `AsOf`.
 - [ ] Page budgets (§8) unchanged.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+- [ ] `ROADMAP.md` row ✅ for 49.1 (released with 49.2).
 
 ---
 
