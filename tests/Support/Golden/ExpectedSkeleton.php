@@ -135,7 +135,7 @@ final class ExpectedSkeleton
         $periods = [
             'golf' => ['last_12_months', '2023', '2024', '2025', '2026'],
             'ev' => ['last_12_months', '2024', '2025', '2026'],
-            'focus' => ['2023', '2024', '2025'],
+            'focus' => ['last_12_months', '2023', '2024', '2025', '2026'],
             'corolla' => ['last_12_months', '2023', '2024', '2025', '2026'],
         ];
         foreach ($periods as $vehicle => $list) {
@@ -149,18 +149,16 @@ final class ExpectedSkeleton
                 }
                 $this->add('true_cost.per_distance', 'alex', $vehicle, $period, $currency, 'money/mi', self::BOTH);
             }
-            if (in_array('last_12_months', $list, true)) {
-                foreach (self::PARTS as $part) {
-                    $this->add(
-                        'true_cost.what_changed.' . $part,
-                        'alex',
-                        $vehicle,
-                        'last_12_months_vs_previous',
-                        $currency,
-                        'money',
-                        self::sourceOf($part)
-                    );
-                }
+            foreach (self::PARTS as $part) {
+                $this->add(
+                    'true_cost.what_changed.' . $part,
+                    'alex',
+                    $vehicle,
+                    'last_12_months_vs_previous',
+                    $currency,
+                    'money',
+                    self::sourceOf($part)
+                );
             }
         }
     }
@@ -241,7 +239,7 @@ final class ExpectedSkeleton
     {
         $years = [
             'golf' => ['2023', '2024', '2025', '2026'], 'ev' => ['2024', '2025', '2026'],
-            'focus' => ['2023', '2024', '2025'], 'corolla' => ['2023', '2024', '2025', '2026'],
+            'focus' => ['2023', '2024', '2025', '2026'], 'corolla' => ['2023', '2024', '2025', '2026'],
         ];
         foreach ($years as $vehicle => $list) {
             $currency = self::CURRENCY[$vehicle];
@@ -264,7 +262,10 @@ final class ExpectedSkeleton
 
     private function digest(): void
     {
-        $views = ['alex' => [['golf', 'ev', 'corolla'], 'mi', ['GBP', 'EUR']], 'sam' => [['golf', 'corolla'], 'km', ['EUR']]];
+        $views = [
+            'alex' => [['golf', 'ev', 'focus', 'corolla'], 'mi', ['GBP', 'EUR']],
+            'sam' => [['golf', 'corolla'], 'km', ['EUR']],
+        ];
         foreach ($views as $viewer => [$vehicles, $unit, $currencies]) {
             foreach ($vehicles as $vehicle) {
                 $this->add('digest.distance', $viewer, $vehicle, '2026-08', '', $unit);

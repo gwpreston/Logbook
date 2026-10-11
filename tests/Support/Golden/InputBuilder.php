@@ -129,9 +129,14 @@ final class InputBuilder
             'is_admin' => 'no',
         ]);
         // Sam logs fill-ups on the Golf without seeing its costs; Alex sees the Corolla, costs included.
-        $this->add('shares', ['vehicle' => 'golf', 'user' => 'sam', 'level' => 'log', 'costs' => 'no', 'date' => '2023-10-07']);
-        $this->add('shares', ['vehicle' => 'corolla', 'user' => 'alex', 'level' => 'view', 'costs' => 'yes',
-            'date' => '2023-11-04']);
+        // Both get the shared car's reminders, so it is in their digest and Coming up.
+        $this->add('shares', [
+            'vehicle' => 'golf', 'user' => 'sam', 'level' => 'log', 'costs' => 'no', 'notify' => 'yes', 'date' => '2023-10-07',
+        ]);
+        $this->add('shares', [
+            'vehicle' => 'corolla', 'user' => 'alex', 'level' => 'view', 'costs' => 'yes', 'notify' => 'yes',
+            'date' => '2023-11-04',
+        ]);
     }
 
     // ------------------------------------------------------------- vehicles
@@ -175,7 +180,7 @@ final class InputBuilder
         $this->add('finance', [
             'vehicle' => 'golf', 'agreement' => 'golf-pcp', 'type' => 'pcp', 'lender' => 'Northway Motor Finance',
             'started_on' => '2023-10-07', 'first_payment_on' => '2023-11-07', 'number_of_payments' => '36',
-            'first_payment' => '', 'regular_payment' => '289.40', 'final_payment' => '7650.00',
+            'first_payment' => '', 'regular_payment' => '284.85', 'final_payment' => '7650.00',
             'final_payment_on' => '2026-11-07', 'cash_price' => '17995.00', 'customer_deposit' => '2000.00',
             'dealer_contribution' => '500.00', 'amount_of_credit' => '15495.00', 'apr' => '6.9',
             'documentation_fee' => '', 'option_to_purchase_fee' => '10.00', 'annual_mileage_allowance' => '15000',
@@ -183,12 +188,8 @@ final class InputBuilder
             'count_in_costs' => 'yes',
         ]);
         $this->add('finance_events', [
-            'vehicle' => 'golf', 'agreement' => 'golf-pcp', 'kind' => 'settlement', 'date' => '2026-05-15',
-            'due_on' => '', 'amount' => '9240.66', 'note' => 'Settled early (balloon included)',
-        ]);
-        $this->add('finance_events', [
-            'vehicle' => 'golf', 'agreement' => 'golf-pcp', 'kind' => 'end', 'date' => '2026-05-15',
-            'due_on' => '', 'amount' => '9240.66', 'note' => 'Ended as settled',
+            'vehicle' => 'golf', 'agreement' => 'golf-pcp', 'kind' => 'settled', 'date' => '2026-05-15',
+            'due_on' => '', 'amount' => '8812.62', 'note' => 'Settled early: the lender\'s quote, balloon included',
         ]);
 
         foreach (
@@ -281,7 +282,7 @@ final class InputBuilder
         $this->add('finance', [
             'vehicle' => 'ev', 'agreement' => 'ev-hp', 'type' => 'hp', 'lender' => 'Greenline Finance',
             'started_on' => '2024-02-10', 'first_payment_on' => '2024-03-10', 'number_of_payments' => '48',
-            'first_payment' => '', 'regular_payment' => '551.12', 'final_payment' => '', 'final_payment_on' => '',
+            'first_payment' => '', 'regular_payment' => '549.17', 'final_payment' => '', 'final_payment_on' => '',
             'cash_price' => '27500.00', 'customer_deposit' => '4000.00', 'dealer_contribution' => '0.00',
             'amount_of_credit' => '23500.00', 'apr' => '5.9', 'documentation_fee' => '', 'option_to_purchase_fee' => '',
             'annual_mileage_allowance' => '', 'mileage_unit' => 'mi', 'excess_mileage_charge' => '',
@@ -316,9 +317,9 @@ final class InputBuilder
     }
 
     /**
-     * A car sold during the window: a valuation on the purchase day (#389),
-     * an accident with an insurance payout and an excess, sold above its last
-     * valuation.
+     * A car sold during the digest's month (August 2026, #374): a valuation
+     * on the purchase day (#389), an accident with an insurance payout and an
+     * excess, sold above its last valuation.
      */
     private function focus(): void
     {
@@ -327,34 +328,37 @@ final class InputBuilder
             'registration' => 'YK16 FCS', 'currency' => 'GBP', 'first_registered_on' => '2016-05-20',
             'purchase_date' => '2023-09-20', 'purchase_price' => '6450.00',
         ]);
-        $this->files['vehicles'][count($this->files['vehicles']) - 1]['sale_date'] = '2025-07-19';
-        $this->files['vehicles'][count($this->files['vehicles']) - 1]['sale_price'] = '4350.00';
+        $this->files['vehicles'][count($this->files['vehicles']) - 1]['sale_date'] = '2026-08-19';
+        $this->files['vehicles'][count($this->files['vehicles']) - 1]['sale_price'] = '3350.00';
         $this->reading('focus', 'alex', '2023-09-20 11:00', 96300000, 'Odometer when bought');
 
         $this->fuelRun('focus', [
-            'from' => '2023-09-21', 'to' => '2025-07-19', 'odometer' => 96300000, 'km_per_day' => 38, 'per_100' => [4800,
+            'from' => '2023-09-21', 'to' => '2026-08-19', 'odometer' => 96300000, 'km_per_day' => 38, 'per_100' => [4800,
                 5500], 'tank' => 52000, 'fuel' => 'diesel',
-            'prices' => ['2023-09' => 1589, '2024-04' => 1539, '2024-10' => 1459, '2025-04' => 1449, '2025-07' => 1439],
+            'prices' => [
+                '2023-09' => 1589, '2024-04' => 1539, '2024-10' => 1459, '2025-04' => 1449, '2025-10' => 1419, '2026-08' => 1439,
+            ],
             'stations' => ['Morrisons Leeds', 'Shell Leeds Road', 'Asda Killingbeck'],
             'partial_one_in' => 12, 'by_sam_one_in' => 0, 'forced' => [],
         ]);
         $this->reading(
             'focus',
             'alex',
-            '2025-07-19 10:00',
-            $this->odometerAt('focus', '2025-07-19', '10:00'),
+            '2026-08-19 10:00',
+            $this->odometerAt('focus', '2026-08-19', '10:00'),
             'Odometer at sale'
         );
 
         foreach (
             [['2023-09-20', '6200.00', 'Trade guide on the day of purchase'], ['2024-09-20', '5300.00', 'Online guide'],
-            ['2025-05-01', '3900.00', 'Online guide']] as [$on, $amount, $source]
+            ['2025-05-01', '3900.00', 'Online guide'], ['2026-03-01', '3150.00', 'Online guide']] as [$on, $amount, $source]
         ) {
             $this->add('valuations', ['vehicle' => 'focus', 'valued_on' => $on, 'amount' => $amount, 'source' => $source]);
         }
-        $this->insurance('focus', 'Aviva', '2023-09-20', ['455.70', '518.22']);
+        $this->insurance('focus', 'Aviva', '2023-09-20', ['455.70', '518.22', '497.40']);
         $this->document('focus', 'inspection', 'MOT', 'Halfords', '2024-05-14', '2025-05-13', '54.85');
         $this->document('focus', 'inspection', 'MOT', 'Halfords', '2025-05-12', '2026-05-11', '54.85');
+        $this->document('focus', 'inspection', 'MOT', 'Halfords', '2026-05-11', '2027-05-10', '54.85');
         $this->maintenance('focus', '2024-05-13', 'repair', 'MOT advisory: rear brake hoses', '96.00', 'Halfords');
         $this->maintenance('focus', '2024-08-02', 'service', 'Interim service', '179.00', 'Local garage');
         $this->maintenance(
@@ -366,13 +370,13 @@ final class InputBuilder
             'Leeds Body Shop'
         );
         $this->maintenance('focus', '2025-04-08', 'battery', 'New battery', '128.50', 'Halfords');
-        foreach (['2023-09-20' => '35.00', '2024-09-01' => '35.00'] as $on => $amount) {
+        foreach (['2023-09-20' => '35.00', '2024-09-01' => '35.00', '2025-09-01' => '35.00'] as $on => $amount) {
             $this->expense('focus', $on, 'tax', $amount, 'Vehicle tax');
         }
-        $this->parking('focus', '2023-09-25', '2025-07-15', 1);
+        $this->parking('focus', '2023-09-25', '2026-08-15', 1);
 
         $this->add('incidents', [
-            'vehicle' => 'focus', 'occurred_on' => '2024-11-08', 'type' => 'collision', 'fault' => 'other_party',
+            'vehicle' => 'focus', 'occurred_on' => '2024-11-08', 'type' => 'collision', 'fault' => 'not_at_fault',
             'claim_status' => 'settled', 'insurer' => 'Aviva', 'excess' => '250.00', 'payout' => '1180.00',
             'updated_on' => '2025-01-10', 'status' => 'closed', 'closed_on' => '2025-01-10',
             'note' => 'Rear-ended at lights; repair 2 Dec 2024 (maintenance)',

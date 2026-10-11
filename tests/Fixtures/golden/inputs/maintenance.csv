@@ -1,7 +1,7 @@
 vehicle,date,category,title,cost,odometer_km,vendor
-corolla,2024-11-12,service,"Toyota service",269.00,69192.900,"Toyota Swords"
-corolla,2025-01-28,repair,"NCT pre-check: wiper blades, bulb",38.40,72381.400,"Toyota Swords"
-corolla,2025-11-18,service,"Toyota service",284.00,85385.000,"Toyota Swords"
+corolla,2024-11-12,service,"Toyota service",269.00,69446.500,"Toyota Swords"
+corolla,2025-01-28,repair,"NCT pre-check: wiper blades, bulb",38.40,72795.300,"Toyota Swords"
+corolla,2025-11-18,service,"Toyota service",284.00,85698.900,"Toyota Swords"
 ev,2025-02-21,service,"Annual EV health check",149.00,17641.200,"Kia Leeds"
 ev,2025-10-03,tyres,"Four tyres (EV rated)",736.00,24590.100,"Kwik Fit"
 ev,2026-02-26,service,"Annual EV health check and cabin filter",189.00,29047.200,"Kia Leeds"

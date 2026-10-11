@@ -1,2 +1,2 @@
 vehicle,occurred_on,type,fault,claim_status,insurer,excess,payout,updated_on,status,closed_on,note
-focus,2024-11-08,collision,other_party,settled,Aviva,250.00,1180.00,2025-01-10,closed,2025-01-10,"Rear-ended at lights; repair 2 Dec 2024 (maintenance)"
+focus,2024-11-08,collision,not_at_fault,settled,Aviva,250.00,1180.00,2025-01-10,closed,2025-01-10,"Rear-ended at lights; repair 2 Dec 2024 (maintenance)"

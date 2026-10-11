@@ -156,8 +156,10 @@ seed. Each property must hold:
       2026-09-15 08:00 UTC; `tests/Fixtures/golden/README.md` for the
       spreadsheet; `GoldenInputsTest` keeps the CSVs and the builder in
       step.
-- [ ] The loader that enters them through the services (not SQL), and
-      the uploads.
+- [x] The loader (`tests/Support/Golden/GoldenHousehold`) that enters
+      them through the services, not SQL, acting as the user in `by`;
+      `GoldenHouseholdLoadTest` checks every row is stored once.
+- [ ] The uploads (receipts on a few entries).
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
       `expected.csv` exported from it (the skeleton, 812 rows with
       `expected` empty, is committed).

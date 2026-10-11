@@ -1,3 +1,3 @@
-vehicle,user,level,costs,date
-corolla,alex,view,yes,2023-11-04
-golf,sam,log,no,2023-10-07
+vehicle,user,level,costs,notify,date
+corolla,alex,view,yes,yes,2023-11-04
+golf,sam,log,no,yes,2023-10-07

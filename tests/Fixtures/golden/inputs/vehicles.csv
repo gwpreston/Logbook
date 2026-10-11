@@ -1,5 +1,5 @@
 vehicle,owner,type,make,model,variant,fuel_type,registration,currency,first_registered_on,purchase_date,purchase_price,sale_date,sale_price
 corolla,sam,car,Toyota,Corolla,"1.8 Hybrid Luna",hybrid,211-D-48213,EUR,2021-02-11,2023-11-04,21400.00,,
 ev,alex,car,Kia,"Niro EV",4,ev,"YC23 EVN",GBP,2023-06-15,2024-02-10,27500.00,,
-focus,alex,car,Ford,Focus,"1.5 TDCi Zetec",diesel,"YK16 FCS",GBP,2016-05-20,2023-09-20,6450.00,2025-07-19,4350.00
+focus,alex,car,Ford,Focus,"1.5 TDCi Zetec",diesel,"YK16 FCS",GBP,2016-05-20,2023-09-20,6450.00,2026-08-19,3350.00
 golf,alex,car,Volkswagen,Golf,"1.5 TSI Life",petrol,"YH20 KLM",GBP,2020-03-02,2023-10-07,17995.00,,
