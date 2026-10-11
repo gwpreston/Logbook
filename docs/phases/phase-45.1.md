@@ -82,11 +82,14 @@ Decided 2026-10-11 (#393, #395). The four vehicles:
   - Sold at a gain over its last valuation.
 - **Car bought in euros, kept in Ireland.**
   - Every figure stays in its own currency and is never converted.
-  - The owner is in `Europe/Dublin`, so it also covers a summer-time
+  - Its owner is in `Europe/Dublin`, so it also covers a summer-time
     change.
 
-The second user has a Log share without costs, and adds fill-ups to the
-first car. No vehicle has a reading dated before its purchase: that rule
+The people (#401): **user 1** (en_GB, Europe/London, UK tax year from
+6 April) owns the petrol car, the EV and the sold car, and makes the
+business trips. **User 2** (en_IE, Europe/Dublin, EUR) owns the Irish
+car, and has a Log share without costs on the petrol car, adding
+fill-ups to it. No vehicle has a reading dated before its purchase: that rule
 (#346) is built in Phase 41.8, which writes its own test (#391). The fixture is only data: the same inputs go in through the
 services (not raw SQL), so every derived row is created as the app would
 create it.
@@ -234,6 +237,16 @@ Found while starting (the edge-case review compared spec and code):
   golden household has none; Phase 41.8 tests it.
 - **#392 The cases where spec and code agree.** *Decided:* confirmed as
   listed in spec §8 *Money edge cases*.
+- **#398 A fleet vehicle whose log doesn't reach back.** *Decided:* its
+  spend counts in the totals, but it is left out of the fleet's cost per
+  distance.
+- **#399 The digest's 12-month average with a short log.** *Decided:*
+  the comparison is left out.
+- **#400 A payout larger than the period's costs.** *Decided:* ownership
+  and true cost go negative with a minus sign; the incident card keeps
+  its 0.
+- **#401 The golden household's people.** *Decided:* split owners, as
+  above.
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.

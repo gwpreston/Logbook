@@ -1512,9 +1512,9 @@ from fleet totals unless "include archived" is toggled.
     the lifetime figures above are unchanged): the value on any day
     between two points of the value series is interpolated in a straight
     line by day, and a period's depreciation is the value at its start
-    minus the value at its end (a gain is negative). A day with points
-    opens at its first and closes at its last (purchase price first, sale
-    last, §7.1's order), so a valuation dated on the purchase day is that
+    minus the value at its end (a gain is negative). Several points on
+    one day: the last one counts, except that the purchase day opens at
+    the purchase price, so a valuation dated on the purchase day is that
     day's closing value and the drop from the price falls in the period
     holding the purchase day: the periods' depreciation always adds up to
     *Since bought* (Phase 45.1, #389, decided 2026-10-11). Nothing is
@@ -2257,7 +2257,7 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   driven **and the mileage log reaches back** to the period's first day (a
   reading on or before it, as cost of ownership requires below); otherwise
   "—", since the period's costs would be divided by part of its distance
-  (Phase 45.1, #376, decided 2026-10-11). For the fleet, the same holds
+  (Phase 45.1, #376, decided 2026-10-11). For the fleet (#398), the same holds
   per vehicle: a vehicle whose log doesn't reach back adds neither its
   spend nor its distance to the fleet's cost per distance (its spend still
   counts in the totals).
@@ -2306,7 +2306,7 @@ costs plus what it has lost in value (§7.1 *Depreciation*). Derived on every
 read (`Service\Report\OwnershipCost`), never stored, in the vehicle's
 currency and never converted.
 
-- **The ownership period** (calendar dates in the owner's time zone, both
+- **The ownership period** (calendar dates in the viewing user's time zone, #386, both
   inclusive) **starts** on the purchase date; without one, at the earlier of
   the vehicle's first ledger line and first odometer reading, and says so
   ("Since first logged, 4 May 2024"). It **ends** on the sale date when one
@@ -2587,7 +2587,7 @@ toggles.
   insights*).
 - **Mileage** (id `mileage`): *This month*, *This year* and *Monthly avg* in
   the owner's distance unit. This month / this year are the calendar month /
-  year to date in the owner's time zone, measured as a report's *distance
+  year to date in the viewing user's time zone (#386), measured as a report's *distance
   driven* (§7.7); monthly average is the Mileage tab's figure (§7.2). For
   the fleet each figure is computed per vehicle and summed (readings of
   different vehicles are never subtracted from each other). A figure with no
@@ -3365,7 +3365,7 @@ Extensible channel interface so more can be added.
       #376); otherwise "—". Its average is the 12 months' spend ÷ their
       distance (a ratio of totals, as the Reports page gives for that
       range), with the same 100 km floor, and only when the log reaches
-      back to the first of those 12 months (#376, decided 2026-10-11);
+      back to the first of those 12 months (#376, #399, decided 2026-10-11);
       otherwise the comparison is left out.
     - *Fleet line* (two or more vehicles listed): distance summed; spend
       summed **per currency**, never converted. When any listed vehicle's
@@ -8290,7 +8290,7 @@ it replaces none of the other figures.
   12 months* (the reports' preset: this month and the 11 before, cut to the
   ownership period; under 90 days, no per-distance figure, as §7.7), and
   the 12 months before it for the change, and each **calendar year** in
-  the owner's time zone
+  the viewing user's time zone (#386)
   (calendar years only; UK tax years are parked, #150). The current year
   and the first year of ownership are partial and say so ("2026 so far",
   "2023 from 14 Mar"); so is the year of a sale ("2026 to 12 Mar").
@@ -8320,9 +8320,9 @@ it replaces none of the other figures.
   `Service\Report\ValueCurve`):
   - the vehicle's **value points** are §7.1's value series: the purchase
     price on the purchase date, each valuation on its date, and the sale
-    price on the sale date (several on one day: the day opens at the
-    first and closes at the last, so a valuation on the purchase day
-    counts from that day, #389);
+    price on the sale date (several on one day: the last one counts,
+    except that the purchase day opens at the price, so a valuation that
+    day is its closing value, #389);
   - the value on any day between two points is interpolated in a straight
     line by day;
   - a period's depreciation = value at its start − value at its end; a
@@ -9032,22 +9032,25 @@ overview while any test is unreviewed. A test is reviewed
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
 - **Money edge cases** (Phase 45.1, decided by the owner 2026-10-11,
-  #386–#392; each has a test, and the answer is the owner's, not the
+  #386–#392 and #398–#400; each has a test, and the answer is the owner's, not the
   code's):
   - **Rounding:** amounts are summed exactly (integer micro-units) and
     rounded **once**, at display or export, half away from zero, to the
     currency's minor unit (0 for JPY, 2 for GBP and EUR, 3 for BHD);
     claim lines and finance amounts are rounded per line to the same
     unit (§7.23, §7.32, #390). Nothing else rounds before it sums.
-  - **Cost 0** is a cost: it counts in every total and count, and a
-    period whose only costs are £0 shows a £0.00 rate, not "—".
+  - **Cost 0:** a £0 fill-up or ad-hoc expense is a ledger line and
+    counts in every total and count; a £0 service or document is not a
+    ledger line (§7.7). A period whose only costs are £0 lines shows a
+    £0.00 rate, not "—".
   - **No distance:** zero distance, no reading or one reading gives no
     per-distance figure ("—"); a backwards reading inside a period is
     ignored (only the end points count), and a period whose end is below
     its start gives "—". Per-distance figures also need the log to reach
     back to the period's start (§7.7, #376).
-  - **Valuations:** two on one day, the last added wins; one on the
-    purchase day is that day's closing value (§7.1, #389). A sale is the
+  - **Valuations:** two on one day, the last added wins (for the
+    current value and the curve); one on the purchase day is that day's
+    closing value, after the price (§7.1, #389). A sale is the
     value whatever the last valuation; a sale above it is a negative
     depreciation part in that period; a sale above the price is a gain:
     a negative per-distance part and no per-year figure.
@@ -9061,7 +9064,8 @@ overview while any test is unreviewed. A test is reviewed
     ledger line; insurance payouts reduce cost of ownership and true
     cost. A payout or adjustment larger than the period's spend gives a
     negative total, shown with a minus sign, and so does its
-    per-distance figure. There are no refunds (§12, #388).
+    per-distance figure (#387, #400); only the incident card shows its
+    own net as 0 (§7.29). There are no refunds (§12, #388).
   - **Plug-in hybrids:** litres and kWh are separate economy series,
     each measured over the odometer distance between its own full
     fills; both count in *Fuel* for cost and cost per distance.
