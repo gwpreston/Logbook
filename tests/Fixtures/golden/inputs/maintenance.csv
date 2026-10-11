@@ -1,0 +1,16 @@
+vehicle,date,category,title,cost,odometer_km,vendor
+corolla,2024-11-12,service,"Toyota service",269.00,69192.900,"Toyota Swords"
+corolla,2025-01-28,repair,"NCT pre-check: wiper blades, bulb",38.40,72381.400,"Toyota Swords"
+corolla,2025-11-18,service,"Toyota service",284.00,85385.000,"Toyota Swords"
+ev,2025-02-21,service,"Annual EV health check",149.00,17641.200,"Kia Leeds"
+ev,2025-10-03,tyres,"Four tyres (EV rated)",736.00,24590.100,"Kwik Fit"
+ev,2026-02-26,service,"Annual EV health check and cabin filter",189.00,29047.200,"Kia Leeds"
+focus,2024-05-13,repair,"MOT advisory: rear brake hoses",96.00,104994.400,Halfords
+focus,2024-08-02,service,"Interim service",179.00,108020.000,"Local garage"
+focus,2024-12-02,bodywork,"Accident repair: rear bumper and tailgate",1430.00,112667.900,"Leeds Body Shop"
+focus,2025-04-08,battery,"New battery",128.50,117469.200,Halfords
+golf,2024-03-14,service,"Annual service",289.00,48586.100,"Leeds VW"
+golf,2024-11-22,tyres,"Two front tyres",412.50,64376.600,"Kwik Fit"
+golf,2025-03-20,service,"Major service",345.00,71684.200,"Leeds VW"
+golf,2025-09-18,other,"MOT test (failed: front brake discs)",54.85,82834.000,"Kwik Fit"
+golf,2025-09-19,brakes,"Front discs and pads",286.40,82891.600,"Kwik Fit"

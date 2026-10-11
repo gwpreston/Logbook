@@ -149,9 +149,18 @@ seed. Each property must hold:
       with the feature phases renumbered after them.
 
 ### 45.1.1 The golden household
-- [ ] The input script (services, not SQL) and its uploads.
+- [x] The inputs: `tests/Fixtures/golden/inputs/*.csv` (users Alex and
+      Sam, 4 vehicles, 577 fill-ups, 143 expenses, 143 trips, finance,
+      valuations, documents, an incident), written by the seeded
+      `tests/Support/Golden/InputBuilder`, with today pinned at
+      2026-09-15 08:00 UTC; `tests/Fixtures/golden/README.md` for the
+      spreadsheet; `GoldenInputsTest` keeps the CSVs and the builder in
+      step.
+- [ ] The loader that enters them through the services (not SQL), and
+      the uploads.
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
-      `expected.csv` exported from it.
+      `expected.csv` exported from it (the skeleton, 812 rows with
+      `expected` empty, is committed).
 - [ ] `GoldenHouseholdTest` on every engine: one assertion per row, and a
       failure message that names the figure, period and vehicle.
 

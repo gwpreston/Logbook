@@ -1,0 +1,3 @@
+user,display_name,locale,timezone,currency,distance_unit,volume_unit,tax_year_start,is_admin
+alex,Alex,en_GB,Europe/London,GBP,mi,l,04-06,yes
+sam,Sam,en_IE,Europe/Dublin,EUR,km,l,01-01,no

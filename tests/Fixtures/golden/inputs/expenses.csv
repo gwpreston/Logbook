@@ -1,0 +1,143 @@
+vehicle,date,category,amount,note
+corolla,2023-11-04,tax,190.00,"Motor tax"
+corolla,2023-11-23,parking,4.50,Parking
+corolla,2023-12-18,parking,6.30,Parking
+corolla,2024-01-27,parking,4.10,Parking
+corolla,2024-02-18,tolls,3.10,"M50 eFlow"
+corolla,2024-02-26,parking,4.00,Parking
+corolla,2024-03-24,parking,4.10,Parking
+corolla,2024-05-02,parking,2.80,Parking
+corolla,2024-05-31,parking,8.30,Parking
+corolla,2024-07-01,parking,4.00,Parking
+corolla,2024-07-30,parking,5.80,Parking
+corolla,2024-08-14,parking,3.30,Parking
+corolla,2024-09-07,tolls,3.10,"M50 eFlow"
+corolla,2024-09-21,parking,6.60,Parking
+corolla,2024-10-22,parking,9.80,Parking
+corolla,2024-11-01,tax,190.00,"Motor tax"
+corolla,2024-12-01,parking,2.70,Parking
+corolla,2024-12-11,parking,4.80,Parking
+corolla,2025-01-30,parking,8.40,Parking
+corolla,2025-02-14,parking,7.20,Parking
+corolla,2025-03-29,parking,8.90,Parking
+corolla,2025-04-14,parking,4.10,Parking
+corolla,2025-05-11,parking,8.00,Parking
+corolla,2025-05-22,tolls,3.20,"M50 eFlow"
+corolla,2025-06-27,parking,6.50,Parking
+corolla,2025-07-10,parking,7.20,Parking
+corolla,2025-08-30,parking,2.50,Parking
+corolla,2025-10-04,parking,6.90,Parking
+corolla,2025-10-22,parking,4.50,Parking
+corolla,2025-11-01,tax,200.00,"Motor tax"
+corolla,2025-11-10,parking,5.40,Parking
+corolla,2025-12-11,parking,4.50,Parking
+corolla,2026-01-25,parking,8.10,Parking
+corolla,2026-03-01,parking,5.50,Parking
+corolla,2026-03-12,parking,6.60,Parking
+corolla,2026-03-30,tolls,3.20,"M50 eFlow"
+corolla,2026-04-28,parking,5.40,Parking
+corolla,2026-05-27,parking,6.90,Parking
+corolla,2026-06-21,parking,8.20,Parking
+corolla,2026-07-28,parking,4.20,Parking
+corolla,2026-08-14,parking,7.60,Parking
+ev,2024-02-10,tax,0.00,"Vehicle tax (zero-rated EV)"
+ev,2024-02-12,accessories,42.99,"Type 2 cable bag"
+ev,2025-04-01,tax,195.00,"Vehicle tax"
+ev,2026-04-01,tax,195.00,"Vehicle tax"
+focus,2023-09-20,tax,35.00,"Vehicle tax"
+focus,2023-10-02,parking,4.90,Parking
+focus,2023-11-02,parking,6.40,Parking
+focus,2023-12-10,parking,5.00,Parking
+focus,2024-01-15,parking,9.30,Parking
+focus,2024-02-16,parking,8.00,Parking
+focus,2024-03-22,parking,8.40,Parking
+focus,2024-04-05,parking,8.70,Parking
+focus,2024-05-14,parking,2.90,Parking
+focus,2024-06-15,parking,3.60,Parking
+focus,2024-07-20,parking,4.30,Parking
+focus,2024-08-19,parking,7.10,Parking
+focus,2024-08-28,parking,5.90,Parking
+focus,2024-09-01,tax,35.00,"Vehicle tax"
+focus,2024-10-17,parking,4.70,Parking
+focus,2024-11-15,parking,4.40,Parking
+focus,2024-12-05,parking,9.00,Parking
+focus,2024-12-27,parking,4.00,Parking
+focus,2025-02-19,parking,5.30,Parking
+focus,2025-03-16,parking,6.40,Parking
+focus,2025-04-03,parking,6.90,Parking
+focus,2025-04-29,parking,9.00,Parking
+focus,2025-05-31,parking,5.90,Parking
+focus,2025-07-12,parking,2.50,Parking
+golf,2023-10-07,tax,190.00,"Vehicle tax"
+golf,2023-10-19,parking,7.60,Parking
+golf,2023-10-23,parking,3.50,Parking
+golf,2023-11-16,parking,2.60,Parking
+golf,2023-11-17,parking,4.60,Parking
+golf,2023-12-11,parking,7.60,Parking
+golf,2024-01-01,parking,8.20,Parking
+golf,2024-01-13,parking,3.80,Parking
+golf,2024-01-17,parking,5.90,Parking
+golf,2024-02-15,parking,5.20,Parking
+golf,2024-03-06,parking,5.60,Parking
+golf,2024-03-17,parking,8.80,Parking
+golf,2024-04-03,parking,9.30,Parking
+golf,2024-04-21,parking,5.10,Parking
+golf,2024-05-06,parking,7.20,Parking
+golf,2024-05-17,parking,9.60,Parking
+golf,2024-06-05,parking,2.90,Parking
+golf,2024-06-11,parking,2.70,Parking
+golf,2024-06-15,parking,3.40,Parking
+golf,2024-07-24,parking,4.80,Parking
+golf,2024-07-31,parking,7.80,Parking
+golf,2024-08-12,parking,7.90,Parking
+golf,2024-08-19,parking,7.90,Parking
+golf,2024-09-22,parking,4.90,Parking
+golf,2024-09-27,parking,2.90,Parking
+golf,2024-10-01,tax,190.00,"Vehicle tax"
+golf,2024-10-11,parking,5.50,Parking
+golf,2024-10-14,parking,7.00,Parking
+golf,2024-11-22,parking,5.50,Parking
+golf,2024-11-29,parking,7.40,Parking
+golf,2024-12-29,parking,3.80,Parking
+golf,2025-01-05,parking,9.60,Parking
+golf,2025-01-10,parking,4.80,Parking
+golf,2025-01-15,parking,7.50,Parking
+golf,2025-02-20,parking,9.50,Parking
+golf,2025-02-27,parking,5.90,Parking
+golf,2025-04-01,parking,5.70,Parking
+golf,2025-04-06,parking,3.80,Parking
+golf,2025-04-12,parking,4.90,Parking
+golf,2025-04-18,parking,2.50,Parking
+golf,2025-05-19,parking,2.90,Parking
+golf,2025-06-02,parking,8.30,Parking
+golf,2025-06-14,parking,6.80,Parking
+golf,2025-07-03,parking,3.20,Parking
+golf,2025-07-22,parking,5.60,Parking
+golf,2025-07-25,parking,8.00,Parking
+golf,2025-08-15,parking,9.80,Parking
+golf,2025-08-27,parking,2.70,Parking
+golf,2025-09-15,parking,2.50,Parking
+golf,2025-09-19,parking,5.20,Parking
+golf,2025-10-01,tax,195.00,"Vehicle tax"
+golf,2025-10-11,parking,4.80,Parking
+golf,2025-10-26,parking,5.90,Parking
+golf,2025-11-27,parking,7.20,Parking
+golf,2025-11-30,parking,6.40,Parking
+golf,2026-01-02,parking,8.70,Parking
+golf,2026-01-04,parking,8.60,Parking
+golf,2026-01-11,parking,6.80,Parking
+golf,2026-02-06,parking,3.00,Parking
+golf,2026-02-18,parking,9.20,Parking
+golf,2026-02-19,parking,6.50,Parking
+golf,2026-03-16,parking,4.50,Parking
+golf,2026-03-19,parking,5.50,Parking
+golf,2026-04-12,parking,2.80,Parking
+golf,2026-05-03,parking,2.80,Parking
+golf,2026-05-19,parking,5.10,Parking
+golf,2026-05-31,parking,6.60,Parking
+golf,2026-06-27,parking,6.10,Parking
+golf,2026-06-27,parking,3.70,Parking
+golf,2026-07-24,parking,3.90,Parking
+golf,2026-08-02,parking,6.20,Parking
+golf,2026-09-01,parking,8.10,Parking
+golf,2026-09-03,parking,5.70,Parking
