@@ -180,8 +180,11 @@ The catalogue, each case with a test:
 
 ### 45.1.5 Fixes decided while starting
 Each with a regression test, spec already updated:
-- [ ] #376: Reports' and the digest's cost per distance need the
-      mileage log to reach back to the period's start (§7.7, §7.11).
+- [ ] #376, #398, #399: Reports' and the digest's cost per distance
+      need the mileage log to reach back to the period's start (§7.7,
+      §7.11).
+- [ ] #400: a test that a payout above the period's costs gives
+      negative ownership and true cost figures with a minus sign.
 - [ ] #374: the digest's *Last month* keeps vehicles archived, sold or
       written off during that month (§7.11).
 - [ ] #375: the digest's fleet spend is labelled when any listed
@@ -189,9 +192,9 @@ Each with a regression test, spec already updated:
 - [ ] #387: a negative finance adjustment shown with its minus sign;
       shares over the groups above zero, a negative group listed after
       them (§7.7, §7.8).
-- [ ] #389: the value curve opens a day at its first point and closes
-      at its last, so a purchase-day valuation is depreciation in that
-      period (§7.1, §7.35).
+- [ ] #389: the value curve opens the purchase day at the price, so a
+      purchase-day valuation is depreciation in that period (§7.1,
+      §7.35).
 - [ ] #390: finance rounds to the agreement currency's minor unit
       (§7.32), with the forms accepting that many decimals.
 
@@ -230,7 +233,8 @@ Found while starting (the edge-case review compared spec and code):
 - **#388 Refunds don't exist.** *Decided:* none in 45.1; the edge case is
   a payout larger than the month's spend; refunds parked in §12.
 - **#389 A valuation on the purchase day.** *Decided:* that day's
-  closing value, so the drop falls in the period holding the purchase.
+  closing value, after the price, so the drop falls in the period
+  holding the purchase.
 - **#390 Finance always at 2 decimals.** *Decided:* the currency's minor
   unit.
 - **#391 Pre-purchase readings (#346) not built yet.** *Decided:* the
