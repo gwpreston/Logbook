@@ -98,6 +98,13 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | ✅ |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | ✅ |
+| [45.1](docs/phases/phase-45.1.md) | Parts and modifications | 📋 |
+| [45.2](docs/phases/phase-45.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
+| [46](docs/phases/phase-46.md) | The licence | 📋 |
+| [47](docs/phases/phase-47.md) | What a share allows, in plain words + release | 📋 |
+| [48](docs/phases/phase-48.md) | How old is the last backup? + release | 📋 |
+| [49](docs/phases/phase-49.md) | "As of" dates on estimates and value-based figures + release | 📋 |
+| [50](docs/phases/phase-50.md) | Import from Tracktor + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1202,6 +1209,106 @@ are.*
   Ask's `coming_up` tool. Release.
 
 → [`phase-44.md`](docs/phases/phase-44.md)
+
+---
+
+## Phase 45.1 — Parts and modifications
+*What was fitted, what came off, and what the build has cost, kept apart
+from what the car costs to run.*
+
+- **Parts:** fitted and removed at a date and mileage, more than once,
+  with what happened to them when they came off, the receipt, warranty
+  terms and distance on the vehicle.
+- **Modifications:** add, edit, delete and *Revert*, fitting parts and
+  recording what came off in the same form; a service record can fit
+  parts too.
+- A *Modifications* cost group: in spend, the Expenses tab, Reports and
+  cost of ownership, but out of every running cost per distance. A
+  *Parts* tab, overview card, History, print, backups and the demo seed.
+
+→ [`phase-45.1.md`](docs/phases/phase-45.1.md)
+
+---
+
+## Phase 45.2 — Warranties, the insurer's list and parts everywhere + release
+*A reminder before a warranty runs out, a list of modifications to read to
+an insurer, and parts wherever entries go.*
+
+- Warranty reminders for the parts the owner chooses; *For your
+  insurer*, a printable list of current modifications and when each was
+  declared; *Include modifications* in the sale pack.
+- A scanned invoice's parts lines offered as parts; parts and
+  modifications in the API, webhooks, Ask, MCP and CSV. Release.
+
+→ [`phase-45.2.md`](docs/phases/phase-45.2.md)
+
+---
+
+## Phase 46 — The licence
+*Anyone who finds the public repository can tell what they may do with
+it.*
+
+- `composer.json` says `proprietary` and there is no `LICENSE` file. A
+  licence chosen by the owner, stated in a `LICENSE` file, `composer.json`,
+  the README, `spec.md`, the Docker image label and the release notes.
+- Third-party licences listed and checked in CI; a stated position on
+  contributions.
+
+→ [`phase-46.md`](docs/phases/phase-46.md)
+
+---
+
+## Phase 47 — What a share allows, in plain words + release
+*"Can log fuel, can't see costs", before you press Add.*
+
+- A *This lets {name}* summary beside the sharing form that follows the
+  level and ticks as they change, without JS too; the same summary on a
+  shared user's *Sharing* page, and for the *Admin* tick.
+- Quick picks that fill in the level and its ticks. Release.
+
+→ [`phase-47.md`](docs/phases/phase-47.md)
+
+---
+
+## Phase 48 — How old is the last backup? + release
+*Data that lives on your own box is only as safe as your last backup.*
+
+- Every completed backup recorded: when, how (*Downloaded*, *Scheduled*,
+  *Command line*) and its size; Settings → Backup leads with "Last backup
+  43 days ago".
+- An admin-only dashboard banner once the last backup is older than the
+  threshold (default 30 days), or there has never been one; *I back up
+  another way* turns it off. Release.
+
+→ [`phase-48.md`](docs/phases/phase-48.md)
+
+---
+
+## Phase 49 — "As of" dates on estimates and value-based figures + release
+*Every figure built on an old input says how old.*
+
+- An inventory in the spec of every figure that depends on a dated input
+  or is an estimate; a `Support\AsOf` value carried by those results, so
+  pages, print, CSV, the API and Ask show the same date.
+- One `ui.as_of()` macro, styled as stale once the input passes its
+  threshold. Release.
+
+→ [`phase-49.md`](docs/phases/phase-49.md)
+
+---
+
+## Phase 50 — Import from Tracktor + release
+*Bring a whole Tracktor garage across: vehicles, fill-ups, services,
+documents and reminders.*
+
+- A Tracktor reader for Phase 31's app importer: its JSON export in
+  Settings → *Import from another app* and `bin/import-app.php`, with
+  vehicles, units (which gallon), document types, maintenance categories
+  and reminder types mapped.
+- A preview, one transaction, and a newer export adding only what's new;
+  `docs/import-tracktor.md`, fixtures and release.
+
+→ [`phase-50.md`](docs/phases/phase-50.md)
 
 ---
 

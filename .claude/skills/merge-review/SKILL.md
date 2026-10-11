@@ -1,6 +1,6 @@
 ---
 name: merge-review
-description: Runs Logbook's review agents (bug-hunter, security-scanner, performance-auditor, design-reviewer, spec-keeper, upgrade-tester, deploy-checker) on a branch, pull request or release and turns their reports into one clear MERGE or REJECT decision with the reasons and the shortest path to MERGE. Use this whenever Gareth asks "can I merge this", "is this ready", "review this PR / branch / phase", "should this go in", "pre-merge check", "release check", or invokes /merge-review — even if he names only one concern, since the point is the combined verdict. Never merges, pushes, approves or edits code.
+description: Runs Logbook's review agents (bug-hunter, security-scanner, performance-auditor, design-reviewer, spec-keeper, upgrade-tester, deploy-checker, api-contract-checker, ai-evaluator, import-tester) on a branch, pull request or release and turns their reports into one clear MERGE or REJECT decision with the reasons and the shortest path to MERGE. Use this whenever Gareth asks "can I merge this", "is this ready", "review this PR / branch / phase", "should this go in", "pre-merge check", "release check", or invokes /merge-review — even if he names only one concern, since the point is the combined verdict. Never merges, pushes, approves or edits code.
 ---
 
 # Merge review
@@ -51,7 +51,7 @@ spec-keeper's, not a gate here.
 
 ## 3. Choose the agents
 
-**Release mode:** all seven run, no skips.
+**Release mode:** all ten run, no skips.
 
 **Branch mode:** run an agent when the diff touches its triggers. When in
 doubt, run it — a skipped agent must be justifiable from the file list
@@ -66,6 +66,9 @@ alone.
 | design-reviewer | `templates/`, `assets/`, `translations/`, `public/assets/` |
 | upgrade-tester | `db/migrations/`; code that reads or writes stored data (repositories, entities and value objects, settings stored as JSON, enums); backup and restore; `docker/entrypoint.sh` |
 | deploy-checker | `Dockerfile`, `docker/`, `docker-compose*.yml`, `bin/`, `public/`, `config/settings.php`, `config/middleware.php`, `config/routes.php` or URL building, the service worker or manifest, `composer.json`/`.lock`, built assets |
+| api-contract-checker | API or MCP code (actions, serialisers, tool definitions), `docs/api/openapi.json`, `docs/api.md`, `docs/mcp.md`, `config/routes.php`, CSV export code, webhook or notification payloads, the calendar feed, problem `code` values |
+| ai-evaluator | AI code, prompts, tool definitions and descriptions, the grounding check, drafting, document reading, provider adapters, the MCP tools, or the services and repositories those tools call |
+| import-tester | import or export code, `bin/import-app.php`, app readers, number, date or unit parsing, the fields of fill-ups, odometer readings, maintenance, documents or expenses, `tests/Fixtures/import/` |
 
 A **docs-only** diff (`docs/`, `README.md`, `CHANGELOG.md`, phase files)
 runs spec-keeper only, plus the gates.
@@ -82,7 +85,7 @@ report must use review-rules §7.
   turn). They isolate their Docker stacks by compose project name and
   port (review-rules §2), so they can run together. If the machine can't
   cope, run the Docker-heavy ones (upgrade-tester, deploy-checker,
-  performance-auditor) one after another and the rest alongside.
+  performance-auditor, import-tester) one after another and the rest alongside.
 - If an agent file is missing from `.claude/agents/`, that agent is
   **not run**.
 - Collect each report in full, including *Not run* and *Handed over*.
@@ -124,7 +127,10 @@ The verdict is **REJECT** if any one of these is true; otherwise it is
 **Confirmed findings, new or made worse by this diff**
 - Any **CRITICAL**, from any agent.
 - Any **HIGH** from bug-hunter, security-scanner, spec-keeper,
-  upgrade-tester or deploy-checker.
+  upgrade-tester, deploy-checker, api-contract-checker or import-tester.
+- Any **HIGH** from ai-evaluator that is a **regression** against master
+  in the deterministic pass. Live-pass results never block on their own;
+  a consistent drop goes under *Notes for the owner*.
 - Any **HIGH** from performance-auditor that is a **regression** against
   master.
 - Any **HIGH** from design-reviewer that is an accessibility failure or
@@ -175,7 +181,8 @@ in exactly this structure:
 ## To get to MERGE
 <Only when rejected. The shortest ordered list of things to do, each tied
 to a blocking reason. No patches. End with: "Then run test-writer on
-blocking reasons N, M to keep them fixed.">
+blocking reasons N, M to keep them fixed." Then list any scratch AI
+cases and import files the agents said should be committed.>
 
 ## Gates
 | Gate | Result |
@@ -194,8 +201,9 @@ blocking reasons N, M to keep them fixed.">
 location. Problems already on master are marked "on master".>
 
 ## Upgrade notes
-<From upgrade-tester and spec-keeper: what CHANGELOG.md should tell
-self-hosters, or "None needed".>
+<From upgrade-tester, api-contract-checker and spec-keeper: what
+CHANGELOG.md should tell self-hosters and integrators, or "None
+needed".>
 
 ## Unconfirmed
 ## Open questions
@@ -221,7 +229,8 @@ reasons are resolved, which remain, and anything new.
 
 Remove `var/merge-review/master` and every agent's scratch folder
 (`var/bug-hunter/`, `var/security-scanner/`, `var/performance-auditor/`,
-`var/spec-keeper/`, `var/upgrade-tester/`, `var/deploy-checker/`), except
+`var/spec-keeper/`, `var/upgrade-tester/`, `var/deploy-checker/`, `var/api-contract-checker/`, `var/ai-evaluator/`,
+`var/import-tester/`), except
 screenshots in `var/design-reviewer/` that the report links to. Check no
 `review-*` compose projects are left running (`docker compose ls`). Keep
 the report.
