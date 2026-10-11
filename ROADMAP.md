@@ -111,6 +111,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51.2](docs/phases/phase-51.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
 | [52](docs/phases/phase-52.md) | Import from Tracktor + release | 📋 |
 | [53](docs/phases/phase-53.md) | Import from ABRP + release | 📋 |
+| [54](docs/phases/phase-54.md) | The README and the docs, for someone deciding | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1404,6 +1405,24 @@ Routeplanner, without typing them in.*
   `docs/import-abrp.md`, fixtures and release.
 
 → [`phase-53.md`](docs/phases/phase-53.md)
+
+---
+
+## Phase 54 — The README and the docs, for someone deciding
+*A stranger can tell in a minute who Logbook is for, what it looks like
+and how to try it, and find the right guide for anything deeper.*
+
+- A short README: who it's for, screenshots, a quick start
+  that ends with a vehicle and a fill-up, features in groups linking to
+  their guides, then docs, upgrading, licence and contributing.
+- The full feature list moved to `docs/features.md`, contributor
+  material to `CONTRIBUTING.md`, and a docs index and
+  `docs/getting-started.md` added.
+- Screenshots made by a script from demo data, in light and dark, on a
+  desktop and a phone. CI checks docs links, orphaned guides and unused
+  images. No app change; noted in the next release.
+
+→ [`phase-54.md`](docs/phases/phase-54.md)
 
 ---
 
