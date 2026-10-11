@@ -3,7 +3,7 @@
 *Every headline figure checked against a source that isn't the code that
 produced it.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress (started 2026-10-11) · file lives in `docs/phases/`
 
 Forty-four phases in, Logbook works out a lot of money:
 
@@ -64,9 +64,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.1,
 
 ---
 
-## The golden household (proposed)
+## The golden household
 
-Settled in 45.1.0 (open question A). The four vehicles:
+Decided 2026-10-11 (#393, #395). The four vehicles:
 
 - **Petrol car, bought used on PCP.**
   - Three valuations, one of them stale.
@@ -76,7 +76,7 @@ Settled in 45.1.0 (open question A). The four vehicles:
 - **EV.**
   - Home charging on two tariffs, plus public AC and DC.
   - A free charge (cost 0).
-  - A refund.
+  - (No refund: the app has none, #388.)
 - **Sold car.**
   - An accident with an insurance payout and an excess.
   - Sold at a gain over its last valuation.
@@ -86,7 +86,8 @@ Settled in 45.1.0 (open question A). The four vehicles:
     change.
 
 The second user has a Log share without costs, and adds fill-ups to the
-first car. The fixture is only data: the same inputs go in through the
+first car. No vehicle has a reading dated before its purchase: that rule
+(#346) is built in Phase 41.8, which writes its own test (#391). The fixture is only data: the same inputs go in through the
 services (not raw SQL), so every derived row is created as the app would
 create it.
 
@@ -106,10 +107,11 @@ vehicle):
 
 ---
 
-## Properties (proposed)
+## Properties
 
-Generated vehicles and entries from a seeded generator, so any failure
-replays from its seed (open question B). Each property must hold:
+Generated vehicles and entries from a seeded generator in
+`tests/Support/`, with no library (#394), so any failure replays from its
+seed. Each property must hold:
 
 - **Totals add up.** A total equals the sum of its parts in every report,
   card and widget, to the decimal place it is shown.
@@ -119,10 +121,13 @@ replays from its seed (open question B). Each property must hold:
 - **Undo restores.** Deleting an entry and adding it back gives
   identical figures.
 - **Never mixed.** No figure ever combines two currencies.
-- **Sign is kept.** Refunds, payouts and gains in value reduce totals,
-  and never turn a per-distance figure negative without saying so.
-- **Owner's time zone.** An entry at 23:30 on the last day of a month is
-  counted in that month for the owner, whatever the server's zone.
+- **Sign is kept.** Insurance payouts, negative finance adjustments and
+  gains in value reduce totals, and a negative figure always shows its
+  minus sign (#387).
+- **The viewer's time zone.** An entry at 23:30 on the last day of a
+  month is counted in that month for the user viewing it, whatever the
+  server's zone (#386). The server runs in UTC and America/Los_Angeles,
+  users in zones such as Australia/Sydney and Europe/London (#397).
   Summer-time days and 29 February are both generated.
 - **Hidden means hidden.** A user without `ViewCosts` gets nothing from
   any service that returns a derived amount.
@@ -132,11 +137,13 @@ replays from its seed (open question B). Each property must hold:
 ## Tasks
 
 ### 45.1.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged.
-- [ ] The edge-case catalogue added to §8 (below): each case with its
-      decided answer.
-- [ ] §13; `ROADMAP.md` rows for 45.1, 45.2 and 45.3, with the feature
-      phases renumbered after them.
+- [x] Open questions A–D decided by the owner and logged (#393–#396),
+      with #386–#392 and #397 found while starting, and the carried
+      #374–#376 (2026-10-11).
+- [x] The edge-case catalogue added to §8 *Money edge cases*: each case
+      with its decided answer.
+- [x] §13 rows for 45.1, 45.2 and 45.3; `ROADMAP.md` already had them,
+      with the feature phases renumbered after them.
 
 ### 45.1.1 The golden household
 - [ ] The input script (services, not SQL) and its uploads.
@@ -159,13 +166,31 @@ The catalogue, each case with a test:
 - [ ] A vehicle with no readings, one reading, or a backwards reading.
 - [ ] A plug-in hybrid with both litres and kWh.
 - [ ] A tax year spanning a rate change, and a trip on 5 and 6 April.
-- [ ] A refund larger than the month's spend.
+- [ ] A payout or negative finance adjustment larger than the month's
+      spend (#388: there are no refunds).
 - [ ] Rounding at half a penny in each currency's minor unit.
 
 ### 45.1.4 Mismatches
 - [ ] Each mismatch logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.
+
+### 45.1.5 Fixes decided while starting
+Each with a regression test, spec already updated:
+- [ ] #376: Reports' and the digest's cost per distance need the
+      mileage log to reach back to the period's start (§7.7, §7.11).
+- [ ] #374: the digest's *Last month* keeps vehicles archived, sold or
+      written off during that month (§7.11).
+- [ ] #375: the digest's fleet spend is labelled when any listed
+      vehicle's costs are hidden (§7.11).
+- [ ] #387: a negative finance adjustment shown with its minus sign;
+      shares over the groups above zero, a negative group listed after
+      them (§7.7, §7.8).
+- [ ] #389: the value curve opens a day at its first point and closes
+      at its last, so a purchase-day valuation is depreciation in that
+      period (§7.1, §7.35).
+- [ ] #390: finance rounds to the agreement currency's minor unit
+      (§7.32), with the forms accepting that many decimals.
 
 ---
 
@@ -179,37 +204,41 @@ The catalogue, each case with a test:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+All decided by the owner on 2026-10-11, before the phase was built.
 
-- **A. Who works out the expected figures?**
-  - (1) The owner, in a spreadsheet, from the input script alone.
-  - (2) Claude Code, in a separate script that shares no code with
-    `src/`.
-  - (3) Both, compared.
+- **A. Who works out the expected figures?** *Decided (#393):* both for
+  finance and depreciation (the owner's spreadsheet and an independent
+  script by Claude Code sharing no code with `src/`, compared); the
+  owner's spreadsheet alone for everything else.
+- **B. A property-testing library?** *Decided (#394):* none; PHPUnit data
+  providers over a small seeded generator in `tests/Support/`.
+- **C. How large a household?** *Decided (#395):* the four vehicles,
+  about 1,500 entries; no heavy variant.
+- **D. What if the spec is ambiguous?** *Decided (#396):* the owner
+  decides, and the spec is made exact.
 
-  *Recommendation:* (3) for finance and depreciation, which are the
-  hardest to get right; (1) for everything else. A second implementation
-  by the same author as the first shares its blind spots.
+Found while starting (the edge-case review compared spec and code):
 
-- **B. A property-testing library?**
-  - (1) None: PHPUnit data providers over a small seeded generator in
-    `tests/Support/`.
-  - (2) A library such as Eris.
+- **#386 Which zone dates a shared vehicle's costs?** *Decided:* the
+  viewing user's (as the code does); §7.7's "owner's" made exact.
+- **#387 A negative finance adjustment against "costs are never
+  negative".** *Decided:* kept and shown with a minus; shares over the
+  groups above zero.
+- **#388 Refunds don't exist.** *Decided:* none in 45.1; the edge case is
+  a payout larger than the month's spend; refunds parked in §12.
+- **#389 A valuation on the purchase day.** *Decided:* that day's
+  closing value, so the drop falls in the period holding the purchase.
+- **#390 Finance always at 2 decimals.** *Decided:* the currency's minor
+  unit.
+- **#391 Pre-purchase readings (#346) not built yet.** *Decided:* the
+  golden household has none; Phase 41.8 tests it.
+- **#392 The cases where spec and code agree.** *Decided:* confirmed as
+  listed in spec §8 *Money edge cases*.
+- **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
+  the time-zone property runs the server in UTC and America/Los_Angeles
+  with users in far zones.
 
-  *Recommendation:* (1). The properties are few, and a library is one
-  more dependency to keep current.
-
-- **C. How large a household?**
-  - (1) The four vehicles above, about 1,500 entries.
-  - (2) Also a "heavy" variant, 20 vehicles over ten years, for budgets.
-
-  *Recommendation:* (1) here, with (2) only if §8's query budgets
-  are doubted.
-
-- **D. What if the spec is ambiguous?** When the spreadsheet and the code
-  differ because the spec allows both readings:
-  - (1) The owner decides, and the spec is made exact.
-  - (2) The code's reading stands.
-
-  *Recommendation:* (1). Settling these ambiguities is the point of the
-  exercise.
+Carried from Phase 43 and decided now, since the golden household's
+digest figures depend on them: #374 (include vehicles archived during
+the month), #375 (label the fleet spend), #376 (require readings that
+reach back, on Reports too). #377 touches no figure and stays open.
