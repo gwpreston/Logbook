@@ -8324,7 +8324,11 @@ it replaces none of the other figures.
     except that the purchase day opens at the price, so a valuation that
     day is its closing value, #389);
   - the value on any day between two points is interpolated in a straight
-    line by day;
+    line by day, and rounded to the micro-unit (half up) before anything is
+    subtracted from it, so adjacent periods' depreciation adds up exactly
+    to the depreciation over both (Phase 45.1, #402: until then each
+    period's loss was rounded after subtracting, and the years could miss
+    *Since bought* by a micro-unit);
   - a period's depreciation = value at its start − value at its end; a
     gain is negative, as in §7.7, and is shown as a negative part in every
     period, *Since bought* included (#154);
@@ -9039,6 +9043,11 @@ overview while any test is unreviewed. A test is reviewed
     currency's minor unit (0 for JPY, 2 for GBP and EUR, 3 for BHD);
     claim lines and finance amounts are rounded per line to the same
     unit (§7.23, §7.32, #390). Nothing else rounds before it sums.
+  - **Shown parts add up** (#403, decided 2026-10-11): where a total is
+    shown with its parts (true cost's parts and payouts, §7.35), the parts
+    are rounded to the minor unit by the largest-remainder method, as the
+    rates per distance already are, so the shown parts always add up to the
+    shown total. Reports' parts are whole minor units already.
   - **Cost 0:** a £0 fill-up or ad-hoc expense is a ledger line and
     counts in every total and count; a £0 service or document is not a
     ledger line (§7.7). A period whose only costs are £0 lines shows a

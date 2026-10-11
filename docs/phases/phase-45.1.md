@@ -167,8 +167,20 @@ seed. Each property must hold:
       failure message that names the figure, period and vehicle.
 
 ### 45.1.2 Properties
-- [ ] The generator and the seven properties; a CI job that runs them
-      with a fresh seed each night, as well as fixed seeds on every push.
+- [x] The generator (`tests/Support/Property/HouseholdGenerator`, 1–3
+      vehicles in GBP, EUR or JPY, an owner and a member in different
+      zones, entered through the services) and the seven properties in
+      `tests/Integration/Property/` (`#[Group('property')]`): fixed seeds
+      on every push in `composer test`; `.github/workflows/properties.yml`
+      runs 25 fresh seeds a night on SQLite, PostgreSQL and MySQL and
+      prints them; `PROPERTY_SEEDS` replays one. The time-zone property
+      fails when the ledger dates by the server's zone, and the sign and
+      hidden-costs properties reach negative figures and hidden vehicles'
+      items on most seeds.
+- [ ] The properties that wait on a 45.1.5 fix are added with it:
+      negative groups (#387), reach-back (#376), the digest (#374, #375),
+      the purchase-day valuation (#389), finance rounding (#390) and shown
+      parts adding up (#403).
 
 ### 45.1.3 Edge cases
 The catalogue, each case with a test:
@@ -185,6 +197,9 @@ The catalogue, each case with a test:
 - [ ] Rounding at half a penny in each currency's minor unit.
 
 ### 45.1.4 Mismatches
+- [x] #402 (found by *totals add up*): the years' depreciation missed
+      *Since bought* by a micro-unit; the code was wrong, fixed in
+      `ValueCurve` with a regression test (spec §7.35).
 - [ ] Each mismatch logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.
@@ -208,6 +223,8 @@ Each with a regression test, spec already updated:
       §7.35).
 - [ ] #390: finance rounds to the agreement currency's minor unit
       (§7.32), with the forms accepting that many decimals.
+- [ ] #403: true cost's shown parts rounded by largest remainder, so
+      they add up to the shown total (§8, §7.35).
 
 ---
 

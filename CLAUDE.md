@@ -85,6 +85,7 @@ composer install                 # deps
 composer start                   # local dev server (php -S) on :8090
 composer test                    # PHPUnit
 composer test:coverage           # PHPUnit with line coverage (pcov or Xdebug) -> var/coverage/
+composer test:properties         # money property tests; PROPERTY_SEEDS=1,2,3 picks seeds (nightly: fresh ones)
 composer coverage:check          # fail if overall coverage is below tests/coverage-floor.txt
 composer lint                    # phpcs (PSR-12)
 composer analyse                 # phpstan

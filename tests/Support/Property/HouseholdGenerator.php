@@ -92,6 +92,16 @@ final class HouseholdGenerator
                 expiry: $start->modify('+1 year -1 day')->format('Y-m-d'),
             );
         }
+        if (!$sold) {
+            // The current policy, so a renewal with a known cost is always coming up.
+            $start = $today->modify('-' . $this->rng->between(1, min(330, max(1, $span))) . ' days');
+            $entries[] = new Entry(
+                'document',
+                $this->amount($currency, 90000),
+                $start->format('Y-m-d'),
+                expiry: $start->modify('+1 year -1 day')->format('Y-m-d'),
+            );
+        }
         foreach ($this->distinctDays($this->rng->between(0, 3), $span) as $offset) {
             $entries[] = new Entry(
                 'valuation',

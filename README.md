@@ -189,6 +189,7 @@ composer install
 composer start               # http://localhost:8090 (PHP built-in server, SQLite by default)
 composer test                # PHPUnit (TEST_DB_*; SQLite by default)
 composer test:coverage       # PHPUnit with line coverage (needs pcov or Xdebug) → var/coverage/
+composer test:properties     # the money property tests; PROPERTY_SEEDS=1,2,3 replays seeds
 composer coverage:check      # overall coverage against tests/coverage-floor.txt (CI also checks 80% of a PR's changed lines)
 composer lint                # phpcs, PSR-12
 composer analyse             # PHPStan, level max
