@@ -181,6 +181,13 @@ seed. Each property must hold:
       negative groups (#387), reach-back (#376), the digest (#374, #375),
       the purchase-day valuation (#389), finance rounding (#390) and shown
       parts adding up (#403).
+- [x] *Hidden means hidden* covers the services that work out amounts
+      for a page: Reports, cost of ownership, true cost, *Coming up*, the
+      digest's *Last month*, finance and incidents. The fuel tab's cost per
+      distance, station stats, the API, exports, Ask and MCP are carried to
+      [45.2](phase-45.2.md)'s leak sweep, which renders every GET route,
+      the API, CSV and every Ask and MCP read tool as a member without
+      costs.
 
 ### 45.1.3 Edge cases
 The catalogue, each case with a test:
@@ -223,8 +230,9 @@ Each with a regression test, spec already updated:
       §7.35).
 - [ ] #390: finance rounds to the agreement currency's minor unit
       (§7.32), with the forms accepting that many decimals.
-- [ ] #403: true cost's shown parts rounded by largest remainder, so
-      they add up to the shown total (§8, §7.35).
+- [ ] #403: shown parts rounded by largest remainder wherever a total
+      is shown with them (Reports, the ownership card, true cost, the
+      expense widgets, CSV), so they add up to the shown total (§8).
 
 ---
 

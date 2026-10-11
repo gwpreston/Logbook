@@ -9043,11 +9043,15 @@ overview while any test is unreviewed. A test is reviewed
     currency's minor unit (0 for JPY, 2 for GBP and EUR, 3 for BHD);
     claim lines and finance amounts are rounded per line to the same
     unit (§7.23, §7.32, #390). Nothing else rounds before it sums.
-  - **Shown parts add up** (#403, decided 2026-10-11): where a total is
-    shown with its parts (true cost's parts and payouts, §7.35), the parts
-    are rounded to the minor unit by the largest-remainder method, as the
-    rates per distance already are, so the shown parts always add up to the
-    shown total. Reports' parts are whole minor units already.
+  - **Shown parts add up** (#403, decided 2026-10-11): amounts are entered
+    to 3 decimals in every currency (£1.005), so parts rounded one by one
+    can miss their total by a minor unit. Wherever a total is shown with
+    its parts (Reports' groups, months and vehicles; the cost of ownership
+    card; true cost's parts and payouts, §7.35; the expense widgets, §7.8;
+    the CSV totals), the shown parts are rounded to the minor unit by the
+    largest-remainder method, as true cost's rates per distance already
+    are, so they always add up to the shown total. The exact sums
+    underneath are unchanged.
   - **Cost 0:** a £0 fill-up or ad-hoc expense is a ledger line and
     counts in every total and count; a £0 service or document is not a
     ledger line (§7.7). A period whose only costs are £0 lines shows a
@@ -10206,7 +10210,10 @@ task breakdowns live in the per-phase files; this is the map.
   distance (#376), the digest keeps vehicles archived during the month
   (#374) and labels a fleet spend with hidden costs (#375), negative
   finance adjustments shown as such (#387), the purchase-day valuation
-  (#389) and finance in the currency's minor unit (#390). See
+  (#389), finance in the currency's minor unit (#390), and shown parts
+  that add up to their total by largest remainder (#403). Seven seeded
+  property tests, fixed seeds on every push and fresh ones nightly
+  (`properties.yml`), found the depreciation rounding fixed as #402. See
   [`phase-45.1.md`](docs/phases/phase-45.1.md).
 - **Phase 45.2 — Hardening: households and backups.** Journey tests per
   persona and a leak sweep of every GET route as each restricted

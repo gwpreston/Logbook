@@ -157,15 +157,25 @@ final class HouseholdGenerator
         );
     }
 
-    /** An amount up to $maxMinor minor units (pence or cents; ×150 for yen), zero one time in ten. */
+    /**
+     * An amount up to $maxMinor minor units (pence or cents; ×150 for yen), zero one time in ten, and
+     * now and then with a third decimal below the minor unit.
+     */
     private function amount(string $currency, int $maxMinor): string
     {
         if ($this->rng->oneIn(10)) {
             return '0.00';
         }
         $minor = $this->rng->between(1, $maxMinor);
+        $whole = $currency === 'JPY' ? intdiv($minor * 150, 100) : $minor;
+        // One in five below the minor unit (£1.005, ¥120.5): the forms take 3 decimals in every currency.
+        if ($this->rng->oneIn(5)) {
+            $step = $currency === 'JPY' ? 1000 : 10;
 
-        return $currency === 'JPY' ? (string) intdiv($minor * 150, 100) : self::fixed($minor, 2);
+            return self::fixed($whole * $step + $this->rng->between(1, $step - 1), 3);
+        }
+
+        return $currency === 'JPY' ? (string) $whole : self::fixed($whole, 2);
     }
 
     /**
