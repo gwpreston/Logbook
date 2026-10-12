@@ -60,7 +60,7 @@ final class MonthlyBriefingSendingTest extends BriefingTestCase
         $own = $this->digestJson();
         self::assertSame('30.000', self::row($own)['spend']);
         self::assertSame('400.000', self::row($own)['distance']);
-        self::assertSame(1, $own['issues'][0]['open'] ?? null);
+        self::assertSame([['vehicle_id' => $golf->id, 'vehicle' => 'Volkswagen Golf', 'open' => 1]], $own['issues']);
         $text = $this->digestText();
         self::assertStringContainsString('£30.00 spent', $text);
         self::assertStringContainsString('249 mi driven', $text);
