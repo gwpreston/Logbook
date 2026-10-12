@@ -27,7 +27,8 @@ use Slim\App;
  * Phase 45.1.3, *Finance settled early, a missed payment, a balloon
  * refinanced, and a 0% agreement*; spec §8 *Money edge cases*, bullet
  * **Finance**, with §7.32 *Schedule*, *Figures*, *Ending* and *Costs*
- * (decided #387, #390, #121).
+ * (decided #387, #390, #121; #392: missed payments, 0% APR and refinancing,
+ * where spec and code already agreed).
  *
  * The HP agreement used throughout: cash price £1,000, no deposit, 12
  * payments of £90 on the 15th from 15 Feb 2026, at 8% APR. Its interest

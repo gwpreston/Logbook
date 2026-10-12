@@ -13,7 +13,9 @@ use Logbook\Tests\Support\CostFixtures;
 /**
  * Phase 45.1.3, *A vehicle with no readings, one reading, or a backwards
  * reading*; spec §8 *Money edge cases*, bullet **No distance**, with §7.3
- * *Consumption is full-to-full only* and §7.7 *Distance driven*.
+ * *Consumption is full-to-full only* and §7.7 *Distance driven* (decided #376
+ * and #405: the log reaching back to the period's start; #392: where spec and
+ * code already agreed).
  *
  * Economy, Reports' cost per distance, cost of ownership and true cost each
  * go without a figure rather than showing a made-up one. Every vehicle was

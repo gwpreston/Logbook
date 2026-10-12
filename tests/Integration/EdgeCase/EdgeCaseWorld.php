@@ -23,6 +23,7 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Number\Decimal;
+use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 
@@ -154,5 +155,20 @@ trait EdgeCaseWorld
         self::assertNull($result->sinceBought->perKm);
         self::assertNotNull($result->lastTwelveMonths);
         self::assertSame(TrueCostGap::NoMileage, $result->lastTwelveMonths->gap);
+    }
+
+    /**
+     * What a page says: its text with the markup stripped and the spaces
+     * collapsed, so a figure can be looked for as a user reads it. The true
+     * cost pages write a minus as U+2212 and the other pages as a hyphen;
+     * both read "-" here (the spec's prose uses U+2212 but does not say which
+     * glyph the page must use).
+     */
+    private function pageText(TestBrowser $browser, string $url): string
+    {
+        $text = preg_replace('/\s+/', ' ', str_replace("\u{2212}", '-', strip_tags(self::body($browser->get($url)))));
+        self::assertIsString($text);
+
+        return trim($text);
     }
 }

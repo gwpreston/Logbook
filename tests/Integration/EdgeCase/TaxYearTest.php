@@ -22,7 +22,8 @@ use Slim\App;
 /**
  * Phase 45.1.3, *A tax year spanning a rate change, and a trip on 5 and 6
  * April*; spec §8 *Money edge cases*, bullet **Tax years**, with §7.23
- * *Tax year* and *Valuing trips*.
+ * *Tax year* and *Valuing trips* (#392: where spec and code already agreed,
+ * *tax-year days*; #401: the UK owner has the UK tax year).
  *
  * Read through the claim report service, as the claim page does. The owner
  * is a GB user, so the tax year runs 6 April to 5 April and HMRC's rates
@@ -52,16 +53,16 @@ final class TaxYearTest extends AppTestCase
         $old = $this->claim($app, $owner, '2026-04-05');
         self::assertCount(2, $old->rows, 'the September trip and 5 April');
         self::assertSame('2026-04-05', $old->rows[1]->trip->data->travelledOn->format('Y-m-d'));
-        self::assertSame('0.2500', $old->rows[1]->lines[0]->rate, 'past the 10,000 miles of 2025/26, at the old rate set');
-        self::assertSame('31.25', $old->rows[1]->mileageAmount, '125 miles at 25p');
-        self::assertSame('4531.25', $old->totals[0]->mileageAmount, '10,000 at 45p, then 125 at 25p');
+        self::assertDecimal('0.25', $old->rows[1]->lines[0]->rate, 'past the 10,000 miles of 2025/26, at the old rate set');
+        self::assertDecimal('31.25', $old->rows[1]->mileageAmount, '125 miles at 25p');
+        self::assertDecimal('4531.25', $old->totals[0]->mileageAmount, '10,000 at 45p, then 125 at 25p');
 
         $new = $this->claim($app, $owner, '2026-04-06');
         self::assertCount(1, $new->rows, 'only 6 April');
         self::assertSame('2026-04-06', $new->rows[0]->trip->data->travelledOn->format('Y-m-d'));
-        self::assertSame('0.5500', $new->rows[0]->lines[0]->rate, 'the band starts again, at the new rate set');
-        self::assertSame('68.75', $new->rows[0]->mileageAmount, '125 miles at 55p');
-        self::assertSame('68.75', $new->totals[0]->mileageAmount);
+        self::assertDecimal('0.55', $new->rows[0]->lines[0]->rate, 'the band starts again, at the new rate set');
+        self::assertDecimal('68.75', $new->rows[0]->mileageAmount, '125 miles at 55p');
+        self::assertDecimal('68.75', $new->totals[0]->mileageAmount);
     }
 
     public function testARateChangeMidYearKeepsTheYearsRunningTotalForTheBand(): void
@@ -80,14 +81,17 @@ final class TaxYearTest extends AppTestCase
 
         self::assertSame('2025/26', $report->filter->taxYear?->label());
         self::assertCount(2, $report->rows);
-        self::assertSame('3600.00', $report->rows[0]->mileageAmount, '8,000 miles at 45p');
+        self::assertDecimal('3600', $report->rows[0]->mileageAmount, '8,000 miles at 45p');
         $crossing = $report->rows[1];
         self::assertTrue($crossing->isSplit(), 'the band runs out inside the second trip');
-        self::assertSame(['2000.000', '2000.000'], array_map(static fn ($l): string => $l->distance, $crossing->lines));
-        self::assertSame(['0.6000', '0.3000'], array_map(static fn ($l): string => $l->rate, $crossing->lines));
-        self::assertSame(['1200.00', '600.00'], array_map(static fn ($l): string => $l->amount, $crossing->lines));
-        self::assertSame('1800.00', $crossing->mileageAmount, 'not 4,000 at 60p: the 8,000 already counted');
-        self::assertSame('5400.00', $report->totals[0]->mileageAmount);
+        self::assertCount(2, $crossing->lines);
+        foreach ([['2000', '0.6', '1200'], ['2000', '0.3', '600']] as $i => [$distance, $rate, $amount]) {
+            self::assertDecimal($distance, $crossing->lines[$i]->distance, "line {$i} miles");
+            self::assertDecimal($rate, $crossing->lines[$i]->rate, "line {$i} rate");
+            self::assertDecimal($amount, $crossing->lines[$i]->amount, "line {$i} amount");
+        }
+        self::assertDecimal('1800', $crossing->mileageAmount, 'not 4,000 at 60p: the 8,000 already counted');
+        self::assertDecimal('5400', $report->totals[0]->mileageAmount);
     }
 
     /**

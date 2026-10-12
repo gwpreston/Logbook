@@ -23,7 +23,7 @@ use Slim\App;
 /**
  * Phase 45.1.3, *A plug-in hybrid with both litres and kWh*; spec §8 *Money
  * edge cases*, bullet **Plug-in hybrids**, with §7.3 and §7.35 *What
- * changed* (#155).
+ * changed* (#155; #392: where spec and code already agreed).
  *
  * Litres and kWh are separate economy series, each measured over the
  * odometer distance between its own full fills; both count in *Fuel* for

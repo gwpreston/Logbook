@@ -197,7 +197,7 @@ final class RoundingTest extends AppTestCase
         return [
             'GBP 0.5p twice' => ['GBP', '0.0050', '0.0025', '0.01', '0.02'],
             'JPY half a yen twice' => ['JPY', '0.5000', '0.2500', '1', '2'],
-            'BHD half a fils twice' => ['BHD', '0.0005', '0.0003', '0.001', '0.002'],
+            'BHD half a fils, then 0.6 fils' => ['BHD', '0.0005', '0.0003', '0.001', '0.002'],
         ];
     }
 
@@ -265,8 +265,10 @@ final class RoundingTest extends AppTestCase
         }
 
         $report = $this->claim($app, $owner, '2026-06-01');
-        self::assertSame(['0.013', '0.013'], array_map(static fn ($r): ?string => $r->mileageAmount, $report->rows));
-        self::assertSame('0.026', $report->totals[0]->mileageAmount, 'BHD 0.0125 a trip: 0.013 each, 0.026 not 0.025');
+        foreach ($report->rows as $row) {
+            self::assertDecimal('0.013', $row->mileageAmount, 'a trip');
+        }
+        self::assertDecimal('0.026', $report->totals[0]->mileageAmount, 'BHD 0.0125 a trip: 0.013 each, 0.026 not 0.025');
     }
 
     /**

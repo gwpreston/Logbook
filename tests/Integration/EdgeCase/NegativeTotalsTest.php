@@ -138,6 +138,24 @@ final class NegativeTotalsTest extends AppTestCase
         self::assertDecimal('0.077498', $report->costPerKm, '309.99 over 4,000 km, to 6 places');
     }
 
+    public function testThePagesShowTheNegativeTotalAndPerDistanceWithAMinusSign(): void
+    {
+        [$app, $owner] = $this->world(self::NOW);
+        [$car] = $this->crashed($app, $owner);
+        $browser = $this->browserFor($app, 'owner');
+
+        $vehicle = $this->pageText($browser, '/vehicles/' . $car->id);
+        self::assertStringContainsString('-£770.01', $vehicle, 'the card: cost of ownership so far');
+        self::assertStringContainsString('-£0.31/mi', $vehicle, 'and its rate');
+
+        $ownership = $this->pageText($browser, '/reports/ownership');
+        self::assertStringContainsString('-£770.01', $ownership);
+        self::assertStringContainsString('-£0.31/mi', $ownership);
+
+        $trueCost = $this->pageText($browser, '/reports/true-cost?vehicle=' . $car->id);
+        self::assertStringContainsString('Since bought: -£0.31/mi', $trueCost);
+    }
+
     public function testOnlyTheIncidentCardShowsItsOwnNetAsZero(): void
     {
         [$app, $owner] = $this->world(self::NOW);

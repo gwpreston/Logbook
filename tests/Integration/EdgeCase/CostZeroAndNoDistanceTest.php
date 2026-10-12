@@ -113,6 +113,29 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         self::assertSame('—', $this->runningCost($browser, $still), 'no distance driven');
     }
 
+    public function testTheCardTheOwnershipPageAndTheTrueCostPagesShowAZeroRateForOnlyZeroLines(): void
+    {
+        [$app] = $this->world(self::NOW);
+        $car = $this->logged($app, '5000');
+        $this->expense($app, $car, '2026-04-01', '0');
+        $browser = $this->browserFor($app, 'owner');
+
+        foreach (['/vehicles/' . $car->id, '/vehicles/' . $car->id . '/ownership', '/reports/ownership'] as $url) {
+            $page = $this->pageText($browser, $url);
+            self::assertStringContainsString('£0.00/mi', $page, $url . ': cost of ownership');
+            self::assertStringNotContainsString('Not enough mileage logged', $page, $url);
+        }
+        $trueCost = [
+            '/reports/true-cost?vehicle=' . $car->id => 'Since bought: £0.00/mi',
+            '/' => 'Make Golf £0.00/mi (running costs only)',
+        ];
+        foreach ($trueCost as $url => $expected) {
+            $page = $this->pageText($browser, $url);
+            self::assertStringContainsString($expected, $page, $url . ': true cost');
+            self::assertStringNotContainsString('Not enough mileage logged', $page, $url);
+        }
+    }
+
     public function testTwoEqualReadingsMeanZeroDistanceAndNoPerDistanceFigure(): void
     {
         [$app, $owner] = $this->world(self::NOW);
