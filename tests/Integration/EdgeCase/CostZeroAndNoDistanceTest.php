@@ -10,6 +10,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Expense\CostLedger;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
+use Logbook\Tests\Support\TestBrowser;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 
@@ -97,6 +98,21 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         self::assertDecimal('0', $result->years[0]->perKm, 'true cost, 2026');
     }
 
+    public function testTheReportsPageShowsAZeroRateForOnlyZeroLinesAndADashForZeroDistance(): void
+    {
+        [$app] = $this->world(self::NOW);
+        $free = $this->logged($app, '5000');
+        $this->expense($app, $free, '2026-04-01', '0');
+        $still = $this->car($app, 'Polo', '2026-01-01', '10000');
+        $this->reading($app, $still, '1000', '2026-01-01T12:00:00Z');
+        $this->reading($app, $still, '1000', '2026-09-01T12:00:00Z');
+        $this->expense($app, $still, '2026-04-01', '25.00');
+        $browser = $this->browserFor($app, 'owner');
+
+        self::assertSame('£0.00/mi', $this->runningCost($browser, $free), 'only a £0 line: a rate of nothing, not "—"');
+        self::assertSame('—', $this->runningCost($browser, $still), 'no distance driven');
+    }
+
     public function testTwoEqualReadingsMeanZeroDistanceAndNoPerDistanceFigure(): void
     {
         [$app, $owner] = $this->world(self::NOW);
@@ -172,6 +188,16 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $this->expense($app, $car, '2026-05-01', '40.00');
 
         $this->assertNoPerDistance($app, $owner, $car, self::TODAY);
+    }
+
+    private function runningCost(TestBrowser $browser, Vehicle $car): string
+    {
+        $page = self::body($browser->get('/reports?range=custom&from=2026-02-01&to=2026-10-05&vehicle=' . $car->id));
+        $stat = '~<dt class="stat__label">Running cost</dt>\s*<dd class="stat__value tabular">([^<]*)</dd>~';
+        $found = preg_match($stat, $page, $m);
+        self::assertSame(1, $found, 'the Reports page has a running cost stat');
+
+        return trim($m[1]);
     }
 
     /**
