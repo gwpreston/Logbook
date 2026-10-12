@@ -93,6 +93,37 @@ final class TrueCostTest extends TestCase
         self::assertSame($true->distanceKm, $true->depreciationKm);
     }
 
+    public function testAPayoutLargerThanThePeriodsCostsMakesItNegative(): void
+    {
+        // #400: £60.00 of fuel and £249.99 of repairs in 2024, then a £1,180 payout.
+        $golf = self::vehicle('2023-03-01', '15000.000');
+        $items = [
+            self::fill($golf, '2024-03-01T12:00:00Z', '60.00'),
+            self::maintenance($golf, '2024-11-01', '249.99'),
+        ];
+        $readings = [
+            self::reading(1, '10000', '2023-03-01T12:00:00Z'),
+            self::reading(2, '15000', '2024-01-01T12:00:00Z'),
+            self::reading(3, '21000', '2024-12-31T12:00:00Z'),
+            self::reading(4, '30000', '2026-09-01T12:00:00Z'),
+        ];
+        $valuations = [self::valuation('2026-03-01', '14900.000')];
+        $payouts = [new InsurancePayout(self::date('2024-11-08'), Money::of('1180', 'GBP'), 5)];
+
+        $ownership = self::ownership($golf, $items, $readings, $valuations, '2026-09-01', $payouts);
+        self::assertSame('-870.010', $ownership->running->toDecimal(3), '309.99 − 1,180: kept below zero');
+        self::assertSame('-770.010', $ownership->total?->toDecimal(3), 'with the £100 of depreciation');
+        self::assertNotNull($ownership->perKm);
+        self::assertTrue(Decimal::compare($ownership->perKm, '0') < 0, 'and so is its rate');
+
+        [, $year] = TrueCostPeriod::years(self::date('2023-03-01'), self::date('2026-09-01'));
+        $true = self::period($golf, $year, $items, $readings, $valuations, $payouts);
+        self::assertSame(2024, $true->period->year);
+        self::assertTrue($true->total()->isNegative(), 'the year\'s true cost goes below zero too');
+        self::assertNotNull($true->perKm);
+        self::assertTrue(Decimal::compare($true->perKm, '0') < 0);
+    }
+
     public function testADocumentIsSpreadOverItsCoverInYearsButNotSinceBought(): void
     {
         // £365 of insurance from 1 Jul 2025 to 30 Jun 2026: £1 a day.

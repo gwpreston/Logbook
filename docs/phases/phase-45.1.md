@@ -216,8 +216,9 @@ Each with a regression test, spec already updated:
 - [ ] #376, #398, #399: Reports' and the digest's cost per distance
       need the mileage log to reach back to the period's start (§7.7,
       §7.11).
-- [ ] #400: a test that a payout above the period's costs gives
-      negative ownership and true cost figures with a minus sign.
+- [x] #400: a test that a payout above the period's costs gives
+      negative ownership and true cost figures with a minus sign
+      (`TrueCostTest`; *sign is kept* checks the minus sign shown).
 - [ ] #374: the digest's *Last month* keeps vehicles archived, sold or
       written off during that month (§7.11).
 - [ ] #375: the digest's fleet spend is labelled when any listed
