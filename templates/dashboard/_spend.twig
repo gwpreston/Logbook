@@ -6,7 +6,7 @@
 {% for section in current ? current.currencies : [] %}
     {% set before = previous ? (previous.currencies|filter(s => s.currency == section.currency)|first) : null %}
     <div class="spend">
-        <p class="figure tabular">{{ section.total|money }}</p>
+        <p class="figure tabular">{{ section.shown.total|money }}</p>
         <p class="muted">
             {{- 'dashboard.spend.so_far'|trans({month: today|local_month(false)}) -}}
             {%- if before %} · {{ 'dashboard.spend.last_month'|trans({amount: before.total|money}) }}{% endif -%}
@@ -15,13 +15,13 @@
             <p class="muted">{{ 'dashboard.spend.nothing'|trans }}</p>
         {% else %}
             <div class="stack-bar" aria-hidden="true">
-                {% for total in section.spentGroups() %}
+                {% for total in section.spentGroups()|filter(total => total.share is not null) %}
                     <span class="stack-bar__part" style="--w: {{ total.share|round(1) }}%; --swatch: var(--{{ total.group.color() }})"></span>
                 {% endfor %}
             </div>
             <ul class="legend">
                 {% for total in section.spentGroups() %}
-                    <li class="legend__item">{{ exp.swatch(total.group) }}<span class="legend__label">{{ ('expense.group.' ~ total.group.value)|trans }}</span><span class="legend__value tabular">{{ total.amount|money }}</span></li>
+                    <li class="legend__item">{{ exp.swatch(total.group) }}<span class="legend__label">{{ ('expense.group.' ~ total.group.value)|trans }}</span><span class="legend__value tabular">{{ section.shown.group(total.group)|money }}</span></li>
                 {% endfor %}
             </ul>
         {% endif %}

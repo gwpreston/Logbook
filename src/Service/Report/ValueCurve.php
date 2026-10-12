@@ -12,6 +12,7 @@ use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\ValuePoint;
+use Logbook\Service\Vehicle\ValuePointKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 
@@ -24,13 +25,17 @@ use Logbook\Support\Money\Money;
  *
  * A value point is the value at the start of its day, so adjacent periods
  * (31 Dec, then 1 Jan) share their boundary and lose nothing between them.
+ * The purchase day opens at the price: a valuation or sale on that day is
+ * its closing value, so it is held as the value at the start of the next day
+ * (#389, and a same-day sale alike, #404).
  */
 final readonly class ValueCurve
 {
     /**
      * @param list<ValuePoint> $points one per day (the last of a day counts), in date order
+     * @param ?DateTimeImmutable $closingOf the purchase day, when its closing value is the point on the next day
      */
-    private function __construct(public array $points)
+    private function __construct(public array $points, private ?DateTimeImmutable $closingOf = null)
     {
     }
 
@@ -55,11 +60,31 @@ final readonly class ValueCurve
     public static function fromPoints(array $points): self
     {
         $byDay = [];
+        $bought = null;
+        $closing = null;
         foreach ($points as $point) {
+            if ($point->kind === ValuePointKind::Bought) {
+                $bought = $point;
+                $closing = null;
+            } elseif ($bought !== null && $point->date == $bought->date) {
+                $closing = $point;
+                continue;
+            }
             $byDay[$point->date->format('Y-m-d')] = $point;
         }
+        if ($bought === null || $closing === null) {
+            return new self(array_values($byDay));
+        }
+        $nextDay = $bought->date->add(new DateInterval('P1D'));
+        $key = $nextDay->format('Y-m-d');
+        if (isset($byDay[$key])) {
+            // A point dated the next day is later than the purchase day's close.
+            return new self(array_values($byDay));
+        }
+        $byDay[$key] = new ValuePoint($closing->kind, $nextDay, $closing->amount, $closing->source, $closing->valuationId);
+        ksort($byDay);
 
-        return new self(array_values($byDay));
+        return new self(array_values($byDay), $bought->date);
     }
 
     public function first(): ?ValuePoint
@@ -130,10 +155,24 @@ final readonly class ValueCurve
         return new PeriodDepreciation(
             Money::of($loss, $currency),
             $start,
-            // The last day counted: the latest point's day itself when cut there.
-            $cutAtEnd ? $latest->date : $to,
+            // The last day counted: the latest point's day itself when cut there
+            // (the purchase day, when the latest point is that day's close).
+            $cutAtEnd ? $this->dayOf($latest) : $to,
             $start > $from,
             $cutAtEnd,
         );
+    }
+
+    /**
+     * The calendar day a point was dated: a purchase day's closing value is
+     * held on the next day but belongs to the purchase day.
+     */
+    private function dayOf(ValuePoint $point): DateTimeImmutable
+    {
+        if ($this->closingOf !== null && $point->date == $this->closingOf->add(new DateInterval('P1D'))) {
+            return $this->closingOf;
+        }
+
+        return $point->date;
     }
 }

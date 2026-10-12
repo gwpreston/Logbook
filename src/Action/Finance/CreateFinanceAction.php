@@ -62,7 +62,11 @@ final readonly class CreateFinanceAction
             return $this->page->render($request, $response, $user, $vehicle, $type, $values);
         }
 
-        $input = FinanceAgreementForm::parse(RequestContext::form($request), $user->preferences);
+        $input = FinanceAgreementForm::parse(
+            RequestContext::form($request),
+            $user->preferences,
+            $this->finance->currencyFor($user, $vehicle),
+        );
         if ($input instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 

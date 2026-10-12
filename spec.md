@@ -1514,8 +1514,8 @@ from fleet totals unless "include archived" is toggled.
     line by day, and a period's depreciation is the value at its start
     minus the value at its end (a gain is negative). Several points on
     one day: the last one counts, except that the purchase day opens at
-    the purchase price, so a valuation dated on the purchase day is that
-    day's closing value and the drop from the price falls in the period
+    the purchase price, so a valuation (or a sale, #404) dated on the purchase day is
+    that day's closing value and the drop from the price falls in the period
     holding the purchase day: the periods' depreciation always adds up to
     *Since bought* (Phase 45.1, #389, decided 2026-10-11). Nothing is
     extrapolated: a period is cut to the first and latest points and
@@ -2254,8 +2254,10 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   towards the fleet's distance (miles from a vehicle whose costs were never
   logged would make the fleet look cheaper to run than any of its vehicles).
   Cost per distance = spend ÷ distance, shown only when some distance was
-  driven **and the mileage log reaches back** to the period's first day (a
-  reading on or before it, as cost of ownership requires below); otherwise
+  driven **and the mileage log reaches back** to the period's first day, or
+  to the vehicle's purchase date when that is later (its first cost without
+  one; Phase 45.1, #405, decided 2026-10-12), with a reading on or before
+  it, as cost of ownership requires below; otherwise
   "—", since the period's costs would be divided by part of its distance
   (Phase 45.1, #376, decided 2026-10-11). For the fleet (#398), the same holds
   per vehicle: a vehicle whose log doesn't reach back adds neither its
@@ -8321,8 +8323,8 @@ it replaces none of the other figures.
   - the vehicle's **value points** are §7.1's value series: the purchase
     price on the purchase date, each valuation on its date, and the sale
     price on the sale date (several on one day: the last one counts,
-    except that the purchase day opens at the price, so a valuation that
-    day is its closing value, #389);
+    except that the purchase day opens at the price, so a valuation or a sale
+    that day is its closing value, #389, #404);
   - the value on any day between two points is interpolated in a straight
     line by day, and rounded to the micro-unit (half up) before anything is
     subtracted from it, so adjacent periods' depreciation adds up exactly
@@ -9051,7 +9053,18 @@ overview while any test is unreviewed. A test is reviewed
     the CSV totals), the shown parts are rounded to the minor unit by the
     largest-remainder method, as true cost's rates per distance already
     are, so they always add up to the shown total. The exact sums
-    underneath are unchanged.
+    underneath are unchanged. Reports' months × groups table is a grid,
+    which largest remainder can't make add up both ways: it is rounded
+    under control (#406, decided 2026-10-12), each cell up or down a unit
+    at most, so every month adds up to its total, every group column to
+    the group's amount (the same as *By group* shows) and those to the
+    grand total; a cell that is already a whole minor unit, zero included,
+    never moves. A vehicle's cost of ownership adds up at each level
+    (groups and payouts to its running costs, running costs and
+    depreciation to its total, and the same per month). A CSV's total
+    rows (cost of ownership, true cost) keep the 3 places a CSV writes,
+    and their parts add up at those places; per-entry rows, the API and
+    MCP stay exact (`Support\Money\ShownAmounts`).
   - **Cost 0:** a £0 fill-up or ad-hoc expense is a ledger line and
     counts in every total and count; a £0 service or document is not a
     ledger line (§7.7). A period whose only costs are £0 lines shows a
@@ -9060,10 +9073,11 @@ overview while any test is unreviewed. A test is reviewed
     per-distance figure ("—"); a backwards reading inside a period is
     ignored (only the end points count), and a period whose end is below
     its start gives "—". Per-distance figures also need the log to reach
-    back to the period's start (§7.7, #376).
+    back to the period's start, or the purchase when later (§7.7, #376,
+    #405).
   - **Valuations:** two on one day, the last added wins (for the
-    current value and the curve); one on the purchase day is that day's
-    closing value, after the price (§7.1, #389). A sale is the
+    current value and the curve); one on the purchase day (or a sale that day,
+    #404) is that day's closing value, after the price (§7.1, #389). A sale is the
     value whatever the last valuation; a sale above it is a negative
     depreciation part in that period; a sale above the price is a gain:
     a negative per-distance part and no per-year figure.
@@ -10210,8 +10224,10 @@ task breakdowns live in the per-phase files; this is the map.
   distance (#376), the digest keeps vehicles archived during the month
   (#374) and labels a fleet spend with hidden costs (#375), negative
   finance adjustments shown as such (#387), the purchase-day valuation
-  (#389), finance in the currency's minor unit (#390), and shown parts
-  that add up to their total by largest remainder (#403). Seven seeded
+  (#389, and a sale that day, #404), finance in the currency's minor
+  unit (#390), the reach-back from the purchase when later (#405), and
+  shown parts that add up to their total by largest remainder, Reports'
+  months table by controlled rounding (#403, #406). Eight seeded
   property tests, fixed seeds on every push and fresh ones nightly
   (`properties.yml`), found the depreciation rounding fixed as #402. See
   [`phase-45.1.md`](docs/phases/phase-45.1.md).

@@ -10,6 +10,9 @@ use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Finance\AgreementData;
+use Logbook\Domain\Finance\AgreementStatus;
+use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Expense\ExpenseEntryData;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
@@ -31,6 +34,9 @@ use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\SetupData;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseService;
+use Logbook\Service\Finance\EndAgreement;
+use Logbook\Service\Finance\FinanceInput;
+use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Maintenance\MaintenanceService;
@@ -50,7 +56,8 @@ use RuntimeException;
 /**
  * Enters a generated household through the services (never SQL): the owner
  * and the member, the shares, each vehicle with its purchase-day reading,
- * every entry, then any sale. Entries can be entered in another order, and
+ * every entry, any finance agreement (and its early settlement), then any
+ * sale. Entries can be entered in another order, and
  * one can be removed and entered again.
  */
 final class PlanWriter
@@ -101,14 +108,19 @@ final class PlanWriter
                 $vehiclePlan->memberSeesCosts,
                 true,
             );
-            $this->get(OdometerService::class)->create($vehicle, new OdometerReadingData(
-                $vehiclePlan->startKm,
-                LocalTime::toUtc($vehiclePlan->purchaseDate . 'T12:00', new DateTimeZone($plan->ownerZone))
-                    ?? throw new RuntimeException('No purchase instant'),
-            ));
+            if ($vehiclePlan->loggedFromPurchase) {
+                $this->get(OdometerService::class)->create($vehicle, new OdometerReadingData(
+                    $vehiclePlan->startKm,
+                    LocalTime::toUtc($vehiclePlan->purchaseDate . 'T12:00', new DateTimeZone($plan->ownerZone))
+                        ?? throw new RuntimeException('No purchase instant'),
+                ));
+            }
             $entries = $order === null ? $vehiclePlan->entries : $order($vehiclePlan->entries);
             foreach ($entries as $entry) {
                 $this->add($vehiclePlan->key, $entry, new DateTimeZone($plan->ownerZone));
+            }
+            if ($vehiclePlan->finance !== null) {
+                $this->finance($vehiclePlan, $vehiclePlan->finance);
             }
         }
         foreach ($plan->vehicles as $vehiclePlan) {
@@ -211,6 +223,32 @@ final class PlanWriter
     public function fleet(): array
     {
         return $this->get(VehicleService::class)->listFleet($this->owner, true);
+    }
+
+    private function finance(VehiclePlan $plan, FinancePlan $finance): void
+    {
+        $service = $this->get(FinanceService::class);
+        $vehicle = $this->vehicles[$plan->key];
+        $purchase = self::day($plan->purchaseDate);
+        $id = $service->create($this->owner, $vehicle, new FinanceInput(new AgreementData(
+            AgreementType::Hp,
+            'Lender',
+            null,
+            $purchase,
+            LocalTime::addMonths($purchase, 1),
+            $finance->payments,
+            $finance->regularPayment,
+            cashPrice: $plan->purchasePrice,
+            customerDeposit: $finance->deposit,
+            apr: $finance->apr,
+        )));
+        if ($finance->settledOn !== null) {
+            $service->end($this->owner, $vehicle, $service->get($this->owner, $vehicle, $id), new EndAgreement(
+                AgreementStatus::Settled,
+                self::day($finance->settledOn),
+                $finance->settlement,
+            ));
+        }
     }
 
     private function sell(VehiclePlan $plan): void

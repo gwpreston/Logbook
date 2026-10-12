@@ -64,6 +64,8 @@ final class TwigExtension extends AbstractExtension
             )),
             new TwigFunction('currency_name', fn (string $code): string => Currency::name($code, $this->locale())),
             new TwigFunction('currency_symbol', fn (string $code): string => Currency::symbol($code, $this->locale())),
+            // The currency's minor unit as an input step: 0.01 for GBP, 1 for JPY, 0.001 for BHD (#390).
+            new TwigFunction('currency_step', static fn (string $code): string => Currency::step($code)),
             new TwigFunction('currency_digits', Currency::fractionDigits(...)),
         ];
     }

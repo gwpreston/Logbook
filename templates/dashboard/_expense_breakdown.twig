@@ -19,7 +19,7 @@
             <div class="spend expense-breakdown">
                 <p class="figure tabular">{{ section.total|money }}</p>
                 <div class="stack-bar" aria-hidden="true">
-                    {% for row in section.rows %}
+                    {% for row in section.rows|filter(row => row.percent is not null) %}
                         <span class="stack-bar__part" style="--w: {{ row.percent }}%; --swatch: var(--{{ row.group.color() }})"></span>
                     {% endfor %}
                 </div>
@@ -27,7 +27,7 @@
                     {% for row in section.rows %}
                         <li class="breakdown__row">
                             <a class="breakdown__label" href="{{ url_for('reports.index', {}, breakdown.reportQuery(row.group)) }}">{{ exp.swatch(row.group) }}{{ ('expense.group.' ~ row.group.value)|trans }}</a>
-                            <span class="breakdown__share tabular">{{ 'report.share'|trans({share: row.percent / 100}) }}</span>
+                            <span class="breakdown__share tabular">{{ row.percent is not null ? 'report.share'|trans({share: row.percent / 100}) : '' }}</span>
                             <span class="breakdown__amount tabular">{{ row.amount|money }}</span>
                         </li>
                     {% endfor %}

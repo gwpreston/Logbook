@@ -45,12 +45,24 @@ final class Currency
 
     /**
      * Digits after the decimal point in normal use: GBP 2, JPY 0, BHD 3.
+     *
+     * @return int<0, max>
      */
     public static function fractionDigits(string $code): int
     {
         $formatter = new NumberFormatter('en@currency=' . $code, NumberFormatter::CURRENCY);
 
-        return $formatter->getAttribute(NumberFormatter::FRACTION_DIGITS);
+        return max(0, (int) $formatter->getAttribute(NumberFormatter::FRACTION_DIGITS));
+    }
+
+    /**
+     * The minor unit as a decimal ("0.01", "1", "0.001"): a money input's step.
+     */
+    public static function step(string $code): string
+    {
+        $digits = self::fractionDigits($code);
+
+        return $digits === 0 ? '1' : '0.' . str_repeat('0', $digits - 1) . '1';
     }
 
     /**

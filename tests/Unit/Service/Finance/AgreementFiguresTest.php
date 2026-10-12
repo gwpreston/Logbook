@@ -6,6 +6,7 @@ namespace Logbook\Tests\Unit\Service\Finance;
 
 use DateTimeImmutable;
 use Logbook\Domain\Finance\AgreementStatus;
+use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Finance\PaymentEventKind;
@@ -85,6 +86,33 @@ final class AgreementFiguresTest extends TestCase
         self::assertSame('2464.80', $figures->costOfCredit->total?->toDecimal(2));
         self::assertSame('2078.28', $figures->costOfCredit->soFar?->toDecimal(2), 'estimated: 30 payments’ interest');
         self::assertFalse($figures->costOfCredit->exact);
+    }
+
+    public function testFinanceRoundsToTheCurrencysMinorUnit(): void
+    {
+        // #390. JPY: ¥1,800,000 of credit at 9.9% over 48 × ¥45,202. Interest
+        // (balance × r, to the yen): 1,800,000 × 0.0078977469 = 14,215.94 → 14,216;
+        // then (1,800,000 + 14,216 − 45,202) × r = 13,971.2 → 13,971.
+        $yen = FinanceFixtures::agreement([
+            'type' => AgreementType::Hp,
+            'startedOn' => '2024-01-15',
+            'firstPaymentOn' => '2024-02-15',
+            'numberOfPayments' => 48,
+            'regularPayment' => '45202',
+            'cashPrice' => '2000000',
+            'customerDeposit' => '200000',
+            'apr' => '9.9',
+        ]);
+        $figures = $this->figures($yen, '2026-07-15', currency: 'JPY');
+        self::assertSame(['14216', '13971'], [$figures->interest[1], $figures->interest[2]]);
+        self::assertNotNull($figures->settlement);
+        self::assertSame(0, $figures->settlement->amount->micros % 1_000_000, 'the settlement estimate in whole yen');
+
+        // BHD keeps 3 places: 12,000 × r = 94.7729… → 94.773 (GBP: 94.77).
+        $dinar = $this->figures(FinanceFixtures::hp(), '2026-07-15', currency: 'BHD');
+        self::assertSame('94.773', $dinar->interest[1]);
+        self::assertNotNull($dinar->halfPaid);
+        self::assertSame('8732.400', $dinar->halfPaid->target->toDecimal(3));
     }
 
     public function testHpHalfPaidDate(): void
@@ -254,6 +282,7 @@ final class AgreementFiguresTest extends TestCase
         array $events = [],
         array $quotes = [],
         ?array $valuation = null,
+        string $currency = 'GBP',
     ): FinanceFigures {
         $day = FinanceFixtures::date($today);
         $value = $valuation === null ? null : new VehicleValuation(
@@ -264,6 +293,6 @@ final class AgreementFiguresTest extends TestCase
             new DateTimeImmutable(),
         );
 
-        return AgreementFigures::of($agreement, Schedule::of($agreement, $events, $day), $quotes, $value, $day, 'GBP');
+        return AgreementFigures::of($agreement, Schedule::of($agreement, $events, $day), $quotes, $value, $day, $currency);
     }
 }

@@ -91,6 +91,15 @@ final class ApportionTest extends TestCase
         self::assertSame([0, 0, 0], Apportion::percentages([0, 0, 0]));
     }
 
+    public function testAPartBelowZeroHasNoShareAndTheOthersShareWhatIsAboveZero(): void
+    {
+        // #387: £60 of fuel, £20 of tax and a −£25 finance adjustment.
+        self::assertSame([75, null, 25], Apportion::percentages([60_000_000, -25_000_000, 20_000_000]));
+        self::assertSame([75.0, null, 25.0], Apportion::shares([60_000_000, -25_000_000, 20_000_000]));
+        self::assertSame([0, null], Apportion::percentages([0, -1]), 'nothing above zero');
+        self::assertSame([0.0, null], Apportion::shares([0, -1]));
+    }
+
     /**
      * @param list<string> $parts
      */

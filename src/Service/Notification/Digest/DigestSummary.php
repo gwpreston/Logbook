@@ -67,7 +67,7 @@ final readonly class DigestSummary
     }
 
     /**
-     * @param list<Vehicle> $vehicles the user's recipient vehicles
+     * @param list<Vehicle> $vehicles the user's recipient vehicles, archived ones too
      * @param DateTimeImmutable $today the user's calendar date
      */
     public function build(
@@ -80,7 +80,7 @@ final readonly class DigestSummary
 
         return new DigestContent(
             $preferences->digestIncludes(DigestSection::Attention) ? $this->openIssues($active) : [],
-            $preferences->digestIncludes(DigestSection::LastMonth) ? $this->lastMonth($user, $active, $today) : null,
+            $preferences->digestIncludes(DigestSection::LastMonth) ? $this->lastMonth($user, $vehicles, $today) : null,
             $preferences->digestIncludes(DigestSection::Insights) ? $this->insights($user, $active, $today) : [],
         );
     }
@@ -110,10 +110,11 @@ final readonly class DigestSummary
     }
 
     /**
-     * Last calendar month, per vehicle with a distance or (with `ViewCosts`)
-     * a spend in it; null when none has.
+     * Last calendar month, per vehicle active for at least part of it (one
+     * archived, sold or written off during it still counts, #374) with a
+     * distance or (with `ViewCosts`) a spend in it; null when none has.
      *
-     * @param list<Vehicle> $vehicles
+     * @param list<Vehicle> $vehicles archived ones too
      */
     public function lastMonth(User $user, array $vehicles, DateTimeImmutable $today): ?LastMonth
     {
@@ -124,6 +125,15 @@ final readonly class DigestSummary
         $firstOfMonth = $today->setDate((int) $today->format('Y'), (int) $today->format('n'), 1);
         $month = ReportPeriod::month(LocalTime::addMonths($firstOfMonth, -1));
         assert($month->from !== null);
+        $from = $month->from;
+        $vehicles = array_values(array_filter(
+            $vehicles,
+            static fn (Vehicle $v): bool => !$v->isArchived()
+                || ($v->archivedAt !== null && LocalTime::dateOf($v->archivedAt, $zone) >= $from),
+        ));
+        if ($vehicles === []) {
+            return null;
+        }
         /** @var list<ReportPeriod> $window the 12 months before, oldest first */
         $window = [];
         for ($i = 12; $i >= 1; $i--) {
@@ -155,7 +165,10 @@ final readonly class DigestSummary
             }
         }
 
-        return new LastMonth($month->from, $lines, $fleetKm, $fleetSpend);
+        // A listed vehicle without costs (no ViewCosts) isn't in the spend: say so (#375).
+        $partial = $fleetSpend !== [] && array_filter($lines, static fn (LastMonthLine $l): bool => $l->costs === null) !== [];
+
+        return new LastMonth($month->from, $lines, $fleetKm, $fleetSpend, $partial);
     }
 
     /**

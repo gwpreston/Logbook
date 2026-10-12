@@ -113,7 +113,8 @@ final readonly class DigestWording
             ]);
         }
         if ($lastMonth->fleetSpend !== []) {
-            $parts[] = $this->translator->trans('notifications.digest.fleet_spend', [
+            $key = $lastMonth->fleetSpendPartial ? 'notifications.digest.fleet_spend_seen' : 'notifications.digest.fleet_spend';
+            $parts[] = $this->translator->trans($key, [
                 'amounts' => implode(', ', array_map(
                     fn (Money $m): string => $this->formatter->money($m),
                     $lastMonth->fleetSpend,

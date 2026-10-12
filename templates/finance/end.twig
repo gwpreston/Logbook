@@ -52,13 +52,13 @@
                     {{ ui.input('ended_on', 'finance.end.field.ended_on'|trans, values, errors, {type: 'date', hint: 'finance.end.hint.ended_on'|trans}) }}
                     {% if 'settled' in outcomes|map(o => o.value) %}
                         <div data-for="settled">
-                            {{ ui.input('settlement', 'finance.end.field.settlement'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.settlement'|trans}) }}
+                            {{ ui.input('settlement', 'finance.end.field.settlement'|trans, values, errors, {type: 'number', step: currency_step(currency), min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.settlement'|trans}) }}
                         </div>
                     {% endif %}
                     {% if 'handed_back' in outcomes|map(o => o.value) or 'ended' in outcomes|map(o => o.value) %}
                         <div class="form-row" data-for="handed_back ended">
-                            {{ ui.input('excess_charge', 'finance.end.field.excess_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.excess_charge'|trans}) }}
-                            {{ ui.input('damage_charge', 'finance.end.field.damage_charge'|trans, values, errors, {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.damage_charge'|trans}) }}
+                            {{ ui.input('excess_charge', 'finance.end.field.excess_charge'|trans, values, errors, {type: 'number', step: currency_step(currency), min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.excess_charge'|trans}) }}
+                            {{ ui.input('damage_charge', 'finance.end.field.damage_charge'|trans, values, errors, {type: 'number', step: currency_step(currency), min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'finance.end.hint.damage_charge'|trans}) }}
                         </div>
                     {% endif %}
                     <p class="field__hint">{{ 'finance.not_advice'|trans }}</p>

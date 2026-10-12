@@ -44,6 +44,8 @@ final readonly class FinanceFigures
         public bool $equityNeedsValuation,
         public array $interest,
         public ?DateTimeImmutable $endsOn,
+        /** The agreement's currency: the vehicle's (§7.32). */
+        public string $currency,
     ) {
     }
 }

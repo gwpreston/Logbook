@@ -70,7 +70,7 @@ final class SpendWidgetsTest extends AppTestCase
 
         $section = $this->dashboard(null, ExpensePeriod::DEFAULT)->expenseBreakdown?->sections[0];
         self::assertNotNull($section);
-        self::assertSame(100, array_sum(array_map(static fn ($row): int => $row->percent, $section->rows)));
+        self::assertSame(100, array_sum(array_map(static fn ($row): int => $row->percent ?? 0, $section->rows)));
         self::assertSame(['fuel', 'maintenance', 'compliance', 'other'], array_map(
             static fn ($row): string => $row->group->value,
             $section->rows,

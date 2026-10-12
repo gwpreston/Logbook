@@ -15,8 +15,11 @@ final readonly class GroupTotal
     public function __construct(
         public CostGroup $group,
         public Money $amount,
-        /** Percentage of the total, 0–100 (for display and bar widths only). */
-        public float $share,
+        /**
+         * Percentage of the groups above zero, 0–100 (for display and bar
+         * widths only); null for a group below zero (#387).
+         */
+        public ?float $share,
     ) {
     }
 }

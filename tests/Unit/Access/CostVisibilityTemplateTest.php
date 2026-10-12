@@ -81,7 +81,8 @@ final class CostVisibilityTemplateTest extends TestCase
      */
     private const array EXPRESSION_EXCEPTIONS = [
         'macros/expenses.twig' => [
-            'total.amount|money' => 'breakdown(): a report section, from ReportService (vehicles without ViewCosts dropped)',
+            'section.shown.group(total.group)|money'
+                => 'breakdown(): a report section, from ReportService (vehicles without ViewCosts dropped)',
         ],
         'macros/incidents.twig' => [
             'paid|money)' => 'claims_stats(): ClaimsStats sums only claims whose amounts the viewer may see '

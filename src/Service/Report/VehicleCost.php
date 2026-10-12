@@ -20,8 +20,8 @@ final readonly class VehicleCost
         public ?string $distanceKm,
         /** Money per kilometre (canonical decimal), or null without distance. */
         public ?string $costPerKm,
-        /** Percentage of the currency's total, 0–100 (display only). */
-        public float $share,
+        /** Percentage of the vehicles above zero, 0–100 (display only); null below zero (#387). */
+        public ?float $share,
     ) {
     }
 }

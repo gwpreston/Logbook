@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Property;
 
+use Logbook\Service\Finance\FinanceService;
+use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
 use Logbook\Tests\Support\Golden\Rng;
 use Logbook\Tests\Support\Property\Entry;
@@ -49,6 +51,41 @@ final class RoundedOncePropertyTest extends PropertyTestCase
             $this->figures($app)->snapshot($writer->owner, $writer->fleet(), withCounts: false),
             $plan->describe(),
         );
+    }
+
+    /**
+     * Finance rounds to the agreement currency's minor unit (spec §7.32,
+     * #390): every cost line it adds, and every payment's interest share,
+     * has no more places than the currency's.
+     */
+    #[DataProvider('seeds')]
+    public function testFinanceIsInTheCurrencysMinorUnit(int $seed): void
+    {
+        [$app, $plan, $writer] = $this->household($seed);
+        $finance = $this->service($app, FinanceService::class);
+        $fleet = $writer->fleet();
+        foreach ($finance->costLines($writer->owner, $fleet) as $vehicleId => $lines) {
+            foreach ($fleet as $vehicle) {
+                if ($vehicle->id !== $vehicleId) {
+                    continue;
+                }
+                $currency = $finance->currencyFor($writer->owner, $vehicle);
+                $places = Currency::fractionDigits($currency);
+                foreach ($lines as $line) {
+                    self::assertMinorUnit($line['line']->amount, $places, "{$currency} line: {$plan->describe()}");
+                }
+                $view = $finance->latestView($writer->owner, $vehicle);
+                foreach ($view?->figures->interest ?? [] as $share) {
+                    self::assertMinorUnit($share, $places, "{$currency} interest: {$plan->describe()}");
+                }
+            }
+        }
+    }
+
+    private static function assertMinorUnit(string $amount, int $places, string $at): void
+    {
+        $rounded = Decimal::round($amount, $places);
+        self::assertSame(0, Decimal::compare($amount, $rounded), "{$amount} has more than {$places} places, {$at}");
     }
 
     /**

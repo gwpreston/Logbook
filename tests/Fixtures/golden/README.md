@@ -121,21 +121,30 @@ fixed to match.
 
 - **Rounding.** Sum exactly. Round once, half away from zero, to the
   currency's minor unit, only for the figure in `expected.csv`.
-  Per-distance figures keep one more place: £0.344/mi.
+  Per-distance figures keep one more place: £0.344/mi. Each row is the
+  exact figure rounded once, even where the app shows it as a part
+  beside a total: on screen such parts are nudged by a minor unit so they
+  add up to the total shown (#403, #406), and a property test checks
+  that, not this spreadsheet.
 - **Months and years** follow the viewer's own time zone (#386). Alex and
   Sam share the same offset, so this changes nothing here.
 - **Cost per distance needs readings that reach back** to the period's
-  start, on Reports and the digest as well (#376, #398, #399). Otherwise
-  the figure is blank: leave `expected` as `—`.
+  start, or to the vehicle's purchase date when that is later (#405), on
+  Reports and the digest as well (#376, #398, #399). Otherwise the figure
+  is blank: leave `expected` as `—`. A fleet's figure adds up only the
+  vehicles whose readings reach back (#398).
 - **The digest's *Last month*** keeps a vehicle archived during that month
   (#374). The fleet spend covers only vehicles whose costs the viewer sees
   (#375).
 - **Depreciation for a period** is the value at its start minus the value
   at its end, interpolated by day between the price, the valuations and the
-  sale. There is no extrapolation past the latest point.
+  sale. There is no extrapolation past the latest point. The purchase day
+  opens at the price: a valuation (or a sale, #404) that day is its
+  closing value (#389).
 - **Finance** rounds to the currency's minor unit (#390). A settled
   agreement's interest lines are adjusted on the end date to the exact cost
-  of credit, and that adjustment may be negative (#387).
+  of credit, and that adjustment may be negative (#387). A group below
+  zero has no share; the others' shares are of the groups above zero.
 - **Insurance payouts** reduce cost of ownership and true cost, and may
   make a total negative (#400).
 

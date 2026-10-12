@@ -26,6 +26,8 @@ final readonly class LastMonth
         /** Kilometres summed, or null with fewer than two lines or no distance. */
         public ?string $fleetDistanceKm,
         public array $fleetSpend,
+        /** True when a listed vehicle's costs are hidden from the user: the spend is only theirs to see (#375). */
+        public bool $fleetSpendPartial = false,
     ) {
     }
 

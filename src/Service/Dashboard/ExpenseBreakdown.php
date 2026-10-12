@@ -63,11 +63,15 @@ final readonly class ExpenseBreakdown
         $spent = $currency->spentGroups();
         $percents = Apportion::percentages(array_map(static fn (GroupTotal $g): int => $g->amount->micros, $spent));
 
+        // Amounts as shown, adding up to the shown total (#403).
+        $shown = $currency->shown;
+
         return new BreakdownSection(
             $currency->currency,
-            $currency->total,
+            $shown->total,
             array_map(
-                static fn (GroupTotal $g, int $percent): GroupShare => new GroupShare($g->group, $g->amount, $percent),
+                static fn (GroupTotal $g, ?int $percent): GroupShare
+                    => new GroupShare($g->group, $shown->group($g->group), $percent),
                 $spent,
                 $percents,
             ),

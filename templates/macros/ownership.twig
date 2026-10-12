@@ -14,13 +14,14 @@
 {%- endmacro %}
 
 {# The depreciation as a cost; a gain is money back. #}
-{% macro depreciation(cost) -%}
+{# shown: ShownOwnership, for the depreciation as shown beside its total (#403). #}
+{% macro depreciation(cost, shown = null) -%}
     {%- if cost.depreciationCost is null -%}
         —
     {%- elseif cost.depreciation.isGain() -%}
-        {{ 'ownership.gain'|trans({amount: cost.depreciation.change|money(cost.currency)}) }}
+        {{ 'ownership.gain'|trans({amount: shown ? shown.gain()|money : cost.depreciation.change|money(cost.currency)}) }}
     {%- else -%}
-        {{ cost.depreciationCost|money }}
+        {{ (shown ? shown.depreciation : cost.depreciationCost)|money }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -46,11 +47,12 @@
     {%- endif -%}
 {%- endmacro %}
 
-{% macro per_month_parts(cost) -%}
+{# shown: ShownOwnership, so the parts add up to the month shown (#403). #}
+{% macro per_month_parts(cost, shown = null) -%}
     {%- if cost.perMonthIsPartial -%}
         {{ 'ownership.running_only'|trans }}
     {%- else -%}
-        {{ 'ownership.parts'|trans({running: cost.runningPerMonth|money, depreciation: cost.depreciationPerMonth|money}) }}
+        {{ 'ownership.parts'|trans({running: (shown ? shown.runningPerMonth : cost.runningPerMonth)|money, depreciation: (shown ? shown.depreciationPerMonth : cost.depreciationPerMonth)|money}) }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -84,12 +86,14 @@
 {# A part's legend: dot, name, amount and share; the negatives under it. #}
 {% macro legend(card) -%}
     {% set currency = card.cost().currency %}
+    {# Amounts as shown: they add up to the card's total (#403). #}
+    {% set shown = card.shown() %}
     <ul class="legend ownership-card__legend">
         {% for segment in card.segments() %}
-            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ segment.part.labelKey()|trans }}</span><span class="legend__value tabular">{{ segment.amount|money }} · {{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span></li>
+            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ segment.part.labelKey()|trans }}</span><span class="legend__value tabular">{{ shown[1][loop.index0]|money }} · {{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span></li>
         {% endfor %}
         {% for line in card.negatives() %}
-            <li class="legend__item"><span class="swatch swatch--none" aria-hidden="true"></span><span class="legend__label">{{ line.labelKey|trans }}</span><span class="legend__value tabular">{{ line.amount|money }}</span></li>
+            <li class="legend__item"><span class="swatch swatch--none" aria-hidden="true"></span><span class="legend__label">{{ line.labelKey|trans }}</span><span class="legend__value tabular">{{ shown[2][loop.index0]|money }}</span></li>
         {% endfor %}
     </ul>
 {%- endmacro %}
@@ -116,7 +120,7 @@
                 </p>
             </div>
             <div class="ownership-card__total">
-                <span class="figure-sm tabular" data-ownership-total>{{ card.total()|money }}</span>
+                <span class="figure-sm tabular" data-ownership-total>{{ card.shownTotal()|money }}</span>
                 {% if card.isRunningOnly() %}
                     <span class="muted">{{ 'ownership.running_only'|trans }}</span>
                 {% elseif cost.perMonth %}

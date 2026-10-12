@@ -14,6 +14,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\SettlementQuote;
 use Logbook\Domain\Valuation\VehicleValuation;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
 
 /**
@@ -49,7 +50,7 @@ final class AgreementFigures
     ): FinanceFigures {
         $data = $agreement->data;
         $type = $data->type;
-        $money = static fn (BigDecimal $amount): Money => Money::of(FinanceMath::money($amount), $currency);
+        $money = static fn (BigDecimal $amount): Money => Money::of(FinanceMath::money($amount, $currency), $currency);
         $rate = FinanceMath::monthlyRate($data->apr);
 
         $optionalFinal = null;
@@ -65,7 +66,7 @@ final class AgreementFigures
         $derivedTotal = self::derivedTotal($data);
         $total = $data->totalAmountPayable === null ? $derivedTotal : BigDecimal::of($data->totalAmountPayable);
         $credit = self::amountOfCredit($data);
-        $interest = $type->isCredit() && $credit !== null ? self::interest($agreement, $credit, $rate) : [];
+        $interest = $type->isCredit() && $credit !== null ? self::interest($agreement, $credit, $rate, $currency) : [];
 
         $settlement = null;
         if ($type->isCredit() && $agreement->status->isActive()) {
@@ -96,11 +97,12 @@ final class AgreementFigures
             amountOfCredit: $credit === null ? null : $money($credit),
             settlement: $settlement,
             costOfCredit: $type->isCredit() ? self::costOfCredit($agreement, $schedule, $total, $interest, $money) : null,
-            halfPaid: $type->hasHalfPaidPoint() ? self::halfPaid($data, $schedule, $total, $money) : null,
+            halfPaid: $type->hasHalfPaidPoint() ? self::halfPaid($data, $schedule, $total, $money, $currency) : null,
             equity: $equity,
             equityNeedsValuation: $needsValuation,
             interest: $interest,
             endsOn: $schedule->endsOn(),
+            currency: $currency,
         );
     }
 
@@ -165,7 +167,7 @@ final class AgreementFigures
      *
      * @return array<int, string> pennies
      */
-    public static function interest(FinanceAgreement $agreement, BigDecimal $credit, BigDecimal $rate): array
+    public static function interest(FinanceAgreement $agreement, BigDecimal $credit, BigDecimal $rate, string $currency): array
     {
         $data = $agreement->data;
         $planned = [];
@@ -179,6 +181,7 @@ final class AgreementFigures
             $planned[$data->numberOfPayments + 1] = [Schedule::finalPaymentOn($agreement), $data->finalPayment];
         }
 
+        $places = Currency::fractionDigits($currency);
         $balance = $credit;
         $previous = $data->startedOn;
         $shares = [];
@@ -186,9 +189,9 @@ final class AgreementFigures
             $payment = BigDecimal::of($amount);
             $months = FinanceMath::monthsBetween($previous, $dueOn);
             $accrued = $balance->isPositive()
-                ? $balance->multipliedBy(FinanceMath::growth($rate, $months)->minus(1))->toScale(2, RoundingMode::HalfUp)
-                : BigDecimal::zero()->toScale(2);
-            $share = $accrued->isGreaterThan($payment) ? $payment->toScale(2, RoundingMode::HalfUp) : $accrued;
+                ? $balance->multipliedBy(FinanceMath::growth($rate, $months)->minus(1))->toScale($places, RoundingMode::HalfUp)
+                : BigDecimal::zero()->toScale($places);
+            $share = $accrued->isGreaterThan($payment) ? $payment->toScale($places, RoundingMode::HalfUp) : $accrued;
             $shares[$number] = (string) $share;
             $balance = $balance->plus($share)->minus($payment);
             $previous = $dueOn;
@@ -337,8 +340,9 @@ final class AgreementFigures
         PaymentSchedule $schedule,
         BigDecimal $total,
         callable $money,
+        string $currency,
     ): HalfPaidPoint {
-        $target = $total->dividedBy(2, 2, RoundingMode::HalfUp);
+        $target = $total->dividedBy(2, Currency::fractionDigits($currency), RoundingMode::HalfUp);
 
         // What is paid, when: the deposit on the agreement date, then each payment (the
         // documentation fee with the first), extra payments and a settlement on their dates.

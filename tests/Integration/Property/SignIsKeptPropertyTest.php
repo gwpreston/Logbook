@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Property;
 
 use DateTimeZone;
+use Logbook\Service\Report\CurrencyReport;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Money\Money;
@@ -18,7 +19,9 @@ use PHPUnit\Framework\Attributes\Group;
  * #400): an insurance payout takes exactly its amount off cost of
  * ownership and true cost, whatever else was spent, so a total may go below
  * zero; a sale above the price is a negative depreciation; and every figure
- * below zero is shown with a minus sign.
+ * below zero is shown with a minus sign. A group below zero (a finance end
+ * adjustment larger than the rest of its group, #387) is listed after the
+ * groups above zero, with no share, and the others share 100%.
  */
 #[Group('property')]
 final class SignIsKeptPropertyTest extends PropertyTestCase
@@ -64,6 +67,12 @@ final class SignIsKeptPropertyTest extends PropertyTestCase
             }
         }
 
+        foreach ($figures->reports($writer->owner, $writer->fleet()) as $name => $report) {
+            foreach ($report->currencies as $currency) {
+                self::assertNegativeGroupsLast($format, $currency, "{$name} {$currency->currency}: {$why}");
+            }
+        }
+
         // Take every payout away: running costs go up by exactly what was paid out.
         $zone = new DateTimeZone($plan->ownerZone);
         $paidOut = [];
@@ -82,6 +91,26 @@ final class SignIsKeptPropertyTest extends PropertyTestCase
                 $result->ownership->running->micros,
                 "payouts taken off exactly, {$model}: {$why}",
             );
+        }
+    }
+
+    private static function assertNegativeGroupsLast(DisplayFormatter $format, CurrencyReport $currency, string $at): void
+    {
+        $seenNegative = false;
+        $shares = 0.0;
+        foreach ($currency->spentGroups() as $group) {
+            if ($group->amount->isNegative()) {
+                $seenNegative = true;
+                self::assertNull($group->share, "a group below zero has no share, {$at}");
+                self::assertMinusShown($format, $group->amount, $at);
+                continue;
+            }
+            self::assertFalse($seenNegative, "groups above zero come first, {$at}");
+            self::assertNotNull($group->share, $at);
+            $shares += $group->share;
+        }
+        if ($currency->spentGroups() !== [] && !$currency->spentGroups()[0]->amount->isNegative()) {
+            self::assertEqualsWithDelta(100.0, $shares, 0.000001, "the groups above zero share 100%, {$at}");
         }
     }
 

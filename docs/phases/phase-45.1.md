@@ -177,10 +177,14 @@ seed. Each property must hold:
       fails when the ledger dates by the server's zone, and the sign and
       hidden-costs properties reach negative figures and hidden vehicles'
       items on most seeds.
-- [ ] The properties that wait on a 45.1.5 fix are added with it:
+- [x] The properties that wait on a 45.1.5 fix are added with it:
       negative groups (#387), reach-back (#376), the digest (#374, #375),
       the purchase-day valuation (#389), finance rounding (#390) and shown
-      parts adding up (#403).
+      parts adding up (#403). All are in, #403 as an eighth property,
+      *shown parts add up*. The generator now
+      values one vehicle in four on its purchase day, buys one unsold
+      vehicle in two on HP, and starts one log in five at the first
+      fill-up.
 - [x] *Hidden means hidden* covers the services that work out amounts
       for a page: Reports, cost of ownership, true cost, *Coming up*, the
       digest's *Last month*, finance and incidents. The fuel tab's cost per
@@ -213,26 +217,42 @@ The catalogue, each case with a test:
 
 ### 45.1.5 Fixes decided while starting
 Each with a regression test, spec already updated:
-- [ ] #376, #398, #399: Reports' and the digest's cost per distance
+- [x] #376, #398, #399: Reports' and the digest's cost per distance
       need the mileage log to reach back to the period's start (§7.7,
-      §7.11).
-- [ ] #400: a test that a payout above the period's costs gives
-      negative ownership and true cost figures with a minus sign.
-- [ ] #374: the digest's *Last month* keeps vehicles archived, sold or
+      §7.11), or to the purchase when later (#405, decided 2026-10-12).
+      Insights' *cheapest to run* and Ask's *vehicle summary* read the
+      same figure, so they follow.
+- [x] #400: a test that a payout above the period's costs gives
+      negative ownership and true cost figures with a minus sign
+      (`TrueCostTest`; *sign is kept* checks the minus sign shown).
+- [x] #374: the digest's *Last month* keeps vehicles archived, sold or
       written off during that month (§7.11).
-- [ ] #375: the digest's fleet spend is labelled when any listed
+- [x] #375: the digest's fleet spend is labelled when any listed
       vehicle's costs are hidden (§7.11).
-- [ ] #387: a negative finance adjustment shown with its minus sign;
+- [x] #387: a negative finance adjustment shown with its minus sign;
       shares over the groups above zero, a negative group listed after
-      them (§7.7, §7.8).
-- [ ] #389: the value curve opens the purchase day at the price, so a
+      them (§7.7, §7.8). The generator now buys one unsold vehicle in two
+      on HP (some at 0%, half settled early, sometimes for far less than
+      the payments left); *sign is kept* holds the groups' order and
+      shares, and *rounded once* holds every finance line and interest
+      share to the currency's minor unit (#390). Seed 11 joins the fixed
+      seeds, for yen on HP and a group below zero.
+- [x] #389: the value curve opens the purchase day at the price, so a
       purchase-day valuation is depreciation in that period (§7.1,
-      §7.35).
-- [ ] #390: finance rounds to the agreement currency's minor unit
-      (§7.32), with the forms accepting that many decimals.
-- [ ] #403: shown parts rounded by largest remainder wherever a total
+      §7.35). A sale on the purchase day is its closing value too (#404,
+      decided 2026-10-12). The generator values one vehicle in four on its
+      purchase day, so *totals add up* holds the years to *Since bought*.
+- [x] #390: finance rounds to the agreement currency's minor unit
+      (§7.32), with the forms accepting that many decimals (the agreement,
+      extra payment, quote and end forms, on the page and the API; the
+      inputs step by `currency_step()`).
+- [x] #403: shown parts rounded by largest remainder wherever a total
       is shown with them (Reports, the ownership card, true cost, the
       expense widgets, CSV), so they add up to the shown total (§8).
+      Reports' months × groups table by controlled rounding (#406,
+      decided 2026-10-12); a vehicle's cost of ownership at each level;
+      the CSV total rows at their 3 places. True cost's amounts are shown
+      only on the ownership card and in the CSV, both covered.
 
 ---
 
@@ -287,6 +307,17 @@ Found while starting (the edge-case review compared spec and code):
   its 0.
 - **#401 The golden household's people.** *Decided:* split owners, as
   above.
+- **#404 A sale on the purchase day** (found while building #389).
+  *Decided 2026-10-12:* as #389, that day's closing value.
+- **#405 A vehicle bought during the period** (found by *totals add up*
+  while building #376). *Decided 2026-10-12:* the log reaches back to the
+  later of the period's first day and the purchase date.
+- **#406 Reports' months table** (found while building #403). *Decided
+  2026-10-12:* controlled rounding, so every month, group and the grand
+  total add up.
+- **#407 Other totals shown with their parts** (found while building
+  #403): the Cost of ownership summary, the ownership print table and
+  *Coming up*'s table. *Needs a decision* (open-questions log).
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.

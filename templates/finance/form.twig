@@ -13,7 +13,7 @@
 {% set heading = (editing ? 'finance.edit_title' : 'finance.add_title')|trans %}
 {% set lease = type.value == 'lease' %}
 {% set pcp = type.value == 'pcp' %}
-{% set money = {type: 'number', step: '0.01', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency)} %}
+{% set money = {type: 'number', step: currency_step(currency), min: 0, inputmode: 'decimal', suffix: currency_symbol(currency)} %}
 {% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
 
 {% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}

@@ -100,6 +100,15 @@ final readonly class FinanceService
     /**
      * The vehicle owner's time zone, which dates readings for the mileage.
      */
+    /**
+     * The agreement's currency: the vehicle's (spec.md §7.32), whose minor
+     * unit its amounts are typed and rounded to (#390).
+     */
+    public function currencyFor(User $viewer, Vehicle $vehicle): string
+    {
+        return $this->vehicles->currencyFor($viewer, $vehicle);
+    }
+
     public function ownerZone(User $viewer, Vehicle $vehicle): DateTimeZone
     {
         $owner = $vehicle->userId === $viewer->id ? $viewer : ($this->directory->find($vehicle->userId) ?? $viewer);
@@ -152,7 +161,7 @@ final readonly class FinanceService
             figures: $figures,
             events: $events,
             quotes: $quotes,
-            checks: FinanceCheck::of($agreement->data),
+            checks: FinanceCheck::of($agreement->data, $currency),
             overlap: FinanceLedger::overlapping($agreement, $schedule, $this->expenses->listForVehicle($vehicle->id)),
             currency: $currency,
             mileage: $mileage,
@@ -523,7 +532,10 @@ final readonly class FinanceService
             $over = (float) $mileage->unit->fromKmDecimal($mileage->distanceKm, 3)
                 - (float) $mileage->unit->fromKmDecimal($mileage->allowanceKm, 3);
             if ($over > 0) {
-                $excess = FinanceMath::money(FinanceMath::of(sprintf('%.3F', $over))->multipliedBy($mileage->chargePerUnit));
+                $excess = FinanceMath::money(
+                    FinanceMath::of(sprintf('%.3F', $over))->multipliedBy($mileage->chargePerUnit),
+                    $view->currency,
+                );
             }
         }
 

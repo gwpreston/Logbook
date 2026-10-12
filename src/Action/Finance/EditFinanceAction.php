@@ -46,11 +46,15 @@ final readonly class EditFinanceAction
                 $type,
                 FinanceAgreementForm::values($agreement, $user->preferences),
                 $agreement,
-                checks: FinanceCheck::of($agreement->data),
+                checks: FinanceCheck::of($agreement->data, $this->finance->currencyFor($user, $vehicle)),
             );
         }
 
-        $input = FinanceAgreementForm::parse(['type' => $type->value] + RequestContext::form($request), $user->preferences);
+        $input = FinanceAgreementForm::parse(
+            ['type' => $type->value] + RequestContext::form($request),
+            $user->preferences,
+            $this->finance->currencyFor($user, $vehicle),
+        );
         if ($input instanceof ValidationErrors) {
             $values = ['type' => $type->value] + RequestContext::formValues($request);
 

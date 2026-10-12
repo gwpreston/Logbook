@@ -356,15 +356,17 @@
                     {% if cost.distanceKm is not null %}
                         <div><dt>{{ 'ownership.row.distance'|trans }}</dt><dd class="tabular">{{ cost.distanceKm|distance }}</dd></div>
                     {% endif %}
+                    {# Amounts as shown: each level adds up to the total shown with it (#403). #}
+                    {% set shown = cost.shown() %}
                     <div>
                         <dt>{{ 'ownership.row.running'|trans }}</dt>
                         <dd>
-                            <span class="tabular">{{ cost.running|money }}</span>
+                            <span class="tabular">{{ shown.running|money }}</span>
                             {% for group in cost.spentGroups() %}
-                                <br><span class="muted">{{ ('expense.group.' ~ group.group.value)|trans }} <span class="tabular">{{ group.amount|money }}</span></span>
+                                <br><span class="muted">{{ ('expense.group.' ~ group.group.value)|trans }} <span class="tabular">{{ shown.group(group.group)|money }}</span></span>
                             {% endfor %}
                             {% if cost.payouts %}
-                                <br><span class="muted">{{ 'ownership.row.payouts'|trans }} <span class="tabular">−{{ cost.payouts|money }}</span></span>
+                                <br><span class="muted">{{ 'ownership.row.payouts'|trans }} <span class="tabular">−{{ shown.payouts|money }}</span></span>
                             {% endif %}
                             {% if cost.settlementIsSale %}
                                 <br><span class="muted">{{ 'ownership.settlement_is_sale'|trans }}</span>
@@ -372,10 +374,10 @@
                         </dd>
                     </div>
                     {% if cost.isComplete() %}
-                        <div><dt>{{ 'ownership.row.depreciation'|trans }}</dt><dd class="tabular">{{ own.depreciation(cost) }}</dd></div>
+                        <div><dt>{{ 'ownership.row.depreciation'|trans }}</dt><dd class="tabular">{{ own.depreciation(cost, shown) }}</dd></div>
                         <div>
                             <dt>{{ 'ownership.row.total'|trans }}</dt>
-                            <dd><strong class="tabular">{{ cost.total|money }}</strong> <span class="muted">({{ own.total_label(cost) }})</span></dd>
+                            <dd><strong class="tabular">{{ shown.total|money }}</strong> <span class="muted">({{ own.total_label(cost) }})</span></dd>
                         </div>
                     {% endif %}
                     {% if cost.perKm is not null %}
@@ -387,7 +389,7 @@
                     {% if cost.perMonth is not null %}
                         <div>
                             <dt>{{ 'ownership.row.per_month'|trans }}</dt>
-                            <dd><span class="tabular">{{ cost.perMonth|money }}</span><br><span class="muted">{{ own.per_month_parts(cost) }}</span></dd>
+                            <dd><span class="tabular">{{ shown.perMonth|money }}</span><br><span class="muted">{{ own.per_month_parts(cost, shown) }}</span></dd>
                         </div>
                     {% endif %}
                 </dl>
