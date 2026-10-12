@@ -67,7 +67,7 @@
             <li class="breakdown__row">
                 <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</span>
                 <span class="breakdown__share">{{ total.share is not null ? 'report.share'|trans({share: total.share / 100}) : '' }}</span>
-                <span class="breakdown__amount tabular">{{ total.amount|money }}</span>
+                <span class="breakdown__amount tabular">{{ section.shown.group(total.group)|money }}</span>
                 {% if total.share is not null %}
                     <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ total.share|round(1) }}%; --swatch: var(--{{ total.group.color() }})"></span></span>
                 {% endif %}

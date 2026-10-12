@@ -119,7 +119,7 @@
                 {% endif %}
 
                 <dl class="stats">
-                    {{ ui.stat('report.stat.total'|trans, section.total|money, 'report.costs_count'|trans({count: section.count})) }}
+                    {{ ui.stat('report.stat.total'|trans, section.shown.total|money, 'report.costs_count'|trans({count: section.count})) }}
                     {{ ui.stat('report.stat.per_distance'|trans,
                         section.costPerKm is not null ? section.costPerKm|per_distance(currency) : dash,
                         'report.all_costs'|trans) }}
@@ -160,11 +160,12 @@
                                         {% for month in section.months|reverse %}
                                             <tr>
                                                 <th scope="row">{{ month.month|local_month }}</th>
+                                                {# Shown amounts: each row and column adds up to its total (#403). #}
                                                 {% for total in spent_groups %}
-                                                    {% set amount = month.amount(total.group) %}
-                                                    <td class="table__num tabular">{{ amount.isZero() ? dash : amount|money }}</td>
+                                                    {% set amount = section.shown.cell(month, total.group) %}
+                                                    <td class="table__num tabular">{{ month.amount(total.group).isZero() ? dash : amount|money }}</td>
                                                 {% endfor %}
-                                                <td class="table__num tabular"><strong>{{ month.total|money }}</strong></td>
+                                                <td class="table__num tabular"><strong>{{ section.shown.month(month)|money }}</strong></td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -172,9 +173,9 @@
                                         <tr>
                                             <th scope="row">{{ 'report.column.total'|trans }}</th>
                                             {% for total in spent_groups %}
-                                                <td class="table__num tabular">{{ total.amount|money }}</td>
+                                                <td class="table__num tabular">{{ section.shown.group(total.group)|money }}</td>
                                             {% endfor %}
-                                            <td class="table__num tabular"><strong>{{ section.total|money }}</strong></td>
+                                            <td class="table__num tabular"><strong>{{ section.shown.total|money }}</strong></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -202,7 +203,7 @@
                                                 {%- if row.vehicle.isArchived() %} <span class="muted">({{ 'vehicle.status.archived'|trans }})</span>{% endif -%}
                                             </span>
                                             <span class="breakdown__share">{{ row.costPerKm is not null ? row.costPerKm|per_distance(currency) : '' }}</span>
-                                            <span class="breakdown__amount tabular">{{ row.total|money }}</span>
+                                            <span class="breakdown__amount tabular">{{ section.shown.vehicle(loop.index0)|money }}</span>
                                             {% if row.share is not null %}
                                                 <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ row.share|round(1) }}%"></span></span>
                                             {% endif %}

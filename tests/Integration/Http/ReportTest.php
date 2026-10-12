@@ -75,6 +75,28 @@ final class ReportTest extends AppTestCase
         self::assertStringNotContainsString('By vehicle', $picked);
     }
 
+    public function testShownPartsAddUpToTheShownTotal(): void
+    {
+        // #403: three £1.005 tolls and a £1.005 car wash. One by one each shows as £1.01,
+        // so the groups and months would read £3.03 + £1.01 against a £4.02 total.
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        foreach (['2026-07-10', '2026-08-10', '2026-09-10'] as $day) {
+            $this->expense($app, $golf, $day, '1.005', ExpenseCategory::Tolls);
+        }
+        $this->expense($app, $golf, '2026-09-12', '1.005', ExpenseCategory::Cleaning);
+
+        $html = self::body($browser->get('/reports?range=3m'));
+
+        self::assertStringContainsString('£4.02', $html, 'the total, rounded once');
+        self::assertStringNotContainsString('£4.03', $html);
+        // September: £1.005 + £1.005 = £2.01, its two cells £1.01 and £1.00 (or the other way).
+        self::assertStringContainsString('<strong>£2.01</strong>', $html);
+        self::assertMatchesRegularExpression('/£1\.00<\/td>/', $html, 'a cell gives way so its row and column add up');
+    }
+
     public function testDateRangesAndSeveralCurrencies(): void
     {
         $app = $this->createApp();

@@ -177,10 +177,10 @@ seed. Each property must hold:
       fails when the ledger dates by the server's zone, and the sign and
       hidden-costs properties reach negative figures and hidden vehicles'
       items on most seeds.
-- [ ] The properties that wait on a 45.1.5 fix are added with it:
+- [x] The properties that wait on a 45.1.5 fix are added with it:
       negative groups (#387), reach-back (#376), the digest (#374, #375),
       the purchase-day valuation (#389), finance rounding (#390) and shown
-      parts adding up (#403). All but #403 are in: the generator now
+      parts adding up (#403). All are in (#403 as *shown parts add up*): the generator now
       values one vehicle in four on its purchase day, buys one unsold
       vehicle in two on HP, and starts one log in five at the first
       fill-up.
@@ -245,9 +245,13 @@ Each with a regression test, spec already updated:
       (§7.32), with the forms accepting that many decimals (the agreement,
       extra payment, quote and end forms, on the page and the API; the
       inputs step by `currency_step()`).
-- [ ] #403: shown parts rounded by largest remainder wherever a total
+- [x] #403: shown parts rounded by largest remainder wherever a total
       is shown with them (Reports, the ownership card, true cost, the
       expense widgets, CSV), so they add up to the shown total (§8).
+      Reports' months × groups table by controlled rounding (#406,
+      decided 2026-10-12); a vehicle's cost of ownership at each level;
+      the CSV total rows at their 3 places. True cost's amounts are shown
+      only on the ownership card and in the CSV, both covered.
 
 ---
 
@@ -307,6 +311,9 @@ Found while starting (the edge-case review compared spec and code):
 - **#405 A vehicle bought during the period** (found by *totals add up*
   while building #376). *Decided 2026-10-12:* the log reaches back to the
   later of the period's first day and the purchase date.
+- **#406 Reports' months table** (found while building #403). *Decided
+  2026-10-12:* controlled rounding, so every month, group and the grand
+  total add up.
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.

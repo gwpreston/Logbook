@@ -30,6 +30,8 @@ final readonly class CurrencyReport
         /** Total ÷ distance (money per km, canonical decimal), or null. */
         public ?string $costPerKm,
         public Money $averagePerMonth,
+        /** The amounts as shown, adding up to the shown total (#403). */
+        public ShownReport $shown,
     ) {
     }
 

@@ -255,6 +255,14 @@ final readonly class OwnershipCost
     }
 
     /**
+     * The amounts as shown, adding up at every level (#403).
+     */
+    public function shown(): ShownOwnership
+    {
+        return ShownOwnership::of($this);
+    }
+
+    /**
      * The groups with something in them, for the card's lines.
      *
      * @return list<GroupTotal>

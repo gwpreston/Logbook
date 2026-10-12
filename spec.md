@@ -9053,7 +9053,18 @@ overview while any test is unreviewed. A test is reviewed
     the CSV totals), the shown parts are rounded to the minor unit by the
     largest-remainder method, as true cost's rates per distance already
     are, so they always add up to the shown total. The exact sums
-    underneath are unchanged.
+    underneath are unchanged. Reports' months × groups table is a grid,
+    which largest remainder can't make add up both ways: it is rounded
+    under control (#406, decided 2026-10-12), each cell up or down a unit
+    at most, so every month adds up to its total, every group column to
+    the group's amount (the same as *By group* shows) and those to the
+    grand total; a cell that is already a whole minor unit, zero included,
+    never moves. A vehicle's cost of ownership adds up at each level
+    (groups and payouts to its running costs, running costs and
+    depreciation to its total, and the same per month). A CSV's total
+    rows (cost of ownership, true cost) keep the 3 places a CSV writes,
+    and their parts add up at those places; per-entry rows, the API and
+    MCP stay exact (`Support\Money\ShownAmounts`).
   - **Cost 0:** a £0 fill-up or ad-hoc expense is a ledger line and
     counts in every total and count; a £0 service or document is not a
     ledger line (§7.7). A period whose only costs are £0 lines shows a

@@ -7,6 +7,7 @@ namespace Logbook\Service\Report;
 use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Money\ShownAmounts;
 
 /**
  * One vehicle's card on the Cost of ownership page (spec.md §7.7 *Cost of
@@ -39,6 +40,30 @@ final readonly class OwnershipCard
     public function total(): Money
     {
         return $this->cost()->total ?? $this->cost()->running;
+    }
+
+    /**
+     * The total as shown: rounded once to the minor unit (#403).
+     */
+    public function shownTotal(): Money
+    {
+        return $this->shown()[0];
+    }
+
+    /**
+     * The parts as shown beside the total, by largest remainder so they add
+     * up to it (spec.md §8, #403): segments() then negatives(), in order.
+     *
+     * @return array{0: Money, 1: list<Money>, 2: list<Money>} the total, the segments', the negatives'
+     */
+    public function shown(): array
+    {
+        $segments = array_map(static fn (array $s): Money => $s['amount'], $this->segments());
+        $negatives = array_map(static fn (array $l): Money => $l['amount'], $this->negatives());
+        [$total, $parts] = ShownAmounts::parts($this->total(), [...$segments, ...$negatives]);
+        $parts = array_values($parts);
+
+        return [$total, array_slice($parts, 0, count($segments)), array_slice($parts, count($segments))];
     }
 
     /**

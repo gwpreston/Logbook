@@ -32,6 +32,7 @@ use Logbook\Service\Report\GroupTotal;
 use Logbook\Service\Report\OwnershipCost;
 use Logbook\Service\Report\OwnershipReport;
 use Logbook\Service\Report\Report;
+use Logbook\Service\Report\TrueCost;
 use Logbook\Service\Report\TruePart;
 use Logbook\Service\Report\VehicleTrueCost;
 use Logbook\Service\Tyre\TyreService;
@@ -43,6 +44,7 @@ use Logbook\Support\Csv\CsvNumber;
 use Logbook\Support\Csv\CsvTable;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Money\ShownAmounts;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
@@ -57,6 +59,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class CsvExporter
 {
+    /** Places a CSV keeps money to (CsvNumber::money), where shown parts must add up (#403). */
+    private const int CSV_PLACES = 3;
+
     public function __construct(
         private FuelEntryRepository $fuel,
         private OdometerReadingRepository $odometer,
@@ -228,18 +233,11 @@ final readonly class CsvExporter
                 default => $this->yesNo($cost->vehicle->data->saleDate !== null),
             },
             $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
-            ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
-            $money($cost->payouts),
-            $money($cost->running),
-            $money($cost->depreciationCost),
-            $cost->valuedOn()?->format('Y-m-d'),
-            $money($cost->total),
+            ...self::ownershipAmounts($cost, $money),
             $perDistance($cost->runningPerKm),
             $perDistance($cost->depreciationPerKm),
             $cost->perKmIsPartial ? null : $perDistance($cost->perKm),
-            $money($cost->runningPerMonth),
-            $money($cost->depreciationPerMonth),
-            $cost->perMonthIsPartial ? null : $money($cost->perMonth),
+            ...self::perMonthAmounts($cost, $money),
         ], $report->rows());
 
         return new CsvTable(
@@ -296,6 +294,8 @@ final readonly class CsvExporter
         $rows = [];
         foreach ($vehicles as $vtc) {
             foreach ($vtc->years as $year) {
+                $amounts = self::trueCostAmounts($year, $money);
+                $parts = count(TruePart::cases());
                 $rows[] = [
                     $vtc->vehicle->name(),
                     $vtc->vehicle->data->registration,
@@ -303,10 +303,9 @@ final readonly class CsvExporter
                     (string) $year->period->year,
                     $this->yesNo($year->period->isPartial()),
                     $year->distanceKm === null ? null : CsvNumber::distance($year->distanceKm, $unit),
-                    ...array_map(static fn (TruePart $p): ?string => $money($year->amount($p)), TruePart::cases()),
+                    ...array_slice($amounts, 0, $parts),
                     ...array_map(static fn (TruePart $p): ?string => $perDistance($year->rate($p)), TruePart::cases()),
-                    $money($year->payouts),
-                    $money($year->total()),
+                    ...array_slice($amounts, $parts),
                     $perDistance($year->perKm),
                 ];
             }
@@ -1047,5 +1046,83 @@ final readonly class CsvExporter
     private function t(string $key, array $params = []): string
     {
         return $this->translator->trans($key, $params);
+    }
+
+    /**
+     * A CSV row's amounts with the total they make up, at the 3 places a
+     * CSV keeps, so the parts add up to the total written (spec.md §8
+     * *Shown parts add up*, #403). Exact sums are not changed.
+     *
+     * @param callable(?Money): ?string $money
+     * @return list<?string> each group, the payouts, running, depreciation, its date, total
+     */
+    private static function ownershipAmounts(OwnershipCost $cost, callable $money): array
+    {
+        $parts = [];
+        foreach ($cost->groups as $group) {
+            $parts[$group->group->value] = $group->amount;
+        }
+        if ($cost->payouts !== null) {
+            $parts['payouts'] = Money::zero($cost->currency)->subtract($cost->payouts);
+        }
+        [$running, $shown] = ShownAmounts::parts($cost->running, $parts, self::CSV_PLACES);
+        $total = $cost->total === null ? null : ShownAmounts::round($cost->total, self::CSV_PLACES);
+        $depreciation = $total === null || $cost->depreciationCost === null
+            ? ($cost->depreciationCost === null ? null : ShownAmounts::round($cost->depreciationCost, self::CSV_PLACES))
+            : $total->subtract($running);
+
+        return [
+            ...array_map(static fn (GroupTotal $g): ?string => $money($shown[$g->group->value]), $cost->groups),
+            $money(isset($shown['payouts']) ? Money::zero($cost->currency)->subtract($shown['payouts']) : null),
+            $money($running),
+            $money($depreciation),
+            $cost->valuedOn()?->format('Y-m-d'),
+            $money($total),
+        ];
+    }
+
+    /**
+     * @param callable(?Money): ?string $money
+     * @return list<?string> running, depreciation and total per month, adding up (#403)
+     */
+    private static function perMonthAmounts(OwnershipCost $cost, callable $money): array
+    {
+        $round = static fn (?Money $m): ?Money => $m === null ? null : ShownAmounts::round($m, self::CSV_PLACES);
+        $whole = !$cost->perMonthIsPartial && $cost->perMonth !== null;
+        if (!$whole || $cost->runningPerMonth === null || $cost->depreciationPerMonth === null) {
+            return [$money($round($cost->runningPerMonth)), $money($round($cost->depreciationPerMonth)), null];
+        }
+        [$total, [$running, $depreciation]] = ShownAmounts::parts(
+            $cost->perMonth,
+            [$cost->runningPerMonth, $cost->depreciationPerMonth],
+            self::CSV_PLACES,
+        );
+
+        return [$money($running), $money($depreciation), $money($total)];
+    }
+
+    /**
+     * @param callable(?Money): ?string $money
+     * @return list<?string> each part's amount, then the payouts and the total, adding up (#403)
+     */
+    private static function trueCostAmounts(TrueCost $year, callable $money): array
+    {
+        $parts = [];
+        foreach (TruePart::cases() as $part) {
+            $amount = $year->amount($part);
+            if ($amount !== null) {
+                $parts[$part->value] = $amount;
+            }
+        }
+        if (!$year->payouts->isZero()) {
+            $parts['payouts'] = Money::zero($year->currency)->subtract($year->payouts);
+        }
+        [$total, $shown] = ShownAmounts::parts($year->total(), $parts, self::CSV_PLACES);
+
+        return [
+            ...array_map(static fn (TruePart $p): ?string => $money($shown[$p->value] ?? null), TruePart::cases()),
+            $money(Money::zero($year->currency)->subtract($shown['payouts'] ?? Money::zero($year->currency))),
+            $money($total),
+        ];
     }
 }

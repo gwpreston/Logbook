@@ -28,7 +28,7 @@
             {% set unit = user.preferences.distanceUnit.value %}
             {% set owned_months = cost.ownedFor.years * 12 + cost.ownedFor.months %}
             <dl class="stats">
-                {{ ui.stat('ownership.page.total'|trans, card.total()|money, (cost.start.value == 'purchase' ? 'ownership.tab.since_purchase' : 'ownership.tab.logged')|trans) }}
+                {{ ui.stat('ownership.page.total'|trans, card.shownTotal()|money, (cost.start.value == 'purchase' ? 'ownership.tab.since_purchase' : 'ownership.tab.logged')|trans) }}
                 {{ ui.stat('ownership.page.per_month'|trans, cost.perMonth ? cost.perMonth|money : dash, cost.perMonth ? (cost.perMonthIsPartial ? 'ownership.running_only' : 'ownership.tab.all_in')|trans : '') }}
                 {{ ui.stat(('ownership.tab.per_' ~ unit)|trans, cost.perKm is not null ? cost.perKm|per_distance(cost.currency) : dash,
                     cost.distanceKm is not null ? 'ownership.tab.driven'|trans({distance: cost.distanceKm|distance}) : (cost.mileageStartsOn() ? 'ownership.tab.mileage_late'|trans : 'ownership.hint.no_distance'|trans)) }}
@@ -41,7 +41,7 @@
                         <h2 id="own-parts-heading" class="card__title">{{ 'ownership.tab.made_of'|trans }}</h2>
                     </div>
                     <p class="ownership-tab__total">
-                        <strong class="figure tabular">{{ card.total()|money }}</strong>
+                        <strong class="figure tabular">{{ card.shownTotal()|money }}</strong>
                         <span class="muted">
                             {%- if vehicle.isArchived() -%}
                                 {{ 'ownership.tab.over_owned'|trans({count: owned_months}) }}
@@ -54,13 +54,15 @@
                         </span>
                     </p>
                     {% set segments = card.segments() %}
+                    {# Amounts as shown: they add up to the total above (#403). #}
+                    {% set shown = card.shown() %}
                     {% set largest = segments is empty ? 0 : segments|first.amount.micros %}
                     <ul class="breakdown" data-ownership-parts>
                         {% for segment in segments %}
                             <li class="breakdown__row">
                                 <span class="breakdown__label"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span>{{ segment.part.labelKey()|trans }}</span>
                                 <span class="breakdown__share tabular">{{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span>
-                                <span class="breakdown__amount tabular">{{ segment.amount|money }}</span>
+                                <span class="breakdown__amount tabular">{{ shown[1][loop.index0]|money }}</span>
                                 <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ (segment.amount.micros / largest * 100)|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span></span>
                             </li>
                         {% endfor %}
@@ -68,7 +70,7 @@
                             <li class="breakdown__row">
                                 <span class="breakdown__label">{{ line.labelKey|trans }}</span>
                                 <span class="breakdown__share"></span>
-                                <span class="breakdown__amount tabular">{{ line.amount|money }}</span>
+                                <span class="breakdown__amount tabular">{{ shown[2][loop.index0]|money }}</span>
                             </li>
                         {% endfor %}
                     </ul>

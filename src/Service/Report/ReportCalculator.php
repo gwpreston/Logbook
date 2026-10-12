@@ -178,15 +178,17 @@ final class ReportCalculator
 
         $groupsAboveZero = self::aboveZero($groups);
 
+        $groupTotals = array_map(
+            static fn (CostGroup $g): GroupTotal
+                => new GroupTotal($g, $groups[$g->value], self::share($groups[$g->value], $groupsAboveZero)),
+            CostGroup::cases(),
+        );
+
         return new CurrencyReport(
             currency: $currency,
             total: $total,
             count: count($items),
-            groups: array_map(
-                static fn (CostGroup $g): GroupTotal
-                    => new GroupTotal($g, $groups[$g->value], self::share($groups[$g->value], $groupsAboveZero)),
-                CostGroup::cases(),
-            ),
+            groups: $groupTotals,
             months: $months,
             vehicles: $vehicleCosts,
             distanceKm: $distanceKm,
@@ -195,6 +197,7 @@ final class ReportCalculator
                 Decimal::divide($total->toDecimal(Money::SCALE), (string) max(1, count($months)), self::SCALE),
                 $currency,
             ),
+            shown: ShownReport::of($total, $groupTotals, $months, $vehicleCosts),
         );
     }
 
