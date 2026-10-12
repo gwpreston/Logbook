@@ -505,9 +505,10 @@ archive first and shows what it contains; nothing changes until you tick
 
 1. saves a **safety backup** of the current data to `BACKUP_PATH`
    (`pre-restore-<date>-<time>.zip`; Docker: `/data/backups`),
-2. replaces every table in one transaction (an error leaves the old data),
-3. replaces the uploaded photos and attachments,
-4. signs everyone out. Sign in with the account and password **from the backup**.
+2. replaces every table and the uploaded photos and attachments together:
+   if anything fails on the way, both are put back as they were, and the
+   safety backup stays,
+3. signs everyone out. Sign in with the account and password **from the backup**.
 
 A backup can only be restored by the Logbook version whose database it matches
 (the version is shown on the confirmation page). To restore an older backup,
@@ -534,6 +535,44 @@ Old files in `BACKUP_PATH` are not deleted automatically; prune them from the
 same cron job, e.g. `find /var/www/logbook/var/backups -name '*.zip' -mtime +30 -delete`.
 Or let Logbook do both: [Scheduled backups](#scheduled-backups) keep only the
 newest few of their own files.
+
+### Practise a restore
+
+A backup you have never restored is a hope, not a backup. Every few months,
+restore last week's onto a spare install and check it, without touching the
+real one.
+
+**Docker.** Start a throwaway container from the same image, on another port,
+with its own volume (SQLite is fine: backups move between engines):
+
+```bash
+docker run -d --name logbook-drill -p 8091:80 -v logbook_drill:/data logbook
+docker cp logbook-backup-2026-10-05-033000.zip logbook-drill:/tmp/drill.zip
+docker exec -u www-data logbook-drill php bin/backup.php restore /tmp/drill.zip --yes
+```
+
+(With the compose file, the image is `logbook:local`. A scheduled backup is in
+`/data/backups` of the real container: `docker cp logbook-app-1:/data/backups/…`
+copies it out first.)
+
+**Bare PHP.** Unpack the same release into a second directory with its own
+`.env`: a SQLite `DB_NAME` and an empty `UPLOAD_PATH` and `BACKUP_PATH`. Then
+`php bin/backup.php restore <file> --yes` there, and `composer start` to look.
+
+**Then check the figures you know.** Sign in at http://localhost:8091 with
+the password you had when the backup was made, and look at:
+
+- the number of vehicles, and each one's latest odometer reading;
+- the last fill-up you logged before the backup, and its amount;
+- a total you remember: last month on Reports, or a vehicle's *Cost of
+  ownership*;
+- a receipt or certificate: open one, so you know the files came back too;
+- who you share each vehicle with, at which level.
+
+If anything is missing, the backup is the problem, not the drill: check
+that your backups include the upload directory and run at the time you think.
+When you're done, remove the spare: `docker rm -f logbook-drill && docker
+volume rm logbook_drill` (or delete the second directory).
 
 ### What else to keep
 

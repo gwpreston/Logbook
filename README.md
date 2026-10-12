@@ -258,6 +258,8 @@ Other tasks run inside the app container:
 ```bash
 docker compose -f docker-compose.dev.yml exec app composer check   # lint + analyse + test
 bin/test-all-dbs.sh                                                 # suite on SQLite, Postgres, MySQL, MariaDB
+bin/restore-matrix.sh                                               # golden household backed up on each engine, restored on every one
+bin/upgrade-check.sh [v3.9.0 …]                                     # golden household from an older release, upgraded (default: the previous minor)
 bin/smoke-test.sh pgsql                                             # production image end-to-end (after docker build -t logbook:local .)
 ```
 

@@ -510,7 +510,10 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
   other event; `items` and `attention` keep their shape.
 - The server's webhook (`WEBHOOK_URL`) receives every member's digest,
-  so from 3.9.0 its copy leaves out spend, cost per distance and the
-  insights (in the text and the JSON); distances and open issues stay.
-  A member's own channels, their personal webhook included, get the
-  whole digest.
+  so its copy leaves out the whole briefing, in the text and the JSON:
+  spend, cost per distance and the insights (from 3.9.0), and *Last
+  month*'s distances and the open issues (after 3.10.0); `last_month`,
+  `issues` and `insights` are empty and `fleet` null. The reminders and
+  *Needs attention* checks stay, and with neither it is not sent. A
+  member's own channels, their personal webhook included, get the whole
+  digest.

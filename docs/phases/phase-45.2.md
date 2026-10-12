@@ -106,31 +106,70 @@ so each scan is an exact search for them, not a guess.
       `MonthlyBriefingSendingTest`).
 
 ### 45.2.1 Journeys and sweep
-- [ ] The persona journeys as integration tests on every engine.
-- [ ] The leak sweep, driven by the route inventory, so a new route is
-      swept without being listed.
-- [ ] Every leak found is fixed with a regression test and noted in
-      §13.
+- [x] The persona journeys as integration tests on every engine
+      (`tests/Integration/Household/HouseholdJourneysTest`). The golden
+      household gains Jo (Manage with costs on the Golf), Vic (View with
+      costs on the EV) and Adrian (an admin with nothing), added through
+      the services after it is loaded (`tests/Support/Household/Household`),
+      so its inputs and `expected.csv` are unchanged.
+- [x] The leak sweep, driven by the router, so a new route is swept
+      without being listed (`LeakSweepTest`, `SweepUrls`): every GET route
+      of the app and the API for each vehicle, and every Ask and MCP read
+      tool for each vehicle, as Sam, Jo, Vic and Adrian; the calendar feed,
+      the digest and reminders by email and personal webhook, entry
+      webhooks and the server's webhook (`LeakSweepDeliveryTest`). Each is
+      scanned for the vehicles, amounts (lines and the app's own totals for
+      the golden rows) and other drivers' places the person may not see
+      (`LeakNeedles`); Alex, who sees everything, is the control, so a
+      needle is only searched for in a form the app prints. A placeholder
+      the sweep can't fill fails it by name. One exception, as the spec
+      asks: an admin's *Delete user* page names that user's vehicles
+      (§7.9).
+- [x] Every leak found is fixed with a regression test and noted in
+      §13. The sweep found none; giving Sam the Golf's costs behind its
+      back makes it report 87 on the pages, and more in the tools and the
+      digest.
 
 ### 45.2.2 Restore matrix
-- [ ] Back up the golden household (with uploads) on SQLite, PostgreSQL,
+- [x] Back up the golden household (with uploads) on SQLite, PostgreSQL,
       MySQL and MariaDB. Restore each backup on each engine. Compare
       every table (normalised), every file's hash, every share, and every
-      row of `expected.csv`.
-- [ ] Scheduled backups, retention, and `bin/backup.php create` and
+      row of `expected.csv` (`HouseholdRestoreTest`, `InstanceSnapshot`:
+      the app's figure for all 890 golden rows before and after, and the
+      owner's filled ones once there are any). All 16 pass
+      (`bin/restore-matrix.sh`); CI runs SQLite → PostgreSQL on every push
+      and all 16 nightly (`restore-matrix.yml`, #416).
+- [x] Scheduled backups, retention, and `bin/backup.php create` and
       `restore` against the same checks.
 
 ### 45.2.3 Upgrade and failure paths
-- [ ] CI installs the previous release tag, loads the golden household,
+- [x] CI installs the previous release tag, loads the golden household,
       backs it up, restores on that tag, upgrades to `HEAD` and runs the
-      golden test.
-- [ ] Each failure leaves the data unchanged and the pre-restore backup
+      golden test (`bin/upgrade-check.sh`, `HouseholdUpgradeTest`: every
+      golden figure of the upgraded household equals the same household
+      entered on `HEAD`, with the same files and row counts). On every
+      release tag (`ci.yml`) and nightly on PostgreSQL. The one-off run
+      from every minor release since v3.0.0 (#417) passed on 2026-10-12,
+      on SQLite, and from v3.9.0 and v3.10.0 on PostgreSQL and MySQL.
+- [x] Each failure leaves the data unchanged and the pre-restore backup
       present: a truncated archive, a wrong schema version, an unknown
-      column, an unsafe file name, and a failure while swapping uploads.
+      column, an unsafe file name, and a failure while swapping uploads
+      (`HouseholdRestoreFailureTest`, on every engine). The first four
+      are found before the pre-restore backup is written, as §7.13 says
+      (there is none to keep); a table that can't be written, and a file
+      that can't be moved into place, roll back with it kept. **Found:**
+      a failed upload swap left the restored data with files missing
+      (the swap came after the commit and never checked a move). Fixed:
+      `UploadSwap` runs inside the restore's transaction and puts both
+      back; PostgreSQL's sequences are moved past the current ids again
+      after a rollback (§7.13). Also found: a restore never deleted scans
+      waiting for an entry; it does.
 
 ### 45.2.4 Docs
-- [ ] `docs/backup.md`: *Practise a restore*. Restore last week's backup
-      onto a spare container, then check the figures you know.
+- [x] *Practise a restore*: restore last week's backup onto a spare
+      container, then check the figures you know. In
+      `docs/deployment.md` § *Backups*, where backup and restore are
+      documented (there is no `docs/backup.md`).
 
 ---
 

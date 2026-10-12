@@ -6,6 +6,42 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 45.2: **households and backups**. A journey through the pages for
+each person of a shared household, a sweep of everything the app answers
+or sends for what each may not see, and the golden household restored on
+every database engine and upgraded from every release since v3.0.0. The
+sweep found no leak; the restore tests found one way a restore could lose
+files.
+
+### Fixed
+- **A restore that fails part-way changes nothing.** The uploads used to
+  be swapped after the data was committed, without checking each move, so
+  a file that couldn't be moved left the restored data with files
+  missing. Now the files are swapped inside the restore's transaction:
+  any failure puts the data and the files back, and the pre-restore
+  backup stays.
+- **A restore deletes scans waiting for an entry**, as it always meant
+  to; they were left behind.
+
+### Changed
+- **The server's webhook (`WEBHOOK_URL`) gets none of the monthly
+  briefing** (#377): no *Last month* distances and no open-issue counts,
+  as well as no amounts or insights (#366). Its digest still lists the
+  reminders and *Needs attention* checks, and is not sent when there are
+  none. Members' own channels get the whole digest.
+
+### Added
+- *Practise a restore* in the deployment guide.
+- For developers: `bin/restore-matrix.sh` and `bin/upgrade-check.sh`, and
+  in CI a SQLite → PostgreSQL restore on every push, the 16-restore
+  matrix and the upgrade path nightly, and the upgrade path on every
+  release.
+
+### Upgrade notes (Phase 45.2)
+- Pull and restart: no migration and no configuration change.
+- A receiver of `WEBHOOK_URL`'s digest now gets `last_month` and
+  `issues` empty and `fleet` null.
+
 Phase 45.1: **proving the money**. The fixes decided while proving it
 (45.1.5 and 45.1.4), a golden household checked against an independent
 script, and the money edge cases each with a test.

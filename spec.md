@@ -10282,8 +10282,18 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 45.2 — Hardening: households and backups.** Journey tests per
   persona and a leak sweep of every GET route as each restricted
   persona; a restore matrix across engines, the upgrade path from the
-  last release, and a restore drill. See
-  [`phase-45.2.md`](docs/phases/phase-45.2.md).
+  last release, and a restore drill. The sweep covers every GET route
+  and API call, every Ask and MCP read tool, the calendar feed, the
+  digest, reminders and webhooks, and found no leak; the server's
+  webhook now gets none of the briefing (#377). The 16 restores and the
+  upgrade from every minor release since v3.0.0 reproduce the golden
+  household; the failure paths found that a failed upload swap left the
+  restored data with files missing, so the swap now runs inside the
+  restore's transaction and either failure puts both back (§7.13).
+  Decided: the full matrix nightly with a SQLite → PostgreSQL pair on
+  every push (#416), the upgrade path from the previous minor release on
+  every release (#417), Ask's tool results swept rather than its answers
+  (#418). See [`phase-45.2.md`](docs/phases/phase-45.2.md).
 - **Phase 45.3 — Hardening: phones and real people + release.** Mobile
   journeys in WebKit and Chromium, a real-device pass, usability
   sessions with newcomers, the hardening report and the release. See
