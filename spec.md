@@ -4131,9 +4131,15 @@ vehicles; a disabled module cannot be imported).
   automatic backup of the current data is written to `BACKUP_PATH`
   (`pre-restore-<timestamp>.zip`), then every table is emptied and refilled
   in one transaction (PostgreSQL id sequences are moved past the restored
-  ids: the one documented platform branch), then the uploads directory is
-  swapped for the archive's files. Every session ends (sign in again with
-  the restored account's password).
+  ids: the one documented platform branch), and the uploads directory is
+  swapped for the archive's files before that transaction commits: the
+  current files are moved aside, the archive's moved in, and the ones set
+  aside deleted only once the data is committed. If anything fails on the
+  way (a table, a file that can't be moved), the transaction rolls back,
+  the files are put back as they were and the sequences moved past the
+  current ids again: nothing has changed, and the pre-restore backup stays
+  (Phase 45.2). Every session ends (sign in again with the restored
+  account's password).
 - A backup from another app version with a different schema is refused with
   a clear message: restore it with the matching version, then upgrade.
   (Every release that adds a column moves the schema version, e.g. Phase

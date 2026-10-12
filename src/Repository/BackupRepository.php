@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
 use Logbook\Service\Demo\DemoMarker;
+use Throwable;
 use UnexpectedValueException;
 
 /**
@@ -260,11 +261,30 @@ final readonly class BackupRepository
      * Replace every table's rows with the given ones, in one transaction.
      * Column names must already be validated against columns().
      *
+     * $beforeCommit runs last inside the transaction (the restore's file
+     * swap): if it throws, nothing is replaced. PostgreSQL's sequences are
+     * not rolled back with it, so they are moved past the current ids again.
+     *
      * @param array<string, list<array<string, string|null>>> $data table → rows, for every table in TABLES
+     * @param (callable(): void)|null $beforeCommit
      */
-    public function replaceAll(array $data): void
+    public function replaceAll(array $data, ?callable $beforeCommit = null): void
     {
-        $this->connection->transactional(function (Connection $connection) use ($data): void {
+        try {
+            $this->replace($data, $beforeCommit);
+        } catch (Throwable $e) {
+            $this->resetSequences($this->connection);
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array<string, list<array<string, string|null>>> $data
+     * @param (callable(): void)|null $beforeCommit
+     */
+    private function replace(array $data, ?callable $beforeCommit): void
+    {
+        $this->connection->transactional(function (Connection $connection) use ($data, $beforeCommit): void {
             // Links point at the replaced accounts (and would block deleting them).
             $connection->createQueryBuilder()->delete('invitations')->executeStatement();
             // The demo marker is neither created nor removed by a restore (spec.md §7.36): set it
@@ -324,6 +344,9 @@ final readonly class BackupRepository
                 $connection->insert('settings', $marker);
                 // The marker may hold an id past the sequence.
                 $this->resetSequences($connection);
+            }
+            if ($beforeCommit !== null) {
+                $beforeCommit();
             }
         });
     }

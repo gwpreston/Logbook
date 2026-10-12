@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Support\Golden;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
@@ -35,6 +36,8 @@ use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Repository\UserRepository;
+use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Access\AccessContext;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUpload;
@@ -101,6 +104,30 @@ final class GoldenHousehold
     {
         $household = new self($container);
         $household->enter($inputs, $password);
+
+        return $household;
+    }
+
+    /**
+     * The household as it already is in the database (loaded before, or
+     * restored from a backup): its people by username, its vehicles by
+     * registration. Nothing is entered.
+     */
+    public static function found(ContainerInterface $container, string $inputs = self::INPUTS): self
+    {
+        $household = new self($container);
+        foreach (ExpectedSkeleton::read($inputs . '/users.csv') as $row) {
+            $household->users[$row['user']] = $household->get(UserRepository::class)->findByUsername($row['user'])
+                ?? throw new RuntimeException("No user {$row['user']}");
+        }
+        $db = $household->get(Connection::class);
+        foreach (ExpectedSkeleton::read($inputs . '/vehicles.csv') as $row) {
+            $id = $db->createQueryBuilder()->select('id')->from('vehicles')
+                ->where('registration = :registration')->setParameter('registration', $row['registration'])
+                ->executeQuery()->fetchOne();
+            $vehicle = is_numeric($id) ? $household->get(VehicleRepository::class)->findById((int) $id) : null;
+            $household->vehicles[$row['vehicle']] = $vehicle ?? throw new RuntimeException("No vehicle {$row['vehicle']}");
+        }
 
         return $household;
     }

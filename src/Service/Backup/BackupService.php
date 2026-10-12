@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Backup;
 
-use FilesystemIterator;
 use JsonException;
 use Logbook\Domain\User\User;
 use Logbook\Kernel;
@@ -13,10 +12,7 @@ use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Storage\FileStorage;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
-use SplFileInfo;
 use Throwable;
 use ZipArchive;
 
@@ -178,18 +174,30 @@ final readonly class BackupService
             $safety = $this->safetyBackup();
             $staging = $this->files->root() . '/.restore-' . bin2hex(random_bytes(8));
             $this->extract($zip, $uploads, $staging);
-
-            $this->repository->replaceAll($data);
         } catch (Throwable $e) {
             if ($staging !== null) {
-                self::removeDirectory($staging);
+                UploadSwap::removeDirectory($staging);
             }
             throw $e;
         } finally {
             $zip->close();
         }
 
-        $this->swapUploads($staging);
+        // The files are swapped inside the transaction, so a failure in
+        // either puts both back (spec.md §7.13 *Restore*, Phase 45.2).
+        $swap = new UploadSwap($this->files, $staging);
+        try {
+            $this->repository->replaceAll($data, $swap->apply(...));
+        } catch (Throwable $e) {
+            $lost = $swap->undo();
+            $this->logger->error('A restore failed and was undone; the data from before is also in {safety}.', [
+                'safety' => $safety,
+                'exception' => $e,
+                'not_put_back' => $lost,
+            ]);
+            throw $e;
+        }
+        $swap->finish();
         $this->logger->notice('Restored a backup; the previous data was saved to {safety}.', ['safety' => $safety]);
 
         return $safety;
@@ -373,49 +381,6 @@ final readonly class BackupService
      * The database now matches the backup: replace the stored files with
      * the backup's (staged in the same directory, so each move is a rename).
      */
-    private function swapUploads(string $staging): void
-    {
-        foreach ($this->files->all() as $relative) {
-            $this->files->delete($relative);
-        }
-        // Scans waiting for an entry belonged to the replaced accounts (their rows go too).
-        $pending = $this->files->root() . '/' . FileStorage::PENDING_DIRECTORY;
-        if (is_dir($pending)) {
-            foreach (FileStorage::storedFilesIn($pending) as $relative) {
-                @unlink($pending . '/' . $relative);
-            }
-        }
-
-        if (is_dir($staging)) {
-            foreach (FileStorage::storedFilesIn($staging) as $relative) {
-                $target = $this->files->absolutePath($relative);
-                $dir = dirname($target);
-                if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-                    throw new RuntimeException(sprintf('Cannot create "%s".', $dir));
-                }
-                rename($staging . '/' . $relative, $target);
-            }
-            self::removeDirectory($staging);
-        }
-    }
-
-    private static function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST,
-        );
-        foreach ($iterator as $entry) {
-            if ($entry instanceof SplFileInfo) {
-                $entry->isDir() && !$entry->isLink() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
-            }
-        }
-        rmdir($dir);
-    }
-
     private static function requireZip(): void
     {
         if (!self::isAvailable()) {
