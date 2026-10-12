@@ -65,8 +65,9 @@ for tag in $tags; do
     fi
 
     if [ "$driver" != sqlite ]; then
-        # Leave this version's schema, as the tests expect.
+        # Leave this version's schema, empty, as the tests expect.
         vendor/bin/phinx migrate -e testing -q
+        php tests/Fixtures/golden/empty-database.php
     fi
 done
 

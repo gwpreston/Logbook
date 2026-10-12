@@ -26,6 +26,7 @@ for engine in $engines; do
     # shellcheck disable=SC2086
     $compose run --rm --no-deps $env $nosecret app sh -c '
         vendor/bin/phinx migrate -e testing -q &&
+        php tests/Fixtures/golden/empty-database.php &&
         vendor/bin/phinx rollback -e testing -t 0 -q &&
         vendor/bin/phinx migrate -e testing -q &&
         vendor/bin/phpunit'

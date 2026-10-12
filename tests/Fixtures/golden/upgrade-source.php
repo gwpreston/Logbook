@@ -28,6 +28,11 @@ if ($backup === '') {
     exit(2);
 }
 
+// Only ever the TEST_DB_* database: it is filled with the household.
+if (getenv('APP_ENV') !== 'testing') {
+    fwrite(STDERR, "Refusing: run with APP_ENV=testing, so the TEST_DB_* database is used.\n");
+    exit(1);
+}
 $container = Kernel::createContainer(Kernel::settings());
 assert($container instanceof DI\Container);
 $container->set(ClockInterface::class, new MutableClock(new DateTimeImmutable(InputBuilder::TODAY_UTC, new DateTimeZone('UTC'))));
