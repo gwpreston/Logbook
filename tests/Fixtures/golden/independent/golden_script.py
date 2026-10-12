@@ -298,8 +298,7 @@ def spread_share(line, a, b, mode):
 def running(v, viewer, a, b, cfg, spread):
     groups = {"fuel": D(0), "maintenance": D(0), "documents": D(0), "other": D(0)}
     for ln in ledger(v, viewer, cfg):
-        if spread and ln["group"] == "documents" and ln.get("expiry") and (
-                cfg.get("spread_types") != "insurance" or ln.get("type") == "insurance"):
+        if spread and ln["group"] == "documents" and ln.get("expiry"):
             groups["documents"] += spread_share(ln, a, b, cfg["spread"])
         elif a <= ln["date"] <= b:
             groups[ln["group"]] += ln["amount"]
@@ -308,9 +307,15 @@ def running(v, viewer, a, b, cfg, spread):
 
 
 # ---------------------------------------------------------------- value curve
+# #408: a value point dated D is the value at the START of D (an instant).
+# The purchase day opens at the price (start of P); a valuation or sale dated
+# on the purchase day is that day's closing value, i.e. the value at the start
+# of P+1 (#389, #404). Several points at one instant: the last one counts.
 def value_points(v):
+    """(price, [(instant_date, value)...]) with instants as dates = start of that day."""
     veh = VEHICLES[v]
-    pts = [(d(veh["purchase_date"]), D(veh["purchase_price"]), "price")]
+    P = d(veh["purchase_date"])
+    pts = [(P, D(veh["purchase_price"]), "price")]
     for x in VALUATIONS:
         if x["vehicle"] == v:
             pts.append((d(x["valued_on"]), D(x["amount"]), "valuation"))
@@ -318,35 +323,40 @@ def value_points(v):
         pts.append((d(veh["sale_date"]), D(veh["sale_price"]), "sale"))
     order = {"price": 0, "valuation": 1, "sale": 2}
     pts.sort(key=lambda p: (p[0], order[p[2]]))  # stable: valuations keep the order added
-    closing = {}
-    for dt, val, _ in pts:
-        closing[dt] = val  # several on a day: the last one counts (closing value)
-    return pts[0][1], sorted(closing.items())
+    at = {}
+    for dt, val, kind in pts:
+        if kind != "price" and dt == P:
+            dt = P + timedelta(days=1)  # purchase-day valuation/sale: that day's close
+        at[dt] = val
+    return pts[0][1], sorted(at.items())
 
 
 CURVE = {"micro": True}
 
 
-def close_value(v, day):
+def start_value(v, instant):
+    """Value at the start of day `instant`, interpolated in a straight line by day."""
     _, pts = value_points(v)
     for (d1, v1), (d2, v2) in zip(pts, pts[1:]):
-        if d1 <= day <= d2:
-            val = v1 + (v2 - v1) * D((day - d1).days) / D((d2 - d1).days)
+        if d1 <= instant <= d2:
+            val = v1 + (v2 - v1) * D((instant - d1).days) / D((d2 - d1).days)
             return q(val, 6) if CURVE["micro"] else val  # each value rounded to the micro-unit, half up (#402)
-    if len(pts) == 1 and day == pts[0][0]:
+    if len(pts) == 1 and instant == pts[0][0]:
         return pts[0][1]
-    raise ValueError((v, day))
+    raise ValueError((v, instant))
 
 
 def depreciation(v, a, b):
-    """(loss, measured_to) or None when the period is outside the points."""
-    price, pts = value_points(v)
+    """Period of days a..b: (loss, start instant, end instant) or None.
+
+    Measured from the start of a to the start of b+1, cut to the first and
+    latest value points; None when the period lies wholly outside them."""
+    _, pts = value_points(v)
     first, last = pts[0][0], pts[-1][0]
-    if b < first or a > last:
+    s_i, e_i = max(a, first), min(b + timedelta(days=1), last)
+    if e_i <= s_i:
         return None
-    a2, b2 = max(a, first), min(b, last)
-    opening = price if a2 == first else close_value(v, a2 - timedelta(days=1))
-    return opening - close_value(v, b2), b2
+    return start_value(v, s_i) - start_value(v, e_i), s_i, e_i
 
 
 # ---------------------------------------------------------------- figures
@@ -379,13 +389,21 @@ def true_cost(v, viewer, period, cfg, unit):
     run, groups, pay = running(v, viewer, a, b, cfg, spread=True)
     dep = depreciation(v, a, b)
     dep_amt = dep[0] if dep else None
+    dep_last_day = None
+    if dep:
+        if dep[2] == b + timedelta(days=1):
+            dep_last_day = b  # not cut: the whole period
+        elif cfg["dep_dist"] == "day_before":
+            dep_last_day = dep[2] - timedelta(days=1)  # loss runs to the start of D: distance to D-1
+        else:
+            dep_last_day = dep[2]  # distance up to and including D
     total = run + (dep_amt or D(0))
     work = "%s..%s running %s (fuel %s, maint %s, docs spread %s, other %s, payouts -%s)" % (
         a, b, fmt_exact(run), fmt_exact(groups["fuel"]), fmt_exact(groups["maintenance"]),
         fmt_exact(groups["documents"]), fmt_exact(groups["other"]), fmt_exact(pay))
     if dep:
-        work_dep = "value open %s %s - close %s %s" % (
-            a, fmt_exact(dep[0] + close_value(v, dep[1])), dep[1], fmt_exact(close_value(v, dep[1])))
+        work_dep = "value at start of %s %s - at start of %s %s" % (
+            dep[1], fmt_exact(start_value(v, dep[1])), dep[2], fmt_exact(start_value(v, dep[2])))
     else:
         work_dep = "period outside the value points (latest %s)" % value_points(v)[1][-1][0]
     dist = distance(v, viewer, a, b)
@@ -394,19 +412,22 @@ def true_cost(v, viewer, period, cfg, unit):
     pd_val, pd_work = None, ""
     if not rb or dist <= 0:
         pd_work = "no per-distance: log reaches back=%s, distance %s km" % (rb, dist)
-    elif period == "last_12_months" and days < 90:
-        pd_work = "under 90 days"
-    elif cfg["ninety_years"] and period not in ("last_12_months",) and days < 90:
-        pd_work = "under 90 days (90-day rule applied to a calendar year)"
+    elif days < 90:
+        pd_work = "under 90 days owned in the period (%s days, #410)" % days
     else:
-        dd = distance(v, viewer, a, dep[1]) if dep else None
+        dd = distance(v, viewer, a, dep_last_day) if dep else None
         pd_val = rate(run, dist, dep_amt, dd, unit, cfg)
+        run_rate = per_dist(run / dist, unit)
+        dep_rate = per_dist(dep_amt / dd, unit) if dep else None
         pd_work = "running %s / %s km" % (fmt_exact(run), dist) + (
-            " + dep %s / %s km (%s..%s)" % (fmt_exact(dep_amt), dd, a, dep[1]) if dep else " (no dep part)")
+            " + dep %s / %s km (%s..%s)" % (fmt_exact(dep_amt), dd, a, dep_last_day) if dep else " (no dep part)")
         if unit == "money/mi":
             pd_work += ", x 1.609344 per mi"
+    if pd_val is None:
+        run_rate = dep_rate = None
     return {"run": run, "dep": dep_amt, "total": total, "pd": pd_val, "work": work,
-            "work_dep": work_dep, "pd_work": pd_work, "days": days, "a": a, "b": b, "dep_to": dep[1] if dep else None}
+            "work_dep": work_dep, "pd_work": pd_work, "days": days, "a": a, "b": b,
+            "dist": dist, "dep_rate": dep_rate, "run_rate": run_rate}
 
 
 def ownership(v, viewer, cfg, unit):
@@ -414,6 +435,8 @@ def ownership(v, viewer, cfg, unit):
     run, groups, pay = running(v, viewer, P, E, cfg, spread=False)
     price, pts = value_points(v)
     value_date, value = pts[-1]
+    if value_date == P + timedelta(days=1) and len(pts) == 2:
+        value_date = P  # only a purchase-day valuation/sale: dated P
     loss = price - value
     dist_owned = distance(v, viewer, P, E)
     dist_dep = distance(v, viewer, P, value_date)
@@ -422,21 +445,18 @@ def ownership(v, viewer, cfg, unit):
     # depreciation per year: years from purchase to the value's date
     yy, mm, dd = ymd(P, value_date)
     days = (value_date - P).days
-    year_variants = {
-        "days/365.2425": D(days) / D("365.2425"),
-        "days/365.25": D(days) / D("365.25"),
-        "days/365": D(days) / D(365),
-        "y+m/12+d/365.2425": D(yy) + D(mm) / 12 + D(dd) / D("365.2425"),
-    }
-    per_month = {}
-    for name, yrs in year_variants.items():
-        per_month["running/%d months + (loss/%s years)/12 [%s]" % (months, q(yrs, 6), name)] = \
-            run / months + (loss / yrs) / 12
-    per_month["total/%d months (spec 7.7 Cost of ownership page)" % months] = (run + loss) / months
+    whole_months = 12 * yy + mm
+    per_year = loss * 12 / (D(whole_months) + D(dd) / D("30.436875"))  # #409
+    if loss < 0:
+        per_year = None  # a gain has no per year: per month is the running part alone
+    per_month = run / months + (per_year / 12 if per_year is not None else D(0))
+    per_month_work = "running %s / %d months owned + per year %s / 12 (loss %s x 12 / (%d whole months + %d days / 30.436875), %s..%s)" % (
+        fmt_exact(run), months, fmt_exact(per_year) if per_year is not None else "none", loss, whole_months, dd, P, value_date)
     work = "%s..%s running %s (fuel %s, maint %s, docs %s, other %s, payouts -%s)" % (
         P, E, fmt_exact(run), fmt_exact(groups["fuel"]), fmt_exact(groups["maintenance"]),
         fmt_exact(groups["documents"]), fmt_exact(groups["other"]), fmt_exact(pay))
     return {"run": run, "dep": loss, "total": run + loss, "pd": pd_val, "per_month": per_month,
+            "per_month_work": per_month_work,
             "work": work, "value": (value_date, value, price),
             "pd_work": "running %s / %s km + loss %s / %s km (%s..%s)%s" % (
                 fmt_exact(run), dist_owned, loss, dist_dep, P, value_date,
@@ -468,29 +488,27 @@ def per_distance_str(x):
 
 
 # ---------------------------------------------------------------- rows
-BASE = {"rate_round": "half_up", "settle": "sum", "spread": "floor", "perkm6": False, "ninety_years": False}
+BASE = {"rate_round": "half_up", "settle": "sum", "spread": "floor", "perkm6": False, "dep_dist": "day_before"}
 ALTERNATIVES = {
     "rate_round": ["half_even"],
     "settle": ["each"],
     "spread": ["halfup"],
     "perkm6": [True],
-    "ninety_years": [True],
+    "dep_dist": ["on_day"],
 }
 # Readings the spec does not allow but a spreadsheet might use: noted in
 # `working` when they change a figure, never turned into `?`.
 NOTE_ALTERNATIVES = {
     "spread": ["exact"],
     "curve_micro": [False],
-    "spread_types": ["insurance"],
 }
 LABELS = {
     "rate_round": "monthly rate rounded half-even at 10 dp",
     "settle": "settlement: each discounted payment rounded",
     "spread": "document share per day",
     "perkm6": "rate per km kept to 6 places before converting",
-    "ninety_years": "90-day rule applied to calendar years",
+    "dep_dist": "depreciation part's distance includes the day of the value point it is cut at",
     "curve_micro": "value-curve points rounded to the micro-unit",
-    "spread_types": "documents spread by day",
 }
 
 
@@ -537,29 +555,37 @@ def compute(row, cfg):
         if key == "per_distance":
             return per_distance_str(o["pd"]), o["pd_work"]
         if key == "per_month":
-            cands = {k: str(q(x, 2)) for k, x in o["per_month"].items()}
-            vals = set(cands.values())
-            work = "; ".join("%s = %s" % (k, x) for k, x in cands.items())
-            if len(vals) == 1:
-                return vals.pop(), work
-            return "?", "AMBIGUOUS per month: " + work
+            return money(o["per_month"]), o["per_month_work"]
         raise KeyError(fig)
 
     if fig.startswith("true_cost.what_changed."):
         key = fig.rsplit(".", 1)[1]
-        cur = true_cost(v, viewer, "last_12_months", cfg, unit)
-        prev = true_cost(v, viewer, "previous_12_months", cfg, unit)
-        if key == "depreciation":
-            if cur["dep"] is None or prev["dep"] is None:
-                return "?", "AMBIGUOUS: last 12 months has no depreciation (%s), previous 12 has %s; '-' or %s (as 0 - previous)?" % (
-                    cur["work_dep"], prev["dep"], money(D(0) - (prev["dep"] or D(0))))
-            return money(cur["dep"] - prev["dep"]), "L12 %s - previous 12 %s" % (fmt_exact(cur["dep"]), fmt_exact(prev["dep"]))
+        if period == "last_12_months_vs_previous":
+            cur_p, prev_p = "last_12_months", "previous_12_months"
+        else:
+            y1, y0 = [x.strip() for x in period.split("vs")]
+            cur_p, prev_p = y1, y0
+        cur = true_cost(v, viewer, cur_p, cfg, unit)
+        prev = true_cost(v, viewer, prev_p, cfg, unit)
+        if cur["pd"] is None or prev["pd"] is None:
+            return DASH, "no rate in %s: %s | %s" % (
+                cur_p if cur["pd"] is None else prev_p, cur["pd_work"] if cur["pd"] is None else "", prev["pd_work"] if prev["pd"] is None else "")
+        if cur_p != "last_12_months" and (cur["dist"] < 500 or prev["dist"] < 500):
+            return DASH, "a year under 500 km (%s km, %s km)" % (cur["dist"], prev["dist"])
         if key == "total":
+            note = ""
             if cur["dep"] is None or prev["dep"] is None:
-                return "?", "AMBIGUOUS: one period is running costs only; L12 total %s - previous 12 total %s = %s, or '-'" % (
-                    fmt_exact(cur["total"]), fmt_exact(prev["total"]), money(cur["total"] - prev["total"]))
-            return money(cur["total"] - prev["total"]), "L12 total %s - previous 12 (%s..%s) total %s" % (
-                fmt_exact(cur["total"]), prev["a"], prev["b"], fmt_exact(prev["total"]))
+                note = " (%s has no depreciation part: its rate is running costs only)" % (cur_p if cur["dep"] is None else prev_p)
+            return per_distance_str(cur["pd"] - prev["pd"]), "rate %s %s - rate %s %s%s" % (
+                cur_p, fmt_exact(cur["pd"]), prev_p, fmt_exact(prev["pd"]), note)
+        if key == "depreciation":
+            if cur["dep_rate"] is None or prev["dep_rate"] is None:
+                missing = cur_p if cur["dep_rate"] is None else prev_p
+                as_zero = (cur["dep_rate"] or D(0)) - (prev["dep_rate"] or D(0))
+                return "?", "AMBIGUOUS: %s has a rate but no depreciation part (outside the value points); '\u2014' or %s (missing part as 0)" % (
+                    missing, per_distance_str(as_zero))
+            return per_distance_str(cur["dep_rate"] - prev["dep_rate"]), "dep rate %s %s - %s %s" % (
+                cur_p, fmt_exact(cur["dep_rate"]), prev_p, fmt_exact(prev["dep_rate"]))
         raise KeyError(fig)
 
     if fig.startswith("true_cost."):

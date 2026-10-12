@@ -1,7 +1,7 @@
 # Independent script for the golden household (#393)
 
 `golden_script.py` works out every `expected.csv` row whose `source` is
-`spreadsheet+script` (finance and depreciation, 96 rows) a second time, so
+`spreadsheet+script` (finance and depreciation, 114 rows of the 910-row file) a second time, so
 they can be compared with the owner's spreadsheet. It writes
 `script.csv`, which has the columns `id, figure, viewer, vehicle, period,
 script, working`.
@@ -16,7 +16,9 @@ It was written from these sources and nothing else:
 - `spec.md`: §7.1, §7.2, §7.7, §7.22, §7.29, §7.32, §7.35 and §8 *Money edge cases*;
 - `docs/finance.md` and `docs/reports.md`;
 - `../README.md`, `../inputs/*.csv` and `../expected.csv`;
-- the decision rows #386–#407 of `docs/phases/open-questions.md`.
+- the decision rows #386–#407 of `docs/phases/open-questions.md`, and the
+  owner's decisions #408–#411 (2026-10-12) as written into spec.md and the
+  golden README.
 
 Nothing under `src/`, `tests/Support/`, `tests/Unit`, `tests/Integration`,
 `templates/` or `config/` was opened. Neither was
@@ -52,202 +54,154 @@ lists each candidate.
 
 ## Interpretations the script made (each rests on the spec text quoted)
 
-1. **The value curve's days.** A value point is the closing value of its
-   day, and the purchase day opens at the price. A period's depreciation
-   is the opening value of its first day minus the closing value of its
-   last day. The opening value is the previous day's close, or the price
-   on the purchase day.
-   - §7.1: "the purchase day opens at the purchase price, so a valuation
-     (or a sale, #404) dated on the purchase day is that day's closing
-     value"
-   - §7.1: "the periods' depreciation always adds up to *Since bought*"
-   - Reading "value at its start" as the start date's own closing value
-     would lose a day's drop at every boundary.
+1. **The value curve (#408).** A value point dated D is the value at the
+   *start* of D. A period of days a..b loses the value at the start of a
+   minus the value at the start of b + 1, cut to the first and latest
+   points. A period wholly outside them has none (`—`).
+   - §7.1: "A value point is the value at the **start** of its day, so a
+     period ending on 31 Dec is measured to the start of 1 Jan, the next
+     period's start"
+   - The purchase day opens at the price. A valuation or sale dated on the
+     purchase day is that day's closing value, so the script places it at
+     the start of the next day (focus: 6,450 at the start of 20 Sep 2023,
+     6,200 at the start of 21 Sep). §7.1: "the purchase day opens at the
+     purchase price, so a valuation (or a sale, #404) dated on the
+     purchase day is that day's closing value".
 2. **Curve values are rounded to the micro-unit, half up, before
-   subtracting.**
-   - §7.35: "rounded to the micro-unit (half up) before anything is
-     subtracted from it" (#402)
-   - The exact curve gives the same figures in every row; the script
-     checks this.
-3. **Periods are cut to the ownership period.** That period ends today,
-   15 Sep 2026, or at the sale. So *Last 12 months* and *2026* stop at
-   15 Sep or 19 Aug, and a document's days of cover after that day don't
-   count.
+   subtracting.** §7.35: "rounded to the micro-unit (half up) before
+   anything is subtracted from it" (#402). The exact curve changes no row.
+3. **Periods are cut to the ownership period**, which ends today (15 Sep
+   2026) or at the sale. So *Last 12 months* and *2026* stop at 15 Sep or
+   19 Aug, and a document's cover after that day doesn't count.
    - §7.35: "Last 12 months (… this month and the 11 before, cut to the
-     ownership period …)"
+     ownership period)"
    - §7.7: the ownership period "ends on the sale date when one is set,
      else today"
 4. **Every document with a start and an expiry is spread by day in true
-   cost**, MOT and NCT included, not only insurance as `../README.md`
-   says.
-   - §7.35: "a document with both a start and an expiry date is spread
-     evenly over its cover by day"
-5. **How a day's share is rounded.** Each day's share is
-   floor(cost in micro-units ÷ days), and the last day takes the
-   remainder. Rounding the share half up instead changes no row.
-   - §7.35: "The shares are worked out in micro-units and the last day
-     takes the remainder"
-   - An exact proportion (cost × days ÷ cover) is *not* the spec's rule.
-     It would move row 172 (corolla 2025 true cost) from 4332.52 to
-     4332.53, and `working` says so. A spreadsheet that spreads by exact
-     proportion will differ there.
-6. **Insurance payouts are dated by the incident's date** (`occurred_on`,
-   8 Nov 2024), not by the date it was settled or closed.
-   - §7.7: "net of the payouts of incidents dated in the period"
+   cost**, MOT and NCT included. §7.35: "a document with both a start and
+   an expiry date is spread evenly over its cover by day". *Since bought*
+   counts each document on its start date.
+5. **How a day's share is rounded.** Each day's share is floor(cost in
+   micro-units ÷ days), and the last day takes the remainder. §7.35: "The
+   shares are worked out in micro-units and the last day takes the
+   remainder". Rounding the share half up instead, or using an exact
+   proportion, changes no row.
+6. **Insurance payouts are dated by `occurred_on`.** §7.7: "net of the
+   payouts of incidents dated in the period"
 7. **Depreciation per distance is measured over its own dates.**
-   - For ownership it is the loss ÷ the distance from purchase to the
-     value's date. §7.1: "the loss ÷ the distance driven between the same
+   - For ownership: the loss ÷ the distance from purchase to the value's
+     date, both days included (§7.1, whose "lifetime figures above are
+     unchanged"). §7.1: "the loss ÷ the distance driven between the same
      two dates"
-   - For a true cost period it is the loss ÷ the distance from the
-     period's start to the date it is measured to. §7.35: "the
-     depreciation part ÷ the distance driven up to the date it is measured
-     to"
-   - The running part divides by the whole period's distance.
+   - For a true-cost period: the loss ÷ the distance from the period's
+     start to the date it is measured to. §7.35: "the depreciation part ÷
+     the distance driven up to the date it is measured to". When a point
+     cuts the period, the loss runs to the *start* of that point's day, so
+     the script takes the distance to the day before. That choice changes
+     only the focus rows in Q1.
 8. **The mileage log** is built from `readings.csv`, fill-up odometers and
-   maintenance odometers at 12:00 local. Trips have no odometers and add
-   none.
+   maintenance odometers at 12:00 local. Trips add none.
    - Distance driven is the last reading in the period minus the last
      reading before it, or minus the first reading in it when there is
-     none before (§7.7).
+     none before.
    - "Reaches back" means a reading on or before the later of the
-     period's first day and the purchase date (§7.7, #405).
-9. **The monthly rate** is (1 + APR)^(1/12) − 1, rounded half up to 10
-   places (§7.32). Half-even changes no row. Each interest share is
-   balance × rate, rounded half away from zero to 0.01 (#390). Every gap
-   between payments here is exactly one month, so simple and compound
-   interest over a gap can't differ.
-10. **The golf PCP, settled early on 15 May 2026:**
-    - *Deposits* include the dealer contribution. §7.32 defines "the
-      deposits (the customer's and the dealer's contribution, as UK
-      paperwork counts them)", and cash price = deposits + credit.
-    - The £10 option-to-purchase fee was **not paid**. §7.32 puts it "with
-      the final one", and "After a `settlement`, later payments leave the
-      schedule". Counting it would give a cost of credit of 2157.97.
-    - *Payments made* = 31, the scheduled payments due on or before the
-      end date. The settlement is an event, not one of the 36. §7.32:
-      "*Payments made* and *Payments remaining* ("18 of 48 remaining")".
-      *Payments remaining* = 0.
+     period's start and the purchase date (§7.7, #405).
+9. **Under 90 days in a period, no per-distance figure.** This covers a
+   short first or last year (golf 2023 is 86 days, corolla 2023 is 58).
+   §7.35: "any period under 90 days once cut to the ownership period, a
+   first or last year included, has no per-distance figure" (#410).
+10. **Ownership per month (#409)** = running costs ÷ months owned +
+    depreciation per year ÷ 12.
+    - Per year = loss × 12 ÷ (whole calendar months from purchase to the
+      value's date + leftover days ÷ 30.436875).
+    - Months owned counts the calendar months the period touches.
+    - A gain would have no per year, but no vehicle here has one.
+    - §7.1: "the loss × 12 ÷ (the whole calendar months between the dates
+      + the days left over ÷ 30.436875 …)"
+    - §7.7: "**Per month** = running costs ÷ months owned + depreciation
+      per year ÷ 12"
+11. **What changed (#411)** is per distance.
+    - **For "Y vs Y−1":** the total change is total rate(Y) − total
+      rate(Y−1), and the depreciation change is the depreciation part's
+      rate(Y) − rate(Y−1). Either is `—` when either year has no rate (under
+      90 days, no distance, a log that doesn't reach back) or under 500 km.
+    - **For `last_12_months_vs_previous`:** the total change only, against
+      1 Oct 2024 – 30 Sep 2025.
+    - **A year whose rate is running costs only** (no depreciation part)
+      still has a rate. So its total change is a number (golf and corolla
+      "2026 vs 2025"; golf `last_12_months_vs_previous`), and `working`
+      says so.
+12. **The monthly rate** is (1 + APR)^(1/12) − 1, rounded half up to 10
+    places (§7.32); half-even changes no row. Each interest share is
+    balance × rate, rounded half away from zero to 0.01 (#390). Every gap
+    between payments here is one month.
+13. **The golf PCP, settled 15 May 2026:**
+    - *Deposits* include the dealer contribution. §7.32: "the deposits
+      (the customer's and the dealer's contribution, as UK paperwork
+      counts them)"
+    - The £10 option-to-purchase fee was not paid. It comes "with the
+      final one", and "After a `settlement`, later payments leave the
+      schedule". Counting it would give 2157.97.
+    - *Payments made* = 31 and *payments remaining* = 0. The settlement is
+      an event, not one of the 36 payments.
     - *Cost of credit* = everything paid − cash price = 2147.97. §7.32:
-      "Once ended it is **exact**: for `settled` …, everything paid
-      (deposits, payments, extras, settlement, fees) − cash price"
-    - *Interest so far* is the same 2147.97. The lines are "adjusted so
-      their total equals the exact cost of credit, the difference falling
-      on the end date". The interest shares came to 2134.89, so the
-      adjustment is **+13.08**, not negative.
-    - *Amount paid* is the *Paid so far* tile: "deposits, payments made,
-      extras, settlement and fees".
-11. **The EV HP:**
-    - *Total amount payable* isn't entered, so it is worked out:
-      deposits + payments + final + fees. docs/finance.md: "Leave the
-      total amount payable blank to have it worked out from the other
-      figures"
-    - The missed payment of 10 Jan 2025 was paid late, so it counts as
-      paid, with its interest on its due date. §7.32: "a paid-late one on
-      its due date"
-    - *Settlement estimate*: each of the 17 remaining payments is
-      discounted by k = 1…17 whole months, rounding a part month up
-      ("one due tomorrow, or in exactly a month, is one month away"). The
-      sum is rounded once. Rounding each discounted payment instead
-      changes no row.
-    - *Equity* = the 10 Feb 2026 valuation − the rounded estimate. That
-      valuation is within 12 months, as equity needs.
-12. **`true_cost.what_changed.*` rows are amounts, not rates per
-    distance.** Their `unit` is `money`. Each is (last 12 months) −
-    (the 12 months before, 1 Oct 2024 – 30 Sep 2025), for the total or
-    the depreciation part. §7.35's sentences give the change in amount
-    ("£88.46 more spent"; "lost £187.23 more in value"). Its *What
-    changed* lines are otherwise per distance and for calendar years, so
-    this is a reading of the `unit` column.
-13. **Time zones.** A timed entry is dated in the viewer's zone, and
-    finance in the owner's. Europe/London and Europe/Dublin share their
-    offsets, so no row depends on this (#386, #397).
-14. **There is no minimum span for a period's depreciation part per
-    distance.** §7.35 says "the depreciation part ÷ the distance driven up
-    to the date it is measured to" and states no minimum span. §7.1's
-    90-day condition is for the lifetime figures. Two parts are measured
-    over short spans:
-    - EV 2026, to 10 Feb: 41 days;
-    - corolla's last 12 months, to 1 Nov 2025: 32 days.
-    The script divides by those spans as written.
+      "Once ended it is **exact**". *Interest so far* is the same, since
+      the lines are adjusted to it.
+    - The interest shares came to 2134.89, so the end *Adjustment* is
+      **+13.08**.
+    - This checks out: after 31 payments the balance is 8,799.54. Eight
+      days' interest adds 13.06, giving 8,812.60, which is the lender's
+      8,812.62 to within 2p.
+    - *Amount paid* = deposits + payments made + settlement + fees paid.
+14. **The EV HP:**
+    - *Total amount payable* is worked out from the figures (30,360.16).
+    - The missed 10 Jan 2025 payment was paid late, so it counts on its
+      due date.
+    - *Settlement*: the 17 remaining payments are discounted by k = 1…17
+      whole months, rounding a part month up, and the sum is rounded once.
+      Rounding each discounted payment instead changes no row.
+    - *Equity* = the 10 Feb 2026 valuation − that settlement.
+15. **Time zones.** London and Dublin share their offsets, so no row
+    depends on the viewer's zone.
 
 ## Open questions (rows left as `?`)
 
-Each of these changes a figure, and the spec doesn't settle it.
+### Q1. A cut depreciation part's distance: up to the day before the point, or including it? (rows 127, 159, 177, 178)
 
-### Q1. Ownership per month: which formula, and how many years? (rows 5, 10, 15, 20, 24)
+Under #408 the focus sale (19 Aug 2026) is its value at the *start* of
+19 Aug. Both *Last 12 months* and *2026* end on 19 Aug, and their
+depreciation is cut at that point.
 
-Two passages give different formulas:
+§7.35 divides the depreciation part by "the distance driven up to the date
+it is measured to". It doesn't say whether that distance includes the
+driving on 19 Aug, and the odometer was read at the sale that day.
 
-- §7.7: "**Per month** = running costs ÷ months owned + depreciation per
-  year ÷ 12".
-- §7.7, on the *Cost of ownership* page: "each vehicle's total ÷ its own
-  owned months, as the table".
+| Row | Figure | To 18 Aug (consistent with "start of D") | Including 19 Aug |
+|---|---|---|---|
+| 127 | focus last 12 months per distance | 0.207 | 0.206 |
+| 159 | focus 2026 per distance | 0.168 | 0.169 |
+| 177 | focus 2026 vs 2025 total change | −0.208 | −0.207 |
+| 178 | focus last 12 vs previous total change | −0.236 | −0.237 |
 
-Depreciation per year is, in §7.1, "the loss ÷ the years from the purchase
-date to the **value's date** … counted in calendar years, months and
-days". The spec never says how years, months and days become one number.
+The same choice exists for the EV and the corolla, cut at a valuation,
+but it changes none of their rows. Ownership per distance is §7.1's
+lifetime rule ("between the same two dates") and is not affected.
 
-The candidates for golf are:
+**Recommendation:** to the day before the point, which matches "the value
+at the start of D".
 
-| Reading | Golf per month |
-|---|---|
-| running ÷ 36 + loss ÷ (days ÷ 365.2425) ÷ 12 | 569.19 |
-| running ÷ 36 + loss ÷ (days ÷ 365.25) ÷ 12 | 569.20 |
-| running ÷ 36 + loss ÷ (days ÷ 365) ÷ 12 | 569.05 |
-| running ÷ 36 + loss ÷ (y + m/12 + d/365.2425) ÷ 12 | 569.29 |
-| total ÷ 36 | 475.54 |
+### Q2. A part's change when one year has no depreciation part (rows 76, 230)
 
-The `working` column gives every candidate for every vehicle.
+Golf 2026 and corolla 2026 lie wholly after their latest valuations. Each
+has a rate (running costs only) but no depreciation part, while 2025 has
+one.
 
-**Recommendation:** use §7.7's formula, with days ÷ 365.2425. That is the
-year §7.2 uses for "age in years (days ÷ 365.2425)". Then fix the
-*Cost of ownership* page sentence, or the formula, so the two agree.
+"`—` when either year has no rate" doesn't say whether a missing *part*
+counts as no rate or as 0.
 
-### Q2. Does the 90-day rule apply to a calendar year's per distance? (rows 38, 159)
+| Row | Figure | `—` | Missing part as 0 |
+|---|---|---|---|
+| 76 | golf 2026 vs 2025 depreciation | `—` | −0.154 |
+| 230 | corolla 2026 vs 2025 depreciation | `—` | −0.217 |
 
-§7.35 states it only for *Last 12 months*: "cut to the ownership period;
-under 90 days, no per-distance figure, as §7.7". For years, the trend
-instead keeps "a year with under 500 km … in the table only".
-
-Two years are affected:
-
-- golf 2023, 86 days: 0.624 /mi, or `—`;
-- corolla 2023, 58 days: 0.622 /mi, or `—`.
-
-**Recommendation:** decide whether a short first year shows a rate. The
-spec's wording, read literally, gives the figure.
-
-### Q3. What changed for golf, when the last 12 months have no depreciation (rows 64, 65)
-
-Golf's latest value point is 30 Jun 2025. The last 12 months (from 1 Oct
-2025) lie wholly after it, so their depreciation is `—` and their total is
-"running costs only". The 12 months before do have depreciation (1,506.90).
-
-- **Row 64 (depreciation):** `—`, or −1506.90 (counting the missing part
-  as 0).
-- **Row 65 (total):** `—`, or −3169.59 (3,356.92 running only, minus
-  6,526.51).
-
-The widget's rule is "nothing when either period has no figure", but that
-is about the rate per distance.
-
-**Recommendation:** `—` for both, since one side isn't a complete figure.
-
-## Not a question, but worth knowing
-
-The script also runs two readings that the spec rules out. When either
-one moves a row, it adds a `NOTE:` to that row's `working`.
-
-- **Exact proportion.** A spreadsheet that spreads documents by exact
-  proportion gets 4332.53 in row 172, where the spec's micro-unit shares
-  give 4332.52 (item 5).
-- **Insurance only.** A spreadsheet that spreads only insurance would
-  differ in 24 rows: 44, 45, 51, 52, 71, 72, 92, 93, 99, 105, 107, 121,
-  123, 129, 137, 139, 145, 151, 152, 172, 173, 179, 180 and 186. It would
-  count the MOT and NCT on their start dates, as `../README.md`'s
-  *Insurance* bullet suggests. §7.35 spreads every document with both
-  dates (item 4).
-- **The golf settlement checks out.** After 31 payments the golf
-  balance is 8,799.54. Eight days' interest to 15 May adds 13.06, giving
-  8,812.60, which is the lender's 8,812.62 to within 2p. That is why the
-  end *Adjustment* is +13.08 here, not negative.
+**Recommendation:** `—`, since that part has no rate in 2026.
