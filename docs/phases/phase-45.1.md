@@ -161,7 +161,7 @@ seed. Each property must hold:
       `GoldenHouseholdLoadTest` checks every row is stored once.
 - [ ] The uploads (receipts on a few entries).
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
-      `expected.csv` exported from it (the skeleton, 812 rows with
+      `expected.csv` exported from it (the skeleton, 864 rows with
       `expected` empty, is committed).
 - [ ] `GoldenHouseholdTest` on every engine: one assertion per row, and a
       failure message that names the figure, period and vehicle.

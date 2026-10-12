@@ -148,6 +148,18 @@ fixed to match.
 - **Insurance payouts** reduce cost of ownership and true cost, and may
   make a total negative (#400).
 
+## The example spreadsheet
+
+`golden-household-example.xlsx` is a starting layout, not the answers.
+It has every input as its own tab (blue), a Ledger and a Reports tab
+worked from them, helper columns for economy segments and tax years, and
+an `expected` tab with all the rows of `expected.csv`. A few rows carry an
+example formula, written by Claude Code to show the pattern: they share
+Claude's reading of the spec, so check or rewrite each one before you
+trust it (#393). The rest are yours (yellow). When done, save the
+`expected` tab alone as CSV (UTF-8), keeping its header, over
+`expected.csv`. If the inputs change, rebuild its input tabs.
+
 ## expected.csv
 
 | column | meaning |
