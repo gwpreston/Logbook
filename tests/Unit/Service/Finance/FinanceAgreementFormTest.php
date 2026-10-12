@@ -51,7 +51,7 @@ final class FinanceAgreementFormTest extends TestCase
         self::assertSame('0.0900', $data->excessMileageCharge);
         self::assertSame(8000, $data->annualMileageAllowance);
         self::assertTrue($data->countInCosts);
-        self::assertSame([], FinanceCheck::of($data), 'no total entered: nothing to compare');
+        self::assertSame([], FinanceCheck::of($data, 'GBP'), 'no total entered: nothing to compare');
     }
 
     public function testZeroIsAValidAmountAndAprButNegativesAreNot(): void
@@ -111,11 +111,11 @@ final class FinanceAgreementFormTest extends TestCase
         // Deposits 3,000 + 36 × 250 + 8,000 = 20,000.
         $exact = $this->parse(['total_amount_payable' => '20001.00'] + self::PCP);
         self::assertInstanceOf(FinanceInput::class, $exact);
-        self::assertSame([], FinanceCheck::of($exact->data), 'a difference of 1.00 is rounding');
+        self::assertSame([], FinanceCheck::of($exact->data, 'GBP'), 'a difference of 1.00 is rounding');
 
         $off = $this->parse(['total_amount_payable' => '20001.01'] + self::PCP);
         self::assertInstanceOf(FinanceInput::class, $off, 'never blocks');
-        $checks = FinanceCheck::of($off->data);
+        $checks = FinanceCheck::of($off->data, 'GBP');
         self::assertCount(1, $checks);
         self::assertSame('total', $checks[0]->kind);
         self::assertSame('20000.00', $checks[0]->computed);
@@ -126,14 +126,14 @@ final class FinanceAgreementFormTest extends TestCase
     {
         $input = $this->parse(['amount_of_credit' => '16998.99'] + self::PCP);
         self::assertInstanceOf(FinanceInput::class, $input);
-        $checks = FinanceCheck::of($input->data);
+        $checks = FinanceCheck::of($input->data, 'GBP');
         self::assertCount(1, $checks);
         self::assertSame('credit', $checks[0]->kind);
         self::assertSame('17000.00', $checks[0]->computed);
 
         $input = $this->parse(['amount_of_credit' => '16999.00'] + self::PCP);
         self::assertInstanceOf(FinanceInput::class, $input);
-        self::assertSame([], FinanceCheck::of($input->data));
+        self::assertSame([], FinanceCheck::of($input->data, 'GBP'));
     }
 
     public function testPurchasePriceOffersByType(): void
@@ -155,12 +155,29 @@ final class FinanceAgreementFormTest extends TestCase
         self::assertSame('8000.00', $input->data->finalPayment);
     }
 
+    public function testAmountsAreTypedToTheCurrencysMinorUnit(): void
+    {
+        // #390: yen to the whole unit, dinar to 3 places, pounds to 2.
+        $typed = ['regular_payment' => '250.555', 'final_payment' => '8000.4'] + self::PCP;
+
+        $yen = $this->parse($typed, 'JPY');
+        $dinar = $this->parse($typed, 'BHD');
+        $pounds = $this->parse($typed);
+
+        self::assertInstanceOf(FinanceInput::class, $yen);
+        self::assertSame(['251', '8000'], [$yen->data->regularPayment, $yen->data->finalPayment]);
+        self::assertInstanceOf(FinanceInput::class, $dinar);
+        self::assertSame(['250.555', '8000.400'], [$dinar->data->regularPayment, $dinar->data->finalPayment]);
+        self::assertInstanceOf(FinanceInput::class, $pounds);
+        self::assertSame(['250.56', '8000.40'], [$pounds->data->regularPayment, $pounds->data->finalPayment]);
+    }
+
     /**
      * @param array<string, string> $input
      */
-    private function parse(array $input): FinanceInput|ValidationErrors
+    private function parse(array $input, string $currency = 'GBP'): FinanceInput|ValidationErrors
     {
-        return FinanceAgreementForm::parse($input, $this->preferences());
+        return FinanceAgreementForm::parse($input, $this->preferences(), $currency);
     }
 
     private function preferences(): DisplayPreferences

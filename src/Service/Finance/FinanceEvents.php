@@ -9,6 +9,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\PaymentEventKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Support\Money\Currency;
 use Logbook\Support\Validation\ValidationErrors;
 use Logbook\Support\Validation\Validator;
 
@@ -21,7 +22,6 @@ use Logbook\Support\Validation\Validator;
  */
 final readonly class FinanceEvents
 {
-    private const int MONEY_SCALE = 2;
     private const int MONEY_WHOLE_DIGITS = 11;
 
     public function __construct(private FinanceService $finance)
@@ -46,9 +46,11 @@ final readonly class FinanceEvents
         $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $kind = $validator->enum('kind', PaymentEventKind::class, true);
         $today = $this->finance->ownerToday($user, $vehicle);
+        $places = $this->places($user, $vehicle);
 
         if ($kind === PaymentEventKind::Extra) {
-            $amount = $validator->decimal('amount', true, self::MONEY_SCALE, '0.01', null, self::MONEY_WHOLE_DIGITS);
+            $currency = $this->finance->currencyFor($user, $vehicle);
+            $amount = $validator->decimal('amount', true, $places, Currency::step($currency), null, self::MONEY_WHOLE_DIGITS);
             $paidOn = $validator->date('paid_on', true);
             $notes = $validator->string('notes', false, 500);
             if ($paidOn !== null && $paidOn > $today) {
@@ -110,7 +112,7 @@ final readonly class FinanceEvents
     ): ?ValidationErrors {
         $validator = new Validator($input, $locale ?? $user->preferences->locale);
         $quotedOn = $validator->date('quoted_on', true);
-        $amount = $validator->decimal('quote_amount', true, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS);
+        $amount = $validator->decimal('quote_amount', true, $this->places($user, $vehicle), '0', null, self::MONEY_WHOLE_DIGITS);
         $validUntil = $validator->date('valid_until', true);
         $notes = $validator->string('quote_notes', false, 500);
         if ($quotedOn !== null && $validUntil !== null && $validUntil < $quotedOn) {
@@ -159,12 +161,13 @@ final readonly class FinanceEvents
         if ($outcome === AgreementStatus::Completed && $endedOn !== null && $lastPayment !== null && $endedOn < $lastPayment) {
             $validator->addError('ended_on', 'finance.end.error_completed');
         }
+        $places = Currency::fractionDigits($view->currency);
         $settlement = $outcome === AgreementStatus::Settled
-            ? $validator->decimal('settlement', true, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS)
+            ? $validator->decimal('settlement', true, $places, '0', null, self::MONEY_WHOLE_DIGITS)
             : null;
         $returned = $outcome === AgreementStatus::HandedBack || $outcome === AgreementStatus::Ended;
         $charge = static fn (string $field): ?string => $returned
-            ? $validator->decimal($field, false, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS)
+            ? $validator->decimal($field, false, $places, '0', null, self::MONEY_WHOLE_DIGITS)
             : null;
         $excess = $charge('excess_charge');
         $damage = $charge('damage_charge');
@@ -175,5 +178,11 @@ final readonly class FinanceEvents
         $this->finance->end($user, $vehicle, $agreement, new EndAgreement($outcome, $endedOn, $settlement, $excess, $damage));
 
         return $outcome;
+    }
+
+    /** Amounts are typed to the agreement currency's minor unit (spec.md §7.32, #390). */
+    private function places(User $user, Vehicle $vehicle): int
+    {
+        return Currency::fractionDigits($this->finance->currencyFor($user, $vehicle));
     }
 }

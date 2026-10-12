@@ -230,8 +230,10 @@ Each with a regression test, spec already updated:
       §7.35). A sale on the purchase day is its closing value too (#404,
       decided 2026-10-12). The generator values one vehicle in four on its
       purchase day, so *totals add up* holds the years to *Since bought*.
-- [ ] #390: finance rounds to the agreement currency's minor unit
-      (§7.32), with the forms accepting that many decimals.
+- [x] #390: finance rounds to the agreement currency's minor unit
+      (§7.32), with the forms accepting that many decimals (the agreement,
+      extra payment, quote and end forms, on the page and the API; the
+      inputs step by `currency_step()`).
 - [ ] #403: shown parts rounded by largest remainder wherever a total
       is shown with them (Reports, the ownership card, true cost, the
       expense widgets, CSV), so they add up to the shown total (§8).

@@ -64,7 +64,7 @@ final class FinanceLedger
             }
             $difference = $exact->minus($sum);
             if (!$difference->isZero()) {
-                $lines[] = new FinanceLine($endedOn, FinanceMath::money($difference), FinanceLineKind::Adjustment);
+                $lines[] = new FinanceLine($endedOn, FinanceMath::money($difference, $figures->currency), FinanceLineKind::Adjustment);
             }
         }
 

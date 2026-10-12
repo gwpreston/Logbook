@@ -29,27 +29,27 @@ final readonly class FinanceCheck
     /**
      * @return list<self>
      */
-    public static function of(AgreementData $data): array
+    public static function of(AgreementData $data, string $currency): array
     {
         $checks = [];
         if ($data->totalAmountPayable !== null) {
-            $checks[] = self::compare('total', AgreementFigures::derivedTotal($data), $data->totalAmountPayable);
+            $checks[] = self::compare('total', AgreementFigures::derivedTotal($data), $data->totalAmountPayable, $currency);
         }
         if ($data->type->hasCashPrice() && $data->cashPrice !== null && $data->amountOfCredit !== null) {
             $credit = BigDecimal::of($data->cashPrice)->minus($data->customerDeposit)->minus($data->dealerContribution);
-            $checks[] = self::compare('credit', $credit, $data->amountOfCredit);
+            $checks[] = self::compare('credit', $credit, $data->amountOfCredit, $currency);
         }
 
         return array_values(array_filter($checks));
     }
 
-    private static function compare(string $kind, BigDecimal $computed, string $stated): ?self
+    private static function compare(string $kind, BigDecimal $computed, string $stated, string $currency): ?self
     {
         $difference = $computed->minus($stated)->abs();
         if (!$difference->isGreaterThan(self::TOLERANCE)) {
             return null;
         }
 
-        return new self($kind, FinanceMath::money($computed), FinanceMath::money(BigDecimal::of($stated)));
+        return new self($kind, FinanceMath::money($computed, $currency), FinanceMath::money(BigDecimal::of($stated), $currency));
     }
 }

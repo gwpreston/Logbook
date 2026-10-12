@@ -8,6 +8,7 @@ use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use DateTimeImmutable;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Money\Currency;
 
 /**
  * The arithmetic behind an agreement's figures (spec.md §7.32), in exact
@@ -95,10 +96,13 @@ final class FinanceMath
         return $months;
     }
 
-    /** An amount rounded to pennies (half up), as a canonical decimal. */
-    public static function money(BigDecimal $amount): string
+    /**
+     * An amount rounded, half away from zero, to the currency's minor unit
+     * (spec.md §7.32, #390), as a canonical decimal.
+     */
+    public static function money(BigDecimal $amount, string $currency): string
     {
-        return (string) $amount->toScale(2, RoundingMode::HalfUp);
+        return (string) $amount->toScale(Currency::fractionDigits($currency), RoundingMode::HalfUp);
     }
 
     public static function of(?string $amount): BigDecimal

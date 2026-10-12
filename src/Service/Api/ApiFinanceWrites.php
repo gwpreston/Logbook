@@ -88,7 +88,7 @@ final readonly class ApiFinanceWrites
         if ($mapped instanceof ValidationErrors) {
             throw $this->validation->of($mapped);
         }
-        $input = FinanceAgreementForm::parse($mapped['input'], $mapped['preferences']);
+        $input = FinanceAgreementForm::parse($mapped['input'], $mapped['preferences'], $this->finance->currencyFor($user, $vehicle));
         if ($input instanceof ValidationErrors) {
             throw $this->validation->of($input);
         }
@@ -138,6 +138,7 @@ final readonly class ApiFinanceWrites
         $input = FinanceAgreementForm::parse(
             JsonInput::overlay($stored, $body, $mapped['input'], JsonInput::AGREEMENT_FIELDS),
             $mapped['preferences'],
+            $this->finance->currencyFor($user, $vehicle),
         );
         if ($input instanceof ValidationErrors) {
             throw $this->validation->of($input);

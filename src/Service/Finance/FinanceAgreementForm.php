@@ -11,6 +11,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Validation\ValidationErrors;
@@ -19,7 +20,8 @@ use Logbook\Support\Validation\Validator;
 /**
  * The agreement form (spec.md §7.32 *Form*), with fields by type: a field
  * that doesn't belong to the type is ignored. Amounts are in the vehicle's
- * currency (2 places as typed, 0 valid), the APR to 3 places, the excess
+ * currency, to its minor unit (0 for JPY, 2 for GBP, 3 for BHD, #390; 0
+ * valid), the APR to 3 places, the excess
  * charge to 4; the start odometer in the user's distance unit.
  */
 final class FinanceAgreementForm
@@ -29,7 +31,6 @@ final class FinanceAgreementForm
     public const int NOTES_MAX = 2000;
     public const int PAYMENTS_MAX = 120;
     public const int MILEAGE_MAX = 200000;
-    private const int MONEY_SCALE = 2;
     private const int MONEY_WHOLE_DIGITS = 11;
 
     /** The fields each type's form shows (besides lender, number, dates, payments and notes). */
@@ -124,13 +125,14 @@ final class FinanceAgreementForm
     /**
      * @param array<array-key, mixed> $input
      */
-    public static function parse(array $input, DisplayPreferences $preferences): FinanceInput|ValidationErrors
+    public static function parse(array $input, DisplayPreferences $preferences, string $currency): FinanceInput|ValidationErrors
     {
         $validator = new Validator($input, $preferences->locale);
+        $places = Currency::fractionDigits($currency);
         $type = $validator->enum('type', AgreementType::class, true);
         $field = static fn (string $name): bool => $type !== null && self::has($type, $name);
         $money = static fn (string $name, bool $required = false): ?string => $field($name) || $name === 'regular_payment'
-            ? $validator->decimal($name, $required, self::MONEY_SCALE, '0', null, self::MONEY_WHOLE_DIGITS)
+            ? $validator->decimal($name, $required, $places, '0', null, self::MONEY_WHOLE_DIGITS)
             : null;
 
         $lender = $validator->string('lender', true, self::LENDER_MAX);
