@@ -10257,7 +10257,12 @@ task breakdowns live in the per-phase files; this is the map.
   shown parts that add up to their total by largest remainder, Reports'
   months table by controlled rounding (#403, #406), and the same for the
   Cost of ownership summary, its print table and *Coming up*'s table
-  (#407). Eight seeded
+  (#407). An independent script (Python, sharing no code with `src/`)
+  works out finance and depreciation too; comparing it with the app made
+  the spec exact on a valuation's moment in its day (#408), per month
+  (#409), a sale day's distance (#412) and *What changed* by part (#413),
+  and gave a short year no rate (#410); the edge-case catalogue's tests
+  gave every negative amount the true minus sign (#414). Eight seeded
   property tests, fixed seeds on every push and fresh ones nightly
   (`properties.yml`), found the depreciation rounding fixed as #402. See
   [`phase-45.1.md`](docs/phases/phase-45.1.md).

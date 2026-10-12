@@ -30,6 +30,7 @@ use Throwable;
 final class GoldenHouseholdTest extends AppTestCase
 {
     private const string EXPECTED = __DIR__ . '/../../Fixtures/golden/expected.csv';
+    private const string SCRIPT = __DIR__ . '/../../Fixtures/golden/independent/script.csv';
 
     /** @var array<string, string>|null the app's figure by row id, read once for the whole class */
     private static ?array $actuals = null;
@@ -62,6 +63,35 @@ final class GoldenHouseholdTest extends AppTestCase
         if ($empty > 0) {
             self::markTestIncomplete($empty . ' of ' . count($rows) . ' expected figures are not filled in yet');
         }
+    }
+
+    /**
+     * Finance and depreciation are also worked out by an independent script
+     * that shares no code with src/ (#393, tests/Fixtures/golden/independent/):
+     * the app must agree with it on every row it fills, to the penny.
+     */
+    public function testTheIndependentScriptAgreesWithTheApp(): void
+    {
+        $rows = ExpectedSkeleton::read(self::EXPECTED);
+        $actuals = $this->actuals($rows);
+        $byId = array_column($rows, null, 'id');
+
+        $script = ExpectedSkeleton::read(self::SCRIPT);
+        self::assertSame(
+            array_column(array_filter($rows, static fn (array $r): bool => $r['source'] === 'spreadsheet+script'), 'id'),
+            array_column($script, 'id'),
+            'the script fills every spreadsheet+script row, by the same ids',
+        );
+        $mismatches = [];
+        foreach ($script as $line) {
+            $row = $byId[$line['id']];
+            self::assertSame($row['figure'], $line['figure'], "row {$line['id']} is the same figure");
+            if (!self::same($line['script'], $actuals[$line['id']])) {
+                $mismatches[] = self::describe($row, $line['script'], $actuals[$line['id']]);
+            }
+        }
+
+        self::assertSame([], $mismatches, "The app differs from the independent script:\n" . implode("\n", $mismatches));
     }
 
     public function testEveryFigureCanBeRead(): void

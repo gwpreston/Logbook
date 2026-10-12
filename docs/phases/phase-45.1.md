@@ -167,8 +167,16 @@ seed. Each property must hold:
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
       `expected.csv` exported from it (the skeleton, 890 rows with
       `expected` empty, is committed).
-- [ ] `GoldenHouseholdTest` on every engine: one assertion per row, and a
-      failure message that names the figure, period and vehicle.
+- [x] `GoldenHouseholdTest` on every engine: every row read through the
+      services as its viewer (`tests/Support/Golden/GoldenFigures`), all
+      mismatches reported at once naming the figure, viewer, vehicle and
+      period; incomplete, never green, while any `expected` is empty.
+      `app-figures.php` prints the app's figure for each row.
+- [x] The independent script (#393 A): `tests/Fixtures/golden/independent/`,
+      Python from the spec and the inputs only, filling the 114
+      `spreadsheet+script` rows. Comparing it with the app found
+      #408–#413; with them decided, it agrees with the app on all 114,
+      and `GoldenHouseholdTest` holds them to that.
 
 ### 45.1.2 Properties
 - [x] The generator (`tests/Support/Property/HouseholdGenerator`, 1–3
@@ -198,18 +206,25 @@ seed. Each property must hold:
       costs.
 
 ### 45.1.3 Edge cases
-The catalogue, each case with a test:
-- [ ] Cost 0, and every figure at 0 distance.
-- [ ] A valuation on the purchase day, two valuations on one day, and a
-      sale below or above the last valuation.
-- [ ] Finance settled early, a missed payment, a balloon refinanced, and
-      a 0% agreement.
-- [ ] A vehicle with no readings, one reading, or a backwards reading.
-- [ ] A plug-in hybrid with both litres and kWh.
-- [ ] A tax year spanning a rate change, and a trip on 5 and 6 April.
-- [ ] A payout or negative finance adjustment larger than the month's
-      spend (#388: there are no refunds).
-- [ ] Rounding at half a penny in each currency's minor unit.
+The catalogue, each case with a test in `tests/Integration/EdgeCase/`,
+through the services and the pages, asserting the spec's answer (64
+tests, green on SQLite, PostgreSQL, MySQL and MariaDB; none disagreed
+with the code, and the minus sign they found is #414):
+- [x] Cost 0, and every figure at 0 distance (`CostZeroAndNoDistanceTest`).
+- [x] A valuation on the purchase day, two valuations on one day, and a
+      sale below or above the last valuation (`ValuationsTest`).
+- [x] Finance settled early, a missed payment, a balloon refinanced
+      (the final payment, the agreement ended and a new loan: existing
+      features, no double count), and a 0% agreement (`FinanceTest`).
+- [x] A vehicle with no readings, one reading, or a backwards reading
+      (`ReadingsTest`).
+- [x] A plug-in hybrid with both litres and kWh (`PlugInHybridTest`).
+- [x] A tax year spanning a rate change, and a trip on 5 and 6 April
+      (`TaxYearTest`).
+- [x] A payout or negative finance adjustment larger than the month's
+      spend (#388: there are no refunds) (`NegativeTotalsTest`).
+- [x] Rounding at half a penny in each currency's minor unit
+      (`RoundingTest`).
 
 ### 45.1.4 Mismatches
 - [x] #402 (found by *totals add up*): the years' depreciation missed
@@ -220,6 +235,10 @@ The catalogue, each case with a test:
 - [x] #414: a negative amount shows U+2212 on every page, email and
       display string (`DisplayFormatter`); the edge-case and page tests
       check the true minus.
+- [x] #408–#415, found by the independent script, the golden test and
+      the edge cases, logged and decided; the code fixes (#410, #414)
+      carry regression tests, the spec fixes are in §7.1, §7.7, §7.35
+      and §8.
 - [ ] Each mismatch logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.
