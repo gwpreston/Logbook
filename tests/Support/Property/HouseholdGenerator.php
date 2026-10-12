@@ -15,9 +15,9 @@ use Logbook\Tests\Support\Golden\Rng;
  * household on every machine.
  *
  * Kept out of what Phase 45.1.5 has still to fix, so every property holds
- * on today's code: no valuation on a purchase day (#389), no finance
- * agreements (#387, #390), and every vehicle's log reaches back to its
- * purchase (#376). No two timed entries of a vehicle share an instant, and
+ * on today's code: no finance agreements (#387, #390), and every
+ * vehicle's log reaches back to its purchase (#376). One vehicle in four is
+ * valued on its purchase day, that day's closing value (#389). No two timed entries of a vehicle share an instant, and
  * no two valuations share a day, so the order they are entered in can't
  * matter (spec §7.1, §7.2).
  */
@@ -102,7 +102,11 @@ final class HouseholdGenerator
                 expiry: $start->modify('+1 year -1 day')->format('Y-m-d'),
             );
         }
-        foreach ($this->distinctDays($this->rng->between(0, 3), $span) as $offset) {
+        $valued = $this->distinctDays($this->rng->between(0, 3), $span);
+        if ($this->rng->oneIn(4)) {
+            array_unshift($valued, 0);
+        }
+        foreach ($valued as $offset) {
             $entries[] = new Entry(
                 'valuation',
                 self::fixed(intdiv($price * $this->rng->between(30, 105), 100), 2),

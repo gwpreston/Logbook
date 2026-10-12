@@ -225,9 +225,11 @@ Each with a regression test, spec already updated:
 - [ ] #387: a negative finance adjustment shown with its minus sign;
       shares over the groups above zero, a negative group listed after
       them (§7.7, §7.8).
-- [ ] #389: the value curve opens the purchase day at the price, so a
+- [x] #389: the value curve opens the purchase day at the price, so a
       purchase-day valuation is depreciation in that period (§7.1,
-      §7.35).
+      §7.35). A sale on the purchase day is its closing value too (#404,
+      decided 2026-10-12). The generator values one vehicle in four on its
+      purchase day, so *totals add up* holds the years to *Since bought*.
 - [ ] #390: finance rounds to the agreement currency's minor unit
       (§7.32), with the forms accepting that many decimals.
 - [ ] #403: shown parts rounded by largest remainder wherever a total
@@ -287,6 +289,8 @@ Found while starting (the edge-case review compared spec and code):
   its 0.
 - **#401 The golden household's people.** *Decided:* split owners, as
   above.
+- **#404 A sale on the purchase day** (found while building #389).
+  *Decided 2026-10-12:* as #389, that day's closing value.
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.

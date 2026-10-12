@@ -1514,8 +1514,8 @@ from fleet totals unless "include archived" is toggled.
     line by day, and a period's depreciation is the value at its start
     minus the value at its end (a gain is negative). Several points on
     one day: the last one counts, except that the purchase day opens at
-    the purchase price, so a valuation dated on the purchase day is that
-    day's closing value and the drop from the price falls in the period
+    the purchase price, so a valuation (or a sale, #404) dated on the purchase day is
+    that day's closing value and the drop from the price falls in the period
     holding the purchase day: the periods' depreciation always adds up to
     *Since bought* (Phase 45.1, #389, decided 2026-10-11). Nothing is
     extrapolated: a period is cut to the first and latest points and
@@ -8321,8 +8321,8 @@ it replaces none of the other figures.
   - the vehicle's **value points** are §7.1's value series: the purchase
     price on the purchase date, each valuation on its date, and the sale
     price on the sale date (several on one day: the last one counts,
-    except that the purchase day opens at the price, so a valuation that
-    day is its closing value, #389);
+    except that the purchase day opens at the price, so a valuation or a sale
+    that day is its closing value, #389, #404);
   - the value on any day between two points is interpolated in a straight
     line by day, and rounded to the micro-unit (half up) before anything is
     subtracted from it, so adjacent periods' depreciation adds up exactly
@@ -9062,8 +9062,8 @@ overview while any test is unreviewed. A test is reviewed
     its start gives "—". Per-distance figures also need the log to reach
     back to the period's start (§7.7, #376).
   - **Valuations:** two on one day, the last added wins (for the
-    current value and the curve); one on the purchase day is that day's
-    closing value, after the price (§7.1, #389). A sale is the
+    current value and the curve); one on the purchase day (or a sale that day,
+    #404) is that day's closing value, after the price (§7.1, #389). A sale is the
     value whatever the last valuation; a sale above it is a negative
     depreciation part in that period; a sale above the price is a gain:
     a negative per-distance part and no per-year figure.
