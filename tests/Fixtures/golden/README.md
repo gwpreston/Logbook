@@ -185,7 +185,16 @@ Precision in `expected`:
 - distance to the whole unit;
 - economy to 2 places.
 
-The golden test reports every mismatch at once, naming the figure,
-viewer, vehicle and period. A mismatch is settled in
+The golden test (`GoldenHouseholdTest`) reports every mismatch at once, naming the
+id, figure, viewer, vehicle and period with both values. Numbers compare as
+numbers (`12.5` equals `12.50`, `1,234.50` equals `1234.50`); a *Coming up*
+total with an unknown cost is written `at_least 123.45`. A row whose
+`expected` is empty never counts as a pass: the test ends incomplete
+("N of 864 expected figures are not filled in yet"). `php
+tests/Fixtures/golden/app-figures.php > app-figures.csv` prints the app's own
+figure for every row (`id,actual`) to compare with the spreadsheet; it never
+writes `expected.csv`. A figure no service exposes reads as `(no reader)` (see
+`GoldenFigures::UNREADABLE_FIGURES`) and counts as a mismatch once its row is
+filled. A mismatch is settled in
 `docs/phases/open-questions.md`: the spreadsheet, the code or the spec was
 wrong (45.1.4).
