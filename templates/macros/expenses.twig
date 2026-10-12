@@ -62,15 +62,16 @@
 {% macro breakdown(section) -%}
     {% import _self as exp %}
     <ul class="breakdown">
-        {% for total in section.groups %}
-            {% if not total.amount.isZero() %}
-                <li class="breakdown__row">
-                    <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</span>
-                    <span class="breakdown__share">{{ 'report.share'|trans({share: total.share / 100}) }}</span>
-                    <span class="breakdown__amount tabular">{{ total.amount|money }}</span>
+        {# Shares are of the groups above zero; one below zero (a finance end adjustment, #387) comes last, with no share. #}
+        {% for total in section.spentGroups() %}
+            <li class="breakdown__row">
+                <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</span>
+                <span class="breakdown__share">{{ total.share is not null ? 'report.share'|trans({share: total.share / 100}) : '' }}</span>
+                <span class="breakdown__amount tabular">{{ total.amount|money }}</span>
+                {% if total.share is not null %}
                     <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ total.share|round(1) }}%; --swatch: var(--{{ total.group.color() }})"></span></span>
-                </li>
-            {% endif %}
+                {% endif %}
+            </li>
         {% endfor %}
     </ul>
 {%- endmacro %}

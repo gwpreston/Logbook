@@ -67,7 +67,7 @@ final readonly class ExpenseBreakdown
             $currency->currency,
             $currency->total,
             array_map(
-                static fn (GroupTotal $g, int $percent): GroupShare => new GroupShare($g->group, $g->amount, $percent),
+                static fn (GroupTotal $g, ?int $percent): GroupShare => new GroupShare($g->group, $g->amount, $percent),
                 $spent,
                 $percents,
             ),

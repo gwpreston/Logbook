@@ -16,6 +16,7 @@ use Logbook\Service\Vehicle\DepreciationState;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Number\Apportion;
 use Logbook\Support\Number\Decimal;
 
 /**
@@ -137,14 +138,12 @@ final readonly class OwnershipCost
                 $received = $received->add($payout->amount);
             }
         }
-        $gross = $running;
         $running = $running->subtract($received);
+        // Shares over the groups above zero; a group below zero has none (§7.7, #387).
+        $shares = Apportion::shares(array_values(array_map(static fn (Money $m): int => $m->micros, $byGroup)));
+        $shareOf = array_combine(array_keys($byGroup), $shares);
         $groups = array_map(
-            static fn (CostGroup $g): GroupTotal => new GroupTotal(
-                $g,
-                $byGroup[$g->value],
-                $gross->micros === 0 ? 0.0 : $byGroup[$g->value]->micros / $gross->micros * 100,
-            ),
+            static fn (CostGroup $g): GroupTotal => new GroupTotal($g, $byGroup[$g->value], $shareOf[$g->value]),
             CostGroup::cases(),
         );
 

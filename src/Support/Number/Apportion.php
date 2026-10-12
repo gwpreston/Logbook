@@ -37,26 +37,49 @@ final class Apportion
     }
 
     /**
-     * Each part's share of their sum as whole percentages adding up to
-     * exactly 100 (spec.md §7.8 *Expense breakdown*); all zeros when the
-     * sum is zero. Parts are non-negative integers (e.g. money in micros).
+     * Each part's share of the parts above zero as whole percentages adding
+     * up to exactly 100 (spec.md §7.8 *Expense breakdown*); all zeros when
+     * nothing is above zero. A part below zero (a finance end adjustment,
+     * §7.7, #387) has no share: null. Parts are integers (money in micros).
      *
      * @param list<int> $parts
-     * @return list<int> in the order given
+     * @return list<int|null> in the order given
      */
     public static function percentages(array $parts): array
     {
-        $sum = array_sum($parts);
-        if ($sum <= 0) {
-            return array_fill(0, count($parts), 0);
+        $sum = array_sum(array_filter($parts, static fn (int $part): bool => $part > 0));
+        $positive = array_values(array_filter($parts, static fn (int $part): bool => $part >= 0));
+        $whole = $sum <= 0
+            ? array_fill(0, count($positive), 0)
+            : array_map('intval', self::toTarget(array_map(
+                static fn (int $part): BigRational => BigRational::ofFraction(BigInteger::of($part)->multipliedBy(100), $sum),
+                $positive,
+            ), '100', 0));
+
+        $out = [];
+        foreach ($parts as $part) {
+            $out[] = $part < 0 ? null : array_shift($whole);
         }
 
-        $shares = array_map(
-            static fn (int $part): BigRational => BigRational::ofFraction(BigInteger::of($part)->multipliedBy(100), $sum),
+        return $out;
+    }
+
+    /**
+     * Each part's share of the parts above zero, in percent (for bar widths
+     * and the Reports breakdown, spec.md §7.7); null for a part below zero,
+     * which is listed with no share (#387).
+     *
+     * @param list<int> $parts integers (money in micros)
+     * @return list<float|null> in the order given
+     */
+    public static function shares(array $parts): array
+    {
+        $sum = array_sum(array_filter($parts, static fn (int $part): bool => $part > 0));
+
+        return array_map(
+            static fn (int $part): ?float => $part < 0 ? null : ($sum === 0 ? 0.0 : $part / $sum * 100),
             $parts,
         );
-
-        return array_map('intval', self::toTarget($shares, '100', 0));
     }
 
     /**

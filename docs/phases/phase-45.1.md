@@ -222,9 +222,14 @@ Each with a regression test, spec already updated:
       written off during that month (§7.11).
 - [ ] #375: the digest's fleet spend is labelled when any listed
       vehicle's costs are hidden (§7.11).
-- [ ] #387: a negative finance adjustment shown with its minus sign;
+- [x] #387: a negative finance adjustment shown with its minus sign;
       shares over the groups above zero, a negative group listed after
-      them (§7.7, §7.8).
+      them (§7.7, §7.8). The generator now buys one unsold vehicle in two
+      on HP (some at 0%, half settled early, sometimes for far less than
+      the payments left); *sign is kept* holds the groups' order and
+      shares, and *rounded once* holds every finance line and interest
+      share to the currency's minor unit (#390). Seed 11 joins the fixed
+      seeds, for yen on HP and a group below zero.
 - [x] #389: the value curve opens the purchase day at the price, so a
       purchase-day valuation is depreciation in that period (§7.1,
       §7.35). A sale on the purchase day is its closing value too (#404,

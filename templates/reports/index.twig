@@ -203,7 +203,9 @@
                                             </span>
                                             <span class="breakdown__share">{{ row.costPerKm is not null ? row.costPerKm|per_distance(currency) : '' }}</span>
                                             <span class="breakdown__amount tabular">{{ row.total|money }}</span>
-                                            <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ row.share|round(1) }}%"></span></span>
+                                            {% if row.share is not null %}
+                                                <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ row.share|round(1) }}%"></span></span>
+                                            {% endif %}
                                         </li>
                                     {% endfor %}
                                 </ul>

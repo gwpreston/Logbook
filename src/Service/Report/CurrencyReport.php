@@ -50,13 +50,20 @@ final readonly class CurrencyReport
     }
 
     /**
-     * The groups with something spent, for legends.
+     * The groups with something spent, for legends: those above zero in
+     * CostGroup order, then any below zero (a finance end adjustment, with
+     * no share, spec.md §7.7, #387).
      *
      * @return list<GroupTotal>
      */
     public function spentGroups(): array
     {
-        return array_values(array_filter($this->groups, static fn (GroupTotal $g): bool => !$g->amount->isZero()));
+        $spent = array_values(array_filter($this->groups, static fn (GroupTotal $g): bool => !$g->amount->isZero()));
+
+        return [
+            ...array_values(array_filter($spent, static fn (GroupTotal $g): bool => $g->amount->micros > 0)),
+            ...array_values(array_filter($spent, static fn (GroupTotal $g): bool => $g->amount->micros < 0)),
+        ];
     }
 
     /**

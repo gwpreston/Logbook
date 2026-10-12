@@ -15,9 +15,12 @@ use Logbook\Tests\Support\Golden\Rng;
  * household on every machine.
  *
  * Kept out of what Phase 45.1.5 has still to fix, so every property holds
- * on today's code: no finance agreements (#387, #390), and every
- * vehicle's log reaches back to its purchase (#376). One vehicle in four is
- * valued on its purchase day, that day's closing value (#389). No two timed entries of a vehicle share an instant, and
+ * on today's code: every vehicle's log reaches back to its purchase (#376).
+ * One vehicle in four is valued on its purchase day, that day's closing
+ * value (#389). One unsold vehicle in two is bought on HP, at 0% now and
+ * then, and half of those are settled early, sometimes for far less than
+ * the payments left, so the end adjustment goes below zero (#387); every
+ * finance amount is in the currency's minor unit (#390). No two timed entries of a vehicle share an instant, and
  * no two valuations share a day, so the order they are entered in can't
  * matter (spec §7.1, §7.2).
  */
@@ -123,6 +126,8 @@ final class HouseholdGenerator
             );
         }
 
+        $finance = !$sold && $this->rng->oneIn(2) ? $this->finance($purchase, $today, $price, $currency) : null;
+
         return new VehiclePlan(
             $key,
             $currency,
@@ -133,6 +138,45 @@ final class HouseholdGenerator
             $sold ? self::fixed(intdiv($price * $this->rng->between(20, 115), 100), 2) : null,
             $memberSeesCosts,
             $entries,
+            $finance,
+        );
+    }
+
+    /**
+     * HP on the purchase price ($price in hundredths of the currency's unit).
+     * The payment is worked out from the APR and typed to the minor unit.
+     */
+    private function finance(DateTimeImmutable $purchase, DateTimeImmutable $today, int $price, string $currency): FinancePlan
+    {
+        $places = $currency === 'JPY' ? 0 : 2;
+        $minor = $currency === 'JPY' ? 100 : 1;
+        $deposit = intdiv($price * $this->rng->between(0, 30), 100 * $minor) * $minor;
+        $credit = ($price - $deposit) / 100;
+        $payments = $this->rng->between(12, 48);
+        $apr = $this->rng->oneIn(4) ? 0 : $this->rng->between(19, 129);
+        $rate = (1 + $apr / 1000) ** (1 / 12) - 1;
+        $payment = $apr === 0 ? $credit / $payments : $credit * $rate / (1 - (1 + $rate) ** -$payments);
+        $regular = (int) round($payment * 10 ** $places);
+
+        $settledOn = null;
+        $settlement = null;
+        $elapsed = (int) floor(self::days($purchase, $today) / 31);
+        if ($elapsed >= 4 && $this->rng->oneIn(2)) {
+            $made = $this->rng->between(2, min($elapsed, $payments) - 1);
+            $settledOn = $purchase->modify('+' . $made . ' months +' . $this->rng->between(1, 20) . ' days');
+            // Sometimes far below the payments left: the adjustment goes negative (#387).
+            $left = ($payments - $made) * $regular;
+            $percent = $this->rng->oneIn(3) ? $this->rng->between(20, 50) : $this->rng->between(80, 100);
+            $settlement = intdiv($left * $percent, 100);
+        }
+
+        return new FinancePlan(
+            self::fixed($deposit, 2),
+            $payments,
+            self::fixed($regular, $places),
+            self::fixed($apr, 1),
+            $settledOn?->format('Y-m-d'),
+            $settlement === null ? null : self::fixed($settlement, $places),
         );
     }
 

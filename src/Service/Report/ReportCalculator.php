@@ -122,6 +122,7 @@ final class ReportCalculator
         // fleet's running cost look cheaper than any single vehicle's.
         $distance = '0';
         $vehicleCosts = [];
+        $aboveZero = self::aboveZero($vehicleTotals);
         foreach ($vehicles as $vehicle) {
             $count = $vehicleCounts[$vehicle->id] ?? 0;
             if ($count === 0) {
@@ -138,7 +139,7 @@ final class ReportCalculator
                 $count,
                 $km,
                 self::perKm($spent, $km),
-                self::share($spent, $total),
+                self::share($spent, $aboveZero),
             );
         }
         usort($vehicleCosts, static fn (VehicleCost $a, VehicleCost $b): int
@@ -151,13 +152,15 @@ final class ReportCalculator
             $months[] = new MonthTotal($month, $monthTotals[$key], $monthGroups[$key]);
         }
 
+        $groupsAboveZero = self::aboveZero($groups);
+
         return new CurrencyReport(
             currency: $currency,
             total: $total,
             count: count($items),
             groups: array_map(
                 static fn (CostGroup $g): GroupTotal
-                    => new GroupTotal($g, $groups[$g->value], self::share($groups[$g->value], $total)),
+                    => new GroupTotal($g, $groups[$g->value], self::share($groups[$g->value], $groupsAboveZero)),
                 CostGroup::cases(),
             ),
             months: $months,
@@ -180,8 +183,24 @@ final class ReportCalculator
         return Decimal::divide($amount->toDecimal(Money::SCALE), $km, self::SCALE);
     }
 
-    private static function share(Money $part, Money $total): float
+    /**
+     * A part's share of the parts above zero; none for a part below zero
+     * (a finance end adjustment, spec.md §7.7, #387).
+     */
+    private static function share(Money $part, int $aboveZero): ?float
     {
-        return $total->micros === 0 ? 0.0 : $part->micros / $total->micros * 100;
+        if ($part->micros < 0) {
+            return null;
+        }
+
+        return $aboveZero === 0 ? 0.0 : $part->micros / $aboveZero * 100;
+    }
+
+    /**
+     * @param array<array-key, Money> $parts
+     */
+    private static function aboveZero(array $parts): int
+    {
+        return array_sum(array_map(static fn (Money $m): int => max(0, $m->micros), $parts));
     }
 }

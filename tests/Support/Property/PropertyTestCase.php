@@ -16,8 +16,12 @@ use Slim\App;
  */
 abstract class PropertyTestCase extends AppTestCase
 {
-    /** The seeds every push runs, on every engine. */
-    private const array FIXED_SEEDS = [7, 42, 451, 2026, 31337];
+    /**
+     * The seeds every push runs, on every engine. 11 is there for what the
+     * others miss: yen on HP, settled early for less than the payments left,
+     * so a year's group goes below zero (#387, #390).
+     */
+    private const array FIXED_SEEDS = [7, 11, 42, 451, 2026, 31337];
 
     private ?string $defaultZone = null;
 

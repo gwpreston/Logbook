@@ -9,14 +9,15 @@ use Logbook\Support\Money\Money;
 
 /**
  * A cost group's spend and its whole-percentage share of its currency's
- * total (the shares of a section add up to 100).
+ * groups above zero (the shares of a section add up to 100); none for a
+ * group below zero (a finance end adjustment, spec.md §7.8, #387).
  */
 final readonly class GroupShare
 {
     public function __construct(
         public CostGroup $group,
         public Money $amount,
-        public int $percent,
+        public ?int $percent,
     ) {
     }
 }

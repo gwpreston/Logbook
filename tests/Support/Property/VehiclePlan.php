@@ -6,7 +6,7 @@ namespace Logbook\Tests\Support\Property;
 
 /**
  * One generated vehicle: what was paid for it, the reading on the day it was
- * bought, whether it was sold, and its entries.
+ * bought, whether it was sold, its entries and any finance agreement.
  */
 final readonly class VehiclePlan
 {
@@ -23,6 +23,7 @@ final readonly class VehiclePlan
         public ?string $salePrice,
         public bool $memberSeesCosts,
         public array $entries,
+        public ?FinancePlan $finance = null,
     ) {
     }
 
@@ -43,6 +44,7 @@ final readonly class VehiclePlan
             $this->salePrice,
             $this->memberSeesCosts,
             $entries,
+            $this->finance,
         );
     }
 }

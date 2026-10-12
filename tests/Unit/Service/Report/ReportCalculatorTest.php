@@ -28,6 +28,8 @@ use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Kernel;
 use Logbook\Service\Expense\CostItem;
+use Logbook\Service\Finance\FinanceLine;
+use Logbook\Service\Finance\FinanceLineKind;
 use Logbook\Service\Report\CurrencyReport;
 use Logbook\Service\Report\MonthTotal;
 use Logbook\Service\Report\Report;
@@ -43,6 +45,7 @@ use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\I18n\TranslatorFactory;
 use Logbook\Support\Units\UnitPreset;
+use Logbook\Tests\Unit\Service\Finance\FinanceFixtures;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -80,9 +83,10 @@ final class ReportCalculatorTest extends TestCase
         self::assertSame(['0.300', '189.990', '480.005'], self::monthTotals($section));
         self::assertSame('60.005', $section->months[2]->amount(CostGroup::Fuel)->toDecimal(3));
 
-        $shares = array_map(static fn ($g): float => round($g->share, 2), $section->groups);
+        $shares = array_map(static fn ($g): float => round($g->share ?? 0.0, 2), $section->groups);
         self::assertSame([8.95, 28.34, 62.66, 0.04], $shares);
-        self::assertEqualsWithDelta(100.0, array_sum(array_map(static fn ($g): float => $g->share, $section->groups)), 0.0001);
+        $sum = array_sum(array_map(static fn ($g): float => $g->share ?? 0.0, $section->groups));
+        self::assertEqualsWithDelta(100.0, $sum, 0.0001);
     }
 
     public function testMonthsWithNothingSpentAreStillListed(): void
@@ -270,6 +274,26 @@ final class ReportCalculatorTest extends TestCase
         self::assertTrue($section->total->isZero());
         self::assertSame(0.0, $section->groups[0]->share, 'no division by zero');
         self::assertCount(1, $section->vehicles);
+    }
+
+    public function testANegativeGroupComesLastWithNoShareAndShowsItsMinus(): void
+    {
+        // #387: settling early cost £25 less than the interest counted so far.
+        $golf = self::vehicle(1);
+        $adjustment = new FinanceLine(self::date('2026-09-10'), '-25.00', FinanceLineKind::Adjustment);
+        $items = [
+            self::fuel($golf, '2026-09-03T10:00:00Z', '60.00'),
+            CostItem::fromFinance($golf, FinanceFixtures::hp(), $adjustment, 'GBP'),
+        ];
+        $period = ReportPeriod::preset(ReportRange::ThisMonth, self::date('2026-09-27'));
+
+        $section = self::report($items, [$golf], $period)->currencies[0];
+
+        self::assertSame('35.000', $section->total->toDecimal(3));
+        $spent = $section->spentGroups();
+        self::assertSame([CostGroup::Fuel, CostGroup::Other], array_map(static fn ($g): CostGroup => $g->group, $spent));
+        self::assertSame([100.0, null], array_map(static fn ($g): ?float => $g->share, $spent));
+        self::assertSame('-£25.00', self::formatter(UnitPreset::Uk)->money($spent[1]->amount));
     }
 
     public function testAllTimeStartsAtTheEarliestCost(): void

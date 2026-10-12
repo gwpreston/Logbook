@@ -81,8 +81,10 @@ final readonly class OwnershipCard
     }
 
     /**
-     * What is taken off rather than drawn: the insurance payouts and a
-     * depreciation gain, each as a negative amount.
+     * What is taken off rather than drawn: the insurance payouts, a
+     * depreciation gain and a running part below zero (a finance end
+     * adjustment larger than the rest of its part, §7.7, #387), each as a
+     * negative amount.
      *
      * @return list<array{labelKey: string, amount: Money}>
      */
@@ -90,6 +92,12 @@ final readonly class OwnershipCard
     {
         $since = $this->trueCost->sinceBought;
         $lines = [];
+        foreach (TruePart::cases() as $part) {
+            $amount = $since->amount($part);
+            if ($part !== TruePart::Depreciation && $amount !== null && $amount->isNegative()) {
+                $lines[] = ['labelKey' => $part->labelKey(), 'amount' => $amount];
+            }
+        }
         if (!$since->payouts->isZero()) {
             $lines[] = ['labelKey' => 'true_cost.payouts', 'amount' => Money::zero($since->currency)->subtract($since->payouts)];
         }
