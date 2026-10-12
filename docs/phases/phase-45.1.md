@@ -315,6 +315,9 @@ Found while starting (the edge-case review compared spec and code):
 - **#406 Reports' months table** (found while building #403). *Decided
   2026-10-12:* controlled rounding, so every month, group and the grand
   total add up.
+- **#407 Other totals shown with their parts** (found while building
+  #403): the Cost of ownership summary, the ownership print table and
+  *Coming up*'s table. *Needs a decision* (open-questions log).
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.

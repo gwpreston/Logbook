@@ -1065,11 +1065,17 @@ final readonly class CsvExporter
         if ($cost->payouts !== null) {
             $parts['payouts'] = Money::zero($cost->currency)->subtract($cost->payouts);
         }
-        [$running, $shown] = ShownAmounts::parts($cost->running, $parts, self::CSV_PLACES);
-        $total = $cost->total === null ? null : ShownAmounts::round($cost->total, self::CSV_PLACES);
-        $depreciation = $total === null || $cost->depreciationCost === null
-            ? ($cost->depreciationCost === null ? null : ShownAmounts::round($cost->depreciationCost, self::CSV_PLACES))
-            : $total->subtract($running);
+        // From the top: the total, then the running costs and depreciation, then the groups.
+        $places = self::CSV_PLACES;
+        if ($cost->total !== null && $cost->depreciationCost !== null) {
+            $levels = [$cost->running, $cost->depreciationCost];
+            [$total, [$running, $depreciation]] = ShownAmounts::parts($cost->total, $levels, $places);
+        } else {
+            $total = $cost->total === null ? null : ShownAmounts::round($cost->total, $places);
+            $running = ShownAmounts::round($cost->running, $places);
+            $depreciation = $cost->depreciationCost === null ? null : ShownAmounts::round($cost->depreciationCost, $places);
+        }
+        $shown = ShownAmounts::to($running, $parts, $places);
 
         return [
             ...array_map(static fn (GroupTotal $g): ?string => $money($shown[$g->group->value]), $cost->groups),

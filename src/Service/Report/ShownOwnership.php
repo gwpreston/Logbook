@@ -10,10 +10,11 @@ use Logbook\Support\Money\ShownAmounts;
 
 /**
  * Cost of ownership's amounts as shown on the vehicle's card (spec.md §8
- * *Shown parts add up*, #403): the groups and the payouts add up to the
- * running costs shown, the running costs and depreciation to the total shown,
- * and a month's running costs and depreciation to its total. Each total is
- * rounded once; display only.
+ * *Shown parts add up*, #403): the running costs and depreciation add up
+ * to the total shown, the groups and the payouts to the running costs
+ * shown, and a month's running costs and depreciation to its total. The
+ * top total is rounded once and the rest shared out from it, so every
+ * figure is within a minor unit of its exact amount; display only.
  */
 final readonly class ShownOwnership
 {
@@ -30,6 +31,7 @@ final readonly class ShownOwnership
         public ?Money $runningPerMonth,
         public ?Money $depreciationPerMonth,
         public ?Money $perMonth,
+        private bool $isGain = false,
     ) {
     }
 
@@ -42,13 +44,19 @@ final readonly class ShownOwnership
         if ($cost->payouts !== null) {
             $parts['payouts'] = Money::zero($cost->currency)->subtract($cost->payouts);
         }
-        [$running, $shown] = ShownAmounts::parts($cost->running, $parts);
+        // From the top: the total, then the running costs and depreciation, then the groups.
+        $total = null;
+        $depreciation = null;
+        if ($cost->total !== null && $cost->depreciationCost !== null) {
+            $levels = [$cost->running, $cost->depreciationCost];
+            [$total, [$running, $depreciation]] = ShownAmounts::parts($cost->total, $levels);
+        } else {
+            $total = $cost->total === null ? null : ShownAmounts::round($cost->total);
+            $running = ShownAmounts::round($cost->running);
+        }
+        $shown = ShownAmounts::to($running, $parts);
         $payouts = isset($shown['payouts']) ? Money::zero($cost->currency)->subtract($shown['payouts']) : null;
         unset($shown['payouts']);
-
-        // The running costs are already shown: depreciation is what makes up the total.
-        $total = $cost->total === null ? null : ShownAmounts::round($cost->total);
-        $depreciation = $total === null || $cost->depreciationCost === null ? null : $total->subtract($running);
 
         $perMonth = $cost->perMonth === null ? null : ShownAmounts::round($cost->perMonth);
         $runningPerMonth = $cost->runningPerMonth === null ? null : ShownAmounts::round($cost->runningPerMonth);
@@ -60,13 +68,25 @@ final readonly class ShownOwnership
             );
         }
 
-        return new self($running, $shown, $payouts, $depreciation, $total, $runningPerMonth, $depreciationPerMonth, $perMonth);
+        $isGain = $cost->depreciationCost !== null && $cost->depreciationCost->isNegative();
+
+        return new self(
+            $running,
+            $shown,
+            $payouts,
+            $depreciation,
+            $total,
+            $runningPerMonth,
+            $depreciationPerMonth,
+            $perMonth,
+            $isGain,
+        );
     }
 
-    /** A gain in value as shown (a positive amount), or null without one. */
+    /** A gain in value as shown (a positive amount, 0 when under half a unit), or null without one. */
     public function gain(): ?Money
     {
-        return $this->depreciation !== null && $this->depreciation->isNegative()
+        return $this->isGain && $this->depreciation !== null
             ? Money::zero($this->depreciation->currency)->subtract($this->depreciation)
             : null;
     }

@@ -89,9 +89,11 @@ final class ShownPartsAddUpPropertyTest extends PropertyTestCase
             if ($cost->payouts !== null && $shown->payouts !== null) {
                 $lines[] = [$zero->subtract($cost->payouts), $zero->subtract($shown->payouts)];
             }
-            self::assertRoundedOnce($cost->running, $shown->running, "running, {$at}");
             self::assertAddUp($shown->running, $lines, "running, {$at}");
             $depreciation = $cost->depreciationCost;
+            if ($cost->total === null || $depreciation === null) {
+                self::assertRoundedOnce($cost->running, $shown->running, "running, {$at}");
+            }
             if ($cost->total !== null && $depreciation !== null && $shown->total !== null && $shown->depreciation !== null) {
                 self::assertRoundedOnce($cost->total, $shown->total, "total, {$at}");
                 $levels = [[$cost->running, $shown->running], [$depreciation, $shown->depreciation]];

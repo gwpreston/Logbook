@@ -34,9 +34,23 @@ final class ShownAmounts
     public static function parts(Money $total, array $parts, ?int $places = null): array
     {
         $places ??= Currency::fractionDigits($total->currency);
-        $shown = self::round($total, $places);
+
+        return [self::round($total, $places), self::to(self::round($total, $places), $parts, $places)];
+    }
+
+    /**
+     * Parts rounded to add up to a total already shown (itself a part of a
+     * larger total, say), each within a unit of its exact amount.
+     *
+     * @template K of array-key
+     * @param array<K, Money> $parts
+     * @return array<K, Money>
+     */
+    public static function to(Money $shown, array $parts, ?int $places = null): array
+    {
+        $places ??= Currency::fractionDigits($shown->currency);
         if ($parts === []) {
-            return [$shown, []];
+            return [];
         }
         $keys = array_keys($parts);
         $rounded = Apportion::toTarget(
@@ -45,9 +59,9 @@ final class ShownAmounts
             max(0, $places),
         );
 
-        $money = array_map(static fn (string $d): Money => Money::of($d, $total->currency), $rounded);
+        $money = array_map(static fn (string $d): Money => Money::of($d, $shown->currency), $rounded);
 
-        return [$shown, array_combine($keys, $money)];
+        return array_combine($keys, $money);
     }
 
     /**
