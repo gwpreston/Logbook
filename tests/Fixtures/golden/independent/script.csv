@@ -1,0 +1,115 @@
+id,figure,viewer,vehicle,period,script,working
+1,ownership.total,alex,golf,since_bought,17119.41,"running 12524.410000 + depreciation 4595.00; 2023-10-07..2026-09-15 running 12524.410000 (fuel 5920.150000, maint 1387.750000, docs 2087.240000, other 3129.270000, payouts -0.000000)"
+3,ownership.depreciation,alex,golf,since_bought,4595.00,price 17995.00 - value 13400.00 on 2025-06-30
+4,ownership.per_distance,alex,golf,since_bought,0.491,"running 12524.410000 / 66948.800 km + loss 4595.00 / 38925.900 km (2023-10-07..2025-06-30), x 1.609344 per mi"
+5,ownership.per_month,alex,golf,since_bought,569.29,"running 12524.410000 / 36 months owned + per year 2656.624448 / 12 (loss 4595.00 x 12 / (20 whole months + 23 days / 30.436875), 2023-10-07..2025-06-30)"
+6,ownership.total,alex,ev,since_bought,16259.96,"running 8009.960000 + depreciation 8250.00; 2024-02-10..2026-09-15 running 8009.960000 (fuel 1457.600000, maint 1074.000000, docs 2575.740000, other 2902.620000, payouts -0.000000)"
+8,ownership.depreciation,alex,ev,since_bought,8250.00,price 27500.00 - value 19250.00 on 2026-02-10
+9,ownership.per_distance,alex,ev,since_bought,1.039,"running 8009.960000 / 28986.500 km + loss 8250.00 / 22359.600 km (2024-02-10..2026-02-10), x 1.609344 per mi"
+10,ownership.per_month,alex,ev,since_bought,594.06,"running 8009.960000 / 32 months owned + per year 4125.000000 / 12 (loss 8250.00 x 12 / (24 whole months + 0 days / 30.436875), 2024-02-10..2026-02-10)"
+11,ownership.total,alex,focus,since_bought,8653.87,"running 5553.870000 + depreciation 3100.00; 2023-09-20..2026-08-19 running 5553.870000 (fuel 2969.700000, maint 1833.500000, docs 1635.870000, other 294.800000, payouts -1180.000000)"
+13,ownership.depreciation,alex,focus,since_bought,3100.00,price 6450.00 - value 3350.00 on 2026-08-19
+14,ownership.per_distance,alex,focus,since_bought,0.350,"running 5553.870000 / 39827.900 km + loss 3100.00 / 39827.900 km (2023-09-20..2026-08-19), x 1.609344 per mi"
+15,ownership.per_month,alex,focus,since_bought,242.88,"running 5553.870000 / 36 months owned + per year 1063.293199 / 12 (loss 3100.00 x 12 / (34 whole months + 30 days / 30.436875), 2023-09-20..2026-08-19)"
+16,ownership.total,alex,corolla,since_bought,11399.27,"running 7199.270000 + depreciation 4200.00; 2023-11-04..2026-09-15 running 7199.270000 (fuel 3730.020000, maint 591.400000, docs 2086.750000, other 791.100000, payouts -0.000000)"
+18,ownership.depreciation,alex,corolla,since_bought,4200.00,price 21400.00 - value 17200.00 on 2025-11-01
+19,ownership.per_distance,alex,corolla,since_bought,0.466,"running 7199.270000 / 45900.200 km + loss 4200.00 / 31686.500 km (2023-11-04..2025-11-01), x 1.609344 per mi"
+20,ownership.per_month,alex,corolla,since_bought,381.28,"running 7199.270000 / 35 months owned + per year 2107.028982 / 12 (loss 4200.00 x 12 / (23 whole months + 28 days / 30.436875), 2023-11-04..2025-11-01)"
+22,ownership.total,sam,corolla,since_bought,11399.27,"running 7199.270000 + depreciation 4200.00; 2023-11-04..2026-09-15 running 7199.270000 (fuel 3730.020000, maint 591.400000, docs 2086.750000, other 791.100000, payouts -0.000000)"
+23,ownership.per_distance,sam,corolla,since_bought,0.289,running 7199.270000 / 45900.200 km + loss 4200.00 / 31686.500 km (2023-11-04..2025-11-01)
+24,ownership.per_month,sam,corolla,since_bought,381.28,"running 7199.270000 / 35 months owned + per year 2107.028982 / 12 (loss 4200.00 x 12 / (23 whole months + 28 days / 30.436875), 2023-11-04..2025-11-01)"
+29,true_cost.depreciation,alex,golf,last_12_months,—,period outside the value points (latest 2025-06-30)
+30,true_cost.total,alex,golf,last_12_months,3356.92,"running costs only (no depreciation in the period); 2025-10-01..2026-09-15 running 3356.919053 (fuel 1880.620000, maint 0.000000, docs spread 701.149053, other 775.150000, payouts -0.000000)"
+31,true_cost.per_distance,alex,golf,last_12_months,0.246,"running 3356.919053 / 22000.100 km (no dep part), x 1.609344 per mi"
+36,true_cost.depreciation,alex,golf,2023,876.18,value at start of 2023-10-07 17995.000000 - at start of 2024-01-01 17118.817204
+37,true_cost.total,alex,golf,2023,1861.39,"running 985.203160 + dep 876.182796; 2023-10-07..2023-12-31 running 985.203160 (fuel 453.730000, maint 0.000000, docs spread 143.883160, other 387.590000, payouts -0.000000)"
+38,true_cost.per_distance,alex,golf,2023,—,"under 90 days owned in the period (86 days, #410)"
+43,true_cost.depreciation,alex,golf,2024,2726.17,value at start of 2024-01-01 17118.817204 - at start of 2025-01-01 14392.647059
+44,true_cost.total,alex,golf,2024,7491.01,"running 4764.842589 + dep 2726.170145; 2024-01-01..2024-12-31 running 4764.842589 (fuel 2149.300000, maint 701.500000, docs spread 646.062589, other 1267.980000, payouts -0.000000)"
+45,true_cost.per_distance,alex,golf,2024,0.507,"running 4764.842589 / 23771.700 km + dep 2726.170145 / 23771.700 km (2024-01-01..2024-12-31), x 1.609344 per mi"
+50,true_cost.depreciation,alex,golf,2025,992.65,value at start of 2025-01-01 14392.647059 - at start of 2025-06-30 13400.000000
+51,true_cost.total,alex,golf,2025,5415.97,"running 4423.323663 + dep 992.647059; 2025-01-01..2025-12-31 running 4423.323663 (fuel 1907.230000, maint 686.250000, docs spread 737.803663, other 1092.040000, payouts -0.000000)"
+52,true_cost.per_distance,alex,golf,2025,0.479,"running 4423.323663 / 21920.400 km + dep 992.647059 / 10382.100 km (2025-01-01..2025-06-30), x 1.609344 per mi"
+57,true_cost.depreciation,alex,golf,2026,—,period outside the value points (latest 2025-06-30)
+58,true_cost.total,alex,golf,2026,2308.93,"running costs only (no depreciation in the period); 2026-01-01..2026-09-15 running 2308.928236 (fuel 1409.890000, maint 0.000000, docs spread 517.378236, other 381.660000, payouts -0.000000)"
+59,true_cost.per_distance,alex,golf,2026,0.225,"running 2308.928236 / 16484.600 km (no dep part), x 1.609344 per mi"
+64,true_cost.what_changed.depreciation,alex,golf,2024 vs 2023,—,"no rate in 2023:  | under 90 days owned in the period (86 days, #410)"
+65,true_cost.what_changed.total,alex,golf,2024 vs 2023,—,"no rate in 2023:  | under 90 days owned in the period (86 days, #410)"
+70,true_cost.what_changed.depreciation,alex,golf,2025 vs 2024,-0.031,dep rate 2025 0.153872 - 2024 0.184562
+71,true_cost.what_changed.total,alex,golf,2025 vs 2024,-0.029,rate 2025 0.478622 - rate 2024 0.507142
+76,true_cost.what_changed.depreciation,alex,golf,2026 vs 2025,-0.154,2026 has no depreciation part (after the latest value point): counts as 0 (#413); dep rate 2026 0.000000 - 2025 0.153872
+77,true_cost.what_changed.total,alex,golf,2026 vs 2025,-0.253,rate 2026 0.225414 - rate 2025 0.478622 (2026 has no depreciation part: its rate is running costs only)
+78,true_cost.what_changed.total,alex,golf,last_12_months_vs_previous,-0.240,rate last_12_months 0.245564 - rate previous_12_months 0.485726 (last_12_months has no depreciation part: its rate is running costs only)
+83,true_cost.depreciation,alex,ev,last_12_months,994.52,value at start of 2025-10-01 20244.520548 - at start of 2026-02-10 19250.000000
+84,true_cost.total,alex,ev,last_12_months,4010.59,"running 3016.069511 + dep 994.520548; 2025-10-01..2026-09-15 running 3016.069511 (fuel 362.730000, maint 925.000000, docs spread 834.359511, other 893.980000, payouts -0.000000)"
+85,true_cost.per_distance,alex,ev,last_12_months,0.857,"running 3016.069511 / 10628.400 km + dep 994.520548 / 4001.500 km (2025-10-01..2026-02-10), x 1.609344 per mi"
+90,true_cost.depreciation,alex,ev,2024,4898.91,value at start of 2024-02-10 27500.000000 - at start of 2025-01-01 22601.092896
+91,true_cost.total,alex,ev,2024,7319.02,"running 2420.109042 + dep 4898.907104; 2024-02-10..2024-12-31 running 2420.109042 (fuel 630.800000, maint 0.000000, docs spread 716.309042, other 1073.000000, payouts -0.000000)"
+92,true_cost.per_distance,alex,ev,2024,1.176,"running 2420.109042 / 10012.200 km + dep 4898.907104 / 10012.200 km (2024-02-10..2024-12-31), x 1.609344 per mi"
+97,true_cost.depreciation,alex,ev,2025,3049.72,value at start of 2025-01-01 22601.092896 - at start of 2026-01-01 19551.369863
+98,true_cost.total,alex,ev,2025,6481.34,"running 3431.616383 + dep 3049.723033; 2025-01-01..2025-12-31 running 3431.616383 (fuel 540.710000, maint 885.000000, docs spread 864.026383, other 1141.880000, payouts -0.000000)"
+99,true_cost.per_distance,alex,ev,2025,0.934,"running 3431.616383 / 11170.800 km + dep 3049.723033 / 11170.800 km (2025-01-01..2025-12-31), x 1.609344 per mi"
+104,true_cost.depreciation,alex,ev,2026,301.37,value at start of 2026-01-01 19551.369863 - at start of 2026-02-10 19250.000000
+105,true_cost.total,alex,ev,2026,2078.85,"running 1777.483483 + dep 301.369863; 2026-01-01..2026-09-15 running 1777.483483 (fuel 286.090000, maint 189.000000, docs spread 614.653483, other 687.740000, payouts -0.000000)"
+106,true_cost.per_distance,alex,ev,2026,0.779,"running 1777.483483 / 7803.500 km + dep 301.369863 / 1176.600 km (2026-01-01..2026-02-10), x 1.609344 per mi"
+111,true_cost.what_changed.depreciation,alex,ev,2025 vs 2024,-0.348,dep rate 2025 0.439365 - 2024 0.787442
+112,true_cost.what_changed.total,alex,ev,2025 vs 2024,-0.243,rate 2025 0.933747 - rate 2024 1.176446
+117,true_cost.what_changed.depreciation,alex,ev,2026 vs 2025,-0.027,dep rate 2026 0.412211 - 2025 0.439365
+118,true_cost.what_changed.total,alex,ev,2026 vs 2025,-0.155,rate 2026 0.778788 - rate 2025 0.933747
+119,true_cost.what_changed.total,alex,ev,last_12_months_vs_previous,-0.093,rate last_12_months 0.856672 - rate previous_12_months 0.950023
+124,true_cost.depreciation,alex,focus,last_12_months,172.53,value at start of 2025-10-01 3522.532895 - at start of 2026-08-19 3350.000000
+125,true_cost.total,alex,focus,last_12_months,1581.76,"running 1409.223504 + dep 172.532895; 2025-10-01..2026-08-19 running 1409.223504 (fuel 861.970000, maint 0.000000, docs spread 488.853504, other 58.400000, payouts -0.000000)"
+127,true_cost.per_distance,alex,focus,last_12_months,0.206,"running 1409.223504 / 12351.200 km + dep 172.532895 / 12351.200 km (2025-10-01..2026-08-19), x 1.609344 per mi"
+132,true_cost.depreciation,alex,focus,2023,501.51,value at start of 2023-09-20 6450.000000 - at start of 2024-01-01 5948.493151
+133,true_cost.total,alex,focus,2023,930.08,"running 428.573343 + dep 501.506849; 2023-09-20..2023-12-31 running 428.573343 (fuel 241.030000, maint 0.000000, docs spread 128.243343, other 59.300000, payouts -0.000000)"
+135,true_cost.per_distance,alex,focus,2023,0.512,"running 428.573343 / 2924.000 km + dep 501.506849 / 2924.000 km (2023-09-20..2023-12-31), x 1.609344 per mi"
+140,true_cost.depreciation,alex,focus,2024,1295.13,value at start of 2024-01-01 5948.493151 - at start of 2025-01-01 4653.363229
+141,true_cost.total,alex,focus,2024,3497.58,"running 2202.447333 + dep 1295.129922; 2024-01-01..2024-12-31 running 2202.447333 (fuel 1076.890000, maint 1705.000000, docs spread 508.557333, other 92.000000, payouts -1180.000000)"
+143,true_cost.per_distance,alex,focus,2024,0.403,"running 2202.447333 / 13953.500 km + dep 1295.129922 / 13953.500 km (2024-01-01..2024-12-31), x 1.609344 per mi"
+148,true_cost.depreciation,alex,focus,2025,1357.80,value at start of 2025-01-01 4653.363229 - at start of 2026-01-01 3295.559211
+149,true_cost.total,alex,focus,2025,3158.28,"running 1800.475323 + dep 1357.804018; 2025-01-01..2025-12-31 running 1800.475323 (fuel 1004.780000, maint 128.500000, docs spread 567.495323, other 99.700000, payouts -0.000000)"
+151,true_cost.per_distance,alex,focus,2025,0.376,"running 1800.475323 / 13534.000 km + dep 1357.804018 / 13534.000 km (2025-01-01..2025-12-31), x 1.609344 per mi"
+156,true_cost.depreciation,alex,focus,2026,-54.44,value at start of 2026-01-01 3295.559211 - at start of 2026-08-19 3350.000000
+157,true_cost.total,alex,focus,2026,986.02,"running 1040.456400 + dep -54.440789; 2026-01-01..2026-08-19 running 1040.456400 (fuel 647.000000, maint 0.000000, docs spread 349.656400, other 43.800000, payouts -0.000000)"
+159,true_cost.per_distance,alex,focus,2026,0.169,"running 1040.456400 / 9416.400 km + dep -54.440789 / 9416.400 km (2026-01-01..2026-08-19), x 1.609344 per mi"
+164,true_cost.what_changed.depreciation,alex,focus,2024 vs 2023,-0.127,dep rate 2024 0.149375 - 2023 0.276025
+165,true_cost.what_changed.total,alex,focus,2024 vs 2023,-0.109,rate 2024 0.403397 - rate 2023 0.511908
+170,true_cost.what_changed.depreciation,alex,focus,2025 vs 2024,0.012,dep rate 2025 0.161458 - 2024 0.149375
+171,true_cost.what_changed.total,alex,focus,2025 vs 2024,-0.028,rate 2025 0.375555 - rate 2024 0.403397
+176,true_cost.what_changed.depreciation,alex,focus,2026 vs 2025,-0.171,dep rate 2026 -0.009304 - 2025 0.161458
+177,true_cost.what_changed.total,alex,focus,2026 vs 2025,-0.207,rate 2026 0.168519 - rate 2025 0.375555
+178,true_cost.what_changed.total,alex,focus,last_12_months_vs_previous,-0.237,rate last_12_months 0.206101 - rate previous_12_months 0.443003
+183,true_cost.depreciation,alex,corolla,last_12_months,178.85,value at start of 2025-10-01 17378.846154 - at start of 2025-11-01 17200.000000
+184,true_cost.total,alex,corolla,last_12_months,2683.19,"running 2504.343381 + dep 178.846154; 2025-10-01..2026-09-15 running 2504.343381 (fuel 1252.330000, maint 284.000000, docs spread 697.613381, other 270.400000, payouts -0.000000)"
+185,true_cost.per_distance,alex,corolla,last_12_months,0.458,"running 2504.343381 / 15648.800 km + dep 178.846154 / 1435.100 km (2025-10-01..2025-11-01), x 1.609344 per mi"
+190,true_cost.depreciation,alex,corolla,2023,334.62,value at start of 2023-11-04 21400.000000 - at start of 2024-01-01 21065.384615
+191,true_cost.total,alex,corolla,2023,815.51,"running 480.897684 + dep 334.615385; 2023-11-04..2023-12-31 running 480.897684 (fuel 179.260000, maint 0.000000, docs spread 101.737684, other 199.900000, payouts -0.000000)"
+192,true_cost.per_distance,alex,corolla,2023,—,"under 90 days owned in the period (58 days, #410)"
+197,true_cost.depreciation,alex,corolla,2024,2111.54,value at start of 2024-01-01 21065.384615 - at start of 2025-01-01 18953.846154
+198,true_cost.total,alex,corolla,2024,4675.85,"running 2564.307774 + dep 2111.538461; 2024-01-01..2024-12-31 running 2564.307774 (fuel 1370.540000, maint 269.000000, docs spread 649.667774, other 275.100000, payouts -0.000000)"
+199,true_cost.per_distance,alex,corolla,2024,0.453,"running 2564.307774 / 16609.300 km + dep 2111.538461 / 16609.300 km (2024-01-01..2024-12-31), x 1.609344 per mi"
+204,true_cost.depreciation,alex,corolla,2025,1753.85,value at start of 2025-01-01 18953.846154 - at start of 2025-11-01 17200.000000
+205,true_cost.total,alex,corolla,2025,4326.76,"running 2572.909542 + dep 1753.846154; 2025-01-01..2025-12-31 running 2572.909542 (fuel 1263.570000, maint 322.400000, docs spread 715.539542, other 271.400000, payouts -0.000000)"
+206,true_cost.per_distance,alex,corolla,2025,0.480,"running 2572.909542 / 15750.300 km + dep 1753.846154 / 12980.800 km (2025-01-01..2025-11-01), x 1.609344 per mi"
+211,true_cost.depreciation,alex,corolla,2026,—,period outside the value points (latest 2025-11-01)
+212,true_cost.total,alex,corolla,2026,1476.47,"running costs only (no depreciation in the period); 2026-01-01..2026-09-15 running 1476.466092 (fuel 916.650000, maint 0.000000, docs spread 515.116092, other 44.700000, payouts -0.000000)"
+213,true_cost.per_distance,alex,corolla,2026,0.208,"running 1476.466092 / 11444.200 km (no dep part), x 1.609344 per mi"
+218,true_cost.what_changed.depreciation,alex,corolla,2024 vs 2023,—,"no rate in 2023:  | under 90 days owned in the period (58 days, #410)"
+219,true_cost.what_changed.total,alex,corolla,2024 vs 2023,—,"no rate in 2023:  | under 90 days owned in the period (58 days, #410)"
+224,true_cost.what_changed.depreciation,alex,corolla,2025 vs 2024,0.013,dep rate 2025 0.217440 - 2024 0.204596
+225,true_cost.what_changed.total,alex,corolla,2025 vs 2024,0.027,rate 2025 0.480336 - rate 2024 0.453062
+230,true_cost.what_changed.depreciation,alex,corolla,2026 vs 2025,-0.217,2026 has no depreciation part (after the latest value point): counts as 0 (#413); dep rate 2026 0.000000 - 2025 0.217440
+231,true_cost.what_changed.total,alex,corolla,2026 vs 2025,-0.273,rate 2026 0.207628 - rate 2025 0.480336 (2026 has no depreciation part: its rate is running costs only)
+232,true_cost.what_changed.total,alex,corolla,last_12_months_vs_previous,-0.016,rate last_12_months 0.458111 - rate previous_12_months 0.473679
+233,finance.payments_made,alex,golf,today,31,31 regular payments due on or before 2026-05-15 and not missed (paid late counts); settlement event not counted as a payment
+234,finance.payments_remaining,alex,golf,today,0,settled 2026-05-15: later payments left the schedule
+235,finance.amount_paid,alex,golf,today,20142.97,deposits 2500.00 + 31 payments + settlement 8812.62 + fees paid
+236,finance.interest_so_far,alex,golf,today,2147.97,ended: lines adjusted on 2026-05-15 to the exact cost of credit (adjustment 13.08)
+237,finance.cost_of_credit,alex,golf,today,2147.97,ended (settled 2026-05-15): everything paid 20142.97 - cash price
+238,finance.payments_made,alex,ev,today,31,31 regular payments due on or before 2026-09-15 and not missed (paid late counts)
+239,finance.payments_remaining,alex,ev,today,17,17 regular payments due after today
+240,finance.amount_paid,alex,ev,today,21024.27,deposits 4000.00 + 31 payments + settlement 0 + fees paid
+241,finance.interest_so_far,alex,ev,today,2469.63,"sum of 31 interest shares at r=0.0047885174, each rounded to 0.01"
+242,finance.cost_of_credit,alex,ev,today,2860.16,active: total amount payable 30360.16 (worked out) - cash price
+243,finance.settlement_estimate,alex,ev,today,8945.46,"PV of 17 payments at r=0.0047885174, k=1..17 whole months"
+244,finance.equity,alex,ev,today,10304.54,valuation 2026-02-10 19250.00 - settlement estimate 8945.46

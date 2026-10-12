@@ -6,7 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 45.1.5: **the money fixes decided while proving the money**.
+Phase 45.1: **proving the money**. The fixes decided while proving it
+(45.1.5 and 45.1.4), a golden household checked against an independent
+script, and the money edge cases each with a test.
 
 ### Changed
 - **Cost per distance needs a mileage log that reaches back** to the
@@ -21,9 +23,18 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   card and a vehicle's cost of ownership, and the cost of ownership and
   true cost CSVs' total rows, never miss their total by a penny (a part
   may move a penny, or 0.001 in a CSV total row; the months table is
-  rounded so every month and group adds up). The
+  rounded so every month and group adds up). So do the Cost of
+  ownership page's summary over its cards (a card may then differ by a
+  penny from the vehicle's own tab), its printed table, and *Coming
+  up*'s months table with its summary cards. The
   exact sums underneath, per-entry exports, the API and MCP are
   unchanged.
+- **Negative amounts show a true minus sign** ("−£12.34", U+2212) on
+  every page, email and display string, as the true-cost page already
+  did. CSV and API numbers keep the plain hyphen-minus.
+- **A true-cost year under 90 days owned** (a short first or last
+  year) shows no cost per distance, as *Last 12 months* already did, so
+  it has no *What changed* either (#410).
 - **A negative finance adjustment** (settling early for less than the
   payments counted) is listed after the groups above zero, with its
   minus sign and no share; shares are over the groups above zero.
@@ -37,8 +48,21 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   off during the month**, and its fleet spend says "on vehicles whose
   costs you see" when a listed vehicle's costs are hidden.
 
+### Documented
+- The spec now says exactly what the app already did: a valuation or
+  sale is the value at the start of its day (#408); *per month* and
+  depreciation *per year* (#409); a period's depreciation per distance
+  includes the driving on the day it is measured to (#412); and a part
+  missing from one year counts as 0 in *What changed* (#413).
+
 ### Upgrade notes
 - Pull and restart: no migration and no configuration change.
+- A true-cost year under 90 days owned now has `per_distance: null` and
+  `why_not: "too_short"` in the API and MCP, no `what_changed` for it or
+  the year after, and empty per-distance cells in the true-cost CSV.
+- Display strings (pages, emails, the API's `display` fields, Ask and
+  MCP) show a negative amount as "−£3.50" (U+2212) rather than "-£3.50";
+  raw API and CSV numbers are unchanged.
 - API, MCP and Ask clients may see `cost_per_km` null where it had a
   value, for a period the mileage log doesn't reach back to; a fleet's
   `cost_per_km` then no longer equals `total / distance_km`.

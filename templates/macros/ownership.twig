@@ -19,7 +19,7 @@
     {%- if cost.depreciationCost is null -%}
         —
     {%- elseif cost.depreciation.isGain() -%}
-        {{ 'ownership.gain'|trans({amount: shown ? shown.gain()|money : cost.depreciation.change|money(cost.currency)}) }}
+        {{ 'ownership.gain'|trans({amount: shown ? shown.gain|money : cost.depreciation.change|money(cost.currency)}) }}
     {%- else -%}
         {{ (shown ? shown.depreciation : cost.depreciationCost)|money }}
     {%- endif -%}

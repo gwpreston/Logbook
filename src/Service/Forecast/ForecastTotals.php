@@ -44,6 +44,14 @@ final readonly class ForecastTotals
         return $this->firstMonths(self::SOON_MONTHS);
     }
 
+    /**
+     * The table's amounts as shown, adding up both ways (spec.md §8, #407).
+     */
+    public function shown(): ShownForecastTotals
+    {
+        return ShownForecastTotals::of($this);
+    }
+
     public function planned(): Money
     {
         return $this->sum(static fn (ForecastMonthTotal $m): Money => $m->planned);

@@ -149,17 +149,31 @@ final class ExpectedSkeleton
                 }
                 $this->add('true_cost.per_distance', 'alex', $vehicle, $period, $currency, 'money/mi', self::BOTH);
             }
-            foreach (self::PARTS as $part) {
-                $this->add(
-                    'true_cost.what_changed.' . $part,
-                    'alex',
-                    $vehicle,
-                    'last_12_months_vs_previous',
-                    $currency,
-                    'money',
-                    self::sourceOf($part)
-                );
+            // What changed, as the page shows it (#411): each year against the one before, the
+            // change per distance in total and per part; the widget's 12 months against the 12 before.
+            $years = array_values(array_filter($list, static fn (string $p): bool => $p !== 'last_12_months'));
+            for ($i = 1; $i < count($years); $i++) {
+                foreach (self::PARTS as $part) {
+                    $this->add(
+                        'true_cost.what_changed.' . $part,
+                        'alex',
+                        $vehicle,
+                        $years[$i] . ' vs ' . $years[$i - 1],
+                        $currency,
+                        'money/mi',
+                        self::sourceOf($part)
+                    );
+                }
             }
+            $this->add(
+                'true_cost.what_changed.total',
+                'alex',
+                $vehicle,
+                'last_12_months_vs_previous',
+                $currency,
+                'money/mi',
+                self::BOTH
+            );
         }
     }
 
@@ -247,9 +261,6 @@ final class ExpectedSkeleton
                 foreach (['fuel', 'maintenance', 'compliance', 'other', 'total'] as $group) {
                     $this->add('reports.group.' . $group, 'alex', $vehicle, $year, $currency, 'money');
                 }
-            }
-            foreach (['tax', 'parking', 'tolls', 'accessories', 'finance'] as $category) {
-                $this->add('reports.category.' . $category, 'alex', $vehicle, 'all_time', $currency, 'money');
             }
             $this->add('reports.cost_per_distance', 'alex', $vehicle, 'all_time', $currency, 'money/mi');
         }

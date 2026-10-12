@@ -1497,7 +1497,9 @@ from fleet totals unless "include archived" is toggled.
     price of 0 shows the amount without a percentage.
   - **Per year** = the loss ÷ the years from the purchase date to the
     **value's date** (not today: that is when the value was true), counted
-    in calendar years, months and days. **Per distance** = the loss ÷ the
+    in calendar years, months and days: the loss × 12 ÷ (the whole
+    calendar months between the dates + the days left over ÷ 30.436875,
+    the average month of 365.2425 ÷ 12 days) (#409, decided 2026-10-12). **Per distance** = the loss ÷ the
     distance driven between the same two dates, measured as a report's
     *distance driven* (§7.7), in the owner's distance unit ("£0.14/mi").
     Both need the purchase date and are shown only when the two dates are at
@@ -1512,7 +1514,11 @@ from fleet totals unless "include archived" is toggled.
     the lifetime figures above are unchanged): the value on any day
     between two points of the value series is interpolated in a straight
     line by day, and a period's depreciation is the value at its start
-    minus the value at its end (a gain is negative). Several points on
+    minus the value at its end (a gain is negative). A value point is the
+    value at the **start** of its day, so a period ending on 31 Dec is
+    measured to the start of 1 Jan, the next period's start, and a
+    valuation dated D counts no loss on D itself (Phase 45.1, #408, decided
+    2026-10-12). Several points on
     one day: the last one counts, except that the purchase day opens at
     the purchase price, so a valuation (or a sale, #404) dated on the purchase day is
     that day's closing value and the drop from the price falls in the period
@@ -2355,7 +2361,8 @@ currency and never converted.
     (nothing logged is not nothing spent, and a rate of £0 would be made
     up); the totals still show.
   - Under 90 days owned: no per-distance or per-month figure (too short to
-    mean anything); the totals still show.
+    mean anything); the totals still show. True cost's periods follow the
+    same rule, a short first or last calendar year included (§7.35, #410).
   - Depreciation per distance unknown (no price or value, no purchase
     date, or the value under 90 days after the purchase, §7.1; a gain is a
     negative part from Phase 32):
@@ -2422,7 +2429,8 @@ currency and never converted.
       purchase"; a vehicle without a total adds its running costs and the
       card says "2 of 3 with depreciation";
     - *Per month*: the **active** vehicles' own *per month* figures added
-      up (each vehicle's total ÷ its own owned months, as the table),
+      up (each vehicle's §7.7 *Per month*: running costs ÷ months owned +
+      depreciation per year ÷ 12, as the table, #409),
       "active vehicles combined"; sold or archived vehicles count in
       *Total cost* but not here (#187); "—" with no active vehicle;
     - *Depreciation*: the sum of the vehicles' depreciation, "{n}% of
@@ -8290,9 +8298,12 @@ it replaces none of the other figures.
   folded into a part.
 - **Periods:** *Since bought* (§7.7's ownership period, unchanged), *Last
   12 months* (the reports' preset: this month and the 11 before, cut to the
-  ownership period; under 90 days, no per-distance figure, as §7.7), and
+  ownership period), and
   the 12 months before it for the change, and each **calendar year** in
-  the viewing user's time zone (#386)
+  the viewing user's time zone (#386); any period under 90 days once cut
+  to the ownership period, a first or last year included, has no
+  per-distance figure, as §7.7 (#410, decided 2026-10-12), so it has no
+  *What changed* either
   (calendar years only; UK tax years are parked, #150). The current year
   and the first year of ownership are partial and say so ("2026 so far",
   "2023 from 14 Mar"); so is the year of a sale ("2026 to 12 Mar").
@@ -8307,7 +8318,9 @@ it replaces none of the other figures.
   exactly as §7.7 does.
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
-  the date it is measured to (below). Rates are kept per km to 6 places:
+  the date it is measured to, that day's driving included, even though a
+  value point is the value at the start of its day (#412, decided
+  2026-10-12) (below). Rates are kept per km to 6 places:
   the running parts and the payouts are shared out (largest remainder) so
   they add up exactly to the running rate, and the depreciation rate is
   added to it, so the parts always add up exactly to the total. Shown in
@@ -8322,7 +8335,8 @@ it replaces none of the other figures.
   `Service\Report\ValueCurve`):
   - the vehicle's **value points** are §7.1's value series: the purchase
     price on the purchase date, each valuation on its date, and the sale
-    price on the sale date (several on one day: the last one counts,
+    price on the sale date, each the value at the start of its day (#408)
+    (several on one day: the last one counts,
     except that the purchase day opens at the price, so a valuation or a sale
     that day is its closing value, #389, #404);
   - the value on any day between two points is interpolated in a straight
@@ -8391,7 +8405,9 @@ it replaces none of the other figures.
     consumption = units bought ÷ distance driven, so price × consumption is
     the energy's cost per distance and the pair sums exactly to its change.
     An energy bought in only one of the two years is one line, its change
-    per distance;
+    per distance; likewise a part missing from one year (no depreciation
+    after the latest value point) counts as 0 there, so the parts always
+    add up to the total change (#413, decided 2026-10-12);
   - **distance:** for the fixed-cost parts (documents and depreciation,
     always treated as time-based, #151), the change caused by driving a
     different distance with the same amount, shown as its own line
@@ -9061,7 +9077,19 @@ overview while any test is unreviewed. A test is reviewed
     grand total; a cell that is already a whole minor unit, zero included,
     never moves. A vehicle's cost of ownership adds up at each level
     (groups and payouts to its running costs, running costs and
-    depreciation to its total, and the same per month). A CSV's total
+    depreciation to its total, and the same per month). Three more
+    places follow (#407, decided 2026-10-12, option (a)): the Cost of
+    ownership page's summary total over its cards, whose shown totals are
+    shared out from it by largest remainder (so a card's total can differ
+    by a minor unit from the same vehicle's own tab), and its parts then
+    from the card's shown total; the ownership report's print table,
+    vehicles × (running costs, depreciation), rounded under control so each
+    row adds up to its total and each column to the fleet footer (a
+    footer total over only some vehicles adds up their shown totals); and
+    *Coming up*'s months × (planned, fuel) table, rounded under control,
+    with the summary cards, *Next 3 months*, each month's fuel line and
+    the dashboard's *Coming up* lines showing the same amounts as the
+    table (the API and Ask stay exact). A CSV's total
     rows (cost of ownership, true cost) keep the 3 places a CSV writes,
     and their parts add up at those places; per-entry rows, the API and
     MCP stay exact (`Support\Money\ShownAmounts`).
@@ -9091,7 +9119,9 @@ overview while any test is unreviewed. A test is reviewed
     ledger line; insurance payouts reduce cost of ownership and true
     cost. A payout or adjustment larger than the period's spend gives a
     negative total, shown with a minus sign, and so does its
-    per-distance figure (#387, #400); only the incident card shows its
+    per-distance figure (#387, #400). The sign is the true minus, U+2212
+    ("−£12.34"), on every page, email and display string (#414, decided
+    2026-10-12); CSV and API numbers keep the ASCII hyphen-minus; only the incident card shows its
     own net as 0 (§7.29). There are no refunds (§12, #388).
   - **Plug-in hybrids:** litres and kWh are separate economy series,
     each measured over the odometer distance between its own full
@@ -10227,7 +10257,14 @@ task breakdowns live in the per-phase files; this is the map.
   (#389, and a sale that day, #404), finance in the currency's minor
   unit (#390), the reach-back from the purchase when later (#405), and
   shown parts that add up to their total by largest remainder, Reports'
-  months table by controlled rounding (#403, #406). Eight seeded
+  months table by controlled rounding (#403, #406), and the same for the
+  Cost of ownership summary, its print table and *Coming up*'s table
+  (#407). An independent script (Python, sharing no code with `src/`)
+  works out finance and depreciation too; comparing it with the app made
+  the spec exact on a valuation's moment in its day (#408), per month
+  (#409), a sale day's distance (#412) and *What changed* by part (#413),
+  and gave a short year no rate (#410); the edge-case catalogue's tests
+  gave every negative amount the true minus sign (#414). Eight seeded
   property tests, fixed seeds on every push and fresh ones nightly
   (`properties.yml`), found the depreciation rounding fixed as #402. See
   [`phase-45.1.md`](docs/phases/phase-45.1.md).

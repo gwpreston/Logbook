@@ -82,6 +82,7 @@ final class InputBuilder
         $this->ev();
         $this->focus();
         $this->corolla();
+        $this->receipts();
         ksort($this->files);
         foreach ($this->files as &$rows) {
             usort($rows, static fn (array $a, array $b): int => [$a['vehicle'] ?? $a['user'] ?? '', self::sortKey($a)]
@@ -104,6 +105,30 @@ final class InputBuilder
         }
 
         return '';
+    }
+
+    // -------------------------------------------------------------- receipts
+
+    /**
+     * A few entries carry a receipt or certificate (tests/Fixtures/golden/
+     * uploads/), attached as the entry is saved. `kind` names the entry's
+     * file and `at` its key there: a fill-up's local time, a document's
+     * start date, or the date of a service or expense.
+     */
+    private function receipts(): void
+    {
+        $receipts = [
+            ['golf', 'fillups', '2025-08-31 23:30', 'golf-fuel-2025-08-31.jpg'],
+            ['golf', 'maintenance', '2024-03-14', 'golf-service-2024-03-14.jpg'],
+            ['golf', 'maintenance', '2025-09-19', 'golf-brakes-2025-09-19.pdf'],
+            ['golf', 'documents', '2025-10-07', 'golf-insurance-2025-10-07.pdf'],
+            ['focus', 'maintenance', '2024-12-02', 'focus-accident-repair-2024-12-02.pdf'],
+            ['corolla', 'documents', '2025-02-03', 'corolla-nct-2025-02-03.pdf'],
+            ['corolla', 'expenses', '2023-11-04', 'corolla-motor-tax-2023-11-04.pdf'],
+        ];
+        foreach ($receipts as [$vehicle, $kind, $at, $file]) {
+            $this->add('attachments', ['vehicle' => $vehicle, 'kind' => $kind, 'at' => $at, 'file' => $file]);
+        }
     }
 
     /**

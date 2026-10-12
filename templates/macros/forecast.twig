@@ -82,21 +82,24 @@
 {%- endmacro %}
 
 {# One total as a line: "Next 12 months: about £1,240 · includes £400 of fuel".
-   With `dash_if_zero`, "—" while nothing in it has a known cost, as a month's figure. #}
-{% macro total_line(label, totals, dash_if_zero = false) -%}
+   With `dash_if_zero`, "—" while nothing in it has a known cost, as a month's figure.
+   `shown` and `shown_fuel` are the amounts as Coming up's table shows them (#407). #}
+{% macro total_line(label, totals, dash_if_zero, shown, shown_fuel) -%}
     {% import _self as forecast_ui %}
     <p class="forecast-total">
         <span>{{ label }}</span>
-        <strong class="tabular">{{ dash_if_zero and totals.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong>
-        {%- if totals.hasFuel %}<span class="muted"> · {{ 'coming_up.includes_fuel'|trans({amount: totals.fuel()|money}) }}</span>{% endif -%}
+        <strong class="tabular">{{ dash_if_zero and totals.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(shown, totals.isAtLeast()) }}</strong>
+        {%- if totals.hasFuel %}<span class="muted"> · {{ 'coming_up.includes_fuel'|trans({amount: shown_fuel|money}) }}</span>{% endif -%}
     </p>
 {%- endmacro %}
 
-{# Each currency's *Next 3 months* and 12-month totals, one line each (spec.md §7.18). #}
+{# Each currency's *Next 3 months* and 12-month totals, one line each (spec.md §7.18),
+   with the amounts Coming up's table shows (#407). #}
 {% macro next_twelve(forecast) -%}
     {% import _self as forecast_ui %}
     {% for totals in forecast.totals %}
-        {{ forecast_ui.total_line('coming_up.next_3_months'|trans, totals.soon(), true) }}
-        {{ forecast_ui.total_line('coming_up.next_12_months'|trans, totals) }}
+        {% set shown = totals.shown() %}
+        {{ forecast_ui.total_line('coming_up.next_3_months'|trans, totals.soon(), true, shown.soon, shown.soonFuel) }}
+        {{ forecast_ui.total_line('coming_up.next_12_months'|trans, totals, false, shown.total, shown.fuelTotal) }}
     {% endfor %}
 {%- endmacro %}

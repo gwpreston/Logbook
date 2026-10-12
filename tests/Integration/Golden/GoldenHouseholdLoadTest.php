@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Golden;
 
+use Logbook\Domain\Attachment\Attachment;
+use Logbook\Repository\AttachmentRepository;
+use Logbook\Support\Storage\FileStorage;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\Golden\ExpectedSkeleton;
 use Logbook\Tests\Support\Golden\GoldenHousehold;
@@ -48,6 +51,27 @@ final class GoldenHouseholdLoadTest extends AppTestCase
         self::assertSame($rows('trips'), $count('trips'));
         // Every fill-up and maintenance entry with an odometer has its reading, plus the readings typed on their own.
         self::assertSame($rows('fillups') + $rows('maintenance') + $rows('readings'), $count('odometer_readings'));
+
+        // The receipts, each on its entry, with the file's own content.
+        $owners = ['fillups' => 'fuel', 'maintenance' => 'maintenance', 'documents' => 'compliance', 'expenses' => 'expense'];
+        $storage = $this->service($app, FileStorage::class);
+        $attachments = $this->service($app, AttachmentRepository::class);
+        foreach (ExpectedSkeleton::read(GoldenHousehold::INPUTS . '/attachments.csv') as $row) {
+            $found = array_values(array_filter(
+                $attachments->listForVehicle($household->vehicle($row['vehicle'])->id),
+                static fn (Attachment $a): bool => $a->filename === $row['file'],
+            ));
+            self::assertCount(1, $found, $row['file']);
+            self::assertSame($owners[$row['kind']], $found[0]->ownerType->value, $row['file']);
+            if (str_ends_with($row['file'], '.pdf')) {
+                self::assertFileEquals(
+                    GoldenHousehold::INPUTS . '/../uploads/' . $row['file'],
+                    $storage->absolutePath($found[0]->storedPath),
+                    'a PDF is stored as uploaded',
+                );
+            }
+        }
+        self::assertSame($rows('attachments'), $count('attachments'));
 
         $bySam = count(array_filter(
             ExpectedSkeleton::read(GoldenHousehold::INPUTS . '/fillups.csv'),

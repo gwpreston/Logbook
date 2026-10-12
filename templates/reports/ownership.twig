@@ -88,6 +88,8 @@
         <div class="print-only">
         {% for section in report.sections %}
             {% set currency = section.currency %}
+            {# Amounts as shown: each row and column adds up (#407). #}
+            {% set shown = section.shown() %}
             <section class="card" aria-labelledby="ownership-{{ currency }}-heading">
                 <div class="card__header">
                     <h2 id="ownership-{{ currency }}-heading" class="card__title">
@@ -111,6 +113,7 @@
                         </thead>
                         <tbody>
                             {% for cost in section.rows %}
+                                {% set row = shown.row(loop.index0) %}
                                 <tr>
                                     <th scope="row">
                                         <a href="{{ url_for('vehicles.show', {id: cost.vehicle.id}) }}">{{ cost.vehicle.name() }}</a>
@@ -124,14 +127,14 @@
                                     </td>
                                     <td class="table__num tabular">{{ cost.distanceKm is not null ? cost.distanceKm|distance : dash }}</td>
                                     <td class="table__num tabular">
-                                        {{- cost.running|money -}}
+                                        {{- row.running|money -}}
                                         {%- if cost.payouts %}<br><span class="muted">{{ 'ownership.row.payouts_short'|trans({amount: cost.payouts|money}) }}</span>{% endif -%}
                                         {%- if cost.settlementIsSale %}<br><span class="muted">{{ 'ownership.settlement_is_sale'|trans }}</span>{% endif -%}
                                     </td>
-                                    <td class="table__num tabular">{{ own.depreciation(cost) }}</td>
+                                    <td class="table__num tabular">{{ own.depreciation(cost, row) }}</td>
                                     <td class="table__num tabular">
                                         {%- if cost.total is not null -%}
-                                            <strong>{{ cost.total|money }}</strong>
+                                            <strong>{{ row.total|money }}</strong>
                                             {%- if not cost.isLifetime() %}<br><span class="muted">{{ own.total_label(cost) }}</span>{% endif -%}
                                         {%- else -%}{{ dash }}{%- endif -%}
                                     </td>
@@ -154,11 +157,11 @@
                                     <th scope="row">{{ 'ownership.fleet'|trans }}</th>
                                     <td></td>
                                     <td class="table__num tabular">{{ section.distanceKm is not null ? section.distanceKm|distance : dash }}</td>
-                                    <td class="table__num tabular">{{ section.running|money }}</td>
-                                    <td class="table__num tabular">{{ section.depreciation is not null ? section.depreciation|money : dash }}</td>
+                                    <td class="table__num tabular">{{ shown.fleetRunning|money }}</td>
+                                    <td class="table__num tabular">{{ shown.fleetDepreciation is not null ? shown.fleetDepreciation|money : dash }}</td>
                                     <td class="table__num tabular">
                                         {%- if section.total is not null -%}
-                                            <strong>{{ section.total|money }}</strong>
+                                            <strong>{{ shown.fleetTotal|money }}</strong>
                                             {%- if section.isTotalPartial() %}<br><span class="muted">{{ 'ownership.of_vehicles'|trans({count: section.completeCount, total: section.rows|length}) }}</span>{% endif -%}
                                         {%- else -%}{{ dash }}{%- endif -%}
                                     </td>

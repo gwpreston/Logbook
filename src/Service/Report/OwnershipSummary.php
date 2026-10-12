@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Logbook\Service\Report;
 
 use Logbook\Support\Money\Money;
+use Logbook\Support\Money\ShownAmounts;
 
 /**
  * The four summary cards of the Cost of ownership page for one currency
  * (spec.md §7.7 *Cost of ownership page*), adding up exactly the vehicle
  * cards under them. Pure: no database; amounts are never converted.
+ * The cards' totals as shown are shared out from the summary's shown
+ * total by largest remainder (spec.md §8, #407).
  */
 final readonly class OwnershipSummary
 {
@@ -59,6 +62,11 @@ final readonly class OwnershipSummary
                 $charges = ($charges ?? Money::zero($currency))->add($cost->financeCharges);
             }
         }
+
+        // The cards' totals as shown add up to the summary's (spec.md §8, #407).
+        $cardTotals = array_map(static fn (OwnershipCard $card): Money => $card->total(), $cards);
+        $shown = ShownAmounts::to(ShownAmounts::round($total), $cardTotals);
+        $cards = array_map(static fn (OwnershipCard $card, Money $m): OwnershipCard => $card->withShownTotal($m), $cards, $shown);
 
         return new self($currency, $cards, $total, $complete, $perMonth, $depreciation, $charges);
     }
