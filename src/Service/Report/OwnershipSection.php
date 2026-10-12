@@ -84,6 +84,14 @@ final readonly class OwnershipSection
     }
 
     /**
+     * The table's amounts as shown, adding up both ways (spec.md §8, #407).
+     */
+    public function shown(): ShownOwnershipSection
+    {
+        return ShownOwnershipSection::of($this);
+    }
+
+    /**
      * Whether the fleet total leaves some vehicles out ("3 of 4 vehicles").
      */
     public function isTotalPartial(): bool

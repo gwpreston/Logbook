@@ -165,6 +165,27 @@ final class CostOfOwnershipPageTest extends AppTestCase
         self::assertStringContainsString('-£700.00', $minor, 'the total: £800 spent, £1,500 gained');
     }
 
+    public function testTheCardsAndThePrintTableAddUpToTheTotalsShown(): void
+    {
+        [$app, $browser] = $this->start();
+        foreach (['Golf', 'Polo', 'Up'] as $model) {
+            $this->expense($app, $this->car($app, 'Volkswagen', $model), '2026-06-01', '10.005');
+        }
+
+        $html = self::body($browser->get('/reports/ownership'));
+        $screen = self::screen($html);
+
+        // #407: £30.015 is shown as £30.02, and the cards share it out, not £10.01 three times.
+        self::assertStringContainsString('£30.02', self::stats($screen));
+        preg_match_all('/data-ownership-total>([^<]+)</', $screen, $cards);
+        self::assertSame(['£10.01', '£10.01', '£10.00'], $cards[1], 'the cards add up to the summary');
+
+        $print = self::between($html, '<div class="print-only">', '</table>');
+        self::assertSame(2, substr_count($print, '£10.01'), 'the print rows add up to the fleet row');
+        self::assertSame(1, substr_count($print, '£10.00'));
+        self::assertStringContainsString('£30.02', self::between($print, '<tfoot>', '</tfoot>'));
+    }
+
     public function testASwitchedOffModuleRemovesItsPart(): void
     {
         [$app, $browser] = $this->start();

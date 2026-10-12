@@ -61,29 +61,33 @@
                 <p>{{ 'coming_up.empty_body'|trans }}</p>
             </div>
         {% else %}
-            {# The 12-month summary, per currency (never converted). #}
+            {# The 12-month summary, per currency (never converted). Amounts as
+               shown: the table adds up both ways, and the cards and month
+               lines show its figures (#407). #}
+            {% set shown_totals = forecast.totals|map(t => t.shown()) %}
             {% for totals in forecast.totals %}
                 {% set currency = totals.currency %}
                 {% set chart = charts[loop.index0] %}
+                {% set shown = shown_totals[loop.index0] %}
                 <section class="page__stack" aria-labelledby="summary-{{ currency }}-heading">
                     <h2 id="summary-{{ currency }}-heading" class="section-title">
                         {{- several ? 'coming_up.summary.title_in'|trans({currency: currency_name(currency)}) : 'coming_up.summary.title'|trans -}}
                     </h2>
                     <dl class="stats">
                         {{ ui.stat('coming_up.summary.planned'|trans,
-                            forecast_ui.amount(totals.planned(), totals.isAtLeast()),
+                            forecast_ui.amount(shown.plannedTotal, totals.isAtLeast()),
                             totals.unknown() > 0 ? 'coming_up.unknown_count'|trans({count: totals.unknown()}) : 'coming_up.summary.planned_sub'|trans) }}
                         {% if forecast.fuel is not empty %}
                         {{ ui.stat('coming_up.summary.fuel'|trans,
-                            totals.hasFuel ? forecast_ui.amount(totals.fuel(), false) : dash,
+                            totals.hasFuel ? forecast_ui.amount(shown.fuelTotal, false) : dash,
                             totals.hasFuel ? ('coming_up.fuel_basis.' ~ unit)|trans : 'coming_up.fuel_missing'|trans) }}
                         {% endif %}
                         {{ ui.stat('coming_up.summary.year'|trans,
-                            forecast_ui.amount(totals.total(), totals.isAtLeast()),
+                            forecast_ui.amount(shown.total, totals.isAtLeast()),
                             'coming_up.summary.total_sub'|trans) }}
                         {% set soon = totals.soon() %}
                         {{ ui.stat('coming_up.summary.soon'|trans,
-                            soon.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(soon.total(), soon.isAtLeast()),
+                            soon.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(shown.soon, soon.isAtLeast()),
                             soon.unknown() > 0 ? 'coming_up.unknown_count'|trans({count: soon.unknown()}) : 'coming_up.summary.soon_sub'|trans) }}
                     </dl>
 
@@ -107,20 +111,21 @@
                                 </thead>
                                 <tbody>
                                     {% for month in totals.months %}
+                                        {% set i = loop.index0 %}
                                         <tr>
                                             <th scope="row">{{ month.month|local_month }}</th>
-                                            <td class="table__num tabular">{{ month.planned.isZero() ? dash : forecast_ui.amount(month.planned, month.unknown > 0) }}</td>
-                                            {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(month.fuel, false) }}</td>{% endif %}
-                                            <td class="table__num tabular"><strong>{{ forecast_ui.amount(month.total(), month.unknown > 0) }}</strong></td>
+                                            <td class="table__num tabular">{{ month.planned.isZero() ? dash : forecast_ui.amount(shown.planned[i], month.unknown > 0) }}</td>
+                                            {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(shown.fuel[i], false) }}</td>{% endif %}
+                                            <td class="table__num tabular"><strong>{{ forecast_ui.amount(shown.months[i], month.unknown > 0) }}</strong></td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                                 <tfoot>
                                     <tr>
                                         <th scope="row">{{ 'coming_up.summary.total'|trans }}</th>
-                                        <td class="table__num tabular">{{ forecast_ui.amount(totals.planned(), totals.isAtLeast()) }}</td>
-                                        {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(totals.fuel(), false) }}</td>{% endif %}
-                                        <td class="table__num tabular"><strong>{{ forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong></td>
+                                        <td class="table__num tabular">{{ forecast_ui.amount(shown.plannedTotal, totals.isAtLeast()) }}</td>
+                                        {% if totals.hasFuel %}<td class="table__num tabular">{{ forecast_ui.amount(shown.fuelTotal, false) }}</td>{% endif %}
+                                        <td class="table__num tabular"><strong>{{ forecast_ui.amount(shown.total, totals.isAtLeast()) }}</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -186,9 +191,8 @@
                         </ul>
                     {% endif %}
                     {% for totals in forecast.totals %}
-                        {% set row = totals.months[month_index] %}
                         {% if totals.hasFuel %}
-                            <p class="muted forecast-section__fuel">{{ ui.icon('local_gas_station') }}{{ 'coming_up.fuel_about'|trans({amount: row.fuel|money}) }}</p>
+                            <p class="muted forecast-section__fuel">{{ ui.icon('local_gas_station') }}{{ 'coming_up.fuel_about'|trans({amount: shown_totals[loop.index0].fuel[month_index]|money}) }}</p>
                         {% endif %}
                     {% endfor %}
                 </section>

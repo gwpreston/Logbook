@@ -253,10 +253,12 @@ Each with a regression test, spec already updated:
       decided 2026-10-12); a vehicle's cost of ownership at each level;
       the CSV total rows at their 3 places. True cost's amounts are shown
       only on the ownership card and in the CSV, both covered.
-- [ ] #407: the Cost of ownership summary's cards share out its total
-      by largest remainder; the ownership print table and *Coming up*'s
-      months table by controlled rounding, *Coming up*'s summary cards
-      and month lines showing the table's amounts (§8).
+- [x] #407: the Cost of ownership summary's cards share out its total
+      by largest remainder (`OwnershipSummary`, `OwnershipCard::withShownTotal`);
+      the ownership print table (`ShownOwnershipSection`) and *Coming up*'s
+      months table (`ShownForecastTotals`) by controlled rounding, *Coming
+      up*'s summary cards and month lines showing the table's amounts
+      (§8). *Shown parts add up* checks all three.
 
 ---
 

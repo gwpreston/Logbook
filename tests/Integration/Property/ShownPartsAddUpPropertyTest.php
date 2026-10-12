@@ -6,6 +6,9 @@ namespace Logbook\Tests\Integration\Property;
 
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Report\OwnershipCard;
+use Logbook\Service\Report\OwnershipCost;
+use Logbook\Service\Report\OwnershipSection;
+use Logbook\Service\Report\OwnershipSummary;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Money\ShownAmounts;
@@ -19,7 +22,9 @@ use PHPUnit\Framework\Attributes\Group;
  * each is within a minor unit of its exact amount, keeps its sign, and is
  * unchanged when already a whole minor unit; the total is rounded once.
  * Reports' groups, vehicles and months × groups table, the ownership card,
- * and a vehicle's cost of ownership at each level.
+ * and a vehicle's cost of ownership at each level; and (#407) the Cost of
+ * ownership summary over its cards, the ownership print table and *Coming
+ * up*'s months table.
  */
 #[Group('property')]
 final class ShownPartsAddUpPropertyTest extends PropertyTestCase
@@ -99,6 +104,85 @@ final class ShownPartsAddUpPropertyTest extends PropertyTestCase
                 $levels = [[$cost->running, $shown->running], [$depreciation, $shown->depreciation]];
                 self::assertAddUp($shown->total, $levels, "total, {$at}");
             }
+        }
+
+        // #407: the Cost of ownership summary over its cards, the print table, and Coming up's table.
+        $byCurrency = [];
+        foreach ($figures->trueCosts($writer->owner, $vehicles) as $result) {
+            $byCurrency[$result->currency][] = $result;
+        }
+        foreach ($byCurrency as $currency => $results) {
+            $at = "{$currency}: {$why}";
+            $cards = array_map(static fn ($r): OwnershipCard => new OwnershipCard($r), $results);
+            $summary = OwnershipSummary::of($currency, $cards);
+            $shownTotal = ShownAmounts::round($summary->total);
+            $cards = array_map(static fn (OwnershipCard $c): array => [$c->total(), $c->shownTotal()], $summary->cards);
+            self::assertAddUp($shownTotal, $cards, "summary cards, {$at}");
+            foreach ($summary->cards as $card) {
+                [$total, $segments, $negatives] = $card->shown();
+                self::assertSame($card->shownTotal()->micros, $total->micros, "the card keeps its shared total, {$at}");
+                $parts = [];
+                foreach ($card->segments() as $i => $segment) {
+                    $parts[] = [$segment['amount'], $segments[$i]];
+                }
+                foreach ($card->negatives() as $i => $line) {
+                    $parts[] = [$line['amount'], $negatives[$i]];
+                }
+                self::assertAddUp($total, $parts, "summary card, {$at}");
+            }
+
+            $section = OwnershipSection::of($currency, array_map(static fn ($r): OwnershipCost => $r->ownership, $results));
+            $table = $section->shown();
+            $running = [];
+            $depreciation = [];
+            $totals = [];
+            foreach ($section->rows as $i => $row) {
+                $running[] = [$row->running, $table->running[$i]];
+                $shownDepreciation = $table->depreciation[$i];
+                if ($row->depreciationCost !== null && $shownDepreciation !== null) {
+                    $depreciation[] = [$row->depreciationCost, $shownDepreciation];
+                    $rowTotal = $table->total[$i];
+                    self::assertNotNull($rowTotal);
+                    self::assertNotNull($row->total);
+                    $levels = [[$row->running, $table->running[$i]], [$row->depreciationCost, $shownDepreciation]];
+                    self::assertAddUp($rowTotal, $levels, "print row {$i}, {$at}");
+                    $totals[] = [$row->total, $rowTotal];
+                } else {
+                    self::assertNull($shownDepreciation);
+                    self::assertNull($table->total[$i]);
+                }
+            }
+            self::assertAddUp($table->fleetRunning, $running, "print running column, {$at}");
+            if ($table->fleetDepreciation !== null) {
+                self::assertAddUp($table->fleetDepreciation, $depreciation, "print depreciation column, {$at}");
+            }
+            if ($table->fleetTotal !== null) {
+                $sum = array_sum(array_map(static fn (array $t): int => $t[1]->micros, $totals));
+                self::assertSame($sum, $table->fleetTotal->micros, "print total column, {$at}");
+                if (!$section->isTotalPartial() && $section->total !== null) {
+                    self::assertRoundedOnce($section->total, $table->fleetTotal, "print fleet total, {$at}");
+                }
+            }
+        }
+
+        foreach ($figures->forecast($writer->owner, $vehicles)->totals as $totals) {
+            $at = "coming up {$totals->currency}: {$why}";
+            $shown = $totals->shown();
+            self::assertRoundedOnce($totals->total(), $shown->total, $at);
+            $planned = [];
+            $fuel = [];
+            $months = [];
+            foreach ($totals->months as $i => $month) {
+                $parts = [[$month->planned, $shown->planned[$i]], [$month->fuel, $shown->fuel[$i]]];
+                self::assertAddUp($shown->months[$i], $parts, "month {$i}, {$at}");
+                $planned[] = [$month->planned, $shown->planned[$i]];
+                $fuel[] = [$month->fuel, $shown->fuel[$i]];
+                $months[] = [$month->total(), $shown->months[$i]];
+            }
+            self::assertAddUp($shown->plannedTotal, $planned, "planned column, {$at}");
+            self::assertAddUp($shown->fuelTotal, $fuel, "fuel column, {$at}");
+            self::assertAddUp($shown->total, $months, "months, {$at}");
+            self::assertAddUp($shown->soon, array_slice($months, 0, 3), "next 3 months, {$at}");
         }
     }
 

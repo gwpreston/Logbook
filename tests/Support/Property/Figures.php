@@ -7,6 +7,8 @@ namespace Logbook\Tests\Support\Property;
 use DateTimeImmutable;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Forecast\ComingUp;
+use Logbook\Service\Forecast\Forecast;
 use Logbook\Service\Report\Report;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
@@ -71,6 +73,16 @@ final class Figures
     public function trueCosts(User $user, array $vehicles): array
     {
         return $this->get(TrueCostService::class)->forVehicles($user, $vehicles, self::today());
+    }
+
+    /**
+     * *Coming up* as of today.
+     *
+     * @param list<Vehicle> $vehicles
+     */
+    public function forecast(User $user, array $vehicles): Forecast
+    {
+        return $this->get(ComingUp::class)->forecast($user, $vehicles);
     }
 
     /**

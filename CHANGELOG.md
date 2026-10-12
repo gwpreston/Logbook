@@ -21,7 +21,10 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   card and a vehicle's cost of ownership, and the cost of ownership and
   true cost CSVs' total rows, never miss their total by a penny (a part
   may move a penny, or 0.001 in a CSV total row; the months table is
-  rounded so every month and group adds up). The
+  rounded so every month and group adds up). So do the Cost of
+  ownership page's summary over its cards (a card may then differ by a
+  penny from the vehicle's own tab), its printed table, and *Coming
+  up*'s months table with its summary cards. The
   exact sums underneath, per-entry exports, the API and MCP are
   unchanged.
 - **A negative finance adjustment** (settling early for less than the

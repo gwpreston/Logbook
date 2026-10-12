@@ -30,10 +30,14 @@ always **add up exactly** to the total. Each figure is rounded to the penny
 or cent for display only.
 
 **Wherever a total is shown with its parts** (Reports' groups, vehicles
-and months table, the expense widgets, the cost of ownership card and the
-CSV totals), the total is rounded once and a part may be shown a penny up
-or down from its own rounding, so the parts always add up to the total on
-screen. The exact sums underneath never change.
+and months table, the expense widgets, the cost of ownership card, the
+Cost of ownership page's summary over its cards and its printed table,
+*Coming up*'s months table, and the CSV totals), the total is rounded
+once and a part may be shown a penny up or down from its own rounding, so
+the parts always add up to the total on screen. On the Cost of ownership
+page that means a vehicle's card can show a penny more or less than the
+same vehicle's own *Cost of ownership* tab. The exact sums underneath
+never change.
 
 **Cost per distance needs a mileage log that reaches back** to the start
 of the period, or to the day you bought the vehicle when that is later
