@@ -14,6 +14,7 @@ use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attention\AttentionList;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Notification\Channel\WebhookChannel;
+use Logbook\Service\Notification\Digest\DigestContent;
 use Logbook\Service\Notification\Digest\DigestSummary;
 use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
@@ -247,12 +248,12 @@ final readonly class ReminderNotifier
         }
 
         $digest = $this->composer->digest($user, $entries, $today, $checks, $content);
-        // The server's webhook gets no amounts or insights (#366), and nothing
-        // when that leaves nothing to say.
-        $withheld = $content->withoutAmounts();
-        $server = $entries === [] && $checks === [] && $withheld->isEmpty()
+        // The server's webhook gets none of the briefing (#366, #377): no
+        // amounts, insights, distances or open issues; nothing when that
+        // leaves nothing to say.
+        $server = $entries === [] && $checks === []
             ? null
-            : $this->composer->digest($user, $entries, $today, $checks, $withheld);
+            : $this->composer->digest($user, $entries, $today, $checks, DigestContent::none());
         $report = $this->dispatcher->dispatch($digest, $recipient, $preferences, [WebhookChannel::KEY => $server]);
         if (!$report->anyDelivered()) {
             return false;

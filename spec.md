@@ -3292,8 +3292,9 @@ Extensible channel interface so more can be added.
   (a reminder carries none; *Coming up* costs are not sent). From Phase
   43 the monthly digest carries last month's spend and cost per distance
   to recipients with `ViewCosts`, through their own channels only: the
-  server's webhook (`WEBHOOK_URL`) gets the digest without amounts or
-  insights (#366, *The monthly briefing*).
+  server's webhook (`WEBHOOK_URL`) gets the digest without its briefing:
+  no amounts, insights, distances or open issues (#366, #377, *The
+  monthly briefing*).
 - **Channels per user** (Phase 19, Phase 36.2): email goes to the user's
   confirmed address (Phase 33.1, §6 User `email`, set on Profile; the
   *Default recipient for admins*, Settings → Delivery, is the default for
@@ -3426,9 +3427,13 @@ Extensible channel interface so more can be added.
     them.
   - **The server's webhook** (#366): `WEBHOOK_URL` is an admin's endpoint
     that receives every member's notifications, so its copy of the digest
-    leaves out spend, cost per distance and insights (text and JSON);
-    distances and open issues stay. Each member's own channels, personal
-    webhooks included, get the whole digest.
+    leaves out the whole briefing (text and JSON): spend, cost per
+    distance and insights (#366), and *Last month*'s distances and the
+    open issues (#377, decided 2026-10-12); `last_month`, `fleet`,
+    `issues` and `insights` are empty (`fleet` null). The reminders and the *Needs
+    attention* checks stay, as on the other notifications it receives,
+    and with neither there is nothing to send it. Each member's own
+    channels, personal webhooks included, get the whole digest.
   - **Webhook JSON**: beside `items` and `attention` (unchanged), every
     event carries `last_month`, `fleet`, `issues` and `insights` (empty
     except on the digest): `last_month` is a list per vehicle of

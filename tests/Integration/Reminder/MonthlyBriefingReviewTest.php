@@ -41,7 +41,7 @@ final class MonthlyBriefingReviewTest extends BriefingTestCase
         $this->spend($v, '2026-09-12', '50');
         $this->runTasks();
 
-        // Spend is all there is, and the server's webhook gets none (#366), so nothing at all.
+        // Spend is all there is, and the server's webhook gets none of the briefing (#366, #377), so nothing at all.
         self::assertStringContainsString('£50.00 spent', $this->digestText());
         $sent = [];
         foreach ($this->http->to('https://hooks.test') as $r) {

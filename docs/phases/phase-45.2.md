@@ -3,7 +3,7 @@
 *Prove that a shared vehicle shows each person only what they should
 see, and that a backup really restores.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress (started 2026-10-12) · file lives in `docs/phases/`
 
 The access matrix checks every route against every level, one request at
 a time. What it doesn't check is a **journey**: a Log driver's month of
@@ -24,7 +24,12 @@ the data.
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §5,
 §7.9, §7.13, §7.20, §7.21, §7.26, §7.28 and §7.30 first.
 
-**Prerequisites:** [Phase 45.1](phase-45.1.md) complete and green.
+**Prerequisites:** [Phase 45.1](phase-45.1.md) complete and green. The
+owner chose on 2026-10-12 to start 45.2 before then: 45.1 waits only on
+the owner's `expected.csv` and a week of green nightly property runs.
+Nothing here needs `expected.csv`. The restore matrix compares each
+instance's figures before and after, and checks `expected.csv`'s rows
+too once they are filled in.
 
 ---
 
@@ -93,7 +98,12 @@ so each scan is an exact search for them, not a guess.
 ## Tasks
 
 ### 45.2.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged; §13.
+- [x] Open questions A–C decided by the owner and logged (#416–#418,
+      2026-10-12); §13.
+- [x] The carried #377, decided the same day: the server's webhook gets
+      none of the briefing (§7.11). Built here, because the leak sweep
+      covers webhook payloads (`ReminderNotifier`;
+      `MonthlyBriefingSendingTest`).
 
 ### 45.2.1 Journeys and sweep
 - [ ] The persona journeys as integration tests on every engine.
@@ -136,21 +146,21 @@ so each scan is an exact search for them, not a guess.
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+A–C were decided by the owner on 2026-10-12, before the phase was built.
 
 - **A. The full restore matrix on every push?** It is 16 restores.
   - (1) On every push.
   - (2) Nightly, with a SQLite → PostgreSQL pair on every push.
 
   *Recommendation:* (2). It keeps CI fast, and the nightly run catches an
-  engine-specific break within a day.
+  engine-specific break within a day. *Decided 2026-10-12:* (2). (#416)
 
 - **B. Upgrade path, from which release?**
   - (1) The previous minor release only.
   - (2) Every minor release since v3.0.
 
   *Recommendation:* (1) on every release, with (2) once now to find
-  anything already broken.
+  anything already broken. *Decided 2026-10-12:* as recommended. (#417)
 
 - **C. Sweep Ask's answers too, or only its tool results?** Answers come
   from a model, so they vary.
@@ -158,3 +168,10 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   - (2) Both.
 
   *Recommendation:* (1). It tests the boundary that actually matters.
+  *Decided 2026-10-12:* (1). (#418)
+
+Carried from [Phase 43](phase-43.md):
+
+- **#377 The server's webhook and the briefing.** `WEBHOOK_URL` got each
+  member's per-vehicle distances and open-issue counts. *Decided
+  2026-10-12:* it gets none of the briefing (§7.11).

@@ -30,30 +30,41 @@ use Logbook\Tests\Support\BriefingTestCase;
  */
 final class MonthlyBriefingSendingTest extends BriefingTestCase
 {
-    public function testTheServerWebhookGetsNoAmountsOrInsights(): void
+    public function testTheServerWebhookGetsNoneOfTheBriefing(): void
     {
         $this->start();
         $golf = $this->car();
         $this->reading($golf, '10000', '2026-08-20');
         $this->reading($golf, '10400', '2026-09-10');
         $this->spend($golf, '2026-09-05', '30');
+        $this->issue($golf, 'Rattle', IssueStatus::Open);
+        // Insurance running out within the month: a reminder, which the server still gets.
+        $this->insurance($golf, '2025-10-20', '420');
 
         $this->runTasks();
 
-        // #366: an admin's endpoint the member never chose gets distances, not money.
+        // #366, #377: an admin's endpoint the member never chose gets the
+        // reminders, but no money, insights, distances or open issues.
         $server = $this->digestJson('owner', server: true);
-        $row = self::row($server);
-        self::assertSame('400.000', $row['distance']);
-        foreach (['spend', 'spend_average', 'currency', 'cost_per_distance', 'cost_per_distance_average'] as $key) {
-            self::assertArrayNotHasKey($key, $row);
-        }
+        self::assertNotSame([], $server['items']);
+        self::assertSame([], $server['last_month']);
+        self::assertNull($server['fleet']);
+        self::assertSame([], $server['issues']);
         self::assertSame([], $server['insights']);
-        self::assertStringNotContainsString('£', self::text($server['message']));
-        self::assertStringContainsString('249 mi driven', self::text($server['message']));
+        $message = self::text($server['message']);
+        self::assertStringNotContainsString('£', $message);
+        self::assertStringNotContainsString('driven', $message);
+        self::assertStringNotContainsString('open issue', $message);
 
         // Their own channels get everything.
-        self::assertSame('30.000', self::row($this->digestJson())['spend']);
-        self::assertStringContainsString('£30.00 spent', $this->digestText());
+        $own = $this->digestJson();
+        self::assertSame('30.000', self::row($own)['spend']);
+        self::assertSame('400.000', self::row($own)['distance']);
+        self::assertSame(1, $own['issues'][0]['open'] ?? null);
+        $text = $this->digestText();
+        self::assertStringContainsString('£30.00 spent', $text);
+        self::assertStringContainsString('249 mi driven', $text);
+        self::assertStringContainsString('1 open issue', $text);
     }
 
     public function testAMonthWithNothingSpentSaysSoWithoutAComparison(): void

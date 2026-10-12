@@ -39,8 +39,8 @@ final readonly class NotificationDispatcher
     /**
      * @param array<string, Notification|null> $variants channel key → the
      *        message that channel gets instead, or null for none (the
-     *        server's webhook gets the digest without amounts, spec.md
-     *        §7.11 *The monthly briefing*, #366)
+     *        server's webhook gets the digest without its briefing, spec.md
+     *        §7.11 *The monthly briefing*, #366, #377)
      */
     public function dispatch(
         Notification $notification,

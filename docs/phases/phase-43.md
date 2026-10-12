@@ -268,7 +268,10 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     archived during last month (#374); the fleet line's spend over only
     the vehicles whose costs are visible (#375); the 12-month cost per
     distance when costs predate the readings (#376); distances and open
-    issues on the server's webhook (#377).
+    issues on the server's webhook (#377). #374–#376 were decided on
+    2026-10-11 and built in [Phase 45.1](phase-45.1.md); #377 was
+    decided on 2026-10-12 (the server's copy gets none of the briefing)
+    and built in [Phase 45.2](phase-45.2.md).
   - **Decided the same day, built in Phase 41.8 (found by the security
     review, low):** Discord rendered Markdown in the digest's AI insight
     text, so a model's `[words](url)` showed as a masked link; the owner
