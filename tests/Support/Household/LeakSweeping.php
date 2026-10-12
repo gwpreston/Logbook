@@ -32,6 +32,9 @@ trait LeakSweeping
      */
     private const array ADMIN_SEES_NAMES = ['settings.users.delete'];
 
+    /** @var list<array{vehicles: list<string>, value: string, label: string}>|null */
+    private static ?array $figures = null;
+
     /**
      * The household on a fresh database, today pinned.
      *
@@ -50,10 +53,12 @@ trait LeakSweeping
      * at where: …snippet…".
      *
      * @param array<string, array<string, string>> $sent person => where => body; Alex's is the control
-     * @param bool $wholeControl each kind of needle must be seen by the control, or the scan proves nothing
+     * @param App<ContainerInterface> $app
+     * @param bool $control only needles the control was sent somewhere, and some of each kind, or the
+     *        scan proves nothing; off where the control is sent too little to judge by (emails, feeds)
      * @return list<string>
      */
-    private function leaks(App $app, Household $household, array $sent, bool $wholeControl = true): array
+    private function leaks(App $app, Household $household, array $sent, bool $control = true): array
     {
         $figures = self::figures($app->getContainer(), $household);
         self::dump($sent);
@@ -62,12 +67,10 @@ trait LeakSweeping
             if (!isset($sent[$person])) {
                 continue;
             }
-            $needles = $this->checked(
-                LeakNeedles::for($person)->withFigures($person, $figures),
-                $sent['alex'] ?? [],
-                $person,
-                $wholeControl,
-            );
+            $needles = LeakNeedles::for($person)->withFigures($person, $figures);
+            if ($control) {
+                $needles = $this->checked($needles, $sent['alex'] ?? [], $person);
+            }
             $admin = $household->user($person)->isAdmin;
             foreach ($sent[$person] as $where => $body) {
                 foreach ($needles->find($body) as $needle => $snippet) {
@@ -93,9 +96,8 @@ trait LeakSweeping
      */
     private static function figures(ContainerInterface $container, Household $household): array
     {
-        static $figures = null;
-        if ($figures !== null) {
-            return $figures;
+        if (self::$figures !== null) {
+            return self::$figures;
         }
         $golden = new GoldenFigures($container, $household->golden);
         $currency = array_column(ExpectedSkeleton::read(GoldenHousehold::INPUTS . '/vehicles.csv'), 'currency', 'vehicle');
@@ -119,15 +121,16 @@ trait LeakSweeping
             ];
         }
 
-        return $figures;
+        return self::$figures = $figures;
     }
 
     /**
-     * The person's needles that the control sees somewhere.
+     * The person's needles that the control sees somewhere; each kind must
+     * keep some.
      *
      * @param array<string, string> $control
      */
-    private function checked(LeakNeedles $needles, array $control, string $person, bool $wholeControl): LeakNeedles
+    private function checked(LeakNeedles $needles, array $control, string $person): LeakNeedles
     {
         $seen = [];
         foreach ($control as $body) {
@@ -136,9 +139,6 @@ trait LeakSweeping
             }
         }
         $kept = $needles->only($seen);
-        if (!$wholeControl) {
-            return $kept;
-        }
         $model = Household::PEOPLE[$person];
         if (count($model['costs']) < 4) {
             self::assertNotEmpty($kept->amounts, "none of {$person}'s hidden amounts is ever shown to Alex");

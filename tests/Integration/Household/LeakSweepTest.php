@@ -136,9 +136,10 @@ final class LeakSweepTest extends AppTestCase
     {
         $properties = is_array($parameters['properties'] ?? null) ? $parameters['properties'] : [];
         $base = [];
-        if (isset($properties['period'])) {
-            $base['period'] = is_array($properties['period']['enum'] ?? null)
-                && in_array('since_bought', $properties['period']['enum'], true) ? 'since_bought' : 'all_time';
+        $period = is_array($properties['period'] ?? null) ? $properties['period'] : null;
+        if ($period !== null) {
+            $enum = is_array($period['enum'] ?? null) ? $period['enum'] : [];
+            $base['period'] = in_array('since_bought', $enum, true) ? 'since_bought' : 'all_time';
         }
         if (isset($properties['by_year'])) {
             $base['by_year'] = true;

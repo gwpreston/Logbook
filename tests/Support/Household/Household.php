@@ -32,8 +32,8 @@ use RuntimeException;
  * - alex: the admin, owns the Golf, the EV and the Focus (sold); View with
  *   costs on the Corolla. Sees everything: the sweep's control.
  * - sam: owns the Corolla; Log without costs on the Golf.
- * - jo: Manage with costs on the Golf (the partner).
- * - vic: View with costs on the EV.
+ * - jo: Manage with costs on the Golf (the partner), sent its reminders.
+ * - vic: View with costs on the EV, sent its reminders.
  * - adm: an admin with no vehicle and no share.
  *
  * Everyone signs in with the given password. Every module is on.
@@ -147,7 +147,7 @@ final class Household
         }
         $sharing = $this->get(SharingService::class);
         foreach ([['golf', 'jo', ShareLevel::Manage], ['ev', 'vic', ShareLevel::View]] as [$vehicle, $user, $level]) {
-            if ($sharing->add($this->vehicle($vehicle), $user, $level, true, false) !== null) {
+            if ($sharing->add($this->vehicle($vehicle), $user, $level, true, true) !== null) {
                 throw new RuntimeException("Share of {$vehicle} with {$user} refused");
             }
         }
