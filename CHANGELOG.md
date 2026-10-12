@@ -37,6 +37,11 @@ files.
   matrix and the upgrade path nightly, and the upgrade path on every
   release.
 
+### Documented
+- Without *Can see costs*, a figure made only of your own entries is
+  yours to see, as a station's spend and prices paid already were; any
+  figure with someone else's entry in it stays hidden (#422).
+
 ### Upgrade notes (Phase 45.2)
 - Pull and restart: no migration and no configuration change.
 - A receiver of `WEBHOOK_URL`'s digest now gets `last_month` and

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Household;
 
+use Brick\Math\BigDecimal;
 use Logbook\Domain\Api\ApiScope;
 use Logbook\Service\Ai\Ask\Tool\Draft\DraftTool;
 use Logbook\Service\Ai\Ask\ToolRegistry;
@@ -61,6 +62,7 @@ final class LeakSweepTest extends AppTestCase
 
         $leaks = $this->leaks($app, $household, $sent);
         self::assertSame([], $leaks, count($leaks) . " leaks:\n" . implode("\n", $leaks));
+        $this->assertStationsCountOnlyOwnAmounts($sent['sam']['API /stations [api.stations.index]'] ?? '');
     }
 
     public function testNoAskOrMcpToolResultShowsWhatItShouldNot(): void
@@ -107,6 +109,40 @@ final class LeakSweepTest extends AppTestCase
 
         $leaks = $this->leaks($app, $household, $sent);
         self::assertSame([], $leaks, count($leaks) . " leaks:\n" . implode("\n", $leaks));
+    }
+
+    /**
+     * Sam may see a station's spend made only of his own fill-ups (#422):
+     * the Golf's stations show his sums, never Alex's.
+     */
+    private function assertStationsCountOnlyOwnAmounts(string $json): void
+    {
+        $own = [];
+        foreach (ExpectedSkeleton::read(GoldenHousehold::INPUTS . '/fillups.csv') as $row) {
+            if ($row['vehicle'] !== 'golf') {
+                continue;
+            }
+            if ($row['by'] === 'sam') {
+                $own[$row['station']] = BigDecimal::of($own[$row['station']] ?? '0')->plus($row['total_cost']);
+            }
+        }
+        $checked = 0;
+        $list = json_decode($json, true);
+        $items = is_array($list) && is_array($list['items'] ?? null) ? $list['items'] : [];
+        foreach ($items as $item) {
+            if (!is_array($item) || !is_string($item['name'] ?? null) || !is_array($item['paid'] ?? null)) {
+                continue;
+            }
+            $name = $item['name'];
+            foreach ($item['paid'] as $paid) {
+                $pounds = is_array($paid) && ($paid['currency'] ?? null) === 'GBP' && is_string($paid['spend'] ?? null);
+                if (isset($own[$name]) && $pounds) {
+                    self::assertTrue($own[$name]->isEqualTo($paid['spend']), "{$name}: Sam's own spend only");
+                    $checked++;
+                }
+            }
+        }
+        self::assertSame(count($own), $checked, 'every Golf station Sam filled at');
     }
 
     /**

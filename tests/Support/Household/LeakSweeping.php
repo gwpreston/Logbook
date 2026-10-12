@@ -72,7 +72,12 @@ trait LeakSweeping
                 $needles = $this->checked($needles, $sent['alex'] ?? [], $person);
             }
             $admin = $household->user($person)->isAdmin;
+            $currencies = HiddenCurrencies::for($person);
             foreach ($sent[$person] as $where => $body) {
+                $found = self::ownTotals($where) ? [] : $currencies->find($body);
+                foreach ($found as $amount => $snippet) {
+                    $leaks[] = sprintf('%s sees %s, not one they typed, at %s: …%s…', $person, $amount, $where, $snippet);
+                }
                 foreach ($needles->find($body) as $needle => $snippet) {
                     if ($admin && $needles->namesVehicle((string) $needle) && self::onRoute($where, self::ADMIN_SEES_NAMES)) {
                         continue;
@@ -151,6 +156,21 @@ trait LeakSweeping
         }
 
         return $kept;
+    }
+
+    /**
+     * Where the currency check does not apply: a station's spend and prices
+     * paid, made only of the person's own fill-ups (§7.21, §7.33, #422;
+     * LeakSweepTest checks those sums apart); the API's own description and
+     * the profile's formatting preview, whose examples are nobody's; and
+     * the person's own mileage rates.
+     */
+    private static function ownTotals(string $where): bool
+    {
+        return self::onRoute($where, [
+            'stations.index', 'stations.show', 'api.stations.index', 'api.stations.show',
+            'api.openapi', 'profile', 'settings.trips', 'settings.trips.rates.edit',
+        ]) || str_starts_with($where, 'Ask stations ') || str_starts_with($where, 'MCP stations ');
     }
 
     /**

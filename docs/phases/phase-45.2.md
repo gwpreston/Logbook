@@ -126,9 +126,14 @@ so each scan is an exact search for them, not a guess.
       asks: an admin's *Delete user* page names that user's vehicles
       (§7.9).
 - [x] Every leak found is fixed with a regression test and noted in
-      §13. The sweep found none; giving Sam the Golf's costs behind its
-      back makes it report 87 on the pages, and more in the tools and the
-      digest.
+      §13. The sweep found none. A second check (`HiddenCurrencies`)
+      covers figures too small or derived to search for one by one
+      (segment costs, rates, prices): in a currency in which a person sees
+      no vehicle's costs, every amount must be one they typed. It found
+      that stations show totals of one's own fill-ups (#422, kept, §7.21
+      made exact). Giving Sam the Golf's costs behind the sweep's back
+      makes it report hundreds of leaks: the fuel tab, the API, Reports,
+      ownership, `fuel_stats`, `cost_per_distance`, the digest.
 
 ### 45.2.2 Restore matrix
 - [x] Back up the golden household (with uploads) on SQLite, PostgreSQL,
@@ -208,6 +213,19 @@ A–C were decided by the owner on 2026-10-12, before the phase was built.
 
   *Recommendation:* (1). It tests the boundary that actually matters.
   *Decided 2026-10-12:* (1). (#418)
+
+Found while building it:
+
+- **#419 A failed upload swap.** It left the restored data with files
+  missing. *Answered:* the code was wrong; fixed (§7.13).
+- **#420 Waiting scans after a restore.** Never deleted. *Answered:* the
+  code was wrong; fixed.
+- **#421 The pre-restore backup after a refused archive.** There is none:
+  §7.13 validates the archive before writing it. *Answered* from the
+  spec.
+- **#422 Totals of one's own entries without `ViewCosts`.** Stations show
+  them (§7.33); §7.21 said derived figures stay hidden. *Decided
+  2026-10-12:* kept; §7.21 made exact.
 
 Carried from [Phase 43](phase-43.md):
 

@@ -5726,7 +5726,11 @@ part of View.
   they see the amounts they typed (row amounts through `can_see_amount()`,
   and in the API). Figures derived from several entries (cost per
   distance, totals, price trends, an economy segment's cost) stay hidden
-  even when some are theirs. Forms still take costs, since a driver pays
+  when any of those entries is someone else's, even when some are
+  theirs. A figure made only of their own entries is theirs to see: a
+  station's spend and average and cheapest price paid count only their
+  own fill-ups (§7.33), while its visits count all they can see (#422,
+  decided 2026-10-12). Forms still take costs, since a driver pays
   at the pump. The Expenses tab (`View`) lists the vehicle's ad-hoc
   expenses without their amounts (their own excepted) and no totals or
   chart; the API's expenses list still needs `ViewCosts`. CSV exports need
@@ -10285,7 +10289,8 @@ task breakdowns live in the per-phase files; this is the map.
   last release, and a restore drill. The sweep covers every GET route
   and API call, every Ask and MCP read tool, the calendar feed, the
   digest, reminders and webhooks, and found no leak; the server's
-  webhook now gets none of the briefing (#377). The 16 restores and the
+  webhook now gets none of the briefing (#377), and §7.21 says exactly
+  that a total of one's own entries is theirs to see (#422). The 16 restores and the
   upgrade from every minor release since v3.0.0 reproduce the golden
   household; the failure paths found that a failed upload swap left the
   restored data with files missing, so the swap now runs inside the
