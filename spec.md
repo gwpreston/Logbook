@@ -1497,7 +1497,9 @@ from fleet totals unless "include archived" is toggled.
     price of 0 shows the amount without a percentage.
   - **Per year** = the loss ÷ the years from the purchase date to the
     **value's date** (not today: that is when the value was true), counted
-    in calendar years, months and days. **Per distance** = the loss ÷ the
+    in calendar years, months and days: the loss × 12 ÷ (the whole
+    calendar months between the dates + the days left over ÷ 30.436875,
+    the average month of 365.2425 ÷ 12 days) (#409, decided 2026-10-12). **Per distance** = the loss ÷ the
     distance driven between the same two dates, measured as a report's
     *distance driven* (§7.7), in the owner's distance unit ("£0.14/mi").
     Both need the purchase date and are shown only when the two dates are at
@@ -1512,7 +1514,11 @@ from fleet totals unless "include archived" is toggled.
     the lifetime figures above are unchanged): the value on any day
     between two points of the value series is interpolated in a straight
     line by day, and a period's depreciation is the value at its start
-    minus the value at its end (a gain is negative). Several points on
+    minus the value at its end (a gain is negative). A value point is the
+    value at the **start** of its day, so a period ending on 31 Dec is
+    measured to the start of 1 Jan, the next period's start, and a
+    valuation dated D counts no loss on D itself (Phase 45.1, #408, decided
+    2026-10-12). Several points on
     one day: the last one counts, except that the purchase day opens at
     the purchase price, so a valuation (or a sale, #404) dated on the purchase day is
     that day's closing value and the drop from the price falls in the period
@@ -2422,7 +2428,8 @@ currency and never converted.
       purchase"; a vehicle without a total adds its running costs and the
       card says "2 of 3 with depreciation";
     - *Per month*: the **active** vehicles' own *per month* figures added
-      up (each vehicle's total ÷ its own owned months, as the table),
+      up (each vehicle's §7.7 *Per month*: running costs ÷ months owned +
+      depreciation per year ÷ 12, as the table, #409),
       "active vehicles combined"; sold or archived vehicles count in
       *Total cost* but not here (#187); "—" with no active vehicle;
     - *Depreciation*: the sum of the vehicles' depreciation, "{n}% of
@@ -8290,9 +8297,12 @@ it replaces none of the other figures.
   folded into a part.
 - **Periods:** *Since bought* (§7.7's ownership period, unchanged), *Last
   12 months* (the reports' preset: this month and the 11 before, cut to the
-  ownership period; under 90 days, no per-distance figure, as §7.7), and
+  ownership period), and
   the 12 months before it for the change, and each **calendar year** in
-  the viewing user's time zone (#386)
+  the viewing user's time zone (#386); any period under 90 days once cut
+  to the ownership period, a first or last year included, has no
+  per-distance figure, as §7.7 (#410, decided 2026-10-12), so it has no
+  *What changed* either
   (calendar years only; UK tax years are parked, #150). The current year
   and the first year of ownership are partial and say so ("2026 so far",
   "2023 from 14 Mar"); so is the year of a sale ("2026 to 12 Mar").
@@ -8322,7 +8332,8 @@ it replaces none of the other figures.
   `Service\Report\ValueCurve`):
   - the vehicle's **value points** are §7.1's value series: the purchase
     price on the purchase date, each valuation on its date, and the sale
-    price on the sale date (several on one day: the last one counts,
+    price on the sale date, each the value at the start of its day (#408)
+    (several on one day: the last one counts,
     except that the purchase day opens at the price, so a valuation or a sale
     that day is its closing value, #389, #404);
   - the value on any day between two points is interpolated in a straight

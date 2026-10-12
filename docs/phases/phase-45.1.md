@@ -215,6 +215,8 @@ The catalogue, each case with a test:
 - [x] #402 (found by *totals add up*): the years' depreciation missed
       *Since bought* by a micro-unit; the code was wrong, fixed in
       `ValueCurve` with a regression test (spec §7.35).
+- [ ] #410: a first or last calendar year under 90 days owned has no
+      per-distance figure (`TrueCostService`), with a regression test.
 - [ ] Each mismatch logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.
@@ -330,6 +332,17 @@ Found while starting (the edge-case review compared spec and code):
   *Coming up*'s table. *Decided 2026-10-12:* all three; the summary's
   cards share out its total by largest remainder, the two tables by
   controlled rounding.
+- **#408 Which moment of its day is a valuation?** (found by comparing
+  the independent script with the app) *Decided 2026-10-12:* the start of
+  its day, as the app does; only a purchase-day one is its close.
+- **#409 Ownership per month** (the same). *Decided 2026-10-12:* the app's
+  formula; the spec's page text and §7.1's year count made exact.
+- **#410 The 90-day rule for a short year** (the same). *Decided
+  2026-10-12:* every true-cost period under 90 days owned has no
+  per-distance figure.
+- **#411 The golden *What changed* rows** (found building the golden
+  test). *Decided 2026-10-12:* check what the page and widget show, per
+  distance.
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.
