@@ -108,11 +108,13 @@ final class PlanWriter
                 $vehiclePlan->memberSeesCosts,
                 true,
             );
-            $this->get(OdometerService::class)->create($vehicle, new OdometerReadingData(
-                $vehiclePlan->startKm,
-                LocalTime::toUtc($vehiclePlan->purchaseDate . 'T12:00', new DateTimeZone($plan->ownerZone))
-                    ?? throw new RuntimeException('No purchase instant'),
-            ));
+            if ($vehiclePlan->loggedFromPurchase) {
+                $this->get(OdometerService::class)->create($vehicle, new OdometerReadingData(
+                    $vehiclePlan->startKm,
+                    LocalTime::toUtc($vehiclePlan->purchaseDate . 'T12:00', new DateTimeZone($plan->ownerZone))
+                        ?? throw new RuntimeException('No purchase instant'),
+                ));
+            }
             $entries = $order === null ? $vehiclePlan->entries : $order($vehiclePlan->entries);
             foreach ($entries as $entry) {
                 $this->add($vehiclePlan->key, $entry, new DateTimeZone($plan->ownerZone));

@@ -35,7 +35,8 @@ final class ReportTest extends AppTestCase
         $golf = $this->vehicle($app);
         $sold = $this->vehicle($app, 'Ford', 'Fiesta');
 
-        $this->reading($app, $golf, '10000', '2026-08-31T12:00:00Z');
+        // The log reaches back to the first day of the last 12 months (#376).
+        $this->reading($app, $golf, '10000', '2025-09-30T12:00:00Z');
         $this->fillUp($app, $golf, '2026-09-10T08:00:00Z', '10400', '40', '60.00');
         $this->maintenance($app, $golf, '2026-08-14', 'Annual service', '189.99');
         $this->expense($app, $golf, '2026-09-20', '2.5', ExpenseCategory::Tolls);

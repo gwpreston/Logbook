@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Reminder;
 
+use DateTimeImmutable;
+use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Notification\Digest\DigestSummary;
+use Logbook\Service\Notification\Digest\DigestWording;
 use Logbook\Service\Notification\Digest\LastMonth;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Sharing\SharingService;
+use Logbook\Service\User\UserAdmin;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Number\Decimal;
 use Logbook\Tests\Support\BriefingTestCase;
@@ -211,7 +216,7 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
     {
         $this->start();
         $golf = $this->car();
-        $this->reading($golf, '9000', '2026-01-10');
+        $this->reading($golf, '9000', '2025-08-10');
         $this->reading($golf, '10000', '2026-08-20');
         $this->reading($golf, '10050', '2026-09-10');
         $this->spend($golf, '2026-03-05', '90');
@@ -311,18 +316,107 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         self::assertStringNotContainsString('Polo', $this->digestText());
     }
 
-    public function testAnArchivedVehicleIsLeftOut(): void
+    public function testAVehicleArchivedBeforeTheMonthIsLeftOut(): void
     {
         $this->start();
         $golf = $this->car();
         $polo = $this->car('Polo');
         $this->spend($golf, '2026-09-05', '30');
         $this->spend($polo, '2026-09-05', '40');
+        $this->clock->set(new DateTimeImmutable('2026-08-31T20:00:00Z'));
         $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $polo);
+        $this->clock->set(new DateTimeImmutable(self::NOW));
+
+        self::assertCount(1, $this->service($this->app, DigestSummary::class)
+            ->lastMonth($this->owner($this->app), [$golf, $this->vehicleNow($polo)], self::date('2026-10-01'))->lines ?? []);
+    }
+
+    public function testAVehicleArchivedDuringTheMonthKeepsItsSpend(): void
+    {
+        // #374: the Polo was sold and archived on 20 Sep; September keeps its £40.
+        $this->start();
+        $golf = $this->car();
+        $polo = $this->car('Polo');
+        $this->spend($golf, '2026-09-05', '30');
+        $this->spend($polo, '2026-09-05', '40');
+        $this->clock->set(new DateTimeImmutable('2026-09-20T10:00:00Z'));
+        $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $polo);
+        $this->clock->set(new DateTimeImmutable(self::NOW));
 
         $this->runTasks();
 
-        self::assertStringNotContainsString('Polo', $this->digestText());
+        $text = $this->digestText();
+        self::assertStringContainsString('• Volkswagen Polo: £40.00 spent', $text);
+        self::assertStringContainsString('£70.00 spent', $text, 'and the fleet line counts it');
+    }
+
+    public function testTheFleetSpendSaysSoWhenAVehiclesCostsAreHidden(): void
+    {
+        // #375: the member sees the Polo's distance but not its costs.
+        $this->start();
+        $golf = $this->car();
+        $polo = $this->car('Polo');
+        foreach ([$golf, $polo] as $vehicle) {
+            $this->reading($vehicle, '10000', '2026-08-20');
+            $this->reading($vehicle, '10400', '2026-09-10');
+        }
+        $this->spend($golf, '2026-09-05', '30');
+        $this->spend($polo, '2026-09-05', '40');
+        $member = $this->member();
+        $this->share($golf, $member, seesCosts: true);
+        $this->share($polo, $member, seesCosts: false);
+
+        $lastMonth = $this->service($this->app, DigestSummary::class)
+            ->lastMonth($member, [$golf, $polo], self::date('2026-10-01'));
+
+        self::assertNotNull($lastMonth);
+        self::assertCount(2, $lastMonth->lines);
+        self::assertSame(['GBP' => '30.000'], array_map(static fn ($m): string => $m->toDecimal(3), $lastMonth->fleetSpend));
+        self::assertTrue($lastMonth->fleetSpendPartial);
+        $fleet = $this->service($this->app, DigestWording::class)->fleetJson($lastMonth);
+        self::assertNotNull($fleet);
+        self::assertStringContainsString('£30.00 spent on vehicles whose costs you see', $fleet['display']);
+
+        $owners = $this->service($this->app, DigestSummary::class)
+            ->lastMonth($this->owner($this->app), [$golf, $polo], self::date('2026-10-01'));
+        self::assertNotNull($owners);
+        self::assertFalse($owners->fleetSpendPartial, 'the owner sees every cost');
+    }
+
+    public function testTheMonthsCostPerDistanceNeedsTheLogToReachBack(): void
+    {
+        // #376: the log starts on 10 Sep, so September's £30 would be divided by part of its distance.
+        $this->start();
+        $golf = $this->car();
+        $this->reading($golf, '10000', '2026-09-10');
+        $this->reading($golf, '10900', '2026-09-28');
+        $this->spend($golf, '2026-09-05', '30');
+
+        $line = $this->lastMonth($golf)->lines[0];
+
+        self::assertSame('900.000', $line->distanceKm);
+        self::assertNotNull($line->costs);
+        self::assertNull($line->costs->costPerKm);
+    }
+
+    public function testTheTwelveMonthAverageNeedsTheLogToReachBackToTheirFirstMonth(): void
+    {
+        // #399: a cost in Nov 2025 but readings from Jan 2026 only, so the 12
+        // months' spend would be divided by part of their distance.
+        $this->start();
+        $golf = $this->car();
+        $this->reading($golf, '9000', '2026-01-10');
+        $this->reading($golf, '10000', '2026-08-31');
+        $this->reading($golf, '10500', '2026-09-28');
+        $this->spend($golf, '2025-11-05', '45');
+        $this->spend($golf, '2026-03-05', '90');
+        $this->spend($golf, '2026-09-05', '30');
+
+        $line = $this->lastMonth($golf)->lines[0];
+
+        self::assertNotNull($line->costs);
+        self::assertNotNull($line->costs->costPerKm, 'September itself is measured from 31 Aug');
+        self::assertNull($line->costs->costPerKmAverage, 'the comparison is left out');
     }
 
     public function testTheLargeEntryIsNamedOnlyAboveHalfTheMonth(): void
@@ -381,6 +475,25 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         $line = $this->lastMonth($golf)->lines[0];
         $report = $this->reportFor($golf, ReportPeriod::month(self::date('2026-09-01')));
         self::assertSame($report->currencies[0]->distanceKm, $line->distanceKm);
+    }
+
+    private function member(): User
+    {
+        $owner = $this->owner($this->app);
+
+        return $this->service($this->app, UserAdmin::class)
+            ->addUser($owner, 'member', 'Member', 'member@example.test', false, $owner->preferences);
+    }
+
+    private function share(Vehicle $vehicle, User $member, bool $seesCosts): void
+    {
+        $this->service($this->app, SharingService::class)->add($vehicle, $member->username, ShareLevel::View, $seesCosts, true);
+    }
+
+    /** The vehicle as stored now (after archiving). */
+    private function vehicleNow(Vehicle $vehicle): Vehicle
+    {
+        return $this->service($this->app, VehicleService::class)->get($this->owner($this->app), $vehicle->id);
     }
 
     private function lastMonth(Vehicle $vehicle): LastMonth

@@ -204,7 +204,7 @@ final class ReportCalculatorTest extends TestCase
                 self::reading(1, '10400', '2026-09-10T12:00:00Z'),
                 self::reading(1, '11000', '2026-09-25T12:00:00Z'),
             ],
-            2 => [self::reading(2, '500', '2026-09-26T12:00:00Z')],  // a single reading: no distance
+            2 => [self::reading(2, '500', '2026-09-26T12:00:00Z')],  // one reading, after the start: no distance, no rate
             // Driven, but no costs logged: its miles must not dilute the fleet figure.
             3 => [self::reading(3, '0', '2026-09-01T12:00:00Z'), self::reading(3, '5000', '2026-09-20T12:00:00Z')],
         ];
@@ -221,16 +221,57 @@ final class ReportCalculatorTest extends TestCase
 
         self::assertSame('1000.000', $section->distanceKm, 'the vehicle without costs is left out');
         self::assertCount(2, $section->vehicles);
-        self::assertSame('0.120500', $section->costPerKm, '£120.50 over 1,000 km');
+        // The bike's log doesn't reach back to 1 Sep: its £20.50 counts in the
+        // total but not in the fleet's cost per distance (#376, #398).
+        self::assertSame('120.500', $section->total->toDecimal(3));
+        self::assertSame('0.100000', $section->costPerKm, '£100 over 1,000 km');
         self::assertSame(1, $section->vehicles[0]->vehicle->id, 'biggest spender first');
         self::assertSame('0.100000', $section->vehicles[0]->costPerKm);
         self::assertNull($section->vehicles[1]->costPerKm, 'no distance, no cost per distance');
 
         $formatter = self::formatter(UnitPreset::Uk);
         self::assertSame('621 mi', $formatter->distance($section->distanceKm));
-        self::assertSame('£0.194/mi', $formatter->perDistance($section->costPerKm, 'GBP'), '£0.1205/km × 1.609344');
+        self::assertSame('£0.161/mi', $formatter->perDistance($section->costPerKm, 'GBP'), '£0.10/km × 1.609344');
         self::assertSame('£0.161/mi', $formatter->perDistance($section->vehicles[0]->costPerKm, 'GBP'));
         self::assertSame('£0.10/km', self::formatter(UnitPreset::Metric)->perDistance($section->vehicles[0]->costPerKm, 'GBP'));
+    }
+
+    public function testCostPerDistanceNeedsTheLogToReachBackToThePeriodsStart(): void
+    {
+        // #376: £300 in the last 12 months, but the log starts in August, so
+        // the 12 months' costs would be divided by two months' distance.
+        $golf = self::vehicle(1);
+        $items = [self::expense($golf, '2025-11-05', '200'), self::expense($golf, '2026-09-05', '100')];
+        $readings = [1 => [self::reading(1, '10000', '2026-08-01T12:00:00Z'), self::reading(1, '11000', '2026-09-25T12:00:00Z')]];
+        $twelve = new ReportFilter(ReportPeriod::preset(ReportRange::TwelveMonths, self::date('2026-09-27')));
+
+        $section = ReportCalculator::build($twelve, [$golf], [1 => 'GBP'], $items, $readings, self::london())->currencies[0];
+        self::assertSame('1000.000', $section->distanceKm, 'the distance is still shown');
+        self::assertNull($section->costPerKm, '"—": the log doesn\'t reach back to 1 Oct 2025');
+        self::assertNull($section->vehicles[0]->costPerKm);
+
+        $reaching = [1 => [self::reading(1, '9000', '2025-10-01T08:00:00Z'), ...$readings[1]]];
+        $section = ReportCalculator::build($twelve, [$golf], [1 => 'GBP'], $items, $reaching, self::london())->currencies[0];
+        self::assertSame('0.150000', $section->costPerKm, 'a reading on the first day is enough: £300 over 2,000 km');
+    }
+
+    public function testAVehicleBoughtDuringThePeriodReachesBackToItsPurchase(): void
+    {
+        // #405: bought on 1 Mar 2026 with a reading that day, inside the last 12 months.
+        $polo = self::vehicle(1, bought: '2026-03-01');
+        $items = [self::expense($polo, '2026-03-01', '50'), self::expense($polo, '2026-09-05', '100')];
+        $readings = [1 => [self::reading(1, '20000', '2026-03-01T12:00:00Z'), self::reading(1, '21500', '2026-09-25T12:00:00Z')]];
+        $twelve = new ReportFilter(ReportPeriod::preset(ReportRange::TwelveMonths, self::date('2026-09-27')));
+
+        $section = ReportCalculator::build($twelve, [$polo], [1 => 'GBP'], $items, $readings, self::london())->currencies[0];
+
+        self::assertSame('0.100000', $section->costPerKm, '£150 over 1,500 km since it was bought');
+        self::assertSame('0.100000', $section->vehicles[0]->costPerKm);
+
+        // A first reading after the purchase still isn't enough.
+        $late = [1 => [self::reading(1, '20200', '2026-03-10T12:00:00Z'), $readings[1][1]]];
+        $section = ReportCalculator::build($twelve, [$polo], [1 => 'GBP'], $items, $late, self::london())->currencies[0];
+        self::assertNull($section->costPerKm);
     }
 
     public function testArchivedVehiclesAreLeftOutUnlessIncludedOrPicked(): void
@@ -328,14 +369,22 @@ final class ReportCalculatorTest extends TestCase
         return new DateTimeZone(self::LONDON);
     }
 
-    private static function vehicle(int $id, ?string $currency = null, bool $archived = false): Vehicle
+    private static function vehicle(int $id, ?string $currency = null, bool $archived = false, ?string $bought = null): Vehicle
     {
         $now = new DateTimeImmutable('2026-01-01 00:00:00 UTC');
+        $data = new VehicleData(
+            VehicleType::Car,
+            'Make',
+            'Model ' . $id,
+            FuelType::Petrol,
+            currency: $currency,
+            purchaseDate: $bought === null ? null : self::date($bought),
+        );
 
         return new Vehicle(
             $id,
             1,
-            new VehicleData(VehicleType::Car, 'Make', 'Model ' . $id, FuelType::Petrol, currency: $currency),
+            $data,
             $archived ? VehicleStatus::Archived : VehicleStatus::Active,
             null,
             null,

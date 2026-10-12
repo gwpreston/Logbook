@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Attention\AttentionList;
@@ -231,12 +232,14 @@ final readonly class ReminderNotifier
             static fn (ReminderEntry $e): bool => $e->reminder->status === ReminderStatus::Overdue
                 || ($e->reminder->dueOn !== null && $e->reminder->dueOn <= $endOfMonth),
         ));
-        $vehicles = $this->vehicles->listByIds($this->access->recipientVehicleIds($user));
+        // Archived ones too: *Last month* keeps a vehicle archived during it (#374).
+        $all = $this->vehicles->listByIds($this->access->recipientVehicleIds($user, archivedToo: true));
+        $vehicles = array_values(array_filter($all, static fn (Vehicle $v): bool => !$v->isArchived()));
         // The reminders were synced at the start of the run.
         $checks = $preferences->digestIncludes(DigestSection::Attention)
             ? $this->attention->forVehicles($user, $vehicles, sync: false)->checks()
             : [];
-        $content = $this->summary->build($user, $vehicles, $today, $preferences);
+        $content = $this->summary->build($user, $all, $today, $preferences);
         if ($entries === [] && $checks === [] && $content->isEmpty()) {
             $this->settings->markDigestSent($user->id, $month);
 

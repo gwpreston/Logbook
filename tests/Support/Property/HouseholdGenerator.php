@@ -15,8 +15,9 @@ use Logbook\Tests\Support\Golden\Rng;
  * household on every machine.
  *
  * Kept out of what Phase 45.1.5 has still to fix, so every property holds
- * on today's code: every vehicle's log reaches back to its purchase (#376).
- * One vehicle in four is valued on its purchase day, that day's closing
+ * on today's code. One vehicle in five has no reading on its purchase day,
+ * so its log starts at its first fill-up and its early periods have no
+ * cost per distance (#376). One vehicle in four is valued on its purchase day, that day's closing
  * value (#389). One unsold vehicle in two is bought on HP, at 0% now and
  * then, and half of those are settled early, sometimes for far less than
  * the payments left, so the end adjustment goes below zero (#387); every
@@ -127,6 +128,7 @@ final class HouseholdGenerator
         }
 
         $finance = !$sold && $this->rng->oneIn(2) ? $this->finance($purchase, $today, $price, $currency) : null;
+        $loggedFromPurchase = !$this->rng->oneIn(5);
 
         return new VehiclePlan(
             $key,
@@ -139,6 +141,7 @@ final class HouseholdGenerator
             $memberSeesCosts,
             $entries,
             $finance,
+            $loggedFromPurchase,
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Report;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Odometer\OdometerReading;
@@ -43,6 +44,14 @@ final class ReportCalculator
         foreach ($vehicles as $vehicle) {
             $covered[$vehicle->id] = true;
         }
+        /** @var array<int, DateTimeImmutable> $firstCost each vehicle's first ledger line, any group */
+        $firstCost = [];
+        foreach ($items as $item) {
+            $id = $item->vehicle->id;
+            if (!isset($firstCost[$id]) || $item->date < $firstCost[$id]) {
+                $firstCost[$id] = $item->date;
+            }
+        }
         $items = array_values(array_filter(
             $items,
             static fn (CostItem $item): bool => isset($covered[$item->vehicle->id])
@@ -62,7 +71,7 @@ final class ReportCalculator
 
         $sections = [];
         foreach ($byCurrency as $currency => $group) {
-            $sections[] = self::currencyReport($currency, $group, $inPeriod, $readings, $period, $zone);
+            $sections[] = self::currencyReport($currency, $group, $inPeriod, $readings, $period, $zone, $firstCost);
         }
 
         // Only currencies with something spent, unless nothing was spent at all.
@@ -76,6 +85,7 @@ final class ReportCalculator
      * @param list<Vehicle> $vehicles the vehicles using $currency
      * @param list<CostItem> $items the period's lines (any currency)
      * @param array<int, list<OdometerReading>> $readings
+     * @param array<int, DateTimeImmutable> $firstCost
      */
     private static function currencyReport(
         string $currency,
@@ -84,6 +94,7 @@ final class ReportCalculator
         array $readings,
         ReportPeriod $period,
         DateTimeZone $zone,
+        array $firstCost,
     ): CurrencyReport {
         $zero = Money::zero($currency);
         $items = array_values(array_filter($items, static fn (CostItem $item): bool => $item->currency() === $currency));
@@ -120,7 +131,14 @@ final class ReportCalculator
         // Distance counts only for vehicles with costs in the period: miles
         // driven by a vehicle whose costs were never logged would make the
         // fleet's running cost look cheaper than any single vehicle's.
+        // Cost per distance needs the log to reach back to the period's first
+        // day, or to the purchase when that is later (#376, #405): otherwise
+        // its costs would be divided by part of its distance. A vehicle whose
+        // log doesn't adds neither its spend nor its distance to the fleet's
+        // (#398); its spend still counts in the totals.
         $distance = '0';
+        $rateKm = '0';
+        $rateSpend = $zero;
         $vehicleCosts = [];
         $aboveZero = self::aboveZero($vehicleTotals);
         foreach ($vehicles as $vehicle) {
@@ -128,17 +146,23 @@ final class ReportCalculator
             if ($count === 0) {
                 continue;
             }
-            $km = PeriodDistance::km($readings[$vehicle->id] ?? [], $period, $zone);
+            $log = $readings[$vehicle->id] ?? [];
+            $km = PeriodDistance::km($log, $period, $zone);
             if ($km !== null) {
                 $distance = Decimal::add($distance, $km);
             }
             $spent = $vehicleTotals[$vehicle->id] ?? $zero;
+            $reachesBack = PeriodDistance::reachesBack($log, self::rateStart($vehicle, $period, $firstCost), $zone);
+            if ($reachesBack) {
+                $rateSpend = $rateSpend->add($spent);
+                $rateKm = $km === null ? $rateKm : Decimal::add($rateKm, $km);
+            }
             $vehicleCosts[] = new VehicleCost(
                 $vehicle,
                 $spent,
                 $count,
                 $km,
-                self::perKm($spent, $km),
+                $reachesBack ? self::perKm($spent, $km) : null,
                 self::share($spent, $aboveZero),
             );
         }
@@ -166,12 +190,29 @@ final class ReportCalculator
             months: $months,
             vehicles: $vehicleCosts,
             distanceKm: $distanceKm,
-            costPerKm: self::perKm($total, $distanceKm),
+            costPerKm: self::perKm($rateSpend, $rateKm),
             averagePerMonth: Money::of(
                 Decimal::divide($total->toDecimal(Money::SCALE), (string) max(1, count($months)), self::SCALE),
                 $currency,
             ),
         );
+    }
+
+    /**
+     * The day a vehicle's log must reach back to for a cost per distance
+     * (spec.md §7.7, #376, #405): the period's first day, or the purchase
+     * date when later (the first cost, without one).
+     *
+     * @param array<int, DateTimeImmutable> $firstCost
+     */
+    private static function rateStart(Vehicle $vehicle, ReportPeriod $period, array $firstCost): DateTimeImmutable
+    {
+        $own = $vehicle->data->purchaseDate ?? $firstCost[$vehicle->id] ?? $period->to;
+        if ($period->from === null) {
+            return $own;
+        }
+
+        return $own > $period->from ? $own : $period->from;
     }
 
     private static function perKm(Money $amount, ?string $km): ?string

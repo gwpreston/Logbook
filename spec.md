@@ -2254,8 +2254,10 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   towards the fleet's distance (miles from a vehicle whose costs were never
   logged would make the fleet look cheaper to run than any of its vehicles).
   Cost per distance = spend ÷ distance, shown only when some distance was
-  driven **and the mileage log reaches back** to the period's first day (a
-  reading on or before it, as cost of ownership requires below); otherwise
+  driven **and the mileage log reaches back** to the period's first day, or
+  to the vehicle's purchase date when that is later (its first cost without
+  one; Phase 45.1, #405, decided 2026-10-12), with a reading on or before
+  it, as cost of ownership requires below; otherwise
   "—", since the period's costs would be divided by part of its distance
   (Phase 45.1, #376, decided 2026-10-11). For the fleet (#398), the same holds
   per vehicle: a vehicle whose log doesn't reach back adds neither its
@@ -9060,7 +9062,8 @@ overview while any test is unreviewed. A test is reviewed
     per-distance figure ("—"); a backwards reading inside a period is
     ignored (only the end points count), and a period whose end is below
     its start gives "—". Per-distance figures also need the log to reach
-    back to the period's start (§7.7, #376).
+    back to the period's start, or the purchase when later (§7.7, #376,
+    #405).
   - **Valuations:** two on one day, the last added wins (for the
     current value and the curve); one on the purchase day (or a sale that day,
     #404) is that day's closing value, after the price (§7.1, #389). A sale is the

@@ -29,11 +29,12 @@ final readonly class Plan
         $parts = [];
         foreach ($this->vehicles as $vehicle) {
             $parts[] = sprintf(
-                '%s %s from %s%s, %d entries%s%s',
+                '%s %s from %s%s%s, %d entries%s%s',
                 $vehicle->key,
                 $vehicle->currency,
                 $vehicle->purchaseDate,
                 $vehicle->saleDate === null ? '' : ' sold ' . $vehicle->saleDate,
+                $vehicle->loggedFromPurchase ? '' : ', log from its first fill-up',
                 count($vehicle->entries),
                 $vehicle->finance === null ? '' : sprintf(
                     ', HP at %s%% over %d%s',

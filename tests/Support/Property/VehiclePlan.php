@@ -24,6 +24,8 @@ final readonly class VehiclePlan
         public bool $memberSeesCosts,
         public array $entries,
         public ?FinancePlan $finance = null,
+        /** False: no reading on the purchase day, so the log starts at the first fill-up (#376). */
+        public bool $loggedFromPurchase = true,
     ) {
     }
 
@@ -45,6 +47,7 @@ final readonly class VehiclePlan
             $this->memberSeesCosts,
             $entries,
             $this->finance,
+            $this->loggedFromPurchase,
         );
     }
 }

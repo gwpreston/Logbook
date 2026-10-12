@@ -3350,6 +3350,7 @@ return [
             'fleet' => '• Alle Fahrzeuge: {figures}',
             'fleet_distance' => '{distance} gefahren',
             'fleet_spend' => '{amounts} ausgegeben',
+            'fleet_spend_seen' => '{amounts} ausgegeben für Fahrzeuge, deren Kosten du siehst',
             'insights' => '{count, plural, one {Eine Erkenntnis:} other {# Erkenntnisse:}}',
             'insight_line' => '• {title} — {body}',
             'ai_insight_line' => '• KI: {title} — {body}',
