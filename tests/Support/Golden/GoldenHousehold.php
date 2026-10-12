@@ -36,6 +36,9 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Access\AccessContext;
+use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Attachment\PendingUpload;
+use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Auth\AuthService;
 use Logbook\Service\Auth\SetupData;
 use Logbook\Service\Compliance\ComplianceService;
@@ -63,6 +66,7 @@ use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use Slim\Psr7\UploadedFile;
 
 /**
  * Enters the golden household (tests/Fixtures/golden/inputs/*.csv) through
@@ -70,6 +74,9 @@ use RuntimeException;
  * derived row (a fill-up's odometer reading, a finance event, a reminder) is
  * made the way the app makes it. The container's clock should already be
  * pinned to InputBuilder::TODAY_UTC.
+ *
+ * A few entries carry a receipt (attachments.csv, files in ../uploads/),
+ * attached as the entry is saved, as the forms do.
  *
  * Entries are written through the services with canonical values (km,
  * litres, kWh); the forms' own checks (decimal places, ranges) are not
@@ -83,6 +90,8 @@ final class GoldenHousehold
     public array $users = [];
     /** @var array<string, Vehicle> */
     public array $vehicles = [];
+    /** @var array<string, string> `kind|vehicle|at` → the receipt's path, until it is attached */
+    private array $receipts = [];
 
     private function __construct(private ContainerInterface $container)
     {
@@ -110,6 +119,10 @@ final class GoldenHousehold
     {
         $csv = static fn (string $name): array => ExpectedSkeleton::read($inputs . '/' . $name . '.csv');
 
+        foreach ($csv('attachments') as $row) {
+            $key = $row['kind'] . '|' . $row['vehicle'] . '|' . $row['at'];
+            $this->receipts[$key] = dirname($inputs) . '/uploads/' . $row['file'];
+        }
         $this->people($csv('users'), $password);
         foreach ($csv('vehicles') as $row) {
             $this->addVehicle($row);
@@ -144,13 +157,41 @@ final class GoldenHousehold
                 $row['total_cost'],
                 $row['partial'] === 'yes',
                 station: $row['station'],
-            ));
+            ), $this->receipt('fillups', $row['vehicle'], $row['at']));
         }
         $this->ownerEntries($csv);
         $this->finance($csv('finance'), $csv('finance_events'));
         $this->trips($csv('rate_sets'), $csv('trips'));
         $this->sales($csv('vehicles'));
         $this->as(null);
+        if ($this->receipts !== []) {
+            throw new RuntimeException('No entry for the receipts ' . implode(', ', array_keys($this->receipts)));
+        }
+    }
+
+    /**
+     * The receipt attached to an entry as it is saved, if attachments.csv
+     * lists one: a copy, since the upload check cleans an image in place.
+     */
+    private function receipt(string $kind, string $vehicle, string $at): PendingUploads
+    {
+        $key = $kind . '|' . $vehicle . '|' . $at;
+        $source = $this->receipts[$key] ?? null;
+        if ($source === null) {
+            return new PendingUploads();
+        }
+        unset($this->receipts[$key]);
+        $path = (string) tempnam(sys_get_temp_dir(), 'logbook-golden-');
+        if (!copy($source, $path)) {
+            throw new RuntimeException("Cannot copy {$source}");
+        }
+        $file = new UploadedFile($path, basename($source), null, (int) filesize($path), UPLOAD_ERR_OK);
+        $check = $this->get(AttachmentService::class)->check($file);
+        if (!$check->isValid()) {
+            throw new RuntimeException("The receipt {$source} was refused: {$check->error}");
+        }
+
+        return new PendingUploads([new PendingUpload($file, $check)]);
     }
 
     /**
@@ -234,7 +275,7 @@ final class GoldenHousehold
                 $row['cost'],
                 $row['odometer_km'],
                 $row['vendor'],
-            ), $zone);
+            ), $zone, $this->receipt('maintenance', $row['vehicle'], $row['date']));
         }
         foreach ($csv('documents') as $row) {
             [$vehicle, $zone] = $this->owned($row['vehicle']);
@@ -246,7 +287,7 @@ final class GoldenHousehold
                 self::date($row['start_on']),
                 self::date($row['expiry_on']),
                 $row['cost'],
-            ), $zone);
+            ), $zone, $this->receipt('documents', $row['vehicle'], $row['start_on']));
         }
         foreach ($csv('expenses') as $row) {
             [$vehicle] = $this->owned($row['vehicle']);
@@ -255,7 +296,7 @@ final class GoldenHousehold
                 ExpenseCategory::from($row['category']),
                 $row['amount'],
                 $row['note'],
-            ));
+            ), $this->receipt('expenses', $row['vehicle'], $row['date']));
         }
         foreach ($csv('valuations') as $row) {
             [$vehicle] = $this->owned($row['vehicle']);

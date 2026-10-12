@@ -15,6 +15,9 @@ code**, then checked against the app to the penny on every database engine
 - `expected.csv` holds the figures to check, one row each. Your spreadsheet
   fills its `expected` column (#393). For finance and depreciation, an
   independent script also fills it, and the two are compared.
+- `inputs/attachments.csv` lists the few entries that carry a receipt or
+  certificate, kept in `uploads/`. They change no figure; they are there
+  so a backup and restore (Phase 45.2) carries files too.
 - `build-inputs.php` regenerates `inputs/` from
   `tests/Support/Golden/InputBuilder.php`, which is seeded so it gives the
   same files every time. The CSVs are the fixture and are committed. After

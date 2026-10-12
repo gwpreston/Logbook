@@ -159,7 +159,11 @@ seed. Each property must hold:
 - [x] The loader (`tests/Support/Golden/GoldenHousehold`) that enters
       them through the services, not SQL, acting as the user in `by`;
       `GoldenHouseholdLoadTest` checks every row is stored once.
-- [ ] The uploads (receipts on a few entries).
+- [x] The uploads: seven receipts and certificates (JPEG and PDF) in
+      `tests/Fixtures/golden/uploads/`, listed in `inputs/attachments.csv`
+      and attached through the services as their fill-up, service,
+      document or expense is saved; `GoldenHouseholdLoadTest` checks each
+      is on its entry, a PDF byte for byte.
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
       `expected.csv` exported from it (the skeleton, 864 rows with
       `expected` empty, is committed).
