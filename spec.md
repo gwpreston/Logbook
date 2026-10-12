@@ -2361,7 +2361,8 @@ currency and never converted.
     (nothing logged is not nothing spent, and a rate of £0 would be made
     up); the totals still show.
   - Under 90 days owned: no per-distance or per-month figure (too short to
-    mean anything); the totals still show.
+    mean anything); the totals still show. True cost's periods follow the
+    same rule, a short first or last calendar year included (§7.35, #410).
   - Depreciation per distance unknown (no price or value, no purchase
     date, or the value under 90 days after the purchase, §7.1; a gain is a
     negative part from Phase 32):
@@ -9086,8 +9087,9 @@ overview while any test is unreviewed. A test is reviewed
     row adds up to its total and each column to the fleet footer (a
     footer total over only some vehicles adds up their shown totals); and
     *Coming up*'s months × (planned, fuel) table, rounded under control,
-    with the summary cards, *Next 3 months* and each month's fuel line
-    showing the same amounts as the table. A CSV's total
+    with the summary cards, *Next 3 months*, each month's fuel line and
+    the dashboard's *Coming up* lines showing the same amounts as the
+    table (the API and Ask stay exact). A CSV's total
     rows (cost of ownership, true cost) keep the 3 places a CSV writes,
     and their parts add up at those places; per-entry rows, the API and
     MCP stay exact (`Support\Money\ShownAmounts`).

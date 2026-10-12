@@ -54,10 +54,14 @@ others, with its minus sign and no share.
   today or the sale date. It is exactly the cost of ownership card's *Per
   distance* figure, split into its parts.
 - **Last 12 months**: this month and the 11 before, as in Reports, cut to
-  the time you have owned the vehicle. Under 90 days there is no figure.
+  the time you have owned the vehicle.
 - **Each calendar year**, in your time zone. The current year, the year
   you bought the vehicle and the year you sold it are partial and say so:
   "2026 so far", "2023 from 14 Mar", "2026 to 12 Mar".
+
+Any period under 90 days of ownership, a short first or last year
+included, shows its amounts but no per-mile or per-km figure, and so no
+*What changed* (too short to mean anything).
 
 In *Last 12 months* and the yearly figures, a document with a start and an
 expiry date is **spread over its cover by day**. A policy renewed 13
@@ -71,6 +75,14 @@ Logbook knows the vehicle's value on a few dates: what you paid, each
 valuation you added, and the sale price. Between two of those dates the
 value is taken to fall (or rise) in a straight line. A period's
 depreciation is the value at its start minus the value at its end.
+
+A valuation or sale dated a given day is the value at the **start** of
+that day, so a year runs from the start of 1 January to the start of the
+next 1 January and nothing falls between two periods. The one exception
+is the day you bought the vehicle: it opens at the price, and a valuation
+(or a sale) that same day is its closing value, so that first drop lands
+in the period you bought it. A period's depreciation per mile divides by
+the distance driven up to the date it is measured to, that day included.
 
 Nothing is guessed beyond the latest value. A period that runs past it is
 measured only up to it ("depreciation to 1 Mar 2026"). A period entirely
@@ -110,12 +122,19 @@ valuation is enough) and every year of the trend includes depreciation.
 - **The vehicle's Cost of ownership tab** (`/vehicles/{id}/ownership`): the
   same figures for one vehicle as tiles (total, per month, per mile or km,
   how long you have owned it), a row per part with its share, and how it
-  is worked out.
+  is worked out. *Per month* is the running costs ÷ the calendar months
+  owned, plus the depreciation per year ÷ 12; depreciation per year is the
+  loss × 12 ÷ the months from purchase to the value's date (whole months,
+  plus the days left over ÷ 30.436875, an average month).
 - **Ask Logbook** ("Why has my car got more expensive?") and the [REST
   API](api.md) (`GET /api/v1/vehicles/{id}/true-cost`).
 
 A year with under 500 km (311 mi) of driving is shown in the table only:
 per-mile figures over a few hundred miles swing too much to compare.
+
+A negative amount (a gain in value, payouts larger than the costs, a
+finance adjustment) shows a true minus sign: "−£12.34". CSV and API
+numbers keep a plain hyphen.
 
 Everything here needs access to the vehicle's costs. A vehicle shared with
 you without its costs is left out.
@@ -126,7 +145,9 @@ Under the trend, each year is compared with the year before, as long as
 both have at least 500 km of driving. The change in cost per distance is
 split into contributions that **add up exactly** to it:
 
-- **Each part's change per distance.**
+- **Each part's change per distance.** A part one year doesn't have
+  (depreciation after the latest valuation, say) counts as 0 there, so
+  the parts still add up to the total change.
 - **Fuel, split into price and economy**, for each kind of energy (a
   plug-in hybrid gets both petrol and electricity):
   - *price*: the change in the average price per litre (or kWh, or kg) ×

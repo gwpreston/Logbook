@@ -37,7 +37,11 @@ returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.
 A cost per distance (`cost_per_distance`, `vehicle_summary`) is `null`
 when the mileage log doesn't reach back to the period's start, or to the
-purchase when that is later, as on the Reports page.
+purchase when that is later, as on the Reports page. In `true_cost`, a period
+under 90 days owned (a short first or last year too) has a `null`
+`per_distance` and no *what changed*. Display strings show a negative
+amount with the true minus sign ("−£3.50"); raw values keep a plain
+hyphen.
 
 A **read and write** key also gets:
 

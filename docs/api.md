@@ -100,6 +100,9 @@ user prefers, so automations can compare and chart them:
   L/100 km, km/L = 100 ÷ L/100 km; miles = km ÷ 1.609344. Or use the
   summary's `display` block, which is already in the owner's units,
   language and currency ("48,730 mi", "44.4 mpg").
+- `display` strings are for showing, not parsing: a negative amount uses
+  the true minus sign ("−£3.50", U+2212), while the raw decimal fields
+  keep a plain hyphen ("-3.500").
 - A field with no value is `null`. Codes (`fuel`, `grade`, `category`,
   `status`, …) are the app's own; `openapi.json` lists them.
 - A switched-off module's endpoints answer `404`, and its fields leave the
@@ -133,7 +136,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`) |
 | `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
-| `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences (cost access, else `403`) |
+| `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences; a period under 90 days owned, a short first or last year included, has `per_distance: null` and `why_not: "too_short"`, and no `what_changed` (cost access, else `403`) |
 | `GET /vehicles/{id}/finance` | the active finance agreement's figures and schedule, else the latest ended one's; estimates marked as such, never the agreement number (Manage and cost access, else `404`; finance module) |
 | `GET /vehicles/{id}/finance/agreements` | every agreement, the active one first, each with its payment events and settlement quotes (as above) |
 | `POST /vehicles/{id}/reminders` | add a manual reminder (read and write key; Manage) |

@@ -660,7 +660,7 @@ def main():
                     "vehicle": row["vehicle"], "period": row["period"], "script": value, "working": work})
 
     with open(os.path.join(HERE, "script.csv"), "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["id", "figure", "viewer", "vehicle", "period", "script", "working"])
+        w = csv.DictWriter(f, fieldnames=["id", "figure", "viewer", "vehicle", "period", "script", "working"], lineterminator="\n")
         w.writeheader()
         w.writerows(out)
     for c in checks:

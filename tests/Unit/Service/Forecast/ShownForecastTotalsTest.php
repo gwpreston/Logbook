@@ -47,6 +47,11 @@ final class ShownForecastTotalsTest extends TestCase
         self::assertSame($fuel, $shown->fuelTotal->micros, 'the fuel column adds up');
         self::assertSame('600.12', $shown->total->toDecimal(2));
         self::assertSame('150.03', $shown->soon->toDecimal(2), 'the first three months as shown');
+        self::assertSame(
+            $shown->fuel[0]->micros + $shown->fuel[1]->micros + $shown->fuel[2]->micros,
+            $shown->soonFuel->micros,
+            'its fuel as those months show it',
+        );
     }
 
     public function testHalfPenniesThatDoNotAddUpExactly(): void

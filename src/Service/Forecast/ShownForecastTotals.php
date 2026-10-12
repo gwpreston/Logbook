@@ -12,7 +12,8 @@ use Logbook\Support\Money\ShownAmounts;
  * up*, #407): months × (planned, fuel) rounded under control, so each
  * month's planned and fuel add up to its total and each column to the
  * year's, and *Next 3 months* is the sum of its three shown months. The
- * summary cards and the month lines show the same amounts. Display only:
+ * summary cards, the month lines and the dashboard's *Coming up* lines
+ * show the same amounts. Display only:
  * the exact sums are unchanged.
  */
 final readonly class ShownForecastTotals
@@ -30,6 +31,8 @@ final readonly class ShownForecastTotals
         public Money $fuelTotal,
         public Money $total,
         public Money $soon,
+        /** The fuel in *Next 3 months*, as its three months show it. */
+        public Money $soonFuel,
     ) {
     }
 
@@ -46,12 +49,14 @@ final readonly class ShownForecastTotals
         $fuel = [];
         $months = [];
         $soon = $zero;
+        $soonFuel = $zero;
         foreach (array_keys($totals->months) as $i) {
             $planned[] = $grid['cells'][$i]['planned'];
             $fuel[] = $grid['cells'][$i]['fuel'];
             $months[] = $grid['rows'][$i];
             if ($i < ForecastTotals::SOON_MONTHS) {
                 $soon = $soon->add($grid['rows'][$i]);
+                $soonFuel = $soonFuel->add($grid['cells'][$i]['fuel']);
             }
         }
 
@@ -63,6 +68,7 @@ final readonly class ShownForecastTotals
             $grid['columns']['fuel'] ?? $zero,
             $grid['total'],
             $soon,
+            $soonFuel,
         );
     }
 }

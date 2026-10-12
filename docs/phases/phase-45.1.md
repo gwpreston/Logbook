@@ -239,7 +239,8 @@ with the code, and the minus sign they found is #414):
       the edge cases, logged and decided; the code fixes (#410, #414)
       carry regression tests, the spec fixes are in §7.1, §7.7, §7.35
       and §8.
-- [ ] Each mismatch logged in `open-questions.md` with what was wrong
+- [ ] Once the owner's `expected.csv` is in: each mismatch with the
+      golden test logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.
 
@@ -298,9 +299,20 @@ Each with a regression test, spec already updated:
 3. Every edge case in the catalogue has a decided answer and a test.
 4. Definition of done (CLAUDE.md §11) holds.
 
+Where it stands (2026-10-12): criterion 3 is met (45.1.3). Criterion 1
+waits on the owner's spreadsheet: `GoldenHouseholdTest` is incomplete,
+never green, until the 890 `expected` figures are filled in, though its
+114 finance and depreciation rows already hold the app to the
+independent script on every engine. Criterion 2 needs the nightly run
+green for a week. The spreadsheet is worked out from the inputs and the
+spec alone (#393), not from `app-figures.php` or the script's
+`script.csv`; those are for comparing afterwards.
+
 ## Open questions
 
-All decided by the owner on 2026-10-11, before the phase was built.
+A–D were decided by the owner on 2026-10-11, before the phase was built;
+the rest were found while starting or building it and decided as they
+came (#386–#401 on 2026-10-11, #404–#415 on 2026-10-12). None is open.
 
 - **A. Who works out the expected figures?** *Decided (#393):* both for
   finance and depreciation (the owner's spreadsheet and an independent
@@ -331,6 +343,9 @@ Found while starting (the edge-case review compared spec and code):
   golden household has none; Phase 41.8 tests it.
 - **#392 The cases where spec and code agree.** *Decided:* confirmed as
   listed in spec §8 *Money edge cases*.
+- **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
+  the time-zone property runs the server in UTC and America/Los_Angeles
+  with users in far zones.
 - **#398 A fleet vehicle whose log doesn't reach back.** *Decided:* its
   spend counts in the totals, but it is left out of the fleet's cost per
   distance.
@@ -373,9 +388,6 @@ Found while starting (the edge-case review compared spec and code):
   U+2212 everywhere a person reads it; CSV and API keep the hyphen.
 - **#415 The golden category rows** (the golden test). *Decided
   2026-10-12:* dropped.
-- **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
-  the time-zone property runs the server in UTC and America/Los_Angeles
-  with users in far zones.
 
 Carried from Phase 43 and decided now, since the golden household's
 digest figures depend on them: #374 (include vehicles archived during
