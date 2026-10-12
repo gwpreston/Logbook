@@ -1,0 +1,105 @@
+name: Restore matrix (nightly)
+
+# Phase 45.2 (#416, #417): the golden household backed up on SQLite,
+# PostgreSQL, MySQL and MariaDB and restored on every one of them (16
+# restores), compared row by row, file by file and figure by figure; then
+# the upgrade path from the previous minor release. Every push runs the
+# SQLite → PostgreSQL pair (ci.yml). Run by hand with bin/restore-matrix.sh
+# and bin/upgrade-check.sh.
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: Every engine to every engine
+    runs-on: ubuntu-latest
+    services:
+      pgsql:
+        image: postgres:17
+        env:
+          POSTGRES_DB: logbook_test
+          POSTGRES_USER: logbook
+          POSTGRES_PASSWORD: logbook
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U logbook -d logbook_test"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: logbook_test
+          MYSQL_USER: logbook
+          MYSQL_PASSWORD: logbook
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ulogbook -plogbook"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: logbook_test
+          MARIADB_USER: logbook
+          MARIADB_PASSWORD: logbook
+          MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_USER: logbook
+      TEST_DB_PASSWORD: logbook
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Back up on each engine, then restore every backup on each
+        run: |
+          engine() {
+            case "$1" in
+              sqlite)  echo "TEST_DB_DRIVER=sqlite TEST_DB_NAME=var/testing.sqlite" ;;
+              pgsql)   echo "TEST_DB_DRIVER=pgsql TEST_DB_PORT=5432 TEST_DB_NAME=logbook_test" ;;
+              mysql)   echo "TEST_DB_DRIVER=mysql TEST_DB_PORT=3306 TEST_DB_NAME=logbook_test" ;;
+              mariadb) echo "TEST_DB_DRIVER=mysql TEST_DB_PORT=3307 TEST_DB_NAME=logbook_test" ;;
+            esac
+          }
+          for e in sqlite pgsql mysql mariadb; do
+            echo "::group::Back up on $e"
+            env $(engine $e) RESTORE_MATRIX_OUT=var/restore-matrix \
+              vendor/bin/phpunit --filter testTheHouseholdRestoresExactlyThroughThePages tests/Integration/Household/HouseholdRestoreTest.php
+            echo "::endgroup::"
+          done
+          ls var/restore-matrix
+          for e in sqlite pgsql mysql mariadb; do
+            echo "::group::Restore every backup on $e"
+            env $(engine $e) RESTORE_MATRIX_IN=var/restore-matrix \
+              vendor/bin/phpunit --filter testBackupsFromOtherEnginesRestoreExactly tests/Integration/Household/HouseholdRestoreTest.php
+            echo "::endgroup::"
+          done
+      - name: Upgrade from the previous release (PostgreSQL)
+        env:
+          TEST_DB_DRIVER: pgsql
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: logbook_test
+        run: bin/upgrade-check.sh

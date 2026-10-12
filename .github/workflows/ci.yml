@@ -128,6 +128,73 @@ jobs:
           cat diff-cover.md >> "$GITHUB_STEP_SUMMARY" || true
           exit "$status"
 
+  restore-pair:
+    # Phase 45.2 (#416): the golden household backed up on SQLite and restored on
+    # PostgreSQL, every push. Every pair of engines runs nightly (restore-matrix.yml).
+    name: Restore SQLite → PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_DB: logbook_test
+          POSTGRES_USER: logbook
+          POSTGRES_PASSWORD: logbook
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U logbook -d logbook_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Back up on SQLite
+        env:
+          TEST_DB_DRIVER: sqlite
+          RESTORE_MATRIX_OUT: var/restore-matrix
+        run: vendor/bin/phpunit --filter testTheHouseholdRestoresExactlyThroughThePages tests/Integration/Household/HouseholdRestoreTest.php
+      - name: Restore on PostgreSQL
+        env:
+          TEST_DB_DRIVER: pgsql
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: logbook_test
+          TEST_DB_USER: logbook
+          TEST_DB_PASSWORD: logbook
+          RESTORE_MATRIX_IN: var/restore-matrix
+        run: vendor/bin/phpunit --filter testBackupsFromOtherEnginesRestoreExactly tests/Integration/Household/HouseholdRestoreTest.php
+
+  upgrade:
+    # Phase 45.2 (#417): on every release, the golden household entered on the previous
+    # minor release, backed up and restored there, upgraded to this one, figure for figure.
+    name: Upgrade from the previous release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
+          coverage: none
+          tools: composer:v2
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: bin/upgrade-check.sh
+
   docker:
     name: Docker image (smoke test + multi-arch build)
     runs-on: ubuntu-latest
