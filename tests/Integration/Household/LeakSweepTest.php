@@ -48,6 +48,11 @@ final class LeakSweepTest extends AppTestCase
         $household = $this->loadHousehold($app);
         $urls = (new SweepUrls($app, $this->connection($app)))->all(self::vehicleIds($household));
         self::assertGreaterThan(500, count($urls), 'every GET route, for each vehicle');
+        // Carried from 45.1 by name: the fuel tab's cost per distance and segment costs, station stats.
+        $routes = array_column($urls, 'route');
+        foreach (['fuel.index', 'stations.index', 'stations.show', 'api.fuel.index', 'api.stations.show'] as $named) {
+            self::assertContains($named, $routes);
+        }
 
         $sent = [];
         foreach (Household::people() as $person) {
@@ -65,6 +70,7 @@ final class LeakSweepTest extends AppTestCase
         $registry = $this->service($app, ToolRegistry::class);
 
         $sent = [];
+        $swept = [];
         $calls = 0;
         foreach (Household::people() as $person) {
             $user = $household->user($person);
@@ -75,6 +81,7 @@ final class LeakSweepTest extends AppTestCase
                     continue;
                 }
                 $name = $tool->name();
+                $swept[$name] = true;
                 self::assertContains($name, $listed, "{$person} gets {$name} over MCP too");
                 foreach (self::arguments($tool->definition()->parameters, $household) as $arguments) {
                     $label = $name . ' ' . json_encode($arguments);
@@ -93,6 +100,10 @@ final class LeakSweepTest extends AppTestCase
             }
         }
         self::assertGreaterThan(300, $calls, 'every read tool, for each vehicle, as each person');
+        // Carried from 45.1 by name.
+        foreach (['fuel_stats', 'cost_per_distance', 'stations', 'costs', 'true_cost', 'ownership', 'finance'] as $named) {
+            self::assertArrayHasKey($named, $swept);
+        }
 
         $leaks = $this->leaks($app, $household, $sent);
         self::assertSame([], $leaks, count($leaks) . " leaks:\n" . implode("\n", $leaks));
