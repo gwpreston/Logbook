@@ -6,10 +6,8 @@ namespace Logbook\Tests\Integration\EdgeCase;
 
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\CostGroup;
-use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Expense\CostLedger;
-use Logbook\Service\Report\TrueCostGap;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Psr\Container\ContainerInterface;
@@ -107,7 +105,7 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $this->reading($app, $car, '1000', '2026-09-01T12:00:00Z');
         $this->expense($app, $car, '2026-05-01', '25.00');
 
-        $this->assertNoPerDistance($app, $owner, $car);
+        $this->assertNoPerDistance($app, $owner, $car, self::TODAY);
     }
 
     public function testAVehicleWithNoReadingsHasNoPerDistanceFigure(): void
@@ -116,7 +114,7 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $car = $this->car($app, 'Golf', '2026-01-01', '10000');
         $this->expense($app, $car, '2026-05-01', '25.00');
 
-        $this->assertNoPerDistance($app, $owner, $car);
+        $this->assertNoPerDistance($app, $owner, $car, self::TODAY);
     }
 
     public function testAVehicleWithOneReadingHasNoPerDistanceFigure(): void
@@ -126,7 +124,7 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $this->reading($app, $car, '1000', '2026-01-01T12:00:00Z');
         $this->expense($app, $car, '2026-05-01', '25.00');
 
-        $this->assertNoPerDistance($app, $owner, $car);
+        $this->assertNoPerDistance($app, $owner, $car, self::TODAY);
     }
 
     public function testABackwardsReadingInsideAPeriodIsIgnoredAndOnlyTheEndPointsCount(): void
@@ -173,7 +171,7 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $this->reading($app, $car, '2500', '2026-09-01T12:00:00Z');
         $this->expense($app, $car, '2026-05-01', '40.00');
 
-        $this->assertNoPerDistance($app, $owner, $car);
+        $this->assertNoPerDistance($app, $owner, $car, self::TODAY);
     }
 
     /**
@@ -186,31 +184,5 @@ final class CostZeroAndNoDistanceTest extends AppTestCase
         $this->reading($app, $car, $endKm, '2026-09-01T12:00:00Z');
 
         return $car;
-    }
-
-    /**
-     * Reports, cost of ownership and true cost have a cost, a purchase day
-     * reading or none, 90 days and a purchase date: only the distance is
-     * missing, and each says so.
-     *
-     * @param App<ContainerInterface> $app
-     */
-    private function assertNoPerDistance(App $app, User $owner, Vehicle $car): void
-    {
-        $report = $this->report($app, $owner, $car, '2026-02-01', self::TODAY);
-        self::assertSame(1, $report->count, 'there is a cost to divide');
-        self::assertNull($report->distanceKm);
-        self::assertNull($report->costPerKm, 'Reports shows "—"');
-        self::assertSame('', $this->shown($app, $owner)->perDistance($report->costPerKm, 'GBP'));
-
-        $result = $this->trueCost($app, $owner, $car, self::TODAY);
-        self::assertSame(1, $result->ownership->count);
-        self::assertNull($result->ownership->distanceKm);
-        self::assertNull($result->ownership->perKm, 'cost of ownership shows "—"');
-        self::assertNull($result->ownership->runningPerKm);
-        self::assertSame(TrueCostGap::NoMileage, $result->sinceBought->gap, 'true cost: not enough mileage');
-        self::assertNull($result->sinceBought->perKm);
-        self::assertNotNull($result->lastTwelveMonths);
-        self::assertSame(TrueCostGap::NoMileage, $result->lastTwelveMonths->gap);
     }
 }

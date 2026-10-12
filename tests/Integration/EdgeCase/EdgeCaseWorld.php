@@ -15,6 +15,7 @@ use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Report\TrueCostGap;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Report\VehicleTrueCost;
 use Logbook\Service\Valuation\ValuationService;
@@ -127,5 +128,31 @@ trait EdgeCaseWorld
     {
         self::assertNotNull($actual, $message . ' (nothing shown)');
         self::assertSame(0, Decimal::compare($expected, $actual), $message . " expected {$expected}, got {$actual}");
+    }
+
+    /**
+     * Reports, cost of ownership and true cost have a cost, a purchase day
+     * reading or none, 90 days and a purchase date: only the distance is
+     * missing, and each says so.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    private function assertNoPerDistance(App $app, User $owner, Vehicle $car, string $today, int $costs = 1): void
+    {
+        $report = $this->report($app, $owner, $car, '2026-01-01', $today);
+        self::assertSame($costs, $report->count, 'there is a cost to divide');
+        self::assertNull($report->distanceKm);
+        self::assertNull($report->costPerKm, 'Reports shows "—"');
+        self::assertSame('', $this->shown($app, $owner)->perDistance($report->costPerKm, 'GBP'));
+
+        $result = $this->trueCost($app, $owner, $car, $today);
+        self::assertSame($costs, $result->ownership->count);
+        self::assertNull($result->ownership->distanceKm);
+        self::assertNull($result->ownership->perKm, 'cost of ownership shows "—"');
+        self::assertNull($result->ownership->runningPerKm);
+        self::assertSame(TrueCostGap::NoMileage, $result->sinceBought->gap, 'true cost: not enough mileage');
+        self::assertNull($result->sinceBought->perKm);
+        self::assertNotNull($result->lastTwelveMonths);
+        self::assertSame(TrueCostGap::NoMileage, $result->lastTwelveMonths->gap);
     }
 }
