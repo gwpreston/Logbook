@@ -396,7 +396,7 @@ def true_cost(v, viewer, period, cfg, unit):
         elif cfg["dep_dist"] == "day_before":
             dep_last_day = dep[2] - timedelta(days=1)  # loss runs to the start of D: distance to D-1
         else:
-            dep_last_day = dep[2]  # distance up to and including D
+            dep_last_day = dep[2]  # distance up to and including D (#412)
     total = run + (dep_amt or D(0))
     work = "%s..%s running %s (fuel %s, maint %s, docs spread %s, other %s, payouts -%s)" % (
         a, b, fmt_exact(run), fmt_exact(groups["fuel"]), fmt_exact(groups["maintenance"]),
@@ -488,13 +488,12 @@ def per_distance_str(x):
 
 
 # ---------------------------------------------------------------- rows
-BASE = {"rate_round": "half_up", "settle": "sum", "spread": "floor", "perkm6": False, "dep_dist": "day_before"}
+BASE = {"rate_round": "half_up", "settle": "sum", "spread": "floor", "perkm6": False, "dep_dist": "on_day"}
 ALTERNATIVES = {
     "rate_round": ["half_even"],
     "settle": ["each"],
     "spread": ["halfup"],
     "perkm6": [True],
-    "dep_dist": ["on_day"],
 }
 # Readings the spec does not allow but a spreadsheet might use: noted in
 # `working` when they change a figure, never turned into `?`.
@@ -581,9 +580,9 @@ def compute(row, cfg):
         if key == "depreciation":
             if cur["dep_rate"] is None or prev["dep_rate"] is None:
                 missing = cur_p if cur["dep_rate"] is None else prev_p
-                as_zero = (cur["dep_rate"] or D(0)) - (prev["dep_rate"] or D(0))
-                return "?", "AMBIGUOUS: %s has a rate but no depreciation part (outside the value points); '\u2014' or %s (missing part as 0)" % (
-                    missing, per_distance_str(as_zero))
+                change = (cur["dep_rate"] or D(0)) - (prev["dep_rate"] or D(0))
+                return per_distance_str(change), "%s has no depreciation part (after the latest value point): counts as 0 (#413); dep rate %s %s - %s %s" % (
+                    missing, cur_p, fmt_exact(cur["dep_rate"] or D(0)), prev_p, fmt_exact(prev["dep_rate"] or D(0)))
             return per_distance_str(cur["dep_rate"] - prev["dep_rate"]), "dep rate %s %s - %s %s" % (
                 cur_p, fmt_exact(cur["dep_rate"]), prev_p, fmt_exact(prev["dep_rate"]))
         raise KeyError(fig)

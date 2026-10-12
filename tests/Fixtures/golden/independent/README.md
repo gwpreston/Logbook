@@ -1,7 +1,7 @@
 # Independent script for the golden household (#393)
 
 `golden_script.py` works out every `expected.csv` row whose `source` is
-`spreadsheet+script` (finance and depreciation, 114 rows of the 910-row file) a second time, so
+`spreadsheet+script` (finance and depreciation, 114 rows of the 890-row file) a second time, so
 they can be compared with the owner's spreadsheet. It writes
 `script.csv`, which has the columns `id, figure, viewer, vehicle, period,
 script, working`.
@@ -17,7 +17,7 @@ It was written from these sources and nothing else:
 - `docs/finance.md` and `docs/reports.md`;
 - `../README.md`, `../inputs/*.csv` and `../expected.csv`;
 - the decision rows #386–#407 of `docs/phases/open-questions.md`, and the
-  owner's decisions #408–#411 (2026-10-12) as written into spec.md and the
+  owner's decisions #408–#413 (2026-10-12) as written into spec.md and the
   golden README.
 
 Nothing under `src/`, `tests/Support/`, `tests/Unit`, `tests/Integration`,
@@ -94,11 +94,10 @@ lists each candidate.
      unchanged"). §7.1: "the loss ÷ the distance driven between the same
      two dates"
    - For a true-cost period: the loss ÷ the distance from the period's
-     start to the date it is measured to. §7.35: "the depreciation part ÷
-     the distance driven up to the date it is measured to". When a point
-     cuts the period, the loss runs to the *start* of that point's day, so
-     the script takes the distance to the day before. That choice changes
-     only the focus rows in Q1.
+     start to the date it is measured to, that day's driving included.
+     §7.35: "the depreciation part ÷ the distance driven up to the date it
+     is measured to, that day's driving included, even though a value
+     point is the value at the start of its day" (#412).
 8. **The mileage log** is built from `readings.csv`, fill-up odometers and
    maintenance odometers at 12:00 local. Trips add none.
    - Distance driven is the last reading in the period minus the last
@@ -128,9 +127,13 @@ lists each candidate.
     - **For `last_12_months_vs_previous`:** the total change only, against
       1 Oct 2024 – 30 Sep 2025.
     - **A year whose rate is running costs only** (no depreciation part)
-      still has a rate. So its total change is a number (golf and corolla
-      "2026 vs 2025"; golf `last_12_months_vs_previous`), and `working`
-      says so.
+      still has a rate, so its total change is a number (golf and corolla
+      "2026 vs 2025"; golf `last_12_months_vs_previous`).
+    - **A part missing from one year counts as 0**, so the parts add up to
+      the total change. Golf "2026 vs 2025" depreciation is −0.154, and
+      corolla's is −0.217. §7.35: "a part missing from one year (no
+      depreciation after the latest value point) counts as 0 there"
+      (#413).
 12. **The monthly rate** is (1 + APR)^(1/12) − 1, rounded half up to 10
     places (§7.32); half-even changes no row. Each interest share is
     balance × rate, rounded half away from zero to 0.01 (#390). Every gap
@@ -164,44 +167,11 @@ lists each candidate.
 15. **Time zones.** London and Dublin share their offsets, so no row
     depends on the viewer's zone.
 
-## Open questions (rows left as `?`)
+## Open questions
 
-### Q1. A cut depreciation part's distance: up to the day before the point, or including it? (rows 127, 159, 177, 178)
-
-Under #408 the focus sale (19 Aug 2026) is its value at the *start* of
-19 Aug. Both *Last 12 months* and *2026* end on 19 Aug, and their
-depreciation is cut at that point.
-
-§7.35 divides the depreciation part by "the distance driven up to the date
-it is measured to". It doesn't say whether that distance includes the
-driving on 19 Aug, and the odometer was read at the sale that day.
-
-| Row | Figure | To 18 Aug (consistent with "start of D") | Including 19 Aug |
-|---|---|---|---|
-| 127 | focus last 12 months per distance | 0.207 | 0.206 |
-| 159 | focus 2026 per distance | 0.168 | 0.169 |
-| 177 | focus 2026 vs 2025 total change | −0.208 | −0.207 |
-| 178 | focus last 12 vs previous total change | −0.236 | −0.237 |
-
-The same choice exists for the EV and the corolla, cut at a valuation,
-but it changes none of their rows. Ownership per distance is §7.1's
-lifetime rule ("between the same two dates") and is not affected.
-
-**Recommendation:** to the day before the point, which matches "the value
-at the start of D".
-
-### Q2. A part's change when one year has no depreciation part (rows 76, 230)
-
-Golf 2026 and corolla 2026 lie wholly after their latest valuations. Each
-has a rate (running costs only) but no depreciation part, while 2025 has
-one.
-
-"`—` when either year has no rate" doesn't say whether a missing *part*
-counts as no rate or as 0.
-
-| Row | Figure | `—` | Missing part as 0 |
-|---|---|---|---|
-| 76 | golf 2026 vs 2025 depreciation | `—` | −0.154 |
-| 230 | corolla 2026 vs 2025 depreciation | `—` | −0.217 |
-
-**Recommendation:** `—`, since that part has no rate in 2026.
+None. Every row has a value. The owner settled the earlier questions:
+- *per month* (#409);
+- 90 days (#410);
+- what changed (#411, #413);
+- the value point at the start of its day (#408);
+- the depreciation part's distance (#412).
