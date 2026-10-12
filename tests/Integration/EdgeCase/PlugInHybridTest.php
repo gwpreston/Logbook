@@ -99,14 +99,15 @@ final class PlugInHybridTest extends AppTestCase
         self::assertSame('172.500', $since->amount(TruePart::Fuel)?->toDecimal(3));
         self::assertDecimal('0.0575', $since->rate(TruePart::Fuel), 'true cost: one Fuel part, per distance');
         self::assertCount(2, $since->energies, 'litres and kWh, for What changed');
-        $byKind = [];
         foreach ($since->energies as $energy) {
-            $byKind[$energy->kind->value] = $energy;
+            [$cost, $units, $label] = match ($energy->kind) {
+                EnergyKind::Liquid => ['157.500', '105', 'litres'],
+                EnergyKind::Electric => ['15.000', '50', 'kWh'],
+                EnergyKind::Gas => self::fail('a plug-in hybrid buys no gas'),
+            };
+            self::assertSame($cost, $energy->cost->toDecimal(3), $label . ' cost');
+            self::assertDecimal($units, $energy->units, $label . ' bought');
         }
-        self::assertSame('157.500', $byKind['liquid']->cost->toDecimal(3));
-        self::assertDecimal('105', $byKind['liquid']->units, 'litres');
-        self::assertSame('15.000', $byKind['electric']->cost->toDecimal(3));
-        self::assertDecimal('50', $byKind['electric']->units, 'kWh');
         self::assertDecimal('0.0575', $result->years[0]->rate(TruePart::Fuel), 'and the year');
     }
 

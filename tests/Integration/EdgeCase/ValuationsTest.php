@@ -106,7 +106,8 @@ final class ValuationsTest extends AppTestCase
 
         $result = $this->trueCost($app, $owner, $car, self::TODAY);
         self::assertSame(ValuePointKind::Sold, $result->ownership->depreciation->current?->kind);
-        self::assertDecimal('8000', $result->ownership->depreciation->current?->amount);
+        self::assertNotNull($result->ownership->depreciation->current);
+        self::assertDecimal('8000', $result->ownership->depreciation->current->amount);
         self::assertSame('2000.000', $result->ownership->depreciationCost?->toDecimal(3), '10,000 to the sale, not the 9,000');
 
         $curve = $this->curve($app, $car);
