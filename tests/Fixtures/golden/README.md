@@ -106,9 +106,10 @@ for the Golf (the `hidden.*` row).
   **date** is a calendar date, never shifted.
 - **Maintenance** is entered with its odometer and is recorded at 12:00
   local.
-- **Insurance** runs a year from `start_on`. Its cost counts on `start_on`
-  in Reports and the ledger, and is spread over its cover by day in true
-  cost (spec §7.35).
+- **Documents** (insurance, MOT, NCT): every one with both a `start_on`
+  and an `expiry_on` counts on `start_on` in Reports and the ledger, and is
+  spread over its cover by day in true cost (spec §7.35), not only
+  insurance. Insurance runs a year from `start_on`.
 - **Finance events:**
   - `settled`: the agreement was settled early on `date` for `amount`.
     This is one event, the settlement payment and the end together, as
@@ -141,9 +142,22 @@ fixed to match.
   (#375).
 - **Depreciation for a period** is the value at its start minus the value
   at its end, interpolated by day between the price, the valuations and the
-  sale. There is no extrapolation past the latest point. The purchase day
-  opens at the price: a valuation (or a sale, #404) that day is its
-  closing value (#389).
+  sale. A valuation or sale dated D is the value at the **start** of D, so
+  a year is measured from the start of 1 Jan to the start of the next
+  1 Jan (#408). The purchase day opens at the price: a valuation (or a
+  sale, #404) that day is its closing value (#389). There is no
+  extrapolation past the latest point: a period after it shows `—` for
+  depreciation, and its total is the running costs only.
+- **Per month** (cost of ownership) = running costs ÷ months owned +
+  depreciation per year ÷ 12, where per year = the loss × 12 ÷ (whole
+  calendar months from purchase to the value's date + the days left over
+  ÷ 30.436875) (#409).
+- **Under 90 days owned**, a true-cost period (a short first or last year
+  too) has no per-distance figure: `—` (#410).
+- **What changed** (#411) is per distance, as the page shows it: for each
+  year against the one before, the total change and each part's change
+  (this year's rate − last year's), `—` when either year has no rate; and
+  *Last 12 months* against the 12 before, the total change only.
 - **Finance** rounds to the currency's minor unit (#390). A settled
   agreement's interest lines are adjusted on the end date to the exact cost
   of credit, and that adjustment may be negative (#387). A group below
@@ -171,7 +185,7 @@ trust it (#393). The rest are yours (yellow). When done, save the
 | `figure` | what is checked, e.g. `true_cost.depreciation`, `claim.amount` |
 | `viewer` | whose view: alex or sam |
 | `vehicle` | golf, ev, focus, corolla, `fleet` or `all` |
-| `period` | `since_bought`, `last_12_months`, a year, `tax_year 2024-25`, `2026-08`, `today`, `segment ending <at>` |
+| `period` | `since_bought`, `last_12_months`, a year, `2025 vs 2024`, `last_12_months_vs_previous`, `tax_year 2024-25`, `2026-08`, `today`, `segment ending <at>` |
 | `currency` | the figure's currency, blank for distances and economy |
 | `unit` | `money`, `money/mi`, `money/km`, `money/month`, `mi`, `km`, `count`, `l/100km`, `kWh/100km` |
 | `expected` | your figure; `—` when the app should show none |
@@ -190,11 +204,9 @@ id, figure, viewer, vehicle and period with both values. Numbers compare as
 numbers (`12.5` equals `12.50`, `1,234.50` equals `1234.50`); a *Coming up*
 total with an unknown cost is written `at_least 123.45`. A row whose
 `expected` is empty never counts as a pass: the test ends incomplete
-("N of 864 expected figures are not filled in yet"). `php
+("N of 910 expected figures are not filled in yet"). `php
 tests/Fixtures/golden/app-figures.php > app-figures.csv` prints the app's own
 figure for every row (`id,actual`) to compare with the spreadsheet; it never
-writes `expected.csv`. A figure no service exposes reads as `(no reader)` (see
-`GoldenFigures::UNREADABLE_FIGURES`) and counts as a mismatch once its row is
-filled. A mismatch is settled in
+writes `expected.csv`. A mismatch is settled in
 `docs/phases/open-questions.md`: the spreadsheet, the code or the spec was
 wrong (45.1.4).

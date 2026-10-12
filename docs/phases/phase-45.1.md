@@ -165,7 +165,7 @@ seed. Each property must hold:
       document or expense is saved; `GoldenHouseholdLoadTest` checks each
       is on its entry, a PDF byte for byte.
 - [ ] The owner's spreadsheet in `tests/Fixtures/golden/`, and
-      `expected.csv` exported from it (the skeleton, 864 rows with
+      `expected.csv` exported from it (the skeleton, 910 rows with
       `expected` empty, is committed).
 - [ ] `GoldenHouseholdTest` on every engine: one assertion per row, and a
       failure message that names the figure, period and vehicle.
@@ -215,8 +215,8 @@ The catalogue, each case with a test:
 - [x] #402 (found by *totals add up*): the years' depreciation missed
       *Since bought* by a micro-unit; the code was wrong, fixed in
       `ValueCurve` with a regression test (spec §7.35).
-- [ ] #410: a first or last calendar year under 90 days owned has no
-      per-distance figure (`TrueCostService`), with a regression test.
+- [x] #410: a first or last calendar year under 90 days owned has no
+      per-distance figure (`TrueCostService`; `ShortYearTrueCostTest`).
 - [ ] Each mismatch logged in `open-questions.md` with what was wrong
       (spreadsheet, code or spec) and the fix. Code fixes carry a
       regression test. Spec fixes are noted in §13.

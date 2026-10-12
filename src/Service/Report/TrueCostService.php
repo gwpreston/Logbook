@@ -130,7 +130,8 @@ final readonly class TrueCostService
 
         $years = [];
         foreach (TrueCostPeriod::years($from, $to) as $year) {
-            $years[] = $period($year);
+            // Under 90 days owned, a year has no rates, as Last 12 months (spec.md §7.35, #410).
+            $years[] = $period($year, OwnershipCost::MIN_DAYS);
         }
         $years = array_values(array_filter($years));
         $small = self::smallPerKm($currency, $user->preferences->distanceUnit);

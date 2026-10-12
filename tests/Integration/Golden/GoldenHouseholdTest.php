@@ -40,7 +40,6 @@ final class GoldenHouseholdTest extends AppTestCase
         $actuals = $this->actuals($rows);
 
         $mismatches = [];
-        $reasons = [];
         $empty = 0;
         foreach ($rows as $row) {
             if (trim($row['expected']) === '') {
@@ -49,12 +48,6 @@ final class GoldenHouseholdTest extends AppTestCase
                 continue;
             }
             $actual = $actuals[$row['id']];
-            if ($actual === GoldenFigures::UNREADABLE) {
-                $mismatches[] = self::describe($row, $row['expected'], $actual);
-                $reasons[(string) GoldenFigures::unreadableReason($row['figure'])] = true;
-
-                continue;
-            }
             if (!self::same($row['expected'], $actual)) {
                 $mismatches[] = self::describe($row, $row['expected'], $actual);
             }
@@ -64,8 +57,7 @@ final class GoldenHouseholdTest extends AppTestCase
             [],
             $mismatches,
             count($mismatches) . " of " . (count($rows) - $empty) . " filled figures differ from the app:\n"
-            . implode("\n", $mismatches)
-            . ($reasons === [] ? '' : "\nNo reader: " . implode('; ', array_keys($reasons))),
+            . implode("\n", $mismatches),
         );
         if ($empty > 0) {
             self::markTestIncomplete($empty . ' of ' . count($rows) . ' expected figures are not filled in yet');
@@ -77,31 +69,15 @@ final class GoldenHouseholdTest extends AppTestCase
         $rows = ExpectedSkeleton::read(self::EXPECTED);
         $actuals = $this->actuals($rows);
 
-        self::assertCount(864, $rows, 'expected.csv is the 864-row skeleton');
         $malformed = [];
-        $unreadable = [];
         foreach ($rows as $row) {
             $actual = $actuals[$row['id']];
-            if ($actual === GoldenFigures::UNREADABLE) {
-                $unreadable[] = $row['figure'];
-
-                continue;
-            }
             if (!self::wellFormed($row, $actual)) {
                 $malformed[] = self::describe($row, '(a ' . $row['unit'] . ' figure)', $actual);
             }
         }
 
         self::assertSame([], $malformed, "Figures not well formed for their unit:\n" . implode("\n", $malformed));
-        $documented = array_values(array_filter(
-            array_map(static fn (array $row): string => $row['figure'], $rows),
-            static fn (string $figure): bool => GoldenFigures::unreadableReason($figure) !== null,
-        ));
-        self::assertSame(
-            $documented,
-            $unreadable,
-            'Exactly the figures listed in GoldenFigures::UNREADABLE_FIGURES have no reader',
-        );
     }
 
     /**

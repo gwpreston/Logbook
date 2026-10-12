@@ -27,6 +27,9 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   up*'s months table with its summary cards. The
   exact sums underneath, per-entry exports, the API and MCP are
   unchanged.
+- **A true-cost year under 90 days owned** (a short first or last
+  year) shows no cost per distance, as *Last 12 months* already did, so
+  it has no *What changed* either.
 - **A negative finance adjustment** (settling early for less than the
   payments counted) is listed after the groups above zero, with its
   minus sign and no share; shares are over the groups above zero.

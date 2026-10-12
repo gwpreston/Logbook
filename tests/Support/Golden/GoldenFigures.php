@@ -63,24 +63,11 @@ use RuntimeException;
  * - distance to the whole unit (miles: km ÷ 1.609344);
  * - economy to 2 places;
  * - "—" where the app shows no figure.
- *
- * A figure that no service exposes is not made up: it reads as UNREADABLE
- * (see UNREADABLE_FIGURES for each one and why).
  */
 final class GoldenFigures
 {
     /** The app shows no figure. */
     public const string NONE = '—';
-    /** No service gives this figure: nothing was computed. */
-    public const string UNREADABLE = '(no reader)';
-
-    /** @var array<string, string> figure (or its prefix, ending in ".") → why it cannot be read */
-    public const array UNREADABLE_FIGURES = [
-        'true_cost.what_changed.' => 'the app only splits a change by cause per km, year against year (CostChange); the last 12 '
-            . 'months against the 12 before are compared per km in total only (VehicleTrueCost::twelveMonthChange), '
-            . 'never per part and never in money',
-    ];
-
     private const string KM_PER_MILE = '1.609344';
 
     /** @var array<string, User> */
@@ -101,28 +88,11 @@ final class GoldenFigures
     }
 
     /**
-     * Why a figure has no reader, or null when it has one.
-     */
-    public static function unreadableReason(string $figure): ?string
-    {
-        foreach (self::UNREADABLE_FIGURES as $name => $reason) {
-            if ($figure === $name || (str_ends_with($name, '.') && str_starts_with($figure, $name))) {
-                return $reason;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @param array<string, string> $row a row of expected.csv
      */
     public function actual(array $row): string
     {
         $figure = $row['figure'];
-        if (self::unreadableReason($figure) !== null) {
-            return self::UNREADABLE;
-        }
         $family = explode('.', $figure, 2)[0];
 
         return match ($family) {
@@ -171,6 +141,9 @@ final class GoldenFigures
     private function trueCost(array $row): string
     {
         $result = $this->vehicleTrueCost($row['viewer'], $row['vehicle']);
+        if (str_starts_with($row['figure'], 'true_cost.what_changed.')) {
+            return $this->whatChanged($result, $row);
+        }
         $period = $this->trueCostPeriod($result, $row['period']);
         if ($period === null) {
             return self::NONE;
@@ -185,6 +158,42 @@ final class GoldenFigures
             'per_distance' => $this->perDistance($period->perKm, $row),
             default => throw new RuntimeException("Unknown figure {$row['figure']} (row {$row['id']})"),
         };
+    }
+
+    /**
+     * *What changed* as the page shows it (#411): a year against the one
+     * before, the total change per distance and each part's (its
+     * contributions add up to it, spec.md §7.35); the widget's last 12
+     * months against the 12 before, in total. "—" where the page has none.
+     *
+     * @param array<string, string> $row
+     */
+    private function whatChanged(?VehicleTrueCost $result, array $row): string
+    {
+        $part = substr($row['figure'], strlen('true_cost.what_changed.'));
+        if ($row['period'] === 'last_12_months_vs_previous') {
+            if ($part !== 'total') {
+                throw new RuntimeException("Only the total changes over 12 months (row {$row['id']})");
+            }
+
+            return $this->perDistance($result?->twelveMonthChange(), $row);
+        }
+        if (preg_match('/^(\d{4}) vs \d{4}$/', $row['period'], $m) !== 1) {
+            throw new RuntimeException("Unknown What changed period {$row['period']} (row {$row['id']})");
+        }
+        $change = $result?->changeFor((int) $m[1]);
+        if ($change === null) {
+            return self::NONE;
+        }
+        if ($part === 'total') {
+            return $this->perDistance($change->perKm, $row);
+        }
+        $truePart = TruePart::from($part);
+
+        return $this->perDistance(
+            Decimal::subtract($change->after->rate($truePart) ?? '0', $change->before->rate($truePart) ?? '0'),
+            $row,
+        );
     }
 
     private function trueCostPeriod(?VehicleTrueCost $result, string $period): ?TrueCost
