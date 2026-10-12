@@ -88,7 +88,8 @@ final readonly class ApiFinanceWrites
         if ($mapped instanceof ValidationErrors) {
             throw $this->validation->of($mapped);
         }
-        $input = FinanceAgreementForm::parse($mapped['input'], $mapped['preferences'], $this->finance->currencyFor($user, $vehicle));
+        $currency = $this->finance->currencyFor($user, $vehicle);
+        $input = FinanceAgreementForm::parse($mapped['input'], $mapped['preferences'], $currency);
         if ($input instanceof ValidationErrors) {
             throw $this->validation->of($input);
         }
