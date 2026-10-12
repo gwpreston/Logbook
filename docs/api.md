@@ -142,7 +142,7 @@ user prefers, so automations can compare and chart them:
 | `POST /reminders/{id}/done`, `/dismiss`, `/reopen` | the Reminders page's buttons, for a reminder of any kind; safe to repeat (`"unchanged": true`) (read and write key; Log) |
 | `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix; an item you can hide carries a `key` for `POST /attention/{key}/hide` |
 | `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)) |
-| `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)) |
+| `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)); `null` for a vehicle whose mileage log doesn't reach back to the period's start (or its purchase, when later), and the fleet's figure covers only the vehicles whose log does |
 | `GET /reports/fuel` | fuel statistics per vehicle, kind and grade, with the grade verdicts ([Reports](#reports); fuel module) |
 | `GET /reports/mileage` | distance driven in the period, and the averages ([Reports](#reports)) |
 | `GET /vehicles/{id}/trips` | trips: your own, or every driver's when you manage or own the vehicle (paged; trips module) |
@@ -638,7 +638,7 @@ OpenAPI description has every field.
 | `PUT`, `DELETE /stations/{id}/favourite` | your own | `204`, safe to repeat; unstarring removes the station's alerts |
 | `POST /fuel-prices/alerts` | your own | `station_id` (a favourite), `grade`, `below` per `volume_unit`; at most 20; an alert for that station and grade is changed (`200`, `duplicate: true`). `PATCH` changes `below` |
 | `POST /attention/{key}/hide` | Log | the `key` from `GET /attention`; `204`, safe to repeat; `404` once the item has changed. Nothing un-hides, as on the page |
-| `POST /vehicles/{id}/finance/agreements` | Manage and cost access | the agreement form; one active agreement (`409 finance_active_exists`); the agreement number is stored, never returned |
+| `POST /vehicles/{id}/finance/agreements` | Manage and cost access | the agreement form; one active agreement (`409 finance_active_exists`); the agreement number is stored, never returned; amounts are rounded to the vehicle currency's minor unit (whole yen, 3 places for dinars) |
 | `POST …/agreements/{agreement}/payments` | as above | `kind`: `missed` or `paid_late` with `due_on` (and `paid_on`), or `extra` with `amount` and `paid_on`; `DELETE …/payments/{event}` |
 | `POST …/agreements/{agreement}/quotes` | as above | `quoted_on`, `amount`, `valid_until`, `notes`; `DELETE …/quotes/{quote}` |
 | `POST …/agreements/{agreement}/end` | as above | `outcome`, `ended_on`, `settlement`, `excess_charge`, `damage_charge`; the vehicle stays. Selling or handing it back goes through `…/archive` |

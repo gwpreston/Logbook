@@ -29,6 +29,21 @@ Each part is shown per distance in your unit. The parts and the payouts
 always **add up exactly** to the total. Each figure is rounded to the penny
 or cent for display only.
 
+**Wherever a total is shown with its parts** (Reports' groups, vehicles
+and months table, the expense widgets, the cost of ownership card and the
+CSV totals), the total is rounded once and a part may be shown a penny up
+or down from its own rounding, so the parts always add up to the total on
+screen. The exact sums underneath never change.
+
+**Cost per distance needs a mileage log that reaches back** to the start
+of the period, or to the day you bought the vehicle when that is later
+(a reading on or before it). Without one, Reports and the monthly
+briefing show "—" rather than dividing the period's costs by part of its
+distance. A fleet's figure leaves out a vehicle whose log doesn't reach
+back; its spend still counts in the totals. A finance group below zero
+(settling early for less than the payments counted) is listed after the
+others, with its minus sign and no share.
+
 ## The periods
 
 - **Since bought**: from the purchase date (or the first thing logged) to

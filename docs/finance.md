@@ -88,6 +88,8 @@ A few things to know:
 - **Monthly payments only.** Weekly and four-weekly agreements aren't
   supported.
 - **0 is a valid amount** and a valid APR (interest-free deals).
+- **Amounts take the currency's decimals**: two for pounds and euros,
+  none for yen, three for dinars. Every figure is worked out to that unit.
 - **Leave the amount of credit blank** to use the cash price less the
   deposits. **Leave the total amount payable blank** to have it worked out
   from the other figures.

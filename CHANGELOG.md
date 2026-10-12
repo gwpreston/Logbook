@@ -19,7 +19,9 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
 - **Shown parts add up to the total shown with them.** Reports' groups,
   vehicles and months table, the expense widgets, the cost of ownership
   card and a vehicle's cost of ownership, and the cost of ownership and
-  true cost CSVs' total rows, never miss their total by a penny. The
+  true cost CSVs' total rows, never miss their total by a penny (a part
+  may move a penny, or 0.001 in a CSV total row; the months table is
+  rounded so every month and group adds up). The
   exact sums underneath, per-entry exports, the API and MCP are
   unchanged.
 - **A negative finance adjustment** (settling early for less than the
@@ -29,7 +31,8 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   dinars. The agreement, payment, quote and end forms take that many
   decimals.
 - **A valuation or sale on the purchase day** is that day's closing
-  value, so its drop from the price falls in that period's depreciation.
+  value, so its drop from the price falls in that period's depreciation
+  (#389, #404).
 - **The digest's *Last month* keeps a vehicle archived, sold or written
   off during the month**, and its fleet spend says "on vehicles whose
   costs you see" when a listed vehicle's costs are hidden.
@@ -37,7 +40,10 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
 ### Upgrade notes
 - Pull and restart: no migration and no configuration change.
 - API, MCP and Ask clients may see `cost_per_km` null where it had a
-  value, for a period the mileage log doesn't reach back to.
+  value, for a period the mileage log doesn't reach back to; a fleet's
+  `cost_per_km` then no longer equals `total / distance_km`.
+- Finance writes through the API round amounts to the vehicle currency's
+  minor unit (whole yen, 3 places for dinars) rather than always 2.
 
 ## [3.10.0] — 2026-10-10
 

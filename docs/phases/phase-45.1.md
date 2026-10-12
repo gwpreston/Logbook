@@ -180,7 +180,8 @@ seed. Each property must hold:
 - [x] The properties that wait on a 45.1.5 fix are added with it:
       negative groups (#387), reach-back (#376), the digest (#374, #375),
       the purchase-day valuation (#389), finance rounding (#390) and shown
-      parts adding up (#403). All are in (#403 as *shown parts add up*): the generator now
+      parts adding up (#403). All are in, #403 as an eighth property,
+      *shown parts add up*. The generator now
       values one vehicle in four on its purchase day, buys one unsold
       vehicle in two on HP, and starts one log in five at the first
       fill-up.
