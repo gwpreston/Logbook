@@ -10238,7 +10238,9 @@ task breakdowns live in the per-phase files; this is the map.
   (#389, and a sale that day, #404), finance in the currency's minor
   unit (#390), the reach-back from the purchase when later (#405), and
   shown parts that add up to their total by largest remainder, Reports'
-  months table by controlled rounding (#403, #406). Eight seeded
+  months table by controlled rounding (#403, #406), and the same for the
+  Cost of ownership summary, its print table and *Coming up*'s table
+  (#407). Eight seeded
   property tests, fixed seeds on every push and fresh ones nightly
   (`properties.yml`), found the depreciation rounding fixed as #402. See
   [`phase-45.1.md`](docs/phases/phase-45.1.md).
