@@ -88,7 +88,8 @@ final class RoundingTest extends AppTestCase
         $money = Money::of($amount, $currency);
 
         $shown = $this->shown($app, $owner)->money($money, $currency);
-        self::assertSame($expected, preg_replace('/[^0-9.\-]/u', '', $shown), "{$amount} {$currency} shown as {$shown}");
+        $digits = preg_replace('/[^0-9.\-]/u', '', str_replace("\u{2212}", '-', $shown));
+        self::assertSame($expected, $digits, "{$amount} {$currency} shown as {$shown}");
         self::assertSame($expected, $money->toDecimal(Currency::fractionDigits($currency)), 'and exported');
     }
 
@@ -98,7 +99,7 @@ final class RoundingTest extends AppTestCase
         $fmt = $this->shown($app, $owner);
 
         self::assertSame('£0.13', $fmt->money(Money::of('0.125', 'GBP')));
-        self::assertSame('-£0.13', $fmt->money(Money::of('-0.125', 'GBP')));
+        self::assertSame('−£0.13', $fmt->money(Money::of('-0.125', 'GBP')));
     }
 
     /**
@@ -134,7 +135,8 @@ final class RoundingTest extends AppTestCase
         self::assertSame(count($entered), $report->count);
         self::assertDecimal($exact, $report->total->toDecimal(6), 'the sum is exact underneath');
         $shown = $this->shown($app, $owner)->money($report->shown->total, $currency);
-        self::assertSame($expected, preg_replace('/[^0-9.\-]/u', '', $shown), "shown as {$shown}");
+        $digits = preg_replace('/[^0-9.\-]/u', '', str_replace("\u{2212}", '-', $shown));
+        self::assertSame($expected, $digits, "shown as {$shown}");
     }
 
     /**
@@ -165,7 +167,8 @@ final class RoundingTest extends AppTestCase
         $report = $this->report($app, $owner, $car, '2026-08-01', '2026-09-30');
         self::assertDecimal($average, $report->averagePerMonth->toDecimal(6), 'exactly, over the two months');
         $shown = $this->shown($app, $owner)->money($report->averagePerMonth, $currency);
-        self::assertSame($expected, preg_replace('/[^0-9.\-]/u', '', $shown), "shown as {$shown}");
+        $digits = preg_replace('/[^0-9.\-]/u', '', str_replace("\u{2212}", '-', $shown));
+        self::assertSame($expected, $digits, "shown as {$shown}");
     }
 
     public function testANegativeHalfPennyIsRoundedAwayFromZeroNotUp(): void
@@ -185,7 +188,7 @@ final class RoundingTest extends AppTestCase
         $ownership = $this->trueCost($app, $owner, $car, '2026-10-05')->ownership;
         self::assertSame('-0.125', $ownership->running->toDecimal(3), '£0.875 of costs less a £1.00 payout');
         $shown = ShownOwnership::of($ownership)->running;
-        self::assertSame('-£0.13', $this->shown($app, $owner)->money($shown), 'away from zero: -£0.13, not -£0.12');
+        self::assertSame('−£0.13', $this->shown($app, $owner)->money($shown), 'away from zero: −£0.13, not −£0.12');
     }
 
     /**

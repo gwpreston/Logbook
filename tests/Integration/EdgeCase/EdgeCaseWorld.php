@@ -159,14 +159,12 @@ trait EdgeCaseWorld
 
     /**
      * What a page says: its text with the markup stripped and the spaces
-     * collapsed, so a figure can be looked for as a user reads it. The true
-     * cost pages write a minus as U+2212 and the other pages as a hyphen;
-     * both read "-" here (the spec's prose uses U+2212 but does not say which
-     * glyph the page must use).
+     * collapsed, so a figure can be looked for as a user reads it. Every
+     * page writes a minus as U+2212 (spec.md §8, #414).
      */
     private function pageText(TestBrowser $browser, string $url): string
     {
-        $text = preg_replace('/\s+/', ' ', str_replace("\u{2212}", '-', strip_tags(self::body($browser->get($url)))));
+        $text = preg_replace('/\s+/', ' ', strip_tags(self::body($browser->get($url))));
         self::assertIsString($text);
 
         return trim($text);

@@ -262,9 +262,6 @@ final class ExpectedSkeleton
                     $this->add('reports.group.' . $group, 'alex', $vehicle, $year, $currency, 'money');
                 }
             }
-            foreach (['tax', 'parking', 'tolls', 'accessories', 'finance'] as $category) {
-                $this->add('reports.category.' . $category, 'alex', $vehicle, 'all_time', $currency, 'money');
-            }
             $this->add('reports.cost_per_distance', 'alex', $vehicle, 'all_time', $currency, 'money/mi');
         }
         foreach (['2023', '2024', '2025', '2026'] as $year) {

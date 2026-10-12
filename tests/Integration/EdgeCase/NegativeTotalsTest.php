@@ -62,17 +62,17 @@ final class NegativeTotalsTest extends AppTestCase
         // October: the adjustment of -216.23 and £20.00 of fuel.
         $october = $this->report($app, $owner, $car, '2026-10-01', self::TODAY);
         self::assertSame('-196.230', $october->total->toDecimal(3), 'the month: -216.23 + 20.00, kept below zero');
-        self::assertSame('-£196.23', $fmt->money($october->shown->total, 'GBP'), 'with its minus sign');
-        self::assertSame('-£196.23', $fmt->money($october->shown->month($october->months[0]), 'GBP'));
+        self::assertSame('−£196.23', $fmt->money($october->shown->total, 'GBP'), 'with its minus sign');
+        self::assertSame('−£196.23', $fmt->money($october->shown->month($october->months[0]), 'GBP'));
         self::assertDecimal('200', $october->distanceKm);
         self::assertDecimal('-0.98115', $october->costPerKm, 'and so is the cost per distance');
-        self::assertSame('-£1.579/mi', $fmt->perDistance($october->costPerKm, 'GBP'));
+        self::assertSame('−£1.579/mi', $fmt->perDistance($october->costPerKm, 'GBP'));
 
         // Over the year to date: 36.23 of interest, the adjustment of -216.23 and the fuel.
         $period = $this->report($app, $owner, $car, '2026-01-01', self::TODAY);
         self::assertSame('-160.000', $period->total->toDecimal(3), 'the period total is negative too');
-        self::assertSame('-£160.00', $fmt->money($period->shown->total, 'GBP'));
-        self::assertSame('-£180.00', $fmt->money($period->shown->group(CostGroup::Other), 'GBP'), 'finance lines are Other');
+        self::assertSame('−£160.00', $fmt->money($period->shown->total, 'GBP'));
+        self::assertSame('−£180.00', $fmt->money($period->shown->group(CostGroup::Other), 'GBP'), 'finance lines are Other');
         self::assertSame('£20.00', $fmt->money($period->shown->group(CostGroup::Fuel), 'GBP'));
         self::assertSame(
             [CostGroup::Fuel, CostGroup::Other],
@@ -85,7 +85,7 @@ final class NegativeTotalsTest extends AppTestCase
             }
         }
         self::assertDecimal('700', $period->distanceKm);
-        self::assertSame('-£0.368/mi', $fmt->perDistance($period->costPerKm, 'GBP'));
+        self::assertSame('−£0.368/mi', $fmt->perDistance($period->costPerKm, 'GBP'));
     }
 
     public function testAnAdjustmentLargerThanTheSpendTakesOwnershipAndTrueCostBelowZeroWithAMinusSign(): void
@@ -97,14 +97,14 @@ final class NegativeTotalsTest extends AppTestCase
         $result = $this->trueCost($app, $owner, $car, self::TODAY);
         $ownership = $result->ownership;
         self::assertSame('-160.000', $ownership->running->toDecimal(3));
-        self::assertSame('-£160.00', $fmt->money($ownership->running, 'GBP'), 'cost of ownership, with its minus sign');
+        self::assertSame('−£160.00', $fmt->money($ownership->running, 'GBP'), 'cost of ownership, with its minus sign');
         self::assertDecimal('-0.228571', $ownership->runningPerKm);
-        self::assertSame('-£0.368/mi', $fmt->perDistance($ownership->perKm, 'GBP'), 'and per distance');
+        self::assertSame('−£0.368/mi', $fmt->perDistance($ownership->perKm, 'GBP'), 'and per distance');
 
         $since = $result->sinceBought;
-        self::assertSame('-£160.00', $fmt->money($since->total(), 'GBP'), 'true cost: the total');
-        self::assertSame('-£180.00', $fmt->money($since->amount(TruePart::Other), 'GBP'), 'finance lines are Other');
-        self::assertSame('-£0.368/mi', $fmt->perDistance($since->perKm, 'GBP'));
+        self::assertSame('−£160.00', $fmt->money($since->total(), 'GBP'), 'true cost: the total');
+        self::assertSame('−£180.00', $fmt->money($since->amount(TruePart::Other), 'GBP'), 'finance lines are Other');
+        self::assertSame('−£0.368/mi', $fmt->perDistance($since->perKm, 'GBP'));
         self::assertDecimal('-0.228571', $since->perKm);
         self::assertSame(1, Decimal::compare('0', (string) $since->rate(TruePart::Other)), 'a negative part per distance');
     }
@@ -117,20 +117,20 @@ final class NegativeTotalsTest extends AppTestCase
 
         $result = $this->trueCost($app, $owner, $car, self::TODAY);
         $ownership = $result->ownership;
-        self::assertSame('-£870.01', $fmt->money($ownership->running, 'GBP'), '£309.99 of costs less a £1,180 payout');
-        self::assertSame('-£770.01', $fmt->money($ownership->total, 'GBP'), 'with the £100 of depreciation');
+        self::assertSame('−£870.01', $fmt->money($ownership->running, 'GBP'), '£309.99 of costs less a £1,180 payout');
+        self::assertSame('−£770.01', $fmt->money($ownership->total, 'GBP'), 'with the £100 of depreciation');
         self::assertSame('£1,180.00', $fmt->money($ownership->payouts, 'GBP'));
         self::assertDecimal('-0.217503', $ownership->runningPerKm);
-        self::assertSame('-£0.35/mi', $fmt->perDistance($ownership->runningPerKm, 'GBP'));
+        self::assertSame('−£0.35/mi', $fmt->perDistance($ownership->runningPerKm, 'GBP'));
         self::assertDecimal('-0.192503', $ownership->perKm, 'running -0.217503 + depreciation 0.025');
-        self::assertSame('-£0.31/mi', $fmt->perDistance($ownership->perKm, 'GBP'));
+        self::assertSame('−£0.31/mi', $fmt->perDistance($ownership->perKm, 'GBP'));
 
         $since = $result->sinceBought;
-        self::assertSame('-£770.01', $fmt->money($since->total(), 'GBP'));
-        self::assertSame('-£0.31/mi', $fmt->perDistance($since->perKm, 'GBP'));
+        self::assertSame('−£770.01', $fmt->money($since->total(), 'GBP'));
+        self::assertSame('−£0.31/mi', $fmt->perDistance($since->perKm, 'GBP'));
         self::assertNotNull($since->payoutsPerKm);
         self::assertSame(1, Decimal::compare('0', $since->payoutsPerKm), 'the payouts are a negative part');
-        self::assertSame('-£770.01', $fmt->money($result->years[0]->total(), 'GBP'), 'and the year');
+        self::assertSame('−£770.01', $fmt->money($result->years[0]->total(), 'GBP'), 'and the year');
 
         // A payout is not a ledger line: Reports count the costs as spent (§7.7).
         $report = $this->report($app, $owner, $car, '2026-01-01', self::TODAY);
@@ -145,15 +145,15 @@ final class NegativeTotalsTest extends AppTestCase
         $browser = $this->browserFor($app, 'owner');
 
         $vehicle = $this->pageText($browser, '/vehicles/' . $car->id);
-        self::assertStringContainsString('-£770.01', $vehicle, 'the card: cost of ownership so far');
-        self::assertStringContainsString('-£0.31/mi', $vehicle, 'and its rate');
+        self::assertStringContainsString('−£770.01', $vehicle, 'the card: cost of ownership so far');
+        self::assertStringContainsString('−£0.31/mi', $vehicle, 'and its rate');
 
         $ownership = $this->pageText($browser, '/reports/ownership');
-        self::assertStringContainsString('-£770.01', $ownership);
-        self::assertStringContainsString('-£0.31/mi', $ownership);
+        self::assertStringContainsString('−£770.01', $ownership);
+        self::assertStringContainsString('−£0.31/mi', $ownership);
 
         $trueCost = $this->pageText($browser, '/reports/true-cost?vehicle=' . $car->id);
-        self::assertStringContainsString('Since bought: -£0.31/mi', $trueCost);
+        self::assertStringContainsString('Since bought: −£0.31/mi', $trueCost);
     }
 
     public function testOnlyTheIncidentCardShowsItsOwnNetAsZero(): void

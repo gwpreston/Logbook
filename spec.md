@@ -8317,7 +8317,9 @@ it replaces none of the other figures.
   exactly as §7.7 does.
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
-  the date it is measured to (below). Rates are kept per km to 6 places:
+  the date it is measured to, that day's driving included, even though a
+  value point is the value at the start of its day (#412, decided
+  2026-10-12) (below). Rates are kept per km to 6 places:
   the running parts and the payouts are shared out (largest remainder) so
   they add up exactly to the running rate, and the depreciation rate is
   added to it, so the parts always add up exactly to the total. Shown in
@@ -8402,7 +8404,9 @@ it replaces none of the other figures.
     consumption = units bought ÷ distance driven, so price × consumption is
     the energy's cost per distance and the pair sums exactly to its change.
     An energy bought in only one of the two years is one line, its change
-    per distance;
+    per distance; likewise a part missing from one year (no depreciation
+    after the latest value point) counts as 0 there, so the parts always
+    add up to the total change (#413, decided 2026-10-12);
   - **distance:** for the fixed-cost parts (documents and depreciation,
     always treated as time-based, #151), the change caused by driving a
     different distance with the same amount, shown as its own line
@@ -9113,7 +9117,9 @@ overview while any test is unreviewed. A test is reviewed
     ledger line; insurance payouts reduce cost of ownership and true
     cost. A payout or adjustment larger than the period's spend gives a
     negative total, shown with a minus sign, and so does its
-    per-distance figure (#387, #400); only the incident card shows its
+    per-distance figure (#387, #400). The sign is the true minus, U+2212
+    ("−£12.34"), on every page, email and display string (#414, decided
+    2026-10-12); CSV and API numbers keep the ASCII hyphen-minus; only the incident card shows its
     own net as 0 (§7.29). There are no refunds (§12, #388).
   - **Plug-in hybrids:** litres and kWh are separate economy series,
     each measured over the odometer distance between its own full

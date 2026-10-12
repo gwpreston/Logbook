@@ -50,7 +50,7 @@ final class DisplayFormatterTest extends TestCase
         self::assertSame('£0.00', $this->formatter->money(Money::zero('GBP')));
         self::assertStringEndsWith('¥1,235', $this->formatter->money('1234.5', 'JPY'));
         self::assertStringEndsWith('1,234.568', $this->formatter->money('1234.5675', 'BHD'));
-        self::assertSame('-£3.50', $this->formatter->money('-3.5', 'GBP'));
+        self::assertSame('−£3.50', $this->formatter->money('-3.5', 'GBP'));
         self::assertSame('', $this->formatter->money(null));
     }
 

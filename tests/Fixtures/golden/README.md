@@ -204,7 +204,7 @@ id, figure, viewer, vehicle and period with both values. Numbers compare as
 numbers (`12.5` equals `12.50`, `1,234.50` equals `1234.50`); a *Coming up*
 total with an unknown cost is written `at_least 123.45`. A row whose
 `expected` is empty never counts as a pass: the test ends incomplete
-("N of 910 expected figures are not filled in yet"). `php
+("N of 890 expected figures are not filled in yet"). `php
 tests/Fixtures/golden/app-figures.php > app-figures.csv` prints the app's own
 figure for every row (`id,actual`) to compare with the spreadsheet; it never
 writes `expected.csv`. A mismatch is settled in

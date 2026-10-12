@@ -334,7 +334,7 @@ final class ReportCalculatorTest extends TestCase
         $spent = $section->spentGroups();
         self::assertSame([CostGroup::Fuel, CostGroup::Other], array_map(static fn ($g): CostGroup => $g->group, $spent));
         self::assertSame([100.0, null], array_map(static fn ($g): ?float => $g->share, $spent));
-        self::assertSame('-£25.00', self::formatter(UnitPreset::Uk)->money($spent[1]->amount));
+        self::assertSame('−£25.00', self::formatter(UnitPreset::Uk)->money($spent[1]->amount));
     }
 
     public function testAllTimeStartsAtTheEarliestCost(): void

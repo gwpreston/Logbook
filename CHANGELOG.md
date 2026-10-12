@@ -27,6 +27,9 @@ Phase 45.1.5: **the money fixes decided while proving the money**.
   up*'s months table with its summary cards. The
   exact sums underneath, per-entry exports, the API and MCP are
   unchanged.
+- **Negative amounts show a true minus sign** ("−£12.34", U+2212) on
+  every page, email and display string, as the true-cost page already
+  did. CSV and API numbers keep the plain hyphen-minus.
 - **A true-cost year under 90 days owned** (a short first or last
   year) shows no cost per distance, as *Last 12 months* already did, so
   it has no *What changed* either.

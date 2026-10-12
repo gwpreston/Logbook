@@ -161,8 +161,8 @@ final class CostOfOwnershipPageTest extends AppTestCase
         $minor = self::cardFor($screen, $classic);
         self::assertSame(1, substr_count($minor, 'class="stack-bar__part"'), 'a gain is never drawn');
         self::assertStringContainsString('Gain in value', $minor);
-        self::assertStringContainsString('-£1,500.00', $minor);
-        self::assertStringContainsString('-£700.00', $minor, 'the total: £800 spent, £1,500 gained');
+        self::assertStringContainsString('−£1,500.00', $minor);
+        self::assertStringContainsString('−£700.00', $minor, 'the total: £800 spent, £1,500 gained');
     }
 
     public function testTheCardsAndThePrintTableAddUpToTheTotalsShown(): void

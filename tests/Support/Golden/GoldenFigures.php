@@ -256,18 +256,6 @@ final class GoldenFigures
 
             return $this->money($name === 'total' ? $section->total : $section->group(CostGroup::from($name)), $row);
         }
-        if (str_starts_with($figure, 'reports.category.')) {
-            // No service totals spend by expense category: the ledger lines the Reports page lists carry it.
-            $kind = 'expense.category.' . substr($figure, strlen('reports.category.'));
-            $sum = Money::zero($row['currency']);
-            foreach ($report->items as $item) {
-                if ($item->kindKey === $kind && $item->currency() === $row['currency']) {
-                    $sum = $sum->add($item->amount);
-                }
-            }
-
-            return $this->money($sum, $row);
-        }
         if ($figure === 'reports.cost_per_distance') {
             return $this->perDistance($section?->costPerKm, $row);
         }

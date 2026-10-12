@@ -631,6 +631,8 @@ final readonly class DisplayFormatter
         $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $minDigits);
         $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxDigits);
         $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+        // A negative amount shows the true minus sign, "−£12.34" (spec.md §8, #414).
+        $formatter->setSymbol(NumberFormatter::MINUS_SIGN_SYMBOL, "\u{2212}");
 
         return (string) $formatter->formatCurrency($value, $currency);
     }
