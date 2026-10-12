@@ -9061,7 +9061,18 @@ overview while any test is unreviewed. A test is reviewed
     grand total; a cell that is already a whole minor unit, zero included,
     never moves. A vehicle's cost of ownership adds up at each level
     (groups and payouts to its running costs, running costs and
-    depreciation to its total, and the same per month). A CSV's total
+    depreciation to its total, and the same per month). Three more
+    places follow (#407, decided 2026-10-12, option (a)): the Cost of
+    ownership page's summary total over its cards, whose shown totals are
+    shared out from it by largest remainder (so a card's total can differ
+    by a minor unit from the same vehicle's own tab), and its parts then
+    from the card's shown total; the ownership report's print table,
+    vehicles × (running costs, depreciation), rounded under control so each
+    row adds up to its total and each column to the fleet footer (a
+    footer total over only some vehicles adds up their shown totals); and
+    *Coming up*'s months × (planned, fuel) table, rounded under control,
+    with the summary cards, *Next 3 months* and each month's fuel line
+    showing the same amounts as the table. A CSV's total
     rows (cost of ownership, true cost) keep the 3 places a CSV writes,
     and their parts add up at those places; per-entry rows, the API and
     MCP stay exact (`Support\Money\ShownAmounts`).

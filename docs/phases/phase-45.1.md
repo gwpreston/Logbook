@@ -253,6 +253,10 @@ Each with a regression test, spec already updated:
       decided 2026-10-12); a vehicle's cost of ownership at each level;
       the CSV total rows at their 3 places. True cost's amounts are shown
       only on the ownership card and in the CSV, both covered.
+- [ ] #407: the Cost of ownership summary's cards share out its total
+      by largest remainder; the ownership print table and *Coming up*'s
+      months table by controlled rounding, *Coming up*'s summary cards
+      and month lines showing the table's amounts (§8).
 
 ---
 
@@ -317,7 +321,9 @@ Found while starting (the edge-case review compared spec and code):
   total add up.
 - **#407 Other totals shown with their parts** (found while building
   #403): the Cost of ownership summary, the ownership print table and
-  *Coming up*'s table. *Needs a decision* (open-questions log).
+  *Coming up*'s table. *Decided 2026-10-12:* all three; the summary's
+  cards share out its total by largest remainder, the two tables by
+  controlled rounding.
 - **#397 Europe/Dublin shares London's offset.** *Decided:* keep Dublin;
   the time-zone property runs the server in UTC and America/Los_Angeles
   with users in far zones.
