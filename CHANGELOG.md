@@ -6,6 +6,39 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 45.1.5: **the money fixes decided while proving the money**.
+
+### Changed
+- **Cost per distance needs a mileage log that reaches back** to the
+  period's first day, or to the purchase when that is later. Without
+  one, Reports, the digest's *Last month*, Insights' *cheapest to run*
+  and Ask's `vehicle_summary` show "—" (`cost_per_km` is null) rather
+  than dividing the period's costs by part of its distance. A fleet's
+  rate leaves out a vehicle whose log doesn't reach back; its spend still
+  counts in the totals.
+- **Shown parts add up to the total shown with them.** Reports' groups,
+  vehicles and months table, the expense widgets, the cost of ownership
+  card and a vehicle's cost of ownership, and the cost of ownership and
+  true cost CSVs' total rows, never miss their total by a penny. The
+  exact sums underneath, per-entry exports, the API and MCP are
+  unchanged.
+- **A negative finance adjustment** (settling early for less than the
+  payments counted) is listed after the groups above zero, with its
+  minus sign and no share; shares are over the groups above zero.
+- **Finance in the currency's minor unit**: whole yen, 3 places for
+  dinars. The agreement, payment, quote and end forms take that many
+  decimals.
+- **A valuation or sale on the purchase day** is that day's closing
+  value, so its drop from the price falls in that period's depreciation.
+- **The digest's *Last month* keeps a vehicle archived, sold or written
+  off during the month**, and its fleet spend says "on vehicles whose
+  costs you see" when a listed vehicle's costs are hidden.
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change.
+- API, MCP and Ask clients may see `cost_per_km` null where it had a
+  value, for a period the mileage log doesn't reach back to.
+
 ## [3.10.0] — 2026-10-10
 
 Phase 44: **what the next three months will probably cost**, on *Coming
