@@ -2,7 +2,7 @@
 
 *Data that lives on your own box is only as safe as your last backup.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.12.0** · file lives in `docs/phases/`
 
 Logbook can back itself up on demand, on the command line, and on a
 schedule (§7.13, §7.30). However, scheduled backups are **off by
@@ -133,15 +133,15 @@ Written into spec §6, §7.8, §7.11, §7.13, §7.20 and §7.30 in 47.0
 - [x] Translations (every shipped locale).
 
 ### 47.3 Tests and release
-- [ ] Each kind recorded; pre-restore, a scheduled file's download and
+- [x] Each kind recorded; pre-restore, a scheduled file's download and
       failed runs not; a restore keeping the newer record; seeding.
-- [ ] The threshold's edges in the admin's time zone; never backed up;
+- [x] The threshold's edges in the admin's time zone; never backed up;
       *Never*; *I back up another way*; *Dismiss* expiring; members never
       see it; demo mode never shows it.
-- [ ] The API read: admin, member (403), never backed up.
-- [ ] The dashboard stays within its query budget (§8).
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; subpath).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
+- [x] The API read: admin, member (403), never backed up.
+- [x] The dashboard stays within its query budget (§8).
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; subpath).
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
       merged.
 
 ---
