@@ -38,10 +38,10 @@
  #}
 {% macro share_fields(values, levels, notify_label, states, name) -%}
     {% import 'macros/ui.twig' as ui %}
-    {% set costs = (values.can_see_costs ?? '') == '1' %}
+    {% set costs_ticked = (values.can_see_costs ?? '') == '1' %}
     {% set notify = (values.notify ?? '') == '1' %}
-    {% set current = values.level ~ '-' ~ (costs ? 1 : 0) ~ '-' ~ (notify ? 1 : 0) %}
-    <div class="share-fields" x-data="{ level: '{{ values.level|e('js') }}', costs: {{ costs ? 'true' : 'false' }}, notify: {{ notify ? 'true' : 'false' }}, get state() { return this.level + '-' + (this.costs ? 1 : 0) + '-' + (this.notify ? 1 : 0); }, pick(level, costs, notify) { this.level = level; this.costs = costs; this.notify = notify; } }">
+    {% set current = values.level ~ '-' ~ (costs_ticked ? 1 : 0) ~ '-' ~ (notify ? 1 : 0) %}
+    <div class="share-fields" x-data="{ level: '{{ values.level|e('js') }}', costs: {{ costs_ticked ? 'true' : 'false' }}, notify: {{ notify ? 'true' : 'false' }}, get state() { return this.level + '-' + (this.costs ? 1 : 0) + '-' + (this.notify ? 1 : 0); }, pick(level, costs, notify) { this.level = level; this.costs = costs; this.notify = notify; } }">
         <div class="field share-picks" role="group" aria-label="{{ 'sharing.picks.label'|trans }}" hidden x-bind:hidden="false">
             <p class="field__label" aria-hidden="true">{{ 'sharing.picks.label'|trans }}</p>
             <div class="chip-row">
@@ -64,7 +64,7 @@
             <p class="field__hint">{{ 'sharing.level_hint'|trans }}</p>
         </fieldset>
         <label class="toggle">
-            <input type="checkbox" name="can_see_costs" value="1"{% if costs %} checked{% endif %} x-model="costs">
+            <input type="checkbox" name="can_see_costs" value="1"{% if costs_ticked %} checked{% endif %} x-model="costs">
             <span class="toggle__text">
                 <span class="toggle__title">{{ 'sharing.can_see_costs'|trans }}</span>
                 <span class="toggle__hint">{{ 'sharing.can_see_costs_hint'|trans }}</span>
