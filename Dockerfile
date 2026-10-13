@@ -91,6 +91,8 @@ CMD ["apache2-foreground"]
 # production (default): app code + vendor, one persistent volume at /data.
 # ---------------------------------------------------------------------------
 FROM base AS production
+LABEL org.opencontainers.image.title="Logbook" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --from=build --chown=www-data:www-data /var/www/html /var/www/html
 # The release number shown in the app and /health comes from the VERSION file

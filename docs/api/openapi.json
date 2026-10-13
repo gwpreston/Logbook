@@ -6,7 +6,8 @@
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
-      "name": "Proprietary"
+      "name": "GNU Affero General Public License v3.0 or later",
+      "identifier": "AGPL-3.0-or-later"
     }
   },
   "servers": [

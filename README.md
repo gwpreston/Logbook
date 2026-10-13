@@ -310,3 +310,29 @@ bin/           CLI helpers (asset build, backup, API keys, dev router, wait-for-
 docs/          deployment, configuration, users and sharing, import, API (and its OpenAPI file), sale pack, trips,
                notification and translation guides; build phases in docs/phases/
 ```
+
+## Contributing
+
+Bug reports and ideas are welcome as issues. Code contributions are accepted
+under the project licence, with every commit signed off (`git commit -s`) to
+certify the [Developer Certificate of Origin](https://developercertificate.org/).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
+
+Copyright (C) 2026 Gareth Preston.
+
+Logbook is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. It is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the full text.
+
+In short: you may run, study, change and share it. If you run a changed copy
+for other people to use over a network, you must offer them its source.
+
+This licence covers every published version of Logbook, including releases
+tagged before the `LICENSE` file was added. The third-party code, fonts and
+icons it bundles keep their own licences: see
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

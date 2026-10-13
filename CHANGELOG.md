@@ -6,6 +6,26 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 45: **the licence.**
+
+### Added
+- **Logbook is free software under the GNU Affero General Public License
+  v3.0 or later** (`LICENSE`). You may run, study, change and share it; if
+  you run a changed copy for others over a network, offer them its source.
+  The licence covers every published version, including the releases
+  tagged before the `LICENSE` file existed (`composer.json` said
+  "proprietary" until now). The image carries the
+  `org.opencontainers.image.licenses` label, and the API description names
+  the licence.
+- **`THIRD-PARTY-NOTICES.md`**, the licence of every PHP package, font,
+  icon set and script Logbook ships, shipped in the image too.
+- **`CONTRIBUTING.md`**: contributions are welcome under the same licence,
+  with a `Signed-off-by` line on every commit (Developer Certificate of
+  Origin).
+
+### Upgrade notes
+- Nothing to do: no app change, no migration and no configuration change.
+
 ## [3.10.0] — 2026-10-10
 
 Phase 44: **what the next three months will probably cost**, on *Coming
