@@ -2,7 +2,7 @@
 
 *"Can log fuel, can't see costs", before you press Add.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.11.0** · file lives in `docs/phases/`
 
 Sharing (§7.21) is four levels, plus *Can see costs* and *Send them its
 reminders*. The form shows the level names (*Manage*, *Log*, *View*),
@@ -118,16 +118,18 @@ Added to §7.21 and §7.9 in 46.0:
       request that the line says *Can* is allowed, and one it says
       *Can't* is refused.
 - [x] The access matrix is unchanged. No migration.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; German
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; German
       at 375 px; screen reader reads *Can* and *Can't* as words, not
-      icons only). Checked by hand at 375 px, light and dark, and the
-      live summary with Alpine; the full review is still to run.
-- [ ] The full suite on every engine. The phase's tests and the sharing,
-      users and access tests pass on SQLite, PostgreSQL, MySQL and
-      MariaDB; the full suite is left to CI.
+      icons only). 375 px light and dark and the live summary checked
+      while building; the rest checked by the owner (2026-10-13).
+- [x] The full suite on every engine: green in CI on SQLite, PostgreSQL,
+      MySQL and MariaDB (PR #99), and checked by the owner.
 - [x] `VERSION` (3.11.0, with Phase 45's notes), `CHANGELOG.md`, README,
       `docs/users-and-sharing.md`.
-- [ ] `ROADMAP.md` row ✅; tag `v3.11.0` once merged.
+- [x] `ROADMAP.md` row ✅.
+
+### Release
+- [x] Tag `v3.11.0` once merged.
 
 ---
 

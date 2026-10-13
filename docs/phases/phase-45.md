@@ -3,7 +3,7 @@
 *Anyone who finds the public repository can tell what they may do with
 it.*
 
-Status: 🚧 in progress · built, waiting for review; noted in the next release's changelog · file lives in `docs/phases/`
+Status: ✅ complete · released with **v3.11.0** (no app change) · file lives in `docs/phases/`
 
 `composer.json` says `"license": "proprietary"`. Neither `spec.md` nor
 the README names a licence, and there is no `LICENSE` file. In Composer's
