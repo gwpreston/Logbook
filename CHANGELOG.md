@@ -6,6 +6,20 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Changed
+- **Distances start at the purchase date.** Readings dated before a vehicle's
+  purchase date (an earlier owner's MOT mileages, for example) no longer count
+  toward reports, cost per distance, true cost, cost of ownership,
+  depreciation per distance, the dashboard's mileage, the fuel forecast,
+  trips' business share, the digest or the API's reports. They stay in History
+  and on the odometer list. A reading on the purchase day is the baseline.
+- **Rolling back the MOT history migration removes its settings.** If you roll
+  back from 3.7 or later and upgrade again, MOT history is off until an admin
+  chooses a provider and enters the credentials again on Settings → MOT
+  history. Before, the provider stayed on without credentials.
+- **MOT history's *Look up*** is documented: anyone who may add a vehicle can
+  use it, rate-limited per person (`docs/mot-history.md`).
+
 ## [3.12.0] — 2026-10-13
 
 Phase 47: **how old is the last backup?** Logbook now remembers when it

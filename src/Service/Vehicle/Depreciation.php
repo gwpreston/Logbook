@@ -98,8 +98,13 @@ final readonly class Depreciation
                 $months = self::monthsBetween($purchased, $current->date);
                 $perYear = Decimal::divide(Decimal::multiply($loss, '12', 6), $months, self::MONEY_SCALE);
             }
-            $km = PeriodDistance::reachesBack($readings, $purchased, $zone)
-                ? PeriodDistance::km($readings, new ReportPeriod(ReportRange::Custom, $purchased, $current->date), $zone)
+            $km = PeriodDistance::reachesBack($readings, $purchased, $zone, $purchased)
+                ? PeriodDistance::km(
+                    $readings,
+                    new ReportPeriod(ReportRange::Custom, $purchased, $current->date),
+                    $zone,
+                    $purchased,
+                )
                 : null;
             $perKm = $km === null ? null : Decimal::divide($loss, $km, 6);
         }

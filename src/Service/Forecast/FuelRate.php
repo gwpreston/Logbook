@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Forecast;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Expense\CostSource;
@@ -38,9 +39,15 @@ final readonly class FuelRate
      * @param list<CostItem> $items the vehicle's ledger lines (any period)
      * @param list<OdometerReading> $readings the vehicle's mileage log, oldest first
      * @param ReportPeriod $period the reports' last 12 months, ending today
+     * @param DateTimeImmutable|null $purchased the vehicle's purchase date; earlier readings are not this owner's
      */
-    public static function of(array $items, array $readings, ReportPeriod $period, DateTimeZone $zone): self
-    {
+    public static function of(
+        array $items,
+        array $readings,
+        ReportPeriod $period,
+        DateTimeZone $zone,
+        ?DateTimeImmutable $purchased,
+    ): self {
         $spend = '0';
         $firstFill = null;
         foreach ($items as $item) {
@@ -53,7 +60,7 @@ final readonly class FuelRate
             }
         }
 
-        $km = PeriodDistance::km($readings, $period, $zone);
+        $km = PeriodDistance::km($readings, $period, $zone, $purchased);
         if (
             $firstFill === null
             || $km === null

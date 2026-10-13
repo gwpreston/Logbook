@@ -34,6 +34,7 @@ use Logbook\Service\Reminder\ReminderOverview;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Report\Report;
+use Logbook\Service\Report\PeriodDistance;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
@@ -282,10 +283,19 @@ final readonly class DashboardService
      */
     private function mileage(User $user, array $vehicles, DateTimeImmutable $today): MileageSummary
     {
+        $zone = $user->preferences->timeZone();
+
         return MileageSummary::of(
-            array_map(fn (Vehicle $v): array => $this->readings->listForVehicle($v->id), $vehicles),
+            array_map(
+                fn (Vehicle $v): array => PeriodDistance::owned(
+                    $this->readings->listForVehicle($v->id),
+                    $v->data->purchaseDate,
+                    $zone,
+                ),
+                $vehicles,
+            ),
             $today,
-            $user->preferences->timeZone(),
+            $zone,
         );
     }
 

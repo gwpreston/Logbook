@@ -280,4 +280,4 @@ D and E, found while starting, as below (#272–#276).*
   Insights query budget) logged in `open-questions.md` for a decision.
   #280 was decided in Phase 42. #279 *Decided 2026-10-10*: no cap; the
   Insights page shows the latest 5 drafts with *Show all (N)*, built in
-  [Phase 41.8](phase-41.8.md).
+  [Phase 47.1](phase-47.1.md).

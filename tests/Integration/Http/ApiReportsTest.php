@@ -94,6 +94,7 @@ final class ApiReportsTest extends AppTestCase
                         $this->service($app, OdometerService::class)->history($vehicle)->readings,
                         $page->filter->period,
                         $demo->preferences->timeZone(),
+                        $vehicle->data->purchaseDate,
                     );
                     $distance = $mileage->get('by_vehicle', $index, 'distance_km');
                     self::assertSame(Serializer::dec($km, Serializer::QUANTITY_SCALE), $distance, $label);

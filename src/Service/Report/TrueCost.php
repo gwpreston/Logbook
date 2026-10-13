@@ -164,14 +164,14 @@ final readonly class TrueCost
         }
 
         $depreciation = $curve->depreciation($period->from, $period->to, $currency);
-        $km = PeriodDistance::reachesBack($readings, $period->from, $zone)
-            ? PeriodDistance::km($readings, $period->report(), $zone)
+        $km = PeriodDistance::reachesBack($readings, $period->from, $zone, $vehicle->data->purchaseDate)
+            ? PeriodDistance::km($readings, $period->report(), $zone, $vehicle->data->purchaseDate)
             : null;
         $depreciationKm = null;
         if ($depreciation !== null && $km !== null) {
             $measured = new ReportPeriod(ReportRange::Custom, $depreciation->from, $depreciation->to);
             $depreciationKm = $depreciation->cutAtStart || $depreciation->cutAtEnd
-                ? PeriodDistance::km($readings, $measured, $zone)
+                ? PeriodDistance::km($readings, $measured, $zone, $vehicle->data->purchaseDate)
                 : $km;
         }
 

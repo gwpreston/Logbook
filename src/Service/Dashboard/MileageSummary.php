@@ -111,7 +111,7 @@ final readonly class MileageSummary
             return null;
         }
 
-        return PeriodDistance::km($readings, $period, $zone) ?? '0';
+        return PeriodDistance::km($readings, $period, $zone, null) ?? '0';
     }
 
     private static function add(?string $total, ?string $km): ?string

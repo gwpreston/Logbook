@@ -51,6 +51,7 @@ final readonly class MileageSplit
             $this->readings->listForVehicle($vehicle->id),
             new ReportPeriod(ReportRange::Custom, $from, $to),
             $user->preferences->timeZone(),
+            $vehicle->data->purchaseDate,
         );
 
         return self::split($businessKm, $total, $others && !$this->access->seesEveryone($user, $vehicle));

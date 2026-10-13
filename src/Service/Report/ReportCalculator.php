@@ -127,7 +127,7 @@ final class ReportCalculator
             if ($count === 0) {
                 continue;
             }
-            $km = PeriodDistance::km($readings[$vehicle->id] ?? [], $period, $zone);
+            $km = PeriodDistance::km($readings[$vehicle->id] ?? [], $period, $zone, $vehicle->data->purchaseDate);
             if ($km !== null) {
                 $distance = Decimal::add($distance, $km);
             }

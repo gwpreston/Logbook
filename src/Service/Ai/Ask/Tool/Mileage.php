@@ -69,7 +69,7 @@ final readonly class Mileage implements AskTool
         $counted = 0;
         foreach ($vehicles as $each) {
             $history = $this->odometer->history($each);
-            $km = PeriodDistance::km($history->readings, $period->reportPeriod(), $zone);
+            $km = PeriodDistance::km($history->readings, $period->reportPeriod(), $zone, $each->data->purchaseDate);
             if ($km !== null) {
                 $total = Decimal::add($total, $km);
                 $counted++;

@@ -1,12 +1,13 @@
-# Phase 41.8 — Decisions carried from Phases 38 and 41 + patch release
+# Phase 47.1 — Decisions carried from Phases 38 and 41 + patch release
 
 *What the owner decided on 2026-10-10 about the questions Phase 41's
 merge review and Phase 38's performance review left open.*
 
 Status: 📋 planned · file lives in `docs/phases/`
 
-Numbered after 41.7 because its questions came from Phases 38 and 41;
-it ships after Phase 43's v3.9.0, as a patch release (v3.9.1 or later).
+Its questions came from Phases 38 and 41; it was renumbered from 41.8 to
+47.1 on 2026-10-13 to match build order. It ships after Phase 47's
+v3.12.0, as a patch release (v3.12.1 or later).
 
 Five questions stayed open through Phases 41.6 to 42 (#279, #346–#349).
 The owner decided them on 2026-10-10, when Phase 43 started, and chose to
@@ -19,9 +20,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
 (*Drafts to review*), §7.38 (*Look up on add*), and
 [Phase 41](phase-41.md) first.
 
-**Prerequisites:** [Phase 42](phase-42.md) merged. Independent of
-[Phase 43](phase-43.md): the digest takes its distances from the same
-`PeriodDistance`, so it follows #346 whichever lands first.
+**Prerequisites:** [Phase 47](phase-47.md) merged (v3.12.0). Phases 42
+and 43 are already out: the digest takes its distances from the same
+`PeriodDistance`, so it follows #346 once this lands.
 
 ---
 
@@ -74,34 +75,34 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
 
 ## Tasks
 
-### 41.8.0 Spec first
+### 47.1.0 Spec first
 - [x] §7.7 *Distance driven* (#346), §6 MotTest rollback (#348), §7.38
       *Look up on add* (#347), §7.28 *Drafts to review* (#279), §13;
       `ROADMAP.md` row; the log (2026-10-10).
 
-### 41.8.1 Distance since purchase (#346)
-- [ ] `PeriodDistance` leaves out readings dated (owner's day) before the
+### 47.1.1 Distance since purchase (#346)
+- [x] `PeriodDistance` leaves out readings dated (owner's day) before the
       vehicle's purchase date, for every caller: reports, true cost,
       ownership cost, depreciation, the fuel forecast, the dashboard's
       mileage, trips' split, the API's reports and Ask's mileage tool.
-- [ ] Tests: a car bought in the period with an earlier owner's MOT
+- [x] Tests: a car bought in the period with an earlier owner's MOT
       readings; a reading on the purchase day is the baseline; no
       purchase date changes nothing.
 
-### 41.8.2 MOT history (#347, #348, #349)
-- [ ] `docs/mot-history.md`: anyone who may add a vehicle can use *Look
+### 47.1.2 MOT history (#347, #348, #349)
+- [x] `docs/mot-history.md`: anyone who may add a vehicle can use *Look
       up*; what it sends; the per-person limit.
-- [ ] The MOT migration's `down()` deletes the `mot_history` settings;
+- [x] The MOT migration's `down()` deletes the `mot_history` settings;
       migrate, roll back and migrate again on every engine; the upgrade
       notes.
-- [ ] `.gitignore` `tests/Fixtures/mot-history/recorded-*.json`; the
+- [x] `.gitignore` `tests/Fixtures/mot-history/recorded-*.json`; the
       fixtures README says so.
 
-### 41.8.3 Drafts on Insights (#279)
+### 47.1.3 Drafts on Insights (#279)
 - [ ] The latest 5 drafts, the rest under *Show all (N)* (works without
       JS); a test with 7 drafts.
 
-### 41.8.4 Discord Markdown (#378)
+### 47.1.4 Discord Markdown (#378)
 - [x] `DiscordSender::escape`: the title, body and "…and n more" line
       escaped before the limit is counted; the link not; spec §7.11,
       `docs/notification-channels.md`, `CHANGELOG.md`.
@@ -110,8 +111,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.7
       after a newline), the backslash; a digest with an AI insight's
       link; escapes counted against the 2000 limit.
 
-### 41.8.5 Release
-- [ ] `VERSION` → next patch; `CHANGELOG.md`; `ROADMAP.md` row ✅. Tag
+### 47.1.5 Release
+- [ ] `VERSION` → 3.12.1; `CHANGELOG.md`; `ROADMAP.md` row ✅. Tag
       once merged.
 
 ---

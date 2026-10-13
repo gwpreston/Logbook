@@ -13,3 +13,7 @@
 /export
 .DS_Store
 Thumbs.db
+
+# Real DVSA answers recorded by bin/record-mot-history.php (a real vehicle's
+# registration and history, scrubbed or not); CI uses the hand-written fixtures.
+/tests/Fixtures/mot-history/recorded-*.json
