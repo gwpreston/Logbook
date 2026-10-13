@@ -433,8 +433,10 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Manage->value);
 
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
-                // Phase 47 (spec.md §7.20, #399): admins only, checked by the action (403 otherwise).
-                $keyed->get('/instance/backup', ApiInstanceBackupAction::class)->setName('api.instance.backup');
+                // Phase 47 (spec.md §7.20, #399): admins only (`Backup`), else 403 `forbidden`.
+                $keyed->get('/instance/backup', ApiInstanceBackupAction::class)->setName('api.instance.backup')
+                    ->setArgument(InstanceAccessMiddleware::ABILITY, InstanceAbility::Backup->value)
+                    ->add(InstanceAccessMiddleware::class);
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.
                 $keyed->post('/vehicles', ApiVehicleWriteAction::class)->setName('api.vehicles.create')

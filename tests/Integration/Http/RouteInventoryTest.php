@@ -398,12 +398,15 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
         }
 
         self::assertSame([
+            // Phase 47: the only API route for admins, refused as 403 `forbidden`.
+            'api.instance.backup' => InstanceAbility::Backup,
             'settings.modules' => InstanceAbility::ManageModules,
             'settings.fuel_prices' => InstanceAbility::ManageFuelPrices,
             'settings.mot_history' => InstanceAbility::ManageMotHistory,
             'settings.mot_history.test' => InstanceAbility::ManageMotHistory,
             'backup.index' => InstanceAbility::Backup,
             'backup.download' => InstanceAbility::Backup,
+            'backup.warning' => InstanceAbility::Backup,
             'backup.restore' => InstanceAbility::Restore,
             'backup.restore.confirm' => InstanceAbility::Restore,
             // Phase 28.1: a scheduled backup file.

@@ -191,6 +191,8 @@ final class JobsPagesTest extends ReminderTestCase
         $app = $this->createRecordingApp();
         $clock = $this->pinClock($app, self::NOW);
         $admin = $this->signedIn($app);
+        // Setup turns weekly backups on (Phase 47, #397); this pass is about the other jobs.
+        $this->service($app, JobSettings::class)->setBackup(BackupSchedule::Off, 7);
 
         self::assertStringNotContainsString('data-scheduler-beacon', self::body($admin->get('/settings')));
         self::assertSame(404, $this->tick($admin), 'off');

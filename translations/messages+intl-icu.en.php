@@ -3815,7 +3815,7 @@ return [
                 'scheduled' => 'scheduled',
                 'cli' => 'command line',
             ],
-            'schedule' => 'Scheduled backups: {schedule, select, daily {daily, keeping the last {keep}} weekly {weekly, keeping the last {keep}} other {off}}.',
+            'schedule' => 'Scheduled backups: {schedule, select, daily {every day, keeping the last {keep}} weekly {every week, keeping the last {keep}} other {off}}.',
             'schedule_link' => 'Change in Jobs',
             'where' => 'Scheduled backups are written to {path} on this server. Copy them somewhere else too.',
             'elsewhere' => 'Backups are handled outside Logbook (set by {admin}, {date}).',
