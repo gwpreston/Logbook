@@ -5215,6 +5215,7 @@ return [
         ],
         'review' => [
             'heading' => 'Entwürfe zum Prüfen',
+            'show_all' => 'Alle anzeigen ({count})',
             'lead' => '{count, plural, one {Ein Assistent hat diesen Eintrag über den MCP-Server entworfen. Prüfe ihn und füge ihn hinzu, bearbeite oder verwirf ihn.} other {Ein Assistent hat diese # Einträge über den MCP-Server entworfen. Prüfe jeden und füge ihn hinzu, bearbeite oder verwirf ihn.}}',
         ],
     ],

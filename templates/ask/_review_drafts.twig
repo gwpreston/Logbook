@@ -3,15 +3,28 @@
  # *Drafts to review* (spec.md §7.28): what an MCP client drafted, waiting
  # for the user's *Add*, *Edit* or *Discard*. `review_drafts` comes from
  # DraftCards::cards(); `back` is the page listing them ('home' or 'insights').
+ # `shown`, when given (Insights, #279), is how many show before the rest go
+ # under *Show all (N)*, a <details> that works without JS.
  #}
+{% set shown = shown ?? review_drafts|length %}
 <section class="card" id="drafts-to-review" aria-labelledby="drafts-to-review-heading">
     <div class="card__header">
         <h2 id="drafts-to-review-heading" class="card__title">{{ ui.icon('smart_toy') }}{{ 'mcp.review.heading'|trans }}</h2>
     </div>
     <p class="muted">{{ trans('mcp.review.lead', {count: review_drafts|length}) }}</p>
     <div class="page__stack">
-        {% for item in review_drafts %}
+        {% for item in review_drafts|slice(0, shown) %}
             {% include 'ask/_draft_card.twig' with {item: item, back: back} %}
         {% endfor %}
     </div>
+    {% if review_drafts|length > shown %}
+        <details class="disclosure drafts-more">
+            <summary class="disclosure__summary">{{ 'mcp.review.show_all'|trans({count: review_drafts|length}) }}</summary>
+            <div class="page__stack">
+                {% for item in review_drafts|slice(shown) %}
+                    {% include 'ask/_draft_card.twig' with {item: item, back: back} %}
+                {% endfor %}
+            </div>
+        </details>
+    {% endif %}
 </section>

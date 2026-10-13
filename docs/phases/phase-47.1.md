@@ -99,7 +99,7 @@ and 43 are already out: the digest takes its distances from the same
       fixtures README says so.
 
 ### 47.1.3 Drafts on Insights (#279)
-- [ ] The latest 5 drafts, the rest under *Show all (N)* (works without
+- [x] The latest 5 drafts, the rest under *Show all (N)* (works without
       JS); a test with 7 drafts.
 
 ### 47.1.4 Discord Markdown (#378)

@@ -19,6 +19,9 @@ is called out explicitly.
   history. Before, the provider stayed on without credentials.
 - **MOT history's *Look up*** is documented: anyone who may add a vehicle can
   use it, rate-limited per person (`docs/mot-history.md`).
+- **Insights shows the latest 5 MCP drafts.** The rest are under *Show all (N)*,
+  a disclosure that works without JavaScript, as *Your questions*. The
+  dashboard's list is unchanged.
 
 ## [3.12.0] — 2026-10-13
 
