@@ -1,4 +1,4 @@
-# Phase 49.2 — Show the working: *How it's worked out* + release
+# Phase 48.2 — Show the working: *How it's worked out* + release
 
 *Every headline figure can be opened to show its inputs and its sum in
 plain words.*
@@ -21,7 +21,7 @@ segment, the mileage claim and *Coming up* totals.
 This part gives each of them the same pattern. The working is one
 collapsed `<details>` under the figure, and it holds:
 
-- **the inputs**, each with its date (49.1) and a link to the row it
+- **the inputs**, each with its date (48.1) and a link to the row it
   came from;
 - **the sum in words**, with the real numbers;
 - **what Logbook did not assume.**
@@ -32,9 +32,9 @@ values the owner entered (§7.1), and the working says so plainly.
 
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.1,
 §7.7, §7.18, §7.23, §7.32, §7.34 (*Was it worth it?*, the existing
-pattern) and §7.35 first, and [Phase 49.1](phase-49.1.md)'s inventory.
+pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
 
-**Prerequisites:** [Phase 49.1](phase-49.1.md) complete and green.
+**Prerequisites:** [Phase 48.1](phase-48.1.md) complete and green.
 
 ---
 
@@ -55,7 +55,7 @@ pattern) and §7.35 first, and [Phase 49.1](phase-49.1.md)'s inventory.
 ## Not in scope
 
 - Changing any figure or method. A figure whose working reveals a bug
-  goes back through Phase 45.1's mismatch process.
+  is fixed in its own change, not here.
 - Interactive "what if" calculators.
 
 ---
@@ -70,7 +70,7 @@ pattern) and §7.35 first, and [Phase 49.1](phase-49.1.md)'s inventory.
 - **True cost for a month:** each part (fuel, maintenance, documents,
   other, depreciation, finance charges), its amount and a link to its
   entries, and their sum. Payouts are shown with their sign, and the
-  build line is shown apart once Phase 51 lands.
+  build line is shown apart once Phase 50 lands.
 - **What changed:** the two periods side by side, part by part, with the
   difference.
 - **Settlement estimate:** "Your 14 remaining payments of £289.50,
@@ -118,12 +118,12 @@ pattern) and §7.35 first, and [Phase 49.1](phase-49.1.md)'s inventory.
 ### 49.2.3 Tests and release
 - [ ] For every golden figure, the working's sum equals the figure
       shown, and every input links to a row that exists.
-- [ ] `ViewCosts`: the working hides with its figure. The leak sweep
-      (Phase 45.2) covers it.
+- [ ] `ViewCosts`: the working hides with its figure. A test as the
+      restricted persona proves it.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print;
       a screen reader opening a working).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 49.1
-      and 49.2; tag once merged.
+- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 48.1
+      and 48.2; tag once merged.
 
 ---
 

@@ -1,11 +1,11 @@
-# Phase 51.2 — Warranties, the insurer's list and parts everywhere + release
+# Phase 50.2 — Warranties, the insurer's list and parts everywhere + release
 
 *A reminder before a warranty runs out, a list of modifications to read to
 an insurer, and parts wherever entries go.*
 
 Status: 📋 planned · file lives in `docs/phases/`
 
-[Phase 51.1](phase-51.1.md) records parts, modifications and their
+[Phase 50.1](phase-50.1.md) records parts, modifications and their
 warranties on Logbook's own pages, and keeps build spend out of every
 running cost per distance. This part takes them further: a warranty that
 is about to end raises a reminder; the current modifications print as a
@@ -14,12 +14,12 @@ a scanned invoice's parts lines become parts; and the API, Ask, MCP, CSV
 and webhooks carry them. Then the release.
 
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.39
-(written in Phase 51.1), then §7.6 (reminder sources), §7.19 (sale pack),
+(written in Phase 50.1), then §7.6 (reminder sources), §7.19 (sale pack),
 §7.20 (API and webhooks), §7.26 (Ask tools), §7.27 (reading files), §7.28
 (MCP), §7.29 (the printable claims history is the nearest pattern for the
 insurer's list) and §7.13 (CSV).
 
-**Prerequisites:** [Phase 51.1](phase-51.1.md) complete and green.
+**Prerequisites:** [Phase 50.1](phase-50.1.md) complete and green.
 
 ---
 
@@ -40,7 +40,7 @@ insurer's list) and §7.13 (CSV).
 - Logbook judging whether a modification must be declared, or what an
   insurer would charge for it: the insurer's list is the owner's record.
 - CSV **import** of parts or modifications (open question G).
-- Anything in 51.1's *Not in scope*.
+- Anything in 50.1's *Not in scope*.
 
 ---
 
@@ -125,7 +125,7 @@ questions below are decided; in outline:
 - [ ] Suite green on every engine; coverage at or above the floor.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print
       preview; subpath).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 51.1
+- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
       and 51.2.
 - [ ] Tag once merged.
 

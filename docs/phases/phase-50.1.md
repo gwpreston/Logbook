@@ -1,4 +1,4 @@
-# Phase 51.1 — Parts and modifications
+# Phase 50.1 — Parts and modifications
 
 *What was fitted, what came off, and what the build has cost, kept apart
 from what the car costs to run.*
@@ -32,9 +32,9 @@ group, ***Modifications*** (`build`): it counts in what the car has cost,
 and **never in any running cost per distance** (requested by the owner,
 2026-10-11).
 
-Phase 51 is planned as one and split in two (open question A): this part
+Phase 50 is planned as one and split in two (open question A): this part
 builds parts, modifications, the cost group and everything on Logbook's
-own pages; [Phase 51.2](phase-51.2.md) adds warranty reminders, the list
+own pages; [Phase 50.2](phase-50.2.md) adds warranty reminders, the list
 for an insurer, the sale pack, scanning, the API, Ask, MCP, CSV and
 webhooks, and releases.
 
@@ -44,7 +44,7 @@ first (tyres: the nearest pattern for fitted, removed and distance), then
 §7.12, §7.16, §7.10, §7.21, §7.24 (Phase 25's cost checks) and §7.37 (the
 issue pages are the nearest page pattern).
 
-**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it). Built after [Phase 49.2](phase-49.2.md), so its build figures show their working from the start.
+**Prerequisites:** none. Built after [Phase 48.2](phase-48.2.md), so its build figures show their working from the start.
 
 ---
 
@@ -75,7 +75,7 @@ issue pages are the nearest page pattern).
 - Catalogue lookups, part-number decoding, or any AI suggestion of a part
   or its fit.
 - Warranty reminders, the insurer's list, the sale pack, scanning, API,
-  Ask, MCP, CSV and webhooks: [Phase 51.2](phase-51.2.md).
+  Ask, MCP, CSV and webhooks: [Phase 50.2](phase-50.2.md).
 
 ---
 
@@ -89,7 +89,7 @@ questions below are decided; in outline:
   question I), `done_on` (calendar date), odometer (optional), cost
   (`decimal(14,3)`, **0 allowed**), fitted by (optional, up to 120:
   a garage, or "Self"), notes (up to 2,000), `declared_on` (optional:
-  when the insurer was told; used by 51.2), `reverted_on` and its
+  when the insurer was told; used by 50.2), `reverted_on` and its
   odometer and note (optional), created/updated (UTC), attachments.
 - **Part** (§6): vehicle, name (up to 120), brand, part number and serial
   (optional, up to 80 each), supplier (optional), `bought_on` and price
@@ -123,7 +123,7 @@ questions below are decided; in outline:
 - **Warranty** on the part: months and/or a distance, starting from the
   purchase date or the fitting (open question L), the provider and terms
   (up to 500). *In warranty until 3 Mar 2028 or 85,400 mi* while either
-  limit holds; *Warranty ended* after. Reminders are 51.2's.
+  limit holds; *Warranty ended* after. Reminders are 50.2's.
 - **Reverting a modification** (a remap taken off, a car put back to
   standard) sets `reverted_on`, offers to remove its fitted parts in the
   same save and to fit stored `original` parts again; the modification
@@ -197,7 +197,7 @@ questions below are decided; in outline:
       `build` group, running cost per distance); §7.35, §7.11, §7.23
       and §7.24 (where `build` is left out); §7.4 (*Parts fitted*,
       *Parts removed*); §7.10 module; §7.16 kinds; §13; `ROADMAP.md`
-      rows for 51.1 and 51.2.
+      rows for 50.1 and 51.2.
 
 ### 51.1.1 Migration and services
 - [ ] `modifications`, `parts`, `part_fittings`;
@@ -287,8 +287,8 @@ questions below are decided; in outline:
 
 Numbered in `open-questions.md` when logged. Not built until decided.
 
-- **A. One phase or two?** Options: (1) 51.1 the records, cost rule and
-  pages; 51.2 warranty reminders, insurer list, sale pack, scanning, API,
+- **A. One phase or two?** Options: (1) 50.1 the records, cost rule and
+  pages; 50.2 warranty reminders, insurer list, sale pack, scanning, API,
   Ask, MCP, CSV, webhooks and the release; (2) one phase. *Recommendation:*
   (1), as Phases 40.1 and 40.2 were split.
 - **B. Does a part's price count?** Options: (1) for reference only; the
@@ -335,7 +335,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   `other`. The first eight are the owner's list (2026-10-11).
   *Recommendation:* this list. `tune` is its own category because it is
   the modification with no part, the one most often reverted, and the
-  one insurers ask about first (51.2's insurer list sorts it to the top).
+  one insurers ask about first (50.2's insurer list sorts it to the top).
 - **J. The cost checks** (Phase 25). Options: (1) `build` lines are left
   out of the baselines and never flagged; (2) checked against a build
   baseline of their own. *Recommendation:* (1): a build is a choice, not

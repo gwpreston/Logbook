@@ -1,4 +1,4 @@
-# Phase 50 — Getting started and household defaults + release
+# Phase 49 — Getting started and household defaults + release
 
 *From an empty garage to a vehicle with its mileage and its essential
 reminders in about two minutes, with a dashboard that shows what needs
@@ -26,16 +26,12 @@ This phase does three things:
   attention and what they are spending;
 - switches fewer modules on for new installs.
 
-It starts from [Phase 45.3](phase-45.3.md)'s usability findings, and
-50.0 revises this file to match what those sessions showed.
-
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.9
 (*Welcome*), §7.10 (modules), §7.5 (documents), §7.6 (reminders), §7.4
 (schedules), §7.24 (*Needs attention*), §7.38 (MOT history *Look up*),
-§8 (the dashboard) and the [hardening report](phase-45.3.md) first.
+§8 (the dashboard) first.
 
-**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening
-passed. Built after [Phase 47](phase-47.md), whose share summary the
+**Prerequisites:** Built after [Phase 46](phase-46.md), whose share summary the
 shared user's first page reuses.
 
 ---
@@ -71,7 +67,7 @@ shared user's first page reuses.
 4. **Fewer modules on new installs** (open question C). Existing
    installs are unchanged.
 5. **A shared user's first visit:** "Sam shared the Golf with you. You
-   can log entries; you can't see costs." (Phase 47's summary), then the
+   can log entries; you can't see costs." (Phase 46's summary), then the
    vehicle.
 6. Release.
 
@@ -86,7 +82,7 @@ shared user's first page reuses.
 
 ## Spec (proposed)
 
-Settled in 50.0, after 45.3's findings:
+Settled in 49.0:
 
 - **`/vehicles/start`** (`Log` on the garage; a page, not a modal, each
   step a plain form that works without JS). It goes through the services
@@ -112,33 +108,32 @@ Settled in 50.0, after 45.3's findings:
 
 ## Tasks
 
-### 50.0 Spec first
-- [ ] 45.3's findings read; this file revised to match them.
+### 49.0 Spec first
 - [ ] Open questions A–D decided by the owner and logged; §7.9, §7.10,
       §8 and the sections the steps touch; §13; `ROADMAP.md` row.
 
-### 50.1 Getting started
+### 49.1 Getting started
 - [ ] `/vehicles/start` and its five steps, with *Look up* when MOT
       history is set up.
 - [ ] Resume and dismiss; the empty garage's *Set up your first vehicle*;
       the overview card.
 
-### 50.2 Household defaults
+### 49.2 Household defaults
 - [ ] The *Household* layout and *Reset layout*'s choice.
 - [ ] Module defaults written at setup (C); Settings → Modules shows
       "Switched off when Logbook was installed; switch on any time."
 - [ ] The shared user's first visit.
 - [ ] Translations (every shipped locale).
 
-### 50.3 Tests and release
+### 49.3 Tests and release
 - [ ] Each step saved through the real services; skipping each; resuming
       after sign-out; two first vehicles by two users at once.
 - [ ] Existing users and installs unchanged after upgrade (layout,
       modules, settings).
-- [ ] 45.3's automated journeys 1–2 updated to the new flow and passing
-      on WebKit and Chromium phone profiles.
+- [ ] The new flow passes an automated journey on WebKit and Chromium
+      phone profiles.
 - [ ] A repeat session with two people new to Logbook: both reach
-      step 5 without help (owner-run, recorded in the hardening report).
+      step 5 without help (owner-run).
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; German
       at 375 px).
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once

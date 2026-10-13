@@ -1,165 +1,155 @@
-# Phase 52 — Import from Tracktor + release
+# Phase 52 — Import from ABRP + release
 
-*Bring a whole Tracktor garage across: vehicles, fill-ups, services,
-documents and reminders.*
+*Your EV's charging sessions, mileage and drives from A Better
+Routeplanner, without typing them in.*
 
 Status: 📋 planned · file lives in `docs/phases/`
 
-[Tracktor](https://github.com/javedh-dev/tracktor) is the self-hosted
-vehicle tracker (SvelteKit, SQLite, MIT licence) whose feature list
-Logbook's spec started from. Its users are the most likely people to try
-Logbook, and today they would have to retype everything.
+ABRP (A Better Routeplanner) records an EV's drives and charging
+sessions through *My Drives*, when the car has a live data connection.
+That record is exactly what an EV owner would otherwise log by hand in
+Logbook: energy added per charge, where it was added, and the odometer.
 
-Tracktor has one export: *Settings → Export*, a single JSON file holding
-every table, optionally encrypted with a password. This phase adds a
-**Tracktor reader** to Phase 31's app importer. The mapping, preview,
-single transaction and `import_sources` steps are shared, so this phase
-writes only a reader and its mappings.
+ABRP's only way out for that data is ***My Drives → Export***. It gives
+an Excel (`.xlsx`) file, either for a chosen interval of days or for a
+single drive or charge. It needs ABRP Premium (or a trial), a live data
+connection, and *Save My Activity* switched on for the vehicle. There is
+no API for reading drive history. ABRP's own help describes the export,
+but not the file's columns.
 
-Logbook isn't affiliated with Tracktor.
+So this phase begins by **getting real exports**, as Phase 31 did for
+Fuelio. No column is guessed. The reader then joins Phase 31's app
+importer, as Tracktor's does in [Phase 51](phase-51.md). `spec.md` §12
+lists ABRP among the later readers; this phase takes it off that list.
+
+Logbook isn't affiliated with ABRP or Iternio.
 
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.13
-(*Importing from another app*, and Phase 31's Fuelio reader as the
-pattern), §6 (`import_sources`, Vehicle, FuelEntry, MaintenanceEntry,
-ComplianceDocument, Reminder), §7.3, §7.5 and §7.6 first.
+(*Importing from another app*), §7.3 (EV fill-ups, charging types, full
+and partial), §7.2 (readings and plausibility), §7.22 (trips), §7.33
+(stations) and §12 first.
 
-**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it).
-Independent of Phases 46 to 51.
+**Prerequisites:** none.
+Independent of Phases 45 to 51.
 
 ---
 
-## Tracktor's export, as read from its source
+## What is known, and what the fixtures must settle
 
-Read from `javedh-dev/tracktor` at `dev`, commit `a60e826` (4 Sep 2026,
-`package.json` 2.0.0). To be confirmed against real exports in 50.1.
+Known from ABRP's help:
 
-- **Envelope:** `{version: "1.0", timestamp, encrypted, data}`. With
-  `encrypted` true, `data` is a string holding `{iv, salt, data}`, all in
-  hex. The cipher is AES-256-GCM, with the key from scrypt(password,
-  salt, 32) at Node's defaults (N = 16384, r = 8, p = 1) and a 16-byte
-  IV. The GCM tag is appended to `data` after a `:`.
-- **`data`** has these keys:
-  - `vehicles`, `fuelLogs`, `maintenanceLogs`, `complianceDocuments` and
-    `reminders`: these are read.
-  - `notifications`, `notificationProviders` and `configs`: of these,
-    only `configs` is read, for the units, currency and date format.
-    Provider credentials are encrypted with the Tracktor server's
-    `APP_SECRET`. They are never read, decrypted or stored.
-- **Ids:** every row has a UUID `id` that stays the same in every export
-  (a database dump), so re-importing a newer export adds only new rows.
-- **Vehicles:** `make`, `model`, `year`, `licensePlate`, `vin`, `color`,
-  `odometer` (a current reading with no date), `image` (a file name),
-  `fuelType` (`petrol` | `diesel` | `electric` | `lpg` | `cng`),
-  `vehicleType` (`car`, `motorcycle`, `scooter`, `truck`, `van`, `bus`,
-  `farm_vehicle`, `yacht`, `rv`, `other`) and `customFields` (a JSON
-  object of strings).
-- **Fuel logs:** `date` (ISO), `odometer`, `fuelAmount`, `rate`, `cost`,
-  `filled` (a full tank), `missedLast` (the previous fill was not
-  logged), `notes` and `attachment`.
-- **Maintenance logs:** `date`, `odometer` (required), `serviceCenter`,
-  `cost`, `notes` and `attachment`. There is no title and no category.
-- **Compliance documents:** `type` (`insurance` | `emissions` |
-  `roadworthiness` | `registration` | `other` with `otherLabel`),
-  `documentNumber`, `issuer`, `startDate`, `endDate`, `recurrenceType`
-  and `recurrenceInterval`, `cost`, `notes` and `attachment`. Older
-  Tracktor versions kept insurance and pollution certificates in
-  separate tables, dropped in August 2026.
-- **Reminders:** `type` (`maintenance`, `insurance`, `pollution`,
-  `registration`, `inspection`, `custom`), `dueDate`, `remindSchedule`,
-  recurrence, `note` and `isCompleted`.
-- **Units and money:** `configs` holds `unitOfDistance` (`kilometer` |
-  `mile`), `unitOfVolume` (`liter` | `gallon`, US or UK not stated),
-  `unitOfLpg`, `unitOfCng`, `currency` and `dateFormat`. Amounts and
-  quantities are JSON numbers stored as SQLite `REAL`.
-- **Files are not in the export.** `attachment` and `image` name files in
-  Tracktor's `UPLOADS_DIR` (`/data/uploads` in its Docker image).
+- My Drives exports to Excel, for an interval of days or for one
+  activity.
+- An activity is a drive or a charging session.
+- Recording needs Premium and live data.
+
+To be read from real exports in 50.1 before anything else is written:
+
+- the sheets and columns of an interval export, and of a single-activity
+  export (which may be a time series rather than a summary);
+- whether a charge carries the energy added, start and end state of
+  charge, power, cost and a place;
+- whether a drive carries distance, energy used, start and end place,
+  and the **odometer**;
+- the time zone of the timestamps;
+- whether rows have a stable id;
+- the units in each case (km or miles, kWh, Wh/km).
+
+The proposals below assume a summary per activity. If the exports don't
+give one, 50.0 rewrites this file before any code is written.
 
 ---
 
 ## Goals
 
-1. Settings → *Import from another app* accepts a Tracktor JSON export.
-   `bin/import-app.php` accepts it too, plus an optional folder or ZIP of
-   Tracktor's uploads for the attachments and photos (open question C).
-2. Mapping:
-   - vehicles to new or existing ones;
-   - units, including which gallon (open question B), with Phase 31's
-     economy sanity check;
-   - document types, maintenance categories and reminder types to
-     Logbook's.
-3. A preview and one transaction across every vehicle. `import_sources`
-   with app `tracktor`, so a newer export adds only what's new.
-4. Docs (`docs/import-tracktor.md`), fixtures and release.
+1. Settings → *Import from another app* accepts an ABRP export. So does
+   `bin/import-app.php`.
+2. **Charging sessions** become EV fill-ups: energy, charging type, cost
+   (open question C), full or partial (D), and the station (E).
+3. **Odometer readings** come from the activities that carry one,
+   thinned so the mileage log isn't flooded (B).
+4. **Drives** come across as private trips only if the owner chooses
+   (F).
+5. A preview and one transaction. Re-importing an overlapping interval
+   adds only new activities (G).
+6. Docs (`docs/import-abrp.md`), fixtures and release.
 
 ## Not in scope
 
-- Writing Tracktor's format (no export to Tracktor).
-- Notifications, notification providers, Tracktor's settings and its
-  dashboard layout.
-- Live sync or reading Tracktor's SQLite file directly.
+- Sending anything to ABRP. Logbook's live data stays local.
+- Routes, GPS tracks and time series, beyond the summary each activity
+  needs.
+- Plug-in hybrids' petrol fills, which ABRP doesn't record.
+- Tesla's and Drivvo's readers, which stay in §12.
 
 ---
 
-## Mapping (proposed)
+## Spec (proposed)
 
-Settled in the spec in 50.0, with each mapping shown on Phase 31's
-mapping page.
+Settled in §7.13 in 50.0, from the fixtures:
 
-| Tracktor | Logbook |
-|---|---|
-| vehicle `make`, `model`, `year`, `licensePlate`, `vin` | make, model, year, registration, VIN |
-| `vehicleType` | `car` for car, van, truck, rv and other; `bike` for motorcycle and scooter. The rest are highlighted and default to `car` (open question E) |
-| `fuelType` `electric` | `ev`; the others to the same code |
-| `color`, `customFields` | the vehicle's notes, one `key: value` per line |
-| vehicle `odometer` | a `manual` reading dated the export's `timestamp`, only when higher than every imported reading |
-| fuel log | a fill-up. `filled` = full; `missedLast` = missed previous. Any two of `fuelAmount`, `rate` and `cost` derive the third, as the form does; a row with all three keeps them and is flagged if they disagree by more than a cent |
-| maintenance log | a service record. The title is the first line of `notes`, or *Service* when blank; the category is chosen on the mapping page (default `service`); `serviceCenter` becomes the vendor |
-| compliance `insurance`, `emissions`, `roadworthiness`, `registration`, `other` | insurance, pollution certificate, inspection, registration, other (`otherLabel` as its title); `documentNumber` and `issuer` to the matching fields |
-| reminder, not completed | a manual reminder (open question D) |
-| `attachment`, `image` | a file on the row, or the vehicle photo, when the uploads are given (C) |
-
-- **Numbers** are read from their shortest decimal form (the JSON text)
-  into `Decimal`, never through float arithmetic. Dates are calendar
-  dates. Tracktor's `created_at` is ignored.
-- **Recurring documents** keep their dates. Recurrence becomes a
-  schedule or reminder only if the owner ticks *Make schedules*, as in
-  Phase 31.
+- **Reading `.xlsx`** needs a new dependency (open question A). Before
+  any cell is read, it gets Phase 31's ZIP safety limits (entries, sizes,
+  ratio, paths), XML read without external entities, and a row limit.
+- **Vehicle:** the export's vehicle is mapped to an existing `ev` (or
+  `phev`) vehicle, or a new `ev` vehicle.
+- **Charge → fill-up:**
+  - **Energy:** the energy added in kWh (open question C covers grid
+    energy against battery energy).
+  - **Charging type:** chosen from the session's peak power (AC up to
+    22 kW; DC above, split into rapid and ultra-rapid at §7.3's
+    thresholds). *Home* applies when the place matches a private place
+    named *Home* (§7.33).
+  - **Cost:** the export's cost if it has one, else C's rule.
+  - **Full or partial:** D.
+  - **Time:** the session's end, in the owner's time zone.
+  - **Odometer:** the session's, when given.
+- **Readings:** source `import`, at most one per day per vehicle (the
+  day's last). Every reading goes through §7.2's plausibility check, and
+  the preview shows the ones it flags.
+- **ABRP's own consumption** (Wh/km) is used only for Phase 31's sanity
+  check against Logbook's figure. It is never stored.
+- **Re-import:** `import_sources` with app `abrp`. The source id is the
+  export's own id when it has one, else the vehicle, kind and start time
+  to the second (G).
 
 ---
 
 ## Tasks
 
 ### 50.0 Spec first
-- [ ] Open questions A–F decided by the owner and logged; §7.13 (the
-      Tracktor reader), §4 if A adds a dependency, §13; `ROADMAP.md`
-      row.
+- [ ] Fixtures read (50.1). This file and §7.13 are corrected to what the
+      exports contain.
+- [ ] Open questions A–G decided by the owner and logged; §4 for the
+      dependency, §12 (ABRP removed), §13; `ROADMAP.md` row.
 
 ### 50.1 Fixtures
-- [ ] Real exports from current Tracktor, anonymised, into
-      `tests/Fixtures/import/tracktor/`: metric and imperial, one with an
-      EV, one encrypted (if A), and one from before the compliance merge
-      if one can be had (F).
+- [ ] Real exports, anonymised (names, places and coordinates replaced,
+      VIN removed), into `tests/Fixtures/import/abrp/`:
+  - an interval export with drives and charges;
+  - a single drive;
+  - a single charge;
+  - one in miles and one in km, if the settings change the file.
 
 ### 50.2 Reader
-- [ ] `Import\App\Tracktor\TracktorReader`: envelope, version check,
-      decryption (A), configs, rows to the shared import rows; unknown
-      keys listed as not read.
-- [ ] Safety: the size limit, JSON depth limit, row limit (20,000 across
-      sections, as Fuelio) and the uploads folder or ZIP under Phase 31's
-      ZIP limits, with paths confined to it.
-- [ ] Mapping page entries for the gallon, document types, maintenance
-      category and reminder types.
+- [ ] The `.xlsx` reader behind the safety limits.
+- [ ] `Import\App\Abrp\AbrpReader`: sheets to the shared import rows;
+      sheets and columns it doesn't know are listed as not read.
+- [ ] Mapping page entries: vehicle, units, cost rule (C), full
+      threshold (D), stations (E), trips (F).
 
 ### 50.3 Pages, docs and release
-- [ ] *Tracktor* on Settings → *Import from another app*; the CLI's
-      `--files`.
-- [ ] `docs/import-tracktor.md`: exporting from Tracktor, what comes
-      across and what doesn't, files on the command line.
+- [ ] *ABRP* on Settings → *Import from another app*, with a note that
+      My Drives needs Premium and live data.
+- [ ] `docs/import-abrp.md`: exporting from ABRP, what comes across.
 - [ ] Translations (every shipped locale).
-- [ ] Tests: each fixture end to end on every engine; a re-import adds
-      nothing; a newer export adds only new rows; amounts to the penny;
-      the gallon check; a wrong password and a tampered file refused with
-      nothing written; provider credentials never read.
+- [ ] Tests:
+  - each fixture end to end on every engine;
+  - overlapping intervals imported twice add nothing;
+  - charging types at the power boundaries;
+  - readings thinned per day in the owner's time zone;
+  - kWh/100 km matching ABRP's within the sanity range;
+  - a malformed or oversized `.xlsx` refused with nothing written.
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
       merged.
 
@@ -167,63 +157,73 @@ mapping page.
 
 ## Acceptance criteria
 
-1. A Tracktor user can bring every vehicle, fill-up, service record,
-   document and open reminder across in one import, and see it all in
-   the preview first.
-2. Importing a newer export later adds only what's new.
-3. Economy and totals match Tracktor's for the same data, allowing for
-   Logbook's full-to-full rules.
+1. An EV owner using ABRP can import a period of charging and mileage.
+   They see each charge as a fill-up and each day's mileage as a reading,
+   checked in the preview first.
+2. Importing an overlapping period later adds nothing twice.
+3. Nothing in the import is guessed from a column the fixtures didn't
+   show.
 4. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
 Numbered in `open-questions.md` when logged. Not built until decided.
 
-- **A. Encrypted exports.** PHP has no built-in scrypt.
-  - (1) Refuse them, with "Export again from Tracktor without a
-    password", and park support in §12.
-  - (2) Support them with a small, tested pure-PHP scrypt.
-  - (3) Support them with a Composer package.
+- **A. Which `.xlsx` library?**
+  - (1) `openspout/openspout` (MIT, streaming, small).
+  - (2) `phpoffice/phpspreadsheet` (MIT, large).
+  - (3) A minimal reader of our own over `ZipArchive` and XMLReader.
 
-  *Recommendation:* (1). Exporting again is one click, and it avoids
-  carrying key-derivation code for one reader.
+  *Recommendation:* (1). It reads row by row within the memory limits of
+  a Raspberry Pi.
 
-- **B. Which gallon?** Tracktor doesn't say.
-  - (1) Ask on the mapping page, preselected from the owner's locale and
-    checked by Phase 31's economy sanity check.
-  - (2) Always US.
+- **B. How many readings?**
+  - (1) One per day per vehicle (the day's last).
+  - (2) One per activity.
+  - (3) Only those on charging sessions.
+
+  *Recommendation:* (1). Daily is plenty for every figure Logbook
+  derives, and a busy month stays readable on the Mileage tab.
+
+- **C. Charging cost and energy.** ABRP may not know what a charge cost,
+  and it may report energy into the battery rather than from the grid.
+  - (1) A price per kWh per charging type, typed on the mapping page
+    (for example a home tariff), used only when a row has no cost.
+    Energy as the export gives it, labelled.
+  - (2) Cost left at 0 (free), with a note on each.
+  - (3) Rows without a cost left out.
+
+  *Recommendation:* (1). (2) would make a car look free to run.
+
+- **D. Full or partial?** Logbook's efficiency needs full-to-full
+  segments.
+  - (1) Full when the end state of charge reaches a threshold set on the
+    mapping page (default 100%, often 80% for daily charging).
+  - (2) Every charge partial, so no per-segment efficiency.
+  - (3) Every charge full.
 
   *Recommendation:* (1).
 
-- **C. Attachments and photos.**
-  - (1) On the command line only, with `--files <dir|zip>` pointing at
-    Tracktor's uploads, as Fuelio's photos are.
-  - (2) Also as a second upload on the web page.
-  - (3) Not at all.
+- **E. Stations.**
+  - (1) Link a charge to an existing station within 100 m.
+  - (2) Also create stations for unmatched public chargers.
+  - (3) None.
 
-  *Recommendation:* (1). The web page names any files left behind.
+  *Recommendation:* (1). The preview lists the unmatched places, so the
+  owner can add the ones they use.
 
-- **D. Reminders.**
-  - (1) Open reminders become manual reminders, and completed ones are
-    skipped.
-  - (2) All of them, the completed ones marked done.
-  - (3) None, since schedules and documents raise their own.
+- **F. Drives as trips?**
+  - (1) Not imported. They give readings only.
+  - (2) Imported as private trips, while the `trips` module is on and the
+    owner ticks it, with places as the export names them.
 
-  *Recommendation:* (1). Maintenance-type reminders are offered as
-  schedules under *Make schedules*.
+  *Recommendation:* (1), with (2) parked. Places are personal data
+  (§7.22 keeps destinations with their driver), and private mileage
+  comes from the mileage log anyway.
 
-- **E. Vehicle types Logbook doesn't have** (bus, farm vehicle, yacht).
-  - (1) Import them as `car`, highlighted.
-  - (2) Leave them out.
+- **G. Re-import key** when rows have no id.
+  - (1) Vehicle, kind and start time to the second.
+  - (2) Also the energy or distance.
 
-  *Recommendation:* (1). Their fill-ups and services still make sense.
-  The `van` type stays parked (#46).
-
-- **F. Exports from before Tracktor's compliance merge** (separate
-  insurance and pollution tables).
-  - (1) Read them too, if a real one can be had as a fixture.
-  - (2) Current format only, with older files refused and the reason
-    given.
-
-  *Recommendation:* (1) if a fixture exists, else (2). Nothing is read
-  without a real file to test against.
+  *Recommendation:* (1). (2) would duplicate a session ABRP later
+  corrects.

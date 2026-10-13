@@ -1,4 +1,4 @@
-# Phase 49.1 — Show the working: "as of" dates
+# Phase 48.1 — Show the working: "as of" dates
 
 *Every figure built on an old input says how old.*
 
@@ -27,14 +27,14 @@ object and one macro:
 
 An estimate also names what it is projected from.
 
-Phase 49 makes the numbers easy to understand and verify, in two parts:
+Phase 48 makes the numbers easy to understand and verify, in two parts:
 
-- **49.1 (this part):** the dates.
-- **[49.2](phase-49.2.md):** *How it's worked out* on every headline
+- **48.1 (this part):** the dates.
+- **[48.2](phase-48.2.md):** *How it's worked out* on every headline
   figure, then the release.
 
-Both use Phase 45.1's golden household as their check: a date or a sum
-shown in the working must match the figure it explains.
+Both check themselves the same way: a date or a sum shown in the working
+must match the figure it explains.
 
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.1
 (valuations, depreciation, stale value), §7.7 (cost of ownership), §7.17
@@ -42,8 +42,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.1
 equity), §7.34 (listed prices), §7.35 (true cost), §7.26 (Ask) and §7.20
 (API) first.
 
-**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening passed (no feature phase starts before it).
-Independent of Phases 46 to 48. Phase 51's warranty and build figures
+**Prerequisites:** none.
+Independent of Phases 45 to 47. Phase 50's warranty and build figures
 follow the same rule when they are built.
 
 ---
@@ -51,7 +51,7 @@ follow the same rule when they are built.
 ## Goals
 
 1. An inventory of every figure that depends on a dated input or is an
-   estimate, recorded in the spec (49.0).
+   estimate, recorded in the spec (48.0).
 2. A `Support\AsOf` value (the input's date, its kind, and for estimates
    the basis) carried by those services' results, so pages, print, CSV,
    the API and Ask all get the same date.
@@ -59,7 +59,7 @@ follow the same rule when they are built.
    everywhere, with the stale style once the input passes its threshold.
 4. Every figure in the inventory shows it. Figures from today's data
    don't.
-5. Release comes with [49.2](phase-49.2.md).
+5. Release comes with [48.2](phase-48.2.md).
 
 ## Not in scope
 
@@ -70,7 +70,7 @@ follow the same rule when they are built.
 
 ---
 
-## The inventory (to verify in 49.0)
+## The inventory (to verify in 48.0)
 
 | Figure | Dated input | Today |
 |---|---|---|
@@ -94,7 +94,7 @@ follow the same rule when they are built.
 
 ### 49.1.0 Spec first
 - [ ] The inventory completed against the code, and added to §8 as a
-      cross-cutting rule with the table (49.2 uses the same inventory).
+      cross-cutting rule with the table (48.2 uses the same inventory).
 - [ ] Open questions A–D decided by the owner and logged; §13;
       `ROADMAP.md` row.
 
@@ -122,7 +122,7 @@ follow the same rule when they are built.
       without its `AsOf`.
 - [ ] Page budgets (§8) unchanged.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print).
-- [ ] `ROADMAP.md` row ✅ for 49.1 (released with 49.2).
+- [ ] `ROADMAP.md` row ✅ for 48.1 (released with 48.2).
 
 ---
 
