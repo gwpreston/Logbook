@@ -113,7 +113,7 @@ and 43 are already out: the digest takes its distances from the same
 
 ### 47.1.5 Release
 - [x] `VERSION` → 3.12.1; `CHANGELOG.md`; `ROADMAP.md` row ✅; README status.
-- [ ] Tag `v3.12.1` once merged.
+- [x] Tag `v3.12.1` once merged.
 
 ---
 
