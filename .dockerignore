@@ -16,3 +16,4 @@ docs/*
 .phpcs-cache
 *.md
 !README.md
+!THIRD-PARTY-NOTICES.md

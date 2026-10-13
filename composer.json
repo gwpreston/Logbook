@@ -2,7 +2,7 @@
     "name": "logbook/logbook",
     "description": "Self-hosted vehicle logbook: garage, odometer, fuel, maintenance, compliance, reminders and reports.",
     "type": "project",
-    "license": "proprietary",
+    "license": "AGPL-3.0-or-later",
     "require": {
         "php": ">=8.4",
         "ext-exif": "*",
@@ -86,7 +86,9 @@
         "migrate": "phinx migrate --configuration=phinx.php",
         "rollback": "phinx rollback --configuration=phinx.php",
         "seed": "phinx seed:run --configuration=phinx.php",
-        "build-assets": "php bin/build-assets.php"
+        "build-assets": "php bin/build-assets.php",
+        "notices": "@php bin/third-party-notices.php",
+        "notices:check": "@php bin/third-party-notices.php --check"
     },
     "scripts-descriptions": {
         "start": "Run the PHP built-in dev server on http://localhost:8090",
@@ -101,6 +103,8 @@
         "migrate": "Apply pending Phinx migrations (add -e <environment>)",
         "rollback": "Roll back Phinx migrations (add -e <environment>, -t 0 for all)",
         "seed": "Run Phinx seeders",
-        "build-assets": "Copy assets/ into public/assets and write the cache-busting manifest"
+        "build-assets": "Copy assets/ into public/assets and write the cache-busting manifest",
+        "notices": "Write THIRD-PARTY-NOTICES.md from composer.lock and the vendored assets",
+        "notices:check": "Fail when THIRD-PARTY-NOTICES.md is stale or a shipped licence isn't allowed"
     }
 }
