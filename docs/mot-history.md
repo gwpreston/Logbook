@@ -146,6 +146,14 @@ no MOT yet, *First MOT due*. Nothing is stored until you save, and it
 doesn't turn on MOT history for the new vehicle. It works without
 JavaScript too.
 
+**Who can use it.** Anyone who may add a vehicle can press *Look up*, not
+only admins, and they become the new vehicle's owner. It uses the
+admin's DVSA credentials, so each request counts against your DVSA quota.
+It sends only the registration typed in the form, and nothing else. Each
+person is limited to 20 lookups in 10 minutes and 200 a day, together with
+their *Fetch* and *Refresh* requests. To stop it, switch the provider *Off*
+on Settings → MOT history; that turns *Look up* off for everyone.
+
 ## Keeping it up to date
 
 The `mot_history` job runs daily while a provider is enabled (see

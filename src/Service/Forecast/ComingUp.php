@@ -161,7 +161,13 @@ final readonly class ComingUp
             currentKm: $history->latest()?->readingKm,
             kmPerDay: $history->averageKmPerDay(),
             fuel: $enabled[Feature::Fuel->value] && $costs
-                ? FuelRate::of($ledger, $history->readings, ReportPeriod::preset(ReportRange::TwelveMonths, $today), $zone)
+                ? FuelRate::of(
+                    $ledger,
+                    $history->readings,
+                    ReportPeriod::preset(ReportRange::TwelveMonths, $today),
+                    $zone,
+                    $vehicle->data->purchaseDate,
+                )
                 : null,
             costs: $costs,
             firstInspection: $firstInspection,

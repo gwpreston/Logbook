@@ -6,6 +6,41 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.12.1] — 2026-10-13
+
+Phase 47.1: **a patch release** that builds the decisions the owner made on
+2026-10-10 about questions left open from Phases 38 and 41.
+
+### Changed
+- **Distances start at the purchase date.** Readings dated before a vehicle's
+  purchase date (an earlier owner's MOT mileages, for example) no longer count
+  toward reports, cost per distance, true cost, cost of ownership,
+  depreciation per distance, the dashboard's mileage, the fuel forecast,
+  trips' business share, the digest or the API's reports. They stay in History
+  and on the odometer list. A reading on the purchase day is the baseline.
+- **Rolling back the MOT history migration removes its settings.** If you roll
+  back from 3.7 or later and upgrade again, MOT history is off until an admin
+  chooses a provider and enters the credentials again on Settings → MOT
+  history. Before, the provider stayed on without credentials.
+- **MOT history's *Look up*** is documented: anyone who may add a vehicle can
+  use it, rate-limited per person (`docs/mot-history.md`).
+- **Insights shows the latest 5 MCP drafts.** The rest are under *Show all (N)*,
+  a disclosure that works without JavaScript, as *Your questions*. The
+  dashboard's list is unchanged.
+- **Discord messages escape Markdown** (#378): already in 3.9.0's notes; this
+  release records the decision as built and logged here.
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change. Distances in
+  reports are now measured from each vehicle's purchase date, so a vehicle
+  bought within a report's period shows only what you drove since you bought
+  it. Per-km cost of ownership and depreciation need a reading on the purchase
+  day (the purchase mileage you enter when adding the vehicle is one).
+  A period with no reading after the purchase on or before its start also shows
+  no per-km figures now (True cost by year as well as Ownership); the old figure
+  was measured from a reading taken before you bought the vehicle. The averages
+  per month and per year are unchanged.
+
 ## [3.12.0] — 2026-10-13
 
 Phase 47: **how old is the last backup?** Logbook now remembers when it
@@ -3024,7 +3059,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.12.1...HEAD
+[3.12.1]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...v3.12.1
 [3.12.0]: https://github.com/gwpreston16/Logbook/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/gwpreston16/Logbook/compare/v3.10.0...v3.11.0
 [3.10.0]: https://github.com/gwpreston16/Logbook/compare/v3.9.0...v3.10.0

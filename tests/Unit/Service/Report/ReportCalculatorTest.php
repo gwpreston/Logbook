@@ -229,6 +229,30 @@ final class ReportCalculatorTest extends TestCase
         self::assertSame('£0.10/km', self::formatter(UnitPreset::Metric)->perDistance($section->vehicles[0]->costPerKm, 'GBP'));
     }
 
+    public function testDistanceStartsAtThePurchaseDateNotAnEarlierOwnersMileage(): void
+    {
+        $bought = self::vehicle(1, purchased: '2026-09-10');
+        $items = [self::expense($bought, '2026-09-12', '50')];
+        $readings = [1 => [
+            self::reading(1, '40000', '2026-02-01T12:00:00Z'),  // an MOT under the last owner
+            self::reading(1, '41000', '2026-08-15T12:00:00Z'),  // another, before the purchase
+            self::reading(1, '41200', '2026-09-10T12:00:00Z'),  // the purchase day: the baseline
+            self::reading(1, '41700', '2026-09-25T12:00:00Z'),
+        ]];
+
+        $report = ReportCalculator::build(
+            new ReportFilter(ReportPeriod::preset(ReportRange::ThisMonth, self::date('2026-09-27'))),
+            [$bought],
+            [1 => 'GBP'],
+            $items,
+            $readings,
+            self::london(),
+        );
+
+        self::assertSame('500.000', $report->currencies[0]->distanceKm, 'not 700, from the last owner\'s August reading');
+        self::assertSame('0.100000', $report->currencies[0]->costPerKm);
+    }
+
     public function testArchivedVehiclesAreLeftOutUnlessIncludedOrPicked(): void
     {
         $golf = self::vehicle(1);
@@ -304,14 +328,21 @@ final class ReportCalculatorTest extends TestCase
         return new DateTimeZone(self::LONDON);
     }
 
-    private static function vehicle(int $id, ?string $currency = null, bool $archived = false): Vehicle
+    private static function vehicle(int $id, ?string $currency = null, bool $archived = false, ?string $purchased = null): Vehicle
     {
         $now = new DateTimeImmutable('2026-01-01 00:00:00 UTC');
 
         return new Vehicle(
             $id,
             1,
-            new VehicleData(VehicleType::Car, 'Make', 'Model ' . $id, FuelType::Petrol, currency: $currency),
+            new VehicleData(
+                VehicleType::Car,
+                'Make',
+                'Model ' . $id,
+                FuelType::Petrol,
+                currency: $currency,
+                purchaseDate: $purchased === null ? null : self::date($purchased),
+            ),
             $archived ? VehicleStatus::Archived : VehicleStatus::Active,
             null,
             null,

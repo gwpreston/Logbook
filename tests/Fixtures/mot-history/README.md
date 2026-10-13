@@ -28,5 +28,8 @@ you have credentials:
 It writes `recorded-*.json` here with the registration, VIN and test
 numbers replaced by placeholders, and the bulk-download links dropped
 (they are signed). `DvsaRecordedTest` reads them when they exist and is
-skipped otherwise. The data is published under the Open Government
+skipped otherwise. They are
+git-ignored (`.gitignore`): a real vehicle's registration and history,
+scrubbed or not, stay on the maintainer's machine and are never
+committed. CI uses the hand-written fixtures above. The data is published under the Open Government
 Licence v3.0.

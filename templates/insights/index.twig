@@ -31,7 +31,7 @@
         {% endif %}
 
         {% if review_drafts is not empty %}
-            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'insights'} %}
+            {% include 'ask/_review_drafts.twig' with {review_drafts: review_drafts, back: 'insights', shown: review_drafts_shown} %}
         {% endif %}
 
         {% if ask_on %}

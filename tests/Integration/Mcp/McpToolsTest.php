@@ -321,6 +321,49 @@ final class McpToolsTest extends AppTestCase
         self::assertSame(2, $this->service($app, DraftStore::class)->deleteExpired());
     }
 
+    public function testInsightsShowsTheLatestFiveDraftsAndTheRestUnderShowAll(): void
+    {
+        $app = $this->createApp(['AI_ENABLED' => 'false']);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $golf = $this->vehicle($app);
+        $mcp = new McpClient($app, $this->apiKey($app, $owner));
+        $ids = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $ids[] = McpClient::structured($mcp->modern('tools/call', ['name' => 'draft_reminder', 'arguments' => [
+                'vehicle' => $golf->id,
+                'title' => 'Reminder ' . $i,
+                'due' => '2026-12-01',
+            ]]))->int('draft_id');
+        }
+        $browser = $this->browserFor($app, 'owner');
+
+        $insights = (string) $browser->get('/insights')->getBody();
+        $more = strpos($insights, 'class="disclosure drafts-more"');
+        self::assertNotFalse($more, 'the rest are behind Show all, a <details> that needs no JS');
+        self::assertStringContainsString('Show all (7)', $insights);
+        $shown = 0;
+        $hidden = 0;
+        foreach ($ids as $id) {
+            $at = strpos($insights, 'id="draft-' . $id . '"');
+            self::assertNotFalse($at, 'every draft is on the page');
+            $at < $more ? $shown++ : $hidden++;
+        }
+        self::assertSame(5, $shown);
+        self::assertSame(2, $hidden);
+
+        // Five or fewer need no disclosure.
+        foreach (array_slice($ids, 0, 2) as $id) {
+            $browser->post('/drafts/' . $id . '/discard', ['back' => 'insights']);
+        }
+        $few = (string) $browser->get('/insights')->getBody();
+        self::assertStringNotContainsString('drafts-more', $few);
+        self::assertStringContainsString('id="draft-' . $ids[6] . '"', $few);
+
+        // The dashboard's list is unchanged: all of them.
+        self::assertStringNotContainsString('drafts-more', (string) $browser->get('/')->getBody());
+    }
+
     public function testDraftsAreReviewedOnInsightsWithoutAi(): void
     {
         $app = $this->createApp(['AI_ENABLED' => 'false']);

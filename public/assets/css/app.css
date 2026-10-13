@@ -1035,12 +1035,17 @@ a.list__item:hover {
     overflow-wrap: anywhere;
 }
 
-/* *Show all (N)* under *Your questions*: a 44 px touch target. */
-.ask-threads-more > .disclosure__summary {
+/* *Show all (N)* under *Your questions* and *Drafts to review*: a 44 px touch target. */
+.ask-threads-more > .disclosure__summary,
+.drafts-more > .disclosure__summary {
     display: flex;
     align-items: center;
     min-height: var(--control-h);
     font-size: var(--fs-base);
+}
+
+.drafts-more {
+    margin-top: var(--space-3);
 }
 
 /* A suggestion is a sentence: it wraps rather than pushing the page wider

@@ -100,6 +100,7 @@ final readonly class OwnershipCost
         array $payouts = [],
     ): ?self {
         $currency = $depreciation->currency;
+        $owned = PeriodDistance::owned($readings, $vehicle->data->purchaseDate, $zone);
         [$from, $start] = self::start($vehicle, $items, $readings, $zone);
         $sale = $vehicle->data->saleDate;
         $to = $sale !== null && $sale < $today ? $sale : $today;
@@ -155,7 +156,9 @@ final readonly class OwnershipCost
 
         // Only when the mileage log reaches back to the start: otherwise the
         // whole period's costs would be divided by part of its distance.
-        $km = PeriodDistance::reachesBack($readings, $from, $zone) ? PeriodDistance::km($readings, $period, $zone) : null;
+        $km = PeriodDistance::reachesBack($readings, $from, $zone, $vehicle->data->purchaseDate)
+            ? PeriodDistance::km($readings, $period, $zone, $vehicle->data->purchaseDate)
+            : null;
         // Nothing logged is not "nothing spent": a rate of £0 would be made up.
         $hasRates = $count > 0 && LocalTime::daysBetween($from, $to) >= self::MIN_DAYS;
         $months = count($period->months());
@@ -204,7 +207,7 @@ final readonly class OwnershipCost
             depreciationPerMonth: $depreciationPerMonth,
             perMonth: $perMonth,
             perMonthIsPartial: $perMonth !== null && $depreciationPerMonth === null,
-            mileageStart: $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone),
+            mileageStart: $owned === [] ? null : LocalTime::dateOf($owned[0]->recordedAt, $zone),
             payouts: $received->isZero() ? null : $received,
             settlementIsSale: $settlementIsSale,
             financeCharges: $charges,

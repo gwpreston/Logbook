@@ -29,6 +29,18 @@ Each part is shown per distance in your unit. The parts and the payouts
 always **add up exactly** to the total. Each figure is rounded to the penny
 or cent for display only.
 
+## Distance starts at the purchase date
+
+Every distance in Logbook's reports (cost per distance, true cost, cost of
+ownership, depreciation per distance, the dashboard's mileage, the fuel
+forecast, trips' business share and the API's reports) is measured from
+the vehicle's **purchase date**. Readings dated before it, such as the
+mileages MOT history brings in from an earlier owner, stay in History and
+on the odometer list, but they are not your driving, so they are left out
+of every distance. A reading on the purchase day counts. A vehicle with no
+purchase date uses all its readings. The averages (per month and per year)
+are a different figure, the Mileage tab's, and still use every reading.
+
 ## The periods
 
 - **Since bought**: from the purchase date (or the first thing logged) to

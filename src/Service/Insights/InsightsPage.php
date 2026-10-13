@@ -24,6 +24,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class InsightsPage
 {
+    /** Drafts to review shown before *Show all (N)* (spec.md §7.28, #279). */
+    public const int DRAFTS_SHOWN = 5;
+
     public function __construct(
         private VehicleService $vehicles,
         private VehicleDataPrimer $primer,
@@ -58,6 +61,7 @@ final readonly class InsightsPage
             'error' => $ask ? $error : null,
             // Drafts an MCP client left (spec.md §7.28 *Drafts to review*); their buttons need no Ask.
             'review_drafts' => array_values($this->draftCards->cards($user, $this->drafts->toReview($user))),
+            'review_drafts_shown' => self::DRAFTS_SHOWN,
             // Today's AI insights from the cache; when due, the page asks for them (never on this GET).
             'ai_set' => $this->aiInsights->forToday($user),
             'ai_due' => $this->aiInsights->isDue($user),

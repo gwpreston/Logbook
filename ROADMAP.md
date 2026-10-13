@@ -94,13 +94,13 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [41](docs/phases/phase-41.md) | DVSA MOT history + release | ✅ |
 | [41.6](docs/phases/phase-41.6.md) | MOT history follow-ups + patch release | ✅ |
 | [41.7](docs/phases/phase-41.7.md) | Dashboard and overview query batching + patch release | ✅ |
-| [41.8](docs/phases/phase-41.8.md) | Decisions carried from Phases 38 and 41 + patch release | 📋 |
 | [42](docs/phases/phase-42.md) | Fuel saving and economy up as computed insights + v3.8 release | ✅ |
 | [43](docs/phases/phase-43.md) | The monthly briefing + release | ✅ |
 | [44](docs/phases/phase-44.md) | A *Next 3 months* total on *Coming up* + release | ✅ |
 | [45](docs/phases/phase-45.md) | The licence | ✅ |
 | [46](docs/phases/phase-46.md) | What a share allows, in plain words + release | ✅ |
 | [47](docs/phases/phase-47.md) | How old is the last backup? + release | ✅ |
+| [47.1](docs/phases/phase-47.1.md) | Decisions carried from Phases 38 and 41 + patch release | ✅ |
 | [48.1](docs/phases/phase-48.1.md) | Show the working: "as of" dates | 📋 |
 | [48.2](docs/phases/phase-48.2.md) | Show the working: *How it's worked out* + release | 📋 |
 | [49](docs/phases/phase-49.md) | Getting started and household defaults + release | 📋 |
@@ -1155,21 +1155,6 @@ couldn't prove.*
 
 ---
 
-## Phase 41.8 — Decisions carried from Phases 38 and 41 + patch release
-*What the owner decided on 2026-10-10 about the questions left open.*
-
-- Reports, and every distance measured as a report's, leave out readings
-  before the purchase date (#346); *Look up* stays open to anyone adding
-  a vehicle, now documented (#347); rolling back the MOT migration
-  deletes its settings (#348); recorded DVSA answers are git-ignored
-  (#349); the Insights page shows the latest 5 MCP drafts with *Show
-  all* (#279); Discord escapes Markdown, so an AI insight in the digest
-  can't mask a link (#378).
-
-→ [`phase-41.8.md`](docs/phases/phase-41.8.md)
-
----
-
 ## Phase 42 — Fuel saving and economy up as computed insights + release
 *Sums done by Logbook; the model keeps only what no single service can
 see.*
@@ -1253,6 +1238,21 @@ it.*
   another way* turns it off. Release.
 
 → [`phase-47.md`](docs/phases/phase-47.md)
+
+---
+
+## Phase 47.1 — Decisions carried from Phases 38 and 41 + patch release
+*What the owner decided on 2026-10-10 about the questions left open.*
+
+- Reports, and every distance measured as a report's, leave out readings
+  before the purchase date (#346); *Look up* stays open to anyone adding
+  a vehicle, now documented (#347); rolling back the MOT migration
+  deletes its settings (#348); recorded DVSA answers are git-ignored
+  (#349); the Insights page shows the latest 5 MCP drafts with *Show
+  all* (#279); Discord escapes Markdown, so an AI insight in the digest
+  can't mask a link (#378). Patch release v3.12.1, after Phase 47.
+
+→ [`phase-47.1.md`](docs/phases/phase-47.1.md)
 
 ---
 

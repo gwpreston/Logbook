@@ -800,7 +800,7 @@ MySQL only.
 - Upgrading to 3.7.0 creates both tables, the vehicle columns, the
   reading link (`odometer_readings.mot_test_id`, `ON DELETE CASCADE`) and
   `mot_history_secrets`. Rolling it back deletes `mot` readings, drops
-  the tables, the link and the columns, and (Phase 41.8, #348) deletes the
+  the tables, the link and the columns, and (Phase 47.1, #348) deletes the
   `mot_history` settings, so upgrading again finds the provider off rather
   than on without credentials; issues and documents made from
   tests stay, as the owner's own entries (`mot_advisory` issues keep their
@@ -2245,11 +2245,12 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   for *all time* the period starts at the earliest cost.
 - **Distance driven** comes from the mileage log: the last reading in the
   period minus the last reading before it (or the first reading in it when
-  there is none before). From Phase 41.8 (#346, decided 2026-10-10) a
+  there is none before). From Phase 47.1 (#346, decided 2026-10-10) a
   vehicle's readings dated before its purchase date (the owner's calendar
   day) are left out, wherever a distance is measured this way: MOT history
   brings in an earlier owner's mileages, and they are not this owner's
-  driving. They stay in History and on the odometer list. Only vehicles with costs in the period count
+  driving. They stay in History and on the odometer list. The averages (per month, per year, per day)
+  stay the Mileage tab's figures, from every reading (§7.2, §7.8). Only vehicles with costs in the period count
   towards the fleet's distance (miles from a vehicle whose costs were never
   logged would make the fleet look cheaper to run than any of its vehicles).
   Cost per distance = spend ÷ distance, shown only when some distance was
@@ -3670,7 +3671,7 @@ go only to those hosts (the policy check still runs).
 - **No pings, no injected formatting.** Vehicle names, titles and notes
   are text other users typed, and from Phase 43 the digest carries AI
   insight text a model wrote: Telegram is plain text, Discord escapes
-  Markdown (Phase 41.8, #378) and sends `allowed_mentions` with an empty
+  Markdown (Phase 47.1, #378) and sends `allowed_mentions` with an empty
   `parse`, Mattermost escapes Markdown and neutralises mentions, Slack
   escapes `&`, `<` and `>` and sends no `link_names`. So no text can
   format the message or hide a link behind words; a bare URL in the text
@@ -3738,7 +3739,7 @@ go only to those hosts (the policy check still runs).
   (so `@everyone`, `@here`, role and user mentions ping nobody) and
   `flags` `4` (`SUPPRESS_EMBEDS`: no link preview). The title is the
   first line. Success is 204.
-- Markdown escaped (Phase 41.8, #378) in the title, the body and the
+- Markdown escaped (Phase 47.1, #378) in the title, the body and the
   "…and {n} more" line, before the 2000-character limit is counted: a
   backslash before `\`, `` ` ``, `*`, `_`, `~`, `|`, `[`, `]`, `(`, `)`,
   `<` and `>` anywhere (bold, italics, underline, strikethrough,
@@ -7120,7 +7121,7 @@ with its own model. No connection in Settings → AI is needed or used.
   the Insights page (after the *Ask Logbook* card and before *Your
   questions*, while there are any, with or without Ask; Phase 38), the
   latest **5** shown and the rest under *Show all (N)*, a disclosure that
-  works without JS, as *Your questions* (Phase 41.8, #279; there is no
+  works without JS, as *Your questions* (Phase 47.1, #279; there is no
   cap on making drafts), each as the §7.26 draft card with *Add*,
   *Edit* and *Discard*, and *Undo* for 10 seconds after *Add*. Their
   buttons work without Ask (only the draft's own user); an Ask draft
@@ -10185,7 +10186,7 @@ task breakdowns live in the per-phase files; this is the map.
   issues, repeats as updates); the recall state and its *Needs
   attention* item; *Look up* on the add-vehicle form; the `mot_history`
   job; History, Ask, API, CSV, backups, sale pack (§4, §6, §7.1, §7.16,
-  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#349 decided 2026-10-10 and built in 41.8, #350 in 41.7). One migration.
+  §7.19, §7.20, §7.24, §7.26, §7.30, §7.38; #320–#345; #346–#349 decided 2026-10-10 and built in 47.1, #350 in 41.7). One migration.
   Release v3.7.0.
 - **Phase 41.6 — MOT history follow-ups + patch release.** The LOW and
   unconfirmed findings of Phase 41's merge review: Settings → MOT history
@@ -10201,15 +10202,6 @@ task breakdowns live in the per-phase files; this is the map.
   budgets in §8 (#350) and query-count tests that don't grow with the
   number of vehicles. Nothing any page shows changes. No migration.
   Release v3.7.2.
-- **Phase 41.8 — Decisions carried from Phases 38 and 41 + patch
-  release.** Reports and every distance measured as a report's leave out
-  readings before the purchase date (§7.7, #346); *Look up* stays open to
-  anyone adding a vehicle, documented (#347); rolling back the MOT
-  migration deletes its settings (#348); recorded DVSA answers are
-  git-ignored (#349); the Insights page shows the latest 5 MCP drafts
-  with *Show all* (#279); Discord's Markdown escaped, so an AI insight in
-  the digest can't mask a link (§7.11, #378, from Phase 43's security
-  review). See [`phase-41.8.md`](docs/phases/phase-41.8.md).
 - **Phase 42 — Fuel saving and economy up as computed insights +
   release.** Two computed insights (§7.8): *Fuel saving*, the yearly
   volume × (the usual station's listed price, else the 30-day average
@@ -10265,6 +10257,16 @@ task breakdowns live in the per-phase files; this is the map.
   installs start with weekly scheduled backups (§7.11, §7.13, §7.20,
   §7.30; #396–#402). No migration. Release.
   See [`phase-47.md`](docs/phases/phase-47.md).
+- **Phase 47.1 — Decisions carried from Phases 38 and 41 + patch
+  release.** Reports and every distance measured as a report's leave out
+  readings before the purchase date (§7.7, #346); *Look up* stays open to
+  anyone adding a vehicle, documented (#347); rolling back the MOT
+  migration deletes its settings (#348); recorded DVSA answers are
+  git-ignored (#349); the Insights page shows the latest 5 MCP drafts
+  with *Show all* (#279); Discord's Markdown escaped, so an AI insight in
+  the digest can't mask a link (§7.11, #378, from Phase 43's security
+  review). No migration of its own. Release v3.12.1. See
+  [`phase-47.1.md`](docs/phases/phase-47.1.md).
 
 ---
 

@@ -713,7 +713,7 @@ final class ForecastCalculatorTest extends TestCase
         ];
         $period = ReportPeriod::preset(ReportRange::TwelveMonths, self::date(self::TODAY));
 
-        return FuelRate::of($fills, $readings, $period, new DateTimeZone(self::LONDON));
+        return FuelRate::of($fills, $readings, $period, new DateTimeZone(self::LONDON), null);
     }
 
     private static function fill(string $utc, string $total): CostItem

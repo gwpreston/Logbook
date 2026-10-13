@@ -347,7 +347,7 @@ Found while starting, decided by the owner on 2026-10-08:
   up* (#347), the settings on rollback (#348), recorded answers in git
   (#349) and page query budgets (#350).
   *Decided 2026-10-10* (when Phase 43 started), built in
-  [Phase 41.8](phase-41.8.md): #346 reports ignore readings before the
+  [Phase 47.1](phase-47.1.md): #346 reports ignore readings before the
   purchase date; #347 *Look up* kept for anyone adding a vehicle, and
   documented; #348 rolling back deletes the `mot_history` settings; #349
   recorded answers git-ignored. (#350 was decided in Phase 41.7.)

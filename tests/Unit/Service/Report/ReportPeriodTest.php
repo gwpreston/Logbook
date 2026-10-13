@@ -111,16 +111,67 @@ final class ReportPeriodTest extends TestCase
             self::reading('2000.000', '2026-05-02T12:00:00Z'), // after: ignored
         ];
 
-        self::assertSame('450.500', PeriodDistance::km($readings, $period, $zone));
+        self::assertSame('450.500', PeriodDistance::km($readings, $period, $zone, null));
 
         // Nothing before the period: from its first reading.
-        self::assertSame('350.500', PeriodDistance::km(array_slice($readings, 2), $period, $zone));
+        self::assertSame('350.500', PeriodDistance::km(array_slice($readings, 2), $period, $zone, null));
         // One reading and nothing before: nothing measurable.
-        self::assertNull(PeriodDistance::km([$readings[3]], $period, $zone));
+        self::assertNull(PeriodDistance::km([$readings[3]], $period, $zone, null));
         // No reading in the period at all.
-        self::assertNull(PeriodDistance::km([$readings[0], $readings[4]], $period, $zone));
+        self::assertNull(PeriodDistance::km([$readings[0], $readings[4]], $period, $zone, null));
         // Going backwards overall (a replaced odometer) is not a distance.
-        self::assertNull(PeriodDistance::km([$readings[3], self::reading('10.000', '2026-04-30T13:00:00Z')], $period, $zone));
+        $backwards = [$readings[3], self::reading('10.000', '2026-04-30T13:00:00Z')];
+        self::assertNull(PeriodDistance::km($backwards, $period, $zone, null));
+    }
+
+    public function testReadingsBeforeThePurchaseDateAreAnEarlierOwnersAndLeftOut(): void
+    {
+        $zone = new DateTimeZone('Europe/London');
+        $period = new ReportPeriod(ReportRange::Custom, self::date('2026-01-01'), self::date('2026-12-31'));
+        $readings = [
+            self::reading('80000.000', '2025-11-20T12:00:00Z'), // an MOT under the last owner
+            self::reading('82000.000', '2026-05-09T12:00:00Z'), // the day before the purchase
+            self::reading('82100.000', '2026-05-10T09:00:00Z'), // the purchase day: the baseline
+            self::reading('83100.000', '2026-09-01T12:00:00Z'),
+        ];
+
+        // Without a purchase date every reading counts, as before.
+        self::assertSame('3100.000', PeriodDistance::km($readings, $period, $zone, null));
+        // From the purchase day: 82100 to 83100.
+        self::assertSame('1000.000', PeriodDistance::km($readings, $period, $zone, self::date('2026-05-10')));
+        // Bought after the last reading: nothing was driven by this owner.
+        self::assertNull(PeriodDistance::km($readings, $period, $zone, self::date('2026-09-02')));
+    }
+
+    public function testThePurchaseDayIsTheOwnersLocalDay(): void
+    {
+        $zone = new DateTimeZone('Europe/London');
+        $readings = [
+            self::reading('100.000', '2026-06-09T23:30:00Z'), // 00:30 BST on 10 June
+            self::reading('200.000', '2026-06-20T12:00:00Z'),
+        ];
+
+        self::assertSame($readings, PeriodDistance::owned($readings, self::date('2026-06-10'), $zone));
+        self::assertSame([$readings[1]], PeriodDistance::owned($readings, self::date('2026-06-11'), $zone));
+    }
+
+    public function testAMileageLogReachesBackToTheLaterOfTheStartAndThePurchase(): void
+    {
+        $zone = new DateTimeZone('UTC');
+        $readings = [
+            self::reading('80000.000', '2025-11-20T12:00:00Z'),
+            self::reading('82100.000', '2026-05-10T09:00:00Z'),
+        ];
+        $purchased = self::date('2026-05-10');
+
+        // A period starting before the purchase is measured from it.
+        self::assertTrue(PeriodDistance::reachesBack($readings, self::date('2026-01-01'), $zone, $purchased));
+        // The earlier owner's reading no longer covers a start on the purchase day...
+        self::assertTrue(PeriodDistance::reachesBack($readings, $purchased, $zone, $purchased));
+        // ...and without a reading on that day, nothing reaches back to it.
+        self::assertFalse(PeriodDistance::reachesBack([$readings[0]], $purchased, $zone, $purchased));
+        self::assertFalse(PeriodDistance::reachesBack([$readings[1]], self::date('2026-05-09'), $zone, null));
+        self::assertFalse(PeriodDistance::reachesBack([], self::date('2026-05-09'), $zone, null));
     }
 
     /**

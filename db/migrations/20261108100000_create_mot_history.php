@@ -20,7 +20,9 @@ use Phinx\Migration\AbstractMigration;
  *   mileage series (source `mot`), removed with the test.
  *
  * Rolling back deletes `mot` readings (they are DVSA's, not the owner's),
- * then drops the link, the columns and the tables. Issues and documents
+ * then drops the link, the columns and the tables, and deletes the
+ * `mot_history` and `mot_history.status` settings so upgrading again finds the
+ * provider off (#348). Issues and documents
  * made from tests stay, as the owner's own entries.
  */
 final class CreateMotHistory extends AbstractMigration
@@ -115,6 +117,10 @@ final class CreateMotHistory extends AbstractMigration
         foreach (['mot_first_due_on', 'mot_recall_state', 'mot_history_fetched_at', 'mot_history_enabled_at'] as $column) {
             $vehicles->removeColumn($column)->update();
         }
+
+        // The secrets go with their table, so the provider setting would come back
+        // on without credentials after upgrading again (Phase 47.1, #348).
+        $this->execute('DELETE FROM settings WHERE name IN (?, ?)', ['mot_history', 'mot_history.status']);
 
         $this->table('mot_history_secrets')->drop()->save();
         $this->table('mot_defects')->drop()->save();

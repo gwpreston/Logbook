@@ -193,7 +193,7 @@ final readonly class ApiReports
         $total = null;
         foreach ($vehicles as $vehicle) {
             $history = $this->odometer->history($vehicle);
-            $km = PeriodDistance::km($history->readings, $period, $zone);
+            $km = PeriodDistance::km($history->readings, $period, $zone, $vehicle->data->purchaseDate);
             if ($km !== null) {
                 $total = Decimal::add($total ?? '0', $km);
             }

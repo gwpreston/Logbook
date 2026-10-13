@@ -51,9 +51,12 @@ final readonly class MileageSummary
 
     /**
      * @param list<list<OdometerReading>> $readings each vehicle's readings, oldest first
+     * @param list<DateTimeImmutable|null> $purchased each vehicle's purchase date, in the same order: readings before it are
+     *                                                an earlier owner's and stay out of the distances. The average
+     *                                                per month is the Mileage tab's figure, from all the readings (§7.8).
      * @param DateTimeImmutable $today the owner's calendar date
      */
-    public static function of(array $readings, DateTimeImmutable $today, DateTimeZone $zone): self
+    public static function of(array $readings, DateTimeImmutable $today, DateTimeZone $zone, array $purchased): self
     {
         $month = ReportPeriod::preset(ReportRange::ThisMonth, $today);
         $year = ReportPeriod::preset(ReportRange::ThisYear, $today);
@@ -70,15 +73,16 @@ final readonly class MileageSummary
         $thisYear = null;
         $average = null;
         $months = array_fill(0, count($chart), null);
-        foreach ($readings as $vehicleReadings) {
-            $thisMonth = self::add($thisMonth, self::driven($vehicleReadings, $month, $zone));
-            $thisYear = self::add($thisYear, self::driven($vehicleReadings, $year, $zone));
+        foreach ($readings as $i => $vehicleReadings) {
+            $bought = $purchased[$i] ?? null;
+            $thisMonth = self::add($thisMonth, self::driven($vehicleReadings, $month, $zone, $bought));
+            $thisYear = self::add($thisYear, self::driven($vehicleReadings, $year, $zone, $bought));
             $perMonth = (new OdometerHistory($vehicleReadings))->averageKmPerMonth();
             if ($perMonth !== null) {
                 $average = ($average ?? 0.0) + $perMonth;
             }
-            foreach ($chart as $i => $period) {
-                $months[$i] = self::add($months[$i], self::driven($vehicleReadings, $period, $zone));
+            foreach ($chart as $m => $period) {
+                $months[$m] = self::add($months[$m], self::driven($vehicleReadings, $period, $zone, $bought));
             }
         }
 
@@ -101,17 +105,22 @@ final readonly class MileageSummary
      *
      * @param list<OdometerReading> $readings
      */
-    private static function driven(array $readings, ReportPeriod $period, DateTimeZone $zone): ?string
-    {
+    private static function driven(
+        array $readings,
+        ReportPeriod $period,
+        DateTimeZone $zone,
+        ?DateTimeImmutable $purchased,
+    ): ?string {
+        $owned = PeriodDistance::owned($readings, $purchased, $zone);
         $known = array_filter(
-            $readings,
+            $owned,
             static fn (OdometerReading $r): bool => LocalTime::dateOf($r->recordedAt, $zone) <= $period->to,
         );
         if ($known === []) {
             return null;
         }
 
-        return PeriodDistance::km($readings, $period, $zone) ?? '0';
+        return PeriodDistance::km($owned, $period, $zone, $purchased) ?? '0';
     }
 
     private static function add(?string $total, ?string $km): ?string

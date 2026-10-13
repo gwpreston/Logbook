@@ -5219,6 +5219,7 @@ return [
         ],
         'review' => [
             'heading' => 'Drafts to review',
+            'show_all' => 'Show all ({count})',
             'lead' => '{count, plural, one {An assistant drafted this entry through the MCP server. Check it, then add, edit or discard it.} other {An assistant drafted these # entries through the MCP server. Check each one, then add, edit or discard it.}}',
         ],
     ],

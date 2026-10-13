@@ -185,11 +185,11 @@ final readonly class DigestSummary
     {
         assert($month->from !== null && $window[0]->from !== null);
         $readings = $this->readings->listForVehicle($vehicle->id);
-        $km = PeriodDistance::km($readings, $month, $zone);
+        $km = PeriodDistance::km($readings, $month, $zone, $vehicle->data->purchaseDate);
 
         $measured = [];
         foreach ($window as $period) {
-            $monthKm = PeriodDistance::km($readings, $period, $zone);
+            $monthKm = PeriodDistance::km($readings, $period, $zone, $vehicle->data->purchaseDate);
             if ($monthKm !== null) {
                 $measured[] = $monthKm;
             }
