@@ -43,6 +43,22 @@ final readonly class UserRepository
             ->fetchOne() !== false;
     }
 
+    /**
+     * When the first account was created (the install's age, spec.md §7.13),
+     * or null before setup.
+     */
+    public function firstCreatedAt(): ?DateTimeImmutable
+    {
+        $value = $this->connection->createQueryBuilder()
+            ->select('MIN(created_at)')
+            ->from(self::TABLE)
+            ->fetchOne();
+
+        return $value === false || $value === null
+            ? null
+            : UtcDateTime::fromDatabase($value, $this->connection->getDatabasePlatform());
+    }
+
     public function find(int $id): ?User
     {
         $row = $this->connection->createQueryBuilder()

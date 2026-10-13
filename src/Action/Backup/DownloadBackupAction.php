@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Backup;
 
+use Logbook\Domain\Backup\BackupKind;
+use Logbook\Service\Backup\BackupRecorder;
 use Logbook\Service\Backup\BackupService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -13,13 +15,14 @@ use Slim\Exception\HttpNotFoundException;
 
 /**
  * GET /settings/backup/download — the whole dataset (database + uploads) as
- * one ZIP (spec.md §7.13).
+ * one ZIP (spec.md §7.13), recorded as the newest backup once built.
  */
 final readonly class DownloadBackupAction
 {
     public function __construct(
         private BackupService $backups,
         private StreamFactoryInterface $streams,
+        private BackupRecorder $recorder,
     ) {
     }
 
@@ -37,6 +40,7 @@ final readonly class DownloadBackupAction
         }
         try {
             $this->backups->create($file);
+            $this->recorder->record(BackupKind::Download, (int) filesize($file));
             $body = $this->streams->createStream();
             $source = $this->streams->createStreamFromFile($file, 'rb');
             while (!$source->eof()) {

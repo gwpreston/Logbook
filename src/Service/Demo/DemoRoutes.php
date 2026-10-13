@@ -45,7 +45,7 @@ final class DemoRoutes
         // The email server (Phase 36.1).
         'settings.delivery', 'settings.delivery.remove',
         // Backup, restore, importing, and everything-exports.
-        'backup.index', 'backup.download', 'backup.restore', 'backup.restore.confirm', 'backup.file',
+        'backup.index', 'backup.download', 'backup.warning', 'backup.restore', 'backup.restore.confirm', 'backup.file',
         'import.upload', 'import.map', 'import_app.upload', 'import_app.map',
         // Jobs and the update check.
         'settings.jobs', 'settings.jobs.triggers', 'settings.jobs.url_token', 'settings.jobs.backup',

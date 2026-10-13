@@ -20,6 +20,60 @@
             <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'backup.unavailable'|trans }}</span></div>
         {% endif %}
 
+        {# How old is the last backup? (spec.md §7.13, Phase 47). #}
+        <section class="card" aria-labelledby="status-heading" id="backup-status">
+            <h2 id="status-heading" class="card__title">{{ 'backup.status.heading'|trans }}</h2>
+            {% set line %}
+                {%- if backup.last -%}
+                    {{ 'backup.status.last'|trans({
+                        days: backup.ageDays,
+                        date: backup.last.at|instant_date,
+                        kind: ('backup.status.kind.' ~ backup.last.kind.value)|trans,
+                        size: backup.last.size|file_size,
+                    }) }}
+                {%- else -%}
+                    {{ 'backup.status.none'|trans }}
+                {%- endif -%}
+            {% endset %}
+            {% if backup.warning %}
+                <div class="alert alert--warning" role="status" data-backup-status>{{ ui.icon('warning') }}<span>{{ line }}</span></div>
+            {% else %}
+                <p data-backup-status>{{ line }}</p>
+            {% endif %}
+            {% if backup.elsewhere %}
+                <p>{{ 'backup.status.elsewhere'|trans({admin: elsewhere_by ?? '—', date: backup.elsewhere.at|instant_date}) }}</p>
+            {% endif %}
+            <p>
+                {{ 'backup.status.schedule'|trans({schedule: schedule, keep: keep}) }}
+                {% if can_instance('run_jobs') %}<a href="{{ url_for('settings.jobs') }}#job-backup">{{ 'backup.status.schedule_link'|trans }}</a>{% endif %}
+            </p>
+            <p class="field__hint">{{ 'backup.status.where'|trans({path: backup_path}) }}</p>
+
+            <form class="form" method="post" action="{{ url_for('backup.warning') }}">
+                {{ ui.csrf(csrf) }}
+                <fieldset class="fieldset">
+                    <legend class="fieldset__legend">{{ 'backup.warning.legend'|trans }}</legend>
+                    {% set warning_errors = warning_error ? {days: warning_error} : {} %}
+                    {% set options = [] %}
+                    {% for days in warn_choices %}
+                        {% set options = options|merge([{value: days, label: 'backup.warning.days'|trans({days: days})}]) %}
+                    {% endfor %}
+                    {% set options = options|merge([{value: 'never', label: 'backup.warning.never'|trans}]) %}
+                    {{ ui.select('days', 'backup.warning.after'|trans, {days: backup.warnAfterDays ?? 'never'}, warning_errors, options, {hint: 'backup.warning.after_hint'|trans}) }}
+                    <label class="toggle">
+                        <input type="checkbox" name="elsewhere" value="1"{% if backup.elsewhere %} checked{% endif %} aria-describedby="f-elsewhere-hint">
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'backup.warning.elsewhere'|trans }}</span>
+                            <span class="toggle__hint" id="f-elsewhere-hint">{{ 'backup.warning.elsewhere_hint'|trans }}</span>
+                        </span>
+                    </label>
+                    <div class="btn-row">
+                        <button type="submit" class="btn">{{ ui.icon('save') }}{{ 'backup.warning.save'|trans }}</button>
+                    </div>
+                </fieldset>
+            </form>
+        </section>
+
         <section class="card" aria-labelledby="download-heading">
             <h2 id="download-heading" class="card__title">{{ 'backup.download_heading'|trans }}</h2>
             <p>{{ 'backup.download_intro'|trans }}</p>

@@ -21,6 +21,8 @@ namespace Logbook\Service\Notification;
  *    "issues": [{"vehicle_id", "vehicle", "open"}],
  *    "insights": [{"kind", "source", "vehicle_ids", "title", "body"}]
  *    (the digest's briefing, Phase 43; else empty),
+ *    "backup": {"last_at", "days", "display"}|null (an admin's digest
+ *    while the last backup is too old, Phase 47),
  *    "user": {"id", "username", "display_name"}}
  */
 final class WebhookPayload
@@ -42,6 +44,7 @@ final class WebhookPayload
             'fleet' => $notification->fleet,
             'issues' => $notification->issues,
             'insights' => $notification->insights,
+            'backup' => $notification->backup,
             'user' => ['id' => $recipient->userId, 'username' => $recipient->username, 'display_name' => $recipient->name],
         ];
     }

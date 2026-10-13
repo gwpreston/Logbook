@@ -1321,7 +1321,12 @@ In backups (the password is not).
   `mot_history` (`{"provider": "uk_dvsa" | null}`) and
   `mot_history.status` (the last call's time, status and redacted error,
   and the last successful call's time for the keep-alive) hold the MOT
-  history provider's (§7.38). Like every setting they travel in a
+  history provider's (§7.38). From Phase 47 the global `backup.last`
+  (`{"at": UTC, "kind": "download" | "scheduled" | "cli", "size":
+  bytes}`, or `{"at": null}` for "no backup") and `backup.warning`
+  (`{"days": 7 | 14 | 30 | 90 | null, "elsewhere": {"by": user id,
+  "at": UTC} | null}`; absent means 30 days) hold the newest backup and
+  its warning (§7.13). Like every setting they travel in a
   backup; the URL token, like API keys, works only where
   `SESSION_SECRET` is the same.
 
@@ -2466,6 +2471,9 @@ toggles.
   of per-fill economy), *compliance status* (current documents that are
   expired or expiring, else "all in order", per active vehicle), *mileage*
   and *recent activity* (below). Archived vehicles never appear.
+- **Admin notices** above the widgets (§7.30), in this order: the update
+  banner (§7.31), from Phase 47 the backup banner (§7.13), then the demo,
+  scheduler and job warnings.
 - **Your vehicles layout** (Phase 33.3, #177): the tiles are laid out
   three to a row from the sidebar breakpoint (≥ 960 px), two on tablets and
   one on phones, as the prototype's garage; the tile is the prototype's
@@ -3395,6 +3403,16 @@ Extensible channel interface so more can be added.
     `digest_include`). With none ticked, the
     digest is the one from before Phase 43 without its *Needs attention*
     section.
+  - **The backup line** (Phase 47, #398): in the digest of a user with
+    `Backup` (an admin), right after *Due this month*, while §7.13's
+    banner would show for them (a dashboard *Dismiss* doesn't hide it):
+    "Your last backup was 43 days ago." or "Logbook has never been
+    backed up.", the age in their time zone. It is not a box under
+    *Include*. It counts as content, so a month with only that line still
+    sends. The webhook JSON gains `backup`, `{"last_at": UTC | null,
+    "days": int | null, "display"}` on that admin's digest, else null;
+    `WEBHOOK_URL`'s copy carries it too (an admin's endpoint, and the
+    line has no amounts).
   - **Kept AI insights and cost access** (#373): when a share's cost
     access is turned off, the member's kept AI insight set is forgotten
     (it may quote that vehicle's costs); the next one is made without
@@ -4168,6 +4186,56 @@ vehicles; a disabled module cannot be imported).
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
   pre-restore backup); suitable for cron.
+- **How old is the last backup?** (Phase 47, decided 2026-10-13,
+  #396–#402.)
+  - **Recorded:** `backup.last` (§6) holds the time (UTC), the kind
+    (`download`, `scheduled`, `cli`) and the size of the newest
+    completed backup. It is written once the archive is complete: for a
+    download, once the ZIP is built (before it is sent); for the `backup`
+    job, when the run succeeds; for `bin/backup.php create`, when the
+    file is written. A failed backup writes nothing. A **pre-restore**
+    backup never counts (a safety copy of data about to be replaced),
+    nor does downloading an existing scheduled file (#402): it was
+    recorded when the job wrote it. `bin/export-user.php` isn't a
+    backup of the install and doesn't count either.
+  - **A restore** brings the archive's settings, `backup.last`
+    included; the record from before the restore is kept whenever it is
+    newer than the restored one (#400).
+  - **Seeding** (no migration, #401): the first time the record is read
+    and none is stored, the newest `logbook-scheduled-YYYYMMDD-HHMMSS.zip`
+    (kind `scheduled`) or `logbook-backup-YYYY-MM-DD-HHMMSS.zip` (kind
+    `cli`) in `BACKUP_PATH` seeds it, its time read from the UTC
+    timestamp in the name and its size from the file. `pre-restore-*`
+    files never count. With none, "no backup" (`{"at": null}`) is
+    stored, so the folder is read once.
+  - **The age** is the number of calendar days between the backup's date
+    and today, both in the viewer's time zone: "today", "yesterday",
+    "43 days ago". With no backup, the warning counts from the first
+    account's creation instead.
+  - **Settings → Backup** leads with the status: "Last backup 43 days
+    ago, 14 Sep 2026 (downloaded, 182 MB)" (*downloaded*, *scheduled*,
+    *command line*), or "No backup yet". Next the schedule ("Scheduled
+    backups: weekly, keeping 7" or "off") with a link to Settings → Jobs,
+    then the note "Scheduled backups are written to {BACKUP_PATH} on
+    this server. Copy them somewhere else too." Then the **warning**
+    form (POST `/settings/backup/warning`, `Backup`, CSRF): *Warn me
+    after* (*7*, *14*, *30* (default, #396) or *90 days*, or *Never*)
+    and *I back up another way* (a tick). With the tick, the status
+    adds "Backups are handled outside Logbook (set by {admin}, {date})";
+    unticking clears who and when. Both are stored in `backup.warning`
+    (§6).
+  - **The banner** (§7.30's admin notice area, admins only, below the
+    update banner): "Your last backup was 43 days ago." or "Logbook has
+    never been backed up.", with *Back up now* (the download link) and,
+    while scheduled backups are off, *Turn on scheduled backups*
+    (Settings → Jobs). It shows when the age is **more than** the
+    threshold (31 days with 30), and never in demo mode (§7.36), with
+    *Never*, or with *I back up another way*. *Dismiss* hides it for **7
+    days** for that admin (`notices.dismissed`, key `backup_age`; the
+    other notices keep 24 hours). The next backup ends it.
+  - **The digest** (#398): §7.11.
+  - **The API** (#399): §7.20 `GET /instance/backup`. Not on `/health`,
+    which is public.
 
 **Importing from another app** (Phase 31; Fuelio is the first reader, and
 the mapping, preview and import steps are shared so later readers add only
@@ -5121,6 +5189,7 @@ parameter answers 400 (`invalid_parameter`).
 | `GET /upcoming` | *Coming up* items (§7.18), `?vehicle=` optional |
 | `GET /reminders` | open reminders, `?vehicle=`, `?status=due\|overdue\|upcoming` |
 | `GET /me` | the key's user (display name, units, locale, time zone), the key's name and scope, and which modules are on (not the AI modules, which have no API yet; Phase 26.1) |
+| `GET /instance/backup` | Phase 47 (§7.13, #399): for a key whose user has `Backup` (an admin), else 403 `forbidden`: `last` (`at`, UTC; `kind`; `size` in bytes) or null, `age_days` (in the key's user's time zone) or null, `warn_after_days` (null for *Never*), `handled_elsewhere` and `warning` (whether the banner's condition holds, ignoring *Dismiss*; false in demo mode) |
 | `GET /openapi.json` | the OpenAPI description, its `servers` set to this install (no key needed) |
 
 **Write endpoints** (scope `read_write`, ability `Log`).
@@ -7411,7 +7480,8 @@ able to run without cron.
   below (Phase 28.2 adds the update banner). Each has a link to its
   page and *Dismiss* (POST, CSRF), which hides that notice for 24 hours
   for that admin (`notices.dismissed`). A notice comes back after that
-  while its problem lasts.
+  while its problem lasts. Phase 47's backup notice (§7.13) is held for
+  7 days instead.
 - **Failure alerts** (decided 2026-10-02, #107): when a job's last two
   finished runs (leaving out `skipped_locked`) are both `failed`, admins
   see "The {job} job failed twice in a row" as an admin notice, linking
@@ -7450,7 +7520,10 @@ able to run without cron.
     the session and CSRF groups. The page suggests services that call a
     URL on a schedule (cron-job.org, Uptime Kuma, a router's scheduler).
 - **Scheduled backups** (on the `backup` job's row): *Off* (default),
-  *Daily* or *Weekly*, and *Keep the last N* (default 7, 1–60). Files
+  *Daily* or *Weekly*, and *Keep the last N* (default 7, 1–60). From
+  Phase 47 (#397), first-run setup stores *Weekly*, keep 7, for a new
+  install; an install without the setting (every one set up earlier)
+  stays *Off*, so nobody's disk fills without their say. Files
   are written to `BACKUP_PATH` as `logbook-scheduled-YYYYMMDD-HHMMSS.zip`
   (UTC). Retention deletes only files with that prefix, oldest first,
   never the owner's own or pre-restore backups. *Run now* works whatever
@@ -10182,6 +10255,16 @@ task breakdowns live in the per-phase files; this is the map.
   admin* asks first (§7.9, §7.21; #392–#395). Shares on the invitation
   parked (§12). No migration. Release v3.11.0 (with Phase 45's notes).
   See [`phase-46.md`](docs/phases/phase-46.md).
+- **Phase 47 — How old is the last backup?** Every completed backup
+  recorded in `backup.last` (downloaded, scheduled, command line; never
+  pre-restore), kept across a restore when newer, seeded once from
+  `BACKUP_PATH`. Settings → Backup leads with its age, the schedule and
+  where the files go, and sets *Warn me after* (30 days by default) and
+  *I back up another way*. Admins get a dashboard banner and a digest
+  line once it is too old, and `GET /api/v1/instance/backup`. New
+  installs start with weekly scheduled backups (§7.11, §7.13, §7.20,
+  §7.30; #396–#402). No migration. Release.
+  See [`phase-47.md`](docs/phases/phase-47.md).
 
 ---
 

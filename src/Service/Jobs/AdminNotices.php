@@ -11,8 +11,9 @@ use Logbook\Domain\Setting\SettingScope;
 use Logbook\Domain\User\User;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Repository\SettingRepository;
-use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Access\InstanceAccess;
+use Logbook\Service\Backup\BackupBanner;
+use Logbook\Service\Demo\DemoMode;
 use Logbook\Service\Updates\UpdateBanner;
 use Logbook\Service\Updates\UpdateSettings;
 use Logbook\Support\Version\SemVer;
@@ -20,10 +21,11 @@ use Psr\Clock\ClockInterface;
 
 /**
  * The dashboard's admin notice area (spec.md §7.30 *Admin notices*): the
- * update banner (§7.31), the scheduler warning and job failure streaks,
- * for admins only. *Dismiss* hides a notice for 24 hours for that admin;
- * it comes back after that while its problem lasts. The update banner's
- * *Dismiss* is for good, for that version.
+ * update banner (§7.31), the backup banner (§7.13), the scheduler warning
+ * and job failure streaks, for admins only. *Dismiss* hides a notice for
+ * 24 hours for that admin (the backup banner 7 days); it comes back after
+ * that while its problem lasts. The update banner's *Dismiss* is for good,
+ * for that version.
  */
 final readonly class AdminNotices
 {
@@ -41,6 +43,7 @@ final readonly class AdminNotices
         private ClockInterface $clock,
         private UpdateBanner $update,
         private UpdateSettings $updates,
+        private BackupBanner $backup,
         private ?DemoMode $demo = null,
     ) {
     }
@@ -58,6 +61,10 @@ final readonly class AdminNotices
         $update = $this->update->for($user);
         if ($update !== null) {
             $notices[] = $update;
+        }
+        $backup = $this->backup->for($user);
+        if ($backup !== null) {
+            $notices[] = $backup;
         }
         // DEMO_MODE set on a database that is not a demo (spec.md §7.36): nothing was changed.
         $refusal = $this->demo?->status()->refusal;
@@ -104,13 +111,22 @@ final readonly class AdminNotices
         return array_values(array_filter(
             $notices,
             static fn (AdminNotice $n): bool => !isset($dismissed[$n->key])
-                || $now - $dismissed[$n->key] >= self::DISMISS_SECONDS,
+                || $now - $dismissed[$n->key] >= self::holdFor($n->key),
         ));
     }
 
     /**
-     * Hide the notice for 24 hours for this admin, or the update banner
-     * for that version for good. Unknown keys are ignored.
+     * How long *Dismiss* hides a notice: 24 hours, the backup banner 7 days.
+     */
+    private static function holdFor(string $key): int
+    {
+        return $key === BackupBanner::KEY ? BackupBanner::DISMISS_SECONDS : self::DISMISS_SECONDS;
+    }
+
+    /**
+     * Hide the notice for 24 hours (the backup banner 7 days) for this
+     * admin, or the update banner for that version for good. Unknown keys
+     * are ignored.
      */
     public function dismiss(User $user, string $key): void
     {
@@ -122,14 +138,14 @@ final readonly class AdminNotices
 
             return;
         }
-        if (preg_match('/^(scheduler|demo_refused|job_failed\.[a-z_]+)$/D', $key) !== 1) {
+        if (preg_match('/^(scheduler|demo_refused|backup_age|job_failed\.[a-z_]+)$/D', $key) !== 1) {
             return;
         }
         $stored = [];
         $now = $this->clock->now();
         foreach ($this->dismissed($user) as $name => $at) {
             // Expired entries are dropped as the list is rewritten.
-            if ($now->getTimestamp() - $at < self::DISMISS_SECONDS) {
+            if ($now->getTimestamp() - $at < self::holdFor($name)) {
                 $stored[$name] = (new DateTimeImmutable('@' . $at))->format(DATE_ATOM);
             }
         }

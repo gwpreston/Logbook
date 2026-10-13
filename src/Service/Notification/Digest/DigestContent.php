@@ -7,7 +7,8 @@ namespace Logbook\Service\Notification\Digest;
 /**
  * What Phase 43 adds to the monthly digest (spec.md §7.11 *The monthly
  * briefing*), for the sections the user includes: open issues, last month
- * and insights. Each is empty when not included.
+ * and insights. Each is empty when not included. Phase 47 adds an admin's
+ * backup line, which is not a choice.
  */
 final readonly class DigestContent
 {
@@ -19,6 +20,7 @@ final readonly class DigestContent
         public array $issues = [],
         public ?LastMonth $lastMonth = null,
         public array $insights = [],
+        public ?DigestBackup $backup = null,
     ) {
     }
 
@@ -30,15 +32,15 @@ final readonly class DigestContent
     /**
      * For the server's webhook (#366): an admin's endpoint the member never
      * chose gets no money and no insight text, only distances and open
-     * issues.
+     * issues (and the backup line, which has no amounts).
      */
     public function withoutAmounts(): self
     {
-        return new self($this->issues, $this->lastMonth?->withoutAmounts(), []);
+        return new self($this->issues, $this->lastMonth?->withoutAmounts(), [], $this->backup);
     }
 
     public function isEmpty(): bool
     {
-        return $this->issues === [] && $this->lastMonth === null && $this->insights === [];
+        return $this->issues === [] && $this->lastMonth === null && $this->insights === [] && $this->backup === null;
     }
 }

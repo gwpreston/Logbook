@@ -12,6 +12,7 @@ use Logbook\Domain\User\InvitationKind;
 use Logbook\Kernel;
 use Logbook\Repository\InvitationRepository;
 use Logbook\Repository\JobRunRepository;
+use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Jobs\AdminNotices;
 use Logbook\Service\Jobs\BackupJob;
@@ -61,6 +62,8 @@ final class JobRunnerTest extends ReminderTestCase
         $app = $this->createRecordingApp();
         $clock = $this->pinClock($app, self::NOW);
         $this->signedIn($app);
+        // Setup turns weekly backups on (Phase 47, #397); this pass is about the other jobs.
+        $this->service($app, JobSettings::class)->setBackup(BackupSchedule::Off, 7);
         $this->document($app, $this->vehicle($app), '2026-10-09');
 
         $summary = $this->service($app, ScheduledTasks::class)->run(JobTrigger::Cron);
@@ -211,6 +214,8 @@ final class JobRunnerTest extends ReminderTestCase
         $settings = $this->service($app, JobSettings::class);
         $tasks = $this->service($app, ScheduledTasks::class);
 
+        // An install set up before Phase 47 has no setting: off (#397).
+        $this->service($app, SettingRepository::class)->delete(JobSettings::BACKUP);
         $tasks->run(JobTrigger::Cron);
         self::assertSame([], $this->scheduledFiles($dir), 'off by default');
 
@@ -396,6 +401,7 @@ final class JobRunnerTest extends ReminderTestCase
     {
         $app = $this->createRecordingApp();
         $this->signedIn($app);
+        $this->service($app, JobSettings::class)->setBackup(BackupSchedule::Off, 7);
         $script = Kernel::rootDir() . '/bin/run-job.php';
 
         [$code, $output] = self::execute([PHP_BINARY, $script, '--list']);

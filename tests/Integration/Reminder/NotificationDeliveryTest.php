@@ -100,6 +100,8 @@ final class NotificationDeliveryTest extends ReminderTestCase
             'fleet' => null,
             'issues' => [],
             'insights' => [],
+            // Phase 47: an admin's backup line, on the digest only.
+            'backup' => null,
             'user' => ['id' => $this->owner($app)->id, 'username' => 'owner', 'display_name' => 'Pat Owner'],
         ], $hook[0]['json']);
 

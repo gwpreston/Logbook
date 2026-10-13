@@ -21,6 +21,8 @@ final readonly class Notification
      * @param list<array{vehicle_id: int, vehicle: string, open: int}> $issues open issues per vehicle (Phase 43)
      * @param list<array{kind: string, source: string, vehicle_ids: list<int>, title: string, body: string}> $insights
      *        the digest's insights (Phase 43)
+     * @param array{last_at: string|null, days: int|null, display: string}|null $backup an admin's
+     *        backup line (Phase 47)
      */
     public function __construct(
         public NotificationKind $kind,
@@ -40,6 +42,7 @@ final readonly class Notification
         public ?array $fleet = null,
         public array $issues = [],
         public array $insights = [],
+        public ?array $backup = null,
     ) {
     }
 

@@ -41,6 +41,8 @@ use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Api\ApiKeyService;
 use Logbook\Service\Attachment\PendingUpload;
 use Logbook\Service\Attachment\PendingUploads;
+use Logbook\Domain\Backup\BackupKind;
+use Logbook\Service\Backup\BackupRecorder;
 use Logbook\Service\Backup\BackupService;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseService;
@@ -248,6 +250,11 @@ final class BackupTest extends AppTestCase
         self::assertSame(303, $browser->get('/')->getStatusCode(), 'everyone is signed out');
 
         self::assertEquals($before, $this->snapshot($app), 'every row and file as it was');
+        self::assertSame(
+            BackupKind::Download,
+            $this->service($app, BackupRecorder::class)->last()?->kind,
+            'the download made before the restore is still the last backup (#400)',
+        );
         self::assertSame(
             200,
             (new ApiClient($app, $this->apiToken))->get('/me')->getStatusCode(),
@@ -556,6 +563,12 @@ final class BackupTest extends AppTestCase
         foreach (BackupRepository::TABLES as $table) {
             $tables[$table] = $repository->rows($table);
         }
+        // The last backup's record (Phase 47) outlives a restore when newer (#400), and the Backup
+        // page seeds it on first read: checked on its own, not as part of the data.
+        $tables['settings'] = array_values(array_filter(
+            $tables['settings'] ?? [],
+            static fn (array $row): bool => ($row['name'] ?? null) !== BackupRecorder::SETTING,
+        ));
         $storage = $this->service($app, FileStorage::class);
         $files = [];
         foreach ($storage->all() as $relative) {

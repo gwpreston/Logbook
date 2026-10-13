@@ -94,6 +94,7 @@ use Logbook\Action\Api\LogReadingAction as ApiLogReadingAction;
 use Logbook\Action\Api\LogReminderAction as ApiLogReminderAction;
 use Logbook\Action\Api\LogTreadCheckAction as ApiLogTreadCheckAction;
 use Logbook\Action\Api\LogTripAction as ApiLogTripAction;
+use Logbook\Action\Api\InstanceBackupAction as ApiInstanceBackupAction;
 use Logbook\Action\Api\MeAction as ApiMeAction;
 use Logbook\Action\Api\AttachmentAction as ApiAttachmentAction;
 use Logbook\Action\Api\EntryAttachmentsAction as ApiEntryAttachmentsAction;
@@ -121,6 +122,7 @@ use Logbook\Action\Auth\WelcomeAction;
 use Logbook\Action\Backup\BackupPageAction;
 use Logbook\Action\Backup\ConfirmRestoreAction;
 use Logbook\Action\Backup\DownloadBackupAction;
+use Logbook\Action\Backup\SaveBackupWarningAction;
 use Logbook\Action\Backup\UploadRestoreAction;
 use Logbook\Action\Compliance\ComplianceListAction;
 use Logbook\Action\Compliance\CreateComplianceDocumentAction;
@@ -431,6 +433,10 @@ return static function (App $app): void {
                     ->setArgument($ability, VehicleAbility::Manage->value);
 
                 $keyed->get('/me', ApiMeAction::class)->setName('api.me');
+                // Phase 47 (spec.md §7.20, #399): admins only (`Backup`), else 403 `forbidden`.
+                $keyed->get('/instance/backup', ApiInstanceBackupAction::class)->setName('api.instance.backup')
+                    ->setArgument(InstanceAccessMiddleware::ABILITY, InstanceAbility::Backup->value)
+                    ->add(InstanceAccessMiddleware::class);
                 $keyed->get('/vehicles', ApiVehiclesAction::class)->setName('api.vehicles');
                 // Phase 39.2 (#284): the key's user becomes the owner; no vehicle to check yet.
                 $keyed->post('/vehicles', ApiVehicleWriteAction::class)->setName('api.vehicles.create')
@@ -1219,6 +1225,9 @@ return static function (App $app): void {
         $group->get('/settings/backup', BackupPageAction::class)->setName('backup.index')
             ->setArgument($instance, InstanceAbility::Backup->value);
         $group->get('/settings/backup/download', DownloadBackupAction::class)->setName('backup.download')
+            ->setArgument($instance, InstanceAbility::Backup->value);
+        // *Warn me after* and *I back up another way* (Phase 47, spec.md §7.13).
+        $group->post('/settings/backup/warning', SaveBackupWarningAction::class)->setName('backup.warning')
             ->setArgument($instance, InstanceAbility::Backup->value);
         $group->post('/settings/backup/restore', UploadRestoreAction::class)->setName('backup.restore')
             ->setArgument($instance, InstanceAbility::Restore->value);

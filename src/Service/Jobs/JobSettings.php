@@ -102,6 +102,18 @@ final readonly class JobSettings
     }
 
     /**
+     * First-run setup: weekly scheduled backups, keeping 7, unless the
+     * setting is already there (spec.md §7.30, #397). An install set up
+     * before has no setting and stays off.
+     */
+    public function startNewInstall(): void
+    {
+        if ($this->settings->find(self::BACKUP) === null) {
+            $this->setBackup(BackupSchedule::Weekly, BackupSchedule::KEEP_DEFAULT);
+        }
+    }
+
+    /**
      * @return array{page_visit: bool, url: bool}
      */
     private function triggers(): array
