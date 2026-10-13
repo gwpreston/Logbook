@@ -3,7 +3,7 @@
 *What the owner decided on 2026-10-10 about the questions Phase 41's
 merge review and Phase 38's performance review left open.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.12.1** · file lives in `docs/phases/`
 
 Its questions came from Phases 38 and 41; it was renumbered from 41.8 to
 47.1 on 2026-10-13 to match build order. It ships after Phase 47's
@@ -112,8 +112,8 @@ and 43 are already out: the digest takes its distances from the same
       link; escapes counted against the 2000 limit.
 
 ### 47.1.5 Release
-- [ ] `VERSION` → 3.12.1; `CHANGELOG.md`; `ROADMAP.md` row ✅. Tag
-      once merged.
+- [x] `VERSION` → 3.12.1; `CHANGELOG.md`; `ROADMAP.md` row ✅; README status.
+- [ ] Tag `v3.12.1` once merged.
 
 ---
 

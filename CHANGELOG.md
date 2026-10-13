@@ -6,6 +6,11 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.12.1] — 2026-10-13
+
+Phase 47.1: **a patch release** that builds the decisions the owner made on
+2026-10-10 about questions left open from Phases 38 and 41.
+
 ### Changed
 - **Distances start at the purchase date.** Readings dated before a vehicle's
   purchase date (an earlier owner's MOT mileages, for example) no longer count
@@ -22,6 +27,13 @@ is called out explicitly.
 - **Insights shows the latest 5 MCP drafts.** The rest are under *Show all (N)*,
   a disclosure that works without JavaScript, as *Your questions*. The
   dashboard's list is unchanged.
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change. Distances in
+  reports are now measured from each vehicle's purchase date, so a vehicle
+  bought within a report's period shows only what you drove since you bought
+  it. Per-km cost of ownership and depreciation need a reading on the purchase
+  day (the purchase mileage you enter when adding the vehicle is one).
 
 ## [3.12.0] — 2026-10-13
 
@@ -3041,7 +3053,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.12.1...HEAD
+[3.12.1]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...v3.12.1
 [3.12.0]: https://github.com/gwpreston16/Logbook/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/gwpreston16/Logbook/compare/v3.10.0...v3.11.0
 [3.10.0]: https://github.com/gwpreston16/Logbook/compare/v3.9.0...v3.10.0
