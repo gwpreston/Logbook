@@ -2249,7 +2249,8 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   vehicle's readings dated before its purchase date (the owner's calendar
   day) are left out, wherever a distance is measured this way: MOT history
   brings in an earlier owner's mileages, and they are not this owner's
-  driving. They stay in History and on the odometer list. Only vehicles with costs in the period count
+  driving. They stay in History and on the odometer list. The averages (per month, per year, per day)
+  stay the Mileage tab's figures, from every reading (§7.2, §7.8). Only vehicles with costs in the period count
   towards the fleet's distance (miles from a vehicle whose costs were never
   logged would make the fleet look cheaper to run than any of its vehicles).
   Cost per distance = spend ÷ distance, shown only when some distance was

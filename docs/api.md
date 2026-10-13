@@ -228,6 +228,13 @@ Vehicles whose costs you may not see are not counted; their ids are in
 `excluded`. A value that can't be read answers `400`, where the page's
 form would fall back to the default.
 
+Distances (`distance_km`, and the cost per distance built on it) are
+measured from each vehicle's purchase date from 3.12.1: readings dated before it,
+such as an earlier owner's MOT mileages, are left out, and a reading on the
+purchase day counts. The averages in `/reports/mileage` still come from every
+reading, as the vehicle's Mileage tab does. See
+[Distance starts at the purchase date](reports.md#distance-starts-at-the-purchase-date).
+
 ```sh
 # This year's spend, month by month.
 curl -s -H "Authorization: Bearer $LOGBOOK_KEY" \

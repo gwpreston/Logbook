@@ -38,7 +38,8 @@ the vehicle's **purchase date**. Readings dated before it, such as the
 mileages MOT history brings in from an earlier owner, stay in History and
 on the odometer list, but they are not your driving, so they are left out
 of every distance. A reading on the purchase day counts. A vehicle with no
-purchase date uses all its readings.
+purchase date uses all its readings. The averages (per month and per year)
+are a different figure, the Mileage tab's, and still use every reading.
 
 ## The periods
 

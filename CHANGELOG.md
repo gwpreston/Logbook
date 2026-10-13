@@ -27,6 +27,8 @@ Phase 47.1: **a patch release** that builds the decisions the owner made on
 - **Insights shows the latest 5 MCP drafts.** The rest are under *Show all (N)*,
   a disclosure that works without JavaScript, as *Your questions*. The
   dashboard's list is unchanged.
+- **Discord messages escape Markdown** (#378): already in 3.9.0's notes; this
+  release records the decision as built and logged here.
 
 ### Upgrade notes
 - Pull and restart: no migration and no configuration change. Distances in
@@ -34,6 +36,10 @@ Phase 47.1: **a patch release** that builds the decisions the owner made on
   bought within a report's period shows only what you drove since you bought
   it. Per-km cost of ownership and depreciation need a reading on the purchase
   day (the purchase mileage you enter when adding the vehicle is one).
+  A period with no reading after the purchase on or before its start also shows
+  no per-km figures now (True cost by year as well as Ownership); the old figure
+  was measured from a reading taken before you bought the vehicle. The averages
+  per month and per year are unchanged.
 
 ## [3.12.0] — 2026-10-13
 

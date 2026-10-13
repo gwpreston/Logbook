@@ -286,16 +286,10 @@ final readonly class DashboardService
         $zone = $user->preferences->timeZone();
 
         return MileageSummary::of(
-            array_map(
-                fn (Vehicle $v): array => PeriodDistance::owned(
-                    $this->readings->listForVehicle($v->id),
-                    $v->data->purchaseDate,
-                    $zone,
-                ),
-                $vehicles,
-            ),
+            array_map(fn (Vehicle $v): array => $this->readings->listForVehicle($v->id), $vehicles),
             $today,
             $zone,
+            array_map(static fn (Vehicle $v): ?DateTimeImmutable => $v->data->purchaseDate, $vehicles),
         );
     }
 

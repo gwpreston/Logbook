@@ -30,13 +30,13 @@ final class MileageSummaryTest extends TestCase
             self::reading('2400', '2026-09-20T12:00:00Z'),
         ];
 
-        $summary = MileageSummary::of([$readings], self::day('2026-09-27'), $london);
+        $summary = MileageSummary::of([$readings], self::day('2026-09-27'), $london, [null]);
 
         // The last reading before September is the January one: 2,400 − 1,000.
         self::assertSame('1400', $summary->thisMonthKm);
         self::assertSame('1400', $summary->thisYearKm);
 
-        $utc = MileageSummary::of([$readings], self::day('2026-09-27'), new DateTimeZone('UTC'));
+        $utc = MileageSummary::of([$readings], self::day('2026-09-27'), new DateTimeZone('UTC'), [null]);
         self::assertSame('400', $utc->thisMonthKm, 'in UTC the 2,000 reading is August\'s');
     }
 
@@ -50,7 +50,7 @@ final class MileageSummaryTest extends TestCase
             self::reading('900', '2026-11-02T12:00:00Z'),
         ];
 
-        $summary = MileageSummary::of([$readings], self::day('2026-11-05'), $london);
+        $summary = MileageSummary::of([$readings], self::day('2026-11-05'), $london, [null]);
 
         self::assertSame('100', $summary->thisMonthKm);
         $october = $summary->months[10];
@@ -64,7 +64,7 @@ final class MileageSummaryTest extends TestCase
         $car = [self::reading('10000', '2026-08-31T12:00:00Z'), self::reading('10500', '2026-09-15T12:00:00Z')];
         $bike = [self::reading('20000', '2026-08-31T12:00:00Z'), self::reading('20100', '2026-09-15T12:00:00Z')];
 
-        $summary = MileageSummary::of([$car, $bike], self::day('2026-09-27'), $utc);
+        $summary = MileageSummary::of([$car, $bike], self::day('2026-09-27'), $utc, [null, null]);
 
         self::assertSame('600', $summary->thisMonthKm, 'never 20,100 − 10,000');
         self::assertNotNull($summary->monthlyAverageKm);
@@ -73,9 +73,33 @@ final class MileageSummaryTest extends TestCase
         self::assertSame('600', $summary->months[11]->km);
     }
 
+    public function testDistancesStartAtThePurchaseButTheAverageIsTheMileageTabs(): void
+    {
+        $utc = new DateTimeZone('UTC');
+        $readings = [
+            self::reading('10000', '2020-01-10T12:00:00Z'), // an earlier owner's MOT
+            self::reading('60000', '2024-01-10T12:00:00Z'), // bought this day
+            self::reading('60500', '2026-09-05T12:00:00Z'),
+            self::reading('61000', '2026-09-20T12:00:00Z'),
+        ];
+        $bought = self::day('2024-01-10');
+
+        $all = MileageSummary::of([$readings], self::day('2026-09-27'), $utc, [null]);
+        $owned = MileageSummary::of([$readings], self::day('2026-09-27'), $utc, [$bought]);
+
+        self::assertSame('1000', $owned->thisMonthKm, '60,000 on the purchase day, not the earlier owner');
+        self::assertSame($all->thisMonthKm, $owned->thisMonthKm, 'nothing before the purchase is in this month');
+        self::assertSame($all->monthlyAverageKm, $owned->monthlyAverageKm, 'the Mileage tab figure, all readings (§7.8)');
+        self::assertNotNull($owned->monthlyAverageKm);
+
+        // Bought after the last reading: no history of this owner's yet, so "—", not 0.
+        $later = MileageSummary::of([$readings], self::day('2026-09-27'), $utc, [self::day('2026-09-25')]);
+        self::assertNull($later->thisMonthKm);
+    }
+
     public function testNoHistoryIsNotZero(): void
     {
-        $summary = MileageSummary::of([[]], self::day('2026-09-27'), new DateTimeZone('UTC'));
+        $summary = MileageSummary::of([[]], self::day('2026-09-27'), new DateTimeZone('UTC'), [null]);
 
         self::assertNull($summary->thisMonthKm);
         self::assertNull($summary->thisYearKm);
@@ -84,7 +108,8 @@ final class MileageSummaryTest extends TestCase
 
         // History, but nothing driven this month: 0, not "—".
         $still = [self::reading('100', '2026-08-01T12:00:00Z')];
-        self::assertSame('0', MileageSummary::of([$still], self::day('2026-09-27'), new DateTimeZone('UTC'))->thisMonthKm);
+        $quiet = MileageSummary::of([$still], self::day('2026-09-27'), new DateTimeZone('UTC'), [null]);
+        self::assertSame('0', $quiet->thisMonthKm);
     }
 
     private static function reading(string $km, string $utc): OdometerReading
