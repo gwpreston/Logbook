@@ -2245,6 +2245,59 @@ a.segmented__option {
     gap: var(--space-2);
 }
 
+/* What a share allows (spec.md §7.21, Phase 46): Can and Can't lines, each
+   list headed in words; the icons only repeat the heading. */
+.share-summary {
+    padding: var(--space-3) 0.875rem;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    font-size: var(--fs-sm);
+}
+
+.share-summary__heading {
+    margin: 0 0 var(--space-1);
+    font-weight: 600;
+}
+
+.share-summary__list {
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    list-style: none;
+}
+
+.share-summary__list:last-child {
+    margin-bottom: 0;
+}
+
+.share-summary__list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: 2px 0;
+}
+
+.share-summary__list .icon {
+    flex: none;
+    margin-top: 1px;
+}
+
+.share-summary__list--can .icon {
+    color: var(--green);
+}
+
+.share-summary__list--cannot .icon {
+    color: var(--muted);
+}
+
+.share-levels > summary {
+    cursor: pointer;
+}
+
+.share-levels__level {
+    margin: var(--space-3) 0 var(--space-2);
+    font-size: var(--fs-base);
+}
+
 .added-by {
     display: inline-flex;
     align-items: center;

@@ -13,12 +13,12 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * POST /settings/users/{member}/{action:admin|member|enable|reset} — one
+ * POST /settings/users/{member}/{action:member|enable|reset} — one
  * change to a user (spec.md §7.9; admins only). *Reset* emails the new
  * one-time link to their address when it can (*Send reset email*, Phase
  * 33.1), and otherwise answers with it, shown once: never both. Refusals
- * (the last admin, oneself) come back as a message. *Revoke access* and
- * *Sign out everywhere* ask first (ConfirmUserAction).
+ * (the last admin, oneself) come back as a message. *Make admin*, *Revoke
+ * access* and *Sign out everywhere* ask first (ConfirmUserAction).
  */
 final readonly class UserAction
 {
@@ -57,11 +57,7 @@ final readonly class UserAction
             return $this->page->render($request, $response, $link);
         }
 
-        $refusal = match ($action) {
-            'admin' => $this->admin->setAdmin($user, true),
-            'member' => $this->admin->setAdmin($user, false),
-            default => null,
-        };
+        $refusal = $action === 'member' ? $this->admin->setAdmin($user, false) : null;
         if ($action === 'enable') {
             $this->admin->enable($user);
         }

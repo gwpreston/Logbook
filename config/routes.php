@@ -1266,11 +1266,12 @@ return static function (App $app): void {
         // Users and their one-time links (spec.md §7.9): admins only.
         $group->map(['GET', 'POST'], '/settings/users', UsersAction::class)->setName('settings.users')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
-        $group->post('/settings/users/{member:[0-9]+}/{action:admin|member|enable|reset}', UserAction::class)
+        $group->post('/settings/users/{member:[0-9]+}/{action:member|enable|reset}', UserAction::class)
             ->setName('settings.users.change')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
-        // *Revoke access* (the old *Disable*) and *Sign out everywhere* ask first (Phase 33.1).
-        $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/{action:disable|sign-out}', ConfirmUserAction::class)
+        // *Revoke access* (the old *Disable*) and *Sign out everywhere* ask first (Phase 33.1), as
+        // *Make admin* does from Phase 46 (spec.md §7.9).
+        $group->map(['GET', 'POST'], '/settings/users/{member:[0-9]+}/{action:disable|sign-out|admin}', ConfirmUserAction::class)
             ->setName('settings.users.confirm')
             ->setArgument($instance, InstanceAbility::ManageUsers->value);
         // *Add user* (Phase 33.1): the account at once, with a set-password link by email.

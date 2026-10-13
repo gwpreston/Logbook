@@ -2779,7 +2779,12 @@ First-run setup creates the initial account. CSRF on all forms.
     configured it can also be sent to an address typed on that form, in
     the admin's language; the address is not stored.
   - *Make admin* / *Remove admin*, and *Disable*: never on the last active
-    admin (refused with a message). *Disable* sets disabled_at, deletes
+    admin (refused with a message). From Phase 46 *Make admin* asks first,
+    on a confirmation page (`GET|POST /settings/users/{member}/admin`)
+    that says what an admin can do (#395). The *Admin* tick on *Invite*
+    and *Add user* says it too: "Admins can manage users and modules,
+    change server settings, and download or restore backups containing
+    every vehicle." *Disable* sets disabled_at, deletes
     their sessions and blocks sign-in; their API keys stop working at once
     (verification checks the user). *Enable* clears it. An admin cannot
     disable or delete themselves. From Phase 33.1 they are labelled
@@ -5663,6 +5668,54 @@ part of View.
   they can switch it on the vehicle's *Sharing* page too (`POST
   …/sharing/me/notify`; *Leave* and *Send me its reminders* are the only
   things there for a non-owner).
+- **What a share allows** (Phase 46, decided 2026-10-13, #392–#395).
+  `Service\Access\ShareSummary` turns a level and its two ticks into two
+  lists, *Can* and *Can't*, built from the abilities the share grants
+  (`VehicleShare::abilities()`, §5) and the modules switched on (§7.10).
+  Lines, in this order, each with the ability it describes:
+
+  | Line | Ability | Shown |
+  |---|---|---|
+  | see the vehicle, its history, mileage and reminders | `View` | always (no "and reminders" while `reminders` is off) |
+  | see its documents, including policy numbers and the registration | `View` | `compliance` on |
+  | add fill-ups, service records and other entries | `Log` | always (fill-ups and service records named only while `fuel` and `maintenance` are on) |
+  | edit or delete the entries they added | `Log`, own entries | Log only, as a *Can* |
+  | edit the vehicle, and edit or delete any entry | `Manage` | always |
+  | see costs, valuations and reports | `ViewCosts` | always (no "reports" while `reports` is off) |
+  | see the amounts they type themselves, but no totals or reports | `View`, own entries | Log without costs, as a *Can* |
+  | export, import and prepare the sale pack | `Manage` | always |
+  | see other drivers' trips and destinations | `ViewOthersTrips` | `trips` on |
+  | see an incident's fault, claim numbers and payouts | `ViewIncidentDetails` | `incidents` on |
+  | get its reminders | the *Send them its reminders* tick | `reminders` on |
+  | share, transfer, archive or delete it | `Own` | always, as a *Can't* |
+
+  A line is a *Can* when the share grants its ability, and a *Can't*
+  otherwise. A test fails the build when a `VehicleAbility` has no line,
+  or a line's *Can* disagrees with the policy (as the route inventory
+  test, Phase 18.1). The words follow the reader: "This lets Sam" and
+  *they* on the owner's form, *What you can do* and *you* for the shared
+  user.
+  - **On the owner's form**, after the ticks and just above *Share* and
+    each share's *Save*: the summary of what is ticked ("They can" on the
+    add form, before a username is known). Every state the controls can
+    be in is rendered, the current one shown; with Alpine the one
+    matching the level and ticks shows as they change. Without JS it
+    shows the saved share (or, on the add form, the default), and *What
+    each level allows* (a disclosure shown only without JS, below the
+    forms) lists the three levels' summaries without the ticks.
+  - **Quick picks** (#392), above the level on both forms, with JS only:
+    *Driver* (Log, costs off, reminders on), *Co-owner* (Manage, reminders
+    on) and *Viewer* (View, costs off, reminders off). A pick only fills
+    in the controls; the share stores its level and ticks as before.
+  - **After *Save*** when access widened (a higher level or costs turned
+    on), a second flash names the *Can* lines added: "Sam can now: see
+    costs, valuations and reports." Reminders aren't access, and an
+    own-entry line adds nothing when the wider line was there before (so
+    Manage → Log says nothing). No confirmation page: a share is easily
+    undone (#395).
+  - **A shared user's *Sharing* page**: *What you can do*, the same
+    summary in the second person, under their level, in place of the
+    old costs line.
 - **Transfer** (`/vehicles/{id}/transfer`, `Own`, with a confirmation
   page): to another active user, who becomes the owner (`vehicles.user_id`)
   and loses their share if they had one; everything stays attached to the
@@ -9464,6 +9517,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
+- Shares on the invitation (Phase 46, #393): the invite form choosing
+  vehicles and a quick pick, applied when the link is used. Today an
+  admin invites and the owner shares by username afterwards.
 - Notification channels (Phase 36.3, #241): Matrix, Signal, and a
   bridge such as Apprise, each a definition and a sender; a shared
   Telegram bot or Pushover application provided by the admin (#236).
@@ -10116,6 +10172,17 @@ task breakdowns live in the per-phase files; this is the map.
   sign-off; no per-file SPDX headers (§1; #386–#389). No app change and
   no migration. Noted in the next release's changelog. See
   [`phase-45.md`](docs/phases/phase-45.md).
+- **Phase 46 — What a share allows, in plain words.** `ShareSummary`
+  turns a share's level and ticks into *Can* and *Can't* lines from the
+  ability table and the modules on, with a test tying them to the policy;
+  shown under the sharing forms (live with Alpine, a per-level list
+  without JS), as *What you can do* for a shared user, and in a flash when
+  a save widens access. Quick picks *Driver*, *Co-owner* and *Viewer* fill
+  in the controls. The *Admin* tick says what an admin can do, and *Make
+  admin* asks first (§7.9, §7.21; #392–#395). Shares on the invitation
+  parked (§12). No migration. Release v3.11.0 (with Phase 45's notes).
+  See [`phase-46.md`](docs/phases/phase-46.md).
+
 ---
 
 ## 14. Definition of done

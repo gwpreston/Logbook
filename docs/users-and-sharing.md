@@ -37,7 +37,9 @@ email address, when they last signed in and whether they have access, and
 has:
 
 - **Invite** and **Add user**: see below.
-- **Make admin** / **Remove admin**.
+- **Make admin** / **Remove admin**. *Make admin* asks first: an admin can
+  download or restore a backup, and a backup holds every vehicle on the
+  install, not only the ones shared with them.
 - **Send reset email** (or **Reset password** when they have no confirmed
   address, or email isn't set up): a one-time link (7 days) that asks for a
   new password. With an address it is emailed to them, in their language;
@@ -121,6 +123,20 @@ and two ticks:
   valuations. Always on for Manage; off by default for View and Log.
 - **Send them its reminders**: whether they are told when something on this
   vehicle is due (off by default). They can change this themselves.
+
+Under each share, before you press *Share* or *Save*, the page says in plain
+words what it allows and what it doesn't ("Sam can … / Sam can't …"),
+including the things that surprise people: documents carry the policy
+number and the registration, a Log user sees the amounts they typed
+themselves, and Manage always includes costs, exports and the sale pack.
+With JavaScript on, the summary follows the level and ticks as you change
+them, and **Quick pick** fills them in for the common cases: *Driver* (Log,
+no costs, reminders on), *Co-owner* (Manage, reminders on) and *Viewer*
+(View, no costs). A pick only fills in the form. Without JavaScript, the
+page shows the saved share's summary and, below the forms, *What each level
+allows*. When a save widens someone's access, the message after it says
+what they can now do. The person sees the same summary on their own
+*Sharing* page, under *What you can do*.
 
 The person sees the vehicle under **Shared with you** in their garage, with
 your name and their level, and it joins their dashboard, History, Reports

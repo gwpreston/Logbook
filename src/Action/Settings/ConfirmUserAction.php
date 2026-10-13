@@ -13,10 +13,11 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * GET|POST /settings/users/{member}/{action:disable|sign-out} (spec.md
- * §7.9 *Admin controls*; admins only): *Revoke access* (the existing
- * *Disable*, #158) and *Sign out everywhere*, each after a confirmation
- * page. Signing oneself out everywhere ends this session too.
+ * GET|POST /settings/users/{member}/{action:disable|sign-out|admin}
+ * (spec.md §7.9 *Admin controls*; admins only): *Revoke access* (the
+ * existing *Disable*, #158), *Sign out everywhere* and, from Phase 46,
+ * *Make admin* (#395), each after a confirmation page. Signing oneself out
+ * everywhere ends this session too.
  */
 final readonly class ConfirmUserAction
 {
@@ -59,11 +60,11 @@ final readonly class ConfirmUserAction
             return $this->redirect->toRoute('settings.users');
         }
 
-        $refusal = $this->admin->disable($actor, $user);
+        $refusal = $action === 'admin' ? $this->admin->setAdmin($user, true) : $this->admin->disable($actor, $user);
         if ($refusal !== null) {
             $session->flash('error', 'users.refused.' . $refusal->value, $params);
         } else {
-            $session->flash('success', 'users.done.disable', $params);
+            $session->flash('success', 'users.done.' . $action, $params);
         }
 
         return $this->redirect->toRoute('settings.users');

@@ -2,7 +2,7 @@
 
 *"Can log fuel, can't see costs", before you press Add.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Sharing (§7.21) is four levels, plus *Can see costs* and *Send them its
 reminders*. The form shows the level names (*Manage*, *Log*, *View*),
@@ -96,33 +96,38 @@ Added to §7.21 and §7.9 in 46.0:
 ## Tasks
 
 ### 46.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged; §7.21, §7.9,
+- [x] Open questions A–D decided by the owner and logged; §7.21, §7.9,
       §13; `ROADMAP.md` row.
 
 ### 46.1 Summary
-- [ ] `ShareSummary` and its translations (every shipped locale),
+- [x] `ShareSummary` and its translations (every shipped locale),
       following the enabled modules.
-- [ ] The coverage test against the ability table.
+- [x] The coverage test against the ability table.
 
 ### 46.2 Pages
-- [ ] The sharing form: add and edit, the live summary, the no-JS
+- [x] The sharing form: add and edit, the live summary, the no-JS
       table, the flash line when access widens.
-- [ ] *What you can do* on a shared user's *Sharing* page.
-- [ ] The *Admin* line on invite and *Add user*, and the *Make admin*
+- [x] *What you can do* on a shared user's *Sharing* page.
+- [x] The *Admin* line on invite and *Add user*, and the *Make admin*
       confirmation.
-- [ ] Quick picks, if A decides for them.
+- [x] Quick picks, if A decides for them.
 
 ### 46.3 Tests and release
-- [ ] Every level and tick combination, with modules on and off.
-- [ ] The summary matches what the policy allows: for each line, a
+- [x] Every level and tick combination, with modules on and off.
+- [x] The summary matches what the policy allows: for each line, a
       request that the line says *Can* is allowed, and one it says
       *Can't* is refused.
-- [ ] The access matrix is unchanged. No migration.
+- [x] The access matrix is unchanged. No migration.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; German
       at 375 px; screen reader reads *Can* and *Can't* as words, not
-      icons only).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+      icons only). Checked by hand at 375 px, light and dark, and the
+      live summary with Alpine; the full review is still to run.
+- [ ] The full suite on every engine. The phase's tests and the sharing,
+      users and access tests pass on SQLite, PostgreSQL, MySQL and
+      MariaDB; the full suite is left to CI.
+- [x] `VERSION` (3.11.0, with Phase 45's notes), `CHANGELOG.md`, README,
+      `docs/users-and-sharing.md`.
+- [ ] `ROADMAP.md` row ✅; tag `v3.11.0` once merged.
 
 ---
 
@@ -147,7 +152,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
 
   *Recommendation:* (2). The levels already are presets, and the mistake
   people make is with the ticks. Stored roles would be a second
-  vocabulary for the same rules.
+  vocabulary for the same rules. *Decided 2026-10-13:* (2). (#392)
 
 - **B. Shares on the invitation?** Today, an admin invites, and the
   owner shares by username afterwards.
@@ -156,13 +161,13 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     link is used.
 
   *Recommendation:* (1). It is a bigger change, and the preview helps
-  either way.
+  either way. *Decided 2026-10-13:* (1), parked in spec §12. (#393)
 
 - **C. Wording.** Name the documents line's contents (policy numbers,
   registration), or say only "documents"?
 
   *Recommendation:* name them. That is the surprise this phase exists to
-  prevent.
+  prevent. *Decided 2026-10-13:* name them. (#394)
 
 - **D. Confirm when access widens?**
   - (1) A flash line after saving.
@@ -170,4 +175,14 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     to Manage.
 
   *Recommendation:* (1) for shares, since they are easily undone, and a
-  confirmation page for *Make admin* only.
+  confirmation page for *Make admin* only. *Decided 2026-10-13:* (1),
+  with the *Make admin* confirmation page. (#395)
+
+- **Found while starting it (2026-10-13):** Manage also grants
+  `ViewOthersTrips` and `ViewIncidentDetails`, which the draft's lines
+  didn't cover; the coverage test needs a line for each, so the summary
+  has *see other drivers' trips and destinations* (trips on) and *see an
+  incident's fault, claim numbers and payouts* (incidents on). Not a new
+  rule, only words for an existing one.
+- The carried #221, #374–#377, #390 and #391 were reviewed and change
+  nothing in Phase 46.
