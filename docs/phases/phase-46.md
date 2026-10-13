@@ -2,7 +2,7 @@
 
 *"Can log fuel, can't see costs", before you press Add.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Sharing (§7.21) is four levels, plus *Can see costs* and *Send them its
 reminders*. The form shows the level names (*Manage*, *Log*, *View*),
@@ -96,7 +96,7 @@ Added to §7.21 and §7.9 in 46.0:
 ## Tasks
 
 ### 46.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged; §7.21, §7.9,
+- [x] Open questions A–D decided by the owner and logged; §7.21, §7.9,
       §13; `ROADMAP.md` row.
 
 ### 46.1 Summary
@@ -156,13 +156,13 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     link is used.
 
   *Recommendation:* (1). It is a bigger change, and the preview helps
-  either way.
+  either way. *Decided 2026-10-13:* (1), parked in spec §12. (#393)
 
 - **C. Wording.** Name the documents line's contents (policy numbers,
   registration), or say only "documents"?
 
   *Recommendation:* name them. That is the surprise this phase exists to
-  prevent.
+  prevent. *Decided 2026-10-13:* name them. (#394)
 
 - **D. Confirm when access widens?**
   - (1) A flash line after saving.
@@ -170,4 +170,14 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     to Manage.
 
   *Recommendation:* (1) for shares, since they are easily undone, and a
-  confirmation page for *Make admin* only.
+  confirmation page for *Make admin* only. *Decided 2026-10-13:* (1),
+  with the *Make admin* confirmation page. (#395)
+
+- **Found while starting it (2026-10-13):** Manage also grants
+  `ViewOthersTrips` and `ViewIncidentDetails`, which the draft's lines
+  didn't cover; the coverage test needs a line for each, so the summary
+  has *see other drivers' trips and destinations* (trips on) and *see an
+  incident's fault, claim numbers and payouts* (incidents on). Not a new
+  rule, only words for an existing one.
+- The carried #221, #374–#377, #390 and #391 were reviewed and change
+  nothing in Phase 46.
