@@ -466,8 +466,10 @@ Notifications) until the job works again.
 
 ### Scheduled backups
 
-On the *Backup* job's row in Settings → Jobs: **Off** (the default),
-**Daily** or **Weekly**, and how many to keep (7 by default, 1–60). Files are
+On the *Backup* job's row in Settings → Jobs: **Off**, **Daily** or
+**Weekly**, and how many to keep (7 by default, 1–60). From 3.12 a new
+install starts on **Weekly**; an install set up earlier keeps what it had
+(**Off** unless you changed it). Files are
 written to `BACKUP_PATH` as `logbook-scheduled-YYYYMMDD-HHMMSS.zip` (UTC), and
 only files with that name are ever deleted: your own backups and pre-restore
 backups are left alone. Settings → Backup lists them to download. They are on
@@ -508,6 +510,23 @@ archive first and shows what it contains; nothing changes until you tick
 2. replaces every table in one transaction (an error leaves the old data),
 3. replaces the uploaded photos and attachments,
 4. signs everyone out. Sign in with the account and password **from the backup**.
+
+### How old is the last backup?
+
+From 3.12, Settings → Backup starts with when the last backup was made and
+how: *downloaded*, *scheduled* or *command line* (`bin/backup.php create`).
+Pre-restore copies don't count. Once the last backup is older than **Warn
+me after** (30 days by default; 7, 14, 30 or 90 days, or *Never*), or there
+has never been one, admins see a banner on the dashboard and a line in
+their monthly digest. *Dismiss* hides the banner for 7 days, and the next
+backup ends it. If you back up another way (`pg_dump`, Proxmox or ZFS
+snapshots, restic on the data volume), tick **I back up another way** and
+the warning stops. For monitoring, an admin's API key can read
+`GET /api/v1/instance/backup` ([API](api.md#backup-age-for-monitoring));
+`/health` doesn't say, because it is public.
+
+On upgrade, the newest `logbook-scheduled-…zip` or `logbook-backup-…zip`
+in `BACKUP_PATH` counts as the last backup.
 
 A backup can only be restored by the Logbook version whose database it matches
 (the version is shown on the confirmation page). To restore an older backup,

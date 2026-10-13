@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Jobs;
 
+use Logbook\Domain\Backup\BackupKind;
+use Logbook\Service\Backup\BackupRecorder;
 use Logbook\Service\Backup\BackupService;
 use Logbook\Support\Display\DisplayFormatter;
 use RuntimeException;
@@ -13,7 +15,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * `backup` (spec.md §7.30 *Scheduled backups*): off by default, else
  * daily or weekly; *Run now* works whatever the schedule. It writes a
  * `logbook-scheduled-…zip` to BACKUP_PATH, then keeps only the newest N
- * scheduled files.
+ * scheduled files. A run that succeeds is recorded as the newest backup
+ * (§7.13).
  */
 final readonly class BackupJob implements Job
 {
@@ -25,6 +28,7 @@ final readonly class BackupJob implements Job
         private JobSettings $settings,
         private DisplayFormatter $formatter,
         private TranslatorInterface $translator,
+        private BackupRecorder $recorder,
     ) {
     }
 
@@ -51,6 +55,7 @@ final readonly class BackupJob implements Job
         $name = $this->files->newName();
         $manifest = $this->backups->create($dir . '/' . $name);
         $size = (int) filesize($dir . '/' . $name);
+        $this->recorder->record(BackupKind::Scheduled, $size);
         $context->logger->info('Backup written to {file} ({vehicles} vehicle(s), {files} file(s), {size} bytes).', [
             'file' => $dir . '/' . $name,
             'vehicles' => $manifest->rows('vehicles'),

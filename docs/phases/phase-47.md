@@ -117,20 +117,20 @@ Written into spec §6, §7.8, §7.11, §7.13, §7.20 and §7.30 in 47.0
       `ROADMAP.md` row.
 
 ### 47.1 Recording
-- [ ] `BackupRecorder` called by the download action, the `backup` job
+- [x] `BackupRecorder` called by the download action, the `backup` job
       and `bin/backup.php create`, never by pre-restore or a scheduled
       file's download.
-- [ ] A restore keeps the newer record.
-- [ ] Seeding from `BACKUP_PATH` once.
-- [ ] First-run setup turns weekly scheduled backups on.
+- [x] A restore keeps the newer record.
+- [x] Seeding from `BACKUP_PATH` once.
+- [x] First-run setup turns weekly scheduled backups on.
 
 ### 47.2 Pages
-- [ ] Backup page status, note, threshold and *I back up another way*.
-- [ ] The dashboard banner, *Dismiss* per admin for 7 days, its actions;
+- [x] Backup page status, note, threshold and *I back up another way*.
+- [x] The dashboard banner, *Dismiss* per admin for 7 days, its actions;
       demo mode.
-- [ ] The digest line (text and webhook JSON).
-- [ ] `GET /api/v1/instance/backup`, `openapi.json`, `docs/api.md`.
-- [ ] Translations (every shipped locale).
+- [x] The digest line (text and webhook JSON).
+- [x] `GET /api/v1/instance/backup`, `openapi.json`, `docs/api.md`.
+- [x] Translations (every shipped locale).
 
 ### 47.3 Tests and release
 - [ ] Each kind recorded; pre-restore, a scheduled file's download and

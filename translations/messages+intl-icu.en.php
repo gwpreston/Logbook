@@ -3344,6 +3344,9 @@ return [
             'attention' => '{count, plural, one {One thing needs attention:} other {# things need attention:}}',
             // Phase 43: the monthly briefing (spec.md §7.11).
             'title_briefing' => '{month}: your monthly digest',
+            // Phase 47: an admin's backup line (spec.md §7.11).
+            'backup' => 'Your last backup was {days, plural, one {# day} other {# days}} ago.',
+            'backup_never' => 'Logbook has never been backed up.',
             'issues_line' => '• {vehicle}: {count, plural, one {# open issue} other {# open issues}}',
             'last_month' => 'Last month ({month}):',
             'distance' => '• {vehicle}: {distance} driven{trend, select, more {, about {percent}% more than your monthly average ({average})} less {, about {percent}% less than your monthly average ({average})} same {, about the same as your monthly average ({average})} other {}}',
@@ -3802,6 +3805,33 @@ return [
         ],
     ],
     'backup' => [
+        // Phase 47: how old is the last backup? (spec.md §7.13)
+        'status' => [
+            'heading' => 'Last backup',
+            'last' => 'Last backup {days, plural, =0 {today} =1 {yesterday} other {# days ago}}, {date} ({kind}, {size}).',
+            'none' => 'No backup yet.',
+            'kind' => [
+                'download' => 'downloaded',
+                'scheduled' => 'scheduled',
+                'cli' => 'command line',
+            ],
+            'schedule' => 'Scheduled backups: {schedule, select, daily {daily, keeping the last {keep}} weekly {weekly, keeping the last {keep}} other {off}}.',
+            'schedule_link' => 'Change in Jobs',
+            'where' => 'Scheduled backups are written to {path} on this server. Copy them somewhere else too.',
+            'elsewhere' => 'Backups are handled outside Logbook (set by {admin}, {date}).',
+        ],
+        'warning' => [
+            'legend' => 'Warning',
+            'after' => 'Warn me after',
+            'after_hint' => 'Admins see a banner on the dashboard, and a line in their monthly digest, once the last backup is older than this.',
+            'days' => '{days} days',
+            'never' => 'Never',
+            'days_invalid' => 'Choose 7, 14, 30 or 90 days, or Never.',
+            'elsewhere' => 'I back up another way',
+            'elsewhere_hint' => 'For example pg_dump, snapshots of the server, or a copy of the data volume. Logbook stops warning about its own backups.',
+            'save' => 'Save',
+            'saved' => 'Backup warning saved.',
+        ],
         'scheduled' => [
             'heading' => 'Scheduled backups',
             'none' => 'No scheduled backups yet.',
@@ -5389,6 +5419,14 @@ return [
         ],
     ],
     'notices' => [
+        // Phase 47: the backup banner (spec.md §7.13).
+        'backup' => [
+            'message' => 'Your last backup was {days, plural, one {# day} other {# days}} ago.',
+            'never' => 'Logbook has never been backed up.',
+            'download' => 'Back up now',
+            'page' => 'Go to Backup',
+            'schedule' => 'Turn on scheduled backups',
+        ],
         'label' => 'Notices for admins',
         'dismiss' => 'Dismiss',
         'scheduler' => [

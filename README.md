@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.11.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.12.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -77,7 +77,8 @@ your own server.
 > enables it), its mileages checked with yours, passes as MOT documents,
 > advisories as issues and an outstanding recall flagged; background jobs
 > you can see and run from Settings, with a warning when they stop and ways
-> to run them without cron, and scheduled backups; an optional check for new
+> to run them without cron, and scheduled backups (with a warning when the
+> last backup is too old); an optional check for new
 > versions (off until you switch it on); hire purchase, PCP, loan and lease
 > agreements typed from the paperwork, with the payments left, what remains
 > to pay, a settlement estimate or the lender's quote, the cost of credit

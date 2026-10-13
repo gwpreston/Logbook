@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.24.0",
+    "version": "1.25.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -22,6 +22,38 @@
     }
   ],
   "paths": {
+    "/instance/backup": {
+      "get": {
+        "operationId": "getInstanceBackup",
+        "summary": "How old the last backup is (admins only)",
+        "description": "For monitoring (Uptime Kuma, Home Assistant): the newest completed backup (downloaded, scheduled or from `bin/backup.php create`; never a pre-restore copy), its age in calendar days in the key's user's time zone, the warning threshold and whether the dashboard warning's condition holds. Only a key whose user is an admin (`Backup`); anyone else gets 403 `forbidden` (Phase 47).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceBackup"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
     "/me": {
       "get": {
         "operationId": "getMe",
@@ -9754,6 +9786,80 @@
               }
             },
             "description": "The figures as text in the key owner's units, language and currency."
+          }
+        }
+      },
+      "InstanceBackup": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "last",
+          "age_days",
+          "warn_after_days",
+          "handled_elsewhere",
+          "warning"
+        ],
+        "properties": {
+          "last": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "description": "The newest completed backup, or null when there has never been one.",
+            "required": [
+              "at",
+              "kind",
+              "size"
+            ],
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the archive was complete (UTC)."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "download",
+                  "scheduled",
+                  "cli"
+                ]
+              },
+              "size": {
+                "type": "integer",
+                "description": "The archive's size in bytes."
+              }
+            }
+          },
+          "age_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Calendar days since the last backup, in the key's user's time zone; null without one."
+          },
+          "warn_after_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "enum": [
+              7,
+              14,
+              30,
+              90,
+              null
+            ],
+            "description": "*Warn me after* on Settings → Backup; null for *Never*."
+          },
+          "handled_elsewhere": {
+            "type": "boolean",
+            "description": "*I back up another way* is ticked."
+          },
+          "warning": {
+            "type": "boolean",
+            "description": "Whether the dashboard warning's condition holds: the age (or, with no backup, the first account's) is more than the threshold, the threshold isn't *Never* and backups aren't handled elsewhere. A dismissal doesn't change it."
           }
         }
       },

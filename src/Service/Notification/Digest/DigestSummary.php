@@ -6,6 +6,7 @@ namespace Logbook\Service\Notification\Digest;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Access\InstanceAbility;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Insights\AiInsight;
 use Logbook\Domain\Feature\Feature;
@@ -14,7 +15,9 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\IssueRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Access\InstanceAccess;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Backup\BackupAge;
 use Logbook\Service\Ai\Insights\AiInsightService;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Feature\FeatureToggles;
@@ -63,6 +66,8 @@ final readonly class DigestSummary
         private AiInsightService $ai,
         private UserDisplayScope $scope,
         private TranslatorInterface $translator,
+        private InstanceAccess $instance,
+        private BackupAge $backups,
     ) {
     }
 
@@ -82,7 +87,22 @@ final readonly class DigestSummary
             $preferences->digestIncludes(DigestSection::Attention) ? $this->openIssues($active) : [],
             $preferences->digestIncludes(DigestSection::LastMonth) ? $this->lastMonth($user, $active, $today) : null,
             $preferences->digestIncludes(DigestSection::Insights) ? $this->insights($user, $active, $today) : [],
+            $this->backup($user),
         );
+    }
+
+    /**
+     * An admin's backup line (Phase 47, spec.md §7.11), while the banner's
+     * condition holds for them; a dashboard *Dismiss* doesn't hide it.
+     */
+    private function backup(User $user): ?DigestBackup
+    {
+        if (!$this->instance->can($user, InstanceAbility::Backup)) {
+            return null;
+        }
+        $status = $this->backups->for($user);
+
+        return $status->warning ? new DigestBackup($status->last?->at, $status->ageDays) : null;
     }
 
     /**

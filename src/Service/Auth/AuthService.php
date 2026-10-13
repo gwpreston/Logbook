@@ -9,6 +9,7 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\User\Username;
 use Logbook\Repository\SessionRepository;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Jobs\JobSettings;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Security\PasswordHasher;
@@ -28,6 +29,7 @@ final readonly class AuthService
         private ClockInterface $clock,
         private ReminderSettingsStore $settings,
         private Transaction $transaction,
+        private JobSettings $jobs,
     ) {
     }
 
@@ -57,6 +59,8 @@ final readonly class AuthService
                 isAdmin: true,
             );
             $this->settings->startNewUser($user->id);
+            // A new install backs itself up weekly (spec.md §7.30, #397).
+            $this->jobs->startNewInstall();
 
             return $user;
         });

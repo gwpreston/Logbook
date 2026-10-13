@@ -3341,6 +3341,9 @@ return [
             'attention' => '{count, plural, one {Ein Punkt braucht Aufmerksamkeit:} other {# Punkte brauchen Aufmerksamkeit:}}',
             // Phase 43: die Monatsübersicht (spec.md §7.11).
             'title_briefing' => '{month}: deine Monatsübersicht',
+            // Phase 47: die Sicherungszeile für Admins (spec.md §7.11).
+            'backup' => 'Deine letzte Sicherung ist {days, plural, one {# Tag} other {# Tage}} alt.',
+            'backup_never' => 'Logbook wurde noch nie gesichert.',
             'issues_line' => '• {vehicle}: {count, plural, one {# offener Mangel} other {# offene Mängel}}',
             'last_month' => 'Letzter Monat ({month}):',
             'distance' => '• {vehicle}: {distance} gefahren{trend, select, more {, etwa {percent} % mehr als dein Monatsdurchschnitt ({average})} less {, etwa {percent} % weniger als dein Monatsdurchschnitt ({average})} same {, etwa so viel wie dein Monatsdurchschnitt ({average})} other {}}',
@@ -3799,6 +3802,33 @@ return [
         ],
     ],
     'backup' => [
+        // Phase 47: Wie alt ist die letzte Sicherung? (spec.md §7.13)
+        'status' => [
+            'heading' => 'Letzte Sicherung',
+            'last' => 'Letzte Sicherung {days, plural, =0 {heute} =1 {gestern} other {vor # Tagen}}, {date} ({kind}, {size}).',
+            'none' => 'Noch keine Sicherung.',
+            'kind' => [
+                'download' => 'heruntergeladen',
+                'scheduled' => 'geplant',
+                'cli' => 'Kommandozeile',
+            ],
+            'schedule' => 'Geplante Sicherungen: {schedule, select, daily {täglich, die letzten {keep} werden behalten} weekly {wöchentlich, die letzten {keep} werden behalten} other {aus}}.',
+            'schedule_link' => 'Unter Aufgaben ändern',
+            'where' => 'Geplante Sicherungen werden auf diesem Server in {path} gespeichert. Kopiere sie auch an einen anderen Ort.',
+            'elsewhere' => 'Sicherungen werden außerhalb von Logbook erledigt (eingestellt von {admin}, {date}).',
+        ],
+        'warning' => [
+            'legend' => 'Warnung',
+            'after' => 'Warnen nach',
+            'after_hint' => 'Admins sehen einen Hinweis auf der Übersicht und eine Zeile in ihrer Monatsübersicht, sobald die letzte Sicherung älter ist.',
+            'days' => '{days} Tagen',
+            'never' => 'Nie',
+            'days_invalid' => 'Wähle 7, 14, 30 oder 90 Tage oder Nie.',
+            'elsewhere' => 'Ich sichere auf andere Weise',
+            'elsewhere_hint' => 'Zum Beispiel mit pg_dump, Snapshots des Servers oder einer Kopie des Datenvolumes. Logbook warnt dann nicht mehr vor seinen eigenen Sicherungen.',
+            'save' => 'Speichern',
+            'saved' => 'Sicherungswarnung gespeichert.',
+        ],
         'scheduled' => [
             'heading' => 'Geplante Sicherungen',
             'none' => 'Noch keine geplanten Sicherungen.',
@@ -5385,6 +5415,14 @@ return [
         ],
     ],
     'notices' => [
+        // Phase 47: der Sicherungshinweis (spec.md §7.13).
+        'backup' => [
+            'message' => 'Deine letzte Sicherung ist {days, plural, one {# Tag} other {# Tage}} alt.',
+            'never' => 'Logbook wurde noch nie gesichert.',
+            'download' => 'Jetzt sichern',
+            'page' => 'Zur Sicherung',
+            'schedule' => 'Geplante Sicherungen einschalten',
+        ],
         'label' => 'Hinweise für Admins',
         'dismiss' => 'Ausblenden',
         'scheduler' => [

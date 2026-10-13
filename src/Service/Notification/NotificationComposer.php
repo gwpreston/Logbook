@@ -105,7 +105,8 @@ final readonly class NotificationComposer
 
     /**
      * "What's due this month": open reminders due by the end of the month,
-     * overdue ones included, then (Phase 24) the *Needs attention* checks
+     * overdue ones included, then (Phase 47) an admin's backup line, then
+     * (Phase 24) the *Needs attention* checks
      * on the same vehicles and (Phase 43) the open issues, then last month
      * and the insights (spec.md §7.11 *The monthly briefing*), in that
      * order so a short channel keeps what's due. Not everything may be
@@ -139,6 +140,16 @@ final readonly class NotificationComposer
             $message = $items === []
                 ? $this->translator->trans('notifications.digest.nothing_due', ['month' => $month])
                 : $this->lines($items, 'notifications.digest.intro', ['count' => count($items), 'month' => $month]);
+            // An admin's backup line, right after what's due (Phase 47).
+            $backup = null;
+            if ($content->backup !== null) {
+                $line = $this->translator->trans(
+                    $content->backup->days === null ? 'notifications.digest.backup_never' : 'notifications.digest.backup',
+                    ['days' => $content->backup->days],
+                );
+                $message .= "\n\n" . $line;
+                $backup = $content->backup->toArray($line);
+            }
             $attention = count($checks) + count($content->issues);
             if ($attention > 0) {
                 $lines = ['', $this->translator->trans('notifications.digest.attention', ['count' => $attention]), ''];
@@ -188,6 +199,7 @@ final readonly class NotificationComposer
                     'open' => $i->count,
                 ], $content->issues),
                 insights: array_map(static fn (DigestInsight $i): array => $i->toArray(), $content->insights),
+                backup: $backup,
             );
         });
     }

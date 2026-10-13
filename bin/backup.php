@@ -19,7 +19,9 @@ declare(strict_types=1);
  * Exit code: 0 ok, 1 failed, 2 usage.
  */
 
+use Logbook\Domain\Backup\BackupKind;
 use Logbook\Kernel;
+use Logbook\Service\Backup\BackupRecorder;
 use Logbook\Service\Backup\BackupService;
 use Logbook\Service\Backup\InvalidBackup;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -56,6 +58,10 @@ try {
                 $file = $dir . '/' . $backups->filename();
             }
             $manifest = $backups->create($file);
+            // The newest backup (spec.md §7.13); a pre-restore copy never is.
+            $recorder = $container->get(BackupRecorder::class);
+            assert($recorder instanceof BackupRecorder);
+            $recorder->record(BackupKind::Cli, (int) filesize($file));
             fwrite(STDOUT, sprintf(
                 "Backup written to %s (%d vehicle(s), %d file(s)).\n",
                 $file,

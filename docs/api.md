@@ -110,6 +110,7 @@ user prefers, so automations can compare and chart them:
 | Endpoint | Returns |
 |---|---|
 | `GET /me` | the key's user and preferences, the key's name and scope, which modules are on |
+| `GET /instance/backup` | from 3.12, admins' keys only (anyone else gets `403 forbidden`): the newest backup (`at`, `kind`: `download`, `scheduled` or `cli`, `size` in bytes) or `null`, `age_days` in the key's user's time zone, `warn_after_days` (`null` for *Never*), `handled_elsewhere` and `warning`, for monitoring ([below](#backup-age-for-monitoring)) |
 | `GET /vehicles` | visible vehicles (`?status=active\|archived\|all`, default `active`) |
 | `GET /vehicles/{id}` | one vehicle, as its edit form holds it, with an `ETag` and its `disposal` (`sold`, `written_off`, …) |
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
@@ -800,7 +801,7 @@ Branch on `code`; `detail` and `message` are English text for people.
 | 400 | `invalid_parameter`, `invalid_body` | a query parameter or the body cannot be read |
 | 401 | `missing_key`, `invalid_key` | no key, or a malformed, unknown or revoked one |
 | 403 | `insufficient_scope` | a read-only key on a write |
-| 403 | `forbidden` | the user may see the vehicle but not do this with it |
+| 403 | `forbidden` | the user may see the vehicle but not do this with it; or `GET /instance/backup` with a key whose user isn't an admin |
 | 403 | `cors_not_allowed` | a browser preflight from an origin that is not allowed |
 | 404 | `not_found` | no such address or vehicle, a switched-off module, or the API is off |
 | 405 | `method_not_allowed` | see `Allow` |
@@ -887,6 +888,49 @@ Logbook shows it, use `value_json.display.odometer` or
 `value_json.display.economy` ("44.4 mpg"). For an electric car use
 `fuel.electric` in place of `fuel.liquid` (kWh/100 km), and for CNG `fuel.gas`
 (kg/100 km).
+
+### Backup age for monitoring
+
+`GET /instance/backup` (from 3.12) tells a monitor how old the last
+backup is. It needs a key made by an **admin** (a read-only key is
+enough); anyone else's key gets `403 forbidden`. `/health` doesn't say,
+because it is public.
+
+```json
+{
+  "last": {"at": "2026-09-14T03:30:12Z", "kind": "scheduled", "size": 190840832},
+  "age_days": 43,
+  "warn_after_days": 30,
+  "handled_elsewhere": false,
+  "warning": true
+}
+```
+
+`last` is `null` when Logbook has never been backed up. `warning` is what
+puts the banner on admins' dashboards: the age is more than *Warn me
+after* (Settings → Backup), which isn't *Never*, and *I back up another
+way* isn't ticked. A dismissed banner doesn't change it. As a Home
+Assistant binary sensor:
+
+```yaml
+rest:
+  - resource: https://garage.example.com/api/v1/instance/backup
+    headers:
+      Authorization: !secret logbook_admin_auth
+    scan_interval: 3600
+    binary_sensor:
+      - name: "Logbook backup overdue"
+        value_template: "{{ value_json.warning }}"
+        device_class: problem
+    sensor:
+      - name: "Logbook backup age"
+        value_template: "{{ value_json.age_days }}"
+        unit_of_measurement: d
+```
+
+In Uptime Kuma, an *HTTP(s) - Json Query* monitor on the same address
+with the query `warning` and the expected value `false` (header
+`Authorization: Bearer lbk_…`).
 
 ### Mark a reminder done from a notification
 

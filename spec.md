@@ -4203,7 +4203,7 @@ vehicles; a disabled module cannot be imported).
     newer than the restored one (#400).
   - **Seeding** (no migration, #401): the first time the record is read
     and none is stored, the newest `logbook-scheduled-YYYYMMDD-HHMMSS.zip`
-    (kind `scheduled`) or `logbook-backup-YYYY-MM-DD-HHMM.zip` (kind
+    (kind `scheduled`) or `logbook-backup-YYYY-MM-DD-HHMMSS.zip` (kind
     `cli`) in `BACKUP_PATH` seeds it, its time read from the UTC
     timestamp in the name and its size from the file. `pre-restore-*`
     files never count. With none, "no backup" (`{"at": null}`) is

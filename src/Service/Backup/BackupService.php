@@ -43,6 +43,7 @@ final readonly class BackupService
         private AppSettings $settings,
         private ClockInterface $clock,
         private LoggerInterface $logger,
+        private BackupRecorder $recorder,
     ) {
     }
 
@@ -175,11 +176,14 @@ final readonly class BackupService
         $staging = null;
         try {
             [, $data, $uploads] = $this->read($zip);
+            // The newest backup so far: kept if newer than the archive's own (#400).
+            $last = $this->recorder->last();
             $safety = $this->safetyBackup();
             $staging = $this->files->root() . '/.restore-' . bin2hex(random_bytes(8));
             $this->extract($zip, $uploads, $staging);
 
             $this->repository->replaceAll($data);
+            $this->recorder->keepNewer($last);
         } catch (Throwable $e) {
             if ($staging !== null) {
                 self::removeDirectory($staging);

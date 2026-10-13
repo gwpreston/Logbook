@@ -29,6 +29,13 @@ final readonly class AdminNotice
         public ?string $detailKey = null,
         /** A command shown after the detail, as code. */
         public ?string $detailCode = null,
+        /**
+         * More pages in the app after the first link (the backup banner's
+         * *Turn on scheduled backups*, §7.13).
+         *
+         * @var list<array{route: string, data: array<string, string|int>, labelKey: string, fragment?: string}>
+         */
+        public array $routes = [],
     ) {
     }
 }

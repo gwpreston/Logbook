@@ -6,6 +6,47 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.12.0] — 2026-10-13
+
+Phase 47: **how old is the last backup?** Logbook now remembers when it
+was last backed up, and tells admins when that was too long ago.
+
+### Added
+- **The last backup, on Settings → Backup**: "Last backup 43 days ago,
+  14 Sep 2026 (downloaded, 182 MB)", or "No backup yet", with the backup
+  schedule and a reminder that scheduled files sit on the same server.
+  Downloads, scheduled backups and `bin/backup.php create` all count; the
+  safety copy made before a restore doesn't. A restore keeps the newer of
+  the two records, so restoring an old backup doesn't make the last backup
+  look older.
+- **A dashboard banner for admins** once the last backup is older than
+  *Warn me after* (30 days by default; 7, 14, 30 or 90 days, or *Never*),
+  or when there has never been one: "Your last backup was 43 days ago.",
+  with *Back up now* and, while scheduled backups are off, *Turn on
+  scheduled backups*. *Dismiss* hides it for 7 days; the next backup ends
+  it. Members never see it, and the demo never shows it.
+- **I back up another way**: for `pg_dump`, snapshots or restic on the
+  data volume. The warning stops, and the Backup page says who set it and
+  when.
+- **A line in admins' monthly digest** while the banner would show. It
+  sends a digest on its own, and the webhook JSON gains `backup`
+  (`last_at`, `days`, `display`; `null` otherwise).
+- **`GET /api/v1/instance/backup`**, for an admin's API key: the last
+  backup, its age in days, the threshold and whether the warning holds, so
+  Uptime Kuma or Home Assistant can alert. Other keys get `403 forbidden`.
+  `/health` doesn't say, because it is public. `openapi.json` 1.25.0.
+
+### Changed
+- **New installs back up weekly**, keeping 7, from first-run setup.
+  Installs set up earlier keep their schedule (*Off* unless changed).
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change.
+- On first use, the newest `logbook-scheduled-…zip` or `logbook-backup-…zip`
+  in `BACKUP_PATH` counts as the last backup. With none, admins of an
+  install older than 30 days see the banner until they back up, tick *I
+  back up another way*, or choose *Never*.
+
 ## [3.11.0] — 2026-10-13
 
 Phase 46: **what a share allows, in plain words**, before you press
@@ -2983,7 +3024,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.11.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...HEAD
+[3.12.0]: https://github.com/gwpreston16/Logbook/compare/v3.11.0...v3.12.0
 [3.11.0]: https://github.com/gwpreston16/Logbook/compare/v3.10.0...v3.11.0
 [3.10.0]: https://github.com/gwpreston16/Logbook/compare/v3.9.0...v3.10.0
 [3.9.0]: https://github.com/gwpreston16/Logbook/compare/v3.8.0...v3.9.0
