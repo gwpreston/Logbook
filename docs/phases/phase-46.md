@@ -100,29 +100,34 @@ Added to §7.21 and §7.9 in 46.0:
       §13; `ROADMAP.md` row.
 
 ### 46.1 Summary
-- [ ] `ShareSummary` and its translations (every shipped locale),
+- [x] `ShareSummary` and its translations (every shipped locale),
       following the enabled modules.
-- [ ] The coverage test against the ability table.
+- [x] The coverage test against the ability table.
 
 ### 46.2 Pages
-- [ ] The sharing form: add and edit, the live summary, the no-JS
+- [x] The sharing form: add and edit, the live summary, the no-JS
       table, the flash line when access widens.
-- [ ] *What you can do* on a shared user's *Sharing* page.
-- [ ] The *Admin* line on invite and *Add user*, and the *Make admin*
+- [x] *What you can do* on a shared user's *Sharing* page.
+- [x] The *Admin* line on invite and *Add user*, and the *Make admin*
       confirmation.
-- [ ] Quick picks, if A decides for them.
+- [x] Quick picks, if A decides for them.
 
 ### 46.3 Tests and release
-- [ ] Every level and tick combination, with modules on and off.
-- [ ] The summary matches what the policy allows: for each line, a
+- [x] Every level and tick combination, with modules on and off.
+- [x] The summary matches what the policy allows: for each line, a
       request that the line says *Can* is allowed, and one it says
       *Can't* is refused.
-- [ ] The access matrix is unchanged. No migration.
+- [x] The access matrix is unchanged. No migration.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; German
       at 375 px; screen reader reads *Can* and *Can't* as words, not
-      icons only).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+      icons only). Checked by hand at 375 px, light and dark, and the
+      live summary with Alpine; the full review is still to run.
+- [ ] The full suite on every engine. The phase's tests and the sharing,
+      users and access tests pass on SQLite, PostgreSQL, MySQL and
+      MariaDB; the full suite is left to CI.
+- [x] `VERSION` (3.11.0, with Phase 45's notes), `CHANGELOG.md`, README,
+      `docs/users-and-sharing.md`.
+- [ ] `ROADMAP.md` row ✅; tag `v3.11.0` once merged.
 
 ---
 
@@ -147,7 +152,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
 
   *Recommendation:* (2). The levels already are presets, and the mistake
   people make is with the ticks. Stored roles would be a second
-  vocabulary for the same rules.
+  vocabulary for the same rules. *Decided 2026-10-13:* (2). (#392)
 
 - **B. Shares on the invitation?** Today, an admin invites, and the
   owner shares by username afterwards.

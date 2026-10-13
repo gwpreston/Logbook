@@ -69,10 +69,15 @@
                             </span>
                         </div>
                         <div class="btn-row user-row__actions">
-                            <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: member.isAdmin ? 'member' : 'admin'}) }}">
-                                {{ ui.csrf(csrf) }}
-                                <button type="submit" class="btn btn--sm">{{ ui.icon('admin_panel_settings') }}{{ (member.isAdmin ? 'users.remove_admin' : 'users.make_admin')|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
-                            </form>
+                            {% if member.isAdmin %}
+                                <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: 'member'}) }}">
+                                    {{ ui.csrf(csrf) }}
+                                    <button type="submit" class="btn btn--sm">{{ ui.icon('admin_panel_settings') }}{{ 'users.remove_admin'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></button>
+                                </form>
+                            {% else %}
+                                {# Phase 46 (spec.md §7.9): asks first, saying what an admin can do. #}
+                                <a class="btn btn--sm" href="{{ url_for('settings.users.confirm', {member: member.id, action: 'admin'}) }}">{{ ui.icon('admin_panel_settings') }}{{ 'users.make_admin'|trans }}<span class="visually-hidden">: {{ member.displayName }}</span></a>
+                            {% endif %}
                             <form method="post" action="{{ url_for('settings.users.change', {member: member.id, action: 'reset'}) }}">
                                 {{ ui.csrf(csrf) }}
                                 {% set emails_reset = mail_configured and (member.email or (member.emailPending and not member.hasPassword())) %}

@@ -10,34 +10,81 @@
 {% set active_nav = 'garage' %}
 {% set heading = 'sharing.title'|trans({name: vehicle.name()}) %}
 
-{% macro share_fields(values, levels, notify_label) -%}
+{#
+ # What a share allows (spec.md §7.21, Phase 46): its Can and Can't lines,
+ # each list headed in words ("Sam can", "You can't"), so a screen reader
+ # never depends on the icons. `person` is 'you' or 'they'.
+ #}
+{% macro summary(allows, person, name) -%}
     {% import 'macros/ui.twig' as ui %}
-    <fieldset class="field fieldset">
-        <legend class="field__label">{{ 'sharing.level'|trans }}</legend>
-        <div class="chip-row">
-            {% for level in levels %}
-                <label class="chip">
-                    <input type="radio" name="level" value="{{ level.value }}"{% if level.value == values.level %} checked{% endif %} required>
-                    <span>{{ ('sharing.levels.' ~ level.value)|trans }}</span>
-                </label>
+    {% for part in ['can', 'cannot'] %}
+        {% set lines = part == 'can' ? allows.can() : allows.cannot() %}
+        {% if lines is not empty %}
+            <p class="share-summary__heading">{{ ('share_summary.' ~ part)|trans({person: person, name: name}) }}</p>
+            <ul class="share-summary__list share-summary__list--{{ part }}">
+                {% for line in lines %}
+                    <li>{{ ui.icon(part == 'can' ? 'check_circle' : 'block') }}<span>{{ ('share_summary.lines.' ~ line.key)|trans(line.params|merge({person: person})) }}</span></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}
+
+{#
+ # A share's level and ticks, with quick picks (JS only: they only fill in
+ # these controls) and the live summary: one per state the controls can be
+ # in, the current one shown; Alpine shows the one that matches as they
+ # change. Without JS the saved (or default) state's summary stays.
+ #}
+{% macro share_fields(values, levels, notify_label, states, name) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% set costs = (values.can_see_costs ?? '') == '1' %}
+    {% set notify = (values.notify ?? '') == '1' %}
+    {% set current = values.level ~ '-' ~ (costs ? 1 : 0) ~ '-' ~ (notify ? 1 : 0) %}
+    <div class="share-fields" x-data="{ level: '{{ values.level|e('js') }}', costs: {{ costs ? 'true' : 'false' }}, notify: {{ notify ? 'true' : 'false' }}, get state() { return this.level + '-' + (this.costs ? 1 : 0) + '-' + (this.notify ? 1 : 0); }, pick(level, costs, notify) { this.level = level; this.costs = costs; this.notify = notify; } }">
+        <div class="field share-picks" role="group" aria-label="{{ 'sharing.picks.label'|trans }}" hidden x-bind:hidden="false">
+            <p class="field__label" aria-hidden="true">{{ 'sharing.picks.label'|trans }}</p>
+            <div class="chip-row">
+                <button type="button" class="btn btn--sm" x-on:click="pick('log', false, true)">{{ 'sharing.picks.driver'|trans }}</button>
+                <button type="button" class="btn btn--sm" x-on:click="pick('manage', true, true)">{{ 'sharing.picks.co_owner'|trans }}</button>
+                <button type="button" class="btn btn--sm" x-on:click="pick('view', false, false)">{{ 'sharing.picks.viewer'|trans }}</button>
+            </div>
+            <p class="field__hint">{{ 'sharing.picks.hint'|trans }}</p>
+        </div>
+        <fieldset class="field fieldset">
+            <legend class="field__label">{{ 'sharing.level'|trans }}</legend>
+            <div class="chip-row">
+                {% for level in levels %}
+                    <label class="chip">
+                        <input type="radio" name="level" value="{{ level.value }}"{% if level.value == values.level %} checked{% endif %} required x-model="level">
+                        <span>{{ ('sharing.levels.' ~ level.value)|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            <p class="field__hint">{{ 'sharing.level_hint'|trans }}</p>
+        </fieldset>
+        <label class="toggle">
+            <input type="checkbox" name="can_see_costs" value="1"{% if costs %} checked{% endif %} x-model="costs">
+            <span class="toggle__text">
+                <span class="toggle__title">{{ 'sharing.can_see_costs'|trans }}</span>
+                <span class="toggle__hint">{{ 'sharing.can_see_costs_hint'|trans }}</span>
+            </span>
+        </label>
+        <label class="toggle">
+            <input type="checkbox" name="notify" value="1"{% if notify %} checked{% endif %} x-model="notify">
+            <span class="toggle__text">
+                <span class="toggle__title">{{ notify_label }}</span>
+                <span class="toggle__hint">{{ 'sharing.notify_hint'|trans }}</span>
+            </span>
+        </label>
+        <div class="share-summary" role="group" aria-label="{{ 'share_summary.label'|trans }}">
+            {% for state, allows in states %}
+                <div{% if state != current %} hidden{% endif %} x-bind:hidden="state !== '{{ state }}'">
+                    {{ _self.summary(allows, 'they', name) }}
+                </div>
             {% endfor %}
         </div>
-        <p class="field__hint">{{ 'sharing.level_hint'|trans }}</p>
-    </fieldset>
-    <label class="toggle">
-        <input type="checkbox" name="can_see_costs" value="1"{% if (values.can_see_costs ?? '') == '1' %} checked{% endif %}>
-        <span class="toggle__text">
-            <span class="toggle__title">{{ 'sharing.can_see_costs'|trans }}</span>
-            <span class="toggle__hint">{{ 'sharing.can_see_costs_hint'|trans }}</span>
-        </span>
-    </label>
-    <label class="toggle">
-        <input type="checkbox" name="notify" value="1"{% if (values.notify ?? '') == '1' %} checked{% endif %}>
-        <span class="toggle__text">
-            <span class="toggle__title">{{ notify_label }}</span>
-            <span class="toggle__hint">{{ 'sharing.notify_hint'|trans }}</span>
-        </span>
-    </label>
+    </div>
 {%- endmacro %}
 
 {% block title %}{{ heading }} · {{ parent() }}{% endblock %}
@@ -71,7 +118,7 @@
                                         level: share.level.value,
                                         can_see_costs: share.canSeeCosts ? '1' : '',
                                         notify: share.notify ? '1' : '',
-                                    }, levels, 'sharing.notify_other'|trans) }}
+                                    }, levels, 'sharing.notify_other'|trans, states, row.user.displayName) }}
                                     <div class="btn-row">
                                         <button type="submit" class="btn btn--primary">{{ ui.icon('save') }}{{ 'form.save'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
                                         <button type="submit" class="btn btn--ghost" formaction="{{ url_for('vehicles.sharing.change', {id: vehicle.id, member: row.user.id, action: 'remove'}) }}">{{ ui.icon('person_remove') }}{{ 'sharing.remove'|trans }}<span class="visually-hidden">: {{ row.user.displayName }}</span></button>
@@ -88,12 +135,21 @@
                 <form class="form" method="post" action="{{ url_for('vehicles.sharing.add', {id: vehicle.id}) }}">
                     {{ ui.csrf(csrf) }}
                     {{ ui.input('username', 'sharing.username'|trans, values, errors, {required: true, maxlength: 64, autocomplete: 'off', hint: 'sharing.username_hint'|trans}) }}
-                    {{ _self.share_fields(values, levels, 'sharing.notify_other'|trans) }}
+                    {{ _self.share_fields(values, levels, 'sharing.notify_other'|trans, states, 'share_summary.someone'|trans) }}
                     <div class="btn-row">
                         <button type="submit" class="btn btn--primary">{{ ui.icon('person_add') }}{{ 'sharing.add'|trans }}</button>
                     </div>
                 </form>
             </section>
+
+            <details class="card share-levels nojs-only">
+                <summary class="card__title">{{ ui.icon('info') }}{{ 'sharing.each_level'|trans }}</summary>
+                <p class="field__hint">{{ 'sharing.each_level_hint'|trans }}</p>
+                {% for allows in each_level %}
+                    <h3 class="share-levels__level">{{ ('sharing.levels.' ~ allows.level.value)|trans }}</h3>
+                    <div class="share-summary">{{ _self.summary(allows, 'they', 'share_summary.someone'|trans) }}</div>
+                {% endfor %}
+            </details>
 
             <section class="card" aria-labelledby="transfer-heading">
                 <h2 id="transfer-heading" class="card__title">{{ ui.icon('swap_horiz') }}{{ 'sharing.transfer_heading'|trans }}</h2>
@@ -106,7 +162,8 @@
             <section class="card" aria-labelledby="mine-heading">
                 <h2 id="mine-heading" class="card__title">{{ ui.icon('group') }}{{ 'sharing.your_access'|trans }}</h2>
                 <p>{{ 'sharing.your_level'|trans({level: ('sharing.levels.' ~ mine.level.value)|trans, owner: owner.displayName ?? ''}) }}</p>
-                <p class="muted">{{ (mine.canSeeCosts ? 'sharing.you_see_costs' : 'sharing.you_do_not_see_costs')|trans }}</p>
+                <h3 class="share-levels__level">{{ 'sharing.what_you_can_do'|trans }}</h3>
+                <div class="share-summary">{{ _self.summary(mine_allows, 'you', '') }}</div>
                 <form class="form" method="post" action="{{ url_for('vehicles.sharing.mine', {id: vehicle.id, action: 'notify'}) }}">
                     {{ ui.csrf(csrf) }}
                     <label class="toggle">

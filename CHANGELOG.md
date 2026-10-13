@@ -6,9 +6,28 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 45: **the licence.**
+## [3.11.0] — 2026-10-13
+
+Phase 46: **what a share allows, in plain words**, before you press
+*Share*. Phase 45: **the licence**.
 
 ### Added
+- **What a share allows.** Under each share on a vehicle's *Sharing* page,
+  and under the form that adds one, two short lists: what the person can do
+  and what they can't, in plain words. They name the surprises: documents
+  carry the policy number and the registration, a Log user sees the amounts
+  they typed themselves (but no totals or reports), and Manage always
+  includes costs, exports and the sale pack. The lines come from the same
+  rules the app enforces, and a test fails if they ever disagree. With
+  JavaScript on they follow the level and ticks as you change them; without
+  it, the saved share's summary shows, with *What each level allows* below
+  the forms.
+- **Quick picks**: *Driver* (Log, no costs, reminders on), *Co-owner*
+  (Manage, reminders on) and *Viewer* (View, no costs) fill in the form. A
+  share still stores only its level and ticks.
+- **"Sam can now: …"** after a save that widens someone's access.
+- **What you can do**, the same summary, on a shared vehicle's *Sharing*
+  page for the person it is shared with.
 - **Logbook is free software under the GNU Affero General Public License
   v3.0 or later** (`LICENSE`). You may run, study, change and share it; if
   you run a changed copy for others over a network, offer them its source.
@@ -23,8 +42,16 @@ Phase 45: **the licence.**
   with a `Signed-off-by` line on every commit (Developer Certificate of
   Origin).
 
+### Changed
+- **Make admin asks first**, on a page that says what an admin can do:
+  manage users and modules, change server settings, and download or restore
+  backups containing every vehicle on the install. The *Admin* tick on
+  *Invite* and *Add user* says the same.
+
 ### Upgrade notes
-- Nothing to do: no app change, no migration and no configuration change.
+- Pull and restart: no migration and no configuration change.
+- `POST /settings/users/{id}/admin` still makes someone an admin; a GET of
+  the same address now shows the confirmation page.
 
 ## [3.10.0] — 2026-10-10
 

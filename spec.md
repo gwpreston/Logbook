@@ -5695,21 +5695,27 @@ part of View.
   test, Phase 18.1). The words follow the reader: "This lets Sam" and
   *they* on the owner's form, *What you can do* and *you* for the shared
   user.
-  - **On the owner's form**, under *Share* and under each share's *Save*:
-    the summary of what is ticked. With Alpine it follows the level and
-    ticks as they change; without JS it shows the saved share (or, on the
-    add form, the default), and *What each level allows*, below the
-    forms, lists the three levels' summaries without the ticks.
+  - **On the owner's form**, after the ticks and just above *Share* and
+    each share's *Save*: the summary of what is ticked ("They can" on the
+    add form, before a username is known). Every state the controls can
+    be in is rendered, the current one shown; with Alpine the one
+    matching the level and ticks shows as they change. Without JS it
+    shows the saved share (or, on the add form, the default), and *What
+    each level allows* (a disclosure shown only without JS, below the
+    forms) lists the three levels' summaries without the ticks.
   - **Quick picks** (#392), above the level on both forms, with JS only:
     *Driver* (Log, costs off, reminders on), *Co-owner* (Manage, reminders
     on) and *Viewer* (View, costs off, reminders off). A pick only fills
     in the controls; the share stores its level and ticks as before.
   - **After *Save*** when access widened (a higher level or costs turned
-    on), a second flash names what was added: "Sam can now: see costs,
-    valuations and reports." No confirmation page: a share is easily
+    on), a second flash names the *Can* lines added: "Sam can now: see
+    costs, valuations and reports." Reminders aren't access, and an
+    own-entry line adds nothing when the wider line was there before (so
+    Manage → Log says nothing). No confirmation page: a share is easily
     undone (#395).
   - **A shared user's *Sharing* page**: *What you can do*, the same
-    summary in the second person, in place of the level and costs lines.
+    summary in the second person, under their level, in place of the
+    old costs line.
 - **Transfer** (`/vehicles/{id}/transfer`, `Own`, with a confirmation
   page): to another active user, who becomes the owner (`vehicles.user_id`)
   and loses their share if they had one; everything stays attached to the
@@ -10174,7 +10180,8 @@ task breakdowns live in the per-phase files; this is the map.
   a save widens access. Quick picks *Driver*, *Co-owner* and *Viewer* fill
   in the controls. The *Admin* tick says what an admin can do, and *Make
   admin* asks first (§7.9, §7.21; #392–#395). Shares on the invitation
-  parked (§12). No migration. See [`phase-46.md`](docs/phases/phase-46.md).
+  parked (§12). No migration. Release v3.11.0 (with Phase 45's notes).
+  See [`phase-46.md`](docs/phases/phase-46.md).
 
 ---
 
