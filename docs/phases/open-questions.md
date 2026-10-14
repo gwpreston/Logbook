@@ -513,6 +513,10 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 408 | [48.2](phase-48.2.md) | B. The working on dashboard widgets | Decided | (1) A *How?* link to the page that shows the working; no working inside a widget. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 | 409 | [48.2](phase-48.2.md) | C. Ask quoting the working | Decided | (1) Ask's read tools (and MCP's) pass the working, and answers may quote its sum, under the same grounding check. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 | 410 | [48.2](phase-48.2.md) | Unknown `?include=` values, `result_value`, and a new key in Ask/MCP output (found by the merge review) | Decided | Reject an unknown `include` with a 400; `result_value` is the headline figure (the per-km rate where there is one); a new optional key is compatible. spec §7.20. Built in [48.2](phase-48.2.md). | 2026-10-14 |
+| 411 | [49](phase-49.md) | A. MOT and tax dates: documents or reminders? | Decided | (1) Documents with only an expiry date, which raise their usual reminders and show on the Documents tab. spec §7.9, §7.5. | 2026-10-14 |
+| 412 | [49](phase-49.md) | B. When does the flow start? | Decided | (1) Straight after the welcome form for a user with no vehicles of their own or shared, with *Skip for now* on step 1. spec §7.9. | 2026-10-14 |
+| 413 | [49](phase-49.md) | C. Modules on for new installs | Decided | (1) On: fuel, maintenance, compliance, reminders, reports. Off: tyres, finance, incidents, issues, stations, trips. AI modules unchanged. Recorded in `features` at setup. spec §7.10. | 2026-10-14 |
+| 414 | [49](phase-49.md) | D. A preset interval for servicing? | Decided | (1) 12 months or 10,000 miles (16,000 km), editable, labelled "a common interval; check your handbook". spec §7.4. | 2026-10-14 |
 
 ## Other loose ends found in the review
 

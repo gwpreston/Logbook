@@ -2519,6 +2519,12 @@ toggles.
   of per-fill economy), *compliance status* (current documents that are
   expired or expiring, else "all in order", per active vehicle), *mileage*
   and *recent activity* (below). Archived vehicles never appear.
+- **The *Household* layout** (Phase 49, #411–#414): a named default
+  layout for new users made only of existing widgets: *Needs attention*,
+  *Coming up* (next 3 months, with costs), *Spend this month*, *Last 12
+  months* and *Recent activity* (the fleet History limited to 10 rows).
+  *Reset layout* offers it and the full layout; existing users' saved
+  layouts are never touched.
 - **Admin notices** above the widgets (§7.30), in this order: the update
   banner (§7.31), from Phase 47 the backup banner (§7.13), then the demo,
   scheduler and job warnings.
@@ -3228,6 +3234,39 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   JWT against a key set (an Authentik proxy provider cannot sign that
   way).
 
+- **Set up your first vehicle** (Phase 49, decided 2026-10-14, #411, #412,
+  #414). `/vehicles/start` (*Log* on the garage): a page, not a modal,
+  each step a plain form that works without JS and goes through the
+  services the full forms use, so a vehicle made here is a vehicle like any
+  other. Five steps, each skippable, the flow resumable:
+  1. **The vehicle:** registration first; with MOT history set up
+     (§7.38), *Look up* fills make, model, fuel and first registration;
+     otherwise type, make, model and fuel only.
+  2. **Mileage now:** one number, dated today (a mileage-log reading).
+  3. **Key dates:** MOT due, tax due, insurance renewal. MOT and tax become
+     documents holding only an expiry date, and insurance an insurance
+     document with its renewal date (and the insurer if typed); each
+     raises its usual reminder (§7.5, §7.6) and later takes its full
+     details on its own page. With MOT history, the MOT date is already
+     filled in.
+  4. **Servicing:** a schedule (§7.4) preset to 12 months or 10,000 miles
+     (16,000 km in metric), editable and labelled "a common interval;
+     check your handbook", with the last service date if known. Its first
+     due point comes from the last service date, else the purchase date,
+     else today.
+  5. **Done:** what's next (log a fill-up, invite a household member, add
+     the purchase price), each one a link.
+  The flow starts straight after the welcome form (or after sign-in) for a
+  user with no vehicles of their own and none shared, with *Skip for now*
+  on step 1; a shared user with vehicles never sees it, and it is always
+  reachable from the empty garage's *Set up your first vehicle*. Progress is
+  in the user's settings (`getting_started`: vehicle id, steps done,
+  dismissed). A **getting-started card** on that vehicle's overview shows
+  "3 of 5 done" with the missing steps as links, until complete or
+  dismissed. A shared user's first visit says what the share allows
+  (Phase 46's summary, §7.9 *What a share allows*) before the vehicle.
+  Existing users are not shown the flow.
+
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
 Disabled modules are removed from nav, routes, and dashboard.
@@ -3244,7 +3283,16 @@ Disabled modules are removed from nav, routes, and dashboard.
   only while AI is set up). A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
-  (default true, except `trips`: default false). The garage, mileage log,
+  (default true, except `trips`: default false).
+  From Phase 49 (decided 2026-10-14, #413) a **new install** writes
+  `features` at setup with fuel, maintenance, compliance, reminders and
+  reports on and tyres, finance, incidents, issues, stations and trips off
+  (the AI modules unchanged), so a later change of defaults never flips an
+  existing install; installs that already have a `features` setting or
+  data are untouched. Settings → Modules says "Switched off when Logbook
+  was installed; switch on any time." beside each, and a module's absence
+  gets a one-line "Switch on" hint where it would surprise (for example
+  *Log incident* on the vehicle's menu). The garage, mileage log,
   expenses and history (§7.16) are
   core and cannot be switched off; a switched-off module's entries simply
   leave the history.
@@ -10495,6 +10543,12 @@ task breakdowns live in the per-phase files; this is the map.
   widgets, `?include=working` in the API, and passed by Ask's and MCP's
   read tools (§8, #407–#409). No migration. See
   [`phase-48.2.md`](docs/phases/phase-48.2.md).
+- **Phase 49 — Getting started and household defaults + release.** A
+  five-step *Set up your first vehicle* flow at `/vehicles/start`, a
+  getting-started card on the overview, a *Household* dashboard layout and
+  fewer modules on new installs, and a first-visit note for a shared user
+  (§7.8, §7.9, §7.10; #411–#414 decided 2026-10-14). See
+  [`phase-49.md`](docs/phases/phase-49.md).
 
 ---
 

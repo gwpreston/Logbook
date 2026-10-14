@@ -4,7 +4,7 @@
 reminders in about two minutes, with a dashboard that shows what needs
 attention and what it costs.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🔨 in progress (49.0 spec first) · file lives in `docs/phases/`
 
 Today a new user signs in, fills in the welcome form (language, time
 zone, units, currency) and lands in an empty garage. After that, they
@@ -109,8 +109,8 @@ Settled in 49.0:
 ## Tasks
 
 ### 49.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged; §7.9, §7.10,
-      §8 and the sections the steps touch; §13; `ROADMAP.md` row.
+- [x] Open questions A–D decided by the owner and logged (#411–#414);
+      §7.8, §7.9, §7.10, §13 written; `ROADMAP.md` row already there.
 
 ### 49.1 Getting started
 - [ ] `/vehicles/start` and its five steps, with *Look up* when MOT
@@ -153,9 +153,10 @@ Settled in 49.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-14 and logged as #411–#414 in
+`open-questions.md`; each took its recommendation.
 
-- **A. MOT and tax dates: documents or reminders?**
+- **A. MOT and tax dates: documents or reminders?** *Decided 2026-10-14 (#411): (1), the recommendation.*
   - (1) Documents with only an expiry date, which raise their usual
     reminders and show on the Documents tab.
   - (2) Manual reminders only.
@@ -164,7 +165,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   in Logbook (renewals, the sale pack, MOT history), and a manual
   reminder would be a second place for them.
 
-- **B. When does the flow start?**
+- **B. When does the flow start?** *Decided 2026-10-14 (#412): (1), the recommendation.*
   - (1) Straight after the welcome form, for a user with no vehicles of
     their own or shared.
   - (2) Only from the empty garage's button.
@@ -172,7 +173,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   *Recommendation:* (1), with *Skip for now* on the first step. A shared
   user with vehicles never sees it.
 
-- **C. Modules on for new installs.**
+- **C. Modules on for new installs.** *Decided 2026-10-14 (#413): (1), the recommendation.*
   - (1) On: fuel, maintenance, compliance, reminders, reports. Off:
     tyres, finance, incidents, issues, stations, trips.
   - (2) Also tyres on.
@@ -183,7 +184,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   "Switch on" hint where its absence would surprise (for example, *Log
   incident* on the vehicle's menu).
 
-- **D. A preset interval for servicing?**
+- **D. A preset interval for servicing?** *Decided 2026-10-14 (#414): (1), the recommendation.*
   - (1) 12 months or 10,000 miles (16,000 km), editable.
   - (2) No preset; the owner types it.
 
