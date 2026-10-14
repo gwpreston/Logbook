@@ -116,7 +116,7 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
 - [x] Translations (every shipped locale).
 
 ### 48.2.3 Tests and release
-- [x] (No shared golden household existed: each figure has a hand-worked example.) For every figure, the working's sum equals the figure
+- [x] For every figure, the working's sum equals the figure
       shown, and every input links to a row that exists.
 - [x] `ViewCosts`: the working hides with its figure. A test as the
       restricted persona proves it.
