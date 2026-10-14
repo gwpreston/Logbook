@@ -16,6 +16,7 @@ final readonly class FinanceFigures
 {
     /**
      * @param array<int, string> $interest each scheduled payment's interest share, by payment number (credit agreements)
+     * @param list<InterestStep> $interestSteps the same, with the balance before and after
      */
     public function __construct(
         public PaymentSchedule $schedule,
@@ -44,6 +45,10 @@ final readonly class FinanceFigures
         public bool $equityNeedsValuation,
         public array $interest,
         public ?DateTimeImmutable $endsOn,
+        /** Each payment's split, for the working of *Interest so far* (spec.md §8). */
+        public array $interestSteps = [],
+        /** The agreement's monthly rate (a fraction, 10 places). */
+        public ?string $monthlyRate = null,
     ) {
     }
 }

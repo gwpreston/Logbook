@@ -440,3 +440,42 @@
         </span>
     {%- endif -%}
 {%- endmacro %}
+
+
+{# How a figure was worked out (spec.md §8 *Show the working*): a collapsed
+   <details> (it works without JS; print opens it) holding the dated inputs
+   with links to their rows, the sum in words and what Logbook did not assume.
+   Null when the figure has no working (or the viewer may not see it). #}
+{% macro working(working, summary = null, links = true, label = null) -%}
+    {%- if working is not null -%}
+        <details class="working" data-working>
+            <summary>{{ summary ?? 'working.summary'|trans }}{% if label %}<span class="visually-hidden">: {{ label }}</span>{% endif %}</summary>
+            <div class="working__body">
+                {% if working.inputs is not empty %}
+                    <dl class="working__inputs">
+                        {% for input in working.inputs %}
+                            <div>
+                                <dt>{{ input.label }}</dt>
+                                <dd>
+                                    {%- if links and input.link is not null %}<a href="{{ url_for(input.link.route, input.link.params, input.link.query) }}">{{ input.value }}</a>{% else %}{{ input.value }}{% endif -%}
+                                    {%- if input.asOf is not null and input.asOf.shows() %} {{ _self.as_of(input.asOf) }}{% endif -%}
+                                </dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                {% endif %}
+                {% for step in working.steps %}
+                    <p class="working__step">{{ step }}</p>
+                {% endfor %}
+                {% for note in working.notes %}
+                    <p class="working__note muted">{{ note }}</p>
+                {% endfor %}
+            </div>
+        </details>
+    {%- endif -%}
+{%- endmacro %}
+
+{# A widget's link to the page that shows the working (Phase 48.2, #408). #}
+{% macro working_link(href, label = null) -%}
+    <a class="working-link" href="{{ href }}">{{ 'working.how'|trans }}{% if label %}<span class="visually-hidden"> {{ label }}</span>{% endif %}</a>
+{%- endmacro %}

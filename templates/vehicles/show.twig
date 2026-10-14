@@ -391,6 +391,7 @@
                         </div>
                     {% endif %}
                 </dl>
+                {{ ui.working(working_of(cost)) }}
                 {# True cost (spec.md §7.35): the five parts per distance, since bought or over the last 12 months. #}
                 {% if true_cost %}
                     {% import 'macros/true_cost.twig' as tcm %}
@@ -411,6 +412,7 @@
                             {% if tc.isRunningOnly() and tc.period.range.value != 'since_bought' %}
                                 <p class="field__hint">{{ 'true_cost.no_depreciation'|trans }}</p>
                             {% endif %}
+                            {{ ui.working(working_of(tc, true_cost)) }}
                         {% else %}
                             <p class="muted">{{ (tc and tc.gap ? tc.gap.messageKey() : 'true_cost.gap.no_mileage')|trans }}</p>
                         {% endif %}

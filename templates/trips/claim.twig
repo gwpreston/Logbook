@@ -181,6 +181,7 @@
                         {% endif %}
                     </dl>
                     {% if totals.employerAmount is not null %}<p class="field__hint">{{ 'trip.claim.difference_hint'|trans }}</p>{% endif %}
+                    {{ ui.working(working_of(totals, filter)) }}
                 </section>
             {% endfor %}
 

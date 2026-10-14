@@ -18,6 +18,7 @@ use Logbook\Service\Valuation\ValuationNotFound;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Service\Working\OwnershipWorking;
 use Logbook\Support\Api\ApiProblem;
 use Logbook\Support\Api\EntityTag;
 use Logbook\Support\Api\ListQuery;
@@ -47,6 +48,7 @@ final readonly class ApiVehicleFigures
         private DisplayFormatter $format,
         private ClockInterface $clock,
         private EntityTag $tags,
+        private OwnershipWorking $working,
     ) {
     }
 
@@ -124,7 +126,7 @@ final readonly class ApiVehicleFigures
      *
      * @return array<string, mixed>
      */
-    public function ownership(User $user, Vehicle $vehicle): array
+    public function ownership(User $user, Vehicle $vehicle, bool $working = false): array
     {
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $readings = $this->odometer->history($vehicle)->readings;
@@ -143,7 +145,7 @@ final readonly class ApiVehicleFigures
         $current = $depreciation->current;
         $money = static fn (?Money $m): ?string => $m?->toDecimal(Serializer::QUANTITY_SCALE);
 
-        return [
+        $out = [
             'vehicle_id' => $vehicle->id,
             'currency' => $currency,
             'since' => $cost?->period->from === null ? null : Serializer::date($cost->period->from),
@@ -186,6 +188,15 @@ final readonly class ApiVehicleFigures
                 'per_month' => $cost?->perMonth === null ? null : $this->format->money($cost->perMonth),
             ],
         ];
+        if ($working) {
+            // How the figures were worked out, on request (?include=working, spec.md §8).
+            $out['working'] = $cost === null ? null : [
+                'cost_of_ownership' => $this->working->forCost($cost, $today)->toArray(),
+                'depreciation' => $this->working->depreciation($cost, $today)?->toArray(),
+            ];
+        }
+
+        return $out;
     }
 
     /**

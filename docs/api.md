@@ -229,6 +229,40 @@ item has `cost_as_of` for the day of "last time". The object is
 attention). Both fields are `null` when there is no date to give. They are
 additive: the API stays `v1`.
 
+## How a figure was worked out
+
+`GET` `/vehicles/{id}/ownership`, `/true-cost`, `/finance`,
+`/finance/agreements`, `/trips/claim` and `/vehicles/{id}/fuel` take
+`?include=working`, which adds a `working` object beside the figure it
+explains, in the key owner's language and units:
+
+```json
+{
+  "inputs": [
+    {"label": "Latest value", "value": "£9,800.00",
+     "as_of": {"date": "2026-03-01", "kind": "valuation", "basis": null, "stale": false}}
+  ],
+  "steps": ["Depreciation: price paid £15,000.00 − latest value £9,800.00 (1 Mar 2026) = £5,200.00."],
+  "notes": ["Logbook doesn’t estimate values or apply a depreciation rate: it only compares values you entered (…)."],
+  "result": "£5,200.00",
+  "result_value": "5200.000"
+}
+```
+
+The inputs carry their date (`as_of`, above) and the steps say the sum in
+words with the real numbers, so a script can show or check them.
+`ownership` has `working.cost_of_ownership` and `working.depreciation`;
+`true-cost` has `working` on the period, on each year and on each
+`what_changed`; a finance agreement has `working.settlement`,
+`working.equity` and `working.interest_so_far`; each total of
+`trips/claim` has one; a fuel item has `economy.working` when it closes a
+measured stretch. `result` is the headline figure as shown, and
+`result_value` is the same figure as a number: the cost per distance
+(per km) where the working explains one, otherwise the amount or distance it
+ends at. Without the parameter nothing changes, and anything
+other than `working` in `include` is a 400. It is additive: the API stays
+`v1`.
+
 ## Reports
 
 The reports take the Reports page's choices: `range` (`month`, `3m`,

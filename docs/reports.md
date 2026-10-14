@@ -115,6 +115,25 @@ per-mile figures over a few hundred miles swing too much to compare.
 Everything here needs access to the vehicle's costs. A vehicle shared with
 you without its costs is left out.
 
+## How it's worked out
+
+Every figure on this page can be opened. Under the cost of ownership, the
+true cost of a period and *What changed* there is a *How it's worked out*
+line (closed on screen, open when you print). It lists what the figure
+rests on, each input with its date and a link to the entry it came from,
+then the sum in words with the real numbers, and what Logbook did not
+assume.
+
+For depreciation that last part matters: Logbook never estimates what a
+vehicle is worth or applies a depreciation rate. It subtracts values you
+entered (the price you paid, your valuations and the sale price), and for a
+period it draws a straight line between two of them. The working shows
+which two, and says so when a period runs past your latest value and is
+measured only up to it. The dashboard's *True cost* widget links to the
+vehicle's card (*How?*) rather than carry the working itself. On the True cost
+report each vehicle opens the working for its latest three years, *Since
+bought* and its latest two changes; older years show their figures only.
+
 ## What changed
 
 Under the trend, each year is compared with the year before, as long as

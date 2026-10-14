@@ -32,6 +32,8 @@ final readonly class FuelRate
         public FuelRateStatus $status,
         /** Money per km (canonical decimal) when ready. */
         public ?string $perKm = null,
+        /** The period the rate is measured over, for the working (spec.md §8). */
+        public ?ReportPeriod $period = null,
     ) {
     }
 
@@ -69,7 +71,7 @@ final readonly class FuelRate
             return new self(FuelRateStatus::NotEnoughFillUps);
         }
 
-        return new self(FuelRateStatus::Ready, Decimal::divide($spend, $km, self::SCALE));
+        return new self(FuelRateStatus::Ready, Decimal::divide($spend, $km, self::SCALE), $period);
     }
 
     public function isReady(): bool

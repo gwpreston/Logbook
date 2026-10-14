@@ -6,6 +6,7 @@ namespace Logbook\Action\Api;
 
 use Logbook\Service\Api\ApiVehicleFigures;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -27,6 +28,7 @@ final readonly class OwnershipAction
         return $this->responder->json($this->figures->ownership(
             RequestContext::requireUser($request),
             RequestContext::vehicle($request),
+            IncludeParam::working($request),
         ));
     }
 }

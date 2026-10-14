@@ -14,12 +14,21 @@ use Logbook\Support\Money\Money;
  */
 final readonly class ForecastMonthTotal
 {
+    /**
+     * @param list<ForecastItem> $costed the items with a known cost that $planned adds up
+     *                                   (a finance line's payments are in $financeSpread)
+     * @param list<ForecastItem> $unknownItems the items counted in $unknown
+     */
     public function __construct(
         /** Its first day. */
         public DateTimeImmutable $month,
         public Money $planned,
         public Money $fuel,
         public int $unknown = 0,
+        public array $costed = [],
+        public array $unknownItems = [],
+        /** What a finance agreement's payments in this month add to $planned (spec.md §7.32). */
+        public ?Money $financeSpread = null,
     ) {
     }
 

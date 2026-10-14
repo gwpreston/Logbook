@@ -6,6 +6,7 @@ namespace Logbook\Action\Api;
 
 use Logbook\Service\Api\ApiReader;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Api\ListQuery;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -25,7 +26,12 @@ final readonly class ListFuelAction
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $query = ListQuery::fromRequest($request);
-        $page = $this->reader->fuel(RequestContext::requireUser($request), RequestContext::vehicle($request), $query);
+        $page = $this->reader->fuel(
+            RequestContext::requireUser($request),
+            RequestContext::vehicle($request),
+            $query,
+            IncludeParam::working($request),
+        );
 
         return $this->responder->page($request, $page['items'], $page['cursor']);
     }

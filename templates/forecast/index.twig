@@ -86,6 +86,8 @@
                             soon.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(soon.total(), soon.isAtLeast()),
                             soon.unknown() > 0 ? 'coming_up.unknown_count'|trans({count: soon.unknown()}) : 'coming_up.summary.soon_sub'|trans) }}
                     </dl>
+                    {{ ui.working(working_of(totals), 'working.summary_for'|trans({period: 'coming_up.summary.year'|trans})) }}
+                    {{ ui.working(working_of(soon), 'working.summary_for'|trans({period: 'coming_up.summary.soon'|trans})) }}
 
                     <section class="card" aria-labelledby="months-{{ currency }}">
                         <div class="card__header">

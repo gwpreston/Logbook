@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Ask\Tool;
 
+use DateTimeImmutable;
 use Logbook\Domain\Ai\Ask\ToolResult;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -19,6 +20,7 @@ use Logbook\Service\Report\TrueCostRange;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Report\TrueCostWording;
 use Logbook\Service\Report\VehicleTrueCost;
+use Logbook\Service\Working\TrueCostWorking;
 use Logbook\Support\Number\Decimal;
 
 /**
@@ -35,6 +37,7 @@ final readonly class TrueCostTool implements AskTool
         private ToolKit $kit,
         private TrueCostService $trueCosts,
         private TrueCostWording $wording,
+        private TrueCostWorking $working,
     ) {
     }
 
@@ -50,7 +53,9 @@ final readonly class TrueCostTool implements AskTool
             'True cost per distance per vehicle: fuel, maintenance, insurance tax and MOT, other and depreciation '
             . 'per mile or km, with by_year the cost by calendar year and what changed from each year to the next, '
             . 'split exactly into causes. Quote its sentences; never work the causes out yourself. Use it for '
-            . '"which car costs me most per mile" and "why has my car got more expensive?".',
+            . '"which car costs me most per mile" and "why has my car got more expensive?".'
+            . ' "How did you get that?" is answered from its working: '
+            . 'quote its sums and the dates of the values it rests on; never recompute them.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -85,12 +90,13 @@ final readonly class TrueCostTool implements AskTool
         ]));
         $byYear = ($arguments->values['by_year'] ?? false) === true;
         $hidden = array_values(array_filter($vehicles, fn (Vehicle $v): bool => !$this->kit->canSeeCosts($user, $v)));
-        $results = $this->trueCosts->forVehicles($user, $vehicles, $this->kit->today($user));
+        $today = $this->kit->today($user);
+        $results = $this->trueCosts->forVehicles($user, $vehicles, $today);
 
         $figures = [];
         $rows = [];
         foreach ($results as $vtc) {
-            $rows[] = $this->vehicle($vtc, $range, $byYear, $figures);
+            $rows[] = $this->vehicle($vtc, $range, $byYear, $figures, $today);
         }
 
         return new ToolResult(
@@ -122,15 +128,21 @@ final readonly class TrueCostTool implements AskTool
      * @param list<string> $figures the display strings the answer may quote
      * @return array<string, mixed>
      */
-    private function vehicle(VehicleTrueCost $vtc, TrueCostRange $range, bool $byYear, array &$figures): array
-    {
+    private function vehicle(
+        VehicleTrueCost $vtc,
+        TrueCostRange $range,
+        bool $byYear,
+        array &$figures,
+        DateTimeImmutable $today,
+    ): array {
         $cost = $vtc->period($range);
         $row = [
             'vehicle' => $this->kit->vehicleRef($vtc->vehicle),
             'currency' => $vtc->currency,
             ...($cost === null
                 ? ['per_distance' => null, 'note' => 'Not owned in this period.']
-                : $this->cost($cost, $figures)),
+                : $this->cost($cost, $figures)
+                    + ['working' => $this->working->period($vtc, $cost, $today)?->toArray()]),
         ];
         $change = $vtc->twelveMonthChange();
         if ($range === TrueCostRange::TwelveMonths && $change !== null) {
@@ -138,15 +150,24 @@ final readonly class TrueCostTool implements AskTool
             $figures[] = $this->wording->signed($change, $vtc->currency);
         }
         if ($byYear) {
+            // The working is for the latest three years and two changes, as on the report: the result
+            // stays within what a conversation can carry (spec.md §7.26).
+            $recent = array_slice($vtc->years, -3);
+            $latest = $vtc->latestChangeYears();
             $row['years'] = array_map(fn (TrueCost $year): array => [
                 'year' => $year->period->year,
                 'label' => $this->wording->label($year),
                 'partial' => $year->period->isPartial(),
                 'comparable' => $year->isComparable(),
                 ...$this->cost($year, $figures),
-            ], $vtc->years);
+            ] + (in_array($year, $recent, true)
+                ? ['working' => $this->working->period($vtc, $year, $today)?->toArray()]
+                : []), $vtc->years);
             $row['what_changed'] = array_values(array_map(
-                fn (CostChange $change): array => $this->change($change, $figures),
+                fn (CostChange $change): array => $this->change($change, $figures)
+                    + (in_array($change->after->period->year, $latest, true)
+                        ? ['working' => $this->working->change($vtc, $change)->toArray()]
+                        : []),
                 $vtc->changes,
             ));
         }

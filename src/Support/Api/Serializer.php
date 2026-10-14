@@ -952,7 +952,25 @@ final class Serializer
      *
      * @return array<string, mixed>
      */
-    public static function financeAgreement(AgreementView $view): array
+    public static function financeAgreement(AgreementView $view, bool $working = false): array
+    {
+        $figures = self::financeAgreementFigures($view);
+        if (!$working) {
+            return $figures;
+        }
+
+        // How the estimates were worked out, on request (`?include=working`, spec.md §8).
+        return $figures + ['working' => [
+            'settlement' => $view->settlementWorking?->toArray(),
+            'equity' => $view->equityWorking?->toArray(),
+            'interest_so_far' => $view->interestWorking?->toArray(),
+        ]];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function financeAgreementFigures(AgreementView $view): array
     {
         $agreement = $view->agreement;
         $data = $agreement->data;

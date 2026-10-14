@@ -17,6 +17,7 @@ use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Report\OwnershipService;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
+use Logbook\Service\Working\OwnershipWorking;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
 
@@ -34,6 +35,7 @@ final readonly class Ownership implements AskTool
         private ValuationService $valuations,
         private AttentionSettingsStore $attentionSettings,
         private FeatureToggles $features,
+        private OwnershipWorking $working,
     ) {
     }
 
@@ -47,7 +49,9 @@ final readonly class Ownership implements AskTool
         return new ToolDefinition(
             $this->name(),
             'Lifetime cost of owning one vehicle: running costs, depreciation (purchase price against the '
-            . 'latest value), the total, and the cost per distance and per month.',
+            . 'latest value), the total, and the cost per distance and per month.'
+            . ' "How did you get that?" is answered from its working: '
+            . 'quote its sums and the dates of the values it rests on; never recompute them.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -155,6 +159,11 @@ final readonly class Ownership implements AskTool
                 'per_distance_is_running_only' => $cost->perKmIsPartial,
                 'per_month' => $money($cost->perMonth),
                 'per_month_is_running_only' => $cost->perMonthIsPartial,
+                // How the figures were worked out: quote its sums, with the dates of the values it rests on (spec.md §8).
+                'working' => [
+                    'cost_of_ownership' => $this->working->forCost($cost, $today)->toArray(),
+                    'depreciation' => $this->working->depreciation($cost, $today)?->toArray(),
+                ],
             ],
             $source,
             $figures,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Api;
 
+use DateTimeImmutable;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Report\ChangeLine;
@@ -13,6 +14,8 @@ use Logbook\Service\Report\TrueCostRange;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Report\TrueCostWording;
 use Logbook\Service\Report\TruePart;
+use Logbook\Service\Report\VehicleTrueCost;
+use Logbook\Service\Working\TrueCostWorking;
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
@@ -32,13 +35,14 @@ final readonly class ApiTrueCost
         private TrueCostService $trueCosts,
         private TrueCostWording $wording,
         private ClockInterface $clock,
+        private TrueCostWorking $working,
     ) {
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function show(User $user, Vehicle $vehicle, TrueCostRange $range): array
+    public function show(User $user, Vehicle $vehicle, TrueCostRange $range, bool $working = false): array
     {
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $vtc = $this->trueCosts->forVehicle($user, $vehicle, $today);
@@ -52,22 +56,33 @@ final readonly class ApiTrueCost
             'vehicle_id' => $vehicle->id,
             'currency' => $vtc->currency,
             'period' => $range->value,
-            'true_cost' => $cost === null ? null : $this->cost($cost),
+            'true_cost' => $cost === null ? null : $this->cost($cost) + $this->workingOf($vtc, $cost, $today, $working),
             'change_against_previous_12_months' => Serializer::dec($change, self::SCALE),
             'years' => array_map(fn (TrueCost $year): array => [
                 'year' => $year->period->year,
                 'label' => $this->wording->label($year),
                 'comparable' => $year->isComparable(),
                 ...$this->cost($year),
+                ...$this->workingOf($vtc, $year, $today, $working),
                 'what_changed' => $year->period->year === null || $vtc->changeFor($year->period->year) === null
                     ? null
-                    : $this->change($vtc->changeFor($year->period->year)),
+                    : $this->change($vtc->changeFor($year->period->year), $vtc, $working),
             ], $vtc->years),
             'display' => [
                 'per_distance' => $cost?->perKm === null ? null : $this->wording->rate($cost->perKm, $vtc->currency),
                 'change_against_previous_12_months' => $change === null ? null : $this->wording->arrow($change, $vtc->currency),
             ],
         ];
+    }
+
+    /**
+     * How a period was worked out, on request (?include=working, spec.md §8).
+     *
+     * @return array<string, mixed>
+     */
+    private function workingOf(VehicleTrueCost $vtc, TrueCost $cost, DateTimeImmutable $today, bool $working): array
+    {
+        return $working ? ['working' => $this->working->period($vtc, $cost, $today)?->toArray()] : [];
     }
 
     /**
@@ -106,7 +121,7 @@ final readonly class ApiTrueCost
     /**
      * @return array<string, mixed>
      */
-    private function change(?CostChange $change): ?array
+    private function change(?CostChange $change, VehicleTrueCost $vtc, bool $working): ?array
     {
         if ($change === null) {
             return null;
@@ -124,6 +139,6 @@ final readonly class ApiTrueCost
                 'per_distance' => Serializer::dec($line->perKm, self::SCALE),
                 'sentence' => $this->wording->sentence($line, $currency),
             ], $change->lines),
-        ];
+        ] + ($working ? ['working' => $this->working->change($vtc, $change)->toArray()] : []);
     }
 }

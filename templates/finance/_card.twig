@@ -25,9 +25,9 @@
             <div><dt>{{ 'finance.row.mileage'|trans }}</dt><dd>{{ fin.mileage(finance.mileage, finance.currency) }}</dd></div>
         {% endif %}
         {% if figures.equity %}
-            <div><dt>{{ 'finance.row.equity'|trans }}</dt><dd>{{ fin.equity(figures.equity) }}</dd></div>
+            <div><dt>{{ 'finance.row.equity'|trans }}</dt><dd>{{ fin.equity(figures.equity) }}{{ ui.working(finance.equityWorking, null, true, 'finance.row.equity'|trans) }}</dd></div>
         {% elseif figures.settlement %}
-            <div><dt>{{ 'finance.row.settlement'|trans }}</dt><dd>{{ fin.settlement(figures.settlement) }}</dd></div>
+            <div><dt>{{ 'finance.row.settlement'|trans }}</dt><dd>{{ fin.settlement(figures.settlement) }}{{ ui.working(finance.settlementWorking, null, true, 'finance.row.settlement'|trans) }}</dd></div>
         {% endif %}
     </dl>
     {% if finance.overlap is not empty %}

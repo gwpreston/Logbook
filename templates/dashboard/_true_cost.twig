@@ -1,5 +1,6 @@
 {# True cost per distance (spec.md §7.35): each vehicle ranked by currency, highest first; no figure last. #}
 {% import 'macros/true_cost.twig' as tcm %}
+{% import 'macros/ui.twig' as ui %}
 {% set widget_data = dashboard.trueCost %}
 {# The vehicle chip and the expense breakdown's period are kept. #}
 {% set chip = (selected ? {vehicle: selected.id} : {})|merge(dashboard.expenseBreakdown ? dashboard.expenseBreakdown.period.toQuery() : {}) %}
@@ -27,6 +28,7 @@
                         <p class="muted true-cost__row-foot">
                             {{- true_cost_wording.breakdown(tc) -}}
                             {%- if vtc.twelveMonthChange() is not null %} · {{ tcm.change(vtc.twelveMonthChange(), vtc.currency, true_cost_wording) }}{% endif -%}
+                            {{ ui.working_link(url_for('vehicles.show', {id: vtc.vehicle.id}) ~ '#true-cost', vtc.vehicle.name()) }}
                         </p>
                     {% else %}
                         <p class="muted">{{ (tc and tc.gap ? tc.gap.messageKey() : 'true_cost.gap.no_mileage')|trans }}</p>

@@ -7173,18 +7173,6 @@ p.stat__label {
     margin-left: var(--space-1);
 }
 
-.near-sum summary {
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.near-sum p {
-    margin: var(--space-2) 0 0;
-    max-width: 32rem;
-    color: var(--muted);
-    font-size: var(--fs-sm);
-}
-
 .fuel-attribution a {
     color: inherit;
 }
@@ -7312,3 +7300,25 @@ p.stat__label {
 .as-of { color: var(--muted); font-size: .85em; white-space: nowrap; }
 .as-of--stale { color: var(--amber); font-weight: 600; }
 @media print { .as-of, .as-of--stale { color: inherit; } }
+
+/* *How it's worked out* (Phase 48.2): closed on screen, open in print. */
+.working { margin-top: var(--space-2); font-size: var(--fs-sm); white-space: normal; }
+.working > summary { cursor: pointer; color: var(--muted); min-height: 2.75rem; display: inline-flex; align-items: center; }
+.working > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.working__body { margin-top: var(--space-2); max-width: 40rem; min-width: min(16rem, 100%); white-space: normal; }
+/* A disclosure marker, so the summary reads as a control; decorative, hence no alt text. */
+.working > summary::before { content: "\25B8" / ""; margin-right: var(--space-1); }
+.working[open] > summary::before { content: "\25BE" / ""; }
+.working__inputs { margin: 0 0 var(--space-2); }
+.working__inputs > div { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); padding: var(--space-1) 0; border-bottom: 1px solid var(--border); }
+.working__inputs dt { color: var(--muted); flex: 0 0 10rem; }
+.working__inputs dd { margin: 0; }
+.working__step, .working__note { margin: var(--space-2) 0 0; }
+.working-link { font-size: var(--fs-sm); margin-left: var(--space-1); display: inline-flex; align-items: center; min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--space-1); }
+@media print {
+    .working > summary { color: inherit; font-weight: 600; }
+    .working::details-content { content-visibility: visible; display: block; }
+    .working-link { display: none; }
+    /* *Cheapest near me* is already wider than a page: its working stays on screen (spec.md §8). */
+    .near-table .working { display: none; }
+}

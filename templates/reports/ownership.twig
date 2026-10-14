@@ -169,6 +169,13 @@
                         {% endif %}
                     </table>
                 </div>
+                {% for cost in section.rows %}
+                    {% set working = working_of(cost) %}
+                    {% if working %}
+                        <h3 class="card__subtitle">{{ cost.vehicle.name() }}</h3>
+                        {{ ui.working(working) }}
+                    {% endif %}
+                {% endfor %}
             </section>
         {% endfor %}
         </div>

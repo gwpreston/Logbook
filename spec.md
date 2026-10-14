@@ -1598,6 +1598,20 @@ from fleet totals unless "include archived" is toggled.
   never sets the frame's size, so a tall or very wide photo leaves the card
   around it exactly as it is with any other.
 
+- **Show the working: depreciation for a period** (Phase 48.2, §8). The
+  working reads the loss off the same `ValueCurve` as the figure and says
+  where each value comes from: "Value on 1 Feb 2026 £11,657.46 (straight line
+  between your valuation of 1 Jan 2026, £12,000.00 and your valuation of
+  1 Jul 2026, £10,000.00) − value at the end of 30 Apr 2026 £10,674.03
+  (straight line between …) = £983.43." A value that is a point of its own
+  says "your valuation of …", "the purchase of …" or "the sale of …". It
+  always adds: "Logbook doesn't estimate values or apply a depreciation
+  rate: it only draws a straight line between values you entered." A period
+  cut to the first or latest value says so ("Measured only up to your latest
+  value, 1 Jul 2026: Logbook doesn't extend the line beyond it"). Each
+  valuation is an input with its date (§8, `AsOf`) and a link to the
+  valuations list.
+
 ### 7.2 Odometer
 First-class mileage log with manual entries plus readings derived from fuel and
 maintenance. History table + trend chart. Warn on implausible readings (large
@@ -1959,6 +1973,16 @@ figure changes. With the `fuel` module off nothing about insights appears.
 - **Not in scope:** temperature or weather, insights by grade for
   electricity beyond cost per distance, fleet insights, a dashboard
   widget, CSV or backup changes, settings.
+
+- **Show the working: economy for a segment** (Phase 48.2, §8). Each
+  fill-up that closes a measured stretch opens to its two full fill-ups
+  (date and odometer, each linked to its fill-up), the fuel bought after
+  the first one up to and including the second, the distance, and the sum:
+  "621 mi between your full fill-ups of 1 Jun 2023 (odometer 7,456 mi) and
+  1 Jul 2023 (odometer 8,078 mi). 50 L was bought after the first one, up to
+  and including the second, in 1 fill-up. 50 L over 621 mi is 56.5 mpg."
+  With partial fill-ups inside it adds that only full fill-ups end a
+  stretch. The dashboard's *Recent fuel* links to the fuel log (*How?*).
 
 ### 7.4 Maintenance
 Full service history per vehicle, categorised. **Recurring schedules**
@@ -2455,6 +2479,27 @@ currency and never converted.
 - On the dashboard as its own widget from Phase 32 (`true_cost`, §7.35),
   not as a fifth tile: the pinned card keeps its four. Phase 32 also
   splits *Per distance* into its parts, by period and by year (§7.35).
+
+- **Show the working: cost of ownership and cost per distance** (Phase
+  48.2, §8). The *How it's worked out* card of the Cost of ownership tab is
+  now the shared working, under the overview card, the tab, the report's
+  cards and its print table. Its inputs are the price paid and the latest
+  value (dated), the running costs and the distance, each linked to its
+  rows. Its steps are: "Depreciation: price paid £15,000.00 − latest value
+  £9,800.00 (1 Mar 2026) = £5,200.00.", "Running costs: £11,700.00, from 2
+  entries logged between … and …", "Total: £11,700.00 of running costs +
+  £5,200.00 of depreciation = £16,900.00.", the distance as the difference
+  between the two readings it comes from ("…between your odometer readings
+  of 1 Mar 2023 (6,214 mi) and 31 Aug 2026 (45,214 mi)"), and the rate
+  ("Running costs £11,700.00 ÷ 39,000 mi driven = £0.30/mi.", then the
+  depreciation per distance and "Together: £0.30/mi + £0.144/mi = £0.444/mi."). The three sentences
+  the card had ("Depreciation compares the price you paid with its latest
+  value.", …) follow unchanged. Without a price and a value the rate says
+  it is running costs only. The Reports page's *Running cost* per distance
+  (§7.7 *Reports*) opens the same way: "£2,184.40 of costs logged in the
+  period ÷ 9,320 mi driven = £0.234/mi.", each vehicle's costs and its two
+  readings, and that depreciation (and any build spend) is left out of this
+  figure and that distance counts only for vehicles with costs in the period.
 
 ### 7.8 Dashboard
 At-a-glance fleet overview built from rearrangeable widgets (drag via SortableJS,
@@ -4947,6 +4992,19 @@ nothing about reminders (§7.6). Derived on every read
 - Not in History, print or reports. Nothing is stored, so there is no
   migration and nothing in backups.
 
+- **Show the working: totals** (Phase 48.2, §8). *Next 12 months* and *Next
+  3 months* each open to every item that is in them, with its cost, its due
+  date, a link to its source and the "last time" it comes from (§8,
+  `AsOf`, kind `last_time`); the finance payments spread over the months;
+  the items without a known cost; and each vehicle's fuel estimate: "{vehicle}:
+  your average of {distance} a day × the days in these months × {rate}, the
+  fuel cost per distance from {from} to {to}, = {amount}." The sums read:
+  "£1,136.00 of planned costs + £400.00 of estimated fuel = £1,536.00." With
+  items of unknown cost it adds that the total is at least the figure
+  shown, and always that Logbook doesn't estimate prices and that items with
+  no date yet are in no total. The overview card and the dashboard widget
+  link to the page (*How?*).
+
 ### 7.19 Sale pack (Phase 17.1)
 
 A buyer's view of one vehicle (`/vehicles/{id}/sale-pack`), for printing
@@ -5712,6 +5770,24 @@ editing a reading that an entry wrote (edit the entry); automatic
 valuation; and MCP tools for the Phase 39 writes (a later phase can map
 them, as Phase 26.5 mapped Phase 26.3's).
 
+- **`?include=working`** (Phase 48.2, §8). `GET /vehicles/{id}/ownership`,
+  `/true-cost`, `/finance`, `/finance/agreements`, `/trips/claim` and
+  `/vehicles/{id}/fuel` take `include=working` and add a `working` object
+  beside the figure it explains: `{inputs: [{label, value, as_of}], steps,
+  notes, result, result_value}`, in the key owner's language and units.
+  `ownership` has `working.cost_of_ownership` and `working.depreciation`;
+  `true-cost` has `working` on the chosen period, on each year and on
+  each `what_changed`; a finance agreement has `working.settlement`,
+  `.equity` and `.interest_so_far`; each `trips/claim` total has one; a
+  fuel item's `economy.working` is there when it closes a measured
+  stretch. `result` is the headline figure as shown; `result_value` is the
+  same figure as a canonical decimal: the cost per distance (per km) where the
+  working explains one, otherwise the amount or distance it ends at. It is
+  additive (the API stays `v1`): a new optional parameter and a new optional
+  key are compatible, and so is a new key in an Ask/MCP tool's output. Anything
+  else in `include` is a 400, decided on 2026-10-14 (#410): a typo should
+  not read as "nothing extra". Without `ViewCosts` the endpoints answer as before.
+
 ### 7.21 Sharing (Phase 19)
 
 A household on one install: each person has their own account, vehicles,
@@ -5997,6 +6073,13 @@ public sign-up. (Self-service password reset by email arrived in Phase
   - **CSV:** the same rows and columns, amounts as plain decimals, with a
     header row in the user's language. The file name is
     `mileage-claim-<tax year>.csv`.
+
+- **Show the working: the claim** (Phase 48.2, §8). Each currency's totals
+  open to the distance in each rate band × its rate ("100 mi × £0.55 =
+  £55.00."), "Mileage for tax year 2026/27: £55.00.", the passengers, and
+  what the employer paid and the difference; and that each trip's amount is
+  rounded to the currency's decimals and the totals add up those rounded
+  amounts. The trips are the table above it, so its inputs have no link.
 
 ### 7.24 Needs attention (Phase 24)
 What is wrong right now, on one short list, with the fix one tap away.
@@ -6808,6 +6891,15 @@ insight (#355; a total on *Coming up*, Phase 44):
   two after its two computed ones, each linking to the page. Details in
   [Phase 33.4](docs/phases/phase-33.4.md).
 
+- **Ask quotes the working** (Phase 48.2, #409). The `ownership`,
+  `true_cost`, `finance`, `coming_up` and `trips_summary` tools return a
+  `working` beside the figures it explains (§8), and say in their
+  descriptions that "How did you get that?" is answered from it. Its sums
+  are in the tool result, so the grounding check holds an answer that quotes
+  them to the same figures. The model never recomputes a sum. `true_cost` with `by_year` carries the
+  working for the latest three years and the latest two changes only (found by
+  the Phase 48.2 review: a seven-car, nine-year household doubled to 147 KB).
+
 ### 7.27 Reading files (Phase 26.4)
 
 A photo or PDF of an invoice, receipt or certificate fills in the right
@@ -7161,6 +7253,9 @@ with its own model. No connection in Settings → AI is needed or used.
   in §12); OAuth for MCP clients; SSE streams, subscriptions and
   list-changed notifications; file reading over MCP (§7.27 stays in
   Logbook's pages); any Settings → AI connection.
+
+- **The working in MCP** (Phase 48.2, #409): the read tools are Ask's, so
+  the same tools return the same `working`.
 
 ### 7.29 Incidents, damage and insurance claims (Phase 27.1)
 What happened, what was fixed, what the insurer did, and the five-year
@@ -7921,6 +8016,24 @@ flow, are out of scope (#121; a refinance is entered as a new loan).
 - **Export** (§7.13): agreements and their schedules join the CSV export;
   backups carry the three tables.
 
+- **Show the working: settlement, equity, interest so far** (Phase 48.2, §8).
+  Built from the values `AgreementFigures` used, on the agreement page and
+  the overview card; the dashboard's finance widget links to the page. The
+  *settlement estimate*: "Your 18 remaining payments (£5,424.00 in all), each
+  discounted at the agreement's monthly rate of 0.79%, come to £5,037.89
+  today.", less any extra payments already made, then "Your lender's quote
+  will differ: it may add fees or interest that the agreement allows." With
+  a lender's quote it says who quoted what, on which date, valid until when
+  (the quote is the dated input) and that Logbook estimated nothing. *Equity*:
+  "Value £7,200.00 (1 Jun 2026) − settlement £5,037.89 (estimated today) =
+  £2,162.11.", noting that Logbook uses a valuation you entered in the last
+  12 months and doesn't estimate the value. *Interest so far*: the sum ("£2,078.28
+  so far: the interest in the 30 payments made."), the split of the last three
+  payments (payment, interest, capital, balance after) and the rule (interest is
+  the balance before × the monthly rate for the months since the previous
+  payment, never more than the payment; the balance starts at the amount of
+  credit). An ended agreement says it is exact: "Everything paid, … , less {cash
+  price or amount of credit} = … of interest and fees."
 
 ### 7.33 Stations (Phase 30.1)
 
@@ -8382,6 +8495,12 @@ third party.
   request is made, and no listed price, link offer, *Cheapest near me*,
   widget, alert, API route or Ask tool appears (the API route answers 404).
 
+- **Show the working: *Was it worth it?*** (Phase 48.2, §8). The four steps
+  of the *Cheapest near me* row (fuel saving, extra distance, fuel for that,
+  actual saving) moved onto the shared working, their sentences unchanged;
+  the summary stays the saving ("saves £0.42", "costs £0.31 more") and the
+  input is the station's listed price with its time.
+
 ### 7.35 True cost (Phase 32)
 One number for what a vehicle costs to run per mile or km, what it is made
 of, and why it changed. Derived on every read (`Service\Report\ValueCurve`,
@@ -8533,6 +8652,22 @@ it replaces none of the other figures.
 - **Not in scope:** inflation adjustment (§7.7), forecasting cost per
   mile, comparisons with other people's cars, a mileage-based depreciation
   option (parked, #151).
+
+- **Show the working: true cost, depreciation and *What changed*** (Phase
+  48.2, §8). Each period opens to its parts, each with its amount and a
+  link to its rows (fuel, maintenance, documents, other, insurance payouts
+  with their sign, depreciation), the sum ("Fuel £… + Maintenance £… − Insurance
+  payouts £… + Depreciation £… = £…."), the distance and the two readings it
+  is the difference of, and the rate ("Running costs … ÷ … driven = …", then
+  the depreciation's own, "Together: …"); the depreciation sentence of §7.1 is
+  part of it. *What changed* sets the two periods side by side, part by part,
+  with the difference, then the sum ("2026 so far £… − 2025 £… = …") and each
+  cause's sentence, and says the parts' changes add up exactly to the change
+  in the total. The dashboard widget links to the vehicle's True cost card
+  (*How?*). So the report stays light for a large garage (measured: 5 vehicles
+  doubled its HTML), it carries the working for the latest three years, *Since
+  bought* and the latest two changes of each vehicle; the Expenses tab's table
+  and older years show their figures without it.
 
 ### 7.36 Demo mode (Phase 35.1)
 
@@ -9179,6 +9314,37 @@ overview while any test is unreviewed. A test is reviewed
 
     The digest quotes none of these figures. A sale is final, so a sold
     vehicle's value has no `AsOf`.
+- **Show the working: *How it's worked out*** (Phase 48.2, decided
+  2026-10-14, #407–#409): every headline figure in the inventory above
+  (and the ones below) can be opened to show its inputs and its sum in
+  plain words. One value, `Support\Working` (the inputs, the sum's steps
+  and what Logbook did not assume), is built by the service that works
+  the figure out, from the values it actually used (never recomputed
+  beside it), so pages, print, the API, Ask and MCP give the same words;
+  one macro, `ui.working()`, renders it.
+  - *Shape*: a collapsed `<details>` under the figure (it works without
+    JS). **Inputs**: each with its `AsOf` date (§8, 48.1) and a link to the
+    row it came from. **The sum**, in words, with the real numbers.
+    **What Logbook did not assume**: depreciation says plainly that Logbook
+    doesn't estimate values or apply a rate, it only draws a straight line
+    between values the owner entered (§7.1).
+  - *Open or closed* (#407): closed on screen, open in print.
+  - *Widgets* (#408): a *How?* link to the page that shows the working
+    (never the working inside the widget).
+  - *Ask and MCP* (#409): their read tools pass the working, so an answer
+    may quote its sum; the grounding check holds it to the same figures.
+  - *API*: `?include=working` adds a `working` object beside the figure
+    (additive; the API stays `v1`).
+  - *Restricted*: a working shows costs, so it hides with its figure for
+    a viewer without `ViewCosts`.
+  - *The figures*, each worded in its own section: depreciation for a
+    period (§7.1, §7.35), true cost for a period and *What changed*
+    (§7.35), the settlement estimate, equity and interest so far (§7.32),
+    cost per distance (§7.7), economy for a segment (§7.3), the mileage
+    claim (§7.23) and the *Coming up* totals (§7.18). The existing
+    *How it's worked out* (§7.7) and *Was it worth it?* (§7.34) move onto
+    the macro with their wording unchanged. A figure whose working
+    reveals a bug is fixed in its own change.
 - **Page budgets** (Phase 41.7, decided 2026-10-09, #350): the dashboard
   and a vehicle's overview (and, from Phase 42, the Insights page, #280)
   run a bounded number of queries, **not one per
@@ -10322,6 +10488,13 @@ task breakdowns live in the per-phase files; this is the map.
   API, `value_as_of` / `last_cost_as_of` in Ask and an *As of* column in
   the *Coming up* CSV (§8, #403–#406). No migration. Released with 48.2.
   See [`phase-48.1.md`](docs/phases/phase-48.1.md).
+- **Phase 48.2 — Show the working: *How it's worked out* + release.** A
+  `Support\Working` value and one `ui.working()` macro open each headline
+  figure to its dated, linked inputs, its sum in words and what Logbook
+  did not assume; closed on screen, open in print, a *How?* link from
+  widgets, `?include=working` in the API, and passed by Ask's and MCP's
+  read tools (§8, #407–#409). No migration. See
+  [`phase-48.2.md`](docs/phases/phase-48.2.md).
 
 ---
 

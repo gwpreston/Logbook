@@ -130,6 +130,33 @@ final readonly class ValueCurve
             $cutAtEnd ? $latest->date : $to,
             $start > $from,
             $cutAtEnd,
+            Money::of($startValue->toScale(Money::SCALE, RoundingMode::HalfUp)->toString(), $currency),
+            Money::of($stopValue->toScale(Money::SCALE, RoundingMode::HalfUp)->toString(), $currency),
+            $stop,
+            $this->pointsFor($start),
+            $this->pointsFor($stop),
         );
+    }
+
+    /**
+     * The value points the value on $day is read from: that day's own, or
+     * the two it lies between (the straight line, spec.md §7.1).
+     *
+     * @return list<ValuePoint>
+     */
+    public function pointsFor(DateTimeImmutable $day): array
+    {
+        $before = null;
+        foreach ($this->points as $point) {
+            if ($point->date == $day) {
+                return [$point];
+            }
+            if ($point->date > $day) {
+                return $before === null ? [] : [$before, $point];
+            }
+            $before = $point;
+        }
+
+        return [];
     }
 }

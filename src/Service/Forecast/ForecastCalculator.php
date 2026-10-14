@@ -385,7 +385,15 @@ final class ForecastCalculator
             $horizon->months(),
         );
 
-        return new FuelEstimate($vehicle->vehicle, $vehicle->currency, FuelRateStatus::Ready, $months, $rate->perKm);
+        return new FuelEstimate(
+            $vehicle->vehicle,
+            $vehicle->currency,
+            FuelRateStatus::Ready,
+            $months,
+            $rate->perKm,
+            $rate->period,
+            $vehicle->kmPerDay,
+        );
     }
 
     /**
@@ -422,28 +430,41 @@ final class ForecastCalculator
                     static fn (ForecastItem $item): bool => $item->currency === $currency,
                 ));
                 $anyItem = $anyItem || $items !== [];
-                $planned = $spread[$currency][$i] ?? Money::zero($currency);
+                $financeSpread = $spread[$currency][$i] ?? Money::zero($currency);
+                $planned = $financeSpread;
                 $unknown = 0;
+                $costed = [];
+                $unknownItems = [];
                 foreach ($items as $item) {
                     if (($item->finance->months ?? []) !== []) {
                         continue;
                     }
                     if ($item->cost === null) {
                         $unknown++;
+                        $unknownItems[] = $item;
                     } else {
                         $planned = $planned->add($item->cost);
+                        $costed[] = $item;
                     }
                 }
                 $fuelTotal = Money::zero($currency);
                 foreach ($ready as $estimate) {
                     $fuelTotal = $fuelTotal->add($estimate->months[$i]);
                 }
-                $rows[] = new ForecastMonthTotal($month->month, $planned, $fuelTotal, $unknown);
+                $rows[] = new ForecastMonthTotal(
+                    $month->month,
+                    $planned,
+                    $fuelTotal,
+                    $unknown,
+                    $costed,
+                    $unknownItems,
+                    $financeSpread,
+                );
             }
             if (!$anyItem && $ready === []) {
                 continue;
             }
-            $totals[] = new ForecastTotals($currency, $rows, $ready !== [], count($estimates) - count($ready));
+            $totals[] = new ForecastTotals($currency, $rows, $ready !== [], count($estimates) - count($ready), $ready);
         }
 
         return $totals;

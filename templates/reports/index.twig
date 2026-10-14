@@ -128,6 +128,7 @@
                         'report.from_mileage_log'|trans) }}
                     {{ ui.stat('report.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
                 </dl>
+                {{ ui.working(working_of(section), 'working.summary_for'|trans({period: 'report.stat.per_distance'|trans})) }}
 
                 {% if section.isEmpty() %}
                     <div class="card empty">

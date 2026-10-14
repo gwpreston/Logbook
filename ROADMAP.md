@@ -102,7 +102,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [47](docs/phases/phase-47.md) | How old is the last backup? + release | ✅ |
 | [47.1](docs/phases/phase-47.1.md) | Decisions carried from Phases 38 and 41 + patch release | ✅ |
 | [48.1](docs/phases/phase-48.1.md) | Show the working: "as of" dates | ✅ |
-| [48.2](docs/phases/phase-48.2.md) | Show the working: *How it's worked out* + release | 📋 |
+| [48.2](docs/phases/phase-48.2.md) | Show the working: *How it's worked out* + release | ✅ |
 | [49](docs/phases/phase-49.md) | Getting started and household defaults + release | 📋 |
 | [50.1](docs/phases/phase-50.1.md) | Parts and modifications | 📋 |
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
@@ -1275,7 +1275,7 @@ plain words.*
 
 - A `Working` result (inputs, steps and notes) beside each figure in the
   inventory, built from the same values, shown by one `ui.working()`
-  macro and worded per figure, checked against the golden household.
+  macro and worded per figure, checked by hand-worked tests.
 - The working in print, the API (`working` on request) and Ask.
   Release.
 

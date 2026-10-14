@@ -15,6 +15,7 @@ use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
 use Logbook\Service\Vehicle\PlateTwigExtension;
 use Logbook\Service\Finance\FinanceTwigExtension;
+use Logbook\Service\Working\WorkingTwigExtension;
 use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
 use Logbook\Service\Ai\Scan\PdfRenderer;
@@ -343,6 +344,9 @@ return [
         $demo = $c->get(DemoTwigExtension::class);
         assert($demo instanceof DemoTwigExtension);
         $twig->addExtension($demo);
+        $working = $c->get(WorkingTwigExtension::class);
+        assert($working instanceof WorkingTwigExtension);
+        $twig->addExtension($working);
 
         return $twig;
     },

@@ -23,7 +23,7 @@
                         {{- 'dashboard.finance.summary'|trans({remaining: figures.schedule.remaining(), amount: figures.remainingToPay|money, ends: figures.endsOn ? figures.endsOn|local_month : ''}) -}}
                     </span>
                     {% if finance.mileage %}<span class="list__meta">{{ fin.mileage(finance.mileage, finance.currency) }}</span>{% endif %}
-                    {% if figures.equity %}<span class="list__meta">{{ fin.equity(figures.equity) }}</span>{% endif %}
+                    {% if figures.equity %}<span class="list__meta">{{ fin.equity(figures.equity) }} {{ ui.working_link(url_for('finance.show', {id: agreement.vehicleId, agreement: agreement.id}), fin.name(agreement)) }}</span>{% endif %}
                 </span>
             </li>
         {% endfor %}

@@ -8,6 +8,7 @@ use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Service\Api\ApiFinanceWrites;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -37,8 +38,10 @@ final readonly class FinanceAgreementsAction
             throw new HttpNotFoundException($request);
         }
 
+        $working = IncludeParam::working($request);
+
         return $this->responder->json(['items' => array_map(
-            fn (FinanceAgreement $agreement): array => $this->writes->read($user, $vehicle, $agreement),
+            fn (FinanceAgreement $agreement): array => $this->writes->read($user, $vehicle, $agreement, $working),
             $this->finance->forVehicle($user, $vehicle),
         )]);
     }

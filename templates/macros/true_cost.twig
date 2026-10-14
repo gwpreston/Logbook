@@ -85,6 +85,7 @@
 
 {# What changed: each comparable year against the one before, newest first. #}
 {% macro changes(vtc, wording) -%}
+    {%- import 'macros/ui.twig' as ui -%}
     {%- set years = vtc.years -%}
     {%- for i in years|length > 1 ? (years|length - 1)..1 : [] -%}
         {%- set change = vtc.changeFor(years[i].period.year) -%}
@@ -98,6 +99,10 @@
                     {% endfor %}
                     <li class="true-cost__total"><strong>{{ 'true_cost.change.total'|trans({amount: wording.signed(change.perKm, vtc.currency)}) }}</strong></li>
                 </ul>
+                {# The latest two changes carry their working; older years are in the table (spec.md §7.35, Phase 48.2). #}
+                {% if years[i].period.year in vtc.latestChangeYears() %}
+                    {{ ui.working(working_of(change, vtc), 'working.summary'|trans, true, vtc.vehicle.name() ~ ', ' ~ wording.label(years[i])) }}
+                {% endif %}
             </section>
         {%- endif -%}
     {%- endfor -%}
