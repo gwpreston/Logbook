@@ -12,6 +12,8 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Report\PeriodDistance;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
+use Logbook\Support\AsOf;
+use Logbook\Support\AsOfKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 use Logbook\Support\Number\Decimal;
@@ -56,6 +58,8 @@ final readonly class Depreciation
         public ?string $perKm = null,
         /** Whole months since the latest valuation, when it is stale. */
         public ?int $staleMonths = null,
+        /** The date the current value is from, for "as of" (spec.md §8); null without a value. */
+        public ?AsOf $asOf = null,
     ) {
     }
 
@@ -78,7 +82,9 @@ final readonly class Depreciation
         $price = $vehicle->data->purchasePrice;
 
         if ($price === null) {
-            return new self(DepreciationState::NoPurchasePrice, $currency, $points, $current);
+            $asOf = self::asOf($vehicle, $current, $today, $staleAfterMonths);
+
+            return new self(DepreciationState::NoPurchasePrice, $currency, $points, $current, asOf: $asOf);
         }
         if ($current === null) {
             return new self(DepreciationState::NoValue, $currency, $points, $current);
@@ -121,6 +127,27 @@ final readonly class Depreciation
             $vehicle->data->saleDate === null && $current->kind === ValuePointKind::Valuation
                 ? self::staleMonths($current->date, $today, $staleAfterMonths)
                 : null,
+            self::asOf($vehicle, $current, $today, $staleAfterMonths),
+        );
+    }
+
+    /**
+     * The date the current value is from (spec.md §8): a valuation's own date,
+     * stale past the owner's threshold. A sale is final, not an estimate, so
+     * it has none.
+     */
+    private static function asOf(Vehicle $vehicle, ?ValuePoint $current, DateTimeImmutable $today, int $staleAfterMonths): ?AsOf
+    {
+        if ($current === null || $current->kind !== ValuePointKind::Valuation) {
+            return null;
+        }
+
+        return AsOf::of(
+            AsOfKind::Valuation,
+            $current->date,
+            $today,
+            null,
+            $vehicle->data->saleDate === null ? $staleAfterMonths : null,
         );
     }
 

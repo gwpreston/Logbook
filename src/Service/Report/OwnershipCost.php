@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\Odometer\OdometerReading;
+use Logbook\Support\AsOf;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Finance\FinanceLineKind;
@@ -238,6 +239,15 @@ final readonly class OwnershipCost
     public function isTooShort(): bool
     {
         return $this->ownedFor->days < self::MIN_DAYS;
+    }
+
+    /**
+     * The valuation the depreciation rests on, for "as of" (spec.md §8); null
+     * when the figure has none or is a sale.
+     */
+    public function asOf(): ?AsOf
+    {
+        return $this->isComplete() ? $this->depreciation->asOf : null;
     }
 
     /**

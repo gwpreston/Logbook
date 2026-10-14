@@ -6,6 +6,7 @@ namespace Logbook\Service\Forecast;
 
 use DateTimeImmutable;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Support\AsOf;
 use Logbook\Support\Money\Money;
 
 /**
@@ -39,6 +40,8 @@ final readonly class ForecastItem
         public int $occurrence = 1,
         /** A finance item's payments (Phase 29.2). */
         public ?FinanceForecast $finance = null,
+        /** The date of the "last time" the cost comes from (spec.md §8); null when not known. */
+        public ?AsOf $costAsOf = null,
     ) {
     }
 

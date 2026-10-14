@@ -30,7 +30,9 @@
 
 {# "Positive equity £2,140" / "Negative equity £1,380". #}
 {% macro equity(equity) -%}
+    {% import 'macros/ui.twig' as ui %}
     {{ (equity.isPositive() ? 'finance.equity_positive' : 'finance.equity_negative')|trans({amount: equity.magnitude()|money}) }}
+    {%- if equity.asOf.shows() %} {{ ui.as_of(equity.asOf, true) }}{% endif -%}
 {%- endmacro %}
 
 {# The mileage position in the agreement's unit (spec.md §7.32 *Mileage*):

@@ -13,6 +13,8 @@ use Logbook\Domain\Finance\AgreementType;
 use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\SettlementQuote;
 use Logbook\Domain\Valuation\VehicleValuation;
+use Logbook\Support\AsOf;
+use Logbook\Support\AsOfKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
 
@@ -80,7 +82,12 @@ final class AgreementFigures
                 && $valuation->data->valuedOn >= LocalTime::addMonths($today, -self::VALUATION_MONTHS);
             if ($recent) {
                 $value = Money::of($valuation->data->amount, $currency);
-                $equity = new Equity($value, $valuation->data->valuedOn, $value->subtract($settlement->amount));
+                $equity = new Equity(
+                    $value,
+                    $valuation->data->valuedOn,
+                    $value->subtract($settlement->amount),
+                    AsOf::of(AsOfKind::Valuation, $valuation->data->valuedOn, $today),
+                );
             } else {
                 $needsValuation = true;
             }

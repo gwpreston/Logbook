@@ -163,6 +163,7 @@ final readonly class CsvExporter
             $item->currency,
             $this->yesNo($item->projected),
             $this->yesNo($item->overdue),
+            $item->costAsOf?->date->format('Y-m-d'),
         ], $forecast->items());
 
         $months = $forecast->horizon->months();
@@ -178,6 +179,7 @@ final readonly class CsvExporter
                     $estimate->currency,
                     $this->yesNo(true),
                     $this->yesNo(false),
+                    null,
                 ];
             }
         }
@@ -194,6 +196,7 @@ final readonly class CsvExporter
                 'export.column.currency',
                 'export.column.projected',
                 'export.column.overdue',
+                'export.column.as_of',
             ]),
             $rows,
         );

@@ -76,6 +76,8 @@ valuation is enough) and every year of the trend includes depreciation.
 
 ## Where it shows
 
+The depreciation in the cost of ownership shows the date of the valuation it rests on ("as of Mar 2026"), and "out of date" once it is older than your *Needs attention* valuation threshold.
+
 - **The vehicle's overview**, on the *Cost of ownership* card: the five
   parts as a bar and a list, with a switch between *Since bought* and *Last
   12 months*.

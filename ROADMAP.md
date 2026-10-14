@@ -101,7 +101,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [46](docs/phases/phase-46.md) | What a share allows, in plain words + release | ✅ |
 | [47](docs/phases/phase-47.md) | How old is the last backup? + release | ✅ |
 | [47.1](docs/phases/phase-47.1.md) | Decisions carried from Phases 38 and 41 + patch release | ✅ |
-| [48.1](docs/phases/phase-48.1.md) | Show the working: "as of" dates | 📋 |
+| [48.1](docs/phases/phase-48.1.md) | Show the working: "as of" dates | ✅ |
 | [48.2](docs/phases/phase-48.2.md) | Show the working: *How it's worked out* + release | 📋 |
 | [49](docs/phases/phase-49.md) | Getting started and household defaults + release | 📋 |
 | [50.1](docs/phases/phase-50.1.md) | Parts and modifications | 📋 |
@@ -1263,7 +1263,7 @@ it.*
   or is an estimate; a `Support\AsOf` value carried by those results, so
   pages, print, CSV, the API and Ask show the same date.
 - One `ui.as_of()` macro, styled as stale once the input passes its
-  threshold. Released with 49.2.
+  threshold. Released with 48.2.
 
 → [`phase-48.1.md`](docs/phases/phase-48.1.md)
 

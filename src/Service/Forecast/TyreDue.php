@@ -24,6 +24,8 @@ final readonly class TyreDue
         public bool $projected,
         /** The tyres' shares of the records that fitted them, when every one has one and above 0. */
         public ?Money $cost = null,
+        /** The oldest of those records' days, for "as of". */
+        public ?DateTimeImmutable $costOn = null,
     ) {
     }
 }

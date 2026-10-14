@@ -2,7 +2,7 @@
 
 *Every figure built on an old input says how old.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ built (released with [48.2](phase-48.2.md)) · file lives in `docs/phases/`
 
 Logbook already dates some of its figures. Depreciation is labelled with
 the date it is measured to (§7.1, §7.35). The *Ownership* card shows the
@@ -70,59 +70,65 @@ follow the same rule when they are built.
 
 ---
 
-## The inventory (to verify in 48.0)
+## The inventory (checked against the code in 48.1)
 
-| Figure | Dated input | Today |
-|---|---|---|
-| *Latest value*, depreciation, per year and per distance (overview card) | latest valuation or sale | dated ✓ |
-| Depreciation part of true cost (§7.35) | the value point measured to | labelled when before today ✓ |
-| Cost of ownership total, per distance and per month (cards, tab, Ownership report) | latest valuation | to check |
-| *True cost* widget, *Insights* widget, garage cards | latest valuation | to check |
-| Equity and negative equity (§7.32) | the valuation used (within 12 months) | to check |
-| Settlement figure | the lender's quote date, or "estimated today" | to check |
-| Tyre wear estimate | the last tread measurement | to check |
-| *Coming up* item costs ("about £240, last time") | the date of last time | not dated |
-| *Coming up* fuel estimate | the window of driving and prices it uses | to check |
-| Listed fuel prices, *Cheapest near me*, *Was it worth it?* | the provider's price time | to check |
-| *Next 3 months* and 12-month totals (Phase 44) | inherits from their items | to check |
-| Ask answers and the digest quoting any of these | as the figure | not carried |
-| API and CSV for any of these | as the figure | not carried |
+The same table is in [`spec.md`](../../spec.md) §8; 48.2 uses it too.
+
+| Figure | Dated input | Before 48.1 | Now |
+|---|---|---|---|
+| *Latest value*, depreciation, per year and per distance (overview card) | latest valuation or sale | dated ✓ | unchanged |
+| Depreciation part of true cost (§7.35), widget, report | the value point measured to | labelled when before today ✓ | unchanged |
+| Depreciation in the cost of ownership (overview card, tab, Ownership report table and cards) | latest valuation | not dated on the tab and cards, no stale | `AsOf` beside it (short form on cards and the report) |
+| Equity and negative equity (§7.32) | the valuation used (within 12 months) | dated only on the agreement page | `AsOf` on the card, the dashboard widget and the agreement page |
+| Settlement figure | the lender's quote date, or "estimated today" | dated ✓ | unchanged |
+| Tyre wear estimate | the last tread measurement | "checked" date ✓ | unchanged |
+| *Coming up* item costs ("about £240, last time") | the day of last time | not dated | `AsOf` (kind `last_time`) beside the cost |
+| *Coming up* fuel estimate | the last 12 months of driving and prices | basis named on the page ✓ | unchanged |
+| Listed fuel prices, *Cheapest near me* | the provider's price time | time and "may be out of date" ✓ | unchanged |
+| *Next 3 months* and 12-month totals | their items | inherit | the items are dated; a total is not |
+| Ask, API, CSV | as the figure | not carried | API `as_of`, `cost_as_of`; Ask `value_as_of`, `last_cost_as_of`; CSV *As of* on *Coming up* (the Ownership CSV already had *Depreciation to*) |
+
+Garage cards show no figure that rests on a valuation, and the digest
+quotes none of these figures, so neither needed a change.
 
 ---
 
 ## Tasks
 
-### 49.1.0 Spec first
-- [ ] The inventory completed against the code, and added to §8 as a
+### 48.1.0 Spec first
+- [x] The inventory completed against the code, and added to §8 as a
       cross-cutting rule with the table (48.2 uses the same inventory).
-- [ ] Open questions A–D decided by the owner and logged; §13;
-      `ROADMAP.md` row.
+- [x] Open questions A–D decided by the owner and logged (#403–#406);
+      §13; `ROADMAP.md` row.
 
-### 49.1.1 The value and the macro
-- [ ] `Support\AsOf` (date, kind: `valuation` | `quote` | `measurement`
+### 48.1.1 The value and the macro
+- [x] `Support\AsOf` (date, kind: `valuation` | `quote` | `measurement`
       | `last_time` | `prices` | `window`, and an optional basis
       string), with stale states from the existing thresholds.
-- [ ] `ui.as_of()`: text, never colour alone; print styles.
+- [x] `ui.as_of()`: text, never colour alone; print styles.
 
-### 49.1.2 Applied
-- [ ] Each service in the inventory returns `AsOf` with its figure.
-- [ ] Every page, widget and print view in the inventory uses the macro.
-- [ ] API: an `as_of` object beside each such figure (additive; the API
-      stays `v1`). CSV: an *As of* column on the Ownership report and
-      *Coming up*.
-- [ ] Ask tools and the digest pass the date with the figure. Ask's
-      grounding check accepts it.
-- [ ] Translations (every shipped locale).
+### 48.1.2 Applied
+- [x] Each service in the inventory returns `AsOf` with its figure
+      (`Depreciation`, `Equity`, `ForecastItem`).
+- [x] Every page, widget and print view in the inventory uses the macro.
+- [x] API: an `as_of` object beside each such figure (additive; the API
+      stays `v1`). CSV: an *As of* column on *Coming up*
+      (the Ownership report already has *Depreciation to*).
+- [x] Ask tools pass the date with the figure (the digest quotes none
+      of these figures). Ask's grounding check reads numbers, not these
+      objects, and the Ask tests pass unchanged.
+- [x] Translations (every shipped locale).
 
-### 49.1.3 Tests
-- [ ] Each inventory row: date shown when the input isn't today, hidden
+### 48.1.3 Tests
+- [x] Each inventory row: date shown when the input isn't today, hidden
       when it is, stale style past its threshold, the owner's time zone
       at the edges.
-- [ ] A test that fails when a service in the inventory returns a figure
-      without its `AsOf`.
-- [ ] Page budgets (§8) unchanged.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; print).
-- [ ] `ROADMAP.md` row ✅ for 48.1 (released with 48.2).
+- [x] A test that fails when a result in the inventory loses its
+      `AsOf` (`AsOfCoverageTest`).
+- [x] Page budgets (§8) unchanged.
+- [ ] Design review (375, 768, 1280 px; light and dark; JS off; print), still pending:
+      run before the 48.2 release.
+- [x] `ROADMAP.md` row ✅ for 48.1 (released with 48.2).
 
 ---
 
@@ -136,36 +142,14 @@ follow the same rule when they are built.
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-13, before the phase was built; logged as
+#403–#406 in [`open-questions.md`](open-questions.md).
 
-- **A. Which figures get a date?**
-  - (1) Every figure in the inventory, whenever its input isn't from
-    today.
-  - (2) Every figure in the inventory, always.
-  - (3) Only once the input is stale.
-
-  *Recommendation:* (1). (2) would date figures computed from this
-  morning's fill-up. (3) hides a 10-month-old valuation that is about to
-  matter.
-
-- **B. Absolute or relative dates?**
-  - (1) Absolute ("as of 14 Sep 2026"), with the relative form in a
-    tooltip.
-  - (2) Relative ("3 months ago").
-
-  *Recommendation:* (1). Printouts and screenshots stay true after the
-  day they were made.
-
-- **C. Several dated inputs.** For example, true cost depends on both a
-  valuation and the last reading.
-  - (1) Show the oldest.
-  - (2) Show each.
-
-  *Recommendation:* (1), with the others on the figure's own page.
-
+- **A. Which figures get a date?** *Decided (#403):* (1) every figure in
+  the inventory, whenever its input isn't from today.
+- **B. Absolute or relative dates?** *Decided (#404):* (1) absolute
+  ("as of 14 Sep 2026"), with the relative form in a tooltip.
+- **C. Several dated inputs.** *Decided (#405):* (1) show the oldest, the
+  others on the figure's own page.
 - **D. The garage cards and dashboard tiles**, where space is tight.
-  - (1) A short date ("Sep 2026").
-  - (2) An icon with the date for screen readers and in a tooltip.
-
-  *Recommendation:* (1). An icon alone is easy to miss, and it is the
-  date that matters.
+  *Decided (#406):* (1) a short date ("Sep 2026") as text.

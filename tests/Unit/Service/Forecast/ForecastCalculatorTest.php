@@ -430,6 +430,39 @@ final class ForecastCalculatorTest extends TestCase
         self::assertNull(ForecastCalculator::cost(null, 'GBP'));
     }
 
+    public function testACostCarriesTheDateOfLastTime(): void
+    {
+        $forecast = self::forecast(self::sources(
+            schedules: [self::schedule(months: 12, doneOn: '2025-12-01', cost: '240.00', costOn: '2025-12-01')],
+            documents: [self::document(ComplianceType::Insurance, '2025-09-01', '2026-09-01', '310.00')],
+        ));
+
+        $withDates = array_values(array_filter(
+            $forecast->items(),
+            static fn (ForecastItem $item): bool => $item->costAsOf !== null,
+        ));
+        self::assertCount(2, $withDates);
+        foreach ($withDates as $item) {
+            self::assertSame('last_time', $item->costAsOf?->kind->value);
+        }
+        $dates = array_map(static fn (ForecastItem $i): string => $i->costAsOf?->date->format('Y-m-d') ?? '', $withDates);
+        sort($dates);
+        self::assertSame(['2025-09-01', '2025-12-01'], $dates);
+    }
+
+    public function testNoCostOrNoDateMeansNoAsOf(): void
+    {
+        $forecast = self::forecast(self::sources(
+            schedules: [self::schedule(months: 12, doneOn: '2025-12-01', cost: '240.00')],
+            documents: [self::document(ComplianceType::Insurance, null, '2026-09-01', '310.00')],
+        ));
+
+        foreach ($forecast->items() as $item) {
+            self::assertNotNull($item->cost);
+            self::assertNull($item->costAsOf, 'a cost without a known day is shown as it was');
+        }
+    }
+
     public function testTotalsPerCurrencyAreAtLeastWithAnUnknownCost(): void
     {
         $golf = self::sources(
@@ -636,6 +669,7 @@ final class ForecastCalculatorTest extends TestCase
         ?string $cost = null,
         int $id = 1,
         string $today = self::TODAY,
+        ?string $costOn = null,
     ): ScheduleDue {
         $intervalKm = $km ?? ($miles === null ? null : self::miles($miles));
         $data = new MaintenanceScheduleData(
@@ -654,6 +688,7 @@ final class ForecastCalculatorTest extends TestCase
         return new ScheduleDue(
             new ScheduleState($schedule, DueState::evaluate($next, self::date($today), $currentKm, $kmPerDay)),
             ForecastCalculator::cost($cost, 'GBP'),
+            $costOn === null ? null : self::date($costOn),
         );
     }
 

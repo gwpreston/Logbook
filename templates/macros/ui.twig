@@ -425,3 +425,18 @@
         </nav>
     {% endif %}
 {%- endmacro %}
+
+{# The date a figure rests on (spec.md §8 *Show the working*): "as of 14 Sep 2026"
+   with "3 months ago" as the tooltip, and what an estimate is projected from.
+   Nothing when the input is from today. `short` is for tight spaces (tiles,
+   garage cards): "as of Sep 2026". Stale is said in words, not colour alone. #}
+{% macro as_of(asOf, short = false) -%}
+    {%- if asOf is not null and asOf.shows() -%}
+        {%- set ago = asOf.ageMonths >= 2 ? 'as_of.ago_months'|trans({months: asOf.ageMonths}) : 'as_of.ago_days'|trans({days: asOf.ageDays}) -%}
+        <span class="as-of{{ asOf.stale ? ' as-of--stale' }}" title="{{ asOf.kind.labelKey()|trans }}, {{ ago }}" data-as-of="{{ asOf.kind.value }}">
+            {{- short ? 'as_of.short'|trans({date: asOf.date|local_month}) : 'as_of.full'|trans({date: asOf.date|local_date}) -}}
+            {%- if asOf.basis %} · {{ 'as_of.basis'|trans({basis: asOf.basis}) }}{% endif -%}
+            {%- if asOf.stale %} · {{ 'as_of.stale'|trans }}{% endif -%}
+        </span>
+    {%- endif -%}
+{%- endmacro %}

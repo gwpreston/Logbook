@@ -434,6 +434,39 @@ final readonly class TyreService
     }
 
     /**
+     * The oldest day among the service records that fitted the tyres (the
+     * "last time" a Coming up cost is from, spec.md §8); null when none did.
+     *
+     * @param list<int> $tyreIds
+     */
+    public function fittingDate(Vehicle $vehicle, array $tyreIds): ?DateTimeImmutable
+    {
+        $records = $this->records($vehicle);
+        $changes = $this->tyres->listChanges($vehicle->id);
+        $result = TyreReplay::run($changes);
+        if ($records === [] || !$result instanceof TyreReplayResult) {
+            return null;
+        }
+        $byId = [];
+        foreach ($changes as $change) {
+            $byId[$change->id] = $change;
+        }
+
+        $oldest = null;
+        foreach ($tyreIds as $tyreId) {
+            $fitting = $byId[$result->fittedBy[$tyreId] ?? 0] ?? null;
+            $record = $fitting?->kind === TyreChangeKind::Fit && $fitting->data->maintenanceEntryId !== null
+                ? ($records[$fitting->data->maintenanceEntryId] ?? null)
+                : null;
+            if ($record !== null && ($oldest === null || $record->data->performedOn < $oldest)) {
+                $oldest = $record->data->performedOn;
+            }
+        }
+
+        return $oldest;
+    }
+
+    /**
      * @param array<int, MaintenanceEntry> $records
      */
     private function costPerKm(Tyre $tyre, ?TyreChange $fitting, array $records, TyreDistanceFigure $distance): ?string

@@ -217,6 +217,18 @@ curl -si -H "Authorization: Bearer $LOGBOOK_KEY" \
   https://garage.example.com/api/v1/vehicles/1/fuel/42 | grep -i etag
 ```
 
+## "As of" dates
+
+A figure that rests on an input older than today carries its date, as the
+app shows it beside the figure. `GET /vehicles/{id}/ownership` has an
+`as_of` object for the current valuation, and each cost on an upcoming
+item has `cost_as_of` for the day of "last time". The object is
+`{"date": "2026-09-01", "kind": "valuation", "basis": null, "stale": false}`:
+`kind` is `valuation`, `quote`, `measurement`, `last_time`, `prices` or
+`window`, and `stale` follows the owner's threshold (Settings → Needs
+attention). Both fields are `null` when there is no date to give. They are
+additive: the API stays `v1`.
+
 ## Reports
 
 The reports take the Reports page's choices: `range` (`month`, `3m`,

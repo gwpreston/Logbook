@@ -148,6 +148,7 @@ final readonly class Ownership implements AskTool
                     ...$this->kit->money(Money::of($current->amount, $currency)),
                     'date' => $current->date->format('Y-m-d'),
                 ],
+                'value_as_of' => $depreciation->asOf?->toArray(),
                 'total' => $money($cost->total),
                 'running_per_distance' => $perKm($cost->runningPerKm),
                 'per_distance' => $perKm($cost->perKm),
