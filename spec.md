@@ -6891,7 +6891,9 @@ insight (#355; a total on *Coming up*, Phase 44):
   `working` beside the figures it explains (§8), and say in their
   descriptions that "How did you get that?" is answered from it. Its sums
   are in the tool result, so the grounding check holds an answer that quotes
-  them to the same figures. The model never recomputes a sum.
+  them to the same figures. The model never recomputes a sum. `true_cost` with `by_year` carries the
+  working for the latest three years and the latest two changes only (found by
+  the Phase 48.2 review: a seven-car, nine-year household doubled to 147 KB).
 
 ### 7.27 Reading files (Phase 26.4)
 

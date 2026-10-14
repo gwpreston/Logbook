@@ -150,17 +150,24 @@ final readonly class TrueCostTool implements AskTool
             $figures[] = $this->wording->signed($change, $vtc->currency);
         }
         if ($byYear) {
+            // The working is for the latest three years and two changes, as on the report: the result
+            // stays within what a conversation can carry (spec.md §7.26).
+            $recent = array_slice($vtc->years, -3);
+            $latest = $vtc->latestChangeYears();
             $row['years'] = array_map(fn (TrueCost $year): array => [
                 'year' => $year->period->year,
                 'label' => $this->wording->label($year),
                 'partial' => $year->period->isPartial(),
                 'comparable' => $year->isComparable(),
                 ...$this->cost($year, $figures),
-                'working' => $this->working->period($vtc, $year, $today)?->toArray(),
-            ], $vtc->years);
+            ] + (in_array($year, $recent, true)
+                ? ['working' => $this->working->period($vtc, $year, $today)?->toArray()]
+                : []), $vtc->years);
             $row['what_changed'] = array_values(array_map(
                 fn (CostChange $change): array => $this->change($change, $figures)
-                    + ['working' => $this->working->change($vtc, $change)->toArray()],
+                    + (in_array($change->after->period->year, $latest, true)
+                        ? ['working' => $this->working->change($vtc, $change)->toArray()]
+                        : []),
                 $vtc->changes,
             ));
         }
