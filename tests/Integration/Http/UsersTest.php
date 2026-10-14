@@ -55,6 +55,8 @@ final class UsersTest extends AppTestCase
 
         $done = $guest->post($path, self::signUp());
         self::assertSame(303, $done->getStatusCode());
+        $location = $done->getHeaderLine('Location');
+        self::assertStringEndsWith('/vehicles/start', $location, 'a new member with no vehicles starts the flow (#415)');
         $home = self::body($guest->follow($done));
         self::assertStringContainsString('Welcome, Sam Partner.', $home);
         $partner = $this->service($app, UserRepository::class)->findByUsername('partner');
@@ -69,6 +71,27 @@ final class UsersTest extends AppTestCase
 
         $again = new TestBrowser($app);
         self::assertSame(404, $again->get($path)->getStatusCode(), 'a used link is gone');
+    }
+
+    public function testAResetLinkRefusesAMismatchedPasswordAndAnInviteForATakenNameIsGone(): void
+    {
+        $app = $this->createApp();
+        $admin = $this->signedIn($app);
+        $member = $this->createMember($app);
+        $admin->get('/settings/users');
+        $reset = self::path($admin->post('/settings/users/' . $member->id . '/reset'));
+
+        $guest = new TestBrowser($app);
+        $guest->get($reset);
+        $mismatch = $guest->post($reset, ['password' => 'a-new-password', 'password_confirm' => 'something else']);
+        self::assertSame(422, $mismatch->getStatusCode());
+        self::assertStringContainsString('Choose a new password', self::body($mismatch));
+
+        $invite = self::path($admin->post('/settings/users', ['username' => 'newbie', 'display_name' => 'Nia Newbie']));
+        $this->createMember($app, 'newbie');
+        $late = new TestBrowser($app);
+        $late->get($invite);
+        self::assertSame(404, $late->post($invite, self::signUp())->getStatusCode(), 'the name was taken meanwhile');
     }
 
     public function testLinksExpireAndCanBeRevoked(): void
@@ -161,6 +184,7 @@ final class UsersTest extends AppTestCase
         self::assertStringContainsString('Choose a new password', self::body($guest->get($link)));
         $done = $guest->post($link, ['password' => 'a-new-password', 'password_confirm' => 'a-new-password']);
         self::assertSame(303, $done->getStatusCode());
+        self::assertStringNotContainsString('/vehicles/start', $done->getHeaderLine('Location'), 'a reset is not a first visit');
         self::assertSame(200, $guest->get('/garage')->getStatusCode(), 'signed in');
 
         $fresh = new TestBrowser($app);

@@ -32,8 +32,8 @@ admin switches them on**.
 
 ## Switching it on or off
 
-Fuel stations are **on by default**. They are part of fuel: an admin can switch
-them off on **Settings → Modules** (or with `FEATURES_STATIONS=false`, see
+Fuel stations are **on by default on installs set up before v3.14.0, and off on new ones**. They are part of fuel: an admin can switch
+them on or off on **Settings → Modules** (or with `FEATURES_STATIONS=false`, see
 [configuration.md](configuration.md)), and with fuel off they are off too.
 While off, the fill-up form has its plain *Station* text field again and
 the stations pages are gone. Nothing is deleted: a fill-up keeps its link

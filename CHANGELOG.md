@@ -6,6 +6,51 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.14.0] — 2026-10-14
+
+Phase 49: **getting started.** A new user is taken from an empty garage to a
+vehicle with its mileage, key dates and servicing in about two minutes, on a
+dashboard that shows what needs attention and what it costs, with fewer tabs
+until they want them.
+
+### Added
+- **Set up your first vehicle (Phase 49.1).** `/vehicles/start`: five short,
+  skippable, resumable steps (the vehicle, the mileage now, MOT/tax/insurance
+  dates, a servicing interval, what to do next). It saves through the same
+  services as the full forms, so what it makes is like anything else in the
+  garage: the dates become documents with only an expiry date (and raise their
+  usual reminders), servicing a schedule with a preset of 12 months or 10,000
+  miles (16,000 km). With MOT history set up, *Look up* fills in the vehicle.
+  A user with no vehicles is taken there after the welcome form; the empty
+  garage offers it too, and so does accepting an invitation (not a password
+  reset), and the vehicle's overview shows a getting-started
+  card ("3 of 5 done") until complete or dismissed. Progress is kept per user.
+- **A *Household* dashboard layout (Phase 49.2).** *Needs attention*, *Coming
+  up*, *Spend this month*, *Last 12 months* and *Recent activity* (10 rows).
+  It is the default for new users; *Reset layout* offers it and the full
+  layout. Existing users keep theirs.
+- **A shared user's first visit (Phase 49.2).** A card above the shared
+  vehicle says what the share allows ("You can log entries; you can't see
+  costs"), once, for shares created from this release.
+- **A *Switch on* hint** in the *Log* chooser where a switched-off module's
+  absence would surprise (*Incident*), shown to an admin only.
+
+### Changed
+- **New installs start with fewer modules (Phase 49.2).** Tyres, finance,
+  incidents, issues, stations and trips are switched off by the first-run
+  setup (saved once in Settings → Modules, which marks them *Switched off when
+  Logbook was installed*); fuel, maintenance, documents, reminders and reports
+  are on. A `FEATURES_*` variable you set still wins. German strings added with
+  the English ones.
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change. Existing
+  installs keep every module they have, existing users keep their dashboard
+  layout, and nobody who already has an account is sent to the setup flow.
+  Users created after the upgrade (added by an admin, first single sign-on,
+  or an invitation accepted after it) start on the Household layout. Going
+  back to 3.13.0 is safe: the new rows are ignored.
+
 ## [3.13.0] — 2026-10-14
 
 Phases 48.1 and 48.2: **show the working.** Every headline figure says how old
@@ -3075,7 +3120,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.13.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.14.0...HEAD
+[3.14.0]: https://github.com/gwpreston16/Logbook/compare/v3.13.0...v3.14.0
 [3.13.0]: https://github.com/gwpreston16/Logbook/compare/v3.12.1...v3.13.0
 [3.12.1]: https://github.com/gwpreston16/Logbook/compare/v3.12.0...v3.12.1
 [3.12.0]: https://github.com/gwpreston16/Logbook/compare/v3.11.0...v3.12.0

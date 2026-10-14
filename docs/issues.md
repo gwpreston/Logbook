@@ -25,7 +25,7 @@ someone; ask a qualified mechanic.
 
 ## Switching it on or off
 
-Issues are **on by default**. An admin can switch them off in **Settings →
+Issues are **on by default on installs set up before v3.14.0, and off on new ones**. An admin can switch them on or off in **Settings →
 Modules** (or with `FEATURES_ISSUES=false`, see
 [configuration.md](configuration.md)). That hides the Issues tab, *Log entry*'s
 *Issue*, the *Fixes* checklist on service records, the *Needs attention*

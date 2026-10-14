@@ -366,8 +366,8 @@ return [
         'step' => [
             'vehicle' => [
                 'name' => 'Fahrzeug',
-                'title' => 'Ihr Fahrzeug',
-                'lead' => 'Beginnen Sie mit dem Kennzeichen; der Rest kann warten.',
+                'title' => 'Dein Fahrzeug',
+                'lead' => 'Beginne mit dem Kennzeichen; der Rest kann warten.',
                 'look_up' => 'Nachschlagen',
             ],
             'mileage' => [
@@ -391,7 +391,7 @@ return [
                 'lead' => 'Wie oft wird das Fahrzeug gewartet?',
                 'distance' => 'Alle (Strecke)',
                 'months' => 'Oder alle (Monate)',
-                'hint' => 'Ein üblicher Abstand; prüfen Sie das Handbuch.',
+                'hint' => 'Ein üblicher Abstand; prüfe das Handbuch.',
                 'last' => 'Letzte Wartung',
             ],
             'done' => [

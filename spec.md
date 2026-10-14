@@ -2519,7 +2519,7 @@ toggles.
   of per-fill economy), *compliance status* (current documents that are
   expired or expiring, else "all in order", per active vehicle), *mileage*
   and *recent activity* (below). Archived vehicles never appear.
-- **The *Household* layout** (Phase 49, #411–#414): a named default
+- **The *Household* layout** (Phase 49, #411–#415): a named default
   layout for new users made only of existing widgets: *Needs attention*,
   *Coming up* (next 3 months, with costs), *Spend this month*, *Last 12
   months* and *Recent activity* (the fleet History limited to 10 rows).
@@ -3271,8 +3271,9 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
      else today (and only for today, the mileage now as its distance point).
   5. **Done:** what's next (log a fill-up, invite a household member, add
      the purchase price), each one a link.
-  The flow starts straight after the welcome form for a user with no
-  vehicles of their own and none shared, with *Skip for now*
+  The flow starts straight after the welcome form, and after accepting an
+  invitation (not a password reset; decided 2026-10-14, #415), for a user
+  with no vehicles of their own and none shared, with *Skip for now*
   on step 1; a shared user with vehicles never sees it, and it is always
   reachable from the empty garage's *Set up your first vehicle*. Progress is
   in the user's settings (`getting_started`: vehicle id, steps done,
@@ -10577,7 +10578,7 @@ task breakdowns live in the per-phase files; this is the map.
   five-step *Set up your first vehicle* flow at `/vehicles/start`, a
   getting-started card on the overview, a *Household* dashboard layout and
   fewer modules on new installs, and a first-visit note for a shared user
-  (§7.8, §7.9, §7.10; #411–#414 decided 2026-10-14). See
+  (§7.8, §7.9, §7.10; #411–#415 decided 2026-10-14). See
   [`phase-49.md`](docs/phases/phase-49.md).
 
 ---

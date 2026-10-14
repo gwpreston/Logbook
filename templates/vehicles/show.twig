@@ -40,9 +40,10 @@
             <section class="card" aria-labelledby="getting-started-heading">
                 <div class="card__header">
                     <h2 id="getting-started-heading" class="card__title">{{ ui.icon('fact_check') }}{{ 'getting_started.card_title'|trans }}</h2>
-                    <p>{{ 'getting_started.card_progress'|trans({done: getting_started.done, total: getting_started.total}) }}</p>
+                    <p class="muted">{{ 'getting_started.card_progress'|trans({done: getting_started.done, total: getting_started.total}) }}</p>
                 </div>
-                <ul class="link-list">
+                <span class="bar getting-started__bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ (getting_started.done / getting_started.total * 100)|round(1) }}%"></span></span>
+                <ul class="link-list plain-list">
                     {% for missing in getting_started.missing %}
                         <li><a href="{{ url_for('vehicles.start', {}, {step: missing.value}) }}">{{ ('getting_started.step.' ~ missing.value ~ '.title')|trans }}</a></li>
                     {% endfor %}
