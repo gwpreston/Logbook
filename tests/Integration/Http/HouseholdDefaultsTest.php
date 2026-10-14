@@ -83,7 +83,7 @@ final class HouseholdDefaultsTest extends AppTestCase
         $settings = $this->service($app, SettingRepository::class);
         $settings->save(FeatureToggles::SETTING, ['tyres' => false, 'fuel' => true]);
         $features->startNewInstall();
-        self::assertSame(['tyres' => false, 'fuel' => true], $settings->find(FeatureToggles::SETTING)?->value);
+        self::assertEquals(['tyres' => false, 'fuel' => true], $settings->find(FeatureToggles::SETTING)?->value, 'MySQL may reorder JSON keys');
     }
 
     public function testExistingUsersAndInstallsKeepTheFullLayoutAndAllModules(): void
