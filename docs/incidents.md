@@ -22,7 +22,7 @@ asks.
 
 ## Switching it on or off
 
-Incidents are **on by default**. An admin can switch them off in
+Incidents are **on by default on installs set up before v3.14.0, and off on new ones**. An admin can switch them on or off in
 **Settings → Modules** (or with `FEATURES_INCIDENTS=false`, see
 [configuration.md](configuration.md)). That hides the Incidents tab, *Log
 incident*, the *Part of an incident* select, the claims history and

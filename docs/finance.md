@@ -36,7 +36,7 @@ is one. Your agreement and your lender have the final word.
 
 ## Switching it on or off
 
-Finance is **on by default**. Nothing shows until a vehicle has an
+Finance is **on by default on installs set up before v3.14.0, and off on new ones** (switch it on in Settings → Modules). Nothing shows until a vehicle has an
 agreement. An admin can switch it off in **Settings → Modules** (or with
 `FEATURES_FINANCE=false`, see [configuration.md](configuration.md)). That
 hides every finance page, the overview card, the dashboard widget, the

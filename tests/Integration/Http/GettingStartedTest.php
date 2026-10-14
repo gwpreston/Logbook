@@ -238,6 +238,52 @@ final class GettingStartedTest extends AppTestCase
         self::assertSame($owner->id, $this->owner($app)->id);
     }
 
+    public function testTwoUsersSettingUpTheirFirstVehicleAtOnceKeepTheirOwn(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $first = $this->signedIn($app);
+        $this->createMember($app, 'second');
+        $second = $this->browserFor($app, 'second');
+        $store = $this->service($app, GettingStartedStore::class);
+
+        // Interleaved, as two people on one install would be.
+        $car = ['step' => 'vehicle', 'type' => 'car', 'make' => 'Ford', 'model' => 'Ka', 'fuel_type' => 'petrol'];
+        $bike = ['step' => 'vehicle', 'type' => 'bike', 'make' => 'Honda', 'model' => 'CB500', 'fuel_type' => 'petrol'];
+        $first->post(self::START, $car);
+        $second->post(self::START, $bike);
+        $first->post(self::START, ['step' => 'mileage', 'reading' => '1000']);
+        $second->post(self::START, ['step' => 'mileage', 'reading' => '2000']);
+        $none = ['mot_due_on' => '', 'tax_due_on' => '', 'insurance_due_on' => ''];
+        $first->post(self::START, ['step' => 'dates', ...$none, 'mot_due_on' => '2027-03-01']);
+        $second->post(self::START, ['step' => 'dates', ...$none, 'tax_due_on' => '2027-02-01']);
+        $first->post(self::START, ['step' => 'servicing', 'interval_distance' => '10000', 'interval_months' => '12']);
+        $second->post(self::START, ['step' => 'servicing', 'interval_distance' => '5000', 'interval_months' => '6']);
+
+        $ownerId = $this->owner($app)->id;
+        $secondUser = $this->service($app, UserRepository::class)->findByUsername('second');
+        self::assertNotNull($secondUser);
+        $mine = $this->ownedVehicles($app, $ownerId);
+        $theirs = $this->ownedVehicles($app, $secondUser->id);
+        self::assertCount(1, $mine);
+        self::assertCount(1, $theirs);
+        self::assertSame('Ka', $mine[0]->data->model);
+        self::assertSame('CB500', $theirs[0]->data->model);
+        self::assertSame($mine[0]->id, $store->load($ownerId)->vehicleId);
+        self::assertSame($theirs[0]->id, $store->load($secondUser->id)->vehicleId);
+
+        $documents = $this->service($app, ComplianceDocumentRepository::class);
+        self::assertCount(1, $documents->listForVehicle($mine[0]->id));
+        self::assertSame('2027-03-01', $documents->listForVehicle($mine[0]->id)[0]->data->expiryOn?->format('Y-m-d'));
+        self::assertCount(1, $documents->listForVehicle($theirs[0]->id));
+        self::assertSame('2027-02-01', $documents->listForVehicle($theirs[0]->id)[0]->data->expiryOn?->format('Y-m-d'));
+        $schedules = $this->service($app, MaintenanceScheduleRepository::class);
+        self::assertSame(12, $schedules->listForVehicle($mine[0]->id)[0]->data->intervalMonths);
+        self::assertSame(6, $schedules->listForVehicle($theirs[0]->id)[0]->data->intervalMonths);
+        self::assertStringContainsString('Step 5 of 5', self::body($first->get(self::START)));
+        self::assertStringContainsString('Step 5 of 5', self::body($second->get(self::START)));
+    }
+
     public function testServicingPresetIsSixteenThousandKmForMetricUsers(): void
     {
         $app = $this->createApp();

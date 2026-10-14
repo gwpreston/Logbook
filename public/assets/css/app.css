@@ -7322,3 +7322,86 @@ p.stat__label {
     /* *Cheapest near me* is already wider than a page: its working stays on screen (spec.md §8). */
     .near-table .working { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Phase 49: set up your first vehicle (step indicator, link rows, card bar).
+ * ------------------------------------------------------------------------- */
+
+.steps {
+    display: flex;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+}
+
+.steps__item {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-top: var(--space-2);
+    border-top: 4px solid var(--border);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    counter-increment: step;
+}
+
+.steps__item.is-done {
+    border-top-color: var(--accent);
+}
+
+.steps__item.is-skipped {
+    border-top-style: dashed;
+    border-top-color: var(--muted);
+}
+
+.steps__item[aria-current="step"] {
+    border-top-color: var(--accent);
+    color: var(--text);
+}
+
+.steps__name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+    /* Only the current step is named on a phone; the bars show the rest. */
+    .steps__item:not([aria-current="step"]) .steps__name {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+}
+
+.link-list > li + li {
+    margin-top: 0;
+    border-top: 1px solid var(--border);
+}
+
+.link-list a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-2) 0;
+    font-weight: 600;
+}
+
+.getting-started__bar {
+    display: block;
+    height: 0.5rem;
+    margin-bottom: var(--space-2);
+}
+
+.btn--wrap {
+    height: auto;
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+}

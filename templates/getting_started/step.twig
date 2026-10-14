@@ -18,8 +18,8 @@
 
         <ol class="steps" aria-label="{{ 'getting_started.title'|trans }}">
             {% for s in steps %}
-                <li{% if s == step %} aria-current="step"{% endif %}>
-                    {{ ('getting_started.step.' ~ s.value ~ '.name')|trans }}
+                <li class="steps__item{% if progress.isDone(s) %} is-done{% elseif progress.isSkipped(s) %} is-skipped{% endif %}"{% if s == step %} aria-current="step"{% endif %}>
+                    <span class="steps__name">{{ ('getting_started.step.' ~ s.value ~ '.name')|trans }}</span>
                     {% if progress.isDone(s) %}<span class="visually-hidden">{{ 'getting_started.is_done'|trans }}</span>{% elseif progress.isSkipped(s) %}<span class="visually-hidden">{{ 'getting_started.is_skipped'|trans }}</span>{% endif %}
                 </li>
             {% endfor %}
@@ -34,12 +34,12 @@
 
         {% if step.value == 'done' %}
             <section class="card">
-                <ul class="link-list">
+                <ul class="link-list plain-list">
                     {% if fuel_on %}<li><a href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('local_gas_station') }}{{ 'getting_started.step.done.fill_up'|trans }}</a></li>{% endif %}
                     <li><a href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ ui.icon('person_add') }}{{ 'getting_started.step.done.invite'|trans }}</a></li>
                     <li><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'getting_started.step.done.price'|trans }}</a></li>
                 </ul>
-                <a class="btn btn--primary" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'getting_started.step.done.open'|trans({name: vehicle.name()}) }}</a>
+                <a class="btn btn--primary btn--wrap" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'getting_started.step.done.open'|trans({name: vehicle.name()}) }}</a>
             </section>
         {% else %}
             <form class="form card" method="post" action="{{ url_for('vehicles.start') }}">

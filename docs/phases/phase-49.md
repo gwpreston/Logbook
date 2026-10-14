@@ -4,7 +4,7 @@
 reminders in about two minutes, with a dashboard that shows what needs
 attention and what it costs.*
 
-Status: 🔨 in progress (49.2 household defaults done) · file lives in `docs/phases/`
+Status: ✅ built (49.3 release; tag after merge) · file lives in `docs/phases/`
 
 Today a new user signs in, fills in the welcome form (language, time
 zone, units, currency) and lands in an empty garage. After that, they
@@ -134,18 +134,27 @@ Settled in 49.0:
 - [x] Translations (English and German, the shipped locales).
 
 ### 49.3 Tests and release
-- [ ] Each step saved through the real services; skipping each; resuming
-      after sign-out; two first vehicles by two users at once.
-- [ ] Existing users and installs unchanged after upgrade (layout,
-      modules, settings).
-- [ ] The new flow passes an automated journey on WebKit and Chromium
-      phone profiles.
+- [x] Each step saved through the real services; skipping each; resuming
+      after sign-out; two first vehicles by two users at once
+      (`GettingStartedTest`).
+- [x] Existing users and installs unchanged after upgrade (layout,
+      modules, settings): `HouseholdDefaultsTest`, and the upgrade from
+      `v3.13.0` (see the merge review).
+- [x] The new flow passes an automated journey on WebKit (iPhone 13) and
+      Chromium (Pixel 7) phone profiles, and WebKit with JavaScript off:
+      first-run setup to step 5, one throwaway instance each. Run once
+      from a scratch Playwright install on 2026-10-14, not committed (Phase
+      53 question B is still open).
 - [ ] A repeat session with two people new to Logbook: both reach
       step 5 without help (owner-run).
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; German
-      at 375 px).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; German
+      at 375 px). Fixed: the step indicator and link rows were unstyled
+      (now a segmented progress and 44 px rows), the overview card got a
+      progress bar, the long vehicle name wraps in *Open*, German uses
+      *du*. Left as they are: the Household grid's ragged heights are the
+      dashboard's own `align-items: start` grid, the same on every layout.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.14.0` once merged.
 
 ---
 
@@ -198,3 +207,11 @@ Decided by the owner on 2026-10-14 and logged as #411–#414 in
 
   *Recommendation:* (1), labelled "a common interval; check your
   handbook".
+
+- **E. Invitation accepted, no vehicles: go to the setup flow?** *Needs a
+  decision (found by the design review, 2026-10-14; #415).*
+  - (a) Leave it: only the welcome form leads there.
+  - (b) Also after an invitation is accepted.
+
+  *Recommendation:* (b). It is the first-run path for a household member
+  with no shared vehicle.
