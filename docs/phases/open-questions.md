@@ -512,6 +512,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 407 | [48.2](phase-48.2.md) | A. Is the working open or closed by default? | Decided | (1) Closed everywhere on screen, open in print. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 | 408 | [48.2](phase-48.2.md) | B. The working on dashboard widgets | Decided | (1) A *How?* link to the page that shows the working; no working inside a widget. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 | 409 | [48.2](phase-48.2.md) | C. Ask quoting the working | Decided | (1) Ask's read tools (and MCP's) pass the working, and answers may quote its sum, under the same grounding check. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
+| 410 | [48.2](phase-48.2.md) | Unknown `?include=` values, `result_value`, and a new key in Ask/MCP output (found by the merge review) | Decided | Reject an unknown `include` with a 400; `result_value` is the headline figure (the per-km rate where there is one); a new optional key is compatible. spec §7.20. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 
 ## Other loose ends found in the review
 

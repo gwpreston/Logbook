@@ -7895,12 +7895,9 @@
         "in": "query",
         "required": false,
         "schema": {
-          "type": "string",
-          "enum": [
-            "working"
-          ]
+          "type": "string"
         },
-        "description": "Extras to add beside the figures, comma-separated. `working` adds how each headline figure was worked out: its dated inputs, the sum in words and what Logbook did not assume."
+        "description": "Extras to add beside the figures, comma-separated; the only one is `working`, and any other value is a 400. `working` adds how each headline figure was worked out: its dated inputs, the sum in words and what Logbook did not assume."
       }
     },
     "headers": {

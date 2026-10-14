@@ -112,6 +112,10 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
       onto the macro, with their wording unchanged.
 
 ### 48.2.2 Everywhere
+- [x] Decided with the merge review (#410): an unknown `?include=` is a
+      400; `result_value` is the headline figure; Ask keeps the working
+      always on (limited to recent years); *Cheapest near me* does not
+      print its working (the table is wider than a page).
 - [x] Every page, card and widget in the inventory. Widgets link to the
       page that shows the working rather than embedding it (open
       question B).

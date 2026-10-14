@@ -256,7 +256,10 @@ words with the real numbers, so a script can show or check them.
 `what_changed`; a finance agreement has `working.settlement`,
 `working.equity` and `working.interest_so_far`; each total of
 `trips/claim` has one; a fuel item has `economy.working` when it closes a
-measured stretch. Without the parameter nothing changes, and anything
+measured stretch. `result` is the headline figure as shown, and
+`result_value` is the same figure as a number: the cost per distance
+(per km) where the working explains one, otherwise the amount or distance it
+ends at. Without the parameter nothing changes, and anything
 other than `working` in `include` is a 400. It is additive: the API stays
 `v1`.
 

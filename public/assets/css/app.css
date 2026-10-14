@@ -7319,4 +7319,6 @@ p.stat__label {
     .working > summary { color: inherit; font-weight: 600; }
     .working::details-content { content-visibility: visible; display: block; }
     .working-link { display: none; }
+    /* *Cheapest near me* is already wider than a page: its working stays on screen (spec.md §8). */
+    .near-table .working { display: none; }
 }

@@ -5780,8 +5780,13 @@ them, as Phase 26.5 mapped Phase 26.3's).
   each `what_changed`; a finance agreement has `working.settlement`,
   `.equity` and `.interest_so_far`; each `trips/claim` total has one; a
   fuel item's `economy.working` is there when it closes a measured
-  stretch. It is additive (the API stays `v1`). Anything else in
-  `include` is a 400. Without `ViewCosts` the endpoints answer as before.
+  stretch. `result` is the headline figure as shown; `result_value` is the
+  same figure as a canonical decimal: the cost per distance (per km) where the
+  working explains one, otherwise the amount or distance it ends at. It is
+  additive (the API stays `v1`): a new optional parameter and a new optional
+  key are compatible, and so is a new key in an Ask/MCP tool's output. Anything
+  else in `include` is a 400, decided on 2026-10-14 (#410): a typo should
+  not read as "nothing extra". Without `ViewCosts` the endpoints answer as before.
 
 ### 7.21 Sharing (Phase 19)
 
