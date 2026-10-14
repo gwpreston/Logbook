@@ -29,6 +29,7 @@ use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Report\OwnershipService;
+use Logbook\Service\Sharing\SharedIntro;
 use Logbook\Service\Report\TrueCostRange;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Report\TrueCostWording;
@@ -94,6 +95,7 @@ final readonly class ShowVehicleAction
         private MotReview $motReview,
         private VehicleDataPrimer $primer,
         private GettingStartedService $gettingStarted,
+        private SharedIntro $sharedIntro,
     ) {
     }
 
@@ -137,6 +139,8 @@ final readonly class ShowVehicleAction
             'vehicle' => $vehicle,
             // Phase 49.1 (spec.md §7.9): "3 of 5 done", for the vehicle the first-vehicle flow made.
             'getting_started' => $this->gettingStarted->card($user, $vehicle),
+            // Phase 49.2 (spec.md §7.9): what a new share allows, once.
+            'shared_intro' => $this->sharedIntro->card($user, $vehicle),
             'currency' => $currency,
             'odometer' => $odometer,
             'fuel' => $fuel,

@@ -94,4 +94,26 @@ final class DashboardLayoutTest extends TestCase
         self::assertSame([], $shown->toArray()['hidden']);
         self::assertSame($layout->toArray()['order'], $shown->toArray()['order']);
     }
+
+    public function testHouseholdShowsFiveWidgetsAndKeepsItsPresetThroughChanges(): void
+    {
+        $layout = DashboardLayout::household();
+
+        self::assertSame(
+            ['needs_attention', 'coming_up', 'spend', 'monthly_expenses', 'recent_activity'],
+            array_slice($layout->toArray()['order'], 0, 5),
+        );
+        self::assertCount(13, $layout->hidden);
+        self::assertFalse($layout->isDefault());
+        self::assertSame(10, $layout->activityRows(8));
+        self::assertSame(8, DashboardLayout::default()->activityRows(8));
+
+        $saved = DashboardLayout::fromArray($layout->toArray());
+        self::assertTrue($saved->household);
+        self::assertTrue($saved->move(DashboardWidget::Spend, -1)->household);
+        self::assertTrue($saved->toggle(DashboardWidget::Fleet)->household);
+        self::assertTrue($saved->reorder(['spend'])->household);
+        self::assertSame('household', $layout->toArray()['preset'] ?? null);
+        self::assertArrayNotHasKey('preset', DashboardLayout::default()->toArray());
+    }
 }

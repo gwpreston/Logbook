@@ -17,7 +17,7 @@ use Logbook\Repository\SettingRepository;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
 use Logbook\Service\Jobs\HeldJobFailures;
-use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\User\NewUserDefaults;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Display\DisplayPreferences;
@@ -43,7 +43,7 @@ final readonly class UserAdmin
         private AppSettings $app,
         private AbsoluteUrl $urls,
         private OneTimeLinks $links,
-        private ReminderSettingsStore $reminderSettings,
+        private NewUserDefaults $reminderSettings,
         private AvatarService $avatars,
         private HeldJobFailures $heldFailures,
     ) {

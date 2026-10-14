@@ -7,6 +7,7 @@ namespace Logbook\Action\Auth;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\GettingStarted\GettingStartedService;
 use Logbook\Service\Auth\WelcomeForm;
+use Logbook\Service\Sharing\SharedIntro;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\I18n\AvailableLocales;
@@ -34,6 +35,7 @@ final readonly class WelcomeAction
         private AvailableLocales $locales,
         private ClockInterface $clock,
         private GettingStartedService $start,
+        private SharedIntro $sharedIntro,
     ) {
     }
 
@@ -68,6 +70,12 @@ final readonly class WelcomeAction
         // Phase 49.1 (decided 2026-10-14, #412): a user with no vehicles goes on to set up their first.
         if ($this->start->wanted($user)) {
             return $this->redirect->toRoute('vehicles.start');
+        }
+
+        // Phase 49.2: a user with a new share meets the vehicle first (spec.md §7.9).
+        $shared = $this->sharedIntro->firstPending($user);
+        if ($shared !== null) {
+            return $this->redirect->toRoute('vehicles.show', ['id' => (string) $shared->id]);
         }
 
         return $next !== null ? $this->redirect->to($next) : $this->redirect->toRoute('home');

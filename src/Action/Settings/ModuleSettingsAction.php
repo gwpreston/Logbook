@@ -36,6 +36,10 @@ final readonly class ModuleSettingsAction
             return $this->view->render($request, $response, 'settings/modules.twig', [
                 'modules' => $shown,
                 'enabled' => $this->features->own(),
+                'install_off' => array_map(
+                    static fn (Feature $feature): string => $feature->value,
+                    $this->features->offSinceInstall(),
+                ),
             ]);
         }
 

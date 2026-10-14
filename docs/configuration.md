@@ -183,6 +183,12 @@ run, then remove them; Settings → Delivery says while any is still set.
 
 ## Modules
 
+A new install (the first account, from Phase 49) starts with tyres, finance, incidents, issues, stations and trips
+switched off, written to Settings → Modules once at setup, so a later change of defaults never flips an existing
+install. A variable below that you set explicitly wins over this for its module, and installs set up before Phase 49
+are unchanged. Settings → Modules marks the modules the install switched off; switch any on at any time. New users also
+start on the *Household* dashboard layout (*Reset layout* offers it and the full one); existing users keep theirs.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `FEATURES_FUEL` | `true` | Fill-ups and charging. |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Sharing;
 
+use Logbook\Service\Sharing\SharedIntro;
 use Logbook\Service\Sharing\SharingService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -12,14 +13,15 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
 
 /**
- * POST /vehicles/{id}/sharing/me/{action:notify|leave} — a shared user's
- * own choices (spec.md §7.21): whether they get the vehicle's reminders, or
- * leaving the share. The owner has no share, so this is a 404 for them.
+ * POST /vehicles/{id}/sharing/me/{action:notify|leave|seen} — a shared user's
+ * own choices (spec.md §7.21): whether they get the vehicle's reminders,
+ * leaving the share, or having read what it allows (spec.md §7.9). The owner has no share, so this is a 404 for them.
  */
 final readonly class MyShareAction
 {
     public function __construct(
         private SharingService $sharing,
+        private SharedIntro $intro,
         private Redirector $redirect,
     ) {
     }
@@ -41,6 +43,12 @@ final readonly class MyShareAction
             $session->flash('success', 'sharing.left', ['name' => $vehicle->name()]);
 
             return $this->redirect->toRoute('garage');
+        }
+
+        if (($args['action'] ?? '') === 'seen') {
+            $this->intro->dismiss($user->id, $vehicle->id);
+
+            return $this->redirect->toRoute('vehicles.show', ['id' => (string) $vehicle->id]);
         }
 
         $this->sharing->setNotify($user, $vehicle, (RequestContext::form($request)['notify'] ?? '') === '1');
