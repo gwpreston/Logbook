@@ -3,7 +3,7 @@
 *Every headline figure can be opened to show its inputs and its sum in
 plain words.*
 
-Status: ✅ complete · released as **v3.13.0** · file lives in `docs/phases/`
+Status: ✅ built · release v3.13.0 pending merge, tag and the design review · file lives in `docs/phases/`
 
 Two figures already show their working:
 
@@ -101,6 +101,9 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
       wording in its own section. §13; `ROADMAP.md` row.
 
 ### 48.2.1 Working
+- [x] The True cost report carries the working for each vehicle's latest
+      three years, *Since bought* and its latest two changes (found by the
+      merge review: all of them doubled the page's HTML at 5 vehicles).
 - [x] `Support\Working` and its construction in each inventory service,
       from the values actually used (never recomputed separately).
 - [x] `ui.working()`: a `<details>` that works without JS, with print

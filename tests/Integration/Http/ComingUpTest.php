@@ -133,7 +133,10 @@ final class ComingUpTest extends ReminderTestCase
         self::assertStringContainsString('href="/vehicles/' . $golf->id . '/maintenance"', $html, 'each input links to its rows');
         // The widget and the card link to it rather than carry it (spec.md §8).
         $home = self::body($this->browser->get('/vehicles/' . $golf->id));
-        self::assertStringContainsString('class="working-link" href="/upcoming">How?<span class="visually-hidden"> Next 3 months:</span></a>', $home);
+        self::assertStringContainsString(
+            'class="working-link" href="/upcoming">How?<span class="visually-hidden"> Next 3 months:</span></a>',
+            $home,
+        );
     }
 
     public function testWithoutJsTheChartIsATable(): void

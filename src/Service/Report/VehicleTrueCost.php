@@ -51,6 +51,21 @@ final readonly class VehicleTrueCost
         return $now === null || $was === null ? null : Decimal::subtract($now, $was);
     }
 
+    /**
+     * The years of the newest changes there are (the ones the report gives a
+     * working, spec.md §7.35): counted among the changes that exist, so a
+     * year too short to compare doesn't use one up.
+     *
+     * @return list<int>
+     */
+    public function latestChangeYears(int $count = 2): array
+    {
+        $years = array_keys($this->changes);
+        rsort($years);
+
+        return array_slice($years, 0, $count);
+    }
+
     public function changeFor(int $year): ?CostChange
     {
         return $this->changes[$year] ?? null;
