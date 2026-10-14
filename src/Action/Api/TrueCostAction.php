@@ -7,6 +7,7 @@ namespace Logbook\Action\Api;
 use Logbook\Service\Api\ApiTrueCost;
 use Logbook\Service\Report\TrueCostRange;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -30,6 +31,7 @@ final readonly class TrueCostAction
             RequestContext::requireUser($request),
             RequestContext::vehicle($request),
             TrueCostRange::chosen($request->getQueryParams()['period'] ?? null),
+            IncludeParam::working($request),
         ));
     }
 }

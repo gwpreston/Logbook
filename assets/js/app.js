@@ -434,6 +434,7 @@
     }
 
     var shownForPrint = [];
+    var openedForPrint = [];
 
     function beforePrint() {
         if (printing) {
@@ -443,6 +444,9 @@
         // Both Economy | Cost panels print (a chart drawn while hidden has no size).
         shownForPrint = Array.prototype.slice.call(document.querySelectorAll('.print-report [data-trend-panel][hidden]'));
         shownForPrint.forEach(function (panel) { panel.hidden = false; });
+        // A figure's working prints open (spec.md §8 *Show the working*).
+        openedForPrint = Array.prototype.slice.call(document.querySelectorAll('details.working:not([open])'));
+        openedForPrint.forEach(function (details) { details.open = true; });
         drawCharts();
     }
 
@@ -453,6 +457,8 @@
         printing = false;
         shownForPrint.forEach(function (panel) { panel.hidden = true; });
         shownForPrint = [];
+        openedForPrint.forEach(function (details) { details.open = false; });
+        openedForPrint = [];
         drawCharts();
     }
 

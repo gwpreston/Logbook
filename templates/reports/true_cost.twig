@@ -88,6 +88,12 @@
                     {{ ui.chart(charts[loop.index0], chart_labels[loop.index0]) }}
                 {% endif %}
                 {{ tcm.table(vtc, true_cost_wording, chart_labels[loop.index0]) }}
+                {% for period in vtc.years|reverse|merge([vtc.sinceBought]) %}
+                    {% set working = working_of(period, vtc) %}
+                    {% if working %}
+                        {{ ui.working(working, 'working.summary_for'|trans({period: true_cost_wording.label(period)})) }}
+                    {% endif %}
+                {% endfor %}
                 {{ tcm.changes(vtc, true_cost_wording) }}
             </section>
         {% endfor %}

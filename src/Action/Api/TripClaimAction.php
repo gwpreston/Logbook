@@ -10,6 +10,7 @@ use Logbook\Service\Trip\ClaimFilter;
 use Logbook\Service\Trip\TripSettingsStore;
 use Logbook\Support\Api\ApiProblem;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Http\RequestContext;
 use Psr\Clock\ClockInterface;
@@ -46,7 +47,7 @@ final readonly class TripClaimAction
             $today,
         );
 
-        return $this->responder->json($this->reader->claim($user, $filter));
+        return $this->responder->json($this->reader->claim($user, $filter, IncludeParam::working($request)));
     }
 
     /**

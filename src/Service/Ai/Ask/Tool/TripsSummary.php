@@ -19,6 +19,7 @@ use Logbook\Service\Trip\BusinessMileage;
 use Logbook\Service\Trip\ClaimFilter;
 use Logbook\Service\Trip\ClaimReportService;
 use Logbook\Service\Trip\ClaimTotals;
+use Logbook\Service\Working\ClaimWorking;
 use Logbook\Support\Number\Decimal;
 
 /**
@@ -37,6 +38,7 @@ final readonly class TripsSummary implements AskTool
         private ClaimReportService $claims,
         private BusinessMileage $business,
         private FeatureToggles $features,
+        private ClaimWorking $working,
     ) {
     }
 
@@ -51,7 +53,9 @@ final readonly class TripsSummary implements AskTool
             $this->name(),
             'The user\'s business trips in a period: count, business distance, private distance, and the mileage '
             . 'claim value at the approved rates (with passengers and what the employer paid, where recorded). '
-            . 'Defaults to the current tax year.',
+            . 'Defaults to the current tax year.'
+            . ' "How did you get that?" is answered from its working: '
+            . 'quote its sums and the dates of the values it rests on; never recompute them.',
             [
                 'type' => 'object',
                 'properties' => AskPeriod::SCHEMA,
@@ -80,6 +84,7 @@ final readonly class TripsSummary implements AskTool
         if ($privateKm !== null && Decimal::compare($privateKm, '0') < 0) {
             $privateKm = '0';
         }
+        $period_label = $this->working->periodLabel($filter);
         $claims = array_map(fn (ClaimTotals $totals): array => [
             'currency' => $totals->currency,
             'trips' => $totals->tripCount,
@@ -90,6 +95,8 @@ final readonly class TripsSummary implements AskTool
             'unpaid_difference' => $totals->difference() === null
                 ? null
                 : $this->money((string) $totals->difference(), $totals->currency),
+            // The distance in each rate band × its rate (spec.md §8).
+            'working' => $this->working->forTotals($totals, $period_label)->toArray(),
         ], $report->totals);
 
         $figures = [$this->kit->format->distance($report->distanceKm())];

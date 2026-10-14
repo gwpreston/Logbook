@@ -45,7 +45,8 @@ final readonly class Finance implements AskTool
             'A vehicle\'s finance or lease agreement (hire purchase, PCP, personal loan or lease): payments remaining, '
             . 'what remains to pay (exact), the next payment, the end date, the settlement figure (the lender\'s quote, '
             . 'or an estimate), cost of credit, the half-paid point, equity, and the mileage against the allowance with '
-            . 'any projected excess charge. Figures, never advice.',
+            . 'any projected excess charge. Figures, never advice. "How did you get that?" is answered from the '
+            . 'agreement\'s working (settlement, equity, interest so far): quote its sums; never recompute them.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -179,6 +180,12 @@ final readonly class Finance implements AskTool
                 'projected_over' => $mileage->isOver(),
                 'projected_excess_charge' => $money($mileage->excessCharge),
                 'is_estimate' => $mileage->projectedKm !== null && $agreement->status->isActive(),
+            ],
+            // How the estimates were worked out: quote its sums (spec.md §8).
+            'working' => [
+                'settlement' => $view->settlementWorking?->toArray(),
+                'equity' => $view->equityWorking?->toArray(),
+                'interest_so_far' => $view->interestWorking?->toArray(),
             ],
         ];
     }

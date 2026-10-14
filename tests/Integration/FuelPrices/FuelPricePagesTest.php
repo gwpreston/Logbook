@@ -129,6 +129,10 @@ final class FuelPricePagesTest extends FuelPricesTestCase
         self::assertStringContainsString('Contains public sector information licensed under the', $page);
         self::assertStringContainsString('Add station', $page);
         self::assertStringNotContainsString('Maxol', $page, 'temporarily closed');
+        // *Was it worth it?* is the shared working now, its four steps worded as before (spec.md §8).
+        self::assertStringContainsString('<details class="working" data-working>', $page);
+        self::assertStringContainsString('Extra distance', $page);
+        self::assertMatchesRegularExpression('/Actual saving [^<]*: (not )?worth the trip/', $page);
 
         // The position went no further than this answer.
         $connection = $this->connection($app);

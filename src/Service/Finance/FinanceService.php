@@ -32,6 +32,7 @@ use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Forecast\FinanceDue;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Working\FinanceWorking;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Vehicle\Depreciation;
 use Logbook\Service\Vehicle\VehicleService;
@@ -65,6 +66,7 @@ final readonly class FinanceService
         private FeatureToggles $features,
         private ClockInterface $clock,
         private WebhookEvents $webhooks,
+        private FinanceWorking $working,
     ) {
     }
 
@@ -156,6 +158,9 @@ final readonly class FinanceService
             overlap: FinanceLedger::overlapping($agreement, $schedule, $this->expenses->listForVehicle($vehicle->id)),
             currency: $currency,
             mileage: $mileage,
+            settlementWorking: $this->working->settlement($agreement, $figures, $today),
+            equityWorking: $this->working->equity($agreement, $figures, $today),
+            interestWorking: $this->working->interestSoFar($agreement, $figures),
         );
     }
 

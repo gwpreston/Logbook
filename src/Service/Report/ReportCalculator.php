@@ -127,7 +127,8 @@ final class ReportCalculator
             if ($count === 0) {
                 continue;
             }
-            $km = PeriodDistance::km($readings[$vehicle->id] ?? [], $period, $zone, $vehicle->data->purchaseDate);
+            $span = PeriodDistance::span($readings[$vehicle->id] ?? [], $period, $zone, $vehicle->data->purchaseDate);
+            $km = $span?->km;
             if ($km !== null) {
                 $distance = Decimal::add($distance, $km);
             }
@@ -139,6 +140,7 @@ final class ReportCalculator
                 $km,
                 self::perKm($spent, $km),
                 self::share($spent, $total),
+                $span,
             );
         }
         usort($vehicleCosts, static fn (VehicleCost $a, VehicleCost $b): int

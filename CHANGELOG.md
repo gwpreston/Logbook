@@ -6,8 +6,21 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.13.0] — 2026-10-14
+
+Phases 48.1 and 48.2: **show the working.** Every headline figure says how old
+the input it rests on is, and can be opened to show its inputs, its sum in
+plain words and what Logbook did not assume.
+
 ### Added
 - **"As of" dates (Phase 48.1).** Depreciation in the cost of ownership, equity and the cost of each *Coming up* item show the date of the valuation or the last time they come from when it isn't today. The API adds `as_of` (ownership) and `cost_as_of` (upcoming items), Ask adds `value_as_of` and `last_cost_as_of`, and the *Coming up* CSV gets a final *As of* column. No migration; nothing to do on upgrade. The column is added last, so existing positions don't move.
+- **How it's worked out (Phase 48.2).** A closed *How it's worked out* line (open when you print) under: depreciation for a period, the cost of ownership and its cost per distance, true cost for a period and *What changed*, the finance settlement estimate, equity and interest so far, the economy of a fill-up's stretch, the Reports page's running cost per distance, the mileage claim and the *Coming up* totals. It lists each input with its date and a link to the entry it came from, then the sum in words with the real numbers. Depreciation says plainly that Logbook never estimates values or applies a depreciation rate: it only draws a straight line between values you entered. The Cost of ownership tab's *How it's worked out* card and *Was it worth it?* are on it now, their wording unchanged. Dashboard widgets and the overview's *Coming up* card link to the page that shows the working (*How?*) rather than carry it.
+- **`?include=working` in the API.** `ownership`, `true-cost`, `finance`, `finance/agreements`, `trips/claim` and a vehicle's `fuel` list add a `working` object beside the figure: `{inputs, steps, notes, result, result_value}`. It is additive (the API stays `v1`), and anything else in `include` is a 400 (`docs/api.md`).
+- **Ask and MCP quote the working.** The `ownership`, `true_cost`, `finance`, `coming_up` and `trips_summary` tools return a `working` beside their figures, so "how did you get that?" is answered from its sums, held to the same grounding check (`docs/ai.md`, `docs/mcp.md`).
+
+### Upgrade notes
+- Pull and restart: no migration and no configuration change. A viewer without
+  the vehicle's costs sees no working, as they see no figure.
 
 ## [3.12.1] — 2026-10-13
 

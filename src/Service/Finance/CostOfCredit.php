@@ -18,6 +18,15 @@ final readonly class CostOfCredit
         /** Interest and fees so far: estimated while active, exact once ended. */
         public ?Money $soFar,
         public bool $exact,
+        /** While active: the interest in the payments made, for the working (spec.md §8). */
+        public ?Money $interestPaid = null,
+        /** While active: the fees paid so far. */
+        public ?Money $feesPaid = null,
+        public int $paymentsMade = 0,
+        /** Once ended: everything paid. */
+        public ?Money $paidTotal = null,
+        /** Once ended: what it is measured against (cash price, or the amount of credit, less a handed-back final payment). */
+        public ?Money $base = null,
     ) {
     }
 }

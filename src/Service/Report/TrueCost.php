@@ -61,6 +61,10 @@ final readonly class TrueCost
         /** The parts' rates added up; null with the reason in $gap. */
         public ?string $perKm,
         public ?TrueCostGap $gap,
+        /** How the loss was read off the value curve, for the working (spec.md §8); null for *Since bought* (the ownership figure). */
+        public ?PeriodDepreciation $depreciationDetail = null,
+        /** The two readings the distance is the difference of, for the working. */
+        public ?DistanceSpan $distanceSpan = null,
     ) {
     }
 
@@ -114,6 +118,7 @@ final readonly class TrueCost
             payoutsPerKm: $payoutsPerKm,
             perKm: $cost->perKm,
             gap: $gap,
+            distanceSpan: $cost->distanceSpan,
         );
     }
 
@@ -164,9 +169,10 @@ final readonly class TrueCost
         }
 
         $depreciation = $curve->depreciation($period->from, $period->to, $currency);
-        $km = PeriodDistance::reachesBack($readings, $period->from, $zone, $vehicle->data->purchaseDate)
-            ? PeriodDistance::km($readings, $period->report(), $zone, $vehicle->data->purchaseDate)
+        $span = PeriodDistance::reachesBack($readings, $period->from, $zone, $vehicle->data->purchaseDate)
+            ? PeriodDistance::span($readings, $period->report(), $zone, $vehicle->data->purchaseDate)
             : null;
+        $km = $span?->km;
         $depreciationKm = null;
         if ($depreciation !== null && $km !== null) {
             $measured = new ReportPeriod(ReportRange::Custom, $depreciation->from, $depreciation->to);
@@ -218,6 +224,8 @@ final readonly class TrueCost
             payoutsPerKm: $payoutsPerKm,
             perKm: $perKm,
             gap: $gap,
+            depreciationDetail: $depreciation,
+            distanceSpan: $span,
         );
     }
 

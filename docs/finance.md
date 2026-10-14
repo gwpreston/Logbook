@@ -151,6 +151,18 @@ because you no longer pay the interest for the months you skip. Mixing
 the two up is the commonest mistake about car finance, so Logbook always
 shows both.
 
+## How each figure is worked out
+
+The settlement estimate, equity and the interest paid so far each open to
+*How it's worked out* on the agreement page and the overview card (the
+dashboard links to it). The settlement shows how many payments remain, the
+monthly rate it discounts them at, and the sum; equity shows the value
+(with its date), the settlement it is measured against and whether that is
+an estimate; the interest shows the split of your last three payments into
+interest and capital and the rule for the rest. Nothing there is new: it is
+the same calculation, written out so you can check it against your lender's
+statement.
+
 ## Estimates and your lender's quote
 
 Logbook's settlement figure is an **estimate**. It is the present value of

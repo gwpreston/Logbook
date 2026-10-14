@@ -48,6 +48,21 @@ final class BusinessMileageTest extends AppTestCase
         self::assertStringContainsString('£0.12/mi', $claim);
     }
 
+    public function testTheClaimOpensToItsRateBandsAndSum(): void
+    {
+        [$app, $browser, $golf] = $this->golf();
+        // 100 mi at 55p: £55.00 (spec.md §8 *Show the working*).
+        $this->trip($app, $golf, '2026-07-01', '160.934');
+
+        $claim = self::body($browser->get('/trips/claim'));
+
+        self::assertStringContainsString('<details class="working" data-working>', $claim, 'closed on screen');
+        self::assertStringContainsString('100 mi × £0.55 = £55.00.', $claim);
+        self::assertStringContainsString('Mileage for tax year', $claim);
+        self::assertStringContainsString('= £55.00.', $claim);
+        self::assertStringContainsString('rounded to 2 decimal places', $claim);
+    }
+
     public function testWithoutADistanceTheCostIsLeftOut(): void
     {
         [$app, $browser, $golf] = $this->golf();

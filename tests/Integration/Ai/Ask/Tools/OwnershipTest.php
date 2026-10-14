@@ -63,6 +63,21 @@ final class OwnershipTest extends AskTestCase
         self::assertSame('Cost of ownership · Volkswagen Golf', $run->result->source);
     }
 
+    public function testItCarriesTheWorkingSoAnAnswerCanQuoteItsSums(): void
+    {
+        [$app, $owner] = $this->askApp();
+        $golf = $this->bought($app);
+
+        $run = $this->call($app, $owner, 'ownership', ['vehicle' => $golf->id]);
+
+        self::assertNotNull($run->result);
+        $data = new JsonDoc($run->result->data);
+        $sum = $data->string('working', 'cost_of_ownership', 'steps', 0);
+        self::assertStringStartsWith('Running costs: ', $sum);
+        self::assertStringContainsString($sum, $run->content(), 'the model is given the sum, so it is grounded');
+        self::assertNull($data->get('working', 'depreciation'), 'no valuation, so no depreciation to explain');
+    }
+
     public function testWithoutViewCostsNothingIsShown(): void
     {
         [$app, $owner, $access] = $this->policyApp();

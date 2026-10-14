@@ -6,6 +6,7 @@ namespace Logbook\Action\Api;
 
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Support\Api\ApiResponder;
+use Logbook\Support\Api\IncludeParam;
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Http\RequestContext;
 use Psr\Http\Message\ResponseInterface;
@@ -37,7 +38,7 @@ final readonly class FinanceAction
         $view = $this->finance->latestView($user, $vehicle);
 
         return $this->responder->json([
-            'agreement' => $view === null ? null : Serializer::financeAgreement($view),
+            'agreement' => $view === null ? null : Serializer::financeAgreement($view, IncludeParam::working($request)),
         ]);
     }
 }

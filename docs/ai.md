@@ -331,6 +331,17 @@ per insight, its topic, its vehicles and any figure no tool returned (such
 an insight is never shown, so the count should be 0); it replaces your
 set for the day, as *Refresh* does.
 
+## "How did you get that?"
+
+Ask's tools hand the model how each headline figure was worked out
+(cost of ownership and depreciation, true cost and what changed, the
+finance settlement, equity and interest, *Coming up* totals and the
+mileage claim), the same words the pages show under *How it's worked
+out*. So when you ask how a figure was reached, the answer quotes those
+sums and the dates of the values behind them; the model never works them out
+itself, and the grounding check holds the answer to them like any other
+figure. The MCP read tools return the same.
+
 ## Adding entries by message
 
 Tell *Ask* what you did, and it drafts the entry for you to check and add:

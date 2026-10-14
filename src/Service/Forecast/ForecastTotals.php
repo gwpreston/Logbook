@@ -18,6 +18,7 @@ final readonly class ForecastTotals
 
     /**
      * @param list<ForecastMonthTotal> $months one per horizon month
+     * @param list<FuelEstimate> $estimates the ready ones
      */
     public function __construct(
         public string $currency,
@@ -26,6 +27,8 @@ final readonly class ForecastTotals
         public bool $hasFuel,
         /** Vehicles in this currency whose fuel cannot be estimated yet. */
         public int $fuelMissing = 0,
+        /** The fuel estimates the months' fuel adds up, for the working (spec.md §8). */
+        public array $estimates = [],
     ) {
     }
 
@@ -36,7 +39,13 @@ final readonly class ForecastTotals
      */
     public function firstMonths(int $count): self
     {
-        return new self($this->currency, array_slice($this->months, 0, max(0, $count)), $this->hasFuel, $this->fuelMissing);
+        return new self(
+            $this->currency,
+            array_slice($this->months, 0, max(0, $count)),
+            $this->hasFuel,
+            $this->fuelMissing,
+            $this->estimates,
+        );
     }
 
     public function soon(): self

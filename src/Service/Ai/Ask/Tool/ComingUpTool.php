@@ -15,6 +15,7 @@ use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\ForecastItem;
 use Logbook\Service\Forecast\ForecastTotals;
 use Logbook\Service\Forecast\ForecastWording;
+use Logbook\Service\Working\ForecastWorking;
 
 /**
  * `coming_up(vehicles?, horizon_months?)`: what falls due, from *Coming
@@ -31,6 +32,7 @@ final readonly class ComingUpTool implements AskTool
         private ToolKit $kit,
         private ComingUp $comingUp,
         private ForecastWording $wording,
+        private ForecastWorking $working,
     ) {
     }
 
@@ -46,7 +48,9 @@ final readonly class ComingUpTool implements AskTool
             'What falls due next: services by schedule, document renewals (insurance, MOT, ...), tyres and '
             . 'reminders, with due dates, due odometer and last time\'s cost. Overdue items come first. '
             . 'Also the total expected over the next 3 months (this month and the next two, fuel included), '
-            . 'per currency.',
+            . 'per currency.'
+            . ' "How did you get that?" is answered from its working: '
+            . 'quote its sums and the dates of the values it rests on; never recompute them.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -141,6 +145,8 @@ final readonly class ComingUpTool implements AskTool
             'at_least' => $totals->isAtLeast(),
             'items_without_cost' => $totals->unknown(),
             'display' => $this->soonDisplay($totals),
+            // Each item with its last-time date, and the fuel estimate's window (spec.md §8).
+            'working' => $this->working->forTotals($totals)->toArray(),
         ];
     }
 

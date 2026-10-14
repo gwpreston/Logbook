@@ -67,7 +67,11 @@ final class AgreementFigures
         $derivedTotal = self::derivedTotal($data);
         $total = $data->totalAmountPayable === null ? $derivedTotal : BigDecimal::of($data->totalAmountPayable);
         $credit = self::amountOfCredit($data);
-        $interest = $type->isCredit() && $credit !== null ? self::interest($agreement, $credit, $rate) : [];
+        $steps = $type->isCredit() && $credit !== null ? self::interestSteps($agreement, $credit, $rate) : [];
+        $interest = [];
+        foreach ($steps as $step) {
+            $interest[$step->number] = $step->interest;
+        }
 
         $settlement = null;
         if ($type->isCredit() && $agreement->status->isActive()) {
@@ -108,6 +112,8 @@ final class AgreementFigures
             equityNeedsValuation: $needsValuation,
             interest: $interest,
             endsOn: $schedule->endsOn(),
+            interestSteps: $steps,
+            monthlyRate: (string) $rate,
         );
     }
 
@@ -174,6 +180,22 @@ final class AgreementFigures
      */
     public static function interest(FinanceAgreement $agreement, BigDecimal $credit, BigDecimal $rate): array
     {
+        $shares = [];
+        foreach (self::interestSteps($agreement, $credit, $rate) as $step) {
+            $shares[$step->number] = $step->interest;
+        }
+
+        return $shares;
+    }
+
+    /**
+     * The same split, with the balance before and after each payment (the
+     * working of *Interest so far*, spec.md §8).
+     *
+     * @return list<InterestStep>
+     */
+    public static function interestSteps(FinanceAgreement $agreement, BigDecimal $credit, BigDecimal $rate): array
+    {
         $data = $agreement->data;
         $planned = [];
         for ($i = 0; $i < $data->numberOfPayments; $i++) {
@@ -188,7 +210,7 @@ final class AgreementFigures
 
         $balance = $credit;
         $previous = $data->startedOn;
-        $shares = [];
+        $steps = [];
         foreach ($planned as $number => [$dueOn, $amount]) {
             $payment = BigDecimal::of($amount);
             $months = FinanceMath::monthsBetween($previous, $dueOn);
@@ -196,12 +218,20 @@ final class AgreementFigures
                 ? $balance->multipliedBy(FinanceMath::growth($rate, $months)->minus(1))->toScale(2, RoundingMode::HalfUp)
                 : BigDecimal::zero()->toScale(2);
             $share = $accrued->isGreaterThan($payment) ? $payment->toScale(2, RoundingMode::HalfUp) : $accrued;
-            $shares[$number] = (string) $share;
+            $before = $balance;
             $balance = $balance->plus($share)->minus($payment);
+            $steps[] = new InterestStep(
+                $number,
+                $dueOn,
+                (string) $payment->toScale(2, RoundingMode::HalfUp),
+                (string) $before->toScale(2, RoundingMode::HalfUp),
+                (string) $share,
+                (string) $balance->toScale(2, RoundingMode::HalfUp),
+            );
             $previous = $dueOn;
         }
 
-        return $shares;
+        return $steps;
     }
 
     /**
@@ -222,17 +252,30 @@ final class AgreementFigures
         }
 
         $value = BigDecimal::zero();
+        $count = 0;
+        $undiscounted = BigDecimal::zero();
         foreach ($schedule->owed() as $payment) {
+            $count++;
+            $undiscounted = $undiscounted->plus($payment->amount);
             $months = FinanceMath::monthsUntil($today, $payment->dueOn);
             $value = $value->plus(
                 BigDecimal::of($payment->amount)->dividedBy(FinanceMath::growth($rate, $months), 10, RoundingMode::HalfUp),
             );
         }
+        $extras = BigDecimal::zero();
         foreach ($schedule->extras as $extra) {
             $value = $value->minus(FinanceMath::of($extra->amount));
+            $extras = $extras->plus(FinanceMath::of($extra->amount));
         }
 
-        return new Settlement($money($value->isNegative() ? BigDecimal::zero() : $value), null);
+        return new Settlement(
+            $money($value->isNegative() ? BigDecimal::zero() : $value),
+            null,
+            $count,
+            $money($undiscounted),
+            (string) $rate,
+            $money($extras),
+        );
     }
 
     /**
@@ -252,16 +295,32 @@ final class AgreementFigures
 
         $exact = self::exactCost($agreement, $schedule);
         if ($exact !== null) {
-            return new CostOfCredit($charge, $money($exact), true);
+            $exactBase = self::exactBase($agreement);
+
+            return new CostOfCredit(
+                $charge,
+                $money($exact),
+                true,
+                paidTotal: $money(self::paidTotal($agreement, $schedule)),
+                base: $exactBase === null ? null : $money($exactBase),
+            );
         }
 
-        $soFar = BigDecimal::zero();
+        $interestPaid = BigDecimal::zero();
         foreach ($schedule->paid() as $payment) {
-            $soFar = $soFar->plus($interest[$payment->number] ?? '0');
+            $interestPaid = $interestPaid->plus($interest[$payment->number] ?? '0');
         }
-        $soFar = $soFar->plus(self::feesPaid($agreement, $schedule));
+        $fees = self::feesPaid($agreement, $schedule);
+        $soFar = $interestPaid->plus($fees);
 
-        return new CostOfCredit($charge, $agreement->status->isActive() ? $money($soFar) : null, false);
+        return new CostOfCredit(
+            $charge,
+            $agreement->status->isActive() ? $money($soFar) : null,
+            false,
+            interestPaid: $money($interestPaid),
+            feesPaid: $money($fees),
+            paymentsMade: count($schedule->paid()),
+        );
     }
 
     /**
@@ -282,6 +341,19 @@ final class AgreementFigures
         if (!$ended || !$data->type->isCredit()) {
             return null;
         }
+        $base = self::exactBase($agreement);
+
+        return $base === null ? null : self::paidTotal($agreement, $schedule)->minus($base);
+    }
+
+    /**
+     * What an ended agreement's payments are measured against: the cash
+     * price (the amount of credit for a loan), less the final payment when
+     * handed back. Null without the figure.
+     */
+    public static function exactBase(FinanceAgreement $agreement): ?BigDecimal
+    {
+        $data = $agreement->data;
         $base = $data->type->hasCashPrice() ? $data->cashPrice : $data->amountOfCredit;
         if ($base === null) {
             return null;
@@ -291,7 +363,7 @@ final class AgreementFigures
             $base = $base->minus(FinanceMath::of($data->finalPayment));
         }
 
-        return self::paidTotal($agreement, $schedule)->minus($base);
+        return $base;
     }
 
     /**

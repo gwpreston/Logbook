@@ -8,6 +8,7 @@ use Logbook\Domain\Expense\ExpenseEntry;
 use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Finance\PaymentEvent;
 use Logbook\Domain\Finance\SettlementQuote;
+use Logbook\Support\Working;
 
 /**
  * One agreement with everything its page shows (spec.md §7.32 *Agreement
@@ -31,6 +32,10 @@ final readonly class AgreementView
         public string $currency,
         /** PCP and leases with an allowance (Phase 29.2). */
         public ?MileagePosition $mileage = null,
+        /** How the settlement estimate, equity and interest so far are worked out (spec.md §8). */
+        public ?Working $settlementWorking = null,
+        public ?Working $equityWorking = null,
+        public ?Working $interestWorking = null,
     ) {
     }
 }

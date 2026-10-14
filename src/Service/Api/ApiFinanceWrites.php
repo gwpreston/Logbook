@@ -48,11 +48,11 @@ final readonly class ApiFinanceWrites
      *
      * @return array<string, mixed>
      */
-    public function read(User $user, Vehicle $vehicle, FinanceAgreement $agreement): array
+    public function read(User $user, Vehicle $vehicle, FinanceAgreement $agreement, bool $working = false): array
     {
         $view = $this->finance->view($user, $vehicle, $agreement);
 
-        return Serializer::financeAgreement($view) + [
+        return Serializer::financeAgreement($view, $working) + [
             'events' => array_map(static fn (PaymentEvent $event): array => [
                 'id' => $event->id,
                 'kind' => $event->kind->value,

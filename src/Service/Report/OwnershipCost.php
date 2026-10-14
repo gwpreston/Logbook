@@ -80,6 +80,8 @@ final readonly class OwnershipCost
          * the end adjustment), never a lease rental; null with none.
          */
         public ?Money $financeCharges = null,
+        /** The two readings the distance is the difference of, for the working (spec.md §8). */
+        public ?DistanceSpan $distanceSpan = null,
     ) {
     }
 
@@ -157,9 +159,10 @@ final readonly class OwnershipCost
 
         // Only when the mileage log reaches back to the start: otherwise the
         // whole period's costs would be divided by part of its distance.
-        $km = PeriodDistance::reachesBack($readings, $from, $zone, $vehicle->data->purchaseDate)
-            ? PeriodDistance::km($readings, $period, $zone, $vehicle->data->purchaseDate)
+        $span = PeriodDistance::reachesBack($readings, $from, $zone, $vehicle->data->purchaseDate)
+            ? PeriodDistance::span($readings, $period, $zone, $vehicle->data->purchaseDate)
             : null;
+        $km = $span?->km;
         // Nothing logged is not "nothing spent": a rate of £0 would be made up.
         $hasRates = $count > 0 && LocalTime::daysBetween($from, $to) >= self::MIN_DAYS;
         $months = count($period->months());
@@ -212,6 +215,7 @@ final readonly class OwnershipCost
             payouts: $received->isZero() ? null : $received,
             settlementIsSale: $settlementIsSale,
             financeCharges: $charges,
+            distanceSpan: $span,
         );
     }
 

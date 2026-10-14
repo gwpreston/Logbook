@@ -78,14 +78,8 @@
                 </section>
 
                 <section class="card" aria-labelledby="own-how-heading">
-                    <div class="card__header">
-                        <h2 id="own-how-heading" class="card__title">{{ 'ownership.tab.how'|trans }}</h2>
-                    </div>
-                    <p class="muted">
-                        {{- (cost.depreciation.isSold() ? 'ownership.tab.how_depreciation_sold' : 'ownership.tab.how_depreciation')|trans }}
-                        {{ 'ownership.tab.how_finance'|trans }}
-                        {{ (vehicle.isArchived() ? 'ownership.tab.how_running_sold' : 'ownership.tab.how_running')|trans -}}
-                    </p>
+                    <h2 id="own-how-heading" class="visually-hidden">{{ 'ownership.tab.how'|trans }}</h2>
+                    {{ ui.working(working_of(cost), 'ownership.tab.how'|trans) }}
                     {% if vehicle.data.purchasePrice is null %}
                         <div class="ownership-tab__prompt">
                             <p>{{ 'ownership.tab.add_price_hint'|trans }}</p>

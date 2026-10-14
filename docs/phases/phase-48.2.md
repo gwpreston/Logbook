@@ -3,7 +3,7 @@
 *Every headline figure can be opened to show its inputs and its sum in
 plain words.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.13.0** · file lives in `docs/phases/` · file lives in `docs/phases/`
 
 Two figures already show their working:
 
@@ -95,35 +95,36 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
 
 ## Tasks
 
-### 49.2.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged.
-- [ ] §8: the *Show the working* rule. Each inventory row gets its
+### 48.2.0 Spec first
+- [x] Open questions A–C decided by the owner and logged (#407–#409).
+- [x] §8: the *Show the working* rule. Each inventory row gets its
       wording in its own section. §13; `ROADMAP.md` row.
 
-### 49.2.1 Working
-- [ ] `Support\Working` and its construction in each inventory service,
+### 48.2.1 Working
+- [x] `Support\Working` and its construction in each inventory service,
       from the values actually used (never recomputed separately).
-- [ ] `ui.working()`: a `<details>` that works without JS, with print
+- [x] `ui.working()`: a `<details>` that works without JS, with print
       expanded and links to the rows.
-- [ ] The existing *How it's worked out* and *Was it worth it?* moved
+- [x] The existing *How it's worked out* and *Was it worth it?* moved
       onto the macro, with their wording unchanged.
 
-### 49.2.2 Everywhere
-- [ ] Every page, card and widget in the inventory. Widgets link to the
+### 48.2.2 Everywhere
+- [x] Every page, card and widget in the inventory. Widgets link to the
       page that shows the working rather than embedding it (open
       question B).
-- [ ] API `?include=working`; Ask's read tools pass it; MCP likewise.
-- [ ] Translations (every shipped locale).
+- [x] API `?include=working`; Ask's read tools pass it; MCP likewise.
+- [x] Translations (every shipped locale).
 
-### 49.2.3 Tests and release
-- [ ] For every golden figure, the working's sum equals the figure
+### 48.2.3 Tests and release
+- [x] (No shared golden household existed: each figure has a hand-worked example.) For every figure, the working's sum equals the figure
       shown, and every input links to a row that exists.
-- [ ] `ViewCosts`: the working hides with its figure. A test as the
+- [x] `ViewCosts`: the working hides with its figure. A test as the
       restricted persona proves it.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print;
-      a screen reader opening a working).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 48.1
-      and 48.2; tag once merged.
+      a screen reader opening a working): pending, run on the dev stack.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 48.1
+      and 48.2.
+- [ ] Tag `v3.13.0` once merged.
 
 ---
 
@@ -138,23 +139,24 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-14, before the phase was built; logged as
+#407–#409 in [`open-questions.md`](open-questions.md).
 
 - **A. Open or closed by default?**
   - (1) Closed everywhere on screen, open in print.
   - (2) Open on the figure's own page.
 
-  *Recommendation:* (1). It is consistent, and pages stay short.
+  *Decided (#407):* (1). It is consistent, and pages stay short.
 
 - **B. On dashboard widgets?**
   - (1) A *How?* link to the page that shows the working.
   - (2) The working inside the widget.
 
-  *Recommendation:* (1). Widgets are small, and the page already exists.
+  *Decided (#408):* (1). Widgets are small, and the page already exists.
 
 - **C. Ask quoting the working.**
   - (1) Ask's tools pass the working, and answers may quote its sum.
   - (2) Figures only.
 
-  *Recommendation:* (1). "How did you get that?" then has a checkable
+  *Decided (#409):* (1). "How did you get that?" then has a checkable
   answer, held to the same grounding check.

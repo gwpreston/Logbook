@@ -22,7 +22,7 @@
                         {%- endif %} {{ fuel_ui.badge(data.fuel, data.grade) }}</span>
                     <span class="list__meta">
                         {{- data.filledAt|instant_date }} · {{ data.volume|quantity(kind) -}}
-                        {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, kind) }}{% endif -%}
+                        {%- if segment %} · {{ segment.distanceKm|economy(segment.volume, kind) }} {{ ui.working_link(url_for('fuel.index', {id: row.vehicle.id})) }}{% endif -%}
                         {%- if row.check %} {{ fuel_ui.check_mark(row.check) }}{% endif -%}
                     </span>
                 </span>

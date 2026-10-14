@@ -2,7 +2,7 @@
 
 *Every figure built on an old input says how old.*
 
-Status: ✅ built (released with [48.2](phase-48.2.md)) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.13.0** with [48.2](phase-48.2.md) · file lives in `docs/phases/`
 
 Logbook already dates some of its figures. Depreciation is labelled with
 the date it is measured to (§7.1, §7.35). The *Ownership* card shows the

@@ -112,6 +112,30 @@ final class ComingUpTest extends ReminderTestCase
         self::assertStringContainsString('Nothing is adjusted for inflation.', $html, 'an estimate, and says so');
     }
 
+    public function testTheTotalsOpenToTheirItemsAndWhatTheyRestOn(): void
+    {
+        $this->start();
+        $golf = $this->golf();
+
+        $html = self::body($this->browser->get('/upcoming'));
+
+        self::assertStringContainsString('How Next 12 months is worked out', $html);
+        self::assertStringContainsString('How Next 3 months is worked out', $html);
+        // 240 × 2 + 480 + 88 × 2 = 1,136: every item with its cost and the "last time" it comes from.
+        self::assertStringContainsString('£1,136.00 of planned costs = £1,136.00.', $html);
+        self::assertStringContainsString('£240.00, due 15 Feb 2027', $html);
+        self::assertStringContainsString(
+            '1 item has no known cost and is left out, so the total is at least the figure shown.',
+            $html,
+        );
+        self::assertStringContainsString('Logbook doesn’t estimate prices', $html);
+        self::assertStringContainsString('Items with no date yet are in no total.', $html);
+        self::assertStringContainsString('href="/vehicles/' . $golf->id . '/maintenance"', $html, 'each input links to its rows');
+        // The widget and the card link to it rather than carry it (spec.md §8).
+        $home = self::body($this->browser->get('/vehicles/' . $golf->id));
+        self::assertStringContainsString('class="working-link" href="/upcoming">How?</a>', $home);
+    }
+
     public function testWithoutJsTheChartIsATable(): void
     {
         $this->start();
@@ -202,7 +226,9 @@ final class ComingUpTest extends ReminderTestCase
             'en_GB',
         );
 
-        $html = self::body($this->browser->get('/upcoming'));
+        // The totals' working names the items again (Phase 48.2): count the list, not the working.
+        $page = self::body($this->browser->get('/upcoming'));
+        $html = (string) preg_replace('~<details class="working".*?</details>~s', '', $page);
 
         self::assertSame(1, substr_count($html, 'Tyres: Winter wheels'), 'one item for the set, named by it');
         self::assertStringContainsString('<time datetime="2026-11-30">30 Nov 2026</time>', $html, 'at its soonest limit');

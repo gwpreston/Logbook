@@ -414,6 +414,9 @@
           },
           {
             "$ref": "#/components/parameters/until"
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
@@ -2327,9 +2330,15 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2559,9 +2568,15 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2594,9 +2609,15 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2703,9 +2724,15 @@
               ],
               "default": "last_12_months"
             }
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3785,6 +3812,9 @@
               }
             },
             "description": "Only these vehicles (default: all)."
+          },
+          {
+            "$ref": "#/components/parameters/include"
           }
         ],
         "responses": {
@@ -7859,6 +7889,18 @@
           "type": "integer",
           "minimum": 1
         }
+      },
+      "include": {
+        "name": "include",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "working"
+          ]
+        },
+        "description": "Extras to add beside the figures, comma-separated. `working` adds how each headline figure was worked out: its dated inputs, the sum in words and what Logbook did not assume."
       }
     },
     "headers": {
@@ -8487,6 +8529,17 @@
                 "type": "null"
               }
             ]
+          },
+          "working": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Working"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with ?include=working: the full fill-ups at each end, the fuel between them and the distance."
           }
         }
       },
@@ -10842,6 +10895,17 @@
           "difference": {
             "$ref": "#/components/schemas/NullableDecimal",
             "description": "Approved mileage (without passengers) minus the employer's payment: positive is unpaid."
+          },
+          "working": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Working"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with ?include=working: the distance in each rate band × its rate."
           }
         }
       },
@@ -12525,6 +12589,43 @@
                 }
               }
             }
+          },
+          "working": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Only with ?include=working: how the settlement estimate, equity and interest so far were worked out; each null when the figure is not shown.",
+            "properties": {
+              "settlement": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Working"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "equity": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Working"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "interest_so_far": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Working"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
           }
         }
       },
@@ -12683,6 +12784,17 @@
                 "type": "null"
               }
             ]
+          },
+          "working": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Working"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with ?include=working: how the period was worked out, with the depreciation in it."
           }
         }
       },
@@ -12753,6 +12865,17 @@
                 }
               }
             }
+          },
+          "working": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Working"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with ?include=working: the two periods side by side, part by part."
           }
         }
       },
@@ -13903,6 +14026,37 @@
                 ]
               }
             }
+          },
+          "working": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "cost_of_ownership",
+                  "depreciation"
+                ],
+                "properties": {
+                  "cost_of_ownership": {
+                    "$ref": "#/components/schemas/Working"
+                  },
+                  "depreciation": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/Working"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with ?include=working: how the cost of ownership and its depreciation were worked out; null without an ownership period."
           }
         },
         "description": "Cost of ownership and depreciation (Phase 14.2), as the overview's card works them out. change is current value − purchase price (negative is a loss)."
@@ -19908,6 +20062,70 @@
                 }
               }
             }
+          }
+        }
+      },
+      "Working": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "inputs",
+          "steps",
+          "notes",
+          "result",
+          "result_value"
+        ],
+        "description": "How a headline figure was worked out, in plain words (spec §8 Show the working), built from the values the figure itself was computed from. Only with ?include=working.",
+        "properties": {
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label",
+                "value",
+                "as_of"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The input as written for the key owner (their units and currency)."
+                },
+                "as_of": {
+                  "$ref": "#/components/schemas/NullableAsOf",
+                  "description": "The input's date, when it is not from today."
+                }
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The sum in words, with the real numbers."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What Logbook did not assume."
+          },
+          "result": {
+            "type": "string",
+            "description": "The figure as shown."
+          },
+          "result_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The figure as a canonical decimal, when it is a number."
           }
         }
       }

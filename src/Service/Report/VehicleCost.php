@@ -22,6 +22,8 @@ final readonly class VehicleCost
         public ?string $costPerKm,
         /** Percentage of the currency's total, 0–100 (display only). */
         public float $share,
+        /** The two readings the distance is the difference of, for the working (spec.md §8). */
+        public ?DistanceSpan $span = null,
     ) {
     }
 }

@@ -163,15 +163,7 @@
                                                     <span class="pill">{{ 'fuel_prices.near.nearest'|trans }}</span>
                                                 {% else %}
                                                     {% set w = row.worthIt %}
-                                                    <details class="near-sum" data-worth-it>
-                                                        <summary>{{ w.actualSaving|price_saving(currency) }}</summary>
-                                                        <p>
-                                                            {{ (w.priceDifference starts with '-' ? 'fuel_prices.worth.fuel_saving_more' : 'fuel_prices.worth.fuel_saving')|trans({amount: w.fuelSaving|signed_money(currency), volume: row.cost.fill|volume(1), difference: (w.priceDifference|trim('-', 'left'))|unit_price(currency, false, true)}) }}
-                                                            · {{ 'fuel_prices.worth.extra_distance'|trans({straight: w.extraKm|distance(1), road: w.extraRoadKm|distance(1)}) }}
-                                                            · {% if profile.hasEconomy() %}{{ 'fuel_prices.worth.fuel_for_that'|trans({amount: w.fuelForThat|signed_money(currency), economy: profile.economyKm|consumption(profile.economyLitres)}) }}{% else %}{{ 'fuel_prices.worth.no_economy'|trans }}{% endif %}
-                                                            · <strong>{{ (w.isWorthIt() ? 'fuel_prices.worth.worth_it' : 'fuel_prices.worth.not_worth_it')|trans({amount: w.actualSaving|signed_money(currency)}) }}</strong>
-                                                        </p>
-                                                    </details>
+                                                    {{ ui.working(working_of(row, result), w.actualSaving|price_saving(currency)) }}
                                                 {% endif %}
                                             </td>
                                         </tr>

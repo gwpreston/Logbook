@@ -48,9 +48,12 @@ use Logbook\Service\Report\ReportService;
 use Logbook\Service\Report\TrueCostService;
 use Logbook\Service\Trip\ClaimFilter;
 use Logbook\Service\Trip\ClaimReportService;
+use Logbook\Service\Trip\ClaimTotals;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Service\Working\ClaimWorking;
+use Logbook\Service\Working\EconomyWorking;
 use Logbook\Support\Api\ListQuery;
 use Logbook\Support\Api\Serializer;
 use Logbook\Support\Date\LocalTime;
@@ -89,6 +92,8 @@ final readonly class ApiReader
         private DisplayFormatter $format,
         private ClockInterface $clock,
         private TrueCostService $trueCosts,
+        private ClaimWorking $claimWorking,
+        private EconomyWorking $economyWorking,
     ) {
     }
 
@@ -151,7 +156,7 @@ final readonly class ApiReader
     /**
      * @return array{items: list<array<string, mixed>>, cursor: ?string}
      */
-    public function fuel(User $user, Vehicle $vehicle, ListQuery $query): array
+    public function fuel(User $user, Vehicle $vehicle, ListQuery $query, bool $working = false): array
     {
         $history = $this->fuel->history($vehicle);
         $page = $query->page(
@@ -165,14 +170,24 @@ final readonly class ApiReader
 
         return [
             'items' => array_map(
-                static fn (FillEconomy $fill): array => Serializer::fuelEntry(
-                    $fill->entry,
-                    $fill,
-                    $checks->for($fill->entry->id),
-                    $currency,
-                    $costs,
-                    EntryAccess::isOwn($user, $fill->entry->createdBy),
-                ),
+                function (FillEconomy $fill) use ($checks, $currency, $costs, $user, $working): array {
+                    $item = Serializer::fuelEntry(
+                        $fill->entry,
+                        $fill,
+                        $checks->for($fill->entry->id),
+                        $currency,
+                        $costs,
+                        EntryAccess::isOwn($user, $fill->entry->createdBy),
+                    );
+                    // ?include=working: how the stretch's economy was worked out (spec.md §8).
+                    $economy = $item['economy'] ?? null;
+                    if ($working && is_array($economy) && ($economy['segment'] ?? null) !== null) {
+                        $economy['working'] = $this->economyWorking->forFill($fill)?->toArray();
+                        $item['economy'] = $economy;
+                    }
+
+                    return $item;
+                },
                 $page['items'],
             ),
             'cursor' => $page['cursor'],
@@ -378,14 +393,20 @@ final readonly class ApiReader
      *
      * @return array<string, mixed>
      */
-    public function claim(User $user, ClaimFilter $filter): array
+    public function claim(User $user, ClaimFilter $filter, bool $working = false): array
     {
         $report = $this->claims->build($user, $filter);
+        $period = $this->claimWorking->periodLabel($filter);
 
         return [
             'period' => Serializer::claimPeriod($filter),
             'trips' => array_map(Serializer::claimTrip(...), $report->rows),
-            'totals' => array_map(Serializer::claimTotals(...), $report->totals),
+            // ?include=working: how each currency's claim was worked out (spec.md §8).
+            'totals' => array_map(
+                fn (ClaimTotals $totals): array => Serializer::claimTotals($totals)
+                    + ($working ? ['working' => $this->claimWorking->forTotals($totals, $period)->toArray()] : []),
+                $report->totals,
+            ),
             'unvalued' => $report->unvalued,
         ];
     }

@@ -87,10 +87,12 @@
    With `dash_if_zero`, "—" while nothing in it has a known cost, as a month's figure. #}
 {% macro total_line(label, totals, dash_if_zero = false) -%}
     {% import _self as forecast_ui %}
+    {% import 'macros/ui.twig' as ui %}
     <p class="forecast-total">
         <span>{{ label }}</span>
         <strong class="tabular">{{ dash_if_zero and totals.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong>
         {%- if totals.hasFuel %}<span class="muted"> · {{ 'coming_up.includes_fuel'|trans({amount: totals.fuel()|money}) }}</span>{% endif -%}
+        {{ ui.working_link(url_for('upcoming')) }}
     </p>
 {%- endmacro %}
 

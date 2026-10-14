@@ -28,6 +28,21 @@ final class PeriodDistance
      */
     public static function km(array $readings, ReportPeriod $period, DateTimeZone $zone, ?DateTimeImmutable $purchased): ?string
     {
+        return self::span($readings, $period, $zone, $purchased)?->km;
+    }
+
+    /**
+     * The same distance with the two readings it is the difference of (for
+     * the working, spec.md §8).
+     *
+     * @param list<OdometerReading> $readings oldest first
+     */
+    public static function span(
+        array $readings,
+        ReportPeriod $period,
+        DateTimeZone $zone,
+        ?DateTimeImmutable $purchased,
+    ): ?DistanceSpan {
         $before = null;
         $first = null;
         $last = null;
@@ -47,8 +62,17 @@ final class PeriodDistance
         }
 
         $distance = Decimal::subtract($last->readingKm, $start->readingKm);
+        if (Decimal::compare($distance, '0') <= 0) {
+            return null;
+        }
 
-        return Decimal::compare($distance, '0') > 0 ? $distance : null;
+        return new DistanceSpan(
+            self::day($start->recordedAt, $zone),
+            $start->readingKm,
+            self::day($last->recordedAt, $zone),
+            $last->readingKm,
+            $distance,
+        );
     }
 
     /**

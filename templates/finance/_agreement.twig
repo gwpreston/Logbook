@@ -145,6 +145,7 @@
                             {% if credit.total %}<span class="tabular">{{ credit.total|money }}</span> <span class="muted">{{ 'finance.cost_of_credit_hint'|trans }}</span>{% endif %}
                             {% if credit.soFar %}<br>{{ 'finance.interest_so_far'|trans({amount: credit.soFar|money}) }} <span class="pill pill--soon">{{ 'finance.estimate'|trans }}</span>{% endif %}
                         {% endif %}
+                        {{ ui.working(view.interestWorking) }}
                     </dd>
                 </div>
             {% endif %}
@@ -189,6 +190,7 @@
                     <dd>
                         {{ fin.settlement(figures.settlement) }}
                         {% if figures.settlement.isEstimate() %}<br><span class="muted">{{ 'finance.settlement_estimate_hint'|trans }}</span>{% endif %}
+                        {{ ui.working(view.settlementWorking) }}
                     </dd>
                 </div>
             {% endif %}
@@ -256,6 +258,7 @@
                 {% endif %}
                 {% if figures.equity %}
                     <p class="field__hint">{{ 'finance.equity_hint'|trans({value: figures.equity.valuation|money, date: figures.equity.valuedOn|local_date}) }}</p>
+                    {{ ui.working(view.equityWorking) }}
                 {% elseif figures.equityNeedsValuation or not value %}
                     <p class="no-print"><a href="{{ url_for('valuations.create', {id: vehicle.id}) }}" data-modal>{{ (figures.equityNeedsValuation ? 'finance.equity_needs_valuation' : 'finance.value.add')|trans }}</a></p>
                 {% endif %}
