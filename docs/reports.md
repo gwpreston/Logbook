@@ -130,7 +130,9 @@ entered (the price you paid, your valuations and the sale price), and for a
 period it draws a straight line between two of them. The working shows
 which two, and says so when a period runs past your latest value and is
 measured only up to it. The dashboard's *True cost* widget links to the
-vehicle's card (*How?*) rather than carry the working itself.
+vehicle's card (*How?*) rather than carry the working itself. On the True cost
+report each vehicle opens the working for its latest three years, *Since
+bought* and its latest two changes; older years show their figures only.
 
 ## What changed
 

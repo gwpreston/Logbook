@@ -8657,7 +8657,10 @@ it replaces none of the other figures.
   with the difference, then the sum ("2026 so far £… − 2025 £… = …") and each
   cause's sentence, and says the parts' changes add up exactly to the change
   in the total. The dashboard widget links to the vehicle's True cost card
-  (*How?*).
+  (*How?*). So the report stays light for a large garage (measured: 5 vehicles
+  doubled its HTML), it carries the working for the latest three years, *Since
+  bought* and the latest two changes of each vehicle; the Expenses tab's table
+  and older years show their figures without it.
 
 ### 7.36 Demo mode (Phase 35.1)
 

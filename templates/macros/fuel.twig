@@ -236,7 +236,7 @@
                 {{ paperclip.count(files) }}
             </span>
         {% if editable %}</a>{% else %}</div>{% endif %}
-        {{ ui.working(working_of(fill), null, editable and can_change(vehicle, fill.segment.opening.createdBy ?? null)) }}
+        {{ ui.working(working_of(fill), null, editable and can_change(vehicle, fill.segment.opening.createdBy ?? null), data.filledAt|local_datetime) }}
         {% if shown %}
             <details class="economy-check__details"{% if opts.open ?? false %} open{% endif %}>
                 <summary>{{ (check.isFlagged() ? 'fuel.check.what_to_check' : 'fuel.check.checked_summary')|trans }}</summary>

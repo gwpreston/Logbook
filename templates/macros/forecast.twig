@@ -92,7 +92,7 @@
         <span>{{ label }}</span>
         <strong class="tabular">{{ dash_if_zero and totals.total().isZero() ? forecast_ui.no_known_cost() : forecast_ui.amount(totals.total(), totals.isAtLeast()) }}</strong>
         {%- if totals.hasFuel %}<span class="muted"> · {{ 'coming_up.includes_fuel'|trans({amount: totals.fuel()|money}) }}</span>{% endif -%}
-        {{ ui.working_link(url_for('upcoming')) }}
+        {{ ui.working_link(url_for('upcoming'), label) }}
     </p>
 {%- endmacro %}
 

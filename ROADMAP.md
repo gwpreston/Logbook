@@ -1275,7 +1275,7 @@ plain words.*
 
 - A `Working` result (inputs, steps and notes) beside each figure in the
   inventory, built from the same values, shown by one `ui.working()`
-  macro and worded per figure, checked against the golden household.
+  macro and worded per figure, checked by hand-worked tests.
 - The working in print, the API (`working` on request) and Ask.
   Release.
 

@@ -509,9 +509,9 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 404 | [48.1](phase-48.1.md) | Absolute or relative dates? | Decided | (1) Absolute ("as of 14 Sep 2026"), with the relative form in a tooltip. spec §8. Built in [48.1](phase-48.1.md). | 2026-10-13 |
 | 405 | [48.1](phase-48.1.md) | Several dated inputs on one figure | Decided | (1) Show the oldest; the others are on the figure's own page. spec §8. Built in [48.1](phase-48.1.md) (`AsOf::oldest()`). | 2026-10-13 |
 | 406 | [48.1](phase-48.1.md) | Garage cards and dashboard tiles, where space is tight | Decided | (1) A short date as text ("as of Sep 2026"), not an icon. spec §8. Built in [48.1](phase-48.1.md). | 2026-10-13 |
-| 407 | [48.2](phase-48.2.md) | A. Is the working open or closed by default? | Scheduled | (1) Closed everywhere on screen, open in print. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
-| 408 | [48.2](phase-48.2.md) | B. The working on dashboard widgets | Scheduled | (1) A *How?* link to the page that shows the working; no working inside a widget. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
-| 409 | [48.2](phase-48.2.md) | C. Ask quoting the working | Scheduled | (1) Ask's read tools (and MCP's) pass the working, and answers may quote its sum, under the same grounding check. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
+| 407 | [48.2](phase-48.2.md) | A. Is the working open or closed by default? | Decided | (1) Closed everywhere on screen, open in print. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
+| 408 | [48.2](phase-48.2.md) | B. The working on dashboard widgets | Decided | (1) A *How?* link to the page that shows the working; no working inside a widget. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
+| 409 | [48.2](phase-48.2.md) | C. Ask quoting the working | Decided | (1) Ask's read tools (and MCP's) pass the working, and answers may quote its sum, under the same grounding check. spec §8. Built in [48.2](phase-48.2.md). | 2026-10-14 |
 
 ## Other loose ends found in the review
 

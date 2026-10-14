@@ -446,10 +446,10 @@
    <details> (it works without JS; print opens it) holding the dated inputs
    with links to their rows, the sum in words and what Logbook did not assume.
    Null when the figure has no working (or the viewer may not see it). #}
-{% macro working(working, summary = null, links = true) -%}
+{% macro working(working, summary = null, links = true, label = null) -%}
     {%- if working is not null -%}
         <details class="working" data-working>
-            <summary>{{ summary ?? 'working.summary'|trans }}</summary>
+            <summary>{{ summary ?? 'working.summary'|trans }}{% if label %}<span class="visually-hidden">: {{ label }}</span>{% endif %}</summary>
             <div class="working__body">
                 {% if working.inputs is not empty %}
                     <dl class="working__inputs">
@@ -476,6 +476,6 @@
 {%- endmacro %}
 
 {# A widget's link to the page that shows the working (Phase 48.2, #408). #}
-{% macro working_link(href) -%}
-    <a class="working-link" href="{{ href }}">{{ 'working.how'|trans }}</a>
+{% macro working_link(href, label = null) -%}
+    <a class="working-link" href="{{ href }}">{{ 'working.how'|trans }}{% if label %}<span class="visually-hidden"> {{ label }}</span>{% endif %}</a>
 {%- endmacro %}

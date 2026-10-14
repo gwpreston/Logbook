@@ -99,7 +99,10 @@
                     {% endfor %}
                     <li class="true-cost__total"><strong>{{ 'true_cost.change.total'|trans({amount: wording.signed(change.perKm, vtc.currency)}) }}</strong></li>
                 </ul>
-                {{ ui.working(working_of(change, vtc), 'working.summary'|trans) }}
+                {# The latest two changes carry their working; older years are in the table (spec.md §7.35, Phase 48.2). #}
+                {% if loop.index <= 2 %}
+                    {{ ui.working(working_of(change, vtc), 'working.summary'|trans, true, vtc.vehicle.name() ~ ', ' ~ wording.label(years[i])) }}
+                {% endif %}
             </section>
         {%- endif -%}
     {%- endfor -%}

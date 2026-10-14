@@ -28,7 +28,7 @@
                         <p class="muted true-cost__row-foot">
                             {{- true_cost_wording.breakdown(tc) -}}
                             {%- if vtc.twelveMonthChange() is not null %} · {{ tcm.change(vtc.twelveMonthChange(), vtc.currency, true_cost_wording) }}{% endif -%}
-                            {{ ui.working_link(url_for('vehicles.show', {id: vtc.vehicle.id}) ~ '#true-cost') }}
+                            {{ ui.working_link(url_for('vehicles.show', {id: vtc.vehicle.id}) ~ '#true-cost', vtc.vehicle.name()) }}
                         </p>
                     {% else %}
                         <p class="muted">{{ (tc and tc.gap ? tc.gap.messageKey() : 'true_cost.gap.no_mileage')|trans }}</p>

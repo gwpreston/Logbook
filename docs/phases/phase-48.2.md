@@ -3,7 +3,7 @@
 *Every headline figure can be opened to show its inputs and its sum in
 plain words.*
 
-Status: ✅ complete · released as **v3.13.0** · file lives in `docs/phases/` · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.13.0** · file lives in `docs/phases/`
 
 Two figures already show their working:
 
@@ -45,8 +45,8 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
    figure was computed from.
 2. **One `ui.working()` macro**, used under every figure in the
    inventory.
-3. **Wording for each figure** (below), checked against the golden
-   household.
+3. **Wording for each figure** (below), checked against the tests in
+   `tests/Integration/Http/WorkingTest.php` and `tests/Unit/Service/Working`.
 4. The working in **print** (expanded), the **API** (`working` on
    request) and **Ask** (its tools pass the working, so answers can quote
    it).
@@ -132,8 +132,7 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
 
 1. Every headline figure in the inventory can be opened to show its
    dated inputs, linked to their rows, and its sum in words.
-2. The working always agrees with the figure. The golden household
-   proves it.
+2. The working always agrees with the figure. Those tests prove it.
 3. Depreciation says plainly that it uses only values the owner entered.
 4. Definition of done (CLAUDE.md §11) holds.
 
