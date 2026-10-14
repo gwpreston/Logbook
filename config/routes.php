@@ -154,6 +154,8 @@ use Logbook\Action\Fuel\EditFuelEntryAction;
 use Logbook\Action\Fuel\FuelLogAction;
 use Logbook\Action\Fuel\QuickFuelAction;
 use Logbook\Action\Garage\GarageAction;
+use Logbook\Action\GettingStarted\DismissStartAction;
+use Logbook\Action\GettingStarted\StartVehicleAction;
 use Logbook\Action\HealthAction;
 use Logbook\Action\History\FleetHistoryAction;
 use Logbook\Action\History\HistoryPrintAction;
@@ -796,6 +798,9 @@ return static function (App $app): void {
 
         $group->get('/garage', GarageAction::class)->setName('garage');
         $group->map(['GET', 'POST'], '/vehicles/new', CreateVehicleAction::class)->setName('vehicles.create');
+        // Set up your first vehicle (Phase 49.1, spec.md §7.9): the user's own progress and vehicle.
+        $group->map(['GET', 'POST'], '/vehicles/start', StartVehicleAction::class)->setName('vehicles.start');
+        $group->post('/vehicles/start/dismiss', DismissStartAction::class)->setName('vehicles.start.dismiss');
         $group->get('/vehicles/{id:[0-9]+}', ShowVehicleAction::class)->setName('vehicles.show')
             ->setArgument($ability, VehicleAbility::View->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/edit', EditVehicleAction::class)->setName('vehicles.edit')

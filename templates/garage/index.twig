@@ -22,6 +22,9 @@
                 {{ ui.icon('garage') }}
                 <p class="empty__title">{{ (counts.archived > 0 ? 'garage.empty_active_title' : 'garage.empty_title')|trans }}</p>
                 <p>{{ 'garage.empty_body'|trans }}</p>
+                {% if counts.active == 0 and counts.archived == 0 %}
+                    <a class="btn btn--primary" href="{{ url_for('vehicles.start') }}">{{ 'getting_started.garage_button'|trans }}</a>
+                {% endif %}
             </div>
         {% else %}
             {% if shared is not empty %}<h2 class="section-title">{{ 'sharing.your_vehicles'|trans }}</h2>{% endif %}

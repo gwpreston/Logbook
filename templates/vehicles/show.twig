@@ -22,6 +22,26 @@
             <div class="alert alert--warning" role="status">{{ ui.icon('inventory_2') }}<span>{{ 'vehicle.archived_notice'|trans }}</span></div>
         {% endif %}
 
+        {# Getting started (Phase 49.1, spec.md §7.9): until complete or dismissed. #}
+        {% if getting_started is not null %}
+            <section class="card" aria-labelledby="getting-started-heading">
+                <div class="card__header">
+                    <h2 id="getting-started-heading" class="card__title">{{ ui.icon('fact_check') }}{{ 'getting_started.card_title'|trans }}</h2>
+                    <p>{{ 'getting_started.card_progress'|trans({done: getting_started.done, total: getting_started.total}) }}</p>
+                </div>
+                <ul class="link-list">
+                    {% for missing in getting_started.missing %}
+                        <li><a href="{{ url_for('vehicles.start', {}, {step: missing.value}) }}">{{ ('getting_started.step.' ~ missing.value ~ '.title')|trans }}</a></li>
+                    {% endfor %}
+                </ul>
+                <form method="post" action="{{ url_for('vehicles.start.dismiss') }}">
+                    {{ ui.csrf(csrf) }}
+                    {{ ui.return_field(current_path) }}
+                    <button class="btn" type="submit">{{ 'getting_started.card_dismiss'|trans }}</button>
+                </form>
+            </section>
+        {% endif %}
+
         {# What is wrong now, first; hidden when nothing is (spec.md §7.24). #}
         {% if attention is not empty %}
             <section class="card card--attention" aria-labelledby="attention-heading">

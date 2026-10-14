@@ -86,6 +86,8 @@ final class RouteInventoryTest extends AppTestCase
         'dashboard.cheapest_fuel',
         'log.chooser',
         'vehicles.create',
+        'vehicles.start',
+        'vehicles.start.dismiss',
         'settings',
         'profile',
         'settings.reminders',
@@ -237,7 +239,8 @@ final class RouteInventoryTest extends AppTestCase
     private const array DEMO_ALLOWED = [
         'health', 'pwa.manifest', 'pwa.worker', 'pwa.offline', 'calendar.feed', 'scheduler.url', 'api.openapi',
         'setup', 'login', 'diagnostics.deep-link', 'home', 'logout', 'dashboard.layout', 'dashboard.cheapest_fuel',
-        'log.chooser', 'log.pick', 'garage', 'vehicles.create', 'vehicles.show', 'vehicles.edit',
+        'log.chooser', 'log.pick', 'garage', 'vehicles.create', 'vehicles.start', 'vehicles.start.dismiss', 'vehicles.show',
+        'vehicles.edit',
         'vehicles.first_inspection', 'attention.hide', 'vehicles.delete', 'vehicles.archive', 'vehicles.restore',
         'vehicles.photo', 'vehicles.sharing', 'vehicles.sharing.add', 'vehicles.sharing.change',
         'vehicles.sharing.mine', 'vehicles.transfer', 'history.fleet', 'history.vehicle', 'history.print',

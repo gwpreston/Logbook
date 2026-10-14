@@ -3245,19 +3245,24 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   2. **Mileage now:** one number, dated today (a mileage-log reading).
   3. **Key dates:** MOT due, tax due, insurance renewal. MOT and tax become
      documents holding only an expiry date, and insurance an insurance
-     document with its renewal date (and the insurer if typed); each
+     document with its renewal date (and the insurer if typed); road tax,
+     which has no document type of its own, is an *Other* document titled
+     "Vehicle tax" (in the user's language); each
      raises its usual reminder (§7.5, §7.6) and later takes its full
      details on its own page. With MOT history, the MOT date is already
-     filled in.
+     filled in: *Look up* keeps the latest test's expiry (or the first MOT
+     due date for a vehicle with no tests) in the progress, so DVSA is
+     asked once.
   4. **Servicing:** a schedule (§7.4) preset to 12 months or 10,000 miles
-     (16,000 km in metric), editable and labelled "a common interval;
+     (16,000 km in metric; the preset is in the user's own unit, never 16,000
+     km shown as miles), editable and labelled "a common interval;
      check your handbook", with the last service date if known. Its first
      due point comes from the last service date, else the purchase date,
-     else today.
+     else today (and only for today, the mileage now as its distance point).
   5. **Done:** what's next (log a fill-up, invite a household member, add
      the purchase price), each one a link.
-  The flow starts straight after the welcome form (or after sign-in) for a
-  user with no vehicles of their own and none shared, with *Skip for now*
+  The flow starts straight after the welcome form for a user with no
+  vehicles of their own and none shared, with *Skip for now*
   on step 1; a shared user with vehicles never sees it, and it is always
   reachable from the empty garage's *Set up your first vehicle*. Progress is
   in the user's settings (`getting_started`: vehicle id, steps done,

@@ -19,6 +19,7 @@ use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Compliance\FirstInspection;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\GettingStarted\GettingStartedService;
 use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Fuel\FuelService;
@@ -92,6 +93,7 @@ final readonly class ShowVehicleAction
         private MotHistoryConfig $motHistory,
         private MotReview $motReview,
         private VehicleDataPrimer $primer,
+        private GettingStartedService $gettingStarted,
     ) {
     }
 
@@ -133,6 +135,8 @@ final readonly class ShowVehicleAction
 
         return $this->view->render($request, $response, 'vehicles/show.twig', [
             'vehicle' => $vehicle,
+            // Phase 49.1 (spec.md §7.9): "3 of 5 done", for the vehicle the first-vehicle flow made.
+            'getting_started' => $this->gettingStarted->card($user, $vehicle),
             'currency' => $currency,
             'odometer' => $odometer,
             'fuel' => $fuel,

@@ -178,7 +178,7 @@ final class SingleSignOnTest extends AppTestCase
         $done = $browser->post('/welcome', [
             'units' => 'uk', 'currency' => 'EUR', 'locale' => 'en_GB', 'timezone' => 'Europe/Berlin',
         ]);
-        self::assertSame('/garage', $done->getHeaderLine('Location'), 'then the page asked for');
+        self::assertSame('/vehicles/start', $done->getHeaderLine('Location'), 'a user with no vehicles sets up their first');
         $saved = $this->users($app)->findByUsername('sam-smith');
         self::assertSame('Europe/Berlin', $saved?->preferences->timezone);
         self::assertSame('EUR', $saved->preferences->currency);
