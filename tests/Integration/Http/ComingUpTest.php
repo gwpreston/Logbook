@@ -77,6 +77,8 @@ final class ComingUpTest extends ReminderTestCase
         self::assertStringContainsString('<time datetime="2027-02-15">15 Feb 2027</time>', $html);
         self::assertStringContainsString('<time datetime="2027-08-15">15 Aug 2027</time>', $html);
         self::assertStringContainsString('about £240.00 (last time)', $html);
+        // ...and the day of last time beside it (spec.md §8), as a month where space is short.
+        self::assertStringContainsString('data-as-of="last_time">as of Aug 2026</span>', $html);
 
         // The insurance, renewed once at last year's premium; a replaced policy raises nothing.
         self::assertSame(1, substr_count($html, '>Renew Insurance</a>'));
@@ -220,12 +222,15 @@ final class ComingUpTest extends ReminderTestCase
 
         $rows = self::csvRows((string) $response->getBody());
         self::assertSame(
-            ['Date', 'Vehicle', 'Registration', 'Source', 'Title', 'Expected cost', 'Currency', 'Projected', 'Overdue'],
+            ['Date', 'Vehicle', 'Registration', 'Source', 'Title', 'Expected cost', 'Currency', 'Projected', 'Overdue', 'As of'],
             $rows[0],
         );
         $service = self::rowsWith($rows, 'Annual service');
         self::assertSame(
-            ['2027-02-15', 'Volkswagen Golf', '', 'Service schedule', 'Annual service', '240.00', 'GBP', 'no', 'no'],
+            [
+                '2027-02-15', 'Volkswagen Golf', '', 'Service schedule', 'Annual service', '240.00', 'GBP', 'no', 'no',
+                '2026-08-15',
+            ],
             $service[0],
         );
         self::assertSame('Renew Insurance', self::rowsWith($rows, 'Renew Insurance')[0][4]);

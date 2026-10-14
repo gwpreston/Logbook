@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Report;
 
+use Logbook\Service\Attention\AttentionSettingsStore;
 use Logbook\Service\Incident\IncidentAccess;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Repository\IncidentRepository;
@@ -36,6 +37,7 @@ final readonly class OwnershipService
         private IncidentRepository $incidents,
         private FeatureToggles $features,
         private IncidentAccess $incidentAccess,
+        private AttentionSettingsStore $attentionSettings,
     ) {
     }
 
@@ -111,6 +113,7 @@ final readonly class OwnershipService
                 $today,
                 $zone,
                 $currency,
+                $this->attentionSettings->thresholds($vehicle->userId)->valuationMonths,
             );
             $cost = OwnershipCost::of(
                 $vehicle,

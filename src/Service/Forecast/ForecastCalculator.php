@@ -16,6 +16,8 @@ use Logbook\Service\Maintenance\DueState;
 use Logbook\Service\Maintenance\DueStatus;
 use Logbook\Service\Maintenance\DueTrigger;
 use Logbook\Service\Maintenance\ScheduleCalculator;
+use Logbook\Support\AsOf;
+use Logbook\Support\AsOfKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Money\Money;
@@ -52,7 +54,7 @@ final class ForecastCalculator
                 array_push($items, ...self::document($vehicle, $document, $horizon));
             }
             foreach ($vehicle->tyres as $tyres) {
-                $items[] = self::tyres($vehicle, $tyres);
+                $items[] = self::tyres($vehicle, $tyres, $horizon);
             }
             if ($vehicle->firstInspection !== null) {
                 $items[] = self::firstInspection($vehicle, $vehicle->firstInspection, $horizon);
@@ -129,6 +131,7 @@ final class ForecastCalculator
                 cost: $due->cost,
                 currency: $vehicle->currency,
                 occurrence: $n,
+                costAsOf: self::lastTime($due->cost, $due->costOn, $horizon),
             );
 
         if ($state->status === DueStatus::Unknown) {
@@ -194,6 +197,7 @@ final class ForecastCalculator
         if ($expiry === null) {
             return [];
         }
+        $cost = $vehicle->costs ? self::positive($data->cost, $vehicle->currency) : null;
         $item = static fn (DateTimeImmutable $on, bool $overdue, int $n): ForecastItem => new ForecastItem(
             vehicle: $vehicle->vehicle,
             source: ForecastSource::Document,
@@ -205,9 +209,10 @@ final class ForecastCalculator
             dueKm: null,
             projected: false,
             overdue: $overdue,
-            cost: $vehicle->costs ? self::positive($data->cost, $vehicle->currency) : null,
+            cost: $cost,
             currency: $vehicle->currency,
             occurrence: $n,
+            costAsOf: self::lastTime($cost, $data->startOn, $horizon),
         );
 
         if ($expiry < $horizon->today) {
@@ -265,7 +270,7 @@ final class ForecastCalculator
         return ['days' => $days];
     }
 
-    private static function tyres(VehicleSources $vehicle, TyreDue $tyres): ForecastItem
+    private static function tyres(VehicleSources $vehicle, TyreDue $tyres, ForecastHorizon $horizon): ForecastItem
     {
         return new ForecastItem(
             vehicle: $vehicle->vehicle,
@@ -280,7 +285,17 @@ final class ForecastCalculator
             overdue: $tyres->overdue,
             cost: $tyres->cost,
             currency: $vehicle->currency,
+            costAsOf: self::lastTime($tyres->cost, $tyres->costOn, $horizon),
         );
+    }
+
+    /**
+     * The date of the "last time" a cost comes from (spec.md §8), when the
+     * cost and the date are both known.
+     */
+    private static function lastTime(?Money $cost, ?DateTimeImmutable $on, ForecastHorizon $horizon): ?AsOf
+    {
+        return $cost === null || $on === null ? null : AsOf::of(AsOfKind::LastTime, $on, $horizon->today);
     }
 
     /**

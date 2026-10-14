@@ -58,7 +58,7 @@
                     <ul class="breakdown" data-ownership-parts>
                         {% for segment in segments %}
                             <li class="breakdown__row">
-                                <span class="breakdown__label"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span>{{ segment.part.labelKey()|trans }}</span>
+                                <span class="breakdown__label"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span>{{ segment.part.labelKey()|trans }}{% if segment.part.value == 'depreciation' and cost.asOf is not null and cost.asOf.shows() %} {{ ui.as_of(cost.asOf) }}{% endif %}</span>
                                 <span class="breakdown__share tabular">{{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span>
                                 <span class="breakdown__amount tabular">{{ segment.amount|money }}</span>
                                 <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ (segment.amount.micros / largest * 100)|round(1) }}%; --swatch: var(--{{ segment.part.color() }})"></span></span>

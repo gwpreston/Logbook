@@ -167,6 +167,7 @@ final readonly class ApiVehicleFigures
                 'per_km' => Serializer::dec($depreciation->perKm, self::SCALE),
             ],
             'valuation_stale_months' => $depreciation->staleMonths,
+            'as_of' => $depreciation->asOf?->toArray(),
             'total' => $cost === null ? null : $money($cost->total),
             'per_km' => Serializer::dec($cost?->perKm, self::SCALE),
             'per_km_is_running_only' => $cost?->perKmIsPartial,

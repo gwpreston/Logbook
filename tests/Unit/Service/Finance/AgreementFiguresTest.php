@@ -111,6 +111,9 @@ final class AgreementFiguresTest extends TestCase
         self::assertNotNull($positive->equity);
         self::assertTrue($positive->equity->isPositive());
         self::assertSame('2162.11', $positive->equity->amount->toDecimal(2), '7,200 − 5,037.89');
+        self::assertSame('2026-06-01', $positive->equity->asOf->date->format('Y-m-d'));
+        self::assertTrue($positive->equity->asOf->shows(), 'valued six weeks ago');
+        self::assertSame('valuation', $positive->equity->asOf->kind->value);
 
         $negative = $this->figures(FinanceFixtures::hp(), '2026-07-15', valuation: ['2026-06-01', '4000']);
         self::assertNotNull($negative->equity);

@@ -7307,3 +7307,8 @@ p.stat__label {
         padding-left: 0;
     }
 }
+
+/* "as of" dates (Phase 48.1): quiet, and a stale one is bold as well as coloured. */
+.as-of { color: var(--muted); font-size: .85em; white-space: nowrap; }
+.as-of--stale { color: var(--amber); font-weight: 600; }
+@media print { .as-of, .as-of--stale { color: inherit; } }

@@ -129,13 +129,17 @@ final readonly class ComingUp
         $zone = $user->preferences->timeZone();
 
         $schedules = $enabled[Feature::Maintenance->value]
-            ? array_map(fn (ScheduleState $state): ScheduleDue => new ScheduleDue(
-                $state,
-                $costs ? ForecastCalculator::cost(
-                    ScheduleCalculator::latest($this->entries->listForSchedule($vehicle->id, $state->schedule->id))?->data->cost,
-                    $currency,
-                ) : null,
-            ), $this->schedules->states($vehicle, $today, $history, $lead->scheduleDays, $lead->scheduleKm))
+            ? array_map(function (ScheduleState $state) use ($vehicle, $currency, $costs): ScheduleDue {
+                $last = $costs
+                    ? ScheduleCalculator::latest($this->entries->listForSchedule($vehicle->id, $state->schedule->id))
+                    : null;
+
+                return new ScheduleDue(
+                    $state,
+                    $last === null ? null : ForecastCalculator::cost($last->data->cost, $currency),
+                    $last?->data->performedOn,
+                );
+            }, $this->schedules->states($vehicle, $today, $history, $lead->scheduleDays, $lead->scheduleKm))
             : [];
 
         $documents = [];
@@ -212,6 +216,7 @@ final readonly class ComingUp
                     $dueOn = $standing->dueOn;
                 }
             }
+            $ids = array_map(static fn (TyreStanding $s): int => $s->view->tyre->id, $named);
             $group = new TyreVerdict($first->status, $verdict->standings, $first->reason, $dueOn, $first->dueKm, $named);
             $dues[] = new TyreDue(
                 title: $this->tyreTitles->title($user, $vehicle, $group),
@@ -220,6 +225,7 @@ final readonly class ComingUp
                 dueKm: $first->dueKm,
                 projected: $first->reason === TyreStanding::WEAR,
                 cost: $costs ? $this->fittingCost($vehicle, $named, $currency) : null,
+                costOn: $costs ? $this->tyres->fittingDate($vehicle, $ids) : null,
             );
         }
 

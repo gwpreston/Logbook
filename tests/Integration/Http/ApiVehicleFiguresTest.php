@@ -157,6 +157,10 @@ final class ApiVehicleFiguresTest extends AppTestCase
         self::assertSame('60.000', $after->get('running_costs'));
         self::assertIsString($after->get('display', 'current_value'));
         self::assertStringContainsString('12,000', $after->get('display', 'current_value'));
+        // Valued a month before the clock's day: the date, its kind and not stale (spec.md §8).
+        self::assertSame('2026-09-01', $after->get('as_of', 'date'));
+        self::assertSame('valuation', $after->get('as_of', 'kind'));
+        self::assertFalse($after->get('as_of', 'stale'));
     }
 
     public function testCostsNeedViewCosts(): void

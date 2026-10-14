@@ -134,6 +134,8 @@ You record only the exceptions, on the agreement page:
 
 ## What each figure means
 
+Equity rests on a valuation, so its date shows beside it ("as of Sep 2026") whenever the valuation isn't from today. Only valuations from the last 12 months are used.
+
 | Figure | What it is |
 |---|---|
 | **Payments remaining** | "18 of 48 remaining". A PCP's optional final payment is shown beside it: "plus the optional final payment of £9,450". |

@@ -569,6 +569,7 @@ final class Serializer
         if ($costs) {
             $out['currency'] = $item->currency;
             $out['cost'] = $item->cost === null ? null : $item->cost->toDecimal(3);
+            $out['cost_as_of'] = $item->costAsOf?->toArray();
         }
 
         return $out;

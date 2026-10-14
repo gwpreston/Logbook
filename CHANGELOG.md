@@ -6,6 +6,9 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Added
+- **"As of" dates (Phase 48.1).** Depreciation in the cost of ownership, equity and the cost of each *Coming up* item show the date of the valuation or the last time they come from when it isn't today. The API adds `as_of` (ownership) and `cost_as_of` (upcoming items), Ask adds `value_as_of` and `last_cost_as_of`, and the *Coming up* CSV gets a final *As of* column. No migration; nothing to do on upgrade. The column is added last, so existing positions don't move.
+
 ## [3.12.1] — 2026-10-13
 
 Phase 47.1: **a patch release** that builds the decisions the owner made on

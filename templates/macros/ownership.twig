@@ -15,6 +15,7 @@
 
 {# The depreciation as a cost; a gain is money back. #}
 {% macro depreciation(cost) -%}
+    {% import 'macros/ui.twig' as ui %}
     {%- if cost.depreciationCost is null -%}
         —
     {%- elseif cost.depreciation.isGain() -%}
@@ -22,6 +23,7 @@
     {%- else -%}
         {{ cost.depreciationCost|money }}
     {%- endif -%}
+    {%- if cost.asOf is not null and cost.asOf.shows() %} {{ ui.as_of(cost.asOf, true) }}{% endif -%}
 {%- endmacro %}
 
 {# What the total covers: "Lifetime, sold 12 Mar 2026" or "depreciation to 1 Mar 2026". #}
@@ -83,10 +85,11 @@
 
 {# A part's legend: dot, name, amount and share; the negatives under it. #}
 {% macro legend(card) -%}
+    {% import 'macros/ui.twig' as ui %}
     {% set currency = card.cost().currency %}
     <ul class="legend ownership-card__legend">
         {% for segment in card.segments() %}
-            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ segment.part.labelKey()|trans }}</span><span class="legend__value tabular">{{ segment.amount|money }} · {{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}</span></li>
+            <li class="legend__item"><span class="swatch" style="--swatch: var(--{{ segment.part.color() }})" aria-hidden="true"></span><span class="legend__label">{{ segment.part.labelKey()|trans }}</span><span class="legend__value tabular">{{ segment.amount|money }} · {{ 'ownership.page.percent'|trans({share: segment.percent|round}) }}{% if segment.part.value == 'depreciation' and card.cost().asOf is not null and card.cost().asOf.shows() %} {{ ui.as_of(card.cost().asOf, true) }}{% endif %}</span></li>
         {% endfor %}
         {% for line in card.negatives() %}
             <li class="legend__item"><span class="swatch swatch--none" aria-hidden="true"></span><span class="legend__label">{{ line.labelKey|trans }}</span><span class="legend__value tabular">{{ line.amount|money }}</span></li>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Finance;
 
 use DateTimeImmutable;
+use Logbook\Support\AsOf;
 use Logbook\Support\Money\Money;
 
 /**
@@ -18,6 +19,8 @@ final readonly class Equity
         public DateTimeImmutable $valuedOn,
         /** Valuation − settlement: negative when more is owed than the car is worth. */
         public Money $amount,
+        /** The valuation's date, for "as of" (spec.md §8). */
+        public AsOf $asOf,
     ) {
     }
 

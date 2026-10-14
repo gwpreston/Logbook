@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Forecast;
 
+use DateTimeImmutable;
 use Logbook\Service\Maintenance\ScheduleState;
 use Logbook\Support\Money\Money;
 
@@ -17,6 +18,8 @@ final readonly class ScheduleDue
         public ScheduleState $state,
         /** The latest completing entry's cost, when above 0. */
         public ?Money $cost = null,
+        /** The day of that entry, for "as of". */
+        public ?DateTimeImmutable $costOn = null,
     ) {
     }
 }

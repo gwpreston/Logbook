@@ -89,7 +89,10 @@ final readonly class ComingUpTool implements AskTool
             'date_is_estimate' => $item->projected,
             'due_odometer' => $this->kit->distance($item->dueKm),
             'overdue' => $item->overdue,
-            ...($item->cost === null ? [] : ['last_cost' => $this->kit->money($item->cost)]),
+            ...($item->cost === null ? [] : [
+                'last_cost' => $this->kit->money($item->cost),
+                'last_cost_as_of' => $item->costAsOf?->toArray(),
+            ]),
         ], $shown);
 
         $soon = array_map(static fn (ForecastTotals $t): ForecastTotals => $t->soon(), $forecast->totals);

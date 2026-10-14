@@ -37,8 +37,10 @@
 
 {# "about £240 (last time)", or a dash read out as "cost not known". #}
 {% macro cost(item) -%}
+    {%- import 'macros/ui.twig' as ui -%}
     {%- if item.cost -%}
         {{ 'coming_up.cost_last_time'|trans({amount: item.cost|money}) }}
+        {%- if item.costAsOf is not null and item.costAsOf.shows() %} {{ ui.as_of(item.costAsOf, true) }}{% endif -%}
     {%- else -%}
         <span aria-hidden="true">—</span><span class="visually-hidden">{{ 'coming_up.cost_unknown'|trans }}</span>
     {%- endif -%}

@@ -7997,6 +7997,55 @@
           "10600.000"
         ]
       },
+      "AsOf": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "kind",
+          "basis",
+          "stale"
+        ],
+        "description": "The date of the input a figure rests on (spec §8 'Show the working'): a valuation, a lender's quote, a tread measurement, 'last time' for a forecast cost, or a price. The app shows it beside the figure when it isn't today.",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "valuation",
+              "quote",
+              "measurement",
+              "last_time",
+              "prices",
+              "window"
+            ]
+          },
+          "basis": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What an estimate is projected from, when it names one."
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "Older than the owner's threshold for this kind of input."
+          }
+        }
+      },
+      "NullableAsOf": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AsOf"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "NullableDecimal": {
         "type": [
           "string",
@@ -9343,6 +9392,10 @@
           "cost": {
             "$ref": "#/components/schemas/NullableDecimal",
             "description": "Last time's price; null when not known."
+          },
+          "cost_as_of": {
+            "$ref": "#/components/schemas/NullableAsOf",
+            "description": "The day of the 'last time' the cost is from; null when not known. Left out, with the amounts, without cost access."
           }
         }
       },
@@ -13658,6 +13711,7 @@
           "current_value",
           "depreciation",
           "valuation_stale_months",
+          "as_of",
           "total",
           "per_km",
           "per_km_is_running_only",
@@ -13774,6 +13828,10 @@
               "integer",
               "null"
             ]
+          },
+          "as_of": {
+            "$ref": "#/components/schemas/NullableAsOf",
+            "description": "The current valuation's date, for 'as of'; null without a valuation, or once sold."
           },
           "total": {
             "$ref": "#/components/schemas/NullableDecimal"

@@ -10,6 +10,7 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Attention\AttentionSettingsStore;
 use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Expense\CostLedger;
 use Logbook\Service\Valuation\ValuationService;
@@ -36,6 +37,7 @@ final readonly class TrueCostService
         private OdometerReadingRepository $readings,
         private ValuationService $valuations,
         private OwnershipService $ownership,
+        private AttentionSettingsStore $attentionSettings,
     ) {
     }
 
@@ -116,7 +118,15 @@ final readonly class TrueCostService
         $readings = $this->readings->listForVehicle($vehicle->id);
         $valuations = $this->valuations->forVehicle($vehicle);
         $payouts = $this->ownership->payouts($user, $vehicle);
-        $depreciation = Depreciation::of($vehicle, $valuations, $readings, $today, $zone, $currency);
+        $depreciation = Depreciation::of(
+            $vehicle,
+            $valuations,
+            $readings,
+            $today,
+            $zone,
+            $currency,
+            $this->attentionSettings->thresholds($vehicle->userId)->valuationMonths,
+        );
         $ownership = OwnershipCost::of($vehicle, $items, $readings, $depreciation, $today, $zone, $payouts);
         if ($ownership === null || $ownership->period->from === null) {
             return null;

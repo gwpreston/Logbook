@@ -1335,6 +1335,8 @@ In backups (the password is not).
 ## 7. Feature specifications
 
 ### 7.1 Garage (vehicles)
+
+> **"As of" dates (Phase 48.1, §8):** `Depreciation::$asOf` carries the current valuation's date (stale past the owner's §7.24 threshold; none once sold) for the depreciation shown in §7.7.
 Add/edit/delete vehicles; upload a photo; set per-vehicle fuel type and currency.
 **Archive** sold vehicles: hidden from active views, history retained, excluded
 from fleet totals unless "include archived" is toggled.
@@ -4810,6 +4812,8 @@ roundabout does.
   buyer's service history shows what was measured.
 
 ### 7.18 Coming up (Phase 15)
+
+> **"As of" dates (Phase 48.1, §8):** each cost has a `costAsOf` (kind `last_time`): the day of the schedule's latest completing entry, a document's start, or the oldest record that fitted the tyres; none when the day isn't known. The CSV gets a last *As of* column; the API upcoming item a `cost_as_of`.
 The next 12 months, looking forward the way History looks back: every
 service, renewal, tyre replacement and manual reminder the app already knows
 is coming, each with what it cost last time, and an estimate of fuel at the
@@ -5088,6 +5092,8 @@ available for active and archived vehicles.
   format.
 
 ### 7.20 REST API (Phase 18.2)
+
+> **"As of" dates (Phase 48.1, §8):** additive `as_of` on `/vehicles/{id}/ownership` and `cost_as_of` on upcoming items: `{date, kind, basis, stale}` or `null`. The API stays `v1`.
 
 A small JSON API for Home Assistant, Apple Shortcuts, Android automations,
 Grafana, Node-RED and OBD tools. It reads what a dashboard or automation
@@ -6424,6 +6430,8 @@ request to any model service.
 
 ### 7.26 Ask Logbook (Phase 26.2)
 
+> **"As of" dates (Phase 48.1, §8):** the `ownership` tool returns `value_as_of`, and `coming_up` returns `last_cost_as_of` beside `last_cost`.
+
 - **Where** (Phase 38, decided 2026-10-07, #272–#276): on the Insights
   page (`/insights`): the *Ask Logbook* box, *Your questions* and the
   retention setting; each thread on its own page,
@@ -7636,6 +7644,8 @@ so it is **off until an admin switches it on**.
   GitHub runs or is rendered as HTML.
 
 ### 7.32 Finance agreements (Phases 29.1 and 29.2)
+
+> **"As of" dates (Phase 48.1, §8):** `Equity::$asOf` is the valuation's date, shown beside the equity on the card, the dashboard widget and the agreement page.
 Hire purchase, PCP, personal loans and leases, typed in from the
 paperwork. From an agreement Logbook works out the payment schedule,
 payments left and what remains to pay, an estimated settlement figure (or
@@ -9131,6 +9141,44 @@ overview while any test is unreviewed. A test is reviewed
   `DateTimeImmutable`, explicit tests. (Primary defence against wrong totals.)
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
+- **Show the working: "as of" dates** (Phase 48.1, decided 2026-10-13,
+  #403–#406): when a figure depends on a dated input that isn't today, the
+  date of that input is shown beside it, and an estimate names what it is
+  projected from. One value, `Support\AsOf` (the input's calendar date, its
+  kind: `valuation` | `quote` | `measurement` | `last_time` | `prices` |
+  `window`, an optional basis, and whether it is stale against the owner's
+  threshold), is carried by the service that works the figure out, so pages,
+  print, CSV, the API and Ask give the same date; one macro, `ui.as_of()`,
+  renders it.
+  - *When* (#403): whenever the input isn't from today, in the owner's time
+    zone. A figure from this morning's data shows nothing; a 10-month-old
+    valuation is dated long before it is stale.
+  - *How* (#404): absolute, "as of 14 Sep 2026", with the relative form
+    ("3 months ago") in the tooltip. Printouts and screenshots stay true
+    after the day they were made. Stale is said in words ("out of date"),
+    bold in print, never by colour alone.
+  - *Several inputs* (#405): the oldest is shown; the others are on the
+    figure's own page.
+  - *Tight space* (#406): garage cards, tiles and legends show the month
+    ("as of Sep 2026") as text, not an icon.
+  - *The inventory*, as checked against the code in Phase 48.1:
+
+    | Figure | Dated input | State |
+    |---|---|---|
+    | *Latest value*, depreciation, per year and per distance (overview card) | latest valuation | dated (§7.1), stale hint (§7.24) |
+    | Depreciation in the cost of ownership (overview card, tab, Ownership report table and cards, CSV) | latest valuation | `AsOf` beside the depreciation; the CSV's *Depreciation to* column |
+    | Depreciation part of true cost, the widget, the report (§7.35) | the value point measured to | "depreciation to" the date (existing) |
+    | Equity and negative equity (§7.32) | the valuation used (within 12 months) | `AsOf` beside the figure on the card, the dashboard widget and the Finance tab; Ask already gave `valued_on` |
+    | Settlement | the lender's quote date, or estimated today | the quote's dates (existing); an estimate is labelled and is today's |
+    | Tyre wear estimate | the last tread measurement | "checked" date (existing) |
+    | *Coming up* item costs ("about £240, last time") | the day of last time | `AsOf` (kind `last_time`) beside the cost: a schedule's latest completing entry, a document's start, the oldest record that fitted the tyres; none when the day isn't known |
+    | *Coming up* fuel estimate | the last 12 months of driving and prices | the basis is named on the page (§7.18) |
+    | Listed fuel prices, *Cheapest near me*, *Was it worth it?* | the provider's price time | time and "may be out of date" (existing, §7.34) |
+    | *Next 3 months* and 12-month totals | their items | the items carry the dates; a total is not dated |
+    | Ask, API, CSV | as the figure | API: `as_of` on `/vehicles/{id}/ownership` and `cost_as_of` on upcoming items (additive; the API stays `v1`); Ask: `value_as_of`, `last_cost_as_of`; CSV: an *As of* column on *Coming up* |
+
+    The digest quotes none of these figures. A sale is final, so a sold
+    vehicle's value has no `AsOf`.
 - **Page budgets** (Phase 41.7, decided 2026-10-09, #350): the dashboard
   and a vehicle's overview (and, from Phase 42, the Insights page, #280)
   run a bounded number of queries, **not one per
@@ -10267,6 +10315,13 @@ task breakdowns live in the per-phase files; this is the map.
   the digest can't mask a link (§7.11, #378, from Phase 43's security
   review). No migration of its own. Release v3.12.1. See
   [`phase-47.1.md`](docs/phases/phase-47.1.md).
+- **Phase 48.1 — Show the working: "as of" dates.** A `Support\AsOf`
+  value and one `ui.as_of()` macro put the date of an old input beside the
+  figures that rest on it: depreciation in the cost of ownership, equity,
+  and *Coming up* costs ("last time"), with `as_of` / `cost_as_of` in the
+  API, `value_as_of` / `last_cost_as_of` in Ask and an *As of* column in
+  the *Coming up* CSV (§8, #403–#406). No migration. Released with 48.2.
+  See [`phase-48.1.md`](docs/phases/phase-48.1.md).
 
 ---
 

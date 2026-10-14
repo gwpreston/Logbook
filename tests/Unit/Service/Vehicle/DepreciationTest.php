@@ -51,6 +51,30 @@ final class DepreciationTest extends TestCase
         self::assertSame('Auto Trader valuation', $result->current?->source);
     }
 
+    public function testTheValuationsDateIsCarriedAsOf(): void
+    {
+        $vehicle = self::vehicle(purchased: '2023-03-01', price: '15000.000');
+        $valuations = [self::valuation(1, '2025-01-10', '9800.000')];
+
+        $fresh = self::of($vehicle, $valuations, today: '2025-01-10')->asOf;
+        self::assertNotNull($fresh);
+        self::assertFalse($fresh->shows(), 'valued today: no date');
+
+        $old = self::of($vehicle, $valuations, today: '2026-05-20')->asOf;
+        self::assertNotNull($old);
+        self::assertSame('2025-01-10', $old->date->format('Y-m-d'));
+        self::assertTrue($old->stale, 'past the 12 months');
+        self::assertSame('valuation', $old->kind->value);
+    }
+
+    public function testASaleOrNothingHasNoAsOf(): void
+    {
+        $sold = self::vehicle(purchased: '2023-03-01', price: '15000.000', sold: '2026-06-01', salePrice: '9000.000');
+
+        self::assertNull(self::of($sold, [self::valuation(1, '2026-03-01', '9800.000')])->asOf);
+        self::assertNull(self::of(self::vehicle(purchased: '2023-03-01', price: '15000.000'), [])->asOf);
+    }
+
     public function testTheSalePriceOverridesTheLatestValuation(): void
     {
         $vehicle = self::vehicle(purchased: '2023-03-01', price: '15000.000', sold: '2026-06-01', salePrice: '9000.000');

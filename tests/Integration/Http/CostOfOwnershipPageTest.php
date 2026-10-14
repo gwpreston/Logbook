@@ -74,6 +74,8 @@ final class CostOfOwnershipPageTest extends AppTestCase
         $golfOnly = self::stats(self::screen(self::body($browser->get('/reports/ownership?vehicle=' . $golf->id))));
         self::assertStringContainsString('£16,900.00', $golfOnly, 'the vehicle filter');
         self::assertStringContainsString('1 vehicle since purchase', $golfOnly);
+        $report = self::screen(self::body($browser->get('/reports/ownership?vehicle=' . $golf->id)));
+        self::assertStringContainsString('data-as-of="valuation">as of Mar 2026</span>', $report);
     }
 
     public function testEachCurrencyHasItsOwnSummaryNeverConverted(): void
@@ -210,6 +212,9 @@ final class CostOfOwnershipPageTest extends AppTestCase
         self::assertStringContainsString('over 42 months since buying it on 1 Mar 2023', $html);
         self::assertStringContainsString('How it’s worked out', $html);
         self::assertStringContainsString('with its latest value', $html);
+        // The valuation it rests on is six months old: dated beside the depreciation, not stale (spec.md §8).
+        self::assertStringContainsString('data-as-of="valuation">as of 1 Mar 2026</span>', $html);
+        self::assertStringNotContainsString('as-of--stale', $html);
         self::assertStringNotContainsString('Add purchase price', $html, 'it has one');
 
         $kia = $this->car($app, 'Kia', 'EV6', purchased: '2025-01-01');
