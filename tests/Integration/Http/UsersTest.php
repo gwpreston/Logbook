@@ -73,6 +73,27 @@ final class UsersTest extends AppTestCase
         self::assertSame(404, $again->get($path)->getStatusCode(), 'a used link is gone');
     }
 
+    public function testAResetLinkRefusesAMismatchedPasswordAndAnInviteForATakenNameIsGone(): void
+    {
+        $app = $this->createApp();
+        $admin = $this->signedIn($app);
+        $member = $this->createMember($app);
+        $admin->get('/settings/users');
+        $reset = self::path($admin->post('/settings/users/' . $member->id . '/reset'));
+
+        $guest = new TestBrowser($app);
+        $guest->get($reset);
+        $mismatch = $guest->post($reset, ['password' => 'a-new-password', 'password_confirm' => 'something else']);
+        self::assertSame(422, $mismatch->getStatusCode());
+        self::assertStringContainsString('Choose a new password', self::body($mismatch));
+
+        $invite = self::path($admin->post('/settings/users', ['username' => 'newbie', 'display_name' => 'Nia Newbie']));
+        $this->createMember($app, 'newbie');
+        $late = new TestBrowser($app);
+        $late->get($invite);
+        self::assertSame(404, $late->post($invite, self::signUp())->getStatusCode(), 'the name was taken meanwhile');
+    }
+
     public function testLinksExpireAndCanBeRevoked(): void
     {
         $app = $this->createApp();
