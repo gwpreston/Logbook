@@ -126,8 +126,8 @@ quotes none of these figures, so neither needed a change.
 - [x] A test that fails when a result in the inventory loses its
       `AsOf` (`AsOfCoverageTest`).
 - [x] Page budgets (§8) unchanged.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; print), still pending:
-      run before the 48.2 release.
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; print), done
+      with the 48.2 release.
 - [x] `ROADMAP.md` row ✅ for 48.1 (released with 48.2).
 
 ---

@@ -3,7 +3,7 @@
 *Every headline figure can be opened to show its inputs and its sum in
 plain words.*
 
-Status: ✅ built · release v3.13.0 pending merge, tag and the design review · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.13.0** · file lives in `docs/phases/`
 
 Two figures already show their working:
 
@@ -127,11 +127,11 @@ pattern) and §7.35 first, and [Phase 48.1](phase-48.1.md)'s inventory.
       shown, and every input links to a row that exists.
 - [x] `ViewCosts`: the working hides with its figure. A test as the
       restricted persona proves it.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; print;
-      a screen reader opening a working): pending, run on the dev stack.
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; print;
+      a screen reader opening a working): done, fixes in the re-review commits.
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 48.1
       and 48.2.
-- [ ] Tag `v3.13.0` once merged.
+- [x] Tag `v3.13.0` once merged.
 
 ---
 
