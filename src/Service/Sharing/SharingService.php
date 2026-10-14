@@ -36,6 +36,7 @@ final readonly class SharingService
         private Transaction $transaction,
         private ClockInterface $clock,
         private AiInsightRepository $insights,
+        private SharedIntroPending $intro,
     ) {
     }
 
@@ -99,6 +100,8 @@ final readonly class SharingService
         }
 
         $this->shares->insert($vehicle->id, $user->id, $level, $canSeeCosts, $notify, $this->clock->now());
+        // Their first visit says what the share allows (spec.md §7.9).
+        $this->intro->mark($user->id, $vehicle->id);
         $this->access->forget();
 
         return null;
@@ -128,6 +131,7 @@ final readonly class SharingService
     public function remove(Vehicle $vehicle, int $userId): void
     {
         $this->shares->delete($vehicle->id, $userId);
+        $this->intro->clear($userId, $vehicle->id);
         $this->access->forget();
     }
 

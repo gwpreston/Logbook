@@ -13,7 +13,7 @@ use Logbook\Repository\UserRepository;
 use Logbook\Service\Auth\Oidc\OidcOutcome;
 use Logbook\Service\Auth\Oidc\OidcResult;
 use Logbook\Service\Jobs\HeldJobFailures;
-use Logbook\Service\Reminder\ReminderSettingsStore;
+use Logbook\Service\User\NewUserDefaults;
 use Logbook\Service\User\EmailAddresses;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Database\Transaction;
@@ -38,7 +38,7 @@ final readonly class ExternalUsers
         private UserRepository $users,
         private UserIdentityRepository $identities,
         private InvitationRepository $invitations,
-        private ReminderSettingsStore $reminderSettings,
+        private NewUserDefaults $reminderSettings,
         private AvailableLocales $locales,
         private Transaction $transaction,
         private ClockInterface $clock,

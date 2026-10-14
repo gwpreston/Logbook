@@ -4,7 +4,7 @@
 reminders in about two minutes, with a dashboard that shows what needs
 attention and what it costs.*
 
-Status: 🔨 in progress (49.0 spec first) · file lives in `docs/phases/`
+Status: 🔨 in progress (49.2 household defaults done) · file lives in `docs/phases/`
 
 Today a new user signs in, fills in the welcome form (language, time
 zone, units, currency) and lands in an empty garage. After that, they
@@ -122,11 +122,16 @@ Settled in 49.0:
       not sent again. German strings added with the English ones.
 
 ### 49.2 Household defaults
-- [ ] The *Household* layout and *Reset layout*'s choice.
-- [ ] Module defaults written at setup (C); Settings → Modules shows
+- [x] The *Household* layout and *Reset layout*'s choice (*Recent activity*
+      at 10 rows on the preset only; decided 2026-10-14).
+- [x] Module defaults written at setup (C); Settings → Modules shows
       "Switched off when Logbook was installed; switch on any time."
-- [ ] The shared user's first visit.
-- [ ] Translations (every shipped locale).
+      beside the modules still off; an explicit `FEATURES_*` variable wins.
+- [x] The "Switch on" hint where a module's absence surprises (*Incident*
+      in the *Log* chooser, shown to an admin only).
+- [x] The shared user's first visit (a card above the vehicle, once per
+      share created from this release; the welcome form leads to it).
+- [x] Translations (English and German, the shipped locales).
 
 ### 49.3 Tests and release
 - [ ] Each step saved through the real services; skipping each; resuming

@@ -830,7 +830,7 @@ return static function (App $app): void {
         $group->post('/vehicles/{id:[0-9]+}/sharing/{member:[0-9]+}/{action:save|remove}', ChangeShareAction::class)
             ->setName('vehicles.sharing.change')
             ->setArgument($ability, VehicleAbility::Own->value);
-        $group->post('/vehicles/{id:[0-9]+}/sharing/me/{action:notify|leave}', MyShareAction::class)
+        $group->post('/vehicles/{id:[0-9]+}/sharing/me/{action:notify|leave|seen}', MyShareAction::class)
             ->setName('vehicles.sharing.mine')
             ->setArgument($ability, VehicleAbility::View->value);
         $group->map(['GET', 'POST'], '/vehicles/{id:[0-9]+}/transfer', TransferVehicleAction::class)

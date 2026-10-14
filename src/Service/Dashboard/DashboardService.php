@@ -198,7 +198,9 @@ final readonly class DashboardService
             efficiency: $show(DashboardWidget::Efficiency) ? $efficiency : [],
             compliance: $show(DashboardWidget::Compliance) ? $this->compliance($user, $scope, $today) : [],
             mileage: $show(DashboardWidget::Mileage) ? $this->mileage($user, $scope, $today) : null,
-            activity: $show(DashboardWidget::RecentActivity) ? $this->activity->latest($user, $scope) : [],
+            activity: $show(DashboardWidget::RecentActivity)
+                ? $this->activity->latest($user, $scope, $layout->activityRows(ActivityFeed::LATEST))
+                : [],
             comingUp: $comingUp,
             businessMileage: $claim,
             attention: $show(DashboardWidget::NeedsAttention) ? $attention : null,

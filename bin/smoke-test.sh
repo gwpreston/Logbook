@@ -66,11 +66,13 @@ case "$variant" in
         expect "$base/history" 200 'Nothing logged yet'
         # The fast fill-up path (no vehicle yet: offers to add one).
         expect "$base/fuel/new" 303
-        # Tyre change from Log entry (Phase 11.1): the same, at the subpath.
-        expect "$base/log/new/tyre" 303
-        # Check tread and Settings → Tyres (Phase 11.2), deep links at the subpath.
-        expect "$base/log/new/tyre_check" 303
-        expect "$base/settings/tyres" 200 'action="/logbook/settings/tyres"'
+        # A new install starts with tyres off (Phase 49.2): their pages are absent, and
+        # Settings -> Modules says so, at the subpath. A module left on still redirects.
+        expect "$base/log/new/tyre" 404
+        expect "$base/log/new/tyre_check" 404
+        expect "$base/settings/tyres" 404
+        expect "$base/log/new/maintenance" 303
+        expect "$base/settings/modules" 200 'Switched off when Logbook was installed'
         # Installable app at the subpath.
         expect "$base/manifest.webmanifest" 200 '"start_url": "/logbook/"'
         expect "$base/sw.js" 200 '"base":"/logbook"'

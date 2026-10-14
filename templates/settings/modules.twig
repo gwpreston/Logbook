@@ -27,6 +27,7 @@
                             <span class="toggle__title">{{ ui.icon(module.icon()) }} {{ ('modules.module.' ~ module.value ~ '.title')|trans }}</span>
                             <span class="toggle__hint" id="m-{{ module.value }}-hint">{{ ('modules.module.' ~ module.value ~ '.hint')|trans }}
                                 {%- if module.requires() %} {{ 'modules.requires'|trans({module: ('modules.module.' ~ module.requires().value ~ '.title')|trans}) }}{% endif -%}
+                                {%- if module.value in install_off %} {{ 'modules.install_off'|trans }}{% endif -%}
                             </span>
                         </span>
                     </label>

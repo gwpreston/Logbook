@@ -14,7 +14,10 @@ use Logbook\Domain\Vehicle\VehicleStatus;
 use Logbook\Kernel;
 use Logbook\Repository\UserRepository;
 use Logbook\Repository\VehicleRepository;
+use Logbook\Repository\SettingRepository;
 use Logbook\Service\Auth\AuthService;
+use Logbook\Service\Dashboard\DashboardLayoutStore;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Auth\SetupData;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Security\PasswordHasher;
@@ -190,8 +193,12 @@ abstract class AppTestCase extends TestCase
      *
      * @param App<ContainerInterface> $app
      */
-    protected function createOwner(App $app, string $username = 'owner', ?DisplayPreferences $preferences = null): User
-    {
+    protected function createOwner(
+        App $app,
+        string $username = 'owner',
+        ?DisplayPreferences $preferences = null,
+        bool $newInstall = false,
+    ): User {
         $preset = UnitPreset::Uk;
         $preferences ??= new DisplayPreferences(
             'en_GB',
@@ -202,8 +209,18 @@ abstract class AppTestCase extends TestCase
             'GBP',
         );
 
-        return $this->service($app, AuthService::class)
+        $user = $this->service($app, AuthService::class)
             ->createInitialUser(new SetupData($username, self::PASSWORD, 'Pat Owner', $preferences));
+        if (!$newInstall) {
+            // Setup now starts a new install on fewer modules and the Household layout (Phase 49.2).
+            // Most tests are about the garage as it was; those about the new start pass $newInstall.
+            $settings = $this->service($app, SettingRepository::class);
+            $settings->delete(FeatureToggles::SETTING);
+            $settings->delete(FeatureToggles::INSTALL_OFF_SETTING);
+            $this->service($app, DashboardLayoutStore::class)->reset($user->id);
+        }
+
+        return $user;
     }
 
     /**

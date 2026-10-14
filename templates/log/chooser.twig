@@ -37,6 +37,10 @@
                     </li>
                 {% endfor %}
             </ul>
+            {# Phase 49.2 (spec.md §7.10): a switched-off module's absence is explained, to the admin who can switch it on. #}
+            {% if not feature_enabled('incidents') and user and user.isAdmin %}
+                <p class="field__hint">{{ 'log.incidents_off'|trans }} <a href="{{ url_for('settings.modules') }}">{{ 'log.switch_on'|trans }}</a></p>
+            {% endif %}
         {% endblock %}
     </div>
 {% endblock %}

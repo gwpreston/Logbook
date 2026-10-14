@@ -5,6 +5,7 @@
 {% import 'macros/compliance.twig' as docs %}
 {% import 'macros/history.twig' as history %}
 {% import 'macros/attention.twig' as attention_ui %}
+{% import 'macros/share_summary.twig' as share_summary %}
 
 {% set active_nav = 'garage' %}
 {% set data = vehicle.data %}
@@ -20,6 +21,18 @@
 
         {% if vehicle.isArchived() %}
             <div class="alert alert--warning" role="status">{{ ui.icon('inventory_2') }}<span>{{ 'vehicle.archived_notice'|trans }}</span></div>
+        {% endif %}
+
+        {# A new share's first visit (Phase 49.2, spec.md §7.9): what it allows, once. #}
+        {% if shared_intro is not null %}
+            <section class="card" aria-labelledby="shared-intro-heading">
+                <h2 id="shared-intro-heading" class="card__title">{{ ui.icon('group') }}{{ 'shared_intro.title'|trans({owner: shared_intro.owner, vehicle: vehicle.name()}) }}</h2>
+                <div class="share-summary">{{ share_summary.summary(shared_intro.allows, 'you', '') }}</div>
+                <form method="post" action="{{ url_for('vehicles.sharing.mine', {id: vehicle.id, action: 'seen'}) }}">
+                    {{ ui.csrf(csrf) }}
+                    <button class="btn btn--primary" type="submit">{{ 'shared_intro.got_it'|trans }}</button>
+                </form>
+            </section>
         {% endif %}
 
         {# Getting started (Phase 49.1, spec.md §7.9): until complete or dismissed. #}

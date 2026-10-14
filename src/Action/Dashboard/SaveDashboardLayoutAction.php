@@ -17,7 +17,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * One form field says what to do:
  *  - `move=up|down` with `widget` (the customise buttons),
  *  - `toggle` with `widget` (hide / show),
- *  - `reset` (back to the default),
+ *  - `reset` (`household`: the Household layout; else the full default),
  *  - `order` — comma-separated widget ids (drag and drop).
  * A script (`X-Requested-With: fetch`) gets 204; a plain form post is sent
  * back to the customise view.
@@ -37,7 +37,9 @@ final readonly class SaveDashboardLayoutAction
         $layout = $this->layouts->load($user->id);
         $widget = is_string($form['widget'] ?? null) ? DashboardWidget::tryFrom($form['widget']) : null;
 
-        if (isset($form['reset'])) {
+        if (($form['reset'] ?? null) === 'household') {
+            $this->layouts->startNewUser($user->id);
+        } elseif (isset($form['reset'])) {
             $this->layouts->reset($user->id);
         } elseif (is_string($form['order'] ?? null)) {
             $this->layouts->save($user->id, $layout->reorder(explode(',', $form['order'])));

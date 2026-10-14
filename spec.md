@@ -2524,7 +2524,17 @@ toggles.
   *Coming up* (next 3 months, with costs), *Spend this month*, *Last 12
   months* and *Recent activity* (the fleet History limited to 10 rows).
   *Reset layout* offers it and the full layout; existing users' saved
-  layouts are never touched.
+  layouts are never touched. Decided 2026-10-14 (Phase 49.2): every **new**
+  user (first account, invitation, single sign-on, added by an admin) gets
+  it written as a saved layout (`preset: household`) when created: those
+  five widgets in that order, every other widget hidden (*Customise* shows
+  them to switch on), and a user with no saved layout still gets the full
+  one, so nothing changes on upgrade. The preset stays on the layout
+  through moving and hiding, and sets *Recent activity* to **10** rows
+  (the widget shows 8 on the full layout; the row limit is the preset's,
+  never a change for existing users). *Reset layout* has two buttons,
+  *Household* (saves the preset) and *All widgets* (removes the saved
+  layout).
 - **Admin notices** above the widgets (§7.30), in this order: the update
   banner (§7.31), from Phase 47 the backup banner (§7.13), then the demo,
   scheduler and job warnings.
@@ -3270,7 +3280,13 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   "3 of 5 done" with the missing steps as links, until complete or
   dismissed. A shared user's first visit says what the share allows
   (Phase 46's summary, §7.9 *What a share allows*) before the vehicle.
-  Existing users are not shown the flow.
+  Decided 2026-10-14 (Phase 49.2): the first visit is a card above the
+  vehicle's overview ("Sam shared the Golf with you." then the *Can* and
+  *Can't* lines of that share) with *Got it*, shown once per share. It is
+  marked pending when the share is **created**, so a share that exists
+  before this release never shows it. A user leaving the welcome form with
+  such a share goes to that vehicle. Existing users are not shown the
+  flow.
 
 ### 7.10 Feature toggles
 Global settings to enable/disable modules (e.g. hide compliance if not needed).
@@ -3294,10 +3310,19 @@ Disabled modules are removed from nav, routes, and dashboard.
   reports on and tyres, finance, incidents, issues, stations and trips off
   (the AI modules unchanged), so a later change of defaults never flips an
   existing install; installs that already have a `features` setting or
-  data are untouched. Settings → Modules says "Switched off when Logbook
-  was installed; switch on any time." beside each, and a module's absence
-  gets a one-line "Switch on" hint where it would surprise (for example
-  *Log incident* on the vehicle's menu). The garage, mileage log,
+  data are untouched. Decided 2026-10-14 (Phase 49.2): the write happens
+  with the first account (beside the weekly backup, §7.30) and only when
+  there is no `features` setting. A module whose `FEATURES_<MODULE>`
+  variable is set keeps what the variable says, so a self-hoster's
+  explicit choice is never overridden; the others take the defaults above.
+  The modules it switched off are kept as the global setting
+  `features_install_off`; Settings → Modules says "Switched off when Logbook
+  was installed; switch on any time." beside each of those still off (an
+  install without the setting, or a module switched on since, has no note),
+  and a module's absence gets a one-line "Switch on" hint where it would
+  surprise: the *Log incident* link on the vehicle's menu stays for an
+  admin as "Incidents are switched off. Switch on" (to Settings → Modules),
+  and is simply absent for anyone else. The garage, mileage log,
   expenses and history (§7.16) are
   core and cannot be switched off; a switched-off module's entries simply
   leave the history.

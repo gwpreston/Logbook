@@ -18,6 +18,23 @@ use Logbook\Support\Config\Env;
 final readonly class FeatureToggles
 {
     public const string SETTING = 'features';
+    /** The modules a new install switched off at setup (spec.md §7.10): the list behind Settings → Modules' note. */
+    public const string INSTALL_OFF_SETTING = 'features_install_off';
+
+    /**
+     * Phase 49 (decided 2026-10-14, #413): what a new install switches off.
+     * The AI modules are not in the list and keep their own defaults.
+     *
+     * @var list<Feature>
+     */
+    private const array OFF_ON_NEW_INSTALL = [
+        Feature::Tyres,
+        Feature::Finance,
+        Feature::Incidents,
+        Feature::Issues,
+        Feature::Stations,
+        Feature::Trips,
+    ];
 
     public function __construct(
         private SettingRepository $settings,
@@ -28,6 +45,52 @@ final readonly class FeatureToggles
     public function isEnabled(Feature $feature): bool
     {
         return $this->all()[$feature->value];
+    }
+
+    /**
+     * First-run setup (spec.md §7.10): write `features` with fewer modules
+     * on, unless the setting is already there. A module whose
+     * FEATURES_<MODULE> variable is set keeps what the variable says. The
+     * modules switched off are recorded for Settings → Modules' note.
+     */
+    public function startNewInstall(): void
+    {
+        if ($this->settings->find(self::SETTING) !== null) {
+            return;
+        }
+
+        $states = [];
+        $off = [];
+        foreach (Feature::cases() as $feature) {
+            $byInstall = in_array($feature, self::OFF_ON_NEW_INSTALL, true) && !$this->env->has($feature->envName());
+            $states[$feature->value] = $byInstall ? false : $this->env->bool($feature->envName(), $feature->isOnByDefault());
+            if ($byInstall) {
+                $off[] = $feature->value;
+            }
+        }
+
+        $this->settings->save(self::SETTING, $states);
+        $this->settings->save(self::INSTALL_OFF_SETTING, $off);
+    }
+
+    /**
+     * The modules still off that the install switched off at setup: where
+     * Settings → Modules says so. None for an install set up before.
+     *
+     * @return list<Feature>
+     */
+    public function offSinceInstall(): array
+    {
+        $stored = $this->settings->find(self::INSTALL_OFF_SETTING)?->value;
+        if (!is_array($stored)) {
+            return [];
+        }
+        $own = $this->own();
+
+        return array_values(array_filter(
+            Feature::cases(),
+            static fn (Feature $f): bool => in_array($f->value, $stored, true) && !$own[$f->value],
+        ));
     }
 
     /**

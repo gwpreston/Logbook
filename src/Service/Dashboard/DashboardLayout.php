@@ -19,7 +19,41 @@ final readonly class DashboardLayout
     private function __construct(
         public array $order,
         public array $hidden,
+        public bool $household = false,
     ) {
+    }
+
+    /** *Recent activity* rows on the Household layout (spec.md §7.8, decided 2026-10-14). */
+    public const int HOUSEHOLD_ACTIVITY_ROWS = 10;
+
+    /**
+     * The *Household* layout (Phase 49.2): what needs attention, what is
+     * coming up and what it costs; every other widget hidden, not removed.
+     */
+    public static function household(): self
+    {
+        $shown = [
+            DashboardWidget::NeedsAttention,
+            DashboardWidget::ComingUp,
+            DashboardWidget::Spend,
+            DashboardWidget::MonthlyExpenses,
+            DashboardWidget::RecentActivity,
+        ];
+        $hidden = array_values(array_filter(
+            DashboardWidget::cases(),
+            static fn (DashboardWidget $w): bool => !in_array($w, $shown, true),
+        ));
+
+        return self::of(
+            array_map(static fn (DashboardWidget $w): string => $w->value, $shown),
+            array_map(static fn (DashboardWidget $w): string => $w->value, $hidden),
+            true,
+        );
+    }
+
+    public function activityRows(int $default): int
+    {
+        return $this->household ? self::HOUSEHOLD_ACTIVITY_ROWS : $default;
     }
 
     public static function default(): self
@@ -40,6 +74,7 @@ final readonly class DashboardLayout
         return self::of(
             is_array($value['order'] ?? null) ? $value['order'] : [],
             is_array($value['hidden'] ?? null) ? $value['hidden'] : [],
+            ($value['preset'] ?? null) === 'household',
         );
     }
 
@@ -47,7 +82,7 @@ final readonly class DashboardLayout
      * @param array<array-key, mixed> $order widget ids, in the wanted order
      * @param array<array-key, mixed> $hidden widget ids
      */
-    public static function of(array $order, array $hidden = []): self
+    public static function of(array $order, array $hidden = [], bool $household = false): self
     {
         $widgets = [];
         foreach ($order as $id) {
@@ -69,18 +104,23 @@ final readonly class DashboardLayout
             }
         }
 
-        return new self($widgets, $hiddenWidgets);
+        return new self($widgets, $hiddenWidgets, $household);
     }
 
     /**
-     * @return array{order: list<string>, hidden: list<string>}
+     * @return array{order: list<string>, hidden: list<string>, preset?: string}
      */
     public function toArray(): array
     {
-        return [
+        $array = [
             'order' => array_map(static fn (DashboardWidget $w): string => $w->value, $this->order),
             'hidden' => array_map(static fn (DashboardWidget $w): string => $w->value, $this->hidden),
         ];
+        if ($this->household) {
+            $array['preset'] = 'household';
+        }
+
+        return $array;
     }
 
     public function isHidden(DashboardWidget $widget): bool
@@ -106,7 +146,7 @@ final readonly class DashboardLayout
         }
         [$order[$from], $order[$to]] = [$order[$to], $order[$from]];
 
-        return new self(array_values($order), $this->hidden);
+        return new self(array_values($order), $this->hidden, $this->household);
     }
 
     public function toggle(DashboardWidget $widget): self
@@ -115,7 +155,9 @@ final readonly class DashboardLayout
             ? array_values(array_filter($this->hidden, static fn (DashboardWidget $w): bool => $w !== $widget))
             : [...$this->hidden, $widget];
 
-        return self::of($this->toArray()['order'], array_map(static fn (DashboardWidget $w): string => $w->value, $hidden));
+        $ids = array_map(static fn (DashboardWidget $w): string => $w->value, $hidden);
+
+        return self::of($this->toArray()['order'], $ids, $this->household);
     }
 
     /**
@@ -125,6 +167,6 @@ final readonly class DashboardLayout
      */
     public function reorder(array $order): self
     {
-        return self::of($order, $this->toArray()['hidden']);
+        return self::of($order, $this->toArray()['hidden'], $this->household);
     }
 }

@@ -90,7 +90,8 @@
                     <span>{{ 'dashboard.customise_hint'|trans }}</span>
                     <form method="post" action="{{ url_for('dashboard.layout') }}" class="customise-bar__reset">
                         {{ ui.csrf(csrf) }}
-                        <button type="submit" name="reset" value="1" class="btn btn--ghost">{{ ui.icon('restart_alt') }}{{ 'dashboard.reset'|trans }}</button>
+                        <button type="submit" name="reset" value="household" class="btn btn--ghost">{{ ui.icon('restart_alt') }}{{ 'dashboard.reset_household'|trans }}</button>
+                        <button type="submit" name="reset" value="1" class="btn btn--ghost">{{ ui.icon('restart_alt') }}{{ 'dashboard.reset_full'|trans }}</button>
                     </form>
                 </div>
                 {# Drag and drop (js/app.js) posts the new order with this form's token. #}

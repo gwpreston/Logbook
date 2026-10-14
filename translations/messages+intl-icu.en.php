@@ -45,6 +45,8 @@ return [
         'close' => 'Close',
     ],
     'log' => [
+        'incidents_off' => 'Incidents are switched off.',
+        'switch_on' => 'Switch on',
         'title' => 'Log something',
         'lead' => 'What would you like to record?',
         'pick_lead' => 'Which vehicle is it for?',
@@ -339,6 +341,10 @@ return [
         'status_health_hint' => 'Machine-readable status for monitoring (JSON).',
         'status_deep_link' => 'Deep-link check',
         'status_deep_link_hint' => 'Open it, then refresh the page: it should load again, including behind a reverse proxy.',
+    ],
+    'shared_intro' => [
+        'title' => '{owner} shared {vehicle} with you.',
+        'got_it' => 'Got it',
     ],
     'getting_started' => [
         'title' => 'Set up your first vehicle',
@@ -3404,6 +3410,8 @@ return [
         'done' => 'Done',
         'customise_hint' => 'Move widgets up or down (or drag them), and hide the ones you don’t need.',
         'reset' => 'Reset layout',
+        'reset_household' => 'Reset to Household layout',
+        'reset_full' => 'Reset to all widgets',
         'move_up' => 'Move {widget} up',
         'move_down' => 'Move {widget} down',
         'hide' => 'Hide {widget}',
@@ -3809,6 +3817,7 @@ return [
         'signed_out' => 'Sign in again to send the fill-ups saved on this device.',
     ],
     'modules' => [
+        'install_off' => 'Switched off when Logbook was installed; switch on any time.',
         'title' => 'Modules',
         'lead' => 'Switch off the parts of Logbook you don’t use. They disappear everywhere: menus, vehicle pages, the dashboard and reports.',
         'legend' => 'Modules in use',

@@ -1,0 +1,19 @@
+{#
+ # What a share allows (spec.md §7.21, Phase 46): its Can and Can't lines,
+ # each list headed in words ("Sam can", "You can't"), so a screen reader
+ # never depends on the icons. `person` is 'you' or 'they'.
+ #}
+{% macro summary(allows, person, name) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% for part in ['can', 'cannot'] %}
+        {% set lines = part == 'can' ? allows.can() : allows.cannot() %}
+        {% if lines is not empty %}
+            <p class="share-summary__heading">{{ ('share_summary.' ~ part)|trans({person: person, name: name}) }}</p>
+            <ul class="share-summary__list share-summary__list--{{ part }}">
+                {% for line in lines %}
+                    <li>{{ ui.icon(part == 'can' ? 'check_circle' : 'block') }}<span>{{ ('share_summary.lines.' ~ line.key)|trans(line.params|merge({person: person})) }}</span></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}

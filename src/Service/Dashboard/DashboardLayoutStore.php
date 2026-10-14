@@ -35,6 +35,15 @@ final readonly class DashboardLayoutStore
         $this->settings->save(self::SETTING, $layout->toArray(), SettingScope::User, $userId);
     }
 
+    /**
+     * A new user starts on the *Household* layout (spec.md §7.8). Existing
+     * users have no row and keep the full layout.
+     */
+    public function startNewUser(int $userId): void
+    {
+        $this->settings->save(self::SETTING, DashboardLayout::household()->toArray(), SettingScope::User, $userId);
+    }
+
     public function reset(int $userId): void
     {
         $this->settings->delete(self::SETTING, SettingScope::User, $userId);

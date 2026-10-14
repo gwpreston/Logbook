@@ -45,6 +45,8 @@ return [
         'close' => 'Schließen',
     ],
     'log' => [
+        'incidents_off' => 'Schäden sind ausgeschaltet.',
+        'switch_on' => 'Einschalten',
         'title' => 'Etwas erfassen',
         'lead' => 'Was möchtest du festhalten?',
         'pick_lead' => 'Für welches Fahrzeug?',
@@ -338,6 +340,10 @@ return [
         'status_health_hint' => 'Maschinenlesbarer Status für die Überwachung (JSON).',
         'status_deep_link' => 'Deep-Link-Prüfung',
         'status_deep_link_hint' => 'Öffnen, dann die Seite neu laden: Sie sollte wieder erscheinen, auch hinter einem Reverse-Proxy.',
+    ],
+    'shared_intro' => [
+        'title' => '{owner} hat {vehicle} mit dir geteilt.',
+        'got_it' => 'Verstanden',
     ],
     'getting_started' => [
         'title' => 'Erstes Fahrzeug einrichten',
@@ -3401,6 +3407,8 @@ return [
         'done' => 'Fertig',
         'customise_hint' => 'Verschiebe Widgets nach oben oder unten (oder ziehe sie) und blende die aus, die du nicht brauchst.',
         'reset' => 'Anordnung zurücksetzen',
+        'reset_household' => 'Auf Haushalts-Anordnung zurücksetzen',
+        'reset_full' => 'Auf alle Widgets zurücksetzen',
         'move_up' => '{widget} nach oben',
         'move_down' => '{widget} nach unten',
         'hide' => '{widget} ausblenden',
@@ -3806,6 +3814,7 @@ return [
         'signed_out' => 'Melde dich erneut an, um die auf diesem Gerät gespeicherten Tankfüllungen zu senden.',
     ],
     'modules' => [
+        'install_off' => 'Bei der Installation von Logbook ausgeschaltet; jederzeit einschaltbar.',
         'title' => 'Module',
         'lead' => 'Schalte die Teile von Logbook ab, die du nicht nutzt. Sie verschwinden überall: aus Menüs, Fahrzeugseiten, der Übersicht und den Berichten.',
         'legend' => 'Genutzte Module',
