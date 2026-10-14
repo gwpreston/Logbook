@@ -7302,16 +7302,19 @@ p.stat__label {
 @media print { .as-of, .as-of--stale { color: inherit; } }
 
 /* *How it's worked out* (Phase 48.2): closed on screen, open in print. */
-.working { margin-top: var(--space-2); font-size: var(--fs-sm); }
+.working { margin-top: var(--space-2); font-size: var(--fs-sm); white-space: normal; }
 .working > summary { cursor: pointer; color: var(--muted); min-height: 2.75rem; display: inline-flex; align-items: center; }
 .working > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.working__body { margin-top: var(--space-2); max-width: 40rem; }
+.working__body { margin-top: var(--space-2); max-width: 40rem; min-width: min(16rem, 100%); white-space: normal; }
+/* A disclosure marker, so the summary reads as a control; decorative, hence no alt text. */
+.working > summary::before { content: "\25B8" / ""; margin-right: var(--space-1); }
+.working[open] > summary::before { content: "\25BE" / ""; }
 .working__inputs { margin: 0 0 var(--space-2); }
 .working__inputs > div { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); padding: var(--space-1) 0; border-bottom: 1px solid var(--border); }
 .working__inputs dt { color: var(--muted); flex: 0 0 10rem; }
 .working__inputs dd { margin: 0; }
 .working__step, .working__note { margin: var(--space-2) 0 0; }
-.working-link { font-size: var(--fs-sm); margin-left: var(--space-1); display: inline-block; padding: var(--space-2) var(--space-1); }
+.working-link { font-size: var(--fs-sm); margin-left: var(--space-1); display: inline-flex; align-items: center; min-height: 2.75rem; min-width: 2.75rem; padding: 0 var(--space-1); }
 @media print {
     .working > summary { color: inherit; font-weight: 600; }
     .working::details-content { content-visibility: visible; display: block; }

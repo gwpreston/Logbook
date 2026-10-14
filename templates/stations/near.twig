@@ -163,7 +163,7 @@
                                                     <span class="pill">{{ 'fuel_prices.near.nearest'|trans }}</span>
                                                 {% else %}
                                                     {% set w = row.worthIt %}
-                                                    {{ ui.working(working_of(row, result), w.actualSaving|price_saving(currency)) }}
+                                                    {{ ui.working(working_of(row, result), w.actualSaving|price_saving(currency), true, ps.data.name) }}
                                                 {% endif %}
                                             </td>
                                         </tr>
