@@ -33,8 +33,9 @@ final readonly class VehicleLookup
     /**
      * @param array<string, string> $values the form as posted
      * @param int $userId who asks, for their limit (MotHistoryLimit)
-     * @return array{fields: array<string, string>, message: string, params: array<string, string>}
-     *   what to fill, and a message key with its parameters
+     * @return array{fields: array<string, string>, message: string, params: array<string, string>, mot_expires_on?: string}
+     *   what to fill, and a message key with its parameters; the latest test's expiry
+     *   (Phase 49.1: the first-vehicle flow's MOT date) when there is one
      */
     public function lookUp(array $values, int $userId): array
     {
@@ -73,6 +74,7 @@ final readonly class VehicleLookup
             'first_registered_on' => ($record->registeredOn ?? $record->firstUsedOn)?->format('Y-m-d'),
             'first_inspection_due_on' => $record->tests === [] ? $record->firstDueOn?->format('Y-m-d') : null,
         ], static fn (?string $value): bool => $value !== null && $value !== '');
+        $expiry = ($record->tests[0] ?? null)?->expiryOn?->format('Y-m-d') ?? $record->firstDueOn?->format('Y-m-d');
         $fields = [];
         foreach ($found as $name => $value) {
             $current = trim($values[$name] ?? '');
@@ -86,7 +88,7 @@ final readonly class VehicleLookup
             'fields' => $fields,
             'message' => $fields === [] ? 'mot_history.lookup.nothing_new' : 'mot_history.lookup.filled',
             'params' => ['count' => (string) count($fields)],
-        ];
+        ] + ($expiry === null ? [] : ['mot_expires_on' => $expiry]);
     }
 
     /**

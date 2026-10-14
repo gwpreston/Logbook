@@ -1,0 +1,104 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{% set active_nav = 'garage' %}
+{% set heading = ('getting_started.step.' ~ step.value ~ '.title')|trans %}
+
+{% block title %}{{ 'getting_started.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <header class="page-header">
+            <div>
+                <p class="page-header__lead">{{ 'getting_started.progress'|trans({step: position, total: steps|length}) }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ ('getting_started.step.' ~ step.value ~ '.lead')|trans }}</p>
+            </div>
+        </header>
+
+        <ol class="steps" aria-label="{{ 'getting_started.title'|trans }}">
+            {% for s in steps %}
+                <li{% if s == step %} aria-current="step"{% endif %}>
+                    {{ ('getting_started.step.' ~ s.value ~ '.name')|trans }}
+                    {% if progress.isDone(s) %}<span class="visually-hidden">{{ 'getting_started.is_done'|trans }}</span>{% elseif progress.isSkipped(s) %}<span class="visually-hidden">{{ 'getting_started.is_skipped'|trans }}</span>{% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        {% if lookup is not null %}
+            <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ lookup.message }}</span></div>
+        {% endif %}
+
+        {% if step.value == 'done' %}
+            <section class="card">
+                <ul class="link-list">
+                    {% if fuel_on %}<li><a href="{{ url_for('fuel.create', {id: vehicle.id}) }}">{{ ui.icon('local_gas_station') }}{{ 'getting_started.step.done.fill_up'|trans }}</a></li>{% endif %}
+                    <li><a href="{{ url_for('vehicles.sharing', {id: vehicle.id}) }}">{{ ui.icon('person_add') }}{{ 'getting_started.step.done.invite'|trans }}</a></li>
+                    <li><a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ ui.icon('sell') }}{{ 'getting_started.step.done.price'|trans }}</a></li>
+                </ul>
+                <a class="btn btn--primary" href="{{ url_for('vehicles.show', {id: vehicle.id}) }}">{{ 'getting_started.step.done.open'|trans({name: vehicle.name()}) }}</a>
+            </section>
+        {% else %}
+            <form class="form card" method="post" action="{{ url_for('vehicles.start') }}">
+                {{ ui.csrf(csrf) }}
+                <input type="hidden" name="step" value="{{ step.value }}">
+
+                {% if step.value == 'vehicle' %}
+                    {# Enter saves the step, not *Look up*: the first submit button is the default one. #}
+                    <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ 'getting_started.save'|trans }}</button>
+                    <input type="hidden" name="first_inspection_due_on" value="{{ values.first_inspection_due_on ?? '' }}">
+                    <input type="hidden" name="mot_expires_on" value="{{ values.mot_expires_on ?? '' }}">
+                    {% set type_options = [] %}
+                    {% for type in types %}
+                        {% set type_options = type_options|merge([{value: type.value, label: ('vehicle.type.' ~ type.value)|trans, icon: type.icon()}]) %}
+                    {% endfor %}
+                    {{ ui.chips('type', 'vehicle.field.type'|trans, values, errors, type_options, {required: true}) }}
+                    <div class="form-row">
+                        {{ ui.input('registration', 'vehicle.field.registration'|trans, values, errors, {optional: true, maxlength: 20, autocomplete: 'off'}) }}
+                        {% if with_lookup %}
+                            <div class="field"><button class="btn" type="submit" name="lookup" value="1" formnovalidate>{{ ui.icon('search') }}{{ 'getting_started.step.vehicle.look_up'|trans }}</button></div>
+                        {% endif %}
+                    </div>
+                    <div class="form-row">
+                        {{ ui.input('make', 'vehicle.field.make'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                        {{ ui.input('model', 'vehicle.field.model'|trans, values, errors, {required: true, maxlength: 100, autocomplete: 'off'}) }}
+                    </div>
+                    {% set fuel_options = [] %}
+                    {% for fuel in fuel_types %}
+                        {% set fuel_options = fuel_options|merge([{value: fuel.value, label: ('vehicle.fuel.' ~ fuel.value)|trans}]) %}
+                    {% endfor %}
+                    <div class="form-row">
+                        {{ ui.select('fuel_type', 'vehicle.field.fuel_type'|trans, values, errors, fuel_options, {required: true}) }}
+                        {{ ui.input('first_registered_on', 'vehicle.field.first_registered_on'|trans, values, errors, {type: 'date', optional: true, max: max_date}) }}
+                    </div>
+                {% elseif step.value == 'mileage' %}
+                    {{ ui.input('reading', 'getting_started.step.mileage.field'|trans, values, errors, {type: 'number', required: true, inputmode: 'decimal', step: 'any', min: 0, suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans}) }}
+                {% elseif step.value == 'dates' %}
+                    <div class="form-row">
+                        {{ ui.input('mot_due_on', 'getting_started.step.dates.mot'|trans, values, errors, {type: 'date', optional: true}) }}
+                        {{ ui.input('tax_due_on', 'getting_started.step.dates.tax'|trans, values, errors, {type: 'date', optional: true}) }}
+                    </div>
+                    <div class="form-row">
+                        {{ ui.input('insurance_due_on', 'getting_started.step.dates.insurance'|trans, values, errors, {type: 'date', optional: true}) }}
+                        {{ ui.input('insurer', 'getting_started.step.dates.insurer'|trans, values, errors, {optional: true, maxlength: 100}) }}
+                    </div>
+                {% elseif step.value == 'servicing' %}
+                    <div class="form-row">
+                        {{ ui.input('interval_distance', 'getting_started.step.servicing.distance'|trans, values, errors, {type: 'number', optional: true, inputmode: 'decimal', step: 'any', min: 0, suffix: ('units.symbol.' ~ prefs().distanceUnit.value)|trans}) }}
+                        {{ ui.input('interval_months', 'getting_started.step.servicing.months'|trans, values, errors, {type: 'number', optional: true, inputmode: 'numeric', min: 1, step: 1}) }}
+                    </div>
+                    <p class="field__hint">{{ 'getting_started.step.servicing.hint'|trans }}</p>
+                    {{ ui.input('last_done_on', 'getting_started.step.servicing.last'|trans, values, errors, {type: 'date', optional: true, max: max_date}) }}
+                {% endif %}
+
+                <div class="form__actions">
+                    <button class="btn btn--primary" type="submit">{{ 'getting_started.save'|trans }}</button>
+                    <button class="btn" type="submit" name="skip" value="1" formnovalidate>{{ (step.value == 'vehicle' ? 'getting_started.skip_for_now' : 'getting_started.skip')|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

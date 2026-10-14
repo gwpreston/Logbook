@@ -113,10 +113,13 @@ Settled in 49.0:
       §7.8, §7.9, §7.10, §13 written; `ROADMAP.md` row already there.
 
 ### 49.1 Getting started
-- [ ] `/vehicles/start` and its five steps, with *Look up* when MOT
+- [x] `/vehicles/start` and its five steps, with *Look up* when MOT
       history is set up.
-- [ ] Resume and dismiss; the empty garage's *Set up your first vehicle*;
+- [x] Resume and dismiss; the empty garage's *Set up your first vehicle*;
       the overview card.
+- [x] The flow starts straight after the welcome form for a user with no
+      vehicles (decided B, #412). A user who skips step 1 or dismisses is
+      not sent again. German strings added with the English ones.
 
 ### 49.2 Household defaults
 - [ ] The *Household* layout and *Reset layout*'s choice.

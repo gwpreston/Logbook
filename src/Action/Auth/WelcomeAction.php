@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Action\Auth;
 
 use Logbook\Repository\UserRepository;
+use Logbook\Service\GettingStarted\GettingStartedService;
 use Logbook\Service\Auth\WelcomeForm;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -20,8 +21,9 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * GET|POST /welcome — once, for a user created on first single sign-on
  * (spec.md §7.9): language, time zone, units and currency, as an
- * invitation asks. *Skip* keeps the defaults. Without a welcome pending,
- * it goes home.
+ * invitation asks. *Skip* keeps the defaults. Then, for a user with no
+ * vehicles, *Set up your first vehicle* (spec.md §7.9). Without a welcome
+ * pending, it goes home.
  */
 final readonly class WelcomeAction
 {
@@ -31,6 +33,7 @@ final readonly class WelcomeAction
         private Redirector $redirect,
         private AvailableLocales $locales,
         private ClockInterface $clock,
+        private GettingStartedService $start,
     ) {
     }
 
@@ -61,6 +64,11 @@ final readonly class WelcomeAction
         }
         $next = $session->finishWelcome();
         $session->flash('success', 'invite.welcome', ['name' => $user->displayName]);
+
+        // Phase 49.1 (decided 2026-10-14, #412): a user with no vehicles goes on to set up their first.
+        if ($this->start->wanted($user)) {
+            return $this->redirect->toRoute('vehicles.start');
+        }
 
         return $next !== null ? $this->redirect->to($next) : $this->redirect->toRoute('home');
     }

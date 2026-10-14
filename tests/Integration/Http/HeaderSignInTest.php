@@ -211,7 +211,7 @@ final class HeaderSignInTest extends AppTestCase
         self::assertSame('robin@example.com', $robin->email, 'their confirmed address: the proxy is trusted (#165)');
         self::assertNull($robin->emailPending);
         self::assertSame(200, $browser->get('/welcome')->getStatusCode());
-        self::assertSame('/garage', $browser->post('/welcome', ['skip' => '1'])->getHeaderLine('Location'));
+        self::assertSame('/vehicles/start', $browser->post('/welcome', ['skip' => '1'])->getHeaderLine('Location'));
     }
 
     public function testAllowedGroupsRefuseEveryoneElse(): void
