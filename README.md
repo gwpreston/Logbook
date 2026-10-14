@@ -100,7 +100,9 @@ your own server.
 > that hold messages overnight; your Ask Logbook conversations kept on the
 > Insights page; an API that reads, writes, corrects and deletes everything
 > the pages do, files included, and signed webhooks that tell your own
-> systems when an entry changes; in English and German. Coming
+> systems when an entry changes; a guided first-vehicle setup (mileage, MOT,
+> tax and insurance dates, a servicing interval) and a *Household* dashboard,
+> with fewer modules switched on for new installs; in English and German. Coming
 > from 3.2? Email is off after upgrading until an admin sets it up in
 > Settings → Delivery: read the 3.3.0 upgrade notes. Coming from 2.x? 3.0.0 is a major version (no API change): read its upgrade notes in
 > [`CHANGELOG.md`](CHANGELOG.md) first. See [`ROADMAP.md`](ROADMAP.md) for

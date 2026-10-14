@@ -4,7 +4,7 @@
 reminders in about two minutes, with a dashboard that shows what needs
 attention and what it costs.*
 
-Status: ✅ built (49.3 release; tag after merge) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.14.0** · file lives in `docs/phases/`
 
 Today a new user signs in, fills in the welcome form (language, time
 zone, units, currency) and lands in an empty garage. After that, they
@@ -146,7 +146,8 @@ Settled in 49.0:
       from a scratch Playwright install on 2026-10-14, not committed (Phase
       53 question B is still open).
 - [ ] A repeat session with two people new to Logbook: both reach
-      step 5 without help (owner-run).
+      step 5 without help (owner-run; carried to the loose ends in
+      `open-questions.md`, released without it).
 - [x] Design review (375, 768, 1280 px; light and dark; JS off; German
       at 375 px). Fixed: the step indicator and link rows were unstyled
       (now a segmented progress and 44 px rows), the overview card got a
@@ -156,7 +157,7 @@ Settled in 49.0:
 - [x] An accepted invitation (not a password reset) starts the setup flow
       for a user with no vehicles (#415); `UsersTest` covers both.
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
-- [ ] Tag `v3.14.0` once merged.
+- [x] Tag `v3.14.0` once merged.
 
 ---
 
