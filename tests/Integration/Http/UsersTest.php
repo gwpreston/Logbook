@@ -55,6 +55,8 @@ final class UsersTest extends AppTestCase
 
         $done = $guest->post($path, self::signUp());
         self::assertSame(303, $done->getStatusCode());
+        $location = $done->getHeaderLine('Location');
+        self::assertStringEndsWith('/vehicles/start', $location, 'a new member with no vehicles starts the flow (#415)');
         $home = self::body($guest->follow($done));
         self::assertStringContainsString('Welcome, Sam Partner.', $home);
         $partner = $this->service($app, UserRepository::class)->findByUsername('partner');
@@ -161,6 +163,7 @@ final class UsersTest extends AppTestCase
         self::assertStringContainsString('Choose a new password', self::body($guest->get($link)));
         $done = $guest->post($link, ['password' => 'a-new-password', 'password_confirm' => 'a-new-password']);
         self::assertSame(303, $done->getStatusCode());
+        self::assertStringNotContainsString('/vehicles/start', $done->getHeaderLine('Location'), 'a reset is not a first visit');
         self::assertSame(200, $guest->get('/garage')->getStatusCode(), 'signed in');
 
         $fresh = new TestBrowser($app);

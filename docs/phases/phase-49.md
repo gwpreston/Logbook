@@ -208,8 +208,7 @@ Decided by the owner on 2026-10-14 and logged as #411–#414 in
   *Recommendation:* (1), labelled "a common interval; check your
   handbook".
 
-- **E. Invitation accepted, no vehicles: go to the setup flow?** *Needs a
-  decision (found by the design review, 2026-10-14; #415).*
+- **E. Invitation accepted, no vehicles: go to the setup flow?** *Decided 2026-10-14 (#415): (b), the recommendation.*
   - (a) Leave it: only the welcome form leads there.
   - (b) Also after an invitation is accepted.
 

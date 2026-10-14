@@ -22,7 +22,8 @@ until they want them.
   usual reminders), servicing a schedule with a preset of 12 months or 10,000
   miles (16,000 km). With MOT history set up, *Look up* fills in the vehicle.
   A user with no vehicles is taken there after the welcome form; the empty
-  garage offers it too, and the vehicle's overview shows a getting-started
+  garage offers it too, and so does accepting an invitation (not a password
+  reset), and the vehicle's overview shows a getting-started
   card ("3 of 5 done") until complete or dismissed. Progress is kept per user.
 - **A *Household* dashboard layout (Phase 49.2).** *Needs attention*, *Coming
   up*, *Spend this month*, *Last 12 months* and *Recent activity* (10 rows).

@@ -3271,8 +3271,9 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
      else today (and only for today, the mileage now as its distance point).
   5. **Done:** what's next (log a fill-up, invite a household member, add
      the purchase price), each one a link.
-  The flow starts straight after the welcome form for a user with no
-  vehicles of their own and none shared, with *Skip for now*
+  The flow starts straight after the welcome form, and after accepting an
+  invitation (not a password reset; decided 2026-10-14, #415), for a user
+  with no vehicles of their own and none shared, with *Skip for now*
   on step 1; a shared user with vehicles never sees it, and it is always
   reachable from the empty garage's *Set up your first vehicle*. Progress is
   in the user's settings (`getting_started`: vehicle id, steps done,
@@ -3284,8 +3285,8 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   vehicle's overview ("Sam shared the Golf with you." then the *Can* and
   *Can't* lines of that share) with *Got it*, shown once per share. It is
   marked pending when the share is **created**, so a share that exists
-  before this release never shows it. A user leaving the welcome form with
-  such a share goes to that vehicle. Existing users are not shown the
+  before this release never shows it. A user leaving the welcome form or accepting an
+  invitation with such a share goes to that vehicle. Existing users are not shown the
   flow.
 
 ### 7.10 Feature toggles
