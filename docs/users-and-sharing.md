@@ -76,6 +76,9 @@ link to choose their password (7 days); using it confirms the address. As
 the account exists at once, you can share or transfer vehicles to it before
 they ever sign in. Without email, use an invitation.
 
+After accepting, a new person who has no vehicles goes straight to *Set up
+your first vehicle* (five short, skippable steps); a password reset does not.
+
 ## Email addresses
 
 Everyone has one email address, on your **Profile** (click your name in the sidebar). It is where

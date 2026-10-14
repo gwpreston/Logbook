@@ -8,7 +8,6 @@ use Logbook\Domain\User\Invitation;
 use Logbook\Domain\User\InvitationKind;
 use Logbook\Service\Auth\SetupForm;
 use Logbook\Service\GettingStarted\GettingStartedService;
-use Logbook\Service\Sharing\SharedIntro;
 use Logbook\Service\User\InvitationService;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\Redirector;
@@ -38,7 +37,6 @@ final readonly class InviteAction
         private AvailableLocales $locales,
         private AppSettings $settings,
         private GettingStartedService $start,
-        private SharedIntro $sharedIntro,
     ) {
     }
 
@@ -92,15 +90,9 @@ final readonly class InviteAction
         $session->signIn($user->id);
         $session->flash('success', $flash, ['name' => $user->displayName]);
 
-        // Phase 49.3 (decided 2026-10-14, #415): a new household member meets the setup flow, or their share, first.
-        if ($invitation->kind !== InvitationKind::Reset) {
-            if ($this->start->wanted($user)) {
-                return $this->redirect->toRoute('vehicles.start');
-            }
-            $shared = $this->sharedIntro->firstPending($user);
-            if ($shared !== null) {
-                return $this->redirect->toRoute('vehicles.show', ['id' => (string) $shared->id]);
-            }
+        // Phase 49.3 (decided 2026-10-14, #415): a new household member meets the setup flow first.
+        if ($invitation->kind !== InvitationKind::Reset && $this->start->wanted($user)) {
+            return $this->redirect->toRoute('vehicles.start');
         }
 
         return $this->redirect->toRoute('home');

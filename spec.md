@@ -2519,7 +2519,7 @@ toggles.
   of per-fill economy), *compliance status* (current documents that are
   expired or expiring, else "all in order", per active vehicle), *mileage*
   and *recent activity* (below). Archived vehicles never appear.
-- **The *Household* layout** (Phase 49, #411–#414): a named default
+- **The *Household* layout** (Phase 49, #411–#415): a named default
   layout for new users made only of existing widgets: *Needs attention*,
   *Coming up* (next 3 months, with costs), *Spend this month*, *Last 12
   months* and *Recent activity* (the fleet History limited to 10 rows).
@@ -3285,8 +3285,8 @@ signed in. Off unless configured. Guide: `docs/sso.md` *Header sign-in*.
   vehicle's overview ("Sam shared the Golf with you." then the *Can* and
   *Can't* lines of that share) with *Got it*, shown once per share. It is
   marked pending when the share is **created**, so a share that exists
-  before this release never shows it. A user leaving the welcome form or accepting an
-  invitation with such a share goes to that vehicle. Existing users are not shown the
+  before this release never shows it. A user leaving the welcome form with
+  such a share goes to that vehicle. Existing users are not shown the
   flow.
 
 ### 7.10 Feature toggles
@@ -10578,7 +10578,7 @@ task breakdowns live in the per-phase files; this is the map.
   five-step *Set up your first vehicle* flow at `/vehicles/start`, a
   getting-started card on the overview, a *Household* dashboard layout and
   fewer modules on new installs, and a first-visit note for a shared user
-  (§7.8, §7.9, §7.10; #411–#414 decided 2026-10-14). See
+  (§7.8, §7.9, §7.10; #411–#415 decided 2026-10-14). See
   [`phase-49.md`](docs/phases/phase-49.md).
 
 ---

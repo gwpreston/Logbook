@@ -517,7 +517,7 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 412 | [49](phase-49.md) | B. When does the flow start? | Decided | (1) Straight after the welcome form for a user with no vehicles of their own or shared, with *Skip for now* on step 1. spec §7.9. | 2026-10-14 |
 | 413 | [49](phase-49.md) | C. Modules on for new installs | Decided | (1) On: fuel, maintenance, compliance, reminders, reports. Off: tyres, finance, incidents, issues, stations, trips. AI modules unchanged. Recorded in `features` at setup. spec §7.10. | 2026-10-14 |
 | 414 | [49](phase-49.md) | D. A preset interval for servicing? | Decided | (1) 12 months or 10,000 miles (16,000 km), editable, labelled "a common interval; check your handbook". spec §7.4. | 2026-10-14 |
-| 415 | [49](phase-49.md) | E. Should a user who accepts an invitation (not single sign-on) and has no vehicles also be taken to the setup flow? (found by the design review) | Decided | (b) Also after an invitation is accepted (not after a password reset), and a share's first-visit card likewise. spec §7.9. Built in [49.3](phase-49.md). | 2026-10-14 |
+| 415 | [49](phase-49.md) | E. Should a user who accepts an invitation (not single sign-on) and has no vehicles also be taken to the setup flow? (found by the design review) | Decided | (b) Also after an invitation is accepted (not after a password reset). (A new invitee has no share yet, so no first-visit card applies.) spec §7.9. Built in [49.3](phase-49.md). | 2026-10-14 |
 
 ## Other loose ends found in the review
 

@@ -7398,10 +7398,3 @@ p.stat__label {
     height: 0.5rem;
     margin-bottom: var(--space-2);
 }
-
-.btn--wrap {
-    height: auto;
-    min-height: 44px;
-    white-space: normal;
-    text-align: center;
-}

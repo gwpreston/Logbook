@@ -153,6 +153,8 @@ Settled in 49.0:
       progress bar, the long vehicle name wraps in *Open*, German uses
       *du*. Left as they are: the Household grid's ragged heights are the
       dashboard's own `align-items: start` grid, the same on every layout.
+- [x] An accepted invitation (not a password reset) starts the setup flow
+      for a user with no vehicles (#415); `UsersTest` covers both.
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
 - [ ] Tag `v3.14.0` once merged.
 
@@ -170,7 +172,7 @@ Settled in 49.0:
 
 ## Open questions
 
-Decided by the owner on 2026-10-14 and logged as #411–#414 in
+Decided by the owner on 2026-10-14 and logged as #411–#415 in
 `open-questions.md`; each took its recommendation.
 
 - **A. MOT and tax dates: documents or reminders?** *Decided 2026-10-14 (#411): (1), the recommendation.*
