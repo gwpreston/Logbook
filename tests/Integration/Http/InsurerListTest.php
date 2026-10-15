@@ -81,8 +81,10 @@ final class InsurerListTest extends AppTestCase
         self::assertStringContainsString('Not declared yet', $page);
         self::assertStringNotContainsString('Old spoiler', $page, 'a reverted modification is no longer on the car');
         self::assertStringContainsString('1 reverted modification is not listed', $page);
+        // The words on the page, not its tokens: a random CSRF value can contain "899".
+        $words = strip_tags($page);
         foreach (['899', '780', '450', '1,240', '£'] as $money) {
-            self::assertStringNotContainsString($money, $page, 'never a cost or a price');
+            self::assertStringNotContainsString($money, $words, 'never a cost or a price');
         }
         self::assertStringContainsString('3 current modifications', $page);
     }
@@ -165,7 +167,7 @@ final class InsurerListTest extends AppTestCase
             $page = self::body($theirs->get($this->base));
             self::assertStringContainsString('Stage 1 remap', $page, $name . ' can read it');
             self::assertStringNotContainsString('Mark declared', $page, $name . ' has no buttons');
-            self::assertStringNotContainsString('450', $page, 'no costs, whoever reads');
+            self::assertStringNotContainsString('450', strip_tags($page), 'no costs, whoever reads');
             $declare = $theirs->post($this->base, ['declared_on' => '2026-10-01', 'only' => 'all']);
             self::assertSame(403, $declare->getStatusCode());
         }

@@ -73,8 +73,10 @@ final class SalePackModificationsTest extends AppTestCase
         self::assertStringContainsString('Standard exhaust', $sheet, 'a stored original part');
         self::assertStringContainsString('Original part', $sheet);
         self::assertStringContainsString('Spare', $sheet, 'a spare bought ahead');
+        // The words on the sheet, not its tokens: a random value in an attribute can contain "55".
+        $words = strip_tags($sheet);
         foreach (['899', '780', '450', '1,240', '120', '55', '77', '33.00', '£'] as $money) {
-            self::assertStringNotContainsString($money, $sheet, 'never a cost, a price or a sale: ' . $money);
+            self::assertStringNotContainsString($money, $words, 'never a cost, a price or a sale: ' . $money);
         }
     }
 
