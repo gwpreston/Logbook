@@ -73,7 +73,7 @@ final class SalePackModificationsTest extends AppTestCase
         self::assertStringContainsString('Standard exhaust', $sheet, 'a stored original part');
         self::assertStringContainsString('Original part', $sheet);
         self::assertStringContainsString('Spare', $sheet, 'a spare bought ahead');
-        foreach (['899', '780', '450', '1,240', '120', '55', '£'] as $money) {
+        foreach (['899', '780', '450', '1,240', '120', '55', '77', '33.00', '£'] as $money) {
             self::assertStringNotContainsString($money, $sheet, 'never a cost, a price or a sale: ' . $money);
         }
     }
@@ -130,6 +130,13 @@ final class SalePackModificationsTest extends AppTestCase
         ), $zone);
         // A spare bought ahead, and one sold (its price must never show).
         $parts->create($this->golf, new PartData('Spare wheel', price: '55.000'), $zone);
+        $sold = $parts->create(
+            $this->golf,
+            new PartData('Sold mirror', price: '77.000'),
+            $zone,
+            fitOn: self::day('2026-01-10'),
+        );
+        $parts->remove($this->golf, $sold, self::day('2026-04-01'), null, new PartRemoval(RemovalOutcome::Sold, '33.000'), $zone);
     }
 
     /**

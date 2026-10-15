@@ -80,6 +80,7 @@ final readonly class Modifications implements AskTool
 
         $rows = [];
         $totals = [];
+        $hidden = false;
         $count = 0;
         $withModifications = [];
         foreach ($vehicles as $vehicle) {
@@ -102,6 +103,9 @@ final readonly class Modifications implements AskTool
             );
             foreach ($listed as $modification) {
                 $count++;
+                if (!$costs) {
+                    $hidden = true;
+                }
                 if ($costs) {
                     $totals[$currency] = ($totals[$currency] ?? Money::zero($currency))
                         ->add(Money::of($modification->data->cost, $currency));
@@ -127,7 +131,8 @@ final readonly class Modifications implements AskTool
                 ...($build === [] ? [] : [
                     'build_total' => $build,
                     'note' => 'build_total is what the modifications cost: it is not a running cost and is in no cost '
-                        . 'per distance.',
+                        . 'per distance.'
+                        . ($hidden ? ' It leaves out vehicles whose costs the user may not see.' : ''),
                 ]),
             ],
             $this->kit->source([

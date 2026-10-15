@@ -11,6 +11,7 @@ use Logbook\Service\Api\ApiModifications;
 use Logbook\Service\Part\ModificationForm;
 use Logbook\Service\Incident\IncidentForm;
 use DateTimeImmutable;
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Compliance\ComplianceDocument;
 use Logbook\Domain\Expense\ExpenseEntry;
@@ -394,7 +395,7 @@ final readonly class DraftWriter
         if ($data->fittedBy !== null) {
             $fields[] = self::field('fitted_by', $data->fittedBy);
         }
-        if (Decimal::compare($data->cost, '0') !== 0) {
+        if (Decimal::compare($data->cost, '0') !== 0 && $this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
             $currency = $this->vehicles->currencyFor($user, $vehicle);
             $fields[] = self::field('cost', $this->format->money(Money::of($data->cost, $currency)));
         }

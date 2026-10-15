@@ -824,6 +824,10 @@ final class JsonInput
             }
             $sub = new ValidationErrors();
             self::unknownFields($row, array_keys(self::PART_FIELDS), $sub);
+            if (!is_string($row['name'] ?? null) || trim($row['name']) === '') {
+                // A row with no name is not a part: refuse it rather than drop it silently.
+                $sub->add('name', 'validation.required');
+            }
             $input = [...$input, ...self::partRow($row, 'new_' . $new . '_', $sub)];
             self::merge($errors, $sub, $field);
             $new++;

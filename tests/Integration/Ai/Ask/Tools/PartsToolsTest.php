@@ -80,6 +80,18 @@ final class PartsToolsTest extends ToolsBTestCase
         self::assertSame('Cat-back exhaust', $theirs->get('rows', 0, 'title'));
         self::assertNull($theirs->get('rows', 0, 'cost'), 'no cost without Can see costs');
         self::assertNull($theirs->get('build_total'));
+
+        // Both vehicles in one answer: the total leaves the hidden one out and says so.
+        $fiesta = $this->vehicle($app, 'Ford', 'Fiesta');
+        $wrap = new ModificationData('Wrap', ModificationCategory::Body, $day('2026-02-01'), cost: '500.000');
+        $mods->create($fiesta, $wrap, $zone);
+        $this->service($app, VehicleShareRepository::class)
+            ->insert($fiesta->id, $member->id, ShareLevel::View, false, false, new DateTimeImmutable('2026-10-01'));
+        $both = new JsonDoc($this->toolResult($app, $member, 'modifications')->data);
+        self::assertSame(2, $both->int('modifications'));
+        self::assertNull($both->get('build_total'), 'a member who sees no costs gets no total');
+        $mine = new JsonDoc($this->toolResult($app, $owner, 'modifications')->data);
+        self::assertStringNotContainsString('leaves out', $mine->string('note'), 'nothing hidden from the owner');
     }
 
     public function testPartsWithTheirWarrantyDistanceAndFittings(): void

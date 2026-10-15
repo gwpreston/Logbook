@@ -134,16 +134,19 @@ final class ApiPartsTest extends AppTestCase
         $response = $this->api->post($this->mods, self::mod([
             'title' => str_repeat('x', 121),
             'done_on' => '2026-12-01',
-            'parts_fitted' => [['name' => 'Fine'], ['brand' => 'No name']],
+            'parts_fitted' => [['name' => 'Fine'], ['name' => 'Cheap', 'price' => '-5']],
             'parts_removed' => [],
         ]));
         self::assertSame(422, $response->getStatusCode());
         $fields = ApiClient::json($response)->keys('errors');
         self::assertContains('title', $fields);
         self::assertContains('done_on', $fields);
-        self::assertContains('parts_fitted.1.name', $fields, 'the form\'s errors under the body\'s names');
+        self::assertContains('parts_fitted.1.price', $fields, 'the form\'s errors under the body\'s names');
         $offered = $this->api->post($this->mods, self::mod(['parts_removed' => [['part' => 999999]]]));
         self::assertContains('parts_removed', ApiClient::json($offered)->keys('errors'), 'a part the list does not offer');
+        $blank = $this->api->post($this->mods, self::mod(['parts_fitted' => [[]]]));
+        self::assertSame(422, $blank->getStatusCode(), 'a row with no name is refused, not dropped');
+        self::assertContains('parts_fitted.0.name', ApiClient::json($blank)->keys('errors'));
         $types = $this->api->post($this->mods, self::mod(['parts_fitted' => [['name' => 'Fine', 'price' => 'free']]]));
         self::assertContains('parts_fitted.0.price', ApiClient::json($types)->keys('errors'));
         $unknown = $this->api->post($this->mods, self::mod(['colour' => 'red']));
