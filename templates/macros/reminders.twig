@@ -17,6 +17,8 @@
         {{ url_for('finance.show', {id: reminder.vehicleId, agreement: reminder.sourceId}) }}
     {%- elseif reminder.source.value == 'issue' -%}
         {{ url_for('issues.show', {id: reminder.vehicleId, issue: reminder.sourceId}) }}
+    {%- elseif reminder.source.value == 'part' -%}
+        {{ url_for('parts.show', {id: reminder.vehicleId, part: reminder.sourceId}) }}
     {%- else -%}
         {{ url_for('reminders.edit', {reminder: reminder.id}) }}
     {%- endif -%}
@@ -79,7 +81,7 @@
             {% if reminder.status.isOpen() %}
                 <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'done'}) }}">
                     {{ ui.csrf(csrf) }}{{ ui.return_field(return_to) }}
-                    <button type="submit" class="btn btn--soft">{{ ui.icon('check_circle') }}{{ (reminder.source.value == 'issue' ? 'issue.update.reason.looked_at' : 'reminders.action.done')|trans }}<span class="visually-hidden">: {{ name }}</span></button>
+                    <button type="submit" class="btn btn--soft">{{ ui.icon('check_circle') }}{{ (reminder.source.value == 'issue' ? 'issue.update.reason.looked_at' : (reminder.source.value == 'part' ? 'part.reminder.checked_it' : 'reminders.action.done'))|trans }}<span class="visually-hidden">: {{ name }}</span></button>
                 </form>
                 <form method="post" action="{{ url_for('reminders.status', {reminder: reminder.id, action: 'dismiss'}) }}">
                     {{ ui.csrf(csrf) }}{{ ui.return_field(return_to) }}

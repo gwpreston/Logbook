@@ -115,6 +115,7 @@ final readonly class PartRepository
             'vehicle_id' => ParameterType::INTEGER,
             'created_by' => ParameterType::INTEGER,
             'warranty_months' => ParameterType::INTEGER,
+            'warranty_reminder' => ParameterType::BOOLEAN,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -126,7 +127,12 @@ final readonly class PartRepository
             self::TABLE,
             ['updated_at' => UtcDateTime::toDatabase($now, $this->connection->getDatabasePlatform())] + self::dataColumns($data),
             ['vehicle_id' => $vehicleId, 'id' => $id],
-            ['vehicle_id' => ParameterType::INTEGER, 'id' => ParameterType::INTEGER, 'warranty_months' => ParameterType::INTEGER],
+            [
+                'vehicle_id' => ParameterType::INTEGER,
+                'id' => ParameterType::INTEGER,
+                'warranty_months' => ParameterType::INTEGER,
+                'warranty_reminder' => ParameterType::BOOLEAN,
+            ],
         );
     }
 
@@ -408,7 +414,7 @@ final readonly class PartRepository
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'created_by', 'name', 'brand', 'part_number', 'serial_number', 'supplier')
             ->addSelect('bought_on', 'price', 'part_condition', 'origin', 'warranty_months', 'warranty_km')
-            ->addSelect('warranty_from', 'warranty_provider', 'warranty_terms', 'notes', 'status')
+            ->addSelect('warranty_from', 'warranty_provider', 'warranty_terms', 'warranty_reminder', 'notes', 'status')
             ->addSelect('created_at', 'updated_at')
             ->from(self::TABLE);
     }
@@ -429,7 +435,7 @@ final readonly class PartRepository
     }
 
     /**
-     * @return array<string, int|string|null>
+     * @return array<string, bool|int|string|null>
      */
     private static function dataColumns(PartData $data): array
     {
@@ -450,6 +456,7 @@ final readonly class PartRepository
             'warranty_from' => $warranty ? $data->warrantyFrom?->value : null,
             'warranty_provider' => $data->warrantyProvider,
             'warranty_terms' => $data->warrantyTerms,
+            'warranty_reminder' => $warranty && $data->warrantyReminder,
             'notes' => $data->notes,
         ];
     }
@@ -481,6 +488,7 @@ final readonly class PartRepository
                 warrantyProvider: Row::nullableString($row, 'warranty_provider'),
                 warrantyTerms: Row::nullableString($row, 'warranty_terms'),
                 notes: Row::nullableString($row, 'notes'),
+                warrantyReminder: Row::bool($row, 'warranty_reminder'),
             ),
             status: PartStatus::tryFrom(Row::string($row, 'status')) ?? PartStatus::Stored,
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),

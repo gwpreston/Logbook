@@ -232,6 +232,7 @@ final readonly class PartService
             warrantyProvider: $data->warrantyProvider,
             warrantyTerms: $data->warrantyTerms,
             notes: $data->notes,
+            warrantyReminder: $data->warrantyReminder,
         );
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $part, $data): void {
             $this->parts->update($vehicle->id, $part->id, $data, $this->clock->now());
@@ -610,6 +611,7 @@ final readonly class PartService
             warrantyProvider: $data->warrantyProvider,
             warrantyTerms: $data->warrantyTerms,
             notes: $data->notes,
+            warrantyReminder: $data->warrantyReminder,
         );
     }
 }

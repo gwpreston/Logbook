@@ -2321,9 +2321,10 @@ iCal/webcal feed so items appear in the user's calendar.
   *Warranty*), so it follows a schedule's rules (§7.4): it is *due* from
   the owner's **document** lead time before the date, or the schedule lead
   distance before the mileage (projected from the vehicle's recent driving,
-  as a schedule's is), and *overdue* once either has passed while the
-  warranty ended. Its title, in the owner's language, is "Warranty ends:
-  {part}" (the part's brand and name, cut to the title column).
+  as a schedule's is), and *upcoming* before that. It is never *overdue*:
+  once either limit passes the warranty has ended and the reminder goes
+  (below). Its title, in the owner's language, is "Warranty ends: {part}"
+  (the part's brand and name, cut to the title column).
   - **Occurrence = the end date and end mileage**, so editing the warranty
     or the first fitting's date re-opens it and clears its notification
     state; the projection moving updates it in place.
@@ -9768,10 +9769,11 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   reminders*): a part's tick ***Remind me before it ends*** (§6 Part
   `warranty_reminder`, off by default) is on the part form and on the
   inline new-part row of a record's form, behind *More* beside the
-  warranty fields. It shows only while the part has a warranty with a limit
-  Logbook can measure, and saving the tick on a warranty that has already
-  ended says so ("This warranty ended on 3 Mar 2028, so there is nothing to
-  remind you of") and keeps it off. A reminder is raised only while the
+  warranty fields. Saving the tick on a warranty the form can tell has
+  already ended (a time limit counted from a purchase date that is past)
+  is refused with "This warranty has already ended, so there is nothing to
+  remind you of"; any other warranty simply stops reminding once it ends.
+  The tick means nothing without a warranty and is not kept. A reminder is raised only while the
   tick is set, the part is not *Gone* and the warranty has not ended; a
   stored spare's warranty runs on, so it still reminds. The reminder's
   *Done* reads *Checked it*.

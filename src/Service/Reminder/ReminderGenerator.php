@@ -9,7 +9,10 @@ use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Finance\FinanceAgreement;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Domain\Issue\IssueStatus;
+use Logbook\Domain\Part\Part;
+use Logbook\Domain\Part\PartStatus;
 use Logbook\Domain\Reminder\ReminderSource;
+use Logbook\Service\Part\PartWarranty;
 use Logbook\Service\Compliance\DocumentState;
 use Logbook\Service\Finance\MileageAllowance;
 use Logbook\Service\Finance\Schedule;
@@ -251,6 +254,56 @@ final class ReminderGenerator
             dueOn: $data->lookAgainOn,
             dueKm: $data->lookAgainKm,
             leadTimeDays: $preferences->manualDays,
+            status: $due->status,
+        );
+    }
+
+    /**
+     * A part's warranty ending (Phase 50.2, spec.md §7.6 *Part warranty
+     * reminders*, #437, #446): only while the tick is set, the part is not
+     * gone, a limit can be measured and the warranty has not ended. It is
+     * judged like a document: the owner's document lead time before the
+     * date, the schedule lead distance before the mileage (projected).
+     */
+    public static function fromPart(
+        int $vehicleId,
+        Part $part,
+        ?PartWarranty $warranty,
+        string $title,
+        DateTimeImmutable $today,
+        ReminderPreferences $preferences,
+        ?string $currentKm,
+        ?float $kmPerDay,
+    ): ?GeneratedReminder {
+        if (
+            !$part->data->warrantyReminder
+            || $part->status === PartStatus::Gone
+            || $warranty === null
+            || !$warranty->active
+            || ($warranty->until === null && $warranty->untilKm === null)
+        ) {
+            return null;
+        }
+        $due = ReminderRules::manual(
+            $warranty->until,
+            $warranty->untilKm,
+            $today,
+            $preferences->documentDays,
+            $currentKm,
+            $kmPerDay,
+            $preferences->scheduleKm,
+        );
+
+        return new GeneratedReminder(
+            vehicleId: $vehicleId,
+            source: ReminderSource::Part,
+            sourceId: $part->id,
+            occurrence: ($warranty->until?->format('Y-m-d') ?? '') . '|' . ($warranty->untilKm ?? ''),
+            category: null,
+            title: $title,
+            dueOn: $warranty->until,
+            dueKm: $warranty->untilKm,
+            leadTimeDays: $preferences->documentDays,
             status: $due->status,
         );
     }

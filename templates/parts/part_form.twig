@@ -80,6 +80,14 @@
                     <textarea class="textarea" id="f-warranty_terms" name="warranty_terms" rows="2" maxlength="500"{{ ui.described_by('warranty_terms', errors, false) }}>{{ values.warranty_terms ?? '' }}</textarea>
                     {{ ui.field_error(errors, 'warranty_terms') }}
                 </div>
+                <label class="toggle">
+                    <input type="checkbox" name="warranty_reminder" value="1"{% if (values.warranty_reminder ?? '') == '1' %} checked{% endif %}{{ ui.described_by('warranty_reminder', errors, false) }}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'part.field.warranty_reminder'|trans }}</span>
+                        <span class="toggle__hint">{{ 'part.hint.warranty_reminder'|trans }}</span>
+                    </span>
+                </label>
+                {{ ui.field_error(errors, 'warranty_reminder') }}
             </section>
 
             {% if not editing %}

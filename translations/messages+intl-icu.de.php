@@ -6849,6 +6849,7 @@ return [
         ],
         'error' => [
             'future' => 'Das Datum darf nicht nach heute liegen.',
+            'warranty_ended' => 'Diese Garantie ist bereits abgelaufen, es gibt also nichts, woran Sie erinnert werden könnten.',
             'reverted_before' => 'Ein Umbau kann nicht vor seinem Datum rückgebaut werden.',
         ],
         'refused' => [
@@ -6895,6 +6896,10 @@ return [
     ],
     'part' => [
         'title' => 'Teile',
+        'reminder_title' => 'Garantie endet: {part}',
+        'reminder' => [
+            'checked_it' => 'Geprüft',
+        ],
         'tab_title' => 'Teile und Umbauten',
         'view_all' => 'Alle anzeigen',
         'add' => 'Teil hinzufügen',
@@ -6989,6 +6994,7 @@ return [
             'warranty_from' => 'Garantie beginnt mit',
             'warranty_provider' => 'Garantiegeber',
             'warranty_terms' => 'Garantiebedingungen',
+            'warranty_reminder' => 'Vor dem Ablauf erinnern',
             'on_car' => 'Es ist jetzt am Auto',
             'fitted_on' => 'Eingebaut am',
             'removed_on' => 'Ausgebaut am',
@@ -7002,6 +7008,7 @@ return [
             'sold_price' => 'Nur bei Verkauf: Er wird von den Umbaukosten abgezogen.',
             'warranty' => 'Monate und/oder eine Strecke. Eine Strecke zählt ab dem Kilometerstand beim ersten Einbau.',
             'warranty_from' => 'Die Garantie eines Händlers läuft meist ab dem Kauf, die einer Werkstatt ab dem Einbau.',
+            'warranty_reminder' => 'Legt eine Erinnerung vor dem Ablauf der Garantie an, damit Sie das Teil prüfen lassen können, solange sie noch gilt.',
             'on_car' => 'Anhaken, um es ab dem Datum unten als eingebaut zu erfassen, ohne Eintrag und ohne Kosten.',
             'without_record' => 'Ohne Eintrag ein- oder ausgebaut, also ohne Kosten. Um die Arbeit mit Kosten zu erfassen, lege einen Wartungseintrag oder einen Umbau an.',
             'came_off_example' => 'Zum Beispiel: Serienauspuff',

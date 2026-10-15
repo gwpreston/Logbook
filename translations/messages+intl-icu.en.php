@@ -6902,6 +6902,10 @@ return [
     ],
     'part' => [
         'title' => 'Parts',
+        'reminder_title' => 'Warranty ends: {part}',
+        'reminder' => [
+            'checked_it' => 'Checked it',
+        ],
         'tab_title' => 'Parts and modifications',
         'view_all' => 'Show all',
         'add' => 'Add part',
@@ -6996,6 +7000,7 @@ return [
             'warranty_from' => 'Warranty starts from',
             'warranty_provider' => 'Warranty provider',
             'warranty_terms' => 'Warranty terms',
+            'warranty_reminder' => 'Remind me before it ends',
             'on_car' => 'It\'s on the car now',
             'fitted_on' => 'Fitted on',
             'removed_on' => 'Removed on',
@@ -7009,6 +7014,7 @@ return [
             'sold_price' => 'Only when sold: it is taken off what the build cost.',
             'warranty' => 'Months and/or a distance. A distance counts from the mileage when it was first fitted.',
             'warranty_from' => 'A supplier\'s warranty usually runs from the sale, a garage\'s from the fitting.',
+            'warranty_reminder' => 'Adds a reminder before the warranty ends, so you can have it checked while it still covers the part.',
             'on_car' => 'Tick to record it as fitted from the date below, without a record and with no cost.',
             'without_record' => 'Fitted or removed without a record, so with no cost. To cost the job, log it as a service record or a modification.',
             'came_off_example' => 'For example: Standard exhaust',
@@ -7020,6 +7026,7 @@ return [
         ],
         'error' => [
             'archived' => 'This vehicle is archived: its parts and modifications can be read but not changed.',
+            'warranty_ended' => 'This warranty has already ended, so there is nothing to remind you of.',
             'future' => 'The date can\'t be after today.',
             'price_only_sold' => 'A sale price only goes with Sold.',
         ],

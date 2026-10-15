@@ -11,6 +11,7 @@ use Logbook\Domain\Part\PartData;
 use Logbook\Domain\Part\RemovalOutcome;
 use Logbook\Domain\Part\WarrantyStart;
 use Logbook\Service\Odometer\OdometerReadingForm;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\ValidationErrors;
@@ -58,6 +59,7 @@ final class PartForm
             $prefix . 'warranty_from' => $data->warrantyFrom->value ?? '',
             $prefix . 'warranty_provider' => $data->warrantyProvider ?? '',
             $prefix . 'warranty_terms' => $data->warrantyTerms ?? '',
+            $prefix . 'warranty_reminder' => $data->warrantyReminder ? '1' : '',
             $prefix . 'notes' => $data->notes ?? '',
         ];
     }
@@ -95,9 +97,19 @@ final class PartForm
         $provider = $validator->string($prefix . 'warranty_provider', false, self::PROVIDER_MAX);
         $terms = $validator->string($prefix . 'warranty_terms', false, self::TERMS_MAX);
         $notes = $validator->string($prefix . 'notes', false, self::NOTES_MAX);
+        $remind = $validator->checkbox($prefix . 'warranty_reminder');
 
         if ($boughtOn !== null && $boughtOn > $today) {
             $validator->addError($prefix . 'bought_on', 'part.error.future');
+        }
+        // #446: nothing to remind of once a warranty has ended. Only a time limit counted from the
+        // purchase date can be told here; any other warranty simply stops reminding when it ends.
+        if (
+            $remind && $months !== null && $boughtOn !== null
+            && ($from ?? self::defaultStart($boughtOn)) === WarrantyStart::Purchase
+            && LocalTime::addMonths($boughtOn, $months) < $today
+        ) {
+            $validator->addError($prefix . 'warranty_reminder', 'part.error.warranty_ended');
         }
         if ($name === null || !$validator->errors()->isEmpty()) {
             return null;
@@ -122,6 +134,7 @@ final class PartForm
             warrantyProvider: $provider,
             warrantyTerms: $terms,
             notes: $notes,
+            warrantyReminder: $remind && $warranty,
         );
     }
 

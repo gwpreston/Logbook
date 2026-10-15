@@ -32,6 +32,8 @@ final readonly class PartData
         public ?string $warrantyProvider = null,
         public ?string $warrantyTerms = null,
         public ?string $notes = null,
+        /** Raise a reminder before the warranty ends (Phase 50.2, #437); only with a warranty. */
+        public bool $warrantyReminder = false,
     ) {
     }
 

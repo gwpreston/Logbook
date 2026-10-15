@@ -36,7 +36,7 @@
                         {{ ui.input(p ~ 'price', 'part.field.price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: money, hint: 'part.hint.price_reference'|trans}) }}
                     {% endif %}
                 </div>
-                <details class="disclosure"{% if (values[p ~ 'warranty_months'] ?? '') != '' or (values[p ~ 'warranty_distance'] ?? '') != '' or (values[p ~ 'notes'] ?? '') != '' %} open{% endif %}>
+                <details class="disclosure"{% if (values[p ~ 'warranty_months'] ?? '') != '' or (values[p ~ 'warranty_distance'] ?? '') != '' or (values[p ~ 'warranty_reminder'] ?? '') == '1' or (values[p ~ 'notes'] ?? '') != '' %} open{% endif %}>
                     <summary>{{ 'part.record.more'|trans }}</summary>
                     {{ ui.select(p ~ 'condition', 'part.field.condition'|trans, values, errors, ['new', 'used', 'reconditioned']|map(c => {value: c, label: ('part.condition.' ~ c)|trans})) }}
                     <div class="form-row">
@@ -44,6 +44,13 @@
                         {{ ui.input(p ~ 'warranty_distance', 'part.field.warranty_distance'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
                     </div>
                     {{ ui.input(p ~ 'warranty_provider', 'part.field.warranty_provider'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                    <label class="toggle">
+                        <input type="checkbox" name="{{ p }}warranty_reminder" value="1"{% if (values[p ~ 'warranty_reminder'] ?? '') == '1' %} checked{% endif %}{{ ui.described_by(p ~ 'warranty_reminder', errors, false) }}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'part.field.warranty_reminder'|trans }}</span>
+                        </span>
+                    </label>
+                    {{ ui.field_error(errors, p ~ 'warranty_reminder') }}
                     {{ ui.input(p ~ 'notes', 'part.field.notes'|trans, values, errors, {optional: true, maxlength: 2000}) }}
                 </details>
             </fieldset>
