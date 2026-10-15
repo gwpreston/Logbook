@@ -6895,7 +6895,6 @@ return [
         ],
         'error' => [
             'future' => 'Das Datum darf nicht nach heute liegen.',
-            'warranty_ended' => 'Diese Garantie ist bereits abgelaufen, es gibt also nichts, woran du erinnert werden könntest.',
             'reverted_before' => 'Ein Umbau kann nicht vor seinem Datum rückgebaut werden.',
             'declared_before' => 'Er kann nicht vor seinem Datum gemeldet worden sein.',
         ],
@@ -7075,6 +7074,7 @@ return [
         'error' => [
             'archived' => 'Dieses Fahrzeug ist archiviert: Seine Teile und Umbauten können gelesen, aber nicht geändert werden.',
             'future' => 'Das Datum darf nicht nach heute liegen.',
+            'warranty_ended' => 'Diese Garantie ist bereits abgelaufen, es gibt also nichts, woran du erinnert werden könntest.',
             'price_only_sold' => 'Ein Verkaufspreis gehört nur zu „Verkauft“.',
         ],
         'refused' => [
