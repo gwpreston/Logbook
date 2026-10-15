@@ -18,6 +18,35 @@
     <input type="hidden" name="new_rows" value="{{ record_parts.rows.new }}">
     <input type="hidden" name="off_rows" value="{{ record_parts.rows.off }}">
 
+    {# Phase 50.2 (#440): the scanned invoice's parts lines, unticked; ticked ones are saved as parts fitted by this record. #}
+    {% set scan_rows = values.scan_part_rows ?? '0' %}
+    {% if scan_rows matches '/^[1-9][0-9]*$/' %}
+        <input type="hidden" name="scan_part_rows" value="{{ scan_rows }}">
+        <section class="card" aria-labelledby="parts-scanned">
+            <h2 id="parts-scanned" class="card__title">{{ 'part.scan.title'|trans }}</h2>
+            <p class="field__hint">{{ 'part.scan.hint'|trans }}</p>
+            {% for i in 0..(scan_rows - 1) %}
+                {% set p = 'scan_part_' ~ i ~ '_' %}
+                <fieldset class="fieldset part-row">
+                    <legend class="visually-hidden">{{ 'part.scan.line'|trans({number: i + 1}) }}</legend>
+                    <label class="toggle">
+                        <input type="checkbox" name="{{ p }}add" value="1"{% if (values[p ~ 'add'] ?? '') == '1' %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'part.scan.add'|trans({number: i + 1}) }}</span>
+                        </span>
+                    </label>
+                    {{ ui.input(p ~ 'name', 'part.field.name'|trans, values, errors, {maxlength: 120}) }}
+                    <div class="form-row">
+                        {{ ui.input(p ~ 'part_number', 'part.field.part_number'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                        {% if costs %}
+                            {{ ui.input(p ~ 'price', 'part.field.price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: money}) }}
+                        {% endif %}
+                    </div>
+                </fieldset>
+            {% endfor %}
+        </section>
+    {% endif %}
+
     <section class="card" aria-labelledby="parts-fitted">
         <h2 id="parts-fitted" class="card__title">{{ 'part.record.fitted'|trans }}</h2>
         <p class="field__hint">{{ 'part.record.fitted_hint'|trans }}</p>

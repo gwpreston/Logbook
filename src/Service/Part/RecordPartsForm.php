@@ -10,6 +10,7 @@ use Logbook\Domain\Part\PartData;
 use Logbook\Domain\Part\PartFitting;
 use Logbook\Domain\Part\PartStatus;
 use Logbook\Domain\Part\RemovalOutcome;
+use Logbook\Service\Ai\Scan\PartLines;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\Validator;
@@ -139,6 +140,17 @@ final class RecordPartsForm
                 $new[] = $data;
             }
         }
+        // Phase 50.2 (#440): a scanned invoice's parts lines the owner ticked, read as new part rows.
+        for ($i = 0, $n = self::scanRows($input); $i < $n; $i++) {
+            $prefix = 'scan_part_' . $i . '_';
+            if (!$validator->checkbox($prefix . 'add')) {
+                continue;
+            }
+            $data = PartForm::read($validator, $preferences, $today, $prefix);
+            if ($data !== null) {
+                $new[] = $data;
+            }
+        }
         $off = [];
         for ($i = 0, $n = self::count($input, 'off_rows'); $i < $n; $i++) {
             $prefix = 'off_' . $i . '_';
@@ -184,6 +196,18 @@ final class RecordPartsForm
         }
 
         return ['fit' => $fit, 'remove' => $remove];
+    }
+
+    /**
+     * How many scanned parts lines the form carries (none without a scan).
+     *
+     * @param array<array-key, mixed> $input
+     */
+    public static function scanRows(array $input): int
+    {
+        $raw = $input['scan_part_rows'] ?? '0';
+
+        return is_string($raw) && ctype_digit($raw) ? min(PartLines::MAX, (int) $raw) : 0;
     }
 
     /**

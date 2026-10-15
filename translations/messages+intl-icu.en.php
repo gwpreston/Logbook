@@ -6949,6 +6949,12 @@ return [
     'part' => [
         'title' => 'Parts',
         'reminder_title' => 'Warranty ends: {part}',
+        'scan' => [
+            'title' => 'Add as parts',
+            'hint' => 'Parts lines read from the invoice, as a guess to check. Tick the ones to record as parts fitted by this record: oil and screen wash are parts lines too, so none are ticked for you. Nothing is saved until you save the record.',
+            'line' => 'Parts line {number}',
+            'add' => 'Add line {number} as a part',
+        ],
         'reminder' => [
             'checked_it' => 'Checked it',
         ],

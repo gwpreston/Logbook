@@ -124,6 +124,14 @@ final readonly class ScanPrefill
         }
 
         $values = $editing ? self::changes($form->values, $defaults) : $form->values;
+        if (!$this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
+            // A part's price needs `ViewCosts` (spec.md §7.39 *Access*, #429), a scanned one too.
+            $values = array_filter(
+                $values,
+                static fn (string $field): bool => preg_match('/^scan_part_\d+_price$/', $field) !== 1,
+                ARRAY_FILTER_USE_KEY,
+            );
+        }
         $marked = array_keys(array_filter($values, static fn (string $v): bool => $v !== ''));
         $meta += [
             '_scan_kind' => $form->kind->value,

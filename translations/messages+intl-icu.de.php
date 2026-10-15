@@ -6943,6 +6943,12 @@ return [
     'part' => [
         'title' => 'Teile',
         'reminder_title' => 'Garantie endet: {part}',
+        'scan' => [
+            'title' => 'Als Teile hinzufügen',
+            'hint' => 'Teilezeilen aus der Rechnung, als Vorschlag zum Prüfen. Hake die an, die als von diesem Eintrag eingebaute Teile erfasst werden sollen: Öl und Scheibenwaschmittel sind auch Teilezeilen, deshalb ist keine vorab angehakt. Gespeichert wird erst, wenn du den Eintrag speicherst.',
+            'line' => 'Teilezeile {number}',
+            'add' => 'Zeile {number} als Teil hinzufügen',
+        ],
         'reminder' => [
             'checked_it' => 'Geprüft',
         ],

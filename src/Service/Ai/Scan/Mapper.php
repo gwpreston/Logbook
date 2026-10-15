@@ -119,6 +119,18 @@ final readonly class Mapper
             $form->set('description', mb_substr(implode("\n\n", $description), 0, self::TEXT_MAX));
         }
 
+        // Phase 50.2 (#440): the parts lines, offered as parts, unticked.
+        $rows = PartLines::parse($reading->lines('parts'), $user->preferences->locale);
+        if ($rows !== []) {
+            $form->set('scan_part_rows', (string) count($rows));
+            foreach ($rows as $i => $row) {
+                $prefix = 'scan_part_' . $i . '_';
+                $form->set($prefix . 'name', $row['name'], $row['line']);
+                $form->set($prefix . 'part_number', $row['part_number'] ?? '', $row['line']);
+                $form->set($prefix . 'price', $row['price'] ?? '', $row['line']);
+            }
+        }
+
         $category = $this->category($user, [...$work, ...$reading->lines('parts')]);
         if ($category !== null) {
             $form->set('category', $category, $work[0] ?? null);

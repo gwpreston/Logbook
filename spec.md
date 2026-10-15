@@ -9819,9 +9819,12 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   ZIP is unchanged: the option only adds to the printed summary.
 - **Scanning** (#440; §7.27 *Mapping to Logbook*): a scanned service
   invoice's **parts lines** appear under the prefilled service record
-  form as ***Add as parts***, a checklist (the module on and `Log`), each
-  line with the name and, when the line shows them, the part number and
-  price, **all unticked**: oil and screen wash are parts lines too. A
+  form as ***Add as parts***, a checklist (the module on and `Log`), up
+  to 20 lines, each an editable name, part number and price read from the
+  line as a **guess to check** (a trailing amount is the price; a token
+  with digits and letters or dashes, but not an oil grade or a tyre size,
+  is the part number; a line that is only an amount keeps its text), all
+  **unticked**: oil and screen wash are parts lines too. A
   ticked line becomes a new *Parts fitted* row, fitted by that record, on
   *Save*; nothing is created without *Save*. A line's price shows and is
   kept only for a user with `ViewCosts` (#429), and **warranty terms are
