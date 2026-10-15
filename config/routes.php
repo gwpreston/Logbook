@@ -265,11 +265,13 @@ use Logbook\Action\Issue\WatchIssueAction;
 use Logbook\Action\Part\ConvertToModificationAction;
 use Logbook\Action\Part\CreateModificationAction;
 use Logbook\Action\Part\CreatePartAction;
+use Logbook\Action\Part\DeclareModificationsAction;
 use Logbook\Action\Part\DeleteModificationAction;
 use Logbook\Action\Part\DeletePartAction;
 use Logbook\Action\Part\EditModificationAction;
 use Logbook\Action\Part\EditPartAction;
 use Logbook\Action\Part\FitPartAction;
+use Logbook\Action\Part\InsurerListAction;
 use Logbook\Action\Part\PartsTabAction;
 use Logbook\Action\Part\RevertModificationAction;
 use Logbook\Action\Part\ShowModificationAction;
@@ -1002,6 +1004,11 @@ return static function (App $app): void {
                 $view = VehicleAbility::View->value;
                 $log = VehicleAbility::Log->value;
                 $parts->get('/parts', PartsTabAction::class)->setName('parts.index')->setArgument($ability, $view);
+                // *For your insurer* (#438): reading needs View, marking declared needs Manage (#444).
+                $parts->get('/parts/insurer', InsurerListAction::class)->setName('parts.insurer')
+                    ->setArgument($ability, $view);
+                $parts->post('/parts/insurer', DeclareModificationsAction::class)->setName('parts.insurer.declare')
+                    ->setArgument($ability, VehicleAbility::Manage->value);
                 $parts->map(['GET', 'POST'], '/parts/new', CreatePartAction::class)->setName('parts.create')
                     ->setArgument($ability, $log);
                 $parts->get('/parts/{part:[0-9]+}', ShowPartAction::class)->setName('parts.show')

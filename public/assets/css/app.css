@@ -7459,3 +7459,42 @@ p.stat__label {
     color: var(--muted);
     font-size: var(--fs-xs, 0.75rem);
 }
+
+/* For your insurer (spec.md §7.39, #438). */
+.insurer-list__rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-4, 1rem);
+}
+
+.insurer-row {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    padding-bottom: var(--space-4, 1rem);
+    border-bottom: 1px solid var(--border);
+    break-inside: avoid;
+}
+
+.insurer-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.insurer-row__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2, 0.5rem);
+}
+
+.insurer-row__title {
+    margin: 0;
+    font-size: var(--fs-md, 1rem);
+}
+
+.insurer-row__parts {
+    margin: 0;
+    padding-left: 1.1rem;
+}

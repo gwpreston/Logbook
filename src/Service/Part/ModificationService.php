@@ -133,6 +133,33 @@ final readonly class ModificationService
     }
 
     /**
+     * *Mark declared* / *Clear* (spec.md §7.39 *For your insurer*, #444, #445): when the insurer
+     * was told, or null for *Not declared yet*. Nothing else about the record changes.
+     *
+     * @throws PartChangeRefused when the date is before the modification's own
+     */
+    public function declare(Vehicle $vehicle, Modification $modification, ?DateTimeImmutable $on): void
+    {
+        $data = $modification->data;
+        if ($on !== null && $on < $data->doneOn) {
+            throw new PartChangeRefused('modification.refused.declared_before', [
+                'title' => $data->title,
+                'done' => $data->doneOn,
+            ]);
+        }
+        $this->modifications->update($vehicle->id, $modification->id, new ModificationData(
+            title: $data->title,
+            category: $data->category,
+            doneOn: $data->doneOn,
+            odometerKm: $data->odometerKm,
+            cost: $data->cost,
+            fittedBy: $data->fittedBy,
+            notes: $data->notes,
+            declaredOn: $on,
+        ), $this->clock->now());
+    }
+
+    /**
      * Delete it with its readings and files. The fittings it made go (the
      * parts stay) and the removals it made are reopened.
      *
