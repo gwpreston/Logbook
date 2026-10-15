@@ -57,6 +57,7 @@ final readonly class McpToolbox
         'draft_reminder' => DraftKind::Reminder,
         'draft_incident' => DraftKind::Incident,
         'draft_issue' => DraftKind::Issue,
+        'draft_modification' => DraftKind::Modification,
     ];
 
     /** @var array<string, DraftTool> by kind value */

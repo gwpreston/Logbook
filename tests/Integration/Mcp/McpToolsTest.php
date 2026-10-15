@@ -39,11 +39,11 @@ final class McpToolsTest extends AppTestCase
     private const array READ_TOOLS = [
         'find_vehicles', 'costs', 'cost_per_distance', 'maintenance', 'vehicle_summary', 'fuel_stats', 'last_done',
         'mileage', 'ownership', 'true_cost', 'coming_up', 'documents', 'tyres', 'incidents', 'issues', 'needs_attention',
-        'finance', 'stations',
+        'finance', 'stations', 'modifications', 'parts',
     ];
     private const array WRITE_TOOLS = [
         'log_fill_up', 'add_reading', 'draft_service_record', 'draft_document', 'draft_expense', 'draft_tyre_check',
-        'draft_reminder', 'draft_incident', 'draft_issue',
+        'draft_reminder', 'draft_incident', 'draft_issue', 'draft_modification',
     ];
 
     protected function tearDown(): void

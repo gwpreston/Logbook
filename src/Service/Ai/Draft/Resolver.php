@@ -13,6 +13,7 @@ use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Import\ImportVocabulary;
@@ -189,6 +190,7 @@ final readonly class Resolver
             DraftKind::Maintenance => [MaintenanceCategory::class, 'maintenance.category.', 'maintenance'],
             DraftKind::Expense => [ExpenseCategory::class, 'expense.category.', 'expense'],
             DraftKind::Document => [ComplianceType::class, 'compliance.type.', 'documents'],
+            DraftKind::Modification => [ModificationCategory::class, 'modification.category.', 'modifications'],
             default => throw new \LogicException('This kind has no categories.'),
         };
         $code = $this->vocabulary($locale)->choice($enum, $prefix, $word) ?? $this->synonym($word, $list, $locale);

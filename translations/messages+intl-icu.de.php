@@ -5212,6 +5212,8 @@ return [
             'stations' => 'Tankstellen',
             'cheapest_fuel' => 'Günstigster Kraftstoff',
             'draft' => 'Entwurf',
+            'modifications' => 'Umbauten',
+            'parts' => 'Teile',
         ],
         // Einträge entwerfen (Phase 26.3, spec.md §7.26).
         'draft' => [
@@ -5227,6 +5229,7 @@ return [
                 'reminder' => 'Erinnerung',
                 'incident' => 'Schaden',
                 'issue' => 'Mangel',
+            'modification' => 'Umbau',
             ],
             'field' => [
                 'when' => 'Wann',
@@ -5259,6 +5262,7 @@ return [
                 'status' => 'Status',
                 'look_again' => 'Erneut ansehen',
                 'affects_safety' => 'Sicherheitsrelevant',
+            'fitted_by' => 'Eingebaut von',
             ],
             'summary' => [
                 'fuel' => '{volume} {fuel} zu {price} = {total}',
@@ -5270,6 +5274,7 @@ return [
                 'reminder' => '{title}, fällig am {due}',
                 'incident' => '{type}, {date}',
                 'issue' => '{title}, bemerkt am {date}',
+            'modification' => '{title}, durchgeführt am {date}',
             ],
             'derived' => [
                 'total' => 'Gesamtbetrag aus Menge und Preis ausgerechnet.',
@@ -5351,6 +5356,7 @@ return [
                 'synonyms_maintenance' => 'inspektion=service; wartung=service; kundendienst=service; ölwechsel=oil; bremsen=brakes; bremsbeläge=brakes; bremsscheiben=brakes; batterie=battery; reifen=tyres; reifenwechsel=tyres; reparatur=repair; karosserie=bodywork; delle=bodywork; kratzer=bodywork',
                 'synonyms_expense' => 'parken=parking; parkhaus=parking; parkticket=parking; maut=tolls; vignette=tolls; kfz steuer=tax; steuer=tax; autowäsche=cleaning; waschanlage=cleaning; reinigung=cleaning; bußgeld=fines; strafzettel=fines; knöllchen=fines; leasingrate=finance; finanzierung=finance; zubehör=accessories',
                 'synonyms_documents' => 'tüv=inspection; hu=inspection; hauptuntersuchung=inspection; au=pollution; abgasuntersuchung=pollution; versicherung=insurance; kfz versicherung=insurance; police=insurance; fahrzeugschein=registration; zulassung=registration; zulassungsbescheinigung=registration',
+            'synonyms_modifications' => 'sportauspuff=exhaust; auspuffanlage=exhaust; downpipe=exhaust; chiptuning=tune; steuergeraet=tune; steuergerät=tune; softwareoptimierung=tune; gewindefahrwerk=suspension; tieferlegungsfedern=suspension; felgen=wheels; alufelgen=wheels; luftfilter=intake; sportluftfilter=intake; radio=audio; lautsprecher=audio; led scheinwerfer=lighting; spoiler=body; bodykit=body; folierung=body; tracker=security; alarmanlage=security',
             ],
         ],
         'progress' => [
@@ -5383,6 +5389,9 @@ return [
             'draft_reminder' => 'Erinnerung wird entworfen…',
             'draft_incident' => 'Schaden wird entworfen…',
             'draft_issue' => 'Mangel wird entworfen…',
+            'modifications' => 'Umbauten werden durchgesehen…',
+            'parts' => 'Teile werden durchgesehen…',
+            'draft_modification' => 'Umbau wird entworfen…',
         ],
         // Words the tools' results and sources use.
         'result' => [
@@ -5394,6 +5403,7 @@ return [
                 'soon' => 'Reifen bald zu ersetzen',
                 'overdue' => 'Reifen jetzt zu ersetzen',
             ],
+            'in_warranty' => 'In Garantie bis {limits}',
         ],
     ],
     // MCP-Server (Phase 26.5, spec.md §7.28).
@@ -5430,6 +5440,9 @@ return [
             'draft_reminder' => 'Entwirft eine manuelle Erinnerung: einen Titel und ein Fälligkeitsdatum oder eine Zeit vor oder nach dem Ablauf eines Dokuments oder der nächsten Fälligkeit eines Plans. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
             'draft_incident' => 'Entwirft einen Schaden (Unfall, Parkschaden, Diebstahl, Einbruch, Vandalismus, Unwetter, Glas, Schlagloch, Wild oder Brand): was passiert ist, der Schaden und alles zum Versicherungsfall. Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis.',
             'draft_issue' => 'Entwirft einen Mangel: einen Fehler, der der Person aufgefallen und noch nicht behoben ist, in ihren eigenen Worten; füge nie eine Ursache hinzu. Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis.',
+            'modifications' => 'Umbauten an den Fahrzeugen der Person (Auspuff, Gewindefahrwerk, Chiptuning, Räder): Titel, Kategorie, Datum und Kilometerstand, wer sie eingebaut hat, ob und wann sie der Versicherung gemeldet wurden, ob sie zurückgebaut wurden, und die Teile, die sie eingebaut und ausgebaut haben. Aktuelle, wenn kein Status angegeben ist. Die Kosten gibt es nur, wo die Person Kosten sehen darf, als build_total, und sie sind nie laufende Kosten oder Teil der Kosten pro Strecke.',
+            'parts' => 'Teile an den Fahrzeugen der Person: Name, Marke, Teilenummer, Lieferant, Status (eingebaut, eingelagert oder weg), Zustand, Garantie (in Garantie bis zu einem Datum oder Kilometerstand, oder abgelaufen), die Strecke, die jedes am Fahrzeug zurückgelegt hat, und jedes Ein- und Ausbauen. Eingebaute, wenn kein Status angegeben ist. Der Preis wird nur angezeigt, wo die Person Kosten sehen darf.',
+            'draft_modification' => 'Entwirft einen Umbau: etwas, das die Person am Auto verändert hat (Auspuff, Gewindefahrwerk, Chiptuning, Räder), in ihren eigenen Worten; keine Wartung, dafür gibt es ein eigenes Werkzeug. Noch wird nichts gespeichert: Die Person fügt ihn in Logbook hinzu, über den Link im Ergebnis, und ergänzt dort die Teile.',
         ],
         'say' => [
             'logged' => 'Eingetragen. Es steht jetzt in Logbook: {link}',
@@ -6939,6 +6952,11 @@ return [
                 'issues' => 'Dieser Wartungseintrag hat einen Mangel behoben, was ein Umbau nicht kann. Entferne zuerst das Häkchen unter „Behebt“.',
                 'tyres' => 'Dieser Wartungseintrag ist mit einem Reifenwechsel verknüpft, was ein Umbau nicht sein kann.',
             ],
+        ],
+        'state' => [
+            'current' => 'Aktuell',
+            'reverted' => 'Zurückgebaut',
+            'all' => 'Alle',
         ],
     ],
     'part' => [

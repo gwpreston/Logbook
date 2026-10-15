@@ -133,6 +133,24 @@ final readonly class ApiModifications
      */
     public function log(User $user, Vehicle $vehicle, array $body): array
     {
+        $result = $this->logModification($user, $vehicle, $body);
+
+        return [
+            'entry' => $this->serialize($user, $vehicle, $this->state($vehicle, $result['modification']->id)),
+            'duplicate' => $result['duplicate'],
+            'warnings' => $result['warnings'],
+        ];
+    }
+
+    /**
+     * The same write, giving the modification (the draft tools' path, spec.md §7.26).
+     *
+     * @param array<string, mixed> $body
+     * @return array{modification: Modification, duplicate: bool, warnings: list<array{code: string, detail: string}>}
+     * @throws ApiProblem 409 for an archived vehicle, 422 for invalid input
+     */
+    public function logModification(User $user, Vehicle $vehicle, array $body): array
+    {
         ApiWriter::assertActive($vehicle);
         $zone = $user->preferences->timeZone();
         $today = LocalTime::today($this->clock, $zone);
@@ -157,9 +175,7 @@ final readonly class ApiModifications
             $same = $stored->data->title === $data->title
                 && $stored->data->doneOn->format('Y-m-d') === $data->doneOn->format('Y-m-d');
             if ($same) {
-                $entry = $this->serialize($user, $vehicle, $this->state($vehicle, $stored->id));
-
-                return ['entry' => $entry, 'duplicate' => true, 'warnings' => []];
+                return ['modification' => $stored, 'duplicate' => true, 'warnings' => []];
             }
         }
         try {
@@ -168,11 +184,7 @@ final readonly class ApiModifications
             throw $this->validation->of(ApiWriter::refusal($refused));
         }
 
-        return [
-            'entry' => $this->serialize($user, $vehicle, $this->state($vehicle, $modification->id)),
-            'duplicate' => false,
-            'warnings' => [],
-        ];
+        return ['modification' => $modification, 'duplicate' => false, 'warnings' => []];
     }
 
     /**

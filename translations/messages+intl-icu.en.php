@@ -5216,6 +5216,8 @@ return [
             'stations' => 'Fuel stations',
             'cheapest_fuel' => 'Cheapest fuel',
             'draft' => 'Draft',
+            'modifications' => 'Modifications',
+            'parts' => 'Parts',
         ],
         // Words the tools' results and sources use.
         'result' => [
@@ -5227,6 +5229,7 @@ return [
                 'soon' => 'Tyres due for replacing soon',
                 'overdue' => 'Tyres due for replacing now',
             ],
+            'in_warranty' => 'In warranty until {limits}',
         ],
         // Drafting entries (Phase 26.3, spec.md §7.26).
         'draft' => [
@@ -5242,6 +5245,7 @@ return [
                 'reminder' => 'Reminder',
                 'incident' => 'Incident',
                 'issue' => 'Issue',
+            'modification' => 'Modification',
             ],
             'field' => [
                 'when' => 'When',
@@ -5274,6 +5278,7 @@ return [
                 'status' => 'Status',
                 'look_again' => 'Look again',
                 'affects_safety' => 'Affects safety',
+            'fitted_by' => 'Fitted by',
             ],
             'summary' => [
                 'fuel' => '{volume} {fuel} at {price} = {total}',
@@ -5285,6 +5290,7 @@ return [
                 'reminder' => '{title}, due {due}',
                 'incident' => '{type}, {date}',
                 'issue' => '{title}, noticed {date}',
+            'modification' => '{title}, done {date}',
             ],
             'derived' => [
                 'total' => 'Total worked out from the amount and price.',
@@ -5366,6 +5372,7 @@ return [
                 'synonyms_maintenance' => 'full service=service; interim service=service; annual service=service; major service=service; oil change=oil; oil and filter=oil; brake pads=brakes; brake discs=brakes; new battery=battery; puncture=tyres; puncture repair=tyres; new tyres=tyres; tyre=tyres; tyre change=tyres; body work=bodywork; dent=bodywork; scratch=bodywork; fix=repair',
                 'synonyms_expense' => 'parking ticket=parking; car park=parking; toll=tolls; congestion charge=tolls; bridge toll=tolls; road tax=tax; car tax=tax; ved=tax; car wash=cleaning; valet=cleaning; wash=cleaning; fine=fines; speeding ticket=fines; penalty=fines; parking fine=fines; finance payment=finance; lease payment=finance; pcp=finance; accessory=accessories',
                 'synonyms_documents' => 'mot=inspection; mot test=inspection; mot certificate=inspection; tüv=inspection; inspection=inspection; insurance=insurance; car insurance=insurance; insurance policy=insurance; policy=insurance; v5c=registration; v5=registration; logbook=registration; registration=registration; emissions=pollution; emissions test=pollution; puc=pollution',
+            'synonyms_modifications' => 'cat back=exhaust; catback=exhaust; downpipe=exhaust; remap=tune; ecu remap=tune; ecu tune=tune; stage 1=tune; chip tune=tune; coilovers=suspension; lowering springs=suspension; alloys=wheels; alloy wheels=wheels; air filter=intake; cold air intake=intake; stereo=audio; speakers=audio; led headlights=lighting; light bar=lighting; spoiler=body; body kit=body; wrap=body; tracker=security; alarm=security',
             ],
         ],
         'progress' => [
@@ -5398,6 +5405,9 @@ return [
             'draft_reminder' => 'Drafting the reminder…',
             'draft_incident' => 'Drafting the incident…',
             'draft_issue' => 'Drafting the issue…',
+            'modifications' => 'Looking through modifications…',
+            'parts' => 'Looking through parts…',
+            'draft_modification' => 'Drafting the modification…',
         ],
     ],
     // MCP server (Phase 26.5, spec.md §7.28): what an MCP client's model and its user read.
@@ -5434,6 +5444,9 @@ return [
             'draft_reminder' => 'Draft a manual reminder: a title and a due date, or a time before or after a document expires or a schedule is next due. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
             'draft_incident' => 'Draft an incident (a collision, parked damage, theft, break-in, vandalism, weather, glass, pothole, animal or fire): what happened, the damage and anything about the insurance claim. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
             'draft_issue' => 'Draft an issue: a fault the user has noticed and not fixed yet, in their own words; never add a cause. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
+            'modifications' => 'Modifications on the user\'s vehicles (an exhaust, coilovers, an ECU tune, wheels): title, category, date and mileage, who fitted it, whether and when it was declared to the insurer, whether it was reverted, and the parts it fitted and took off. Current ones unless a state is given. The cost is only given where the user may see costs, as build_total, and is never a running cost or part of a cost per distance.',
+            'parts' => 'Parts on the user\'s vehicles: name, brand, part number, supplier, status (fitted, stored or gone), condition, warranty (in warranty until a date or mileage, or ended), the distance each has covered on the vehicle and each time it was fitted and removed. Fitted ones unless a status is given. The price is only given where the user may see costs.',
+            'draft_modification' => 'Draft a modification: something the user changed on the car (an exhaust, coilovers, a remap, wheels), in their own words; not servicing, which has its own tool. Nothing is saved yet: the user adds it in Logbook, from the link in the result, and adds its parts there.',
         ],
         'say' => [
             'logged' => 'Logged. It is in Logbook now: {link}',
@@ -6946,6 +6959,11 @@ return [
                 'issues' => 'This service record fixed an issue, which a modification can\'t. Untick it under Fixes first.',
                 'tyres' => 'This service record is linked to a tyre change, which a modification can\'t be.',
             ],
+        ],
+        'state' => [
+            'current' => 'Current',
+            'reverted' => 'Reverted',
+            'all' => 'All',
         ],
     ],
     'part' => [

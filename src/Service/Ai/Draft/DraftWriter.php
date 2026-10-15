@@ -7,6 +7,8 @@ namespace Logbook\Service\Ai\Draft;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Service\Api\ApiIncidents;
 use Logbook\Service\Api\ApiIssues;
+use Logbook\Service\Api\ApiModifications;
+use Logbook\Service\Part\ModificationForm;
 use Logbook\Service\Incident\IncidentForm;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\DraftKind;
@@ -37,6 +39,7 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Api\ApiProblem;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Validation\ValidationErrors;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -63,6 +66,7 @@ final readonly class DraftWriter
         private TranslatorInterface $translator,
         private ApiIncidents $incidents,
         private ApiIssues $issues,
+        private ApiModifications $modifications,
         private StationService $stations,
     ) {
     }
@@ -111,6 +115,7 @@ final readonly class DraftWriter
                 DraftKind::Reminder => $this->reminder($user, $vehicle, $input),
                 DraftKind::Incident => $this->incident($user, $vehicle, $input),
                 DraftKind::Issue => $this->issue($user, $vehicle, $input),
+                DraftKind::Modification => $this->modification($user, $vehicle, $input),
             };
         } catch (ApiProblem $problem) {
             if ($problem->validation !== null) {
@@ -364,6 +369,49 @@ final readonly class DraftWriter
             $fields,
             [],
             IncidentForm::flatValues(IncidentForm::values($incident, $result['odometerKm'], $user->preferences)),
+        );
+    }
+
+    /**
+     * A modification (Phase 50.2, #441): no parts (the owner adds those in the form the card opens), and
+     * a cost only where the user may see costs.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function modification(User $user, Vehicle $vehicle, array $input): DraftWritten
+    {
+        $result = $this->modifications->logModification($user, $vehicle, $input);
+        $modification = $result['modification'];
+        $data = $modification->data;
+        $fields = [
+            self::field('date', $this->format->date($data->doneOn)),
+            self::field('title', $data->title),
+            self::field('category', $this->t($data->category->labelKey())),
+        ];
+        if ($data->odometerKm !== null) {
+            $fields[] = self::field('odometer', $this->format->distance($data->odometerKm));
+        }
+        if ($data->fittedBy !== null) {
+            $fields[] = self::field('fitted_by', $data->fittedBy);
+        }
+        if (Decimal::compare($data->cost, '0') !== 0) {
+            $currency = $this->vehicles->currencyFor($user, $vehicle);
+            $fields[] = self::field('cost', $this->format->money(Money::of($data->cost, $currency)));
+        }
+
+        return $this->written(
+            DraftKind::Modification,
+            $modification->id,
+            $modification->updatedAt,
+            $result['duplicate'],
+            $result['warnings'],
+            $this->t('ask.draft.summary.modification', [
+                'title' => $data->title,
+                'date' => $this->format->date($data->doneOn),
+            ]),
+            $fields,
+            [],
+            ModificationForm::values($modification, $user->preferences),
         );
     }
 

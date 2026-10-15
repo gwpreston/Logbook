@@ -239,6 +239,10 @@ $questions = [
         ['only records', 'nur festhält'],
     ],
     ['Noticed a slow leak in the Golf\'s rear right tyre today.', ['draft_issue'], null],
+    // Phase 50.2 (spec.md §7.39): a modification, its parts and its warranty.
+    ['I fitted a Milltek cat-back exhaust to the Golf last month myself, it cost £899.', ['draft_modification'], null],
+    ['What modifications have I made to the Golf?', ['modifications'], null],
+    ['Which parts on the Golf are still in warranty?', ['parts'], null],
 ];
 unset($triple, $ev6, $fiesta, $outlander, $corolla);
 

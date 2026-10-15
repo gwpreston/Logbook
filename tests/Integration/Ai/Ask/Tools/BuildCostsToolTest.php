@@ -63,6 +63,10 @@ final class BuildCostsToolTest extends AskTestCase
         self::assertSame('2780.00', $rate->get('currencies', 0, 'all_vehicles', 'total', 'amount'));
         self::assertSame('2780.00', $rate->get('currencies', 0, 'vehicles', 0, 'total', 'amount'));
         self::assertSame('0.2780', $rate->get('currencies', 0, 'all_vehicles', 'cost_per_km'), '2780 over 10,000 km');
+        // #441: the build spend is given beside it as its own figure, so an answer can say both.
+        self::assertSame('1240.00', $rate->get('currencies', 0, 'all_vehicles', 'build_total', 'amount'));
+        self::assertSame('1240.00', $rate->get('currencies', 0, 'vehicles', 0, 'build_total', 'amount'));
+        self::assertStringContainsString('build_total', $rate->string('note'));
     }
 
     public function testTheDescriptionsSayModificationsAreNotRunningCosts(): void

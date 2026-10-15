@@ -7,6 +7,8 @@ namespace Logbook\Service\Ai\Draft;
 use Logbook\Service\Incident\IncidentNotFound;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Issue\IssueNotFound;
+use Logbook\Service\Part\ModificationNotFound;
+use Logbook\Service\Part\ModificationService;
 use Logbook\Service\Issue\IssueService;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\AiDraft;
@@ -62,6 +64,7 @@ final readonly class DraftStore
         private ClockInterface $clock,
         private IncidentService $incidents,
         private IssueService $issues,
+        private ModificationService $modifications,
     ) {
     }
 
@@ -276,6 +279,13 @@ final readonly class DraftStore
                     }
                     $this->issues->delete($vehicle, $issue);
                     break;
+                case DraftKind::Modification:
+                    $modification = $this->modifications->get($vehicle, $entryId);
+                    if (!$untouched($modification->updatedAt)) {
+                        return false;
+                    }
+                    $this->modifications->delete($vehicle, $modification);
+                    break;
                 case DraftKind::TyreCheck:
                     $check = $this->tyreChanges->get($vehicle, $entryId);
                     if (!$untouched($check->updatedAt)) {
@@ -301,6 +311,7 @@ final readonly class DraftStore
             | ReminderNotFound
             | IncidentNotFound
             | IssueNotFound
+            | ModificationNotFound
             | PartChangeRefused
         ) {
             return false;
