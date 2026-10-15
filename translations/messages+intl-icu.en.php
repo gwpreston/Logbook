@@ -6936,6 +6936,7 @@ return [
             'future' => 'The date can\'t be after today.',
             'reverted_before' => 'A modification can\'t be reverted before it was done.',
             'declared_before' => 'It can\'t have been declared before it was done.',
+            'declared_after' => 'The date can\'t be after the day it was declared to the insurer. Clear that first.',
         ],
         'refused' => [
             'reverted_before' => 'This modification was reverted on {reverted}, before the new date. Undo the revert first.',

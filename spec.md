@@ -9780,6 +9780,8 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   already ended (a time limit counted from a purchase date that is past)
   is refused with "This warranty has already ended, so there is nothing to
   remind you of"; any other warranty simply stops reminding once it ends.
+  An edit that leaves a tick already stored, and the warranty, as they were
+  is never refused, so a part whose warranty has since ended stays editable.
   The tick means nothing without a warranty and is not kept. A reminder is raised only while the
   tick is set, the part is not *Gone* and the warranty has not ended; a
   stored spare's warranty runs on, so it still reminds. The reminder's

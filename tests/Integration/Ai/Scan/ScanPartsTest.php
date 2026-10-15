@@ -104,13 +104,23 @@ final class ScanPartsTest extends ScanTestCase
     {
         $golf = $this->garage['Golf'];
         $page = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', [
-            'parts_lists' => '1', 'scan_part_rows' => '200000', 'title' => '',
+            'parts_lists' => '1', 'scan_part_rows' => '50', 'title' => '',
         ]);
         $html = self::body($page);
 
         self::assertSame(422, $page->getStatusCode());
         self::assertStringContainsString('name="scan_part_19_add"', $html, 'rows 0 to 19 are drawn');
         self::assertStringNotContainsString('scan_part_20_add', $html);
+
+        $huge = self::body($this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', [
+            'parts_lists' => '1', 'scan_part_rows' => '200000', 'title' => '',
+        ]));
+        self::assertStringNotContainsString('scan_part_0_add', $huge, 'an absurd count is not drawn at all');
+
+        $junk = self::body($this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', [
+            'parts_lists' => '1', 'scan_part_rows' => 'abc', 'title' => '',
+        ]));
+        self::assertStringNotContainsString('scan_part_0_add', $junk, 'a count that is not a number draws none');
     }
 
     public function testTheListIsGoneWithThePartsModuleOff(): void

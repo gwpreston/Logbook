@@ -6929,6 +6929,7 @@ return [
             'future' => 'Das Datum darf nicht nach heute liegen.',
             'reverted_before' => 'Ein Umbau kann nicht vor seinem Datum rückgebaut werden.',
             'declared_before' => 'Er kann nicht vor seinem Datum gemeldet worden sein.',
+            'declared_after' => 'Das Datum darf nicht nach dem Tag liegen, an dem der Umbau der Versicherung gemeldet wurde. Setze das zuerst zurück.',
         ],
         'refused' => [
             'reverted_before' => 'Dieser Umbau wurde am {reverted} rückgebaut, vor dem neuen Datum. Hebe zuerst den Rückbau auf.',

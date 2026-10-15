@@ -164,6 +164,22 @@ final class ApiPartsTest extends AppTestCase
         self::assertSame($few, $many, 'the same queries however many modifications the vehicle holds');
     }
 
+    public function testAWebEditCannotMoveTheDateAfterTheDeclaration(): void
+    {
+        $id = $this->logged(['declared_on' => '2026-05-20']);
+        $edit = $this->api->patch($this->mods . '/' . $id, ['done_on' => '2026-06-30']);
+        self::assertSame(422, $edit->getStatusCode());
+        self::assertContains('declared_on', ApiClient::json($edit)->keys('errors'));
+
+        $form = \Logbook\Service\Part\ModificationForm::parse(
+            ['title' => 'Cat-back exhaust', 'category' => 'exhaust', 'done_on' => '2026-06-30'],
+            $this->owner->preferences,
+            new \DateTimeImmutable('2026-09-30'),
+            $this->service($this->app, \Logbook\Repository\ModificationRepository::class)->find($this->golf->id, $id),
+        );
+        self::assertInstanceOf(\Logbook\Support\Validation\ValidationErrors::class, $form, 'the page\'s form says so too');
+    }
+
     public function testListsFilterAndOrder(): void
     {
         $first = $this->logged();

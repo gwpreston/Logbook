@@ -45,6 +45,19 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
 - **CSV:** `modifications.csv`, `parts.csv` and `part-fittings.csv` from the
   *Parts* tab (export only).
 
+### Fixed (Phase 50.2 review)
+- A part whose reminded warranty has ended stays editable; the refusal is
+  only for newly ticking an ended warranty or changing it to another ended one.
+- *For your insurer*: Enter in the date field changes nothing; *Mark all
+  declared* with a date before any chosen modification refuses the lot;
+  moving a modification's date past its declaration is refused on the page
+  as well as the API; the long *Mark all* label wraps at 375 px.
+- The `parts` tool in Ask and MCP no longer reads the whole mileage log per
+  part (12 s over 20,000 readings, now 0.3 s); the modifications tool and API
+  list read their fittings once for the page.
+- The Reminders list shows "Part warranty" (and "Issue") instead of a raw key;
+  a tampered scanned-rows count draws no more than 20 rows.
+
 ### Upgrading (Phase 50.2)
 - One small migration (`parts.warranty_reminder`, off for every existing
   part), reversible on every engine; rolling it back removes the warranty

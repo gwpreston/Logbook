@@ -183,13 +183,7 @@ final readonly class PartService
      */
     public function currentKm(Vehicle $vehicle): ?string
     {
-        $all = $this->readings->listForVehicle($vehicle->id);
-        if ($all === []) {
-            return null;
-        }
-        $latest = $all[count($all) - 1];
-
-        return $latest->readingKm;
+        return $this->readings->latestKm($vehicle->id);
     }
 
     /**

@@ -48,6 +48,8 @@
         {% else %}
             <form method="post" action="{{ url_for('parts.insurer.declare', {id: vehicle.id}) }}" class="form">
                 {{ ui.csrf(csrf) }}
+                {# Enter in the date field submits the first button: make that one change nothing. #}
+                {% if can_declare %}<button type="submit" name="noop" value="1" hidden tabindex="-1" aria-hidden="true"></button>{% endif %}
                 {% if can_declare %}
                     <section class="card no-print" aria-labelledby="insurer-declare">
                         <h2 id="insurer-declare" class="card__title">{{ 'insurer.declare.title'|trans }}</h2>
@@ -56,7 +58,7 @@
                             {{ ui.input('declared_on', 'insurer.declare.date'|trans, values, errors, {type: 'date', required: true, max: today|date('Y-m-d')}) }}
                         </div>
                         {% if undeclared > 0 %}
-                            <button type="submit" class="btn btn--primary" name="only" value="all">{{ ui.icon('check_circle') }}{{ 'insurer.declare.all'|trans({count: undeclared}) }}</button>
+                            <button type="submit" class="btn btn--primary btn--wrap" name="only" value="all">{{ ui.icon('check_circle') }}{{ 'insurer.declare.all'|trans({count: undeclared}) }}</button>
                         {% endif %}
                     </section>
                 {% endif %}

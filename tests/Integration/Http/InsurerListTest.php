@@ -111,6 +111,27 @@ final class InsurerListTest extends AppTestCase
         self::assertSame('2026-10-12', $this->declared($a), 'one row on its own');
     }
 
+    public function testEnterInTheDateFieldChangesNothingAndMarkAllIsAllOrNone(): void
+    {
+        $browser = $this->me;
+        $tune = $this->modify('Stage 1 remap', ModificationCategory::Tune, '2026-03-01', '0');
+        $wheels = $this->modify('Alloys', ModificationCategory::Wheels, '2026-09-01', '0');
+
+        $page = self::body($browser->get($this->base));
+        self::assertLessThan(
+            (int) strpos($page, 'name="only" value="all"'),
+            (int) strpos($page, 'name="noop"'),
+            'the hidden button comes first, so Enter presses it',
+        );
+        $browser->post($this->base, ['declared_on' => '2026-10-01', 'noop' => '1']);
+        self::assertNull($this->declared($tune));
+        self::assertNull($this->declared($wheels));
+
+        $browser->post($this->base, ['declared_on' => '2026-06-01', 'only' => 'all']);
+        self::assertNull($this->declared($tune), 'one refused row leaves none declared');
+        self::assertNull($this->declared($wheels));
+    }
+
     public function testTheDateIsNotInTheFutureAndNotBeforeTheModification(): void
     {
         $browser = $this->me;

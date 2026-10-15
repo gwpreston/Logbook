@@ -49,6 +49,31 @@ final readonly class OdometerReadingRepository
     }
 
     /**
+     * The vehicle's latest reading in km (the end of listForVehicle's order), without reading them all:
+     * a request that has them already remembered reuses them.
+     */
+    public function latestKm(int $vehicleId): ?string
+    {
+        if ($this->reads->isActive()) {
+            $all = $this->listForVehicle($vehicleId);
+
+            return $all === [] ? null : $all[count($all) - 1]->readingKm;
+        }
+        $row = $this->connection->createQueryBuilder()
+            ->select('reading_km')
+            ->from(self::TABLE)
+            ->where('vehicle_id = :vehicle')
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->orderBy('recorded_at', 'DESC')
+            ->addOrderBy('reading_km', 'DESC')
+            ->addOrderBy('id', 'DESC')
+            ->setMaxResults(1)
+            ->fetchOne();
+
+        return $row === false ? null : Row::decimal(['reading_km' => $row], 'reading_km', self::KM_SCALE);
+    }
+
+    /**
      * Read every reading of these vehicles in one query, so the page's later
      * listForVehicle() calls for them cost nothing (spec.md §8 *Page budgets*).
      *

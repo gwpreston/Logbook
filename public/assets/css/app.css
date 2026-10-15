@@ -7504,3 +7504,11 @@ p.stat__label {
     font-size: var(--fs-sm);
     color: var(--muted);
 }
+
+/* A button whose label may be a sentence (spec.md §8 responsive): it wraps rather than overflow at 375 px. */
+.btn--wrap {
+    white-space: normal;
+    text-align: left;
+    height: auto;
+    padding-block: var(--space-2);
+}

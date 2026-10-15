@@ -85,6 +85,10 @@ final class ModificationForm
                 $validator->addError('declared_on', 'modification.error.declared_before');
             }
         }
+        // Moving the date past a stored declaration would leave it declared before it was done.
+        if (!$validator->has('declared_on') && $declaredOn !== null && $doneOn !== null && $declaredOn < $doneOn) {
+            $validator->addError('done_on', 'modification.error.declared_after');
+        }
         if ($title === null || $doneOn === null || !$validator->errors()->isEmpty()) {
             return null;
         }

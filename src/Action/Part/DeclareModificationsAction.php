@@ -49,6 +49,10 @@ final readonly class DeclareModificationsAction
         $input = RequestContext::form($request);
         $validator = new Validator($input, $user->preferences->locale);
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        // The hidden first button: Enter in the date field submits that, and it changes nothing.
+        if (isset($input['noop'])) {
+            return $back();
+        }
         $clear = is_string($input['clear'] ?? null) ? (int) $input['clear'] : 0;
         $only = is_string($input['only'] ?? null) ? $input['only'] : '';
         $rows = $this->list->forVehicle($vehicle);
@@ -79,6 +83,17 @@ final readonly class DeclareModificationsAction
         ));
         if ($targets === []) {
             return $back();
+        }
+        // All or none: a date before any chosen modification's own date refuses the lot.
+        foreach ($targets as $row) {
+            if ($on < $row->modification->data->doneOn) {
+                $session->flash('error', 'modification.refused.declared_before', [
+                    'title' => $row->modification->data->title,
+                    'done' => $this->formatter->date($row->modification->data->doneOn),
+                ]);
+
+                return $back();
+            }
         }
         try {
             foreach ($targets as $row) {

@@ -95,6 +95,11 @@ final readonly class Modifications implements AskTool
             ));
             usort($listed, static fn (Modification $a, Modification $b): int
                 => $b->data->doneOn <=> $a->data->doneOn ?: $b->id <=> $a->id);
+            $made = $this->parts->byRecords(
+                $vehicle,
+                PartService::MODIFICATION,
+                array_map(static fn (Modification $m): int => $m->id, array_slice($listed, 0, ToolKit::LIST_CAP)),
+            );
             foreach ($listed as $modification) {
                 $count++;
                 if ($costs) {
@@ -102,7 +107,7 @@ final readonly class Modifications implements AskTool
                         ->add(Money::of($modification->data->cost, $currency));
                 }
                 if (count($rows) < ToolKit::LIST_CAP) {
-                    $rows[] = $this->row($user, $vehicle, $modification, $costs, $currency);
+                    $rows[] = $this->row($vehicle, $modification, $made[$modification->id] ?? [], $costs, $currency);
                 }
                 $withModifications[$vehicle->id] = $vehicle->id;
             }
@@ -137,14 +142,14 @@ final readonly class Modifications implements AskTool
     }
 
     /**
+     * @param list<array{part: \Logbook\Domain\Part\Part, fitting: \Logbook\Domain\Part\PartFitting}> $made
      * @return array<string, mixed>
      */
-    private function row(User $user, Vehicle $vehicle, Modification $modification, bool $costs, string $currency): array
+    private function row(Vehicle $vehicle, Modification $modification, array $made, bool $costs, string $currency): array
     {
         $data = $modification->data;
         $fitted = [];
         $removed = [];
-        $made = $this->parts->byRecord($vehicle, PartService::MODIFICATION, $modification->id);
         foreach ($made as ['part' => $part, 'fitting' => $fitting]) {
             if ($fitting->fittedModificationId === $modification->id) {
                 $fitted[] = $part->label() . ($part->data->partNumber === null ? '' : ' (' . $part->data->partNumber . ')');
