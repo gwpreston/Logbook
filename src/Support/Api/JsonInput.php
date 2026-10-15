@@ -333,7 +333,7 @@ final class JsonInput
         // Outside strings, wrap every number token in quotes. Strings are matched
         // first and whole, so digits inside them are never touched.
         $quoted = preg_replace_callback(
-            '/"(?:[^"\\\\]|\\\\.)*"|-?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/s',
+            '/"(?>[^"\\\\]++|\\\\.)*+"|-?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/s',
             static fn (array $m): string => $m[0][0] === '"' ? $m[0] : '"' . $m[0] . '"',
             $body,
         );
@@ -828,9 +828,10 @@ final class JsonInput
                 // A row with no name is not a part: refuse it rather than drop it silently.
                 $sub->add('name', 'validation.required');
             }
-            $input = [...$input, ...self::partRow($row, 'new_' . $new . '_', $sub)];
+            // The form's row number is the body's, so an error names the row the client sent.
+            $input = [...$input, ...self::partRow($row, 'new_' . $i . '_', $sub)];
             self::merge($errors, $sub, $field);
-            $new++;
+            $new = $i + 1;
         }
         foreach (self::rows($body, 'parts_removed', $errors) as $i => $row) {
             $field = 'parts_removed.' . $i;
@@ -844,11 +845,15 @@ final class JsonInput
                 $sub = new ValidationErrors();
                 self::unknownFields($inner, self::CAME_OFF_FIELDS, $sub);
                 foreach (self::CAME_OFF_FIELDS as $name) {
-                    $input['off_' . $off . '_' . $name] = self::text($inner, $name, $sub);
+                    $input['off_' . $i . '_' . $name] = self::text($inner, $name, $sub);
+                }
+                if (!is_string($inner['name'] ?? null) || trim($inner['name']) === '') {
+                    // An original part with no name is refused, not dropped.
+                    $sub->add('name', 'validation.required');
                 }
                 self::merge($errors, $sub, $field . '.came_off');
                 self::onlyKeys($row, ['came_off'], $field, $errors);
-                $off++;
+                $off = $i + 1;
 
                 continue;
             }

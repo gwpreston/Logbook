@@ -5687,13 +5687,13 @@ are absent from every read, and a write that sends them ignores them.
   as the other entries (§7.12). They are cost files (#429, as the pages'):
   listing them needs `ViewCosts`, adding one needs `Log` (and `EntryAccess`).
 - **Errors** name the body's fields; a parts-list row's are
-  `parts_fitted.{i}.{field}` (counting new parts only),
-  `parts_removed.{i}.came_off.{field}` and `parts_removed.part_{id}.{field}`,
+  `parts_fitted.{i}.{field}`, `parts_removed.{i}.came_off.{field}` and
+  `parts_removed.{i}.{field}`, `{i}` being the row's place in the body,
   and a part id the list can't take is a 422 on `parts_fitted` or
   `parts_removed`.
 - **History:** `GET /vehicles/{id}/history` and `/history` carry the kinds
   `modification`, `modification_reverted`, `part_fitted` and `part_removed`
-  (`?kind=parts` as the page's chip), with no amount without `ViewCosts`.
+  (`?kinds=parts` is not a kind: name them, e.g. `?kinds=modification,part_fitted`; the page's chip is `?kind=parts`), with no amount without `ViewCosts`.
 - **Ledger reads** (`/reports/costs`, `/vehicles/{id}/ownership`, the
   summary) carry the group `build` (§7.7), and every per-distance figure
   there leaves it out, as the pages.

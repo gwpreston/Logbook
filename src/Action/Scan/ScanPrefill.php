@@ -124,7 +124,8 @@ final readonly class ScanPrefill
         }
 
         $values = $editing ? self::changes($form->values, $defaults) : $form->values;
-        if (!$this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
+        $costsHidden = !$this->access->can($user, VehicleAbility::ViewCosts, $vehicle);
+        if ($costsHidden) {
             // A part's price needs `ViewCosts` (spec.md §7.39 *Access*, #429), a scanned one too.
             $values = array_filter(
                 $values,
@@ -148,6 +149,10 @@ final readonly class ScanPrefill
         ];
         foreach ($notes as $prefix => $byField) {
             foreach ($byField as $field => $text) {
+                // The quoted line carries the price: it follows the price's rule (#429).
+                if ($costsHidden && preg_match('/^scan_part_\d+_/', $field) === 1) {
+                    continue;
+                }
                 $meta[$prefix . $field] = $text;
             }
         }

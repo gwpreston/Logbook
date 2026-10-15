@@ -98,6 +98,10 @@ final class ScanPartsTest extends ScanTestCase
         self::assertStringContainsString('Oil filter', $html);
         self::assertStringNotContainsString('scan_part_1_price', $html, 'a price needs Can see costs');
         self::assertStringNotContainsString('name="scan_part_0_price"', $html);
+        // The description still holds the member's own invoice lines (Phase 26.4); the quoted evidence under the
+        // part fields, which carries the price, follows the price's rule.
+        self::assertStringNotContainsString('“Oil filter 12.50”', $html, 'the quoted line carries the price too');
+        self::assertStringNotContainsString('“Engine oil 5W-30 4.5 litres 38.25”', $html);
     }
 
     public function testAPostedRowCountNeverDrawsMoreThanTwentyRows(): void

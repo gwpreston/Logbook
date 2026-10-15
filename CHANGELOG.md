@@ -18,8 +18,9 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
   document lead time of the date, or your schedule lead distance of the
   mileage (projected from your driving). *Done* reads *Checked it*. It goes
   when you clear the tick, edit the warranty away, or the part is sold,
-  scrapped or its warranty ends; a warranty that has already ended refuses
-  the tick.
+  scrapped or its warranty ends; ticking a time limit counted from a purchase
+  date that has already passed is refused (any other warranty just stops
+  reminding when it ends).
 - **For your insurer.** A printable list of the modifications currently on
   the car, ECU tunes first, with when each was fitted, its parts and when you
   declared it ("Not declared yet" otherwise), never a cost. With *Manage*,
@@ -62,6 +63,12 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
   new kind name was longer than the cursor allowed); rolling back the
   warranty-reminder migration on SQLite also removes the reminders'
   delivery rows, so a later backup restores.
+
+- API: a nameless `came_off` row is refused (422) rather than dropped; list
+  errors name the row by its place in the body; a JSON body with a long
+  string (a 2,200-character note, or any long non-ASCII text escaped as
+  `\u…`) no longer fails with "must be a JSON object". A scanned line's quoted
+  evidence no longer shows its price to a member without *Can see costs*.
 
 ### Upgrading (Phase 50.2)
 - One small migration (`parts.warranty_reminder`, off for every existing

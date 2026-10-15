@@ -154,8 +154,9 @@ recent driving, is within the **schedule lead distance**. Its title is
 looked at: it stays done until you edit the warranty, which raises a new one.
 
 It goes (nothing is lost) when you clear the tick, edit the warranty away,
-sell or scrap the part, or the warranty ends. A part whose warranty has
-already ended refuses the tick. It is sent through your channels and shows
+sell or scrap the part, or the warranty ends. Ticking a time limit counted
+from a purchase date that has already passed is refused; any other warranty
+simply stops reminding once it ends. It is sent through your channels and shows
 in the calendar like any reminder.
 
 ## For your insurer

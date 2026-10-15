@@ -204,6 +204,37 @@ final class ApiPartsTest extends AppTestCase
         self::assertInstanceOf(\Logbook\Support\Validation\ValidationErrors::class, $form, 'the page\'s form says so too');
     }
 
+    public function testListErrorsNameTheRowTheClientSentAndNamelessRowsAreRefused(): void
+    {
+        $stored = $this->part(['name' => 'Spare']);
+        $mixed = $this->api->post($this->mods, self::mod([
+            'parts_fitted' => [
+                ['part' => (string) $stored], ['name' => 'N', 'condition' => 'bogus'], ['name' => 'M', 'price' => '-1'],
+            ],
+            'parts_removed' => [],
+        ]));
+        $fields = ApiClient::json($mixed)->keys('errors');
+        self::assertContains('parts_fitted.1.condition', $fields, 'the place in the body, whatever the rows before it');
+        self::assertContains('parts_fitted.2.price', $fields);
+
+        $nameless = $this->api->post($this->mods, self::mod([
+            'parts_fitted' => [], 'parts_removed' => [['came_off' => ['outcome' => 'kept']]],
+        ]));
+        self::assertSame(422, $nameless->getStatusCode(), 'not dropped with a 201');
+        self::assertContains('parts_removed.0.came_off.name', ApiClient::json($nameless)->keys('errors'));
+    }
+
+    public function testALongStringInABodyIsStillAJsonObject(): void
+    {
+        $note = str_repeat('é', 2200);
+        $raw = json_encode(['title' => 'Long note', 'notes' => $note], JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('\\u00e9', $raw, 'escaped, as PHP and Python write it');
+        $response = $this->api->post($this->mods, $raw);
+
+        self::assertSame(201, $response->getStatusCode(), self::body($response));
+        self::assertSame($note, ApiClient::json($response)->get('entry', 'notes'));
+    }
+
     public function testListsFilterAndOrder(): void
     {
         $first = $this->logged();

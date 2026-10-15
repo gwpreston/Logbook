@@ -157,7 +157,7 @@ final readonly class ApiModifications
         $body = $this->guardCosts($user, $vehicle, $body);
         $mapped = $this->mapped(JsonInput::modification($body, $user->preferences, $today, true));
         $data = ModificationForm::parse($mapped['input'], $mapped['preferences'], $today);
-        $parts = $this->lists($vehicle, $mapped, $today, null);
+        $parts = $this->lists($vehicle, $mapped, $body, $today, null);
         $errors = new ValidationErrors();
         if ($data instanceof ValidationErrors) {
             $errors = $errors->merge(JsonInput::renamed($data, JsonInput::MODIFICATION_FIELDS));
@@ -332,10 +332,12 @@ final readonly class ApiModifications
      * may be named, so an id the vehicle doesn't have, or one in the wrong state, is a 422.
      *
      * @param array{input: array<string, string>, preferences: DisplayPreferences} $mapped
+     * @param array<string, mixed> $body
      */
     private function lists(
         Vehicle $vehicle,
         array $mapped,
+        array $body,
         \DateTimeImmutable $today,
         ?int $recordId,
     ): RecordParts|ValidationErrors|null {
@@ -363,22 +365,37 @@ final readonly class ApiModifications
         $validator = new Validator($input, $mapped['preferences']->locale);
         $lists = RecordPartsForm::read($validator, $input, $mapped['preferences'], $today, $choices['fit'], $choices['remove']);
 
-        return $lists ?? self::listErrors($validator->errors());
+        return $lists ?? self::listErrors($validator->errors(), $body);
     }
 
     /**
-     * The form's row fields under the body's names: `new_0_price` is `parts_fitted.0.price` (counting
-     * the new parts only), `off_1_outcome` is `parts_removed.1.came_off.outcome` and
-     * `remove_12_sold_price` is `parts_removed.part_12.sold_price`.
+     * The form's row fields under the body's names, by the row's place in the body: `new_1_price` is
+     * `parts_fitted.1.price`, `off_1_outcome` is `parts_removed.1.came_off.outcome` and a removal of part 12
+     * sent as row 2 is `parts_removed.2.sold_price`.
+     *
+     * @param array<string, mixed> $body
      */
-    private static function listErrors(ValidationErrors $errors): ValidationErrors
+    private static function listErrors(ValidationErrors $errors, array $body): ValidationErrors
     {
+        // A removal row is named by its part id in the form and by its place in the body in the answer.
+        $place = [];
+        $rows = $body['parts_removed'] ?? [];
+        foreach (is_array($rows) ? array_values($rows) : [] as $i => $row) {
+            if (is_array($row) && is_string($row['part'] ?? null)) {
+                $place[$row['part']] = $i;
+            }
+        }
         $renamed = new ValidationErrors();
         foreach ($errors->all() as $field => $error) {
             $name = (string) preg_replace(
-                ['/^new_([0-9]+)_/', '/^off_([0-9]+)_/', '/^remove_([0-9]+)_/'],
-                ['parts_fitted.$1.', 'parts_removed.$1.came_off.', 'parts_removed.part_$1.'],
+                ['/^new_([0-9]+)_/', '/^off_([0-9]+)_/'],
+                ['parts_fitted.$1.', 'parts_removed.$1.came_off.'],
                 $field,
+            );
+            $name = (string) preg_replace_callback(
+                '/^remove_([0-9]+)_/',
+                static fn (array $m): string => 'parts_removed.' . ($place[$m[1]] ?? 'part_' . $m[1]) . '.',
+                $name,
             );
             $renamed->add($name, $error['key'], $error['params']);
         }
