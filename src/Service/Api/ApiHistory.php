@@ -182,7 +182,7 @@ final readonly class ApiHistory
             return null;
         }
         $decoded = is_string($cursor) ? base64_decode(strtr($cursor, '-_', '+/'), true) : false;
-        $pattern = '/^(-?[0-9]{1,12}):(-?[0-9]{1,3}):(-?[0-9]{1,12}):([0-9]{1,18}):([a-z_]{1,20})$/';
+        $pattern = '/^(-?[0-9]{1,12}):(-?[0-9]{1,3}):(-?[0-9]{1,12}):([0-9]{1,18}):([a-z_]{1,32})$/';
         if ($decoded === false || preg_match($pattern, $decoded, $m) !== 1) {
             throw ApiProblem::invalidParameter('cursor', 'use the "next" URL of the previous page.');
         }

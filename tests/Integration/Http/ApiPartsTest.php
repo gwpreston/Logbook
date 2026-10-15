@@ -41,11 +41,14 @@ final class ApiPartsTest extends AppTestCase
     private ApiClient $api;
     private string $mods;
     private string $parts;
+    private \Logbook\Tests\Support\QueryCounter $counter;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        // Before the database is opened, or it counts nothing.
+        $this->counter = \Logbook\Tests\Support\QueryCounter::install($this->app);
         $this->pinClock($this->app, self::NOW);
         $this->resetDatabase($this->app);
         $this->owner = $this->createOwner($this->app);
@@ -150,7 +153,7 @@ final class ApiPartsTest extends AppTestCase
 
     public function testTheModificationListReadsTheFittingsOnceForThePage(): void
     {
-        $counter = \Logbook\Tests\Support\QueryCounter::install($this->app);
+        $counter = $this->counter;
         foreach (['A', 'B', 'C', 'D'] as $title) {
             $this->logged(['title' => $title, 'parts_fitted' => [], 'parts_removed' => []]);
         }
@@ -161,7 +164,25 @@ final class ApiPartsTest extends AppTestCase
         }
         $many = $counter->during(fn () => $this->api->get($this->mods . '?limit=1'));
 
+        self::assertGreaterThan(0, $few, 'the counter sees the requests');
         self::assertSame($few, $many, 'the same queries however many modifications the vehicle holds');
+    }
+
+    public function testHistoryPagesOneItemAtATimeAcrossARevertedModification(): void
+    {
+        $id = $this->logged(['parts_fitted' => [], 'parts_removed' => []]);
+        $this->api->post($this->mods . '/' . $id . '/revert', ['reverted_on' => '2026-07-01']);
+        $next = '/vehicles/' . $this->golf->id . '/history?limit=1&kinds=modification_reverted,modification';
+        $kinds = [];
+        for ($i = 0; $i < 5 && $next !== null; $i++) {
+            $page = $this->api->get($next);
+            self::assertSame(200, $page->getStatusCode(), self::body($page));
+            $doc = ApiClient::json($page);
+            $kinds = [...$kinds, ...$doc->column('kind', 'items')];
+            $link = $doc->get('next');
+            $next = is_string($link) ? (string) preg_replace('~^.*?/api/v1~', '', $link) : null;
+        }
+        self::assertSame(['modification_reverted', 'modification'], $kinds, 'every page follows its cursor');
     }
 
     public function testAWebEditCannotMoveTheDateAfterTheDeclaration(): void

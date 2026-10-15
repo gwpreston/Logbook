@@ -24,6 +24,8 @@ final class AddPartWarrantyReminder extends AbstractMigration
 
     public function down(): void
     {
+        // Their deliveries first: SQLite under Phinx has foreign keys off, so the cascade never fires.
+        $this->execute("DELETE FROM reminder_deliveries WHERE reminder_id IN (SELECT id FROM reminders WHERE source = 'part')");
         $this->execute("DELETE FROM reminders WHERE source = 'part'");
         $this->table('parts')->removeColumn('warranty_reminder')->update();
     }

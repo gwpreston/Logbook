@@ -58,6 +58,11 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
 - The Reminders list shows "Part warranty" (and "Issue") instead of a raw key;
   a tampered scanned-rows count draws no more than 20 rows.
 
+- API History's `next` cursor works across a reverted modification (the
+  new kind name was longer than the cursor allowed); rolling back the
+  warranty-reminder migration on SQLite also removes the reminders'
+  delivery rows, so a later backup restores.
+
 ### Upgrading (Phase 50.2)
 - One small migration (`parts.warranty_reminder`, off for every existing
   part), reversible on every engine; rolling it back removes the warranty
