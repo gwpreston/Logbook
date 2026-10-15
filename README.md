@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.14.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.15.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -75,7 +75,10 @@ your own server.
 > work from an invoice or MOT added in one tap (Logbook never guesses a
 > cause); a UK vehicle's MOT history from DVSA (off until an admin
 > enables it), its mileages checked with yours, passes as MOT documents,
-> advisories as issues and an outstanding recall flagged; background jobs
+> advisories as issues and an outstanding recall flagged; the parts on a
+> car and its modifications (what was fitted and what came off, warranties
+> with a reminder before they end, a printable list for your insurer, build
+> spend kept out of every running cost per mile); background jobs
 > you can see and run from Settings, with a warning when they stop and ways
 > to run them without cron, and scheduled backups (with a warning when the
 > last backup is too old); an optional check for new

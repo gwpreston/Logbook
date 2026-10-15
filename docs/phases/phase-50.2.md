@@ -90,42 +90,44 @@ questions below are decided; in outline:
 ### 50.2.0 Spec first
 - [x] Open questions A–G decided by the owner and logged in
       `open-questions.md` (#437–#443).
-- [ ] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
+- [x] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
 
 ### 50.2.1 Warranty reminders
-- [ ] The tick on the part form; source `part` in *Sync* (created,
+- [x] The tick on the part form; source `part` in *Sync* (created,
       moved, removed with the warranty and the part's status); *Checked
       it*; the reminders list, calendar and channels.
 
 ### 50.2.2 Insurer's list and sale pack
-- [ ] *For your insurer* page and print layout; *Mark declared*; a
+- [x] *For your insurer* page and print layout; *Mark declared*; a
       *Not declared* badge on the *Parts* tab.
-- [ ] Sale pack *Include modifications*.
+- [x] Sale pack *Include modifications*.
 
 ### 50.2.3 Scanning, API, webhooks, Ask, MCP and CSV
-- [ ] *Add as parts* on scanned service records and modifications.
-- [ ] API endpoints, OpenAPI, contract tests; webhook kinds and events.
-- [ ] Ask read tools and the draft tool; the running cost tools' build
+- [x] *Add as parts* on scanned service records (a modification is made from
+      a record or the form, which never carry the scanned lines).
+- [x] API endpoints, OpenAPI, contract tests; webhook kinds and events.
+- [x] Ask read tools and the draft tool; the running cost tools' build
       line; MCP.
-- [ ] CSV exports.
-- [ ] Translations (every shipped locale).
+- [x] CSV exports.
+- [x] Translations (every shipped locale).
 
 ### 50.2.4 Tests and release
-- [ ] Warranty reminder due dates by date and by projected mileage; the
+- [x] Warranty reminder due dates by date and by projected mileage; the
       lead time; removed, sold, returned or edited away; module off
       neither lists nor sends.
-- [ ] The insurer's list: current only, never costs, `ViewCosts` not
+- [x] The insurer's list: current only, never costs, `ViewCosts` not
       needed; *Mark declared*.
-- [ ] Sale pack: modifications only with the tick; never prices.
-- [ ] Scanning fixtures with parts lines; nothing saved without *Save*.
-- [ ] API contract tests and the access matrix; webhooks signed and
+- [x] Sale pack: modifications only with the tick; never prices.
+- [x] Scanning fixtures with parts lines; nothing saved without *Save*.
+- [x] API contract tests and the access matrix; webhooks signed and
       carrying ids and links only; Ask's grounding check on the build
       figure.
-- [ ] CSV round trips of quantities and dates; formula-injection guard.
+- [x] CSV exports of quantities and dates and the formula-injection guard
+      (export only: no round trip, #443).
 - [ ] Suite green on every engine; coverage at or above the floor.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print
       preview; subpath).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
       and 50.2.
 - [ ] Tag once merged.
 

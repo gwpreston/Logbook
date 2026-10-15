@@ -29,7 +29,7 @@ key's user sees. `spec.md` §7.28 has the rules.
 **Tools.** Every key gets the read tools: `find_vehicles`, `costs`,
 `cost_per_distance`, `maintenance`, `vehicle_summary`, `fuel_stats`,
 `last_done`, `mileage`, `ownership`, `coming_up`, `documents`, `tyres`,
-`trips_summary`, `incidents`, `issues`, `finance`, `stations`,
+`trips_summary`, `incidents`, `issues`, `modifications`, `parts`, `finance`, `stations`,
 `cheapest_fuel`, `needs_attention`, `computed_insights` (the insights
 Logbook works out, with their figures) and, while MOT history is on,
 `mot_history` ([MOT history](mot-history.md)). Each
@@ -38,7 +38,10 @@ currency, and a link to the page in Logbook that shows the same.
 `costs` takes the category `build` (modifications, [Parts](parts.md));
 when there is build spend it also returns `running_total` and
 `build_total`, and its `average_per_month`, like `cost_per_distance`'s
-totals and rates, counts running costs only (none for `category=build`).
+totals and rates, counts running costs only (none for `category=build`);
+`cost_per_distance` gives `build_total` beside each total, so a client can
+say both. `modifications` and `parts` read the build work and its parts
+(costs and prices only where the key's user may see costs).
 `ownership`, `true_cost`, `finance`, `coming_up` and `trips_summary` also
 return a `working` for their headline figures: the dated inputs, the sum in
 words and what Logbook did not assume, so a client can answer "how did you
@@ -50,7 +53,7 @@ A **read and write** key also gets:
 |---|---|
 | `log_fill_up` | Logs a fill-up (or a charge) **now**, through the API's write path: the same validation, derived amount and warnings as the form. Calling it again with the same fill-up finds it already logged and writes nothing. |
 | `add_reading` | Logs an odometer reading now, likewise. |
-| `draft_service_record`, `draft_document`, `draft_expense`, `draft_tyre_check`, `draft_reminder`, `draft_incident`, `draft_issue` | **Drafts** the entry and saves nothing. You add it in Logbook ([Drafts to review](#drafts-to-review)). |
+| `draft_service_record`, `draft_document`, `draft_expense`, `draft_tyre_check`, `draft_reminder`, `draft_incident`, `draft_issue`, `draft_modification` | **Drafts** the entry and saves nothing. You add it in Logbook ([Drafts to review](#drafts-to-review)). |
 
 A tool shows only while its module is on (no fuel module, no `fuel_stats`
 or `log_fill_up`) and while you can add that kind of entry to some vehicle.
