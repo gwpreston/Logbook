@@ -102,6 +102,73 @@
             </ol>
         {% endif %}
     {% endif %}
+
+    {# Modifications (Phase 50.2, *Include modifications*): names, brands and part numbers; never a cost or a price. #}
+    {% if pack.modifications is not null %}
+        {% set mods = pack.modifications %}
+        <h3 class="sale-pack__group">{{ 'sale_pack.history.modifications'|trans }}</h3>
+        <p class="muted no-print" role="note">{{ 'sale_pack.modifications_notice'|trans }}</p>
+        {% if mods.isEmpty() %}
+            <p class="muted">{{ 'sale_pack.history.none'|trans }}</p>
+        {% endif %}
+        {% if mods.current is not empty %}
+            <ol class="list history-print__list">
+                {% for row in mods.current %}
+                    {% set data = row.modification.data %}
+                    <li class="history-print__item">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon('handyman') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ data.title }}</span>
+                                <span class="list__meta">
+                                    {{- data.category.labelKey()|trans }} · {{ data.doneOn|local_date -}}
+                                    {%- if data.odometerKm is not null %} · {{ data.odometerKm|distance(0) }}{% endif -%}
+                                    {%- if data.fittedBy %} · {{ 'sale_pack.modifications.fitted_by'|trans({who: data.fittedBy}) }}{% endif -%}
+                                </span>
+                                {% if row.fitted is not empty %}
+                                    <span class="list__meta">{{ row.fitted|map(p => p.label() ~ (p.data.partNumber ? ' (' ~ p.data.partNumber ~ ')' : ''))|join(', ') }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+        {% if mods.returned is not empty %}
+            <h4 class="sale-pack__subgroup">{{ 'sale_pack.history.returned'|trans }}</h4>
+            <ol class="list history-print__list">
+                {% for item in mods.returned %}
+                    <li class="history-print__item">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon('restart_alt') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ item.modification.data.title }}</span>
+                                <span class="list__meta">{{ 'sale_pack.modifications.returned_on'|trans({date: item.modification.revertedOn|local_date}) }} · {{ item.restored|map(p => p.label())|join(', ') }}</span>
+                            </span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+        {% if mods.kept is not empty %}
+            <h4 class="sale-pack__subgroup">{{ 'sale_pack.history.kept'|trans }}</h4>
+            <ol class="list history-print__list">
+                {% for part in mods.kept %}
+                    <li class="history-print__item">
+                        <div class="list__item">
+                            <span class="list__icon">{{ ui.icon('inventory_2') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ part.label() }}</span>
+                                <span class="list__meta">
+                                    {{- [part.data.partNumber, ('sale_pack.modifications.origin.' ~ (part.data.origin.value == 'original' ? 'original' : 'spare'))|trans]|filter(v => v)|join(' · ') -}}
+                                </span>
+                            </span>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    {% endif %}
 </section>
 
 {% if pack.timeline is not null %}

@@ -4213,6 +4213,15 @@ return [
     ],
     'sale_pack' => [
         'issues_notice' => 'Listed because you chose to include them. Logbook never describes a fault beyond your words.',
+        'modifications_notice' => 'Modifications can affect insurance. Tell the buyer what has been changed. Costs and prices are never included.',
+        'modifications' => [
+            'fitted_by' => 'Fitted by {who}',
+            'returned_on' => 'Put back to standard on {date}',
+            'origin' => [
+                'original' => 'Original part',
+                'spare' => 'Spare',
+            ],
+        ],
         'title' => 'Sale pack',
         'title_for' => 'Sale pack · {name}',
         'prepare' => 'Prepare for sale',
@@ -4228,6 +4237,8 @@ return [
             'incidents_hint' => 'What was damaged and how it was repaired. Never the fault, the claim, payouts, the driver or the other party.',
             'issues' => 'Include open issues',
             'issues_hint' => 'Faults you have noticed and not fixed yet, and those you are watching, in your words. Off unless you tick it.',
+            'modifications' => 'Include modifications',
+            'modifications_hint' => 'What has been changed on the car, what was put back to standard and the original parts kept. Never costs or prices. Off unless you tick it.',
             'legend' => 'Include',
             'due' => 'Show what’s due next',
             'due_hint' => 'Buyers ask anyway. Costs are never shown.',
@@ -4302,6 +4313,9 @@ return [
         'history' => [
             'incidents' => 'Incidents',
             'issues' => 'Open issues',
+            'modifications' => 'Modifications',
+            'returned' => 'Returned to standard',
+            'kept' => 'Kept with the car',
             'title' => 'History',
             'services' => 'Service and repairs',
             'documents' => 'Inspections and certificates',

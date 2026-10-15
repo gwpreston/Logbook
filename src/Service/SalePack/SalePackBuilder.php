@@ -32,6 +32,7 @@ use Logbook\Service\History\ActivityKind;
 use Logbook\Service\History\ActivityQuery;
 use Logbook\Service\History\Milestone;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Part\InsurerList;
 use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\Vehicle\VehicleAge;
 use Logbook\Service\Vehicle\VehicleService;
@@ -76,6 +77,7 @@ final readonly class SalePackBuilder
         private IssueRepository $issues,
         private MotHistoryConfig $motHistory,
         private MotTestRepository $motTests,
+        private InsurerList $modifications,
     ) {
     }
 
@@ -177,6 +179,9 @@ final readonly class SalePackBuilder
                 : null,
             motTests: $motTests,
             motProvider: $motTests === null ? null : $this->motHistory->provider(),
+            modifications: $enabled[Feature::Parts->value] && $options->modifications
+                ? $this->modifications->forSale($vehicle)
+                : null,
         );
     }
 

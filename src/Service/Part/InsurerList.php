@@ -70,6 +70,21 @@ final readonly class InsurerList
         return $rows;
     }
 
+    /**
+     * What the sale pack lists (spec.md §7.19, #439), or null when the vehicle has no modification
+     * and no part.
+     */
+    public function forSale(Vehicle $vehicle): SaleModifications
+    {
+        $all = $this->modifications->listForVehicle($vehicle->id);
+        $parts = $this->parts->listForVehicle($vehicle->id);
+        $reverted = array_values(array_filter($all, static fn (Modification $m): bool => $m->isReverted()));
+        $ids = array_map(static fn (Modification $m): int => $m->id, $reverted);
+        $fittings = $this->parts->fittingsByRecords('modification', $ids);
+
+        return SaleModifications::of($all, $this->forVehicle($vehicle), $parts, $fittings);
+    }
+
     public function revertedCount(Vehicle $vehicle): int
     {
         return count(array_filter(

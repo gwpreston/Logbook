@@ -165,7 +165,8 @@ final class InsurerListTest extends AppTestCase
         $html = self::body($browser->get($tab));
         self::assertStringContainsString('Not declared yet', $html);
         self::assertStringContainsString('href="' . $this->base . '"', $html, 'linked from the Modifications heading');
-        self::assertStringContainsString('Not declared yet', self::body($browser->get('/vehicles/' . $this->golf->id . '/modifications/' . $a->id)));
+        $page = self::body($browser->get('/vehicles/' . $this->golf->id . '/modifications/' . $a->id));
+        self::assertStringContainsString('Not declared yet', $page);
 
         $browser->post($this->base, ['declared_on' => '2026-10-01', 'only' => 'all']);
         self::assertStringNotContainsString('Not declared yet', self::body($browser->get($tab)));
@@ -175,7 +176,8 @@ final class InsurerListTest extends AppTestCase
     {
         $browser = $this->me;
         self::assertStringContainsString('No current modifications', self::body($browser->get($this->base)));
-        self::assertStringNotContainsString($this->base . '"', self::body($browser->get('/vehicles/' . $this->golf->id . '/parts')));
+        $tab = self::body($browser->get('/vehicles/' . $this->golf->id . '/parts'));
+        self::assertStringNotContainsString($this->base . '"', $tab);
 
         $a = $this->modify('Stage 1 remap', ModificationCategory::Tune, '2026-05-10', '0');
         $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $this->golf);

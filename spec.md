@@ -9805,18 +9805,18 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
     terms, and §7.24 keeps to what is certainly wrong.
   - With `parts` off the page is a 404, as every parts page.
 - **Sale pack** (#439; §7.19): ***Include modifications*** (`modifications=1`,
-  off by default, disabled with no modification or stored part on the
-  vehicle, and with `parts` off the option is not shown). Three
-  sections after the servicing summary: ***Modifications*** (current ones:
-  title, category, date, mileage, fitted by and the parts they fitted),
+  off by default; the option is offered with `parts` on and the sections
+  are not built with it off). Three groups under *History*, after the open
+  issues: ***Modifications*** (current ones: title, category, date,
+  mileage, who fitted it and the parts they fitted, with part numbers),
   ***Returned to standard*** (reverted modifications whose `original`
-  parts were fitted again, with the date) and ***Kept with the car***
-  (the vehicle's *Stored* parts: name, brand, part number, and its origin:
-  "Original" or "Spare"). **Never costs, prices or sale proceeds**,
+  parts are fitted again, with the date and the parts) and ***Kept with
+  the car*** (the vehicle's *Stored* parts: name, brand, part number and
+  "Original part" or "Spare"). **Never costs, prices or sale proceeds**,
   whatever the other options: `costs=1` does not add them. A screen-only
-  notice says "Modifications can affect insurance. Tell the buyer what's
-  been changed." The sections are in the printed pack and the ZIP's summary
-  PDF only through the same option.
+  notice says "Modifications can affect insurance. Tell the buyer what
+  has been changed. Costs and prices are never included." The paperwork
+  ZIP is unchanged: the option only adds to the printed summary.
 - **Scanning** (#440; §7.27 *Mapping to Logbook*): a scanned service
   invoice's **parts lines** appear under the prefilled service record
   form as ***Add as parts***, a checklist (the module on and `Log`), each
