@@ -31,8 +31,9 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
     {
         return new ToolDefinition(
             $this->name(),
-            'Running cost per distance (all costs divided by distance driven) in a period, per vehicle and '
-            . 'for all vehicles together in each currency. Use it for "which car costs most per mile".',
+            'Running cost per distance (running costs divided by distance driven) in a period, per vehicle and '
+            . 'for all vehicles together in each currency. Modifications are not running costs and are left out; '
+            . 'each total is the running total the rate divides. Use it for "which car costs most per mile".',
             [
                 'type' => 'object',
                 'properties' => [
@@ -62,7 +63,8 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
                 'all_vehicles' => $this->perDistance($section->currency, $section->costPerKm, $section->distanceKm, $section),
                 'vehicles' => array_map(fn (VehicleCost $row): array => [
                     'vehicle' => $this->kit->vehicleRef($row->vehicle),
-                    'total' => $this->kit->money($row->total),
+                    // What the rate divides: build spend (Phase 50.1) is left out.
+                    'total' => $this->kit->money($row->running ?? $row->total),
                     ...$this->perDistance($section->currency, $row->costPerKm, $row->distanceKm),
                 ], $rows),
             ];
@@ -78,7 +80,8 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
             [
                 'period' => $period->toArray() + ['label' => $this->kit->periodLabel($period)],
                 'currencies' => $currencies,
-                'note' => 'A vehicle without a cost per distance had no distance logged in the period.',
+                'note' => 'A vehicle without a cost per distance had no distance logged in the period. '
+                    . 'Totals are running costs only: modifications are left out.',
                 ...$this->hiddenNote($hidden),
             ],
             $this->kit->source([
@@ -98,7 +101,7 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
     private function perDistance(string $currency, ?string $perKm, ?string $km, ?CurrencyReport $section = null): array
     {
         return [
-            ...($section === null ? [] : ['total' => $this->kit->money($section->total)]),
+            ...($section === null ? [] : ['total' => $this->kit->money($section->runningTotal())]),
             'distance' => $this->kit->distance($km),
             'cost_per_km' => $perKm === null ? null : Decimal::round($perKm, 4),
             'display' => $perKm === null ? null : $this->kit->format->perDistance($perKm, $currency),

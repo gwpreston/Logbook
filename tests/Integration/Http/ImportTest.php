@@ -10,6 +10,9 @@ use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Part\ModificationCategory;
+use Logbook\Domain\Part\ModificationData;
+use Logbook\Domain\Part\PartData;
 use Logbook\Repository\ComplianceDocumentRepository;
 use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Domain\Station\StationData;
@@ -18,6 +21,9 @@ use Logbook\Repository\StationRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\PartRemoval;
+use Logbook\Service\Part\PartService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
@@ -263,6 +269,60 @@ final class ImportTest extends AppTestCase
         $preview = $this->preview($browser, $map);
         self::assertStringContainsString('Already there', $preview);
         self::assertStringContainsString('Import 1 row', $preview);
+    }
+
+    /**
+     * Modifications and parts are not imported (spec.md §7.13), so the
+     * readings they wrote come back as ordinary ones rather than *implied*.
+     */
+    public function testReadingsFromModificationsAndPartsImportAsOrdinaryReadings(): void
+    {
+        $app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $zone = new DateTimeZone('UTC');
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $parts = $this->service($app, PartService::class);
+        $mods = $this->service($app, ModificationService::class);
+        $on = new DateTimeImmutable('2026-02-01');
+        $mirror = $parts->create($golf, new PartData('Mirror cap'), $zone, fitOn: $on, fitKm: '1000.000');
+        $off = new DateTimeImmutable('2026-03-01');
+        $parts->remove($golf, $parts->get($golf, $mirror->id), $off, '1500.000', new PartRemoval(), $zone);
+        $wing = $mods->create($golf, new ModificationData(
+            'Rear wing',
+            ModificationCategory::Other,
+            new DateTimeImmutable('2026-04-01'),
+            '2000.000',
+            '150.000',
+        ), $zone);
+        $mods->revert($golf, $wing, new DateTimeImmutable('2026-05-01'), '2500.000', null, [], [], $zone);
+        $sources = array_map(
+            static fn ($r): OdometerSource => $r->source,
+            $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id),
+        );
+        self::assertSame([
+            OdometerSource::PartFitted,
+            OdometerSource::PartRemoved,
+            OdometerSource::Modification,
+            OdometerSource::ModificationRevert,
+        ], $sources);
+        $odometerCsv = self::body($browser->get('/vehicles/' . $golf->id . '/export/odometer.csv'));
+
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'odometer', $odometerCsv);
+        $preview = $this->preview($browser, $map);
+        self::assertStringNotContainsString('Comes from an entry', $preview);
+        self::assertStringContainsString('Import 4 rows', $preview);
+        $this->commit($browser, $map, $preview);
+
+        $readings = $this->service($app, OdometerReadingRepository::class)->listForVehicle($polo->id);
+        self::assertSame(
+            ['1000.000', '1500.000', '2000.000', '2500.000'],
+            array_map(static fn ($r): string => $r->readingKm, $readings),
+        );
+        foreach ($readings as $reading) {
+            self::assertSame(OdometerSource::Manual, $reading->source);
+        }
     }
 
     public function testBadRowsAreReportedAndOnlySkippedWhenConfirmed(): void

@@ -1,0 +1,25 @@
+{% extends 'entries/delete.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{#
+ # Deleting a record that fitted or removed parts (spec.md §7.39 *Deleting a
+ # record*): the confirmation names the parts it changes, and a refusal
+ # (fittings that would overlap) says why. Expects what entries/delete.twig
+ # does, plus parts (labels) and optionally refusal ({key, params}).
+ #}
+{% block modal_body %}
+    {% if refusal is defined and refusal %}
+        <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ trans(refusal.key, refusal.params) }}</span></div>
+    {% endif %}
+    <p>{{ body|trans(params) }}</p>
+    {% if parts is not empty %}
+        <p>{{ 'part.delete_record_parts'|trans }}</p>
+        <ul>{% for name in parts %}<li>{{ name }}</li>{% endfor %}</ul>
+    {% endif %}
+    <div class="btn-row">
+        <form method="post" action="{{ url_for(action[0], action[1]) }}">
+            {{ ui.csrf(csrf) }}
+            <button type="submit" class="btn btn--danger-solid">{{ ui.icon('delete') }}{{ 'form.delete_confirm'|trans }}</button>
+        </form>
+        <a data-modal-cancel class="btn btn--ghost" href="{{ url_for(cancel[0], cancel[1]) }}">{{ 'form.cancel'|trans }}</a>
+    </div>
+{% endblock %}

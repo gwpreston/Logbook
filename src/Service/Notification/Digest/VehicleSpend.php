@@ -18,7 +18,10 @@ final readonly class VehicleSpend
         public string $currency,
         /** The month's ledger total. */
         public Money $spend,
-        /** The monthly average of the 12 months before, or null with fewer than 3 months in use (#364). */
+        /**
+         * The monthly average of running costs over the 12 months before (build spend left
+         * out, Phase 50.1), or null with fewer than 3 months in use (#364).
+         */
         public ?Money $average,
         /** Money per kilometre (canonical decimal), null under 100 km. */
         public ?string $costPerKm,

@@ -155,6 +155,20 @@ final readonly class AttachmentRepository
         return (int) $this->connection->lastInsertId();
     }
 
+    /**
+     * Move an entry's files to another entry of the same vehicle (*Make this
+     * a modification*, spec.md §7.39): the stored files stay where they are.
+     */
+    public function reassign(int $vehicleId, AttachmentOwner $from, int $fromId, AttachmentOwner $to, int $toId): void
+    {
+        $this->connection->update(
+            self::TABLE,
+            ['owner_type' => $to->value, 'owner_id' => $toId],
+            ['vehicle_id' => $vehicleId, 'owner_type' => $from->value, 'owner_id' => $fromId],
+            ['owner_id' => ParameterType::INTEGER, 'vehicle_id' => ParameterType::INTEGER],
+        );
+    }
+
     public function delete(int $vehicleId, int $id): void
     {
         $this->connection->delete(

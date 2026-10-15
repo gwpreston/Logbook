@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Incident;
 
 use Logbook\Domain\Feature\Feature;
+use Logbook\Domain\Incident\Incident;
 use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\IncidentRepository;
@@ -38,13 +39,14 @@ final class IncidentTwigExtension extends AbstractExtension
                 if (!$this->features->isEnabled(Feature::Incidents)) {
                     return null;
                 }
-                foreach ($this->incidents->listForVehicles([$vehicle->id]) as $incident) {
-                    if ($incident->data->writeOff->isWrittenOff()) {
-                        return $incident->data->writeOff;
-                    }
-                }
+                // The vehicle's list is read once per request; the newest write-off wins.
+                $writtenOff = array_values(array_filter(
+                    $this->incidents->listForVehicle($vehicle->id),
+                    static fn (Incident $incident): bool => $incident->data->writeOff->isWrittenOff(),
+                ));
+                usort($writtenOff, IncidentRepository::newestFirst(...));
 
-                return null;
+                return ($writtenOff[0] ?? null)?->data->writeOff;
             }),
             new TwigFunction('total_loss_offered', fn (Vehicle $vehicle): bool => $this->totalLoss->isOffered($vehicle)),
         ];

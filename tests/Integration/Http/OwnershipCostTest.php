@@ -196,7 +196,8 @@ final class OwnershipCostTest extends AppTestCase
             'Insurance payouts', 'Running costs', 'Depreciation', 'Depreciation to', 'Total',
             'Running per distance (per mi)', 'Depreciation per distance (per mi)', 'Total per distance (per mi)',
             'Running per month', 'Depreciation per month', 'Total per month',
-        ], $rows[0]);
+            'Modifications (not a running cost)',
+        ], $rows[0], 'the build column is last, so v3.14.0 columns keep their places');
         $golf = array_combine($rows[0], $rows[1]);
         self::assertSame('Volkswagen Golf', $golf['Vehicle']);
         self::assertSame('2023-03-01', $golf['Owned from']);

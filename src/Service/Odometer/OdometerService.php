@@ -148,6 +148,10 @@ final readonly class OdometerService
             $own = $reading->source === $source && match ($source) {
                 OdometerSource::Issue => $reading->issueId === $entryId,
                 OdometerSource::IssueUpdate => $reading->issueUpdateId === $entryId,
+                OdometerSource::Modification => $reading->modificationId === $entryId,
+                OdometerSource::ModificationRevert => $reading->modificationRevertId === $entryId,
+                OdometerSource::PartFitted => $reading->partFittedId === $entryId,
+                OdometerSource::PartRemoved => $reading->partRemovedId === $entryId,
                 default => false,
             };
             if (!$own && Decimal::compare($reading->readingKm, $km) === 0) {

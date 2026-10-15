@@ -27,6 +27,7 @@ use Logbook\Service\Maintenance\MaintenanceEntryNotFound;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerReadingNotFound;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Part\PartChangeRefused;
 use Logbook\Service\Reminder\ReminderNotFound;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Tyre\TyreChangeNotFound;
@@ -300,6 +301,7 @@ final readonly class DraftStore
             | ReminderNotFound
             | IncidentNotFound
             | IssueNotFound
+            | PartChangeRefused
         ) {
             return false;
         }

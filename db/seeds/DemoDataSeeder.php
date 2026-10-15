@@ -277,6 +277,7 @@ final class DemoDataSeeder extends AbstractSeed
         $this->seedSalePack($now);
         $this->seedIncidents($now, $userId);
         $this->seedIssues($now, $userId);
+        $this->seedParts($now, $userId);
         $this->seedTrips($now, $userId);
         $this->seedPartner($now, $userId);
         $this->seedFinance($now, $userId);
@@ -1949,6 +1950,104 @@ final class DemoDataSeeder extends AbstractSeed
         }
         $fixed = ['status_from' => 'open', 'status_to' => 'fixed', 'reason' => 'fixed'];
         $this->issueLine($now, $userId, $grinding, $fixedOn, $fixed);
+    }
+
+    /**
+     * The Golf's parts and modifications (Phase 50.1, spec.md §7.39): a
+     * coilover modification fitting two parts, with the standard dampers
+     * recorded as *Kept*; and a clutch fitted by a service record, with a
+     * two-year warranty from the fitting.
+     */
+    private function seedParts(string $now, int $userId): void
+    {
+        $golf = $this->vehicleIds()['LB19 KTR'] ?? throw new RuntimeException('The demo Golf is missing.');
+        // Coilovers: one modification, two parts on, the standard dampers off and kept.
+        $doneOn = self::day('2025-05-10');
+        $km = $this->odometerOn($golf, $doneOn);
+        $coilovers = $this->insertRow('modifications', [
+            'vehicle_id' => $golf, 'created_by' => $userId, 'title' => 'Coilovers and top mounts',
+            'category' => 'suspension', 'done_on' => $doneOn, 'odometer_km' => $km, 'cost' => '1240.000',
+            'fitted_by' => 'Northside Performance', 'notes' => 'Lowered 30 mm front and rear; alignment done after.',
+            'declared_on' => null, 'reverted_on' => null, 'reverted_odometer_km' => null, 'reverted_note' => null,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $this->table('odometer_readings')->insert([
+            'vehicle_id' => $golf, 'reading_km' => $km, 'recorded_at' => self::localNoon($doneOn),
+            'source' => 'modification', 'modification_id' => $coilovers, 'created_at' => $now, 'updated_at' => $now,
+        ])->saveData();
+        $kit = $this->partRow($golf, $now, $userId, [
+            'name' => 'B14 coilover kit', 'brand' => 'Bilstein', 'part_number' => '47-080402',
+            'supplier' => 'Demon Tweeks', 'bought_on' => self::day('2025-05-02'), 'price' => '899.000',
+            'warranty_months' => 24, 'warranty_from' => 'purchase', 'warranty_provider' => 'Demon Tweeks',
+        ]);
+        $mounts = $this->partRow($golf, $now, $userId, [
+            'name' => 'Strut top mounts', 'brand' => 'Meyle', 'part_number' => '100 412 0034',
+            'supplier' => 'Demon Tweeks', 'bought_on' => self::day('2025-05-02'), 'price' => '64.000',
+        ]);
+        foreach ([$kit, $mounts] as $id) {
+            $this->fittingRow($now, [
+                'part_id' => $id, 'fitted_on' => $doneOn, 'fitted_odometer_km' => $km,
+                'fitted_modification_id' => $coilovers,
+            ]);
+        }
+        $dampers = $this->partRow($golf, $now, $userId, [
+            'name' => 'Standard dampers', 'brand' => 'Sachs', 'origin' => 'original', 'status' => 'stored',
+        ]);
+        $this->fittingRow($now, [
+            'part_id' => $dampers, 'fitted_on' => self::day('2021-03-14'), 'removed_on' => $doneOn,
+            'removed_odometer_km' => $km, 'removed_modification_id' => $coilovers, 'outcome' => 'kept',
+        ]);
+
+        // A clutch fitted by a service record, under a two-year warranty from the fitting.
+        $clutchOn = self::day('2025-11-20');
+        $clutchKm = $this->odometerOn($golf, $clutchOn);
+        $record = $this->insertRow('maintenance_entries', [
+            'vehicle_id' => $golf, 'schedule_id' => null, 'performed_on' => $clutchOn, 'odometer_km' => $clutchKm,
+            'category' => 'repair', 'title' => 'Clutch replaced', 'description' => 'Clutch kit £320, labour £460.',
+            'cost' => '780.000', 'vendor' => 'Main Street Motors', 'created_by' => $userId,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $this->table('odometer_readings')->insert([
+            'vehicle_id' => $golf, 'reading_km' => $clutchKm, 'recorded_at' => self::localNoon($clutchOn),
+            'source' => 'maintenance', 'maintenance_entry_id' => $record, 'created_at' => $now, 'updated_at' => $now,
+        ])->saveData();
+        $clutch = $this->partRow($golf, $now, $userId, [
+            'name' => 'Clutch kit', 'brand' => 'LuK', 'part_number' => '624 3500 00', 'supplier' => 'Main Street Motors',
+            'price' => '320.000', 'warranty_months' => 24, 'warranty_from' => 'fitting',
+            'warranty_provider' => 'Main Street Motors', 'warranty_terms' => 'Parts and labour, 24 months.',
+        ]);
+        $this->fittingRow($now, [
+            'part_id' => $clutch, 'fitted_on' => $clutchOn, 'fitted_odometer_km' => $clutchKm,
+            'fitted_maintenance_id' => $record,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     */
+    private function partRow(int $vehicle, string $now, int $userId, array $values): int
+    {
+        return $this->insertRow('parts', $values + [
+            'vehicle_id' => $vehicle, 'created_by' => $userId, 'brand' => null, 'part_number' => null,
+            'serial_number' => null, 'supplier' => null, 'bought_on' => null, 'price' => null,
+            'part_condition' => 'new', 'origin' => 'fitted', 'warranty_months' => null, 'warranty_km' => null,
+            'warranty_from' => null, 'warranty_provider' => null, 'warranty_terms' => null, 'notes' => null,
+            'status' => 'fitted', 'created_at' => $now, 'updated_at' => $now,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     */
+    private function fittingRow(string $now, array $values): int
+    {
+        return $this->insertRow('part_fittings', $values + [
+            'fitted_odometer_km' => null, 'fitted_maintenance_id' => null, 'fitted_modification_id' => null,
+            'fitted_by_revert' => false, 'removed_on' => null, 'removed_odometer_km' => null,
+            'removed_maintenance_id' => null, 'removed_modification_id' => null, 'removed_by_revert' => false,
+            'outcome' => null, 'sold_price' => null, 'replaced_by_part_id' => null,
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
     }
 
     /**

@@ -52,6 +52,11 @@ final readonly class BackupRepository
         // issues they link.
         'mot_tests',
         'mot_defects',
+        // Phase 50.1: modifications and parts, then the fittings that name both (and
+        // service records), before the readings a modification or a fitting owns.
+        'modifications',
+        'parts',
+        'part_fittings',
         // Tyres (Phase 11.1): a change refers to its service record, and a
         // change's odometer reading to the change, so they come before the readings.
         'tyre_sets',

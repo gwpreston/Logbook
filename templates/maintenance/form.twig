@@ -64,12 +64,17 @@
                 {% include 'issues/_fixes.twig' %}
             </section>
 
+            {% include 'parts/_record_parts.twig' %}
+
             {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
 
             <div class="btn-row">
                 <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'maintenance.add_submit')|trans }}</button>
                 <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: (url_for('maintenance.index', {id: vehicle.id})) }}">{{ 'form.cancel'|trans }}</a>
                 {% if editing %}
+                    {% if record_parts %}
+                        <a class="btn btn--lg btn--ghost" href="{{ url_for('modifications.from_maintenance', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('handyman') }}{{ 'modification.convert.action'|trans }}</a>
+                    {% endif %}
                     <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('maintenance.delete', {id: vehicle.id, entry: entry.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
                 {% endif %}
             </div>

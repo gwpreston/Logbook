@@ -26,6 +26,19 @@ final class ValidatorTest extends TestCase
         self::assertFalse($v->errors()->has('blank'));
     }
 
+    /**
+     * A textarea posts its line breaks as CRLF; they are stored and counted
+     * as LF, so text from a form and from the API counts the same (#433).
+     */
+    public function testLineBreaksAreStoredAndCountedAsOneCharacter(): void
+    {
+        $v = new Validator(['notes' => "a\r\nb\rc\nd", 'ten' => str_repeat("x\r\n", 5)], 'en');
+
+        self::assertSame("a\nb\nc\nd", $v->string('notes'));
+        self::assertSame(str_repeat("x\n", 4) . 'x', $v->string('ten', false, 9), 'nine characters once trimmed');
+        self::assertFalse($v->errors()->has('ten'));
+    }
+
     public function testArraysAndInvalidUtf8AreRejected(): void
     {
         $v = new Validator(['arr' => ['x'], 'bad' => "\xC3\x28"], 'en');

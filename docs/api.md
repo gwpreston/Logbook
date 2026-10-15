@@ -81,7 +81,9 @@ Base URL: `<APP_URL><APP_BASE_PATH>/api/v1`, e.g.
 Settings → API keys shows yours.
 
 Responses are JSON. Values are **canonical**, the same whatever the key's
-user prefers, so automations can compare and chart them:
+user prefers, so automations can compare and chart them. Text you send is
+stored with its line breaks as `\n` (`\r\n` and `\r` become `\n`, and
+count once towards a limit); text saved before 3.15.0 keeps what it had.
 
 | What | Unit | Example |
 |---|---|---|
@@ -116,7 +118,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/summary` | odometer and its time, economy per series (liquid, electric, gas for CNG), the last fill-up, running cost per km over 12 months and the true cost per km (depreciation included), what is due next, open reminder counts, current documents' expiry, tyre status, and `display` text |
 | `GET /vehicles/{id}/fuel` | fill-ups, each with the economy of the tank it closes and its economy-check flag (paged) |
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
-| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update, and from 3.7 `mot`: a DVSA MOT test's odometer) (paged) |
+| `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update, from 3.7 `mot`: a DVSA MOT test's odometer, and from 3.15 `modification`, `mod_revert`, `part_fitted` and `part_removed`) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
 | `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `issues`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
 | `GET /vehicles/{id}/maintenance` | service records (paged; `?category=`, and `?q=` for words in the title, vendor or description) |
@@ -131,7 +133,7 @@ user prefers, so automations can compare and chart them:
 | `GET /vehicles/{id}/tyre-sets`, `GET /tyre-sets` | tyre sets with their tyres, for one vehicle or every active one (`?vehicle=`; tyres module) |
 | `GET /vehicles/{id}/schedules` | maintenance schedules with their due state, most urgent first, as the Maintenance tab: `status` (`overdue`, `soon`, `ok`, `unknown` in your lead times), the `trigger` that applies (date or distance), `due_on` (the date, or the day the distance is projected to be reached: `due_on_projected`), `days_left`, `distance_left` (maintenance module) |
 | `GET /vehicles/{id}/valuations` | valuations, newest first (paged; cost access) |
-| `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`) |
+| `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`); from 3.15 `running_costs` leaves modifications out and `total` includes them, so `total` can exceed `running_costs` + depreciation |
 | `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
 | `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences (cost access, else `403`) |
@@ -142,7 +144,7 @@ user prefers, so automations can compare and chart them:
 | `GET /reminders` | open reminders, most urgent first (`?vehicle=`, `?status=overdue\|due\|upcoming`); `?closed=1` (or `?status=done\|dismissed`) the done and dismissed ones, most recently closed first; every reminder carries `closed_at` (null while open) |
 | `POST /reminders/{id}/done`, `/dismiss`, `/reopen` | the Reminders page's buttons, for a reminder of any kind; safe to repeat (`"unchanged": true`) (read and write key; Log) |
 | `GET /attention` | *Needs attention* for every active vehicle (`?vehicle=`), in the page's order and words, each with a link to its fix; an item you can hide carries a `key` for `POST /attention/{key}/hide` |
-| `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)) |
+| `GET /reports/costs` | spend by category group, month or vehicle (`?group_by=`), per currency ([Reports](#reports)); from 3.15 the group `build` (modifications) is in the totals but never in a cost per distance |
 | `GET /reports/cost-per-distance` | cost per km, per vehicle and in all ([Reports](#reports)) |
 | `GET /reports/fuel` | fuel statistics per vehicle, kind and grade, with the grade verdicts ([Reports](#reports); fuel module) |
 | `GET /reports/mileage` | distance driven in the period, and the averages ([Reports](#reports)) |

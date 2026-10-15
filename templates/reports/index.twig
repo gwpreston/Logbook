@@ -122,11 +122,13 @@
                     {{ ui.stat('report.stat.total'|trans, section.total|money, 'report.costs_count'|trans({count: section.count})) }}
                     {{ ui.stat('report.stat.per_distance'|trans,
                         section.costPerKm is not null ? section.costPerKm|per_distance(currency) : dash,
-                        'report.all_costs'|trans) }}
+                        (section.hasBuild() ? 'report.build_left_out' : 'report.all_costs')|trans) }}
                     {{ ui.stat('report.stat.distance'|trans,
                         section.distanceKm is not null ? section.distanceKm|distance : dash,
                         'report.from_mileage_log'|trans) }}
-                    {{ ui.stat('report.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
+                    {{ ui.stat('report.stat.per_month'|trans,
+                        filter.group and not filter.group.isRunning() ? dash : section.averagePerMonth|money,
+                        'report.months'|trans({count: report.monthCount()})) }}
                 </dl>
                 {{ ui.working(working_of(section), 'working.summary_for'|trans({period: 'report.stat.per_distance'|trans})) }}
 

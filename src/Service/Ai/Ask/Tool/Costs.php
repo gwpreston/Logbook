@@ -36,8 +36,10 @@ final readonly class Costs extends ReportTool implements AskTool
         return new ToolDefinition(
             $this->name(),
             'Money spent in a period: totals per currency, split by category (fuel, maintenance, '
-            . 'compliance, other), by month or by vehicle, plus distance driven. Leave vehicles out for all of them. '
-            . 'Use category to count only one kind of cost, e.g. fuel.',
+            . 'compliance, other, and build for modifications), by month or by vehicle, plus distance driven. '
+            . 'Leave vehicles out for all of them. Use category to count only one kind of cost, e.g. fuel. '
+            . 'Modifications (build) are in the total but are not running costs: average_per_month and '
+            . 'running_total leave them out.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -60,9 +62,9 @@ final readonly class Costs extends ReportTool implements AskTool
         $currencies = array_map(fn (CurrencyReport $section): array => [
             'currency' => $section->currency,
             'total' => $this->kit->money($section->total),
+            ...$this->running($section, $category),
             'entries' => $section->count,
             'distance' => $this->kit->distance($section->distanceKm),
-            'average_per_month' => $this->kit->money($section->averagePerMonth),
             ...$this->breakdown($section, $groupBy),
         ], $report->isEmpty() ? [] : $report->currencies);
 
@@ -92,6 +94,33 @@ final readonly class Costs extends ReportTool implements AskTool
             $this->reportLink($period, $counted, $named, $category),
             array_map(static fn (Vehicle $v): int => $v->id, $counted),
         );
+    }
+
+    /**
+     * Build spend (Phase 50.1) is in the total but never a running cost
+     * (spec.md §7.7): the monthly average leaves it out, and says so.
+     *
+     * @return array<string, mixed>
+     */
+    private function running(CurrencyReport $section, ?CostGroup $category): array
+    {
+        if ($category === CostGroup::Build) {
+            return [
+                'average_per_month' => null,
+                'note' => 'Modifications are not a running cost, so there is no monthly average for them.',
+            ];
+        }
+        if (!$section->hasBuild()) {
+            return ['average_per_month' => $this->kit->money($section->averagePerMonth)];
+        }
+
+        return [
+            'running_total' => $this->kit->money($section->runningTotal()),
+            'build_total' => $this->kit->money($section->group(CostGroup::Build)),
+            'average_per_month' => $this->kit->money($section->averagePerMonth),
+            'note' => 'The total includes modifications (build_total); they are not running costs, '
+                . 'so average_per_month is running_total spread over the months.',
+        ];
     }
 
     /**

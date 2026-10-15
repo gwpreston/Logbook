@@ -8,6 +8,7 @@ use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Repository\PartRepository;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
@@ -33,6 +34,7 @@ final readonly class EditOdometerReadingAction
         private OdometerWarningFlash $warnings,
         private Redirector $redirect,
         private EntryGuard $guard,
+        private PartRepository $parts,
     ) {
     }
 
@@ -70,6 +72,14 @@ final readonly class EditOdometerReadingAction
         $this->warnings->queue($session, $this->odometer->warningFor($vehicle, $reading->id));
 
         return $this->redirect->backOr($request, 'odometer.index', ['id' => (string) $vehicle->id]);
+    }
+
+    private function toPart(ServerRequestInterface $request, Vehicle $vehicle, OdometerReading $reading): ResponseInterface
+    {
+        $part = $this->parts->partOfFitting($vehicle->id, (int) ($reading->partFittedId ?? $reading->partRemovedId))
+            ?? throw new HttpNotFoundException($request);
+
+        return $this->redirect->toRoute('parts.show', ['id' => (string) $vehicle->id, 'part' => (string) $part]);
     }
 
     /**
@@ -110,6 +120,16 @@ final readonly class EditOdometerReadingAction
             $reading->motTestId !== null => $this->redirect->toRoute('mot_history.show', [
                 'id' => (string) $vehicle->id,
             ]),
+            // Phase 50.1 (spec.md §7.39): a modification's form, its revert's page, a fitting's part.
+            $reading->modificationId !== null => $this->redirect->toRoute('modifications.edit', [
+                'id' => (string) $vehicle->id,
+                'modification' => (string) $reading->modificationId,
+            ]),
+            $reading->modificationRevertId !== null => $this->redirect->toRoute('modifications.show', [
+                'id' => (string) $vehicle->id,
+                'modification' => (string) $reading->modificationRevertId,
+            ]),
+            ($reading->partFittedId ?? $reading->partRemovedId) !== null => $this->toPart($request, $vehicle, $reading),
             // Mileage when bought is set on the vehicle form (spec.md §6 OdometerReading).
             $reading->source === OdometerSource::Purchase => $this->redirect->toRoute('vehicles.edit', [
                 'id' => (string) $vehicle->id,

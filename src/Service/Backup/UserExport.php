@@ -107,6 +107,17 @@ final class UserExport
         $out['mot_tests'] = $keep('mot_tests', static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true));
         $tests = array_column($out['mot_tests'], 'id');
         $out['mot_defects'] = $keep('mot_defects', static fn (array $row): bool => in_array($row['mot_test_id'], $tests, true));
+        // Phase 50.1: the modifications and parts (theirs), and every fitting of those parts.
+        $out['modifications'] = array_map(
+            static fn (array $row): array => ['created_by' => $user] + $row,
+            $keep('modifications', static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true)),
+        );
+        $out['parts'] = array_map(
+            static fn (array $row): array => ['created_by' => $user] + $row,
+            $keep('parts', static fn (array $row): bool => in_array($row['vehicle_id'], $vehicles, true)),
+        );
+        $parts = array_column($out['parts'], 'id');
+        $out['part_fittings'] = $keep('part_fittings', static fn (array $row): bool => in_array($row['part_id'], $parts, true));
         $changes = array_column($out['tyre_changes'], 'id');
         $out['tyre_change_lines'] = $keep(
             'tyre_change_lines',

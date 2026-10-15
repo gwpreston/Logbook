@@ -27,4 +27,7 @@ enum AttachmentOwner: string
     case Incident = 'incident';
     /** An issue's photos and files (Phase 40.1, spec.md §7.37). */
     case Issue = 'issue';
+    /** A modification's and a part's photos, receipts and warranty papers (Phase 50.1, spec.md §7.39). */
+    case Modification = 'modification';
+    case Part = 'part';
 }

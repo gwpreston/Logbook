@@ -24,6 +24,8 @@ final readonly class VehicleCost
         public float $share,
         /** The two readings the distance is the difference of, for the working (spec.md §8). */
         public ?DistanceSpan $span = null,
+        /** The total less build spend (Phase 50.1): what the rate divides. */
+        public ?Money $running = null,
     ) {
     }
 }

@@ -6,6 +6,15 @@ namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Issue\IssueFixPicker;
+use Logbook\Action\Part\PartRoute;
+use Logbook\Action\Part\CostInput;
+use Logbook\Action\Part\RecordPartsPicker;
+use Logbook\Service\Part\PartChangeRefused;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\RecordPartsForm;
+use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Display\DisplayFormatter;
+use Psr\Clock\ClockInterface;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\EntryGuard;
 use Logbook\Action\Attachment\AttachmentUpload;
@@ -39,6 +48,10 @@ final readonly class EditMaintenanceEntryAction
         private EntryGuard $guard,
         private IncidentPicker $incidents,
         private IssueFixPicker $fixes,
+        private RecordPartsPicker $parts,
+        private CostInput $costs,
+        private DisplayFormatter $formatter,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -54,12 +67,20 @@ final readonly class EditMaintenanceEntryAction
         $currency = $this->vehicles->currencyFor($user, $vehicle);
 
         if ($request->getMethod() !== 'POST') {
-            $values = $this->incidents->current($entry->incidentId, MaintenanceEntryForm::values($entry, $user->preferences));
+            $values = $this->incidents->current($entry->incidentId, MaintenanceEntryForm::values($entry, $user->preferences))
+                + $this->parts->values($vehicle, PartService::MAINTENANCE, $entry->id);
 
             return $this->page->render($request, $response, $vehicle, $currency, $values, $entry);
         }
 
-        $input = RequestContext::form($request);
+        // A service record's own cost follows the own-entry rule; only the parts' prices are guarded.
+        $input = $this->costs->guard(
+            $request,
+            $vehicle,
+            RequestContext::form($request),
+            $this->parts->values($vehicle, PartService::MAINTENANCE, $entry->id),
+            withCost: false,
+        );
         $data = MaintenanceEntryForm::parse(
             $input,
             $user->preferences,
@@ -68,17 +89,64 @@ final readonly class EditMaintenanceEntryAction
         );
         $files = $this->upload->fromRequest($request);
         $errors = $this->upload->errors($data, $files);
-        if ($errors !== null || $data instanceof ValidationErrors) {
+        $zone = $user->preferences->timeZone();
+        // *Add another* part row (spec.md §7.39): the form again, one row more, nothing saved.
+        if (RecordPartsForm::more($input) !== null) {
+            $values = RequestContext::formValues($request);
+
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                $values,
+                $entry,
+                null,
+                200,
+                $this->fixes->posted($input),
+            );
+        }
+        $today = LocalTime::today($this->clock, $zone);
+        $parts = $this->parts->read($vehicle, PartService::MAINTENANCE, $entry->id, $input, $user->preferences, $today);
+        if ($parts instanceof ValidationErrors) {
+            $errors = ($errors ?? ($data instanceof ValidationErrors ? $data : new ValidationErrors()))->merge($parts);
+        }
+        if ($errors !== null || $data instanceof ValidationErrors || $parts instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
             $ticked = $this->fixes->posted($input);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, $entry, $errors, 422, $ticked);
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                $values,
+                $entry,
+                $errors ?? ($data instanceof ValidationErrors ? $data : null),
+                422,
+                $ticked,
+            );
         }
 
         try {
             $fixes = $this->fixes->toSave($vehicle, $entry, $input);
-            $updated = $this->maintenance->update($vehicle, $entry, $data, $user->preferences->timeZone(), $files, $fixes);
+            $updated = $this->maintenance->update($vehicle, $entry, $data, $zone, $files, $fixes, $parts);
+        } catch (PartChangeRefused $refused) {
+            $values = RequestContext::formValues($request);
+            $errors = PartRoute::refusal($refused, $this->formatter);
+
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                $values,
+                $entry,
+                $errors,
+                422,
+                $this->fixes->posted($input),
+            );
         } catch (TyreChangeRefused $refused) {
             // A linked tyre change cannot move to the new date or odometer (spec.md §7.17).
             $values = RequestContext::formValues($request);

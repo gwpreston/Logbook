@@ -128,13 +128,16 @@ final readonly class PaperworkSelector
                 AttachmentOwner::Purchase => $attachment->ownerId === $vehicle->id
                     ? $this->purchase($attachment, $vehicle, $zone)
                     : null,
-                // Never offered: fill-ups, expenses, the sale, valuations, trips and issues.
+                // Never offered: fill-ups, expenses, the sale, valuations, trips and issues;
+                // parts and modifications not before Phase 50.2 (spec.md §7.39).
                 AttachmentOwner::Fuel,
                 AttachmentOwner::Expense,
                 AttachmentOwner::Sale,
                 AttachmentOwner::Valuation,
                 AttachmentOwner::Trip,
-                AttachmentOwner::Issue => null,
+                AttachmentOwner::Issue,
+                AttachmentOwner::Modification,
+                AttachmentOwner::Part => null,
                 AttachmentOwner::Incident => $this->incidentPhoto($attachment, $incidents[$attachment->ownerId] ?? null),
             };
             if ($file !== null && in_array($file['kind'], $chosen, true)) {

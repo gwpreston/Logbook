@@ -20,6 +20,8 @@ enum LogKind: string
     case Maintenance = 'maintenance';
     /** A fault noticed and not yet fixed (Phase 40.1, spec.md §7.37). */
     case Issue = 'issue';
+    /** Build work (Phase 50.1, spec.md §7.39). */
+    case Modification = 'modification';
     case Expense = 'expense';
     case Document = 'document';
     case Schedule = 'schedule';
@@ -53,6 +55,7 @@ enum LogKind: string
             self::Trip => 'trips.create',
             self::Incident => 'incidents.create',
             self::Issue => 'issues.create',
+            self::Modification => 'modifications.create',
         };
     }
 
@@ -83,6 +86,7 @@ enum LogKind: string
             self::Trip => Feature::Trips,
             self::Incident => Feature::Incidents,
             self::Issue => Feature::Issues,
+            self::Modification => Feature::Parts,
             self::Odometer, self::Expense => null,
         };
     }
@@ -101,6 +105,7 @@ enum LogKind: string
             self::Trip => 'route',
             self::Incident => 'car_crash',
             self::Issue => 'report',
+            self::Modification => 'handyman',
         };
     }
 
@@ -115,6 +120,7 @@ enum LogKind: string
             self::Maintenance, self::Schedule, self::Tyre, self::TyreCheck => 'c-maint',
             self::Expense, self::Incident, self::Issue => 'c-other',
             self::Document => 'c-ins',
+            self::Modification => 'c-build',
         };
     }
 }

@@ -262,6 +262,18 @@ use Logbook\Action\Issue\IssueUpdateAction;
 use Logbook\Action\Issue\ReopenIssueAction;
 use Logbook\Action\Issue\ShowIssueAction;
 use Logbook\Action\Issue\WatchIssueAction;
+use Logbook\Action\Part\ConvertToModificationAction;
+use Logbook\Action\Part\CreateModificationAction;
+use Logbook\Action\Part\CreatePartAction;
+use Logbook\Action\Part\DeleteModificationAction;
+use Logbook\Action\Part\DeletePartAction;
+use Logbook\Action\Part\EditModificationAction;
+use Logbook\Action\Part\EditPartAction;
+use Logbook\Action\Part\FitPartAction;
+use Logbook\Action\Part\PartsTabAction;
+use Logbook\Action\Part\RevertModificationAction;
+use Logbook\Action\Part\ShowModificationAction;
+use Logbook\Action\Part\ShowPartAction;
 use Logbook\Action\Incident\ClaimsHistoryAction;
 use Logbook\Action\Incident\ClaimsHistoryExportAction;
 use Logbook\Action\Incident\CreateIncidentAction;
@@ -984,6 +996,57 @@ return static function (App $app): void {
                     ->setArgument('mode', 'delete')
                     ->setArgument($ability, $log);
             })->add($module(Feature::Issues));
+
+            // Parts and modifications (spec.md §7.39). Editing or deleting someone else's needs Manage (EntryGuard).
+            $vehicle->group('', function (Group $parts) use ($ability, $module): void {
+                $view = VehicleAbility::View->value;
+                $log = VehicleAbility::Log->value;
+                $parts->get('/parts', PartsTabAction::class)->setName('parts.index')->setArgument($ability, $view);
+                $parts->map(['GET', 'POST'], '/parts/new', CreatePartAction::class)->setName('parts.create')
+                    ->setArgument($ability, $log);
+                $parts->get('/parts/{part:[0-9]+}', ShowPartAction::class)->setName('parts.show')
+                    ->setArgument($ability, $view);
+                $parts->map(['GET', 'POST'], '/parts/{part:[0-9]+}/edit', EditPartAction::class)->setName('parts.edit')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/parts/{part:[0-9]+}/delete', DeletePartAction::class)
+                    ->setName('parts.delete')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/parts/{part:[0-9]+}/fit', FitPartAction::class)->setName('parts.fit')
+                    ->setArgument('mode', 'fit')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/parts/{part:[0-9]+}/remove', FitPartAction::class)->setName('parts.remove')
+                    ->setArgument('mode', 'remove')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/modifications/new', CreateModificationAction::class)
+                    ->setName('modifications.create')
+                    ->setArgument($ability, $log);
+                $parts->get('/modifications/{modification:[0-9]+}', ShowModificationAction::class)
+                    ->setName('modifications.show')
+                    ->setArgument($ability, $view);
+                $parts->map(['GET', 'POST'], '/modifications/{modification:[0-9]+}/edit', EditModificationAction::class)
+                    ->setName('modifications.edit')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/modifications/{modification:[0-9]+}/delete', DeleteModificationAction::class)
+                    ->setName('modifications.delete')
+                    ->setArgument($ability, $log);
+                $parts->map(['GET', 'POST'], '/modifications/{modification:[0-9]+}/revert', RevertModificationAction::class)
+                    ->setName('modifications.revert')
+                    ->setArgument($ability, $log);
+                $parts->post('/modifications/{modification:[0-9]+}/unrevert', RevertModificationAction::class)
+                    ->setName('modifications.unrevert')
+                    ->setArgument('mode', 'undo')
+                    ->setArgument($ability, $log);
+                // *Make this a modification* (#423): one record at a time.
+                $parts->map(['GET', 'POST'], '/maintenance/{entry:[0-9]+}/modification', ConvertToModificationAction::class)
+                    ->setName('modifications.from_maintenance')
+                    ->setArgument('from', 'maintenance')
+                    ->setArgument($ability, $log)
+                    ->add($module(Feature::Maintenance));
+                $parts->map(['GET', 'POST'], '/expenses/{entry:[0-9]+}/modification', ConvertToModificationAction::class)
+                    ->setName('modifications.from_expense')
+                    ->setArgument('from', 'expense')
+                    ->setArgument($ability, $log);
+            })->add($module(Feature::Parts));
 
             // Incidents (spec.md §7.29). Editing someone else's needs Manage (EntryGuard).
             $vehicle->group('/incidents', function (Group $incidents) use ($ability): void {

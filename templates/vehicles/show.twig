@@ -1,5 +1,6 @@
 {% extends 'layout.twig' %}
 {% import 'macros/issues.twig' as issues_ui %}
+{% import 'macros/parts.twig' as parts_ui %}
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/maintenance.twig' as maint %}
 {% import 'macros/compliance.twig' as docs %}
@@ -115,6 +116,28 @@
                 <ul class="list">
                     {% for issue in issues|slice(0, 5) %}{{ issues_ui.row(issue, vehicle) }}{% endfor %}
                 </ul>
+            </section>
+            {% endif %}
+
+            {% if parts_card %}
+            {# Current modifications, build spend and parts in warranty (spec.md §7.39 *Overview card*). #}
+            <section class="card" aria-labelledby="parts-card-heading">
+                <div class="card__header">
+                    <h2 id="parts-card-heading" class="card__title">{{ 'modification.title'|trans }}</h2>
+                    <a class="card__link" href="{{ url_for('parts.index', {id: vehicle.id}) }}">{{ 'part.view_all'|trans }}</a>
+                </div>
+                <dl class="meta-grid">
+                    <div><dt>{{ 'modification.card.current'|trans }}</dt><dd class="tabular">{{ parts_card.currentCount }}</dd></div>
+                    {% if can_see_costs(vehicle) %}
+                        <div><dt>{{ 'modification.card.spend'|trans }}</dt><dd class="tabular">{{ parts_card.buildSpend|money }} <span class="not-running-note">{{ 'modification.not_running_short'|trans }}</span></dd></div>
+                    {% endif %}
+                    <div><dt>{{ 'modification.card.in_warranty'|trans }}</dt><dd class="tabular">{{ parts_card.inWarranty }}</dd></div>
+                </dl>
+                {% if parts_card.current is not empty %}
+                    <ul class="list">
+                        {% for modification in parts_card.current %}{{ parts_ui.modification_row(modification, vehicle, currency, parts_thumbnails ? parts_thumbnails.of('modification', modification.id) : null) }}{% endfor %}
+                    </ul>
+                {% endif %}
             </section>
             {% endif %}
 
@@ -394,7 +417,7 @@
                         <dt>{{ 'ownership.row.running'|trans }}</dt>
                         <dd>
                             <span class="tabular">{{ cost.running|money }}</span>
-                            {% for group in cost.spentGroups() %}
+                            {% for group in cost.spentGroups()|filter(g => g.group.isRunning()) %}
                                 <br><span class="muted">{{ ('expense.group.' ~ group.group.value)|trans }} <span class="tabular">{{ group.amount|money }}</span></span>
                             {% endfor %}
                             {% if cost.payouts %}

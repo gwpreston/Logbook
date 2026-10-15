@@ -81,6 +81,15 @@ final readonly class ActivityItem
         public ?DateTimeImmutable $partOfDate = null,
         /** An MOT test's number of defects and advisories (Phase 41). */
         public int $defects = 0,
+        /**
+         * On a service record or modification: the parts it fitted and took
+         * off (Phase 50.1), its second line.
+         *
+         * @var list<TranslatableMessage>
+         */
+        public array $parts = [],
+        /** A modification that has been reverted (Phase 50.1). */
+        public bool $reverted = false,
     ) {
     }
 

@@ -36,6 +36,9 @@ enum EvidenceSource: string
             OdometerSource::Fuel, OdometerSource::Incident, OdometerSource::Purchase,
             // An MOT's mileage is printed with its test (spec.md §7.19, §7.38).
             OdometerSource::Issue, OdometerSource::IssueUpdate, OdometerSource::Mot => null,
+            // Parts and modifications go in the sale pack in Phase 50.2 (spec.md §7.39).
+            OdometerSource::Modification, OdometerSource::ModificationRevert,
+            OdometerSource::PartFitted, OdometerSource::PartRemoved => null,
         };
     }
 

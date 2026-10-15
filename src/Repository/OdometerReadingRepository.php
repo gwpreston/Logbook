@@ -84,7 +84,8 @@ final readonly class OdometerReadingRepository
         $rows = $this->connection->createQueryBuilder()
             ->select('r.id', 'r.created_by AS own', 'f.created_by AS fuel', 'm.created_by AS maintenance')
             ->addSelect('c.created_by AS document', 't.created_by AS tyre', 'i.created_by AS incident')
-            ->addSelect('s.created_by AS issue', 'u.created_by AS issue_update')
+            ->addSelect('s.created_by AS issue', 'u.created_by AS issue_update', 'md.created_by AS modification')
+            ->addSelect('mr.created_by AS mod_revert', 'pf.created_by AS part_fitted', 'pr.created_by AS part_removed')
             ->from(self::TABLE, 'r')
             ->leftJoin('r', 'fuel_entries', 'f', 'f.id = r.fuel_entry_id')
             ->leftJoin('r', 'maintenance_entries', 'm', 'm.id = r.maintenance_entry_id')
@@ -93,6 +94,12 @@ final readonly class OdometerReadingRepository
             ->leftJoin('r', 'incidents', 'i', 'i.id = r.incident_id')
             ->leftJoin('r', 'issues', 's', 's.id = r.issue_id')
             ->leftJoin('r', 'issue_updates', 'u', 'u.id = r.issue_update_id')
+            ->leftJoin('r', 'modifications', 'md', 'md.id = r.modification_id')
+            ->leftJoin('r', 'modifications', 'mr', 'mr.id = r.modification_revert_id')
+            ->leftJoin('r', 'part_fittings', 'ff', 'ff.id = r.part_fitted_id')
+            ->leftJoin('ff', 'parts', 'pf', 'pf.id = ff.part_id')
+            ->leftJoin('r', 'part_fittings', 'fr', 'fr.id = r.part_removed_id')
+            ->leftJoin('fr', 'parts', 'pr', 'pr.id = fr.part_id')
             ->where('r.vehicle_id = :vehicle')
             ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
             ->fetchAllAssociative();
@@ -106,7 +113,11 @@ final readonly class OdometerReadingRepository
                 ?? Row::nullableInt($row, 'tyre')
                 ?? Row::nullableInt($row, 'incident')
                 ?? Row::nullableInt($row, 'issue')
-                ?? Row::nullableInt($row, 'issue_update');
+                ?? Row::nullableInt($row, 'issue_update')
+                ?? Row::nullableInt($row, 'modification')
+                ?? Row::nullableInt($row, 'mod_revert')
+                ?? Row::nullableInt($row, 'part_fitted')
+                ?? Row::nullableInt($row, 'part_removed');
         }
 
         return $authors;
@@ -247,6 +258,10 @@ final readonly class OdometerReadingRepository
             'issue_id' => ParameterType::INTEGER,
             'issue_update_id' => ParameterType::INTEGER,
             'mot_test_id' => ParameterType::INTEGER,
+            'modification_id' => ParameterType::INTEGER,
+            'modification_revert_id' => ParameterType::INTEGER,
+            'part_fitted_id' => ParameterType::INTEGER,
+            'part_removed_id' => ParameterType::INTEGER,
         ]);
 
         return (int) $this->connection->lastInsertId();
@@ -276,7 +291,8 @@ final readonly class OdometerReadingRepository
         return $this->connection->createQueryBuilder()
             ->select('id', 'vehicle_id', 'reading_km', 'recorded_at', 'source', 'note', 'fuel_entry_id')
             ->addSelect('maintenance_entry_id', 'compliance_document_id', 'tyre_change_id', 'incident_id')
-            ->addSelect('issue_id', 'issue_update_id', 'mot_test_id')
+            ->addSelect('issue_id', 'issue_update_id', 'mot_test_id', 'modification_id', 'modification_revert_id')
+            ->addSelect('part_fitted_id', 'part_removed_id')
             ->addSelect('created_at', 'updated_at', 'created_by')
             ->from(self::TABLE);
     }
@@ -292,6 +308,10 @@ final readonly class OdometerReadingRepository
             OdometerSource::Issue => 'issue_id',
             OdometerSource::IssueUpdate => 'issue_update_id',
             OdometerSource::Mot => 'mot_test_id',
+            OdometerSource::Modification => 'modification_id',
+            OdometerSource::ModificationRevert => 'modification_revert_id',
+            OdometerSource::PartFitted => 'part_fitted_id',
+            OdometerSource::PartRemoved => 'part_removed_id',
             OdometerSource::Manual, OdometerSource::Purchase => throw new LogicException(
                 sprintf('%s readings have no owning entry.', ucfirst($source->value)),
             ),
@@ -335,6 +355,10 @@ final readonly class OdometerReadingRepository
             issueId: Row::nullableInt($row, 'issue_id'),
             issueUpdateId: Row::nullableInt($row, 'issue_update_id'),
             motTestId: Row::nullableInt($row, 'mot_test_id'),
+            modificationId: Row::nullableInt($row, 'modification_id'),
+            modificationRevertId: Row::nullableInt($row, 'modification_revert_id'),
+            partFittedId: Row::nullableInt($row, 'part_fitted_id'),
+            partRemovedId: Row::nullableInt($row, 'part_removed_id'),
         );
     }
 }

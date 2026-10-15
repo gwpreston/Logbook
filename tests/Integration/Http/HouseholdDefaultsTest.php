@@ -46,12 +46,13 @@ final class HouseholdDefaultsTest extends AppTestCase
             self::assertTrue($features->isEnabled($on), $on->value);
         }
         $disabled = [
-            Feature::Tyres, Feature::Finance, Feature::Incidents, Feature::Issues, Feature::Stations, Feature::Trips,
+            Feature::Tyres, Feature::Finance, Feature::Incidents, Feature::Issues, Feature::Parts, Feature::Stations,
+            Feature::Trips,
         ];
         foreach ($disabled as $off) {
             self::assertFalse($features->isEnabled($off), $off->value);
         }
-        self::assertCount(6, $features->offSinceInstall());
+        self::assertCount(7, $features->offSinceInstall());
 
         $layout = $this->service($app, DashboardLayoutStore::class)->load($this->owner($app)->id);
         self::assertSame(self::HOUSEHOLD, array_map(
@@ -64,12 +65,12 @@ final class HouseholdDefaultsTest extends AppTestCase
 
         // Settings → Modules says why they are off, then stops once one is switched on.
         $page = self::body($browser->get('/settings/modules'));
-        self::assertSame(6, substr_count($page, 'Switched off when Logbook was installed; switch on any time.'));
+        self::assertSame(7, substr_count($page, 'Switched off when Logbook was installed; switch on any time.'));
         $browser->post('/settings/modules', [
             'fuel' => '1', 'maintenance' => '1', 'compliance' => '1', 'reminders' => '1', 'reports' => '1',
             'tyres' => '1', 'ai_ask' => '1', 'ai_actions' => '1', 'ai_scan' => '1',
         ]);
-        self::assertCount(5, $this->service($app, FeatureToggles::class)->offSinceInstall());
+        self::assertCount(6, $this->service($app, FeatureToggles::class)->offSinceInstall());
     }
 
     public function testSetupKeepsAnExplicitModuleVariableAndNeverOverwritesFeatures(): void

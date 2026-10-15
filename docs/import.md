@@ -29,7 +29,7 @@ spreadsheet, another app, or another Logbook.
 | **Import** | Valid and new. |
 | **Problem** | Something the form would also refuse: a missing date, a negative number, an unknown category, an amount in another currency. The reason is shown per field. Rows with problems are only skipped if you tick *Skip the rows with problems*. |
 | **Already there** | The same entry is already logged for the vehicle, or appears earlier in the file. Importing the same file twice therefore changes nothing. |
-| **Comes from an entry** | (Mileage only.) A reading whose source is a fill-up, service or document. Fill-ups, maintenance and documents with an odometer create their own readings, so import the fuel, maintenance and documents files instead — readings are never doubled. |
+| **Comes from an entry** | (Mileage only.) A reading whose source is a fill-up, service or document. Fill-ups, maintenance and documents with an odometer create their own readings, so import the fuel, maintenance and documents files instead — readings are never doubled. A reading from a tyre change, the purchase, an issue, an MOT test, a modification or a part fitted or removed imports as an ordinary reading, because those aren't imported. |
 
 What counts as "the same entry": a fill-up with the same time and odometer; a
 reading with the same time and odometer (whatever created it); maintenance on

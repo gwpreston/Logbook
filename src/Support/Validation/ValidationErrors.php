@@ -25,6 +25,18 @@ final class ValidationErrors
         $this->errors[$field] ??= ['key' => $key, 'params' => $params];
     }
 
+    /**
+     * Add another form's errors (a field already in error keeps its first).
+     */
+    public function merge(self $other): self
+    {
+        foreach ($other->errors as $field => $error) {
+            $this->errors[$field] ??= $error;
+        }
+
+        return $this;
+    }
+
     public function has(string $field): bool
     {
         return isset($this->errors[$field]);

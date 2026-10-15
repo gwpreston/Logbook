@@ -1,0 +1,67 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # *Make this a modification* (spec.md §7.39, #423): one service record or
+ # expense at a time, never automatic. The form is prefilled from it; saving
+ # creates the modification, moves its files and deletes the record
+ # together. A service record with links a modification can't hold is
+ # refused with the reason.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'modification.convert.title'|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set back = from == 'expense' ? url_for('expenses.edit', {id: vehicle.id, entry: entry.id}) : url_for('maintenance.edit', {id: vehicle.id, entry: entry.id}) %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ back }}">{{ ui.icon('chevron_left') }}{{ (from == 'expense' ? 'expense.title' : 'maintenance.title')|trans }} · {{ vehicle.name() }}</a>
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ ('modification.convert.lead_' ~ from)|trans }}</p>
+            </div>
+        </header>
+
+        {% if refusal %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ refusal|trans }}</span></div>
+            <p><a class="btn" href="{{ back }}">{{ 'form.cancel'|trans }}</a></p>
+        {% else %}
+            {% if errors is not empty %}
+                <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+            {% endif %}
+            <form class="form" method="post" action="{{ url_for(from == 'expense' ? 'modifications.from_expense' : 'modifications.from_maintenance', {id: vehicle.id, entry: entry.id}) }}">
+                {{ ui.csrf(csrf) }}
+                <section class="card">
+                    {{ ui.input('title', 'modification.field.title'|trans, values, errors, {required: true, maxlength: 120}) }}
+                    {{ ui.select('category', 'modification.field.category'|trans, values, errors, categories|map(c => {value: c.value, label: c.labelKey()|trans})) }}
+                    <div class="form-row">
+                        {{ ui.input('done_on', 'modification.field.done_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                        {{ ui.input('odometer', 'modification.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                    </div>
+                    <div class="form-row">
+                        {% if can_see_costs(vehicle) %}
+                            {{ ui.input('cost', 'modification.field.cost'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency)}) }}
+                        {% else %}
+                            <input type="hidden" name="cost" value="{{ values.cost ?? '' }}">
+                        {% endif %}
+                        {{ ui.input('fitted_by', 'modification.field.fitted_by'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="f-notes">{{ 'modification.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                        <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="2200"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                        {{ ui.field_error(errors, 'notes') }}
+                    </div>
+                    <p class="field__hint">{{ ('modification.convert.hint_' ~ from)|trans }}</p>
+                </section>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('handyman') }}{{ 'modification.convert.submit'|trans }}</button>
+                    <a class="btn btn--lg" href="{{ back }}">{{ 'form.cancel'|trans }}</a>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

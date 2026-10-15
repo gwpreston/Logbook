@@ -33,12 +33,23 @@ final readonly class OwnershipCard
     }
 
     /**
-     * Running costs plus depreciation; the running costs alone without a
-     * price and a value (see isRunningOnly).
+     * Running costs, build spend and depreciation; without a price and a
+     * value, the running costs and build spend alone (see isRunningOnly).
      */
     public function total(): Money
     {
-        return $this->cost()->total ?? $this->cost()->running;
+        $cost = $this->cost();
+
+        return $cost->total ?? ($cost->build === null ? $cost->running : $cost->running->add($cost->build));
+    }
+
+    /**
+     * Build spend (Phase 50.1, spec.md §7.39): in the total, shown as its
+     * own line beside the parts, never one of them (#419).
+     */
+    public function build(): ?Money
+    {
+        return $this->cost()->build;
     }
 
     /**

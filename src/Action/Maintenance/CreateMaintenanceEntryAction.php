@@ -6,6 +6,13 @@ namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Issue\IssueFixPicker;
+use Logbook\Action\Part\PartRoute;
+use Logbook\Action\Part\CostInput;
+use Logbook\Action\Part\RecordPartsPicker;
+use Logbook\Service\Part\PartChangeRefused;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\RecordPartsForm;
+use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Domain\Incident\LinkKind;
 use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Action\Scan\ScanPrefill;
@@ -50,6 +57,9 @@ final readonly class CreateMaintenanceEntryAction
         private ClockInterface $clock,
         private IncidentPicker $incidents,
         private IssueFixPicker $fixes,
+        private RecordPartsPicker $parts,
+        private CostInput $costs,
+        private DisplayFormatter $formatter,
     ) {
     }
 
@@ -75,30 +85,80 @@ final readonly class CreateMaintenanceEntryAction
             return $this->page->render($request, $response, $vehicle, $currency, $defaults, ticked: $ticked);
         }
 
-        $input = RequestContext::form($request);
+        // A service record's own cost follows the own-entry rule; only the parts' prices are guarded.
+        $input = $this->costs->guard($request, $vehicle, RequestContext::form($request), withCost: false);
         $data = MaintenanceEntryForm::parse($input, $user->preferences, $this->page->scheduleIds($vehicle));
         $files = $this->scan->files($request, $this->upload->fromRequest($request));
         $errors = $this->upload->errors($data, $files);
-        if ($errors !== null || $data instanceof ValidationErrors) {
+        $today = LocalTime::today($this->clock, $user->preferences->timeZone());
+        // *Add another* part row (spec.md §7.39): the form again, one row more, nothing saved.
+        if (RecordPartsForm::more($input) !== null) {
+            $ticked = $this->fixes->posted($input);
+
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                RequestContext::formValues($request),
+                null,
+                null,
+                200,
+                $ticked,
+            );
+        }
+        $parts = $this->parts->read($vehicle, PartService::MAINTENANCE, null, $input, $user->preferences, $today);
+        if ($parts instanceof ValidationErrors) {
+            $errors = ($errors ?? ($data instanceof ValidationErrors ? $data : new ValidationErrors()))->merge($parts);
+        }
+        if ($errors !== null || $data instanceof ValidationErrors || $parts instanceof ValidationErrors) {
             $values = RequestContext::formValues($request);
 
             $ticked = $this->fixes->posted($input);
 
-            return $this->page->render($request, $response, $vehicle, $currency, $values, null, $errors, 422, $ticked);
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                $values,
+                null,
+                $errors ?? ($data instanceof ValidationErrors ? $data : null),
+                422,
+                $ticked,
+            );
         }
 
         $fixes = $this->fixes->toSave($vehicle, null, $input);
-        [$entry, $claimed] = $this->scan->save(
-            $request,
-            $files,
-            fn (PendingUploads $files): MaintenanceEntry => $this->maintenance->create(
-                $vehicle,
-                $data,
-                $user->preferences->timeZone(),
+        try {
+            [$entry, $claimed] = $this->scan->save(
+                $request,
                 $files,
-                $fixes,
-            ),
-        );
+                fn (PendingUploads $files): MaintenanceEntry => $this->maintenance->create(
+                    $vehicle,
+                    $data,
+                    $user->preferences->timeZone(),
+                    $files,
+                    $fixes,
+                    $parts,
+                ),
+            );
+        } catch (PartChangeRefused $refused) {
+            $values = RequestContext::formValues($request);
+            $errors = PartRoute::refusal($refused, $this->formatter);
+
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $currency,
+                $values,
+                null,
+                $errors,
+                422,
+                $this->fixes->posted($input),
+            );
+        }
         $this->incidents->save($vehicle, LinkKind::Maintenance, $entry->id, $input);
         $this->prefill->saved($request);
         $session = RequestContext::session($request);

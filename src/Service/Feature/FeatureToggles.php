@@ -32,6 +32,8 @@ final readonly class FeatureToggles
         Feature::Finance,
         Feature::Incidents,
         Feature::Issues,
+        // Phase 50.1 (#428).
+        Feature::Parts,
         Feature::Stations,
         Feature::Trips,
     ];

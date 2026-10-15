@@ -104,7 +104,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [48.1](docs/phases/phase-48.1.md) | Show the working: "as of" dates | ✅ |
 | [48.2](docs/phases/phase-48.2.md) | Show the working: *How it's worked out* + release | ✅ |
 | [49](docs/phases/phase-49.md) | Getting started and household defaults + release | ✅ |
-| [50.1](docs/phases/phase-50.1.md) | Parts and modifications | 📋 |
+| [50.1](docs/phases/phase-50.1.md) | Parts and modifications | 🚧 |
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | 📋 |
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | 📋 |
 | [52](docs/phases/phase-52.md) | Import from ABRP + release | 📋 |

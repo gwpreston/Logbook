@@ -14,6 +14,10 @@
         {{ url_for('compliance.edit', {id: id, document: item.sourceId}) }}
     {%- elseif item.source.value == 'finance' -%}
         {{ url_for('finance.show', {id: id, agreement: item.sourceId}) }}
+    {%- elseif item.source.value == 'modification' -%}
+        {{ url_for('modifications.show', {id: id, modification: item.sourceId}) }}
+    {%- elseif item.source.value == 'part_sale' -%}
+        {{ url_for('parts.show', {id: id, part: item.sourceId}) }}
     {%- else -%}
         {{ url_for('expenses.edit', {id: id, entry: item.sourceId}) }}
     {%- endif -%}
@@ -32,12 +36,14 @@
     {% set kind = item.kindKey|trans %}
     {% set title = item.title ?: (item.source.value == 'fuel' ? 'expense.fill_up'|trans : kind) %}
     {% set derived = item.source.value == 'finance' %}
+    {# A modification and a sold part open their pages (spec.md §7.39), not a modal form. #}
+    {% set page = derived or item.source.value in ['modification', 'part_sale'] %}
     {% set linked = derived ? can_finance(item.vehicle) : can_change(item.vehicle, item.createdBy) %}
     <li class="list__item">
         <span class="list__icon swatch-icon" style="--swatch: var(--{{ item.group().color() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
             <span class="list__title">
-                {%- if linked %}<a href="{{ exp.source_url(item) }}"{% if not derived %} data-modal{% endif %}>{{ title }}</a>{% else %}{{ title }}{% endif -%}
+                {%- if linked %}<a href="{{ exp.source_url(item) }}"{% if not page %} data-modal{% endif %}>{{ title }}</a>{% else %}{{ title }}{% endif -%}
                 {%- if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif -%}
             </span>
             <span class="list__meta">
@@ -65,7 +71,7 @@
         {% for total in section.groups %}
             {% if not total.amount.isZero() %}
                 <li class="breakdown__row">
-                    <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}</span>
+                    <span class="breakdown__label">{{ exp.swatch(total.group) }}{{ ('expense.group.' ~ total.group.value)|trans }}{% if not total.group.isRunning() %} <span class="not-running-note">{{ 'modification.not_running_short'|trans }}</span>{% endif %}</span>
                     <span class="breakdown__share">{{ 'report.share'|trans({share: total.share / 100}) }}</span>
                     <span class="breakdown__amount tabular">{{ total.amount|money }}</span>
                     <span class="bar" aria-hidden="true"><span class="bar__fill" style="--w: {{ total.share|round(1) }}%; --swatch: var(--{{ total.group.color() }})"></span></span>

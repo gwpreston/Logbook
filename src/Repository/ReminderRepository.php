@@ -18,6 +18,7 @@ use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Service\Reminder\GeneratedReminder;
 use Logbook\Service\Reminder\OpenReminderRow;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -36,7 +37,7 @@ final readonly class ReminderRepository
     private const string DELIVERIES = 'reminder_deliveries';
     private const int KM_SCALE = 3;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private RequestReads $reads)
     {
     }
 
@@ -145,6 +146,20 @@ final readonly class ReminderRepository
         if ($vehicleIds === []) {
             return [];
         }
+        $sorted = $vehicleIds;
+        sort($sorted);
+
+        // Read once per request: the page and the sidebar both count (spec.md §8 *Page budgets*).
+        return $this->reads->remember(self::TABLE, 'counts:' . implode(',', $sorted), fn (): array
+            => $this->openForCounts($vehicleIds));
+    }
+
+    /**
+     * @param non-empty-list<int> $vehicleIds
+     * @return list<OpenReminderRow>
+     */
+    private function openForCounts(array $vehicleIds): array
+    {
         $query = $this->connection->createQueryBuilder()
             ->select('vehicle_id', 'source', 'status', 'due_on', 'lead_time_days')
             ->from(self::TABLE)

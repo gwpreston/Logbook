@@ -40,6 +40,7 @@ use Logbook\Service\Station\StationService;
 use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripNotFound;
 use Logbook\Service\Trip\TripService;
+use Logbook\Service\Part\PartChangeRefused;
 use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Api\ApiProblem;
@@ -141,7 +142,7 @@ final readonly class ApiEditor
                 $stored instanceof IssueState => $this->issues->delete($vehicle, $stored),
                 default => throw new \LogicException('No delete for ' . $stored::class . '.'),
             };
-        } catch (TyreChangeRefused $refused) {
+        } catch (TyreChangeRefused | PartChangeRefused $refused) {
             throw $this->validation->of(ApiWriter::refusal($refused));
         }
     }
@@ -328,7 +329,7 @@ final readonly class ApiEditor
         try {
             // The incident link is the form's own field, not the API's: it stays as it is.
             $updated = $this->maintenance->update($vehicle, $entry, $data, $zone);
-        } catch (TyreChangeRefused $refused) {
+        } catch (TyreChangeRefused | PartChangeRefused $refused) {
             throw $this->validation->of(JsonInput::renamed(ApiWriter::refusal($refused), JsonInput::MAINTENANCE_FIELDS));
         }
 

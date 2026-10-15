@@ -252,7 +252,8 @@ final readonly class DigestSummary
                 continue;
             }
             $months++;
-            $sum = $sum->add($this->section($report, $currency)->total);
+            // A running figure: build spend (Phase 50.1) is left out (spec.md §7.7).
+            $sum = $sum->add($this->section($report, $currency)->runningTotal());
         }
         $average = $months >= self::MIN_MONTHS
             ? Money::of(Decimal::divide($sum->toDecimal(Money::SCALE), (string) $months, self::SCALE), $currency)
@@ -265,7 +266,9 @@ final readonly class DigestSummary
                 $largest = $item;
             }
         }
-        $named = $largest instanceof CostItem && $largest->amount->micros * 2 > $section->total->micros ? $largest : null;
+        // Only spend is named: a part sold back (a negative line, Phase 50.1) never is.
+        $named = $largest instanceof CostItem && $largest->amount->micros > 0
+            && $largest->amount->micros * 2 > $section->total->micros ? $largest : null;
 
         // Nothing spent: no cost per distance to compare (#367).
         return new VehicleSpend(

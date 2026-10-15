@@ -84,6 +84,7 @@
     --c-ins: #6d5bd0;
     --c-tax: #b07800;     /* 3.8:1 on white: a graphic needs 3:1 (#242) */
     --c-other: #788496;   /* 3.8:1 on white (#242) */
+    --c-build: #b5541c;   /* Modifications (Phase 50.1): 4.6:1 on white */
 
     /* Typography. */
     --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -194,6 +195,7 @@
         --c-ins: #9a8cff;
         --c-tax: #f2b340;
         --c-other: #66758b;
+        --c-build: #ff8f57;
         --overlay: rgba(0, 0, 0, 0.6);
         --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
         color-scheme: dark;
@@ -223,6 +225,7 @@
     --c-ins: #9a8cff;
     --c-tax: #f2b340;
     --c-other: #66758b;
+    --c-build: #ff8f57;
     --overlay: rgba(0, 0, 0, 0.6);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
@@ -3226,6 +3229,11 @@ a.list__title:hover {
     font-weight: 400;
 }
 
+/* A part's or modification's notes: long words and URLs wrap (Phase 50.1). */
+.part-notes {
+    overflow-wrap: anywhere;
+}
+
 .meta-grid--clip dd {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -5862,6 +5870,7 @@ a.list__title:hover {
         --c-maint: #000 !important;
         --c-ins: #000 !important;
         --c-other: #000 !important;
+        --c-build: #000 !important;
         --c-tax: #000 !important;
         --shadow: none !important;
 
@@ -7397,4 +7406,56 @@ p.stat__label {
     display: block;
     height: 0.5rem;
     margin-bottom: var(--space-2);
+}
+
+/* Parts and modifications (Phase 50.1, spec.md §7.39). */
+.list__thumb {
+    display: block;
+    width: 2.375rem;
+    height: 2.375rem;
+    flex: none;
+    overflow: hidden;
+    border-radius: 11px;
+    background: var(--surface-2);
+}
+
+.list__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.part-row {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    padding-block: var(--space-3, 0.75rem);
+    border-top: 1px solid var(--border);
+}
+
+.part-row:first-of-type {
+    border-top: 0;
+}
+
+.part-remove-list {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.part-remove {
+    display: grid;
+    gap: var(--space-2, 0.5rem);
+    padding-bottom: var(--space-3, 0.75rem);
+    border-bottom: 1px solid var(--border);
+}
+
+.part-timeline__outcome {
+    color: var(--muted);
+}
+
+.not-running-note {
+    color: var(--muted);
+    font-size: var(--fs-xs, 0.75rem);
 }

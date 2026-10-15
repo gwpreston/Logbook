@@ -253,7 +253,12 @@ final class RouteInventoryTest extends AppTestCase
         'trips.index', 'trips.create', 'trips.edit', 'trips.delete', 'incidents.index', 'incidents.create',
         'incidents.show', 'incidents.edit', 'incidents.delete', 'incidents.links', 'issues.index', 'issues.create',
         'issues.show', 'issues.edit', 'issues.delete', 'issues.watch', 'issues.reopen', 'issues.fix',
-        'issues.updates.create', 'issues.updates.edit', 'issues.updates.delete', 'issues.fleet', 'finance.index',
+        'issues.updates.create', 'issues.updates.edit', 'issues.updates.delete', 'issues.fleet',
+        // Phase 50.1: parts and modifications (spec.md §7.39).
+        'parts.index', 'parts.create', 'parts.show', 'parts.edit', 'parts.delete', 'parts.fit', 'parts.remove',
+        'modifications.create', 'modifications.show', 'modifications.edit', 'modifications.delete',
+        'modifications.revert', 'modifications.unrevert', 'modifications.from_maintenance', 'modifications.from_expense',
+        'finance.index',
         'finance.create', 'finance.show', 'finance.edit', 'finance.delete', 'finance.payments',
         'finance.events.delete', 'finance.quotes', 'finance.quotes.delete', 'finance.schedule', 'finance.end',
         'compliance.index', 'compliance.create', 'compliance.edit', 'compliance.delete', 'expenses.index',

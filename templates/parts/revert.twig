@@ -1,0 +1,84 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # *Revert* a modification (spec.md §7.39): a remap taken off, a car put
+ # back to standard. The modification stays in the record with a *Reverted*
+ # badge (its cost still counted: it was spent); the parts it fitted can come
+ # off, and the original parts it took off can go back on, in one save.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = 'modification.revert_title'|trans({title: modification.data.title}) %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set back = url_for('modifications.show', {id: vehicle.id, modification: modification.id}) %}
+{% set outcomes = ['kept', 'sold', 'returned', 'scrapped', 'other']|map(o => {value: o, label: ('part.outcome.' ~ o)|trans}) %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ back }}">{{ ui.icon('chevron_left') }}{{ modification.data.title }}</a>
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'modification.revert_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ url_for('modifications.revert', {id: vehicle.id, modification: modification.id}) }}">
+            {{ ui.csrf(csrf) }}
+            <section class="card">
+                <div class="form-row">
+                    {{ ui.input('reverted_on', 'modification.field.reverted_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                    {{ ui.input('odometer', 'modification.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                </div>
+                {{ ui.input('note', 'modification.field.revert_note'|trans, values, errors, {optional: true, maxlength: 500}) }}
+            </section>
+            {% if removable is not empty %}
+                <section class="card" aria-labelledby="revert-remove">
+                    <h2 id="revert-remove" class="card__title">{{ 'modification.revert_remove'|trans }}</h2>
+                    <ul class="part-remove-list">
+                        {% for part in removable %}
+                            {% set p = 'remove_' ~ part.id ~ '_' %}
+                            <li class="part-remove">
+                                <label class="toggle">
+                                    <input type="checkbox" name="remove_{{ part.id }}" value="1"{% if (values['remove_' ~ part.id] ?? '') == '1' %} checked{% endif %}>
+                                    <span class="toggle__text"><span class="toggle__title">{{ part.label() }}</span></span>
+                                </label>
+                                <div class="form-row">
+                                    {{ ui.select(p ~ 'outcome', 'part.field.outcome'|trans, values|merge({(p ~ 'outcome'): values[p ~ 'outcome'] ?? 'kept'}), errors, outcomes) }}
+                                    {% if can_see_costs(vehicle) %}
+                                        {{ ui.input(p ~ 'sold_price', 'part.field.sold_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal'}) }}
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+            {% if refittable is not empty %}
+                <section class="card" aria-labelledby="revert-refit">
+                    <h2 id="revert-refit" class="card__title">{{ 'modification.revert_refit'|trans }}</h2>
+                    <div class="chip-row">
+                        {% for part in refittable %}
+                            <label class="chip">
+                                <input type="checkbox" name="refit_{{ part.id }}" value="1"{% if (values['refit_' ~ part.id] ?? '') == '1' %} checked{% endif %}>
+                                <span>{{ part.label() }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('restart_alt') }}{{ 'modification.revert'|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ back }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

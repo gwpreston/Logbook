@@ -1,0 +1,76 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/parts.twig' as parts_ui %}
+
+{#
+ # The *Parts* tab (spec.md §7.39 *Pages*, #426): *Modifications* (current
+ # first, then reverted), then *Parts* with status filters as links. Each
+ # row's first photo is its thumbnail.
+ #}
+{% set active_nav = 'garage' %}
+{% set can_add = not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+
+{% block title %}{{ 'part.tab_title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        {% include 'vehicles/_header.twig' with {active_tab: 'parts'} %}
+
+        <div class="toolbar list-toolbar">
+            <h1 class="visually-hidden">{{ 'part.tab_title'|trans }}</h1>
+            {% if can_add %}
+                <div class="btn-row list-toolbar__actions">
+                    <a class="btn" href="{{ url_for('parts.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'part.add'|trans }}</a>
+                    <a class="btn btn--primary" href="{{ url_for('modifications.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'modification.add'|trans }}</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <section class="card" aria-labelledby="modifications-heading">
+            <h2 id="modifications-heading" class="card__title">{{ 'modification.title'|trans }}</h2>
+            {% if modifications is empty %}
+                <div class="empty">
+                    {{ ui.icon('handyman') }}
+                    <p class="empty__title">{{ 'modification.empty_title'|trans }}</p>
+                    <p>{{ 'modification.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="list">
+                    {% for modification in modifications %}
+                        {{ parts_ui.modification_row(modification, vehicle, currency, thumbnails.of('modification', modification.id), attachment_counts.of('modification', modification.id)) }}
+                    {% endfor %}
+                </ul>
+                <p class="not-running-note">{{ 'modification.not_running'|trans }}</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="parts-heading">
+            <h2 id="parts-heading" class="card__title">{{ 'part.title'|trans }}</h2>
+            {% if counts.all == 0 %}
+                <div class="empty">
+                    {{ ui.icon('inventory_2') }}
+                    <p class="empty__title">{{ 'part.empty_title'|trans }}</p>
+                    <p>{{ 'part.empty_body'|trans }}</p>
+                </div>
+            {% else %}
+                <nav class="chip-row" aria-label="{{ 'part.filter_label'|trans }}">
+                    {% for option in filters %}
+                        <a class="chip" href="{{ url_for('parts.index', {id: vehicle.id}, option == 'fitted' ? {} : {status: option}) }}"{% if filter == option %} aria-current="true"{% endif %}>
+                            {{- ('part.filter.' ~ option)|trans }} <span class="chip__count muted tabular">{{ counts[option] }}</span>
+                        </a>
+                    {% endfor %}
+                </nav>
+                {% if parts is empty %}
+                    <p class="muted">{{ ('part.filter_empty.' ~ filter)|trans }}</p>
+                {% else %}
+                    <ul class="list">
+                        {% for part in parts %}
+                            {{ parts_ui.part_row(part, vehicle, thumbnails.of('part', part.id), attachment_counts.of('part', part.id)) }}
+                        {% endfor %}
+                    </ul>
+                    {{ ui.pagination(pagination, 'parts.index', {id: vehicle.id}, filter == 'fitted' ? {} : {status: filter}) }}
+                {% endif %}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

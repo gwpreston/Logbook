@@ -6,7 +6,8 @@ namespace Logbook\Domain\Odometer;
 
 /**
  * Where an odometer reading came from. Readings from fill-ups, maintenance
- * entries, compliance documents, tyre changes, incidents, issues and MOT tests
+ * entries, compliance documents, tyre changes, incidents, issues, MOT tests,
+ * modifications and part fittings
  * are owned by that entry and change with it (an MOT test's only by
  * refreshing); the `purchase` reading (Phase 33.3) is the vehicle form's
  * *Mileage when bought*, owned by the vehicle itself.
@@ -25,6 +26,12 @@ enum OdometerSource: string
     case IssueUpdate = 'issue_update';
     // Phase 41 (spec.md §7.38, #322): a DVSA MOT test's odometer, changed only by refreshing.
     case Mot = 'mot';
+    // Phase 50.1 (spec.md §7.39, #421): a modification's mileage and its
+    // revert's, and a part's fitting or removal made without a record.
+    case Modification = 'modification';
+    case ModificationRevert = 'mod_revert';
+    case PartFitted = 'part_fitted';
+    case PartRemoved = 'part_removed';
 
     /**
      * Icon name in the vendored sprite (assets/vendor/icons.svg).
@@ -41,6 +48,8 @@ enum OdometerSource: string
             self::Purchase => 'key',
             self::Issue, self::IssueUpdate => 'report',
             self::Mot => 'fact_check',
+            self::Modification, self::ModificationRevert => 'handyman',
+            self::PartFitted, self::PartRemoved => 'inventory_2',
         };
     }
 }

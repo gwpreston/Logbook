@@ -56,9 +56,14 @@ final class Validator
         return is_string($value) ? trim($value) : '';
     }
 
+    /**
+     * A text value, its line breaks as `\n`: browsers post a textarea's as
+     * `\r\n`, so the same text counts the same whether it came from a form,
+     * the API or an import (#433).
+     */
     public function string(string $field, bool $required = false, int $maxLength = 255): ?string
     {
-        $value = $this->raw($field);
+        $value = str_replace(["\r\n", "\r"], "\n", $this->raw($field));
         if (!mb_check_encoding($value, 'UTF-8') || str_contains($value, "\0")) {
             $this->errors->add($field, 'validation.invalid');
 

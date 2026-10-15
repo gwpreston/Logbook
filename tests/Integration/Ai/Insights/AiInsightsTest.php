@@ -84,7 +84,7 @@ final class AiInsightsTest extends AskTestCase
         $page = (string) $browser->get('/insights')->getBody();
         self::assertStringNotContainsString('data-ai-insights-auto', $page);
         self::assertStringContainsString('Fuel came to £70.25 in 2025', $page);
-        self::assertStringNotContainsString('999', $page, '£999 did not come from Logbook: that insight is dropped');
+        self::assertStringNotContainsString('£999', $page, '£999 did not come from Logbook: that insight is dropped');
         self::assertStringNotContainsString('Fuel is dear', $page);
         self::assertStringNotContainsString('<mark class="ask-unverified"', $page, 'nothing unmatched is shown');
         self::assertStringContainsString('Costs · All vehicles · 1 Jan 2025 – 31 Dec 2025', $page, 'its source');

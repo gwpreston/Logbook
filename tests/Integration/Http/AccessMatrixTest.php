@@ -28,6 +28,11 @@ use Logbook\Repository\TripRepository;
 use Logbook\Repository\VehicleShareRepository;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Issue\IssueService;
+use Logbook\Domain\Part\ModificationCategory;
+use Logbook\Domain\Part\ModificationData;
+use Logbook\Domain\Part\PartData;
+use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\PartService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\ReminderService;
@@ -161,6 +166,24 @@ final class AccessMatrixTest extends AppTestCase
         'issues.updates.create' => self::LOG,
         'issues.updates.edit' => self::MANAGE,
         'issues.updates.delete' => self::MANAGE,
+        // Phase 50.1 (spec.md §7.39 *Access*): Log adds, fits, removes and reverts; the
+        // owner's part and modification are someone else's under Log, and so is the record made a modification.
+        'parts.index' => self::VIEW,
+        'parts.create' => self::LOG,
+        'parts.show' => self::VIEW,
+        'parts.edit' => self::MANAGE,
+        'parts.delete' => self::MANAGE,
+        'parts.fit' => self::LOG,
+        'parts.remove' => self::LOG,
+        'modifications.create' => self::LOG,
+        'modifications.show' => self::VIEW,
+        'modifications.edit' => self::MANAGE,
+        'modifications.delete' => self::MANAGE,
+        'modifications.revert' => self::LOG,
+        // Undo revert follows EntryAccess, as editing: the owner's modification needs Manage (#430).
+        'modifications.unrevert' => self::MANAGE,
+        'modifications.from_maintenance' => self::MANAGE,
+        'modifications.from_expense' => self::MANAGE,
         'finance.index' => self::FINANCE,
         'finance.create' => self::FINANCE,
         'finance.show' => self::FINANCE,
@@ -310,6 +333,16 @@ final class AccessMatrixTest extends AppTestCase
         $issue = $issues->create($vehicle, new IssueData($day('2026-09-08'), 'Knock'), new DateTimeZone('Europe/London'));
         $still = new IssueUpdateData($day('2026-09-09'), 'Still there');
         $note = $issues->addUpdate($vehicle, $issue, $still, new DateTimeZone('Europe/London'));
+        $modification = $this->service($app, ModificationService::class)->create(
+            $vehicle,
+            new ModificationData('Remap', ModificationCategory::Tune, $day('2026-09-02'), cost: '450.000'),
+            new DateTimeZone('Europe/London'),
+        );
+        $part = $this->service($app, PartService::class)->create(
+            $vehicle,
+            new PartData('Cold air intake'),
+            new DateTimeZone('Europe/London'),
+        );
         $agreement = $this->service($app, FinanceAgreementRepository::class)->insert($vehicle->id, new AgreementData(
             type: AgreementType::Hp,
             lender: 'Black Horse',
@@ -387,6 +420,8 @@ final class AccessMatrixTest extends AppTestCase
             'incident' => $incident->id,
             'issue' => $issue->id,
             'update' => $note->id,
+            'modification' => $modification->id,
+            'part' => $part->id,
             'agreement' => $agreement,
             'event' => $event,
             'quote' => $quote,
@@ -400,6 +435,9 @@ final class AccessMatrixTest extends AppTestCase
             'expenses' => $expense->id,
             'valuations' => $valuation->id,
             'trips' => $trip,
+            // *Make this a modification* takes the record it converts.
+            'modifications.from_maintenance' => $service->id,
+            'modifications.from_expense' => $expense->id,
         ];
 
         return [$vehicle, $ids, $browsers];
@@ -417,7 +455,9 @@ final class AccessMatrixTest extends AppTestCase
     {
         $prefix = explode('.', (string) $route->getName())[0];
 
-        return $this->requestRoute($browser, $route, $vehicle, ['entry' => $this->entryIds[$prefix] ?? $ids['entry']] + $ids);
+        $entry = $this->entryIds[(string) $route->getName()] ?? $this->entryIds[$prefix] ?? $ids['entry'];
+
+        return $this->requestRoute($browser, $route, $vehicle, ['entry' => $entry] + $ids);
     }
 
     /**

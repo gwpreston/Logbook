@@ -24,6 +24,8 @@ enum HistoryChip: string
     case Incidents = 'incidents';
     /** Issues noticed and fixed (Phase 40.1, spec.md §7.37). */
     case Issues = 'issues';
+    /** Modifications and parts fitted or removed without a record (Phase 50.1, spec.md §7.39). */
+    case Parts = 'parts';
     /** The only place trips are listed (Phase 22, spec.md §7.22). */
     case Trips = 'trips';
 
@@ -73,6 +75,12 @@ enum HistoryChip: string
             self::Trips => [ActivityKind::Trip],
             self::Incidents => [ActivityKind::Incident],
             self::Issues => [ActivityKind::IssueNoticed, ActivityKind::IssueFixed],
+            self::Parts => [
+                ActivityKind::Modification,
+                ActivityKind::ModificationReverted,
+                ActivityKind::PartFitted,
+                ActivityKind::PartRemoved,
+            ],
         };
     }
 
@@ -86,6 +94,7 @@ enum HistoryChip: string
             self::Trips => Feature::Trips,
             self::Incidents => Feature::Incidents,
             self::Issues => Feature::Issues,
+            self::Parts => Feature::Parts,
             self::Everything, self::Expenses, self::Mileage => null,
         };
     }
@@ -111,6 +120,7 @@ enum HistoryChip: string
             self::Trips => 'route',
             self::Incidents => 'car_crash',
             self::Issues => 'report',
+            self::Parts => 'handyman',
         };
     }
 }

@@ -452,7 +452,7 @@ MySQL only.
 
 **OdometerReading**
 - id, vehicle_id, reading_km (`decimal(12,3)`), recorded_at (UTC instant),
-  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`|`mot`), note (optional),
+  source (`manual`|`fuel`|`maintenance`|`document`|`tyre`|`incident`|`purchase`|`issue`|`issue_update`|`mot`|`modification`|`mod_revert`|`part_fitted`|`part_removed`), note (optional),
   fuel_entry_id (optional; set for `fuel` readings, removed with the fill-up
   by `ON DELETE CASCADE`), maintenance_entry_id, compliance_document_id and
   tyre_change_id (likewise, for `maintenance`, `document` and `tyre`
@@ -461,6 +461,12 @@ MySQL only.
   readings, Phase 40.1:
   an issue's or an update's odometer, §7.37), mot_test_id (likewise, for
   `mot` readings, Phase 41: a DVSA test's odometer, §7.38),
+  modification_id and modification_revert_id (likewise, for
+  `modification` and `mod_revert` readings, Phase 50.1: a
+  modification's mileage and its revert's), part_fitted_id and
+  part_removed_id (likewise, for `part_fitted` and `part_removed`
+  readings: a fitting's or a removal's mileage when no record made it,
+  §7.39),
   created/updated (UTC). Index `(vehicle_id, recorded_at)`.
 - Fuel and maintenance entries create/reference readings so mileage is one
   coherent series (see #230-style requirement). A fill-up writes its reading in
@@ -807,15 +813,87 @@ MySQL only.
   source).
 - In backups and `bin/export-user.php` (the user's vehicles' rows).
 
+**Modification** (Phase 50.1, §7.39), `modifications`
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (user, `ON DELETE SET
+  NULL`, as entry authorship), title (required, up to 120), category (a
+  code from §7.39's list, stored as text so a new one needs no
+  migration), done_on (calendar date), odometer_km (optional
+  `decimal(12,3)`), cost (`decimal(14,3)`, default 0, **0 allowed**),
+  fitted_by (optional, up to 120: a garage, or "Self"), notes (optional,
+  up to 2,200: room for a converted service record's whole title and
+  description, #431), declared_on (optional date: when the insurer was told;
+  read by Phase 50.2), reverted_on (optional date), reverted_odometer_km
+  (optional `decimal(12,3)`, only with reverted_on), reverted_note
+  (optional, up to 500, only with reverted_on), created/updated (UTC).
+  Index `(vehicle_id, done_on)`.
+
+**Part** (Phase 50.1), `parts`
+- id, vehicle_id (`ON DELETE CASCADE`), created_by (`ON DELETE SET
+  NULL`), name (required, up to 120), brand, part_number and
+  serial_number (optional, up to 80 each), supplier (optional, up to
+  120), bought_on (optional date), price (optional `decimal(14,3)`, for
+  reference: never a ledger line, #417), part_condition (`new` | `used` |
+  `reconditioned`, default `new`), origin (`original`: it came with the
+  car; `fitted`: everything else), warranty_months (optional, 1–600),
+  warranty_km (optional `decimal(12,3)`, above 0), warranty_from
+  (`purchase` | `fitting`; set when a warranty limit is), warranty_provider
+  (optional, up to 120), warranty_terms (optional, up to 500), notes
+  (optional, up to 2,000), the **computed, stored** status (`fitted` |
+  `stored` | `gone`), created/updated (UTC). Index `(vehicle_id,
+  status)`.
+- Status is replayed from the part's fittings and stored so lists can
+  query it, as a tyre's is (§6 Tyre); it is never edited directly.
+  Distance is never stored.
+
+**PartFitting** (Phase 50.1), `part_fittings`
+- id, part_id (`ON DELETE CASCADE`), fitted_on (date), fitted_odometer_km
+  (optional `decimal(12,3)`), fitted_maintenance_id and
+  fitted_modification_id (optional, at most one set: the record that
+  fitted it; `ON DELETE CASCADE`, though the services delete the rows
+  first, §7.39 *Deleting a record*), removed_on (optional date; null =
+  still fitted), removed_odometer_km (optional), removed_maintenance_id
+  and removed_modification_id (optional, at most one: the record that
+  removed it; `ON DELETE SET NULL`, the service reopening the fitting
+  first), outcome (`kept` | `sold` | `returned` | `scrapped` | `other`,
+  set exactly when removed_on is), sold_price (optional `decimal(14,3)`,
+  only when `sold`), replaced_by_part_id (optional, only when `returned`;
+  `ON DELETE SET NULL`), fitted_by_revert and removed_by_revert (bool,
+  default false: made by reverting the modification named, so *Undo
+  revert* can take back exactly those), created/updated (UTC). Index
+  `(part_id, fitted_on)`. Two fittings of one part never overlap, and only the last
+  may have an outcome other than `kept`.
+- Upgrading to 3.15.0 creates the three tables, the reading links
+  (`odometer_readings.modification_id`, `modification_revert_id`,
+  `part_fitted_id` and `part_removed_id`, `ON DELETE CASCADE`) and the
+  `modification` and `part` attachment owner types. Rolling it back turns
+  their readings into `manual` ones (links cleared), turns every
+  modification into an `other` expense owned by the vehicle's owner (never
+  the modification's author, so a member without costs never gains one as
+  their own entry, #435; its date, cost and times;
+  as the note its title, or the whole text when its notes begin with the
+  title, as *Make this a modification* keeps a longer one (#431), cut to
+  500) and moves its files to that expense, so a record converted by *Make
+  this a modification* keeps its money; then removes `part` attachment rows
+  (the files stay under `UPLOAD_PATH`) and drops the tables. Parts,
+  fittings and sale prices go with them. The rollback can be run again
+  after stopping part-way (MySQL and MariaDB commit at each schema change):
+  each modification is removed as its expense is written, and each schema
+  step is skipped once done (#434).
+- In backups and `bin/export-user.php` (the user's vehicles' rows). The
+  schema version moves: a backup from before 3.15.0 is restored with its
+  own version, then upgraded (§7.13).
+
 **Attachment**
 - id, vehicle_id (scopes every lookup; `ON DELETE CASCADE`), owner_type
   (`fuel`|`maintenance`|`compliance`|`expense`|`odometer`|`purchase`|
-  `sale`|`valuation`|`trip`|`incident`|`issue`; `odometer` for manual readings only;
+  `sale`|`valuation`|`trip`|`incident`|`issue`|`modification`|`part`; `odometer` for manual readings only;
   `purchase` and
   `sale` for the vehicle's purchase and sale, Phase 12, with owner_id = the
   vehicle's id; `valuation` for a valuation, Phase 14.1; `trip` for a trip,
   Phase 22; `incident` for an incident's photos and files, Phase 27.1;
-  `issue` for an issue's photos and files, Phase 40.1),
+  `issue` for an issue's photos and files, Phase 40.1; `modification`
+  and `part` for a modification's or a part's photos, receipts and
+  warranty papers, Phase 50.1),
   owner_id, filename (the uploaded name,
   sanitised, for display and downloads only), mime (detected from the
   content), size (bytes), stored_path (random name under `UPLOAD_PATH`),
@@ -923,7 +1001,8 @@ MySQL only.
   odometer_readings (`manual` readings; a derived reading's author is its
   entry's), maintenance_entries, compliance_documents, expense_entries,
   tyre_changes, vehicle_valuations and trips (Phase 22; a trip's author is
-  its driver and claimant), issues and issue_updates (Phase 40.1), and uploaded_by on attachments.
+  its driver and claimant), issues and issue_updates (Phase 40.1),
+  modifications and parts (Phase 50.1), and uploaded_by on attachments.
   Every create path sets it: forms, CSV import and the API take the
   signed-in or key's user; the command line and seeds, which have none,
   name the vehicle's owner. Upgrading to 2.0.0 names each vehicle's owner
@@ -1658,8 +1737,8 @@ jumps, going backwards) without blocking.
   history), *average per year since first registered* (below), distance
   logged; odometer-over-time chart; readings newest first (25 per page) with
   the distance since the one before and their source (*Manual*, *Fill-up*,
-  *Service*, *Document*, *Tyres*, and *Issue* from Phase 40.1, and *MOT*
-  from Phase 41). Each row shows a paperclip with its number of
+  *Service*, *Document*, *Tyres*, and *Issue* from Phase 40.1, *MOT*
+  from Phase 41, and *Modification* and *Part* from Phase 50.1). Each row shows a paperclip with its number of
   files: a manual reading's own, a derived reading's owning entry's.
 - **MOT readings** (Phase 41, §7.38): each read odometer of a fetched DVSA
   test is a `mot` reading at the test's instant. It is changed only by
@@ -1747,7 +1826,7 @@ math stays correct across gaps. Show per-fill and rolling consumption
   mobile tab bar) opens the *Log something* chooser (`/log/new`; a modal on
   desktop, §5): Fill-up, Odometer reading, Service record, Expense,
   Document, Service interval, Tyre change (Phase 11.1; opens *Fit tyres*),
-  Issue (Phase 40.1, §7.37) —
+  Issue (Phase 40.1, §7.37), Modification (Phase 50.1, §7.39) —
   choices of a switched-off module are left out. Fill-up goes to
   `/fuel/new`; the others to `/log/new/{odometer|maintenance|expense|
   document|schedule|tyre}`. Each goes straight to the form
@@ -1993,7 +2072,8 @@ reminders. Attach invoices/receipts. Cost of 0 is valid.
   odometer (typed in the user's distance unit; adds a reading to the mileage
   log, with the usual plausibility warning), cost (blank or 0 for free work),
   garage/shop, details, optionally the schedule it completes and, from
-  Phase 40.1, the issues it *Fixes* (§7.37). Listed
+  Phase 40.1, the issues it *Fixes* (§7.37), and from Phase 50.1 *Parts
+  fitted* and *Parts removed* (§7.39). Listed
   newest first (25 per page) and filterable by category (`?category=`).
 - **Last done** for a schedule is its latest entry (by date, then odometer);
   with none yet, the "last done" typed on the schedule.
@@ -2245,6 +2325,14 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   start date, else the day it was added), and each ad-hoc expense (*other*,
   zero included, since the owner logged it deliberately). Sums are exact
   (integer micro-units, never floats).
+- ***Modifications*** (`build`, Phase 50.1, §7.39): a modification with a
+  cost above 0 is one line, dated `done_on`; a part sold on removal is a
+  negative line in the group of the record that first fitted it. Build
+  spend counts in totals and the breakdown as its own group, and is left
+  out of every per-distance and per-month running figure (cost per
+  distance, average per month, cost of ownership's rates, true cost, the
+  digest, the cost checks), with "Not in cost per mile" beside the group
+  where such a figure sits next to it (#419).
 - **Tyre costs are maintenance costs** (Phase 11.1): a tyre change has no
   cost of its own; what was paid is on the `tyres` service record it is
   linked to (§7.17), so it is counted once, under *maintenance*. There is no
@@ -2284,6 +2372,7 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
 - **Archived vehicles** are left out of fleet reports unless
   `include_archived=1` is ticked; picking one explicitly always includes it.
 - **Costs filter** (Phase 26.2): `group=fuel|maintenance|compliance|other`
+  (and `build` from Phase 50.1, which shows no cost per distance)
   keeps only that group's ledger lines, in the totals, the chart, the
   table and the CSV. Distance is unchanged, so cost per distance becomes
   that group's (fuel cost per mile). Ask Logbook's sources link to it.
@@ -2425,7 +2514,9 @@ currency and never converted.
     sold (yes/no), distance owned (unit in the header), running costs per
     group and in total, depreciation, depreciation to (date), total, per
     distance (running, depreciation, total) and per month (running,
-    depreciation, total); a figure that cannot be worked out is empty.
+    depreciation, total), then (Phase 50.1, added last so earlier columns
+    keep their places) *Modifications (not a running cost)*; a figure that
+    cannot be worked out is empty.
 - **Cost of ownership page** (Phase 33.4; the Ownership report's screen
   layout, decided 2026-10-05, #186–#191): `/reports/ownership` keeps its
   URL, its filters (vehicle, *include archived*),
@@ -3297,7 +3388,8 @@ Disabled modules are removed from nav, routes, and dashboard.
   `tyres` (Phase 11.1), `trips` (Phase 22), `incidents` (Phase 27.1, on by
   default, decided 2026-10-01, `docs/phases/open-questions.md` #94),
   `finance` (Phase 29.1, on by default, §7.32), `issues` (Phase 40.1, on
-  by default, §7.37), `stations` (Phase 30.1,
+  by default, §7.37), `parts` (Phase 50.1, on by default, §7.39),
+  `stations` (Phase 30.1,
   on by default, §7.33; off whenever `fuel` is off), and
   from Phase 26.1 the AI
   modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
@@ -3311,7 +3403,8 @@ Disabled modules are removed from nav, routes, and dashboard.
   reports on and tyres, finance, incidents, issues, stations and trips off
   (the AI modules unchanged), so a later change of defaults never flips an
   existing install; installs that already have a `features` setting or
-  data are untouched. Decided 2026-10-14 (Phase 49.2): the write happens
+  data are untouched. From Phase 50.1 (#428) `parts` is in that off list
+  too; an install set up before keeps it on by default. Decided 2026-10-14 (Phase 49.2): the write happens
   with the first account (beside the weekly backup, §7.30) and only when
   there is no `features` setting. A module whose `FEATURES_<MODULE>`
   variable is set keeps what the variable says, so a self-hoster's
@@ -3382,6 +3475,7 @@ Disabled modules are removed from nav, routes, and dashboard.
     are hidden on tyre forms, existing links are kept untouched, and a
     linked change is listed on its own in history (without a cost).
   - `issues` off: as §7.37 *Module* lists. The data is kept.
+  - `parts` off: as §7.39 *Module* lists. The data is kept.
   - *Coming up* (§7.18) is core, like history: each module's items simply
     leave it. `maintenance` off: schedule items and tyre costs; `compliance`
     off: renewals; `tyres` off: tyre items; `reminders` off: manual
@@ -3485,7 +3579,8 @@ Extensible channel interface so more can be added.
       is left out. When one ledger line is more than half of the month's
       spend, it is named by its kind as listed (no change of case, which some languages need): "£604 spent, including Insurance £412".
     - *Cost per distance* (`ViewCosts` only): the month's spend ÷ its
-      distance, only when that distance is at least 100 km (as §7.35);
+      distance (from Phase 50.1 without *Modifications* lines, §7.39,
+      in the month and in its average), only when that distance is at least 100 km (as §7.35);
       otherwise "—". Its average is the 12 months' spend ÷ their distance
       (a ratio of totals, as the Reports page gives for that range), with
       the same 100 km floor.
@@ -4211,7 +4306,9 @@ vehicles; a disabled module cannot be imported).
   start date makes the row invalid.
 - A `tyre` or `purchase` reading in an odometer CSV imports as an ordinary
   manual reading (tyre history and vehicle details are not imported, so it
-  is not *implied*); the
+  is not *implied*), and so do `modification`, `mod_revert`, `part_fitted`
+  and `part_removed` readings (Phase 50.1: modifications and parts are not
+  imported either); the
   duplicate key (time and odometer) keeps a re-import from doubling it.
 - Imports go through the same services as the forms: a fill-up writes its
   odometer reading, a maintenance entry with an odometer writes its reading
@@ -4558,6 +4655,9 @@ with a printable service history to hand to a buyer.
 | Valuation (Phase 14.1) | `valued_on` | "Valued at £9,800 · Auto Trader valuation" |
   | Issue noticed (Phase 40.1) | `noticed_on` | title; "Affects safety" |
   | Issue fixed (Phase 40.1) | `fixed_on` | title; the record(s) that fixed it, or "Fixed without a record" |
+  | Modification (Phase 50.1) | `done_on` | title; category; "Fitted 2 parts" |
+  | Modification reverted (Phase 50.1) | `reverted_on` | title |
+  | Part fitted / Part removed (Phase 50.1) | `fitted_on` / `removed_on` | the part; only for a fitting or removal without a record (§7.39) |
   | MOT test (Phase 41) | the test's instant | "MOT passed" / "MOT failed", mileage, number of defects; not listed when the test became an `inspection` document, whose row carries it (§7.38). Under the *Documents* chip |
 
   **A tyre change linked to a service record is never listed on its own**
@@ -4602,9 +4702,10 @@ with a printable service history to hand to a buyer.
   print view list plainly).
 - **Kind chips** under the toolbar: *Everything* (default), *Service*,
   *Fuel*, *Tyres*, *Documents*, *Expenses*, *Mileage*, *Incidents*
-  (Phase 27.1, §7.29) and *Issues* (Phase 40.1, §7.37). Each is a link
+  (Phase 27.1, §7.29), *Issues* (Phase 40.1, §7.37) and *Parts* (Phase
+  50.1, §7.39). Each is a link
   (`?kind=service` / `fuel` / `tyres` / `documents` / `expenses` /
-  `mileage` / `incidents` / `issues`), one chosen at a time,
+  `mileage` / `incidents` / `issues` / `parts`), one chosen at a time,
   with `aria-current` on the chosen one; a switched-off module's chip is
   hidden, and an unknown (or switched-off) value falls back to *Everything*.
   Milestones show under *Everything* only.
@@ -6288,6 +6389,8 @@ wrong.
          its vehicle's currency, so there is nothing to convert.
        - Only records dated within the last **12 months** are raised, so
          old history doesn't flood the list.
+       - A modification (Phase 50.1, §7.39) is never a maintenance record,
+         so build spend is neither flagged nor part of a baseline (#425).
        - **Title:** "Service on 14 Mar cost £6,400, about 30× your usual
          £212. Check the amount.", with the same digit wording as item 8.
        - *Fix* opens the record's edit form. *Looks right* hides a genuine
@@ -6647,8 +6750,8 @@ request to any model service.
   |---|---|---|
   | `find_vehicles(query)` | vehicle repository | matches by name, make, model, registration |
   | `vehicle_summary(vehicle)` | overview services | odometer, age, economy, running cost, next due |
-  | `costs(vehicles?, period, group_by?)` | Reports (§7.7) | totals by category group, month or vehicle, per currency, and distance driven |
-  | `cost_per_distance(vehicles?, period)` | Reports | per vehicle and fleet, with distance |
+  | `costs(vehicles?, period, group_by?)` | Reports (§7.7) | totals by category group, month or vehicle, per currency, and distance driven; with build spend (Phase 50.1) also the running total and the build total, and a monthly average of running costs only (none for `category=build`) |
+  | `cost_per_distance(vehicles?, period)` | Reports | per vehicle and fleet, with distance; each total is the running total the rate divides (modifications left out) |
   | `fuel_stats(vehicle?, period, grade?)` | fuel services, Phase 16 | economy, volume, spend, price per unit, by grade, verdicts |
   | `maintenance(vehicle, category?, text?, period?, limit?)` | maintenance repository | records, newest first |
   | `last_done(vehicle, category or schedule)` | schedules (§7.4) | last date and odometer |
@@ -8590,7 +8693,10 @@ it replaces none of the other figures.
 - **Parts:** *Fuel*, *Maintenance*, *Documents* and *Other* are the cost
   ledger's groups (§7.7), read through the same ledger with its rules: tyre
   costs under maintenance, Phase 29's finance lines under other, and
-  switched-off modules left out. *Depreciation* is the fifth part. Labels
+  switched-off modules left out. *Depreciation* is the fifth part.
+  *Modifications* (Phase 50.1, §7.39) are **not** a part: build spend is
+  not a running cost (#419), so true cost, its periods and *What changed*
+  leave it out, and *What changed* never names it as a cause. Labels
   and icons are fixed and translated (*Fuel*, *Maintenance*, *Insurance,
   tax and MOT* for documents, *Other*, *Depreciation*). **Insurance
   payouts** (Phase 27.1, `incidents` on) stay what §7.7 makes them: their
@@ -9327,6 +9433,228 @@ overview while any test is unreviewed. A test is reviewed
   inspection records (the provider interface allows them later); the
   variant, which DVSA doesn't give (#3 stays in §12 for it).
 
+### 7.39 Parts and modifications (Phases 50.1 and 50.2)
+
+What was fitted, what came off, and what the build has cost, kept apart
+from what the car costs to run. A **part** is the physical item (name,
+brand, part number, supplier, price, condition, receipt, warranty),
+fitted and removed at a date and mileage, more than once. A
+**modification** is the build work (title, category, date, mileage,
+cost, who fitted it, the parts it fitted and what it took off). Decided
+2026-10-14 (`docs/phases/open-questions.md` #416–#428).
+
+- **Data:** §6 Modification, Part, PartFitting; the odometer reading
+  sources `modification`, `mod_revert`, `part_fitted` and
+  `part_removed`; the attachment owner types
+  `modification` and `part`.
+- **Costs stay on the record that fitted the part** (#417), as tyre costs
+  stay on their service record (§7.17), so nothing is counted twice. A
+  service record's cost stays *Maintenance*. A modification's cost is the
+  ledger group ***Modifications*** (`build`, §7.7). A part's price is for
+  reference and a warranty claim only, never a ledger line: a part bought
+  for a DIY job is costed by logging the job as a service record or
+  modification with that cost.
+- **Build spend is not a running cost** (requested by the owner
+  2026-10-11; decided 2026-10-14, #419). It counts in total spend, the
+  Expenses tab, Reports' totals, breakdown and monthly spend, and cost of
+  ownership's *Total so far*, as its own group with "Not in cost per
+  mile" (the owner's distance unit) beside it wherever a per-distance
+  figure sits next to it. It is left out of **every per-distance and
+  per-month running figure**: Reports' and the Expenses tab's cost per
+  distance and average per month (a vehicle's and the fleet's), cost of
+  ownership's *Per distance* and *Per month* (and so the trips report's
+  cost per business mile, §7.23), true cost and *What changed* (§7.35),
+  the dashboard's running-cost widgets, the digest's *Last month* cost
+  per distance (§7.11), and the cost checks (§7.24, #425: left out of
+  their baselines, never flagged). `?group=build` on Reports shows the
+  group's total and no cost per distance. Build spend never changes the
+  purchase price, a valuation or depreciation: treating it as capital
+  would invent a value the owner never recorded (§7.1).
+- **A part sold** (#420): the sale price on a removal with outcome *Sold*
+  is a negative ledger line dated the removal, in the group of the record
+  that first fitted the part (*Maintenance* for a service record, else
+  *Modifications*, including `original` parts and parts first fitted
+  without a record), so a build's net cost is what the owner paid less
+  what they got back. Its title is "Sold: {part}".
+- **Parts:** add, edit, delete, on the vehicle. Fields: name (required,
+  up to 120), brand, part number and serial (up to 80 each), supplier (up
+  to 120), bought on (not after today) and price (0 allowed), condition
+  (*New*, *Used*, *Reconditioned*), notes (up to 2,000), files (receipts,
+  photos, warranty papers), and the **warranty**: months and/or a
+  distance (each positive), *Starts from* (#427: *Purchase date* or
+  *Fitting*, defaulting to the purchase date when there is one, else the
+  first fitting; the distance limit always counts from the first
+  fitting's mileage), provider (up to 120) and terms (up to 500). A part
+  page shows "In warranty until 3 Mar 2028 or 85,400 mi" while every set
+  limit holds, "Warranty ended 3 Mar 2028" after, and nothing without a
+  warranty. Deleting a part deletes its fittings, their readings and its
+  files.
+- **Status** (*Fitted*, *Stored*, *Gone*) is replayed from the part's
+  fittings and stored, as a tyre's is: no fittings, or the last one
+  removed with outcome *Kept*, is *Stored* (a spare bought ahead is a
+  stored part); an open fitting is *Fitted*; the last one removed with any
+  other outcome is *Gone*.
+- **Fittings** (§6 PartFitting): fitted on a date (not after today) and
+  optionally a mileage; removed on a date (not before the fitting, not
+  after today), optionally a mileage, with an **outcome**: *Kept*
+  (stored), *Sold* (with a price, 0 allowed, only then), *Returned* (under
+  warranty, optionally naming the part that replaced it), *Scrapped* or
+  *Other*. Two fittings of one part may not overlap (a fitting starting
+  the day another ended is allowed), and a refused save names the part
+  and both fittings' dates. Only a *Stored* part can be fitted again, so
+  only the last fitting has an outcome other than *Kept*.
+- **Fitting without a record** (#418): a part's page has *Fit*, *Remove*
+  and *Fit again* with no record and no cost, for a part *Already on the
+  car* and a stored part going back on. A fitting or removal made by a
+  record takes that record's date and mileage.
+- **Distance** is derived, never stored: the sum of each fitting's span
+  (removed mileage, or for an open fitting the vehicle's current reading
+  (§7.2), minus fitted mileage). A fitting without a fitted mileage, or a
+  removed one without a removed mileage, counts nothing and the total
+  says "at least"; a negative span counts as 0 and is flagged ("A
+  reading goes backwards between 3 Mar and 9 Jun"), as for tyres.
+- **Odometer** (#421): a modification's mileage, its revert's mileage, and
+  a fitting's or removal's mileage when no record made it, each **add a
+  reading** (sources `modification`, `mod_revert`, `part_fitted`
+  and `part_removed`, local noon on its date,
+  with the usual plausibility warning), written, moved and removed with
+  it in the same transaction. A fitting or removal made by a record adds
+  none: the record's own reading covers it.
+- **Modifications:** add, edit, delete, *Revert* and *Undo revert*.
+  Fields: title (required, up to 120), category, done on (not after
+  today), odometer, cost (0 allowed), fitted by (up to 120: a garage, or
+  "Self"), notes (up to 2,000), files, and the parts lists below. A
+  modification may fit no parts at all (an ECU tune, a wrap).
+- **Categories** (#424), stored as codes, in this order: `exhaust`
+  *Exhaust*, `suspension` *Suspension*, `wheels` *Wheels*, `tune` *ECU
+  tune*, `intake` *Intake*, `audio` *Audio*, `lighting` *Lighting*,
+  `body` *Bodywork*, `engine` *Engine internals*, `brakes` *Brakes*,
+  `interior` *Interior*, `electrical` *Electrical*, `security` *Security
+  and tracking*, `other` *Other*.
+- **Fitting parts from a record** (§7.4): the modification form and the
+  service record form (page and modal, with and without JS) get
+  - ***Parts fitted***: new parts, each an inline row (name, brand, part
+    number, supplier, price; condition, warranty and notes behind
+    *More*), created with the record in the same transaction, so a
+    one-part modification is one save; and the vehicle's *Stored* parts
+    as a checklist, fitted again;
+  - ***Parts removed***: the vehicle's *Fitted* parts as a checklist, each
+    with its outcome (*Kept* by default; a sale price for *Sold*), and
+    ***Record what came off***: an inline row (name, brand, part number,
+    outcome) that creates an `original` part fitted from the vehicle's
+    purchase date (else the removal date), with no fitted mileage, and
+    removed by this record, usually *Kept*.
+  Without JS the form shows one empty new-part row and one *Record what
+  came off* row; *Add another* re-renders the form with one more. A
+  fitting or removal made by a record has the record's date and mileage
+  and moves with it when the record is edited; unticking a part on the
+  record removes that fitting (or reopens that removal). The lists are
+  shown only with the `parts` module on, and the checklists only when
+  there is a part to list.
+- **Deleting a record** (a service record or a modification): the
+  fittings it made are deleted (the parts stay, usually *Stored*), and
+  the removals it made are reopened (the part is *Fitted* again; its
+  outcome and sale price go). A delete that would leave two fittings
+  overlapping is refused, naming the part. The delete confirmation names
+  the parts it changes. Deleting a part never deletes a record.
+- **Reverting a modification** (a remap taken off, a car put back to
+  standard): a date (today by default, not before the modification),
+  optional mileage and note; it offers, ticked, to remove the parts this
+  modification fitted that are still fitted (outcome *Kept* unless
+  changed), and to fit again the stored `original` parts it removed, in
+  the same save. The modification stays in the record with a *Reverted*
+  badge, its cost still counted (it was spent). *Undo revert* clears the
+  revert and reopens the removals and deletes the fittings it made; it is
+  refused while a part the revert put back has come off again since (kept,
+  sold, returned or scrapped), as taking that fitting back would erase it (#432).
+- ***Make this a modification*** (#423) on a service record's and an
+  expense's page (one at a time, never automatic or in bulk): a form
+  prefilled from the record (title from its title or note, category
+  *Other*, date, mileage, cost, notes; a title or note longer than a
+  modification's 120-character title is cut to its first 120 characters
+  and kept whole in *Notes*, ahead of a service record's description, so
+  no text is lost: decided 2026-10-15, #431) that on save creates the
+  modification, moves the record's files to it, and deletes the record in
+  the same transaction. A service record that fits or removes parts, or
+  completes a schedule or fixes an issue, is refused with the reason
+  (those links have no place on a modification). It needs `Log` on the
+  vehicle and the right to delete the record (`EntryAccess`).
+- **Pages:**
+  - ***Parts* tab** (#426) `/vehicles/{id}/parts`, after *Issues*:
+    *Modifications* (current first, newest done first, then reverted
+    ones), then *Parts* with filters *Fitted* (default), *Stored*,
+    *Gone*, *All* (`?status=`, links with `aria-current`; 25 parts per
+    page, every modification listed), and *Add modification* and *Add
+    part*. Each row has a
+    thumbnail when it has an image (below).
+  - **Overview card** *Modifications*: current modifications (newest
+    first, up to five, *Show all* to the tab), total build spend (all
+    time, with `ViewCosts`) and the number of parts in warranty. Hidden
+    when the vehicle has no modifications and no parts.
+  - **Modification page** `/vehicles/{id}/modifications/{mod}`: title,
+    category, *Reverted* badge, date and mileage, cost (with `ViewCosts`),
+    fitted by, notes, photos and files, the parts it fitted and removed
+    (each linking to its part), and *Edit*, *Revert* / *Undo revert*,
+    *Delete*.
+  - **Part page** `/vehicles/{id}/parts/{part}`: name, brand, part number,
+    serial, status, condition, supplier, bought on and price (with
+    `ViewCosts`), warranty, distance on the vehicle, notes, photos and
+    files, its fittings as a timeline (each fitted and removed date,
+    mileage, the record that did it, the outcome), and *Edit*, *Fit* /
+    *Fit again*, *Remove*, *Delete*.
+  - **Add / edit** as every entry form: a modal on desktop and its own
+    page without JS.
+  - ***Log entry* chooser:** *Modification* (`/log/new/modification`),
+    after *Issue*.
+  - **Mileage tab** source labels *Modification* and *Part*.
+  - **Archived vehicles** keep their parts and modifications read-only.
+- **Photos:** a modification's or part's image attachments (§7.12) show
+  as a gallery on its page, before its other files; the first image (the
+  earliest attached) is the thumbnail on its row on the *Parts* tab and
+  on the overview card. No new data; choosing a cover is not in Phase
+  50.1.
+- **History** (§7.16): kinds *Modification* (`done_on`; title, category,
+  "Fitted 2 parts"), *Modification reverted* (`reverted_on`), *Part
+  fitted* and *Part removed* (a fitting or removal without a record; one
+  made by a service record or modification folds into that record's row
+  as a second line, "Fitted Bilstein B14 · removed Standard dampers"),
+  under a *Parts* chip (`?kind=parts`). The printable service history
+  lists modifications (date, mileage, title, category, *Reverted*) and,
+  with *Show costs*, their cost.
+- **Module** (#422, #428): `parts` (Settings → Modules, `FEATURES_PARTS`),
+  on by default for existing installs and **off on a new install** with
+  the other non-core modules (§7.10). Off: the tab, pages and routes
+  (404), the overview card, the chooser's *Modification*, the parts lists
+  on the service record form (existing fittings kept untouched), the
+  History kinds and chip, the print section, and the `build` and sold-part
+  lines leave every report, as any module's costs do. Readings already
+  written stay in the mileage log. The data is kept.
+- **Access** (§7.21): viewing needs `View`; adding, *Fit*, *Remove*, *Fit
+  again* and *Revert* need `Log`; editing and deleting follow `EntryAccess`
+  (own under `Log`, any under `Manage`), and so does *Undo revert*: it
+  rewrites the record, and can take back a sale price someone else typed
+  (decided 2026-10-15, #430). Costs, prices and sale prices
+  need `ViewCosts`; without it they are hidden and the inline price
+  fields are not shown. The own-entry rule (§7.21 `canSeeAmount`) does not
+  apply to them: a member without `ViewCosts` never types them, so adding
+  a part or a modification does not make its amount theirs (decided
+  2026-10-15, merge review). Any price, cost or sale price such a member
+  sends is ignored: a new record gets none (a modification's cost is 0),
+  an edit keeps the stored one, and a sale is recorded without a price.
+  A member who makes their own expense or service record a modification
+  stops seeing its amount.
+- **Backups** and `bin/export-user.php` carry the three tables. The schema
+  version moves: a backup from before 3.15.0 is restored with its own
+  version, then upgraded (§7.13).
+- **Phase 50.2 — elsewhere:** warranty reminders, the list for an
+  insurer, the sale pack, scanning a receipt into a part, the API, Ask,
+  MCP, CSV and webhooks.
+- **Not in scope:** tyres (§7.17 keeps them; wheels are parts, the tyres
+  on them are not); a parts inventory away from any vehicle (#79 stays)
+  and moving a part to another vehicle; planned modifications or a wish
+  list; changing value or depreciation; catalogue lookups, part-number
+  decoding or any AI suggestion of a part or its fit.
+
 ---
 
 ## 8. Cross-cutting requirements
@@ -9355,6 +9683,9 @@ overview while any test is unreviewed. A test is reviewed
   `DateTimeImmutable`, explicit tests. (Primary defence against wrong totals.)
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
+  Text keeps its line breaks as `\n`: a browser posts a textarea's as
+  `\r\n`, so they are stored and counted once, and the same text fits the
+  same limit from a form, the API or an import (#433).
 - **Show the working: "as of" dates** (Phase 48.1, decided 2026-10-13,
   #403–#406): when a figure depends on a dated input that isn't today, the
   date of that input is shown beside it, and an estimate names what it is
@@ -10580,6 +10911,19 @@ task breakdowns live in the per-phase files; this is the map.
   fewer modules on new installs, and a first-visit note for a shared user
   (§7.8, §7.9, §7.10; #411–#415 decided 2026-10-14). See
   [`phase-49.md`](docs/phases/phase-49.md).
+- **Phase 50.1 — Parts and modifications.** Parts (number, supplier,
+  price, condition, receipt, warranty) fitted and removed more than once
+  with their distance on the vehicle; modifications that fit parts and
+  record what came off, with *Revert*; a service record fits parts too;
+  the ledger group *Modifications* (`build`), counted in spend and never
+  in a running cost per distance; the *Parts* tab, pages, overview card,
+  History and print; *Make this a modification*; module `parts` (§6,
+  §7.4, §7.7, §7.10, §7.16, §7.35, §7.39; #416–#428 decided 2026-10-14).
+  One migration. See [`phase-50.1.md`](docs/phases/phase-50.1.md).
+- **Phase 50.2 — Warranties, the insurer's list and parts everywhere +
+  release.** Warranty reminders, the list for an insurer, the sale pack,
+  scanning, the API, Ask, MCP, CSV and webhooks for §7.39; release
+  v3.15.0. See [`phase-50.2.md`](docs/phases/phase-50.2.md).
 
 ---
 
