@@ -26,6 +26,7 @@ use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Tyre\TyreChangeForm;
+use Logbook\Service\Part\PartChangeRefused;
 use Logbook\Service\Tyre\TyreChangeRefused;
 use Logbook\Service\Tyre\TyreChangeService;
 use Logbook\Service\Tyre\TyreFormContexts;
@@ -443,16 +444,17 @@ final readonly class ApiWriter
     }
 
     /**
-     * A tyre change the service refused (spec.md §7.17) as the form's error.
+     * A tyre change (spec.md §7.17) or a part fitting (§7.39) the service
+     * refused, as the form's error.
      */
-    public static function refusal(TyreChangeRefused $refused): ValidationErrors
+    public static function refusal(TyreChangeRefused|PartChangeRefused $refused): ValidationErrors
     {
         $params = [];
         foreach ($refused->params as $name => $value) {
             $params[$name] = $value instanceof DateTimeImmutable ? $value->format('Y-m-d') : $value;
         }
         $errors = new ValidationErrors();
-        $errors->add($refused->field, $refused->key, $params);
+        $errors->add($refused instanceof TyreChangeRefused ? $refused->field : 'form', $refused->key, $params);
 
         return $errors;
     }

@@ -50,14 +50,14 @@ final readonly class OwnershipCost
         public int $months,
         /** Kilometres driven in the period (canonical decimal), or null. */
         public ?string $distanceKm,
-        /** Net of insurance payouts (Phase 27.1): what the running costs came to. */
+        /** Net of insurance payouts (Phase 27.1): what the running costs came to, build spend left out. */
         public Money $running,
         public int $count,
         public array $groups,
         public Depreciation $depreciation,
         /** The loss as a cost (a gain is negative: money back); null without a price and a value. */
         public ?Money $depreciationCost,
-        /** Running + depreciation; null without both. */
+        /** Running + build + depreciation; null without a depreciation. */
         public ?Money $total,
         public ?string $runningPerKm,
         public ?string $depreciationPerKm,
@@ -82,6 +82,11 @@ final readonly class OwnershipCost
         public ?Money $financeCharges = null,
         /** The two readings the distance is the difference of, for the working (spec.md §8). */
         public ?DistanceSpan $distanceSpan = null,
+        /**
+         * Build spend in the period (Phase 50.1, #419): in the total, never in
+         * the running costs or a rate; null with none.
+         */
+        public ?Money $build = null,
     ) {
     }
 
@@ -114,6 +119,7 @@ final readonly class OwnershipCost
 
         $zero = Money::zero($currency);
         $running = $zero;
+        $build = $zero;
         $count = 0;
         $charges = null;
         /** @var array<string, Money> $byGroup */
@@ -122,8 +128,12 @@ final readonly class OwnershipCost
             if ($item->vehicle->id !== $vehicle->id || !$period->contains($item->date)) {
                 continue;
             }
-            $running = $running->add($item->amount);
             $byGroup[$item->group()->value] = $byGroup[$item->group()->value]->add($item->amount);
+            if (!$item->group()->isRunning()) {
+                $build = $build->add($item->amount);
+                continue;
+            }
+            $running = $running->add($item->amount);
             $count++;
             if ($item->financeKind !== null && $item->financeKind !== FinanceLineKind::Rental && !$item->fromLease) {
                 $charges = ($charges ?? $zero)->add($item->amount);
@@ -141,13 +151,16 @@ final readonly class OwnershipCost
                 $received = $received->add($payout->amount);
             }
         }
-        $gross = $running;
+        $gross = $running->add($build);
         $running = $running->subtract($received);
         $groups = array_map(
             static fn (CostGroup $g): GroupTotal => new GroupTotal(
                 $g,
                 $byGroup[$g->value],
-                $gross->micros === 0 ? 0.0 : $byGroup[$g->value]->micros / $gross->micros * 100,
+                // 0–100: a part sold back can make a group negative (Phase 50.1).
+                $gross->micros <= 0 || $byGroup[$g->value]->micros <= 0
+                    ? 0.0
+                    : min(100.0, $byGroup[$g->value]->micros / $gross->micros * 100),
             ),
             CostGroup::cases(),
         );
@@ -155,7 +168,7 @@ final readonly class OwnershipCost
         $depreciationCost = $depreciation->state === DepreciationState::Ready && $depreciation->change !== null
             ? $zero->subtract(Money::of($depreciation->change, $currency))
             : null;
-        $total = $depreciationCost === null ? null : $running->add($depreciationCost);
+        $total = $depreciationCost === null ? null : $running->add($build)->add($depreciationCost);
 
         // Only when the mileage log reaches back to the start: otherwise the
         // whole period's costs would be divided by part of its distance.
@@ -216,6 +229,7 @@ final readonly class OwnershipCost
             settlementIsSale: $settlementIsSale,
             financeCharges: $charges,
             distanceSpan: $span,
+            build: $build->isZero() ? null : $build,
         );
     }
 

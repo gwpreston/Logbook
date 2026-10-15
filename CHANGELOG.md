@@ -6,6 +6,89 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 50.1 (ships with 50.2 as **v3.15.0**): **parts and modifications.**
+What was fitted, what came off, and what the build has cost, kept apart from
+what the car costs to run. See [docs/parts.md](docs/parts.md).
+
+### Added
+- **Parts** on each vehicle: name, brand, part number, serial, supplier,
+  price, condition, receipt and photos, and a **warranty** (months and/or a
+  distance, from the purchase date or the fitting: "In warranty until 3 Mar
+  2028 or 85,400 mi"). A part is fitted and removed at a date and mileage,
+  more than once, with what happened to it when it came off (kept, sold,
+  returned under warranty, scrapped), and its **distance on the vehicle**.
+- **Modifications** (a remap, coilovers, a cat-back exhaust, wheels): title,
+  category, date, mileage, cost, who fitted it, notes and photos. The same
+  form fits new parts and records **what came off**, so a one-part
+  modification is one save. **Revert** puts the car back to standard and
+  keeps the modification in the record, marked *Reverted*.
+- **Parts fitted** and **Parts removed** on the service record form too, so
+  the clutch a garage fitted is a part with its warranty.
+- A **Parts** tab after Issues, an overview card (current modifications,
+  build spend, parts in warranty), *Modification* in *Log entry*, History
+  under a *Parts* chip, and modifications in the printable service history.
+- **Make this a modification** on a service record or an expense, for a
+  build logged before this release, one at a time; a title or note longer than 120
+  characters keeps its whole text in *Notes*.
+- *Undo revert* (only on a modification you may edit) is refused, with a
+  message, while a part the revert put back has come off again since: undo
+  that first, so its sale or removal isn't erased.
+- `FEATURES_PARTS` and the *Parts and modifications* module (on for
+  existing installs, off on new ones).
+- Part prices, modification costs and sale prices need *Can see costs*,
+  even on a part or modification a member added: without it they aren't
+  shown or asked for, and a member's edit keeps the owner's figures.
+
+### Changed
+- A modification's cost is a new cost group, ***Modifications***: counted in
+  total spend, the Expenses tab, Reports and cost of ownership's total, and
+  **never in a running cost per mile or per month** (Reports, the Expenses
+  tab, cost of ownership's rates, true cost and *What changed*, the digest,
+  the trips report's cost per business mile, the cost checks). A part sold as
+  it came off is money back in the group of the record that fitted it.
+- Reports' average per month is of running costs, so it leaves build spend
+  out; the ownership CSV gets a final *Modifications (not a running cost)* column (added last, so existing positions don't move).
+- The API's odometer readings may have the sources `modification`,
+  `mod_revert`, `part_fitted` and `part_removed`, `GET /me` lists
+  the `parts` module, and `/reports/costs` takes and returns the group
+  `build`. `GET /vehicles/{id}/ownership`'s `running_costs` leaves modifications
+  out while its `total` includes them. The rest of the API for parts comes
+  with Phase 50.2.
+- Ask and MCP: `costs` takes the category `build` and, with build spend,
+  returns `running_total`, `build_total` and a note; its
+  `average_per_month` (null for `category=build`) and `cost_per_distance`'s
+  totals count running costs only. See [docs/mcp.md](docs/mcp.md).
+- All text input (forms, the API, MCP and AI drafts, imports) is stored
+  with its line breaks as `\n`: `\r\n` and `\r` become `\n`, and a line
+  break counts once towards a limit. Text saved before the upgrade is
+  unchanged.
+
+### Upgrading
+- One migration (three tables and four reading links), reversible on every
+  engine. Rolling it back keeps the money: each modification becomes an
+  *Other* expense owned by the vehicle's owner, with its date, cost and
+  files, its title as the note (or
+  the whole note *Make this a modification* kept, up to 500 characters),
+  and readings from modifications and parts become ordinary ones. Its
+  other notes, *fitted by*, category and revert details are not kept, nor a
+  converted record's vendor or expense category. Parts, their fittings and
+  sale prices are dropped, so total spend rises by any sale prices; part
+  photos and receipts stay on disk but are no longer shown. On MySQL and
+  MariaDB, take a backup before rolling back; a rollback that stops
+  part-way can be run again.
+- Backups carry the new tables. The schema version moves: restore an older
+  backup with its own version, then upgrade.
+- CSV: the ownership export's new column is the last one. An odometer CSV
+  with `modification`, `mod_revert`, `part_fitted` or `part_removed`
+  readings imports them as ordinary readings.
+- API: the new reading sources, the `build` group and the attachment owner
+  types `modification` and `part` are new enum values; a client that
+  rejects unknown values should accept them. Text is returned with `\n`
+  line breaks when it was saved from now on, even if sent with `\r\n`:
+  compare after normalising line breaks. A maintenance
+  `PATCH` or `DELETE` that would put a part's fittings out of order is
+  refused with a 422 `validation_failed` (key `part.refused.*`).
+
 ## [3.14.0] — 2026-10-14
 
 Phase 49: **getting started.** A new user is taken from an empty garage to a

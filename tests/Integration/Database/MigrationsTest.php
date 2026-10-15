@@ -80,6 +80,9 @@ final class MigrationsTest extends AppTestCase
         'mot_tests',
         'mot_defects',
         'mot_history_secrets',
+        'modifications',
+        'parts',
+        'part_fittings',
     ];
 
     /** Tables with a Phase 19 created_by column. */
@@ -140,6 +143,18 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 50.1: parts, modifications, fittings and the four reading links.
+        self::assertTrue($schema->tablesExist(['modifications', 'parts', 'part_fittings']));
+        self::assertTrue($this->hasColumn('odometer_readings', 'modification_id'));
+        Migrator::run('rollback');
+        foreach (['part_fittings', 'parts', 'modifications'] as $table) {
+            self::assertFalse($schema->tablesExist([$table]), sprintf('rollback must drop %s', $table));
+        }
+        foreach (['modification_id', 'modification_revert_id', 'part_fitted_id', 'part_removed_id'] as $column) {
+            $message = sprintf('rollback must drop odometer_readings.%s', $column);
+            self::assertFalse($this->hasColumn('odometer_readings', $column), $message);
+        }
+
         // Phase 41: MOT history from DVSA, its secrets, the vehicle columns and the reading link.
         self::assertTrue($schema->tablesExist(['mot_tests', 'mot_defects', 'mot_history_secrets']));
         self::assertTrue($this->hasColumn('odometer_readings', 'mot_test_id'));

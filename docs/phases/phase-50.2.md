@@ -46,7 +46,7 @@ insurer's list) and §7.13 (CSV).
 
 ## Spec (proposed)
 
-Added to §7.39 and the sections it touches in 51.2.0 once the open
+Added to §7.39 and the sections it touches in 50.2.0 once the open
 questions below are decided; in outline:
 
 - **Warranty reminders** (§7.6): a part's *Remind me before it ends*
@@ -87,22 +87,22 @@ questions below are decided; in outline:
 
 ## Tasks
 
-### 51.2.0 Spec first
+### 50.2.0 Spec first
 - [ ] Open questions A–G decided by the owner and logged in
       `open-questions.md`.
 - [ ] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
 
-### 51.2.1 Warranty reminders
+### 50.2.1 Warranty reminders
 - [ ] The tick on the part form; source `part` in *Sync* (created,
       moved, removed with the warranty and the part's status); *Checked
       it*; the reminders list, calendar and channels.
 
-### 51.2.2 Insurer's list and sale pack
+### 50.2.2 Insurer's list and sale pack
 - [ ] *For your insurer* page and print layout; *Mark declared*; a
       *Not declared* badge on the *Parts* tab.
 - [ ] Sale pack *Include modifications*.
 
-### 51.2.3 Scanning, API, webhooks, Ask, MCP and CSV
+### 50.2.3 Scanning, API, webhooks, Ask, MCP and CSV
 - [ ] *Add as parts* on scanned service records and modifications.
 - [ ] API endpoints, OpenAPI, contract tests; webhook kinds and events.
 - [ ] Ask read tools and the draft tool; the running cost tools' build
@@ -110,7 +110,7 @@ questions below are decided; in outline:
 - [ ] CSV exports.
 - [ ] Translations (every shipped locale).
 
-### 51.2.4 Tests and release
+### 50.2.4 Tests and release
 - [ ] Warranty reminder due dates by date and by projected mileage; the
       lead time; removed, sold, returned or edited away; module off
       neither lists nor sends.
@@ -126,7 +126,7 @@ questions below are decided; in outline:
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print
       preview; subpath).
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
-      and 51.2.
+      and 50.2.
 - [ ] Tag once merged.
 
 ---

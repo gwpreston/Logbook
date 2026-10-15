@@ -34,8 +34,9 @@
         <env name="MAIL_HOST" value="" force="true"/>
         <env name="LOG_PATH" value="var/log/testing.log"/>
         <ini name="error_reporting" value="-1"/>
-        <!-- The suite builds an app per test; the CLI default of 128M is close to its peak. -->
-        <ini name="memory_limit" value="512M"/>
+        <!-- The suite builds an app per test; the CLI default of 128M is close to its peak, and
+             writing the coverage reports (composer test:coverage) needs more than 512M since Phase 50.1. -->
+        <ini name="memory_limit" value="1G"/>
         <ini name="date.timezone" value="Europe/London"/>
     </php>
 </phpunit>

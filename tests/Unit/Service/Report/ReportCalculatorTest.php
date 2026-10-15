@@ -81,7 +81,7 @@ final class ReportCalculatorTest extends TestCase
         self::assertSame('60.005', $section->months[2]->amount(CostGroup::Fuel)->toDecimal(3));
 
         $shares = array_map(static fn ($g): float => round($g->share, 2), $section->groups);
-        self::assertSame([8.95, 28.34, 62.66, 0.04], $shares);
+        self::assertSame([8.95, 28.34, 62.66, 0.04, 0.0], $shares);
         self::assertEqualsWithDelta(100.0, array_sum(array_map(static fn ($g): float => $g->share, $section->groups)), 0.0001);
     }
 

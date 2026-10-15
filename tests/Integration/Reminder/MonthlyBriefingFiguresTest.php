@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Reminder;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Logbook\Domain\Expense\ExpenseCategory;
+use Logbook\Domain\Part\ModificationCategory;
+use Logbook\Domain\Part\ModificationData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\UserRepository;
 use Logbook\Service\Notification\Digest\DigestSummary;
 use Logbook\Service\Notification\Digest\LastMonth;
+use Logbook\Service\Part\ModificationService;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
@@ -64,6 +69,31 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         self::assertSame('GBP', $row['currency']);
         self::assertSame('2026-09', $row['month']);
         self::assertSame($golf->id, $row['vehicle_id']);
+    }
+
+    /**
+     * The monthly average is a running figure (spec.md §7.7): a £900
+     * modification in July doesn't make September look cheap.
+     */
+    public function testTheAverageLeavesBuildSpendOut(): void
+    {
+        $this->start(self::CHANNELS + ['FEATURES_PARTS' => 'true']);
+        $golf = $this->car();
+        $this->spend($golf, '2026-06-05', '100');
+        $this->spend($golf, '2026-08-05', '200');
+        $this->spend($golf, '2026-09-05', '60');
+        $this->service($this->app, ModificationService::class)->create($golf, new ModificationData(
+            'Remap',
+            ModificationCategory::Other,
+            new DateTimeImmutable('2026-07-10'),
+            null,
+            '900.000',
+        ), new DateTimeZone('UTC'));
+
+        $costs = $this->lastMonth($golf)->lines[0]->costs;
+        self::assertNotNull($costs);
+        self::assertSame('60.000', $costs->spend->toDecimal(3));
+        self::assertSame('100.000', $costs->average?->toDecimal(3), '(100 + 0 + 200) / 3, not (100 + 900 + 200) / 3');
     }
 
     public function testEveryDemoVehicleMatchesTheReportsPage(): void

@@ -37,6 +37,31 @@ final readonly class AttachmentIndex
         return $this->byOwner[self::key($type, $ownerId)] ?? [];
     }
 
+    /**
+     * Each entry's earliest attached image, for these owner types (spec.md
+     * §7.39 *Photos*: the row's thumbnail).
+     *
+     * @param list<AttachmentOwner> $types
+     * @return array<string, Attachment> keyed "{type}:{id}"
+     */
+    public function firstImages(array $types): array
+    {
+        $wanted = array_map(static fn (AttachmentOwner $t): string => $t->value . ':', $types);
+        $first = [];
+        foreach ($this->byOwner as $key => $attachments) {
+            if (!in_array(substr($key, 0, (int) strpos($key, ':') + 1), $wanted, true)) {
+                continue;
+            }
+            foreach ($attachments as $attachment) {
+                if ($attachment->isImage() && (!isset($first[$key]) || $attachment->id < $first[$key]->id)) {
+                    $first[$key] = $attachment;
+                }
+            }
+        }
+
+        return $first;
+    }
+
     private static function key(AttachmentOwner|string $type, int $ownerId): string
     {
         return ($type instanceof AttachmentOwner ? $type->value : $type) . ':' . $ownerId;

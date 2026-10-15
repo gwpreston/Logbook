@@ -231,7 +231,10 @@ final readonly class CsvExporter
                 default => $this->yesNo($cost->vehicle->data->saleDate !== null),
             },
             $cost->distanceKm === null ? null : CsvNumber::distance($cost->distanceKm, $unit),
-            ...array_map(static fn (GroupTotal $g): ?string => $money($g->amount), $cost->groups),
+            ...array_map(
+                static fn (GroupTotal $g): ?string => $money($g->amount),
+                array_values(array_filter($cost->groups, static fn (GroupTotal $g): bool => $g->group->isRunning())),
+            ),
             $money($cost->payouts),
             $money($cost->running),
             $money($cost->depreciationCost),
@@ -243,6 +246,11 @@ final readonly class CsvExporter
             $money($cost->runningPerMonth),
             $money($cost->depreciationPerMonth),
             $cost->perMonthIsPartial ? null : $money($cost->perMonth),
+            // Last, so the columns before it keep their places (Phase 50.1).
+            ...array_map(
+                static fn (GroupTotal $g): ?string => $money($g->amount),
+                array_values(array_filter($cost->groups, static fn (GroupTotal $g): bool => !$g->group->isRunning())),
+            ),
         ], $report->rows());
 
         return new CsvTable(
@@ -259,7 +267,7 @@ final readonly class CsvExporter
                 ...array_map(fn (CostGroup $g): array => [
                     'export.column.running_group',
                     ['group' => $this->t('expense.group.' . $g->value)],
-                ], CostGroup::cases()),
+                ], array_values(array_filter(CostGroup::cases(), static fn (CostGroup $g): bool => $g->isRunning()))),
                 'export.column.insurance_payouts',
                 'export.column.running',
                 'export.column.depreciation',
@@ -271,6 +279,12 @@ final readonly class CsvExporter
                 'export.column.running_per_month',
                 'export.column.depreciation_per_month',
                 'export.column.total_per_month',
+                // Build spend (Phase 50.1) is in the total, never a running cost (spec.md §7.39);
+                // it comes last so every earlier column keeps its place.
+                ...array_map(fn (CostGroup $g): array => [
+                    'export.column.build_group',
+                    ['group' => $this->t('expense.group.' . $g->value)],
+                ], array_values(array_filter(CostGroup::cases(), static fn (CostGroup $g): bool => !$g->isRunning()))),
             ]),
             $rows,
         );

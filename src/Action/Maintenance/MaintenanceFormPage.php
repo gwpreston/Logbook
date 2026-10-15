@@ -6,6 +6,9 @@ namespace Logbook\Action\Maintenance;
 
 use Logbook\Action\Incident\IncidentPicker;
 use Logbook\Action\Issue\IssueFixPicker;
+use Logbook\Action\Part\RecordPartsPicker;
+use Logbook\Service\Part\PartService;
+use Logbook\Support\Http\RequestContext;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
@@ -31,6 +34,7 @@ final readonly class MaintenanceFormPage
         private AttachmentUpload $upload,
         private IncidentPicker $incidents,
         private IssueFixPicker $fixes,
+        private RecordPartsPicker $parts,
     ) {
     }
 
@@ -70,6 +74,7 @@ final readonly class MaintenanceFormPage
             'latest' => $this->odometer->history($vehicle)->latest(),
         ] + $this->upload->formContext($vehicle, AttachmentOwner::Maintenance, $entry?->id)
             + $this->incidents->context($vehicle)
-            + $this->fixes->context($vehicle, $entry, $ticked), $status);
+            + $this->fixes->context($vehicle, $entry, $ticked)
+            + $this->parts->context($vehicle, PartService::MAINTENANCE, $entry?->id, RequestContext::form($request)), $status);
     }
 }

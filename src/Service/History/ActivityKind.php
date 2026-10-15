@@ -44,6 +44,15 @@ enum ActivityKind: string
      * or the sale pack's history, which summarise the tests themselves.
      */
     case MotTest = 'mot_test';
+    /**
+     * Parts and modifications (Phase 50.1, spec.md §7.39): a modification on
+     * its date and its revert on that date; a part fitted or removed without
+     * a record (one a record made folds into that record's line).
+     */
+    case Modification = 'modification';
+    case ModificationReverted = 'modification_reverted';
+    case PartFitted = 'part_fitted';
+    case PartRemoved = 'part_removed';
     case Milestone = 'milestone';
 
     /**
@@ -65,6 +74,10 @@ enum ActivityKind: string
             self::IssueNoticed,
             self::IssueFixed,
             self::MotTest,
+            self::Modification,
+            self::ModificationReverted,
+            self::PartFitted,
+            self::PartRemoved,
         ];
     }
 
@@ -90,6 +103,8 @@ enum ActivityKind: string
             self::IssueNoticed, self::IssueFixed => ['issues.show', 'issue'],
             // The vehicle's MOT history page, which anyone who can view it may see.
             self::MotTest => ['mot_history.show', null],
+            self::Modification, self::ModificationReverted => ['modifications.show', 'modification'],
+            self::PartFitted, self::PartRemoved => ['parts.show', 'part'],
             self::Milestone => ['vehicles.edit', null],
         };
     }
@@ -108,6 +123,7 @@ enum ActivityKind: string
             self::Incident => Feature::Incidents,
             self::IssueNoticed, self::IssueFixed => Feature::Issues,
             self::MotTest => Feature::Compliance,
+            self::Modification, self::ModificationReverted, self::PartFitted, self::PartRemoved => Feature::Parts,
             self::Odometer, self::Expense, self::Valuation, self::Milestone => null,
         };
     }
@@ -129,7 +145,9 @@ enum ActivityKind: string
             self::Incident => AttachmentOwner::Incident,
             self::IssueNoticed => AttachmentOwner::Issue,
             // Its files are counted once, on the noticed line.
-            self::Tyre, self::Milestone, self::IssueFixed, self::MotTest => null,
+            self::Modification => AttachmentOwner::Modification,
+            self::Tyre, self::Milestone, self::IssueFixed, self::MotTest,
+            self::ModificationReverted, self::PartFitted, self::PartRemoved => null,
         };
     }
 
@@ -150,7 +168,10 @@ enum ActivityKind: string
             self::Incident => DatedSource::Incident,
             self::IssueNoticed => DatedSource::IssueNoticed,
             self::IssueFixed => DatedSource::IssueFixed,
-            self::Document, self::Milestone, self::MotTest => null,
+            // Placed in PHP from the lists read once per request (ActivityFeed::placedYears), so the
+            // page budget doesn't grow by a query per kind.
+            self::Document, self::Milestone, self::MotTest,
+            self::Modification, self::ModificationReverted, self::PartFitted, self::PartRemoved => null,
         };
     }
 
@@ -165,6 +186,7 @@ enum ActivityKind: string
             self::Maintenance, self::Tyre => 'c-maint',
             self::Document, self::MotTest => 'c-ins',
             self::Expense, self::Incident, self::IssueNoticed, self::IssueFixed => 'c-other',
+            self::Modification, self::ModificationReverted, self::PartFitted, self::PartRemoved => 'c-build',
         };
     }
 }

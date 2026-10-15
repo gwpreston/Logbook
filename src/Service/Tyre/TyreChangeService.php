@@ -25,6 +25,7 @@ use Logbook\Repository\TyreRepository;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Part\PartChangeRefused;
 use Logbook\Support\Database\Transaction;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Translation\TranslatableMessage;
@@ -616,16 +617,21 @@ final readonly class TyreChangeService
             return new TyreChangeData($data->doneOn, $data->odometerKm, null, $data->note);
         }
         if ($record->data->odometerKm === null && $data->odometerKm !== null) {
-            $record = $this->maintenance->update($vehicle, $record, new MaintenanceEntryData(
-                performedOn: $record->data->performedOn,
-                category: $record->data->category,
-                title: $record->data->title,
-                cost: $record->data->cost,
-                odometerKm: $data->odometerKm,
-                vendor: $record->data->vendor,
-                description: $record->data->description,
-                scheduleId: $record->data->scheduleId,
-            ), $zone);
+            try {
+                $record = $this->maintenance->update($vehicle, $record, new MaintenanceEntryData(
+                    performedOn: $record->data->performedOn,
+                    category: $record->data->category,
+                    title: $record->data->title,
+                    cost: $record->data->cost,
+                    odometerKm: $data->odometerKm,
+                    vendor: $record->data->vendor,
+                    description: $record->data->description,
+                    scheduleId: $record->data->scheduleId,
+                ), $zone);
+            } catch (PartChangeRefused $refused) {
+                // The record's odometer would move a part fitting out of order (spec.md §7.39).
+                throw new TyreChangeRefused($refused->key, $refused->params, 'odometer');
+            }
         }
 
         return TyreSync::aligned($data, $record);

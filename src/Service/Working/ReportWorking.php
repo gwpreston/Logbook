@@ -37,7 +37,7 @@ final readonly class ReportWorking
         $currency = $section->currency;
         $inputs = [];
         $steps = [$this->t('working.report.rate', [
-            'total' => $this->format->money($section->total),
+            'total' => $this->format->money($section->runningTotal()),
             'distance' => $this->format->distance($section->distanceKm),
             'rate' => $this->format->perDistance($section->costPerKm, $currency),
         ])];
@@ -45,9 +45,9 @@ final readonly class ReportWorking
             $inputs[] = new WorkingInput(
                 $cost->vehicle->name(),
                 $cost->distanceKm === null
-                    ? $this->t('working.report.no_distance', ['total' => $this->format->money($cost->total)])
+                    ? $this->t('working.report.no_distance', ['total' => $this->format->money($cost->running ?? $cost->total)])
                     : $this->t('working.report.vehicle', [
-                        'total' => $this->format->money($cost->total),
+                        'total' => $this->format->money($cost->running ?? $cost->total),
                         'distance' => $this->format->distance($cost->distanceKm),
                     ]),
                 null,
@@ -67,7 +67,11 @@ final readonly class ReportWorking
         return new Working(
             $inputs,
             $steps,
-            [$this->t('working.report.left_out'), $this->t('working.report.distance_note')],
+            [
+                $this->t('working.report.left_out'),
+                $this->t('working.report.distance_note'),
+                ...($section->hasBuild() ? [$this->t('working.report.build_left_out')] : []),
+            ],
             $this->format->perDistance($section->costPerKm, $currency),
             $section->costPerKm,
         );

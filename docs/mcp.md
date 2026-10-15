@@ -35,6 +35,10 @@ Logbook works out, with their figures) and, while MOT history is on,
 `mot_history` ([MOT history](mot-history.md)). Each
 returns raw values beside display strings in your units, language and
 currency, and a link to the page in Logbook that shows the same.
+`costs` takes the category `build` (modifications, [Parts](parts.md));
+when there is build spend it also returns `running_total` and
+`build_total`, and its `average_per_month`, like `cost_per_distance`'s
+totals and rates, counts running costs only (none for `category=build`).
 `ownership`, `true_cost`, `finance`, `coming_up` and `trips_summary` also
 return a `working` for their headline figures: the dated inputs, the sum in
 words and what Logbook did not assume, so a client can answer "how did you

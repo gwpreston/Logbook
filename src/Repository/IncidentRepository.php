@@ -292,7 +292,10 @@ final readonly class IncidentRepository
         return ($a->data->status === IncidentStatus::Open ? 0 : 1) <=> ($b->data->status === IncidentStatus::Open ? 0 : 1);
     }
 
-    private static function newestFirst(Incident $a, Incident $b): int
+    /**
+     * By date, then time, then the latest logged: the order listForVehicles() returns.
+     */
+    public static function newestFirst(Incident $a, Incident $b): int
     {
         return ($b->data->occurredOn <=> $a->data->occurredOn)
             ?: (($b->data->occurredAtTime ?? '') <=> ($a->data->occurredAtTime ?? ''))

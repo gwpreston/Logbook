@@ -18,13 +18,18 @@ enum TruePart: string
     case Other = 'other';
     case Depreciation = 'depreciation';
 
-    public static function ofGroup(CostGroup $group): self
+    /**
+     * The part a ledger group is, or null for build spend, which is not a
+     * running cost and so no part of true cost (spec.md §7.35, #419).
+     */
+    public static function ofGroup(CostGroup $group): ?self
     {
         return match ($group) {
             CostGroup::Fuel => self::Fuel,
             CostGroup::Maintenance => self::Maintenance,
             CostGroup::Compliance => self::Documents,
             CostGroup::Other => self::Other,
+            CostGroup::Build => null,
         };
     }
 

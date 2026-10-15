@@ -65,12 +65,29 @@ final readonly class OwnershipWorking
                 'payouts' => $this->format->money($cost->payouts),
             ] + $window);
 
+        // Build spend (Phase 50.1, #419): in the total, never in a rate.
+        if ($cost->build !== null) {
+            $inputs[] = new WorkingInput(
+                $this->t('working.ownership.build'),
+                $this->format->money($cost->build),
+                null,
+                new WorkingLink('parts.index', ['id' => $vehicle->id]),
+            );
+            $notes[] = $this->t('working.ownership.build_note');
+        }
         if ($cost->total !== null && $cost->depreciationCost !== null) {
-            $steps[] = $this->t('working.ownership.total', [
-                'running' => $running,
-                'depreciation' => $this->format->money($cost->depreciationCost),
-                'total' => $this->format->money($cost->total),
-            ]);
+            $steps[] = $cost->build === null
+                ? $this->t('working.ownership.total', [
+                    'running' => $running,
+                    'depreciation' => $this->format->money($cost->depreciationCost),
+                    'total' => $this->format->money($cost->total),
+                ])
+                : $this->t('working.ownership.total_build', [
+                    'running' => $running,
+                    'build' => $this->format->money($cost->build),
+                    'depreciation' => $this->format->money($cost->depreciationCost),
+                    'total' => $this->format->money($cost->total),
+                ]);
         }
 
         if ($cost->perKm !== null && $cost->distanceKm !== null) {

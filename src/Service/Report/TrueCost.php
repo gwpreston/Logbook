@@ -81,7 +81,10 @@ final readonly class TrueCost
         $period = new TrueCostPeriod(TrueCostRange::SinceBought, $cost->period->from ?? $cost->period->to, $cost->period->to);
         $amounts = [];
         foreach ($cost->groups as $group) {
-            $amounts[TruePart::ofGroup($group->group)->value] = $group->amount;
+            $part = TruePart::ofGroup($group->group);
+            if ($part !== null) {
+                $amounts[$part->value] = $group->amount;
+            }
         }
         $payouts = $cost->payouts ?? Money::zero($currency);
 
@@ -145,15 +148,15 @@ final readonly class TrueCost
         $amounts = array_fill_keys(array_map(static fn (TruePart $p): string => $p->value, TruePart::running()), $zero);
         $count = 0;
         foreach ($items as $item) {
-            if ($item->vehicle->id !== $vehicle->id) {
+            $part = TruePart::ofGroup($item->group());
+            if ($item->vehicle->id !== $vehicle->id || $part === null) {
                 continue;
             }
             $share = self::share($item, $period);
             if ($share === null) {
                 continue;
             }
-            $part = TruePart::ofGroup($item->group())->value;
-            $amounts[$part] = $amounts[$part]->add($share);
+            $amounts[$part->value] = $amounts[$part->value]->add($share);
             $count++;
         }
 

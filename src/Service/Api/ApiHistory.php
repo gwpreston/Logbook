@@ -127,7 +127,8 @@ final readonly class ApiHistory
             // The vehicle's tests are read together (spec.md §7.38).
             ActivityKind::MotTest => 'mot-tests',
             ActivityKind::Milestone => '',
-            ActivityKind::Tyre => null,
+            ActivityKind::Tyre, ActivityKind::Modification, ActivityKind::ModificationReverted,
+            ActivityKind::PartFitted, ActivityKind::PartRemoved => null,
         };
 
         return match ($list) {
@@ -214,14 +215,22 @@ final readonly class ApiHistory
      */
     private static function kinds(mixed $raw): array
     {
+        // Parts and modifications reach the API in Phase 50.2 (spec.md §7.39), not before.
+        $listed = array_values(array_filter(ActivityKind::cases(), static fn (ActivityKind $k): bool => !in_array(
+            $k,
+            [ActivityKind::Modification, ActivityKind::ModificationReverted, ActivityKind::PartFitted, ActivityKind::PartRemoved],
+            true,
+        )));
         if ($raw === null) {
-            return ActivityKind::cases();
+            return $listed;
         }
-        $codes = array_map(static fn (ActivityKind $k): string => $k->value, ActivityKind::cases());
+        $codes = array_map(static fn (ActivityKind $k): string => $k->value, $listed);
         $kinds = [];
         foreach (is_string($raw) ? explode(',', $raw) : [''] as $code) {
-            $kinds[] = ActivityKind::tryFrom(trim($code))
-                ?? throw ApiProblem::invalidParameter('kinds', 'a comma list of ' . implode(', ', $codes) . '.');
+            $kind = ActivityKind::tryFrom(trim($code));
+            $kinds[] = $kind !== null && in_array($kind, $listed, true)
+                ? $kind
+                : throw ApiProblem::invalidParameter('kinds', 'a comma list of ' . implode(', ', $codes) . '.');
         }
 
         return array_values(array_unique($kinds, SORT_REGULAR));

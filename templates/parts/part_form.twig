@@ -1,0 +1,114 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as files %}
+
+{#
+ # Add or edit a part (spec.md §7.39 *Parts*), as a page and a desktop
+ # modal. Its price is for reference and a warranty claim: what was paid is
+ # on the record that fitted it (#417). A new part is stored unless it is
+ # *Already on the car*, which fits it without a record (#418).
+ #}
+{% set active_nav = 'garage' %}
+{% set editing = part is not null %}
+{% set heading = (editing ? 'part.edit_title' : 'part.add_title')|trans %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set back = editing ? url_for('parts.show', {id: vehicle.id, part: part.id}) : url_for('parts.index', {id: vehicle.id}) %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ back }}">{{ ui.icon('chevron_left') }}{{ 'part.tab_title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+                <p class="page-header__lead">{{ 'part.form_lead'|trans }}</p>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if modal %}<p class="modal-fragment__context">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>{% endif %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="post" enctype="multipart/form-data"
+              action="{{ editing ? url_for('parts.edit', {id: vehicle.id, part: part.id}) : url_for('parts.create', {id: vehicle.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+
+            <section class="card">
+                {{ ui.input('name', 'part.field.name'|trans, values, errors, {required: true, maxlength: 120, hint: 'part.hint.name'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input('brand', 'part.field.brand'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                    {{ ui.input('part_number', 'part.field.part_number'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('serial_number', 'part.field.serial_number'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                    {{ ui.select('condition', 'part.field.condition'|trans, values, errors, conditions|map(c => {value: c.value, label: c.labelKey()|trans})) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input('supplier', 'part.field.supplier'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                    {{ ui.input('bought_on', 'part.field.bought_on'|trans, values, errors, {type: 'date', optional: true, max: 'now'|date('Y-m-d')}) }}
+                </div>
+                {% if can_see_costs(vehicle) %}
+                    {{ ui.input('price', 'part.field.price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: currency_symbol(currency), hint: 'part.hint.price_reference'|trans}) }}
+                {% endif %}
+                <div class="field">
+                    <label class="field__label" for="f-notes">{{ 'part.field.notes'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="2000"{{ ui.described_by('notes', errors, false) }}>{{ values.notes ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'notes') }}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="part-warranty">
+                <h2 id="part-warranty" class="card__title">{{ 'part.section.warranty'|trans }}</h2>
+                <p class="field__hint">{{ 'part.hint.warranty'|trans }}</p>
+                <div class="form-row">
+                    {{ ui.input('warranty_months', 'part.field.warranty_months'|trans, values, errors, {type: 'number', optional: true, step: 1, min: 1, max: 600, inputmode: 'numeric'}) }}
+                    {{ ui.input('warranty_distance', 'part.field.warranty_distance'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                </div>
+                {{ ui.chips('warranty_from', 'part.field.warranty_from'|trans, values, errors, [
+                    {value: 'purchase', label: 'part.warranty_from.purchase'|trans},
+                    {value: 'fitting', label: 'part.warranty_from.fitting'|trans},
+                ], {hint: 'part.hint.warranty_from'|trans}) }}
+                {{ ui.input('warranty_provider', 'part.field.warranty_provider'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                <div class="field">
+                    <label class="field__label" for="f-warranty_terms">{{ 'part.field.warranty_terms'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></label>
+                    <textarea class="textarea" id="f-warranty_terms" name="warranty_terms" rows="2" maxlength="500"{{ ui.described_by('warranty_terms', errors, false) }}>{{ values.warranty_terms ?? '' }}</textarea>
+                    {{ ui.field_error(errors, 'warranty_terms') }}
+                </div>
+            </section>
+
+            {% if not editing %}
+                <section class="card" aria-labelledby="part-on-car">
+                    <h2 id="part-on-car" class="card__title">{{ 'part.section.on_car'|trans }}</h2>
+                    <label class="toggle">
+                        <input type="checkbox" name="on_car" value="1"{% if (values.on_car ?? '') == '1' %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'part.field.on_car'|trans }}</span>
+                            <span class="toggle__hint">{{ 'part.hint.on_car'|trans }}</span>
+                        </span>
+                    </label>
+                    <div class="form-row">
+                        {{ ui.input('fit_on', 'part.field.fitted_on'|trans, values, errors, {type: 'date', optional: true, max: 'now'|date('Y-m-d')}) }}
+                        {{ ui.input('fit_odometer', 'part.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                    </div>
+                </section>
+            {% endif %}
+
+            {{ files.card(vehicle, attachments, errors, max_upload_mb, max_upload_files) }}
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (editing ? 'form.save' : 'part.add_submit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: back }}">{{ 'form.cancel'|trans }}</a>
+                {% if editing %}
+                    <a class="btn btn--lg btn--danger btn--push" href="{{ url_for('parts.delete', {id: vehicle.id, part: part.id}) }}">{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                {% endif %}
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}

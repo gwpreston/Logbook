@@ -1,0 +1,113 @@
+{#
+ # *Parts fitted* and *Parts removed* (spec.md §7.39 *Fitting parts from a
+ # record*) on the service record and modification forms, page and modal.
+ # Flat fields, so the form re-fills without JS: new part rows
+ # (`new_{i}_*`), stored parts to fit again (`fit_{id}`), fitted parts to
+ # take off (`remove_{id}`, with the outcome), and *Record what came off*
+ # rows (`off_{i}_*`). *Add another* re-renders the form with one more row;
+ # a row left empty is ignored. Prices need *Can see costs*.
+ # Expects: record_parts (null hides it), values, errors, currency, vehicle.
+ #}
+{% import 'macros/ui.twig' as ui %}
+{% if record_parts %}
+    {% set costs = can_see_costs(vehicle) %}
+    {% set money = currency_symbol(currency) %}
+    {% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+    {% set outcomes = ['kept', 'sold', 'returned', 'scrapped', 'other']|map(o => {value: o, label: ('part.outcome.' ~ o)|trans}) %}
+    <input type="hidden" name="parts_lists" value="1">
+    <input type="hidden" name="new_rows" value="{{ record_parts.rows.new }}">
+    <input type="hidden" name="off_rows" value="{{ record_parts.rows.off }}">
+
+    <section class="card" aria-labelledby="parts-fitted">
+        <h2 id="parts-fitted" class="card__title">{{ 'part.record.fitted'|trans }}</h2>
+        <p class="field__hint">{{ 'part.record.fitted_hint'|trans }}</p>
+        {% for i in 0..(record_parts.rows.new - 1) %}
+            {% set p = 'new_' ~ i ~ '_' %}
+            <fieldset class="fieldset part-row">
+                <legend class="field__label">{{ 'part.record.new_row'|trans({number: i + 1}) }}</legend>
+                {{ ui.input(p ~ 'name', 'part.field.name'|trans, values, errors, {maxlength: 120, hint: i == 0 ? 'part.hint.name'|trans : null}) }}
+                <div class="form-row">
+                    {{ ui.input(p ~ 'brand', 'part.field.brand'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                    {{ ui.input(p ~ 'part_number', 'part.field.part_number'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.input(p ~ 'supplier', 'part.field.supplier'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                    {% if costs %}
+                        {{ ui.input(p ~ 'price', 'part.field.price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: money, hint: 'part.hint.price_reference'|trans}) }}
+                    {% endif %}
+                </div>
+                <details class="disclosure"{% if (values[p ~ 'warranty_months'] ?? '') != '' or (values[p ~ 'warranty_distance'] ?? '') != '' or (values[p ~ 'notes'] ?? '') != '' %} open{% endif %}>
+                    <summary>{{ 'part.record.more'|trans }}</summary>
+                    {{ ui.select(p ~ 'condition', 'part.field.condition'|trans, values, errors, ['new', 'used', 'reconditioned']|map(c => {value: c, label: ('part.condition.' ~ c)|trans})) }}
+                    <div class="form-row">
+                        {{ ui.input(p ~ 'warranty_months', 'part.field.warranty_months'|trans, values, errors, {type: 'number', optional: true, step: 1, min: 1, max: 600, inputmode: 'numeric'}) }}
+                        {{ ui.input(p ~ 'warranty_distance', 'part.field.warranty_distance'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                    </div>
+                    {{ ui.input(p ~ 'warranty_provider', 'part.field.warranty_provider'|trans, values, errors, {optional: true, maxlength: 120}) }}
+                    {{ ui.input(p ~ 'notes', 'part.field.notes'|trans, values, errors, {optional: true, maxlength: 2000}) }}
+                </details>
+            </fieldset>
+        {% endfor %}
+        <button type="submit" class="btn btn--ghost" name="parts_more" value="new" formnovalidate>{{ ui.icon('add') }}{{ 'part.record.add_new'|trans }}</button>
+
+        {% if record_parts.fit is not empty %}
+            <fieldset class="field fieldset">
+                <legend class="field__label">{{ 'part.record.fit_stored'|trans }} <span class="field__optional">{{ 'form.optional'|trans }}</span></legend>
+                <div class="chip-row">
+                    {% for part in record_parts.fit %}
+                        <label class="chip">
+                            <input type="checkbox" name="fit_{{ part.id }}" value="1"{% if (values['fit_' ~ part.id] ?? '') == '1' %} checked{% endif %}>
+                            <span>{{ part.label() }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <p class="field__hint">{{ 'part.record.fit_stored_hint'|trans }}</p>
+            </fieldset>
+        {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="parts-removed">
+        <h2 id="parts-removed" class="card__title">{{ 'part.record.removed'|trans }}</h2>
+        <p class="field__hint">{{ 'part.record.removed_hint'|trans }}</p>
+        {% if record_parts.remove is not empty %}
+            <ul class="part-remove-list">
+                {% for part in record_parts.remove %}
+                    {% set p = 'remove_' ~ part.id ~ '_' %}
+                    <li class="part-remove">
+                        <label class="toggle">
+                            <input type="checkbox" name="remove_{{ part.id }}" value="1"{% if (values['remove_' ~ part.id] ?? '') == '1' %} checked{% endif %}>
+                            <span class="toggle__text"><span class="toggle__title">{{ part.label() }}</span></span>
+                        </label>
+                        <div class="form-row">
+                            {{ ui.select(p ~ 'outcome', 'part.field.outcome'|trans, values|merge({(p ~ 'outcome'): values[p ~ 'outcome'] ?? 'kept'}), errors, outcomes) }}
+                            {% if costs %}
+                                {{ ui.input(p ~ 'sold_price', 'part.field.sold_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: money, hint: 'part.hint.sold_price'|trans}) }}
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <h3 class="card__subtitle">{{ 'part.record.came_off'|trans }}</h3>
+        <p class="field__hint">{{ 'part.record.came_off_hint'|trans }}</p>
+        {% for i in 0..(record_parts.rows.off - 1) %}
+            {% set p = 'off_' ~ i ~ '_' %}
+            <fieldset class="fieldset part-row">
+                <legend class="field__label">{{ 'part.record.off_row'|trans({number: i + 1}) }}</legend>
+                {{ ui.input(p ~ 'name', 'part.field.name'|trans, values, errors, {maxlength: 120, placeholder: 'part.hint.came_off_example'|trans}) }}
+                <div class="form-row">
+                    {{ ui.input(p ~ 'brand', 'part.field.brand'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                    {{ ui.input(p ~ 'part_number', 'part.field.part_number'|trans, values, errors, {optional: true, maxlength: 80}) }}
+                </div>
+                <div class="form-row">
+                    {{ ui.select(p ~ 'outcome', 'part.field.outcome'|trans, values|merge({(p ~ 'outcome'): values[p ~ 'outcome'] ?? 'kept'}), errors, outcomes) }}
+                    {% if costs %}
+                        {{ ui.input(p ~ 'sold_price', 'part.field.sold_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: money}) }}
+                    {% endif %}
+                </div>
+            </fieldset>
+        {% endfor %}
+        <button type="submit" class="btn btn--ghost" name="parts_more" value="off" formnovalidate>{{ ui.icon('add') }}{{ 'part.record.add_off'|trans }}</button>
+    </section>
+{% endif %}

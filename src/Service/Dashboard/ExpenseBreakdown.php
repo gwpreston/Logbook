@@ -61,7 +61,8 @@ final readonly class ExpenseBreakdown
     private static function section(CurrencyReport $currency): BreakdownSection
     {
         $spent = $currency->spentGroups();
-        $percents = Apportion::percentages(array_map(static fn (GroupTotal $g): int => $g->amount->micros, $spent));
+        // Shares of what was spent: a group netted below zero by a part sold back (Phase 50.1) gets 0.
+        $percents = Apportion::percentages(array_map(static fn (GroupTotal $g): int => max(0, $g->amount->micros), $spent));
 
         return new BreakdownSection(
             $currency->currency,

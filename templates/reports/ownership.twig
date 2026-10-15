@@ -125,6 +125,7 @@
                                     <td class="table__num tabular">{{ cost.distanceKm is not null ? cost.distanceKm|distance : dash }}</td>
                                     <td class="table__num tabular">
                                         {{- cost.running|money -}}
+                                        {%- if cost.build %}<br><span class="muted">{{ 'ownership.row.build_short'|trans({amount: cost.build|money}) }}</span>{% endif -%}
                                         {%- if cost.payouts %}<br><span class="muted">{{ 'ownership.row.payouts_short'|trans({amount: cost.payouts|money}) }}</span>{% endif -%}
                                         {%- if cost.settlementIsSale %}<br><span class="muted">{{ 'ownership.settlement_is_sale'|trans }}</span>{% endif -%}
                                     </td>

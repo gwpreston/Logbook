@@ -1,0 +1,88 @@
+{#
+ # Parts and modifications (spec.md §7.39): status pills, the warranty line,
+ # a thumbnail, and list rows for the *Parts* tab and the overview card.
+ #}
+
+{% macro status_pill(part) -%}
+    {% set tone = {fitted: 'pill--valid', stored: '', gone: ''}[part.status.value] %}
+    <span class="pill {{ tone }}">{{ part.status.labelKey()|trans }}</span>
+{%- endmacro %}
+
+{% macro reverted_pill(modification) -%}
+    {% if modification.isReverted() %}<span class="pill">{{ 'modification.reverted'|trans }}</span>{% endif %}
+{%- endmacro %}
+
+{# "In warranty until 3 Mar 2028 or 85,400 mi" / "Warranty ended 3 Mar 2028". #}
+{% macro warranty(warranty) -%}
+    {%- if warranty is null -%}
+    {%- elseif warranty.active -%}
+        {%- if warranty.until and warranty.untilKm is not null -%}
+            {{ 'part.warranty.until_both'|trans({date: warranty.until|local_date, distance: warranty.untilKm|distance(0)}) }}
+        {%- elseif warranty.until -%}
+            {{ 'part.warranty.until_date'|trans({date: warranty.until|local_date}) }}
+        {%- elseif warranty.untilKm is not null -%}
+            {{ 'part.warranty.until_distance'|trans({distance: warranty.untilKm|distance(0)}) }}
+        {%- else -%}
+            {{ 'part.warranty.active'|trans }}
+        {%- endif -%}
+    {%- elseif warranty.endedOn -%}
+        {{ 'part.warranty.ended_on'|trans({date: warranty.endedOn|local_date}) }}
+    {%- else -%}
+        {{ 'part.warranty.ended'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# The row's first photo, or the icon. #}
+{% macro thumb(vehicle, photo, icon) -%}
+    {% import 'macros/ui.twig' as ui %}
+    {% if photo %}
+        <span class="list__thumb"><img src="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}" alt="" loading="lazy"></span>
+    {% else %}
+        <span class="list__icon">{{ ui.icon(icon) }}</span>
+    {% endif %}
+{%- endmacro %}
+
+{# A modification as a list row linking to its page. #}
+{% macro modification_row(modification, vehicle, currency, photo = null, files = 0) -%}
+    {% import 'macros/attachments.twig' as paperclip %}
+    {% set data = modification.data %}
+    <li>
+        <a class="list__item" href="{{ url_for('modifications.show', {id: vehicle.id, modification: modification.id}) }}">
+            {{ _self.thumb(vehicle, photo, 'handyman') }}
+            <span class="list__body">
+                <span class="list__title">{{ data.title }}</span>
+                <span class="list__meta">
+                    {{- data.category.labelKey()|trans }} · {{ data.doneOn|local_date -}}
+                    {%- if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance(0) }}</span>{% endif -%}
+                    {%- if modification.isReverted() %} · {{ 'modification.reverted_on'|trans({date: modification.revertedOn|local_date}) }}{% endif -%}
+                </span>
+            </span>
+            <span class="list__end">
+                {{ _self.reverted_pill(modification) }}
+                {% if data.cost != '0.000' and can_see_costs(vehicle) %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
+                {{ paperclip.count(files) }}
+            </span>
+        </a>
+    </li>
+{%- endmacro %}
+
+{# A part as a list row linking to its page. #}
+{% macro part_row(part, vehicle, photo = null, files = 0) -%}
+    {% import 'macros/attachments.twig' as paperclip %}
+    {% set data = part.data %}
+    <li>
+        <a class="list__item" href="{{ url_for('parts.show', {id: vehicle.id, part: part.id}) }}">
+            {{ _self.thumb(vehicle, photo, 'inventory_2') }}
+            <span class="list__body">
+                <span class="list__title">{{ part.label() }}</span>
+                <span class="list__meta">
+                    {{- [data.partNumber, data.supplier, data.origin.value == 'original' ? 'part.origin.original'|trans : null]|filter(v => v)|join(' · ') -}}
+                </span>
+            </span>
+            <span class="list__end">
+                {{ _self.status_pill(part) }}
+                {{ paperclip.count(files) }}
+            </span>
+        </a>
+    </li>
+{%- endmacro %}

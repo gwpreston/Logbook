@@ -20,7 +20,8 @@
             {{ ui.stat('expense.stat.total'|trans, section.total|money, 'report.period'|trans({from: report.period.from|local_date, to: report.period.to|local_date})) }}
             {{ ui.stat('expense.stat.per_distance'|trans,
                 section.costPerKm is not null ? section.costPerKm|per_distance(currency) : dash,
-                section.distanceKm is not null ? 'report.over_distance'|trans({distance: section.distanceKm|distance}) : 'report.no_distance'|trans) }}
+                (section.distanceKm is not null ? 'report.over_distance'|trans({distance: section.distanceKm|distance}) : 'report.no_distance'|trans)
+                    ~ (section.hasBuild() ? ' · ' ~ 'report.build_left_out'|trans : '')) }}
             {{ ui.stat('expense.stat.per_month'|trans, section.averagePerMonth|money, 'report.months'|trans({count: report.monthCount()})) }}
         </dl>
 

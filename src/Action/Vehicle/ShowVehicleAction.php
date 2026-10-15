@@ -9,6 +9,11 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Service\Issue\IssueService;
+use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\PartThumbnails;
+use Logbook\Action\Attachment\AttachmentGuard;
+use Logbook\Domain\Attachment\Attachment;
 use Logbook\Service\MotHistory\MotHistoryConfig;
 use Logbook\Service\MotHistory\MotReview;
 use Logbook\Service\Attachment\AttachmentService;
@@ -96,6 +101,9 @@ final readonly class ShowVehicleAction
         private VehicleDataPrimer $primer,
         private GettingStartedService $gettingStarted,
         private SharedIntro $sharedIntro,
+        private PartService $parts,
+        private ModificationService $modifications,
+        private AttachmentGuard $attachmentGuard,
     ) {
     }
 
@@ -134,6 +142,10 @@ final readonly class ShowVehicleAction
         );
         // Core too; an archived vehicle raises nothing (spec.md §7.18, §7.24).
         $comingUp = $vehicle->isArchived() ? null : $this->comingUp->forecast($user, [$vehicle]);
+
+        $partsCard = $this->features->isEnabled(Feature::Parts)
+            ? $this->parts->card($vehicle, $this->modifications->list($vehicle), $currency, $user->preferences->timeZone())
+            : null;
 
         return $this->view->render($request, $response, 'vehicles/show.twig', [
             'vehicle' => $vehicle,
@@ -186,6 +198,15 @@ final readonly class ShowVehicleAction
             'recent_history' => $this->feed->latest($user, [$vehicle], self::RECENT_HISTORY),
             // Phase 40.1 (spec.md §7.37): open and watching issues, safety first; the card shows five.
             'issues' => $this->features->isEnabled(Feature::Issues) ? $this->issues->unresolved($vehicle) : [],
+            // Phase 50.1 (spec.md §7.39): current modifications, build spend and parts in warranty.
+            'parts_card' => $partsCard,
+            // Their first photos, read only when there is a modification to show.
+            'parts_thumbnails' => $partsCard === null || $partsCard->current === []
+                ? null
+                : PartThumbnails::from(
+                    $this->attachments->index($vehicle),
+                    fn (Attachment $a): bool => $this->attachmentGuard->mayUse($user, $vehicle, $a),
+                ),
             // The Tyres card is hidden while the vehicle has no tyres (spec.md §7.17).
             'tyres' => $this->features->isEnabled(Feature::Tyres) && $this->tyres->hasTyres($vehicle)
                 ? $this->tyres->overview($vehicle, $user)

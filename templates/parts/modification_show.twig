@@ -1,0 +1,119 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/parts.twig' as parts_ui %}
+
+{#
+ # The modification page (spec.md §7.39 *Pages*): what was done, its cost
+ # (build spend, never a running cost), its photos before its other files,
+ # the parts it fitted and what came off, and the actions the viewer may take.
+ #}
+{% set active_nav = 'garage' %}
+{% set data = modification.data %}
+{% set images = files|filter(f => f.isImage()) %}
+{% set documents = files|filter(f => not f.isImage()) %}
+
+{% block title %}{{ data.title }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('parts.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'part.tab_title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ data.title }}</h1>
+                <p class="page-header__lead">{{ data.category.labelKey()|trans }} · {{ data.doneOn|local_date }}{% if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance(0) }}</span>{% endif %}</p>
+                {% if modification.isReverted() %}<p class="btn-row">{{ parts_ui.reverted_pill(modification) }}</p>{% endif %}
+            </div>
+            {# Revert is Log, as Fit and Remove; Undo revert, Edit and Delete are EntryAccess (spec.md §7.39 Access, #430). #}
+            {% set can_revert = not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}
+            {% if can_change or can_revert %}
+                <div class="btn-row">
+                    {% if modification.isReverted() and can_change %}
+                        <form method="post" action="{{ url_for('modifications.unrevert', {id: vehicle.id, modification: modification.id}) }}">
+                            {{ ui.csrf(csrf) }}
+                            <button type="submit" class="btn">{{ ui.icon('undo') }}{{ 'modification.undo_revert'|trans }}</button>
+                        </form>
+                    {% elseif not modification.isReverted() and can_revert %}
+                        <a class="btn" href="{{ url_for('modifications.revert', {id: vehicle.id, modification: modification.id}) }}" data-modal>{{ ui.icon('restart_alt') }}{{ 'modification.revert'|trans }}</a>
+                    {% endif %}
+                    {% if can_change %}
+                    <a class="btn btn--ghost" href="{{ url_for('modifications.edit', {id: vehicle.id, modification: modification.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                    <a class="btn btn--ghost" href="{{ url_for('modifications.delete', {id: vehicle.id, modification: modification.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </header>
+
+        <section class="card" aria-labelledby="mod-details">
+            <h2 id="mod-details" class="card__title">{{ 'modification.section.details'|trans }}</h2>
+            {% if data.notes %}<p class="part-notes">{{ data.notes|nl2br }}</p>{% endif %}
+            <dl class="meta-grid">
+                <div><dt>{{ 'modification.field.done_on'|trans }}</dt><dd>{{ data.doneOn|local_date }}</dd></div>
+                {% if data.odometerKm is not null %}<div><dt>{{ 'modification.field.odometer'|trans }}</dt><dd class="tabular">{{ data.odometerKm|distance(0) }}</dd></div>{% endif %}
+                <div><dt>{{ 'modification.field.category'|trans }}</dt><dd>{{ data.category.labelKey()|trans }}</dd></div>
+                {% if data.fittedBy %}<div><dt>{{ 'modification.field.fitted_by'|trans }}</dt><dd>{{ data.fittedBy }}</dd></div>{% endif %}
+                {% if can_see_costs(vehicle) %}
+                    <div><dt>{{ 'modification.field.cost'|trans }}</dt><dd class="tabular">{{ data.cost|money(currency) }} <span class="not-running-note">{{ 'modification.not_running_short'|trans }}</span></dd></div>
+                {% endif %}
+                {% if modification.isReverted() %}
+                    <div><dt>{{ 'modification.field.reverted_on'|trans }}</dt><dd>{{ modification.revertedOn|local_date }}{% if modification.revertedOdometerKm is not null %} · <span class="tabular">{{ modification.revertedOdometerKm|distance(0) }}</span>{% endif %}</dd></div>
+                    {% if modification.revertedNote %}<div class="meta-grid__wide part-notes"><dt>{{ 'modification.field.revert_note'|trans }}</dt><dd>{{ modification.revertedNote }}</dd></div>{% endif %}
+                {% endif %}
+            </dl>
+            {{ ui.added_by(vehicle, modification.createdBy) }}
+        </section>
+
+        {% if files is not empty %}
+            <section class="card" aria-labelledby="mod-files">
+                <h2 id="mod-files" class="card__title">{{ 'modification.section.photos'|trans }}</h2>
+                {% if images is not empty %}
+                    <ul class="incident-photos">
+                        {% for photo in images %}
+                            <li><a href="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}"><img src="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}" alt="{{ photo.filename }}" loading="lazy"></a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if documents is not empty %}
+                    <ul class="attachment-list">{% for file in documents %}{{ paperclip.item(vehicle, file) }}{% endfor %}</ul>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="mod-parts">
+            <h2 id="mod-parts" class="card__title">{{ 'part.record.fitted'|trans }}</h2>
+            {% if fitted is empty %}
+                <p class="muted">{{ 'modification.no_parts'|trans }}</p>
+            {% else %}
+                <ul class="list">
+                    {% for row in fitted %}
+                        <li><a class="list__item" href="{{ url_for('parts.show', {id: vehicle.id, part: row.part.id}) }}">
+                            <span class="list__icon">{{ ui.icon('inventory_2') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ row.part.label() }}</span>
+                                <span class="list__meta">{{ [row.part.data.partNumber, row.fitting.fittedByRevert ? 'modification.refitted_on_revert'|trans : null]|filter(v => v)|join(' · ') }}</span>
+                            </span>
+                            <span class="list__end">{{ parts_ui.status_pill(row.part) }}</span>
+                        </a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if removed is not empty %}
+                <h3 class="card__subtitle">{{ 'part.record.removed'|trans }}</h3>
+                <ul class="list">
+                    {% for row in removed %}
+                        <li><a class="list__item" href="{{ url_for('parts.show', {id: vehicle.id, part: row.part.id}) }}">
+                            <span class="list__icon">{{ ui.icon('inventory_2') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ row.part.label() }}</span>
+                                <span class="list__meta">{{ row.fitting.outcome ? row.fitting.outcome.labelKey()|trans : '' }}{% if row.fitting.removedByRevert %} · {{ 'modification.removed_on_revert'|trans }}{% endif %}</span>
+                            </span>
+                            <span class="list__end">{{ parts_ui.status_pill(row.part) }}</span>
+                        </a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

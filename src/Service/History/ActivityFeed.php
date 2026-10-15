@@ -7,6 +7,10 @@ namespace Logbook\Service\History;
 use Logbook\Domain\Incident\DamageArea;
 use Logbook\Domain\Incident\Incident;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\ModificationRepository;
+use Logbook\Repository\PartRepository;
+use Logbook\Domain\Part\Modification;
+use Logbook\Domain\Part\PartFitting;
 use Logbook\Repository\MotTestRepository;
 use Logbook\Domain\MotHistory\MotTest;
 use Logbook\Service\MotHistory\MotHistoryConfig;
@@ -93,6 +97,8 @@ final readonly class ActivityFeed
         private MotTestRepository $motTests,
         private MotHistoryConfig $motHistory,
         private UserDirectory $users,
+        private ModificationRepository $modifications,
+        private PartRepository $parts,
     ) {
     }
 
@@ -288,8 +294,12 @@ final readonly class ActivityFeed
         $incidentsOn = $enabled[Feature::Incidents->value];
         $incidentsOf = [];
         if ($incidentsOn) {
-            foreach ($this->incidents->listForVehicles($ids) as $incident) {
-                $incidentsOf[$incident->id] = $incident;
+            // Each vehicle's incidents are read once per request, all in one query.
+            $this->incidents->prime($ids);
+            foreach ($ids as $id) {
+                foreach ($this->incidents->listForVehicle($id) as $incident) {
+                    $incidentsOf[$incident->id] = $incident;
+                }
             }
         }
         $incidents = $query->includes(ActivityKind::Incident)
@@ -313,6 +323,38 @@ final readonly class ActivityFeed
             }
         }
         $fixSummaries = $this->issues->fixSummaries(array_map(static fn (Issue $i): int => $i->id, $fixedIssues));
+
+        // Parts and modifications (Phase 50.1, spec.md §7.39): a modification on its date and
+        // its revert on that one; a part fitted or removed without a record on its date. What a
+        // service record or a modification fitted and took off is its second line.
+        $modifications = [];
+        $reverts = [];
+        $standalone = [];
+        $partsLines = [];
+        if ($enabled[Feature::Parts->value]) {
+            $this->modifications->prime($ids);
+            $this->parts->prime($ids);
+            if ($query->includes(ActivityKind::Modification) || $query->includes(ActivityKind::ModificationReverted)) {
+                // Each vehicle's list is read once per request (primed above).
+                $all = [];
+                foreach ($ids as $id) {
+                    array_push($all, ...$this->modifications->listForVehicle($id));
+                }
+                foreach ($all as $modification) {
+                    if ($query->includes(ActivityKind::Modification) && $query->covers($modification->data->doneOn)) {
+                        $modifications[] = $modification;
+                    }
+                    $on = $modification->revertedOn;
+                    if ($query->includes(ActivityKind::ModificationReverted) && $on !== null && $query->covers($on)) {
+                        $reverts[] = $modification;
+                    }
+                }
+            }
+            if ($query->includes(ActivityKind::PartFitted) || $query->includes(ActivityKind::PartRemoved)) {
+                $standalone = $this->standaloneFittings($ids);
+            }
+            $partsLines = $this->partsLines($ids, $services, $modifications);
+        }
 
         $milestones = [];
         if ($query->includes(ActivityKind::Milestone)) {
@@ -339,6 +381,7 @@ final readonly class ActivityFeed
             AttachmentOwner::Trip->value => array_map(static fn (Trip $t): int => $t->id, $trips),
             AttachmentOwner::Incident->value => array_map(static fn (Incident $i): int => $i->id, $incidents),
             AttachmentOwner::Issue->value => array_map(static fn (Issue $i): int => $i->id, $noticed),
+            AttachmentOwner::Modification->value => array_map(static fn (Modification $m): int => $m->id, $modifications),
             AttachmentOwner::Purchase->value => $paperwork(AttachmentOwner::Purchase),
             AttachmentOwner::Sale->value => $paperwork(AttachmentOwner::Sale),
         ]));
@@ -409,6 +452,7 @@ final readonly class ActivityFeed
                     : [],
                 partOfKey: $partOf($entry->incidentId)?->data->type->labelKey(),
                 partOfDate: $partOf($entry->incidentId)?->data->occurredOn,
+                parts: $partsLines['maintenance:' . $entry->id] ?? [],
             );
         }
         foreach ($ownChanges as $change) {
@@ -564,6 +608,90 @@ final readonly class ActivityFeed
                     ? $linked
                     : [['title' => 'issue.fixes.without_record', 'isKey' => true, 'date' => $fixedOn]],
             );
+        }
+        foreach ($modifications as $modification) {
+            $data = $modification->data;
+            $items[] = new ActivityItem(
+                kind: ActivityKind::Modification,
+                vehicle: $vehicles[$modification->vehicleId],
+                entryId: $modification->id,
+                date: $data->doneOn,
+                createdAt: $modification->createdAt,
+                label: $data->title,
+                labelKey: $data->category->labelKey(),
+                icon: 'handyman',
+                amount: $data->cost,
+                currency: $currencies[$modification->vehicleId],
+                odometerKm: $data->odometerKm,
+                vendor: $data->fittedBy,
+                files: $counts->of(AttachmentOwner::Modification, $modification->id),
+                createdBy: $modification->createdBy,
+                parts: $partsLines['modification:' . $modification->id] ?? [],
+                reverted: $modification->isReverted(),
+            );
+        }
+        foreach ($reverts as $modification) {
+            $items[] = new ActivityItem(
+                kind: ActivityKind::ModificationReverted,
+                vehicle: $vehicles[$modification->vehicleId],
+                entryId: $modification->id,
+                date: $modification->revertedOn ?? $modification->data->doneOn,
+                createdAt: $modification->updatedAt,
+                label: $modification->data->title,
+                labelKey: 'history.kind.modification_reverted',
+                icon: 'restart_alt',
+                odometerKm: $modification->revertedOdometerKm,
+                note: $modification->revertedNote,
+                createdBy: $modification->createdBy,
+            );
+        }
+        $partsById = [];
+        if ($standalone !== []) {
+            foreach ($ids as $id) {
+                foreach ($this->parts->listForVehicle($id) as $part) {
+                    $partsById[$part->id] = $part;
+                }
+            }
+        }
+        foreach ($standalone as $fitting) {
+            $part = $partsById[$fitting->partId] ?? null;
+            if ($part === null) {
+                continue;
+            }
+            $fittedHere = !$fitting->fittedByRecord() && $query->covers($fitting->fittedOn);
+            if ($query->includes(ActivityKind::PartFitted) && $fittedHere) {
+                $items[] = new ActivityItem(
+                    kind: ActivityKind::PartFitted,
+                    vehicle: $vehicles[$part->vehicleId],
+                    entryId: $part->id,
+                    date: $fitting->fittedOn,
+                    createdAt: $fitting->createdAt,
+                    label: $part->label(),
+                    labelKey: 'history.kind.part_fitted',
+                    icon: 'inventory_2',
+                    odometerKm: $fitting->fittedOdometerKm,
+                    createdBy: $part->createdBy,
+                );
+            }
+            $removedOn = $fitting->removedOn;
+            if (
+                $query->includes(ActivityKind::PartRemoved) && $removedOn !== null
+                && !$fitting->removedByRecord() && $query->covers($removedOn)
+            ) {
+                $items[] = new ActivityItem(
+                    kind: ActivityKind::PartRemoved,
+                    vehicle: $vehicles[$part->vehicleId],
+                    entryId: $part->id,
+                    date: $removedOn,
+                    createdAt: $fitting->updatedAt,
+                    label: $part->label(),
+                    labelKey: 'history.kind.part_removed',
+                    icon: 'undo',
+                    odometerKm: $fitting->removedOdometerKm,
+                    note: $fitting->outcome?->labelKey(),
+                    createdBy: $part->createdBy,
+                );
+            }
         }
         foreach ($milestones as [$vehicle, $milestone, $date, $price]) {
             $owner = $milestone->filesOwner();
@@ -740,6 +868,34 @@ final readonly class ActivityFeed
         foreach ($tests as $test) {
             $years[] = (int) LocalTime::fromUtc($test->completedAt, $zone)->format('Y');
         }
+        // Parts and modifications (Phase 50.1), from the lists read once per request.
+        $partsOn = $this->features->isEnabled(Feature::Parts);
+        if ($partsOn) {
+            $this->modifications->prime($query->vehicleIds());
+            $this->parts->prime($query->vehicleIds());
+        }
+        if ($partsOn && ($query->includes(ActivityKind::Modification) || $query->includes(ActivityKind::ModificationReverted))) {
+            foreach ($query->vehicleIds() as $vehicleId) {
+                foreach ($this->modifications->listForVehicle($vehicleId) as $modification) {
+                    if ($query->includes(ActivityKind::Modification)) {
+                        $years[] = (int) $modification->data->doneOn->format('Y');
+                    }
+                    if ($query->includes(ActivityKind::ModificationReverted) && $modification->revertedOn !== null) {
+                        $years[] = (int) $modification->revertedOn->format('Y');
+                    }
+                }
+            }
+        }
+        if ($partsOn && ($query->includes(ActivityKind::PartFitted) || $query->includes(ActivityKind::PartRemoved))) {
+            foreach ($this->standaloneFittings($query->vehicleIds()) as $fitting) {
+                if (!$fitting->fittedByRecord()) {
+                    $years[] = (int) $fitting->fittedOn->format('Y');
+                }
+                if ($fitting->removedOn !== null && !$fitting->removedByRecord()) {
+                    $years[] = (int) $fitting->removedOn->format('Y');
+                }
+            }
+        }
         if ($query->includes(ActivityKind::Milestone)) {
             foreach ($query->vehicles as $vehicle) {
                 foreach (self::milestones($vehicle) as [, $date]) {
@@ -749,6 +905,86 @@ final readonly class ActivityFeed
         }
 
         return $years;
+    }
+
+    /**
+     * What each service record and modification fitted and took off, as its
+     * second line, keyed "maintenance:{id}" / "modification:{id}" (Phase 50.1).
+     *
+     * @param list<int> $vehicleIds
+     * @param list<MaintenanceEntry> $services
+     * @param list<Modification> $modifications
+     * @return array<string, list<TranslatableMessage>>
+     */
+    private function partsLines(array $vehicleIds, array $services, array $modifications): array
+    {
+        $wanted = [
+            'maintenance' => array_fill_keys(array_map(static fn (MaintenanceEntry $e): int => $e->id, $services), true),
+            'modification' => array_fill_keys(array_map(static fn (Modification $m): int => $m->id, $modifications), true),
+        ];
+        $fitted = [];
+        $removed = [];
+        foreach ($vehicleIds as $vehicleId) {
+            $labels = [];
+            foreach ($this->parts->listForVehicle($vehicleId) as $part) {
+                $labels[$part->id] = $part->label();
+            }
+            foreach ($this->parts->fittingsForVehicle($vehicleId) as $partId => $fittings) {
+                $label = $labels[$partId] ?? null;
+                if ($label === null) {
+                    continue;
+                }
+                foreach ($fittings as $fitting) {
+                    foreach (
+                        [
+                            ['maintenance', $fitting->fittedMaintenanceId, $fitting->removedMaintenanceId],
+                            ['modification', $fitting->fittedModificationId, $fitting->removedModificationId],
+                        ] as [$kind, $on, $off]
+                    ) {
+                        if ($on !== null && isset($wanted[$kind][$on]) && !$fitting->fittedByRevert) {
+                            $fitted[$kind . ':' . $on][] = $label;
+                        }
+                        if ($off !== null && isset($wanted[$kind][$off]) && !$fitting->removedByRevert) {
+                            $removed[$kind . ':' . $off][] = $label;
+                        }
+                    }
+                }
+            }
+        }
+        $lines = [];
+        foreach (array_unique([...array_keys($fitted), ...array_keys($removed)]) as $key) {
+            if (isset($fitted[$key])) {
+                $lines[$key][] = new TranslatableMessage('history.parts_fitted', ['parts' => implode(', ', $fitted[$key])]);
+            }
+            if (isset($removed[$key])) {
+                $lines[$key][] = new TranslatableMessage('history.parts_removed', ['parts' => implode(', ', $removed[$key])]);
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * The fittings and removals made without a record (Phase 50.1), from
+     * each vehicle's fittings, read once per request.
+     *
+     * @param list<int> $vehicleIds
+     * @return list<PartFitting>
+     */
+    private function standaloneFittings(array $vehicleIds): array
+    {
+        $standalone = [];
+        foreach ($vehicleIds as $vehicleId) {
+            foreach ($this->parts->fittingsForVehicle($vehicleId) as $fittings) {
+                foreach ($fittings as $fitting) {
+                    if (!$fitting->fittedByRecord() || ($fitting->removedOn !== null && !$fitting->removedByRecord())) {
+                        $standalone[] = $fitting;
+                    }
+                }
+            }
+        }
+
+        return $standalone;
     }
 
     /**

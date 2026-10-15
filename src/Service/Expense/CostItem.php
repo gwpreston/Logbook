@@ -17,6 +17,9 @@ use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
+use Logbook\Domain\Part\Modification;
+use Logbook\Domain\Part\Part;
+use Logbook\Domain\Part\PartFitting;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Finance\FinanceLine;
 use Logbook\Service\Finance\FinanceLineKind;
@@ -62,6 +65,8 @@ final readonly class CostItem
         public ?FinanceLineKind $financeKind = null,
         /** The finance line is a lease's: never a credit charge (spec.md §7.7, #186). */
         public bool $fromLease = false,
+        /** A sold part's group: that of the record that first fitted it (Phase 50.1, #420). */
+        public ?CostGroup $groupOverride = null,
     ) {
     }
 
@@ -186,9 +191,68 @@ final readonly class CostItem
         );
     }
 
+    /**
+     * A modification's cost (Phase 50.1, spec.md §7.39): build spend. Free
+     * work (cost 0) is history, not an expense, as for maintenance.
+     */
+    public static function fromModification(Modification $modification, Vehicle $vehicle, string $currency): ?self
+    {
+        $amount = Money::of($modification->data->cost, $currency);
+        if ($amount->isZero()) {
+            return null;
+        }
+
+        return new self(
+            vehicle: $vehicle,
+            date: $modification->data->doneOn,
+            source: CostSource::Modification,
+            sourceId: $modification->id,
+            amount: $amount,
+            kindKey: $modification->data->category->labelKey(),
+            icon: 'handyman',
+            title: $modification->data->title,
+            createdBy: $modification->createdBy,
+        );
+    }
+
+    /**
+     * A part sold as it came off (#420): money back, a negative line dated
+     * the removal, in the group of the record that first fitted the part.
+     */
+    public static function fromPartSale(
+        Part $part,
+        PartFitting $removal,
+        CostGroup $group,
+        Vehicle $vehicle,
+        string $currency,
+    ): ?self {
+        if ($removal->soldPrice === null || $removal->removedOn === null) {
+            return null;
+        }
+        $amount = Money::of($removal->soldPrice, $currency);
+        if ($amount->isZero()) {
+            return null;
+        }
+
+        return new self(
+            vehicle: $vehicle,
+            date: $removal->removedOn,
+            source: CostSource::PartSale,
+            sourceId: $part->id,
+            amount: Money::zero($currency)->subtract($amount),
+            kindKey: 'part.ledger.sold',
+            icon: 'sell',
+            title: $part->label(),
+            // Whoever typed the price isn't recorded, so the own-entry rule never shows it:
+            // only someone who may see costs does (spec.md §7.24).
+            createdBy: null,
+            groupOverride: $group,
+        );
+    }
+
     public function group(): CostGroup
     {
-        return $this->source->group();
+        return $this->groupOverride ?? $this->source->group();
     }
 
     public function currency(): string

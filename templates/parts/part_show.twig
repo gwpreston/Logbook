@@ -1,0 +1,155 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/attachments.twig' as paperclip %}
+{% import 'macros/parts.twig' as parts_ui %}
+
+{#
+ # The part page (spec.md §7.39 *Pages*): its details, warranty, distance on
+ # the vehicle (derived), photos and files, its fittings as a timeline
+ # (newest first) with the record that made each, and the actions the
+ # viewer may take. Every action is a link or a form: no JS needed.
+ #}
+{% set active_nav = 'garage' %}
+{% set data = part.data %}
+{% set status = part.status.value %}
+{% set images = files|filter(f => f.isImage()) %}
+{% set documents = files|filter(f => not f.isImage()) %}
+{# A part's price is never the member's own entry (spec.md §7.39 Access). #}
+{% set costs = can_see_costs(vehicle) %}
+
+{% macro record(vehicle, fitting, services, modifications, end) -%}
+    {%- set maintenance_id = end == 'fitted' ? fitting.fittedMaintenanceId : fitting.removedMaintenanceId -%}
+    {%- set modification_id = end == 'fitted' ? fitting.fittedModificationId : fitting.removedModificationId -%}
+    {%- if maintenance_id and services[maintenance_id] is defined -%}
+        <a href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: maintenance_id}) }}" data-modal>{{ services[maintenance_id].data.title }}</a>
+    {%- elseif modification_id and modifications[modification_id] is defined -%}
+        <a href="{{ url_for('modifications.show', {id: vehicle.id, modification: modification_id}) }}">{{ modifications[modification_id].data.title }}</a>
+    {%- else -%}
+        {{ 'part.timeline.no_record'|trans }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% block title %}{{ part.label() }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('parts.index', {id: vehicle.id}, status == 'fitted' ? {} : {status: status}) }}">{{ ui.icon('chevron_left') }}{{ 'part.tab_title'|trans }} · {{ vehicle.name() }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
+                <h1 class="page-header__title">{{ part.label() }}</h1>
+                {% if warranty %}<p class="page-header__lead">{{ parts_ui.warranty(warranty) }}</p>{% endif %}
+                <p class="btn-row">{{ parts_ui.status_pill(part) }}</p>
+            </div>
+            {% if can_log or can_change %}
+                <div class="btn-row">
+                    {% if can_log and status == 'stored' %}
+                        <a class="btn btn--primary" href="{{ url_for('parts.fit', {id: vehicle.id, part: part.id}) }}" data-modal>{{ ui.icon('add') }}{{ (fittings is empty ? 'part.fit' : 'part.fit_again')|trans }}</a>
+                    {% endif %}
+                    {% if can_log and status == 'fitted' %}
+                        <a class="btn" href="{{ url_for('parts.remove', {id: vehicle.id, part: part.id}) }}" data-modal>{{ ui.icon('undo') }}{{ 'part.remove'|trans }}</a>
+                    {% endif %}
+                    {% if can_change %}
+                        <a class="btn btn--ghost" href="{{ url_for('parts.edit', {id: vehicle.id, part: part.id}) }}" data-modal>{{ ui.icon('edit') }}{{ 'form.edit'|trans }}</a>
+                        <a class="btn btn--ghost" href="{{ url_for('parts.delete', {id: vehicle.id, part: part.id}) }}" data-modal>{{ ui.icon('delete') }}{{ 'form.delete'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </header>
+
+        <section class="card" aria-labelledby="part-details">
+            <h2 id="part-details" class="card__title">{{ 'part.section.details'|trans }}</h2>
+            {% if data.notes %}<p class="part-notes">{{ data.notes|nl2br }}</p>{% endif %}
+            <dl class="meta-grid">
+                {% if data.brand %}<div><dt>{{ 'part.field.brand'|trans }}</dt><dd>{{ data.brand }}</dd></div>{% endif %}
+                {% if data.partNumber %}<div><dt>{{ 'part.field.part_number'|trans }}</dt><dd>{{ data.partNumber }}</dd></div>{% endif %}
+                {% if data.serialNumber %}<div><dt>{{ 'part.field.serial_number'|trans }}</dt><dd>{{ data.serialNumber }}</dd></div>{% endif %}
+                <div><dt>{{ 'part.field.condition'|trans }}</dt><dd>{{ data.condition.labelKey()|trans }}</dd></div>
+                {% if data.origin.value == 'original' %}<div><dt>{{ 'part.field.origin'|trans }}</dt><dd>{{ 'part.origin.original'|trans }}</dd></div>{% endif %}
+                {% if data.supplier %}<div><dt>{{ 'part.field.supplier'|trans }}</dt><dd>{{ data.supplier }}</dd></div>{% endif %}
+                {% if data.boughtOn %}<div><dt>{{ 'part.field.bought_on'|trans }}</dt><dd>{{ data.boughtOn|local_date }}</dd></div>{% endif %}
+                {% if data.price is not null and costs %}<div><dt>{{ 'part.field.price'|trans }}</dt><dd class="tabular">{{ data.price|money(currency) }}</dd></div>{% endif %}
+                <div>
+                    <dt>{{ 'part.field.distance'|trans }}</dt>
+                    <dd class="tabular">
+                        {%- if distance.km is null -%}
+                            {{ 'part.distance.unknown'|trans }}
+                        {%- elseif distance.atLeast -%}
+                            {{ 'part.distance.at_least'|trans({distance: distance.km|distance(0)}) }}
+                        {%- else -%}
+                            {{ distance.km|distance(0) }}
+                        {%- endif -%}
+                    </dd>
+                </div>
+            </dl>
+            {% if distance.isFlagged() %}
+                <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'part.distance.backwards'|trans({from: distance.backwardsFrom|local_date, to: distance.backwardsTo|local_date}) }}</span></p>
+            {% endif %}
+            {{ ui.added_by(vehicle, part.createdBy) }}
+        </section>
+
+        {% if data.warrantyMonths is not null or data.warrantyKm is not null %}
+            <section class="card" aria-labelledby="part-warranty">
+                <h2 id="part-warranty" class="card__title">{{ 'part.section.warranty'|trans }}</h2>
+                <p>{{ parts_ui.warranty(warranty) }}</p>
+                <dl class="meta-grid">
+                    {% if data.warrantyMonths is not null %}<div><dt>{{ 'part.field.warranty_months'|trans }}</dt><dd class="tabular">{{ data.warrantyMonths }}</dd></div>{% endif %}
+                    {% if data.warrantyKm is not null %}<div><dt>{{ 'part.field.warranty_distance'|trans }}</dt><dd class="tabular">{{ data.warrantyKm|distance(0) }}</dd></div>{% endif %}
+                    {% if data.warrantyFrom %}<div><dt>{{ 'part.field.warranty_from'|trans }}</dt><dd>{{ data.warrantyFrom.labelKey()|trans }}</dd></div>{% endif %}
+                    {% if data.warrantyProvider %}<div><dt>{{ 'part.field.warranty_provider'|trans }}</dt><dd>{{ data.warrantyProvider }}</dd></div>{% endif %}
+                </dl>
+                {% if data.warrantyTerms %}<p class="part-notes">{{ data.warrantyTerms|nl2br }}</p>{% endif %}
+            </section>
+        {% endif %}
+
+        {% if files is not empty %}
+            <section class="card" aria-labelledby="part-files">
+                <h2 id="part-files" class="card__title">{{ 'part.section.photos'|trans }}</h2>
+                {% if images is not empty %}
+                    <ul class="incident-photos">
+                        {% for photo in images %}
+                            <li><a href="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}"><img src="{{ url_for('attachments.show', {id: vehicle.id, attachment: photo.id}, {v: photo.version()}) }}" alt="{{ photo.filename }}" loading="lazy"></a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if documents is not empty %}
+                    <ul class="attachment-list">{% for file in documents %}{{ paperclip.item(vehicle, file) }}{% endfor %}</ul>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="card" aria-labelledby="part-timeline">
+            <h2 id="part-timeline" class="card__title">{{ 'part.section.timeline'|trans }}</h2>
+            {% if fittings is empty %}
+                <p class="muted">{{ 'part.timeline.never_fitted'|trans }}</p>
+            {% else %}
+                <ol class="list">
+                    {% for fitting in fittings %}
+                        {% if fitting.removedOn %}
+                            <li><div class="list__item">
+                                <span class="list__icon">{{ ui.icon('undo') }}</span>
+                                <span class="list__body">
+                                    <span class="list__title">{{ 'part.timeline.removed'|trans({date: fitting.removedOn|local_date}) }}{% if fitting.removedOdometerKm is not null %} · <span class="tabular">{{ fitting.removedOdometerKm|distance(0) }}</span>{% endif %}</span>
+                                    <span class="list__meta">
+                                        {{- _self.record(vehicle, fitting, services, modifications, 'removed') }}
+                                        {%- if fitting.outcome %} · <span class="part-timeline__outcome">{{ fitting.outcome.labelKey()|trans }}</span>{% endif -%}
+                                        {%- if fitting.soldPrice is not null and can_see_costs(vehicle) %} · <span class="tabular">{{ fitting.soldPrice|money(currency) }}</span>{% endif -%}
+                                        {%- if fitting.replacedByPartId and replacements[fitting.replacedByPartId] is defined %} · {{ 'part.timeline.replaced_by'|trans({name: replacements[fitting.replacedByPartId].label()}) }}{% endif -%}
+                                    </span>
+                                </span>
+                            </div></li>
+                        {% endif %}
+                        <li><div class="list__item">
+                            <span class="list__icon">{{ ui.icon('add') }}</span>
+                            <span class="list__body">
+                                <span class="list__title">{{ 'part.timeline.fitted'|trans({date: fitting.fittedOn|local_date}) }}{% if fitting.fittedOdometerKm is not null %} · <span class="tabular">{{ fitting.fittedOdometerKm|distance(0) }}</span>{% endif %}</span>
+                                <span class="list__meta">{{ _self.record(vehicle, fitting, services, modifications, 'fitted') }}</span>
+                            </span>
+                        </div></li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

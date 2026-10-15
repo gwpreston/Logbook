@@ -16,6 +16,7 @@ use Logbook\Domain\Maintenance\MaintenanceCategory;
 use Logbook\Domain\Maintenance\MaintenanceEntry;
 use Logbook\Domain\Maintenance\MaintenanceEntryData;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
+use Logbook\Domain\Part\PartData;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -36,6 +37,9 @@ use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
 use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Service\Part\PartRemoval;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\RecordParts;
 use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
@@ -86,7 +90,7 @@ final class ApiEntryEditTest extends AppTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createApp(['FEATURES_TRIPS' => 'true']);
+        $this->app = $this->createApp(['FEATURES_TRIPS' => 'true', 'FEATURES_PARTS' => 'true']);
         $this->pinClock($this->app, '2026-09-30T12:00:00Z');
         $this->resetDatabase($this->app);
         // Metric, so a changed figure is the same km typed into the page or sent
@@ -376,6 +380,42 @@ final class ApiEntryEditTest extends AppTestCase
             self::assertSame($base . '/fuel/' . $fill->id, $problem->doc('links')->get('entry'));
         }
         self::assertSame(200, $this->api->get($base . '/odometer/' . $derived)->getStatusCode(), 'still there');
+    }
+
+    /**
+     * A service record whose new date or deletion would leave a part's
+     * fittings out of order (spec.md §7.39) is the form's refusal, not a 500.
+     */
+    public function testARecordThatWouldBreakAPartsFittingsIsRefused(): void
+    {
+        $zone = new DateTimeZone('Europe/London');
+        $parts = $this->service($this->app, PartService::class);
+        $exhaust = $parts->create(
+            $this->golf,
+            new PartData('Standard exhaust'),
+            $zone,
+            fitOn: new DateTimeImmutable('2026-01-10'),
+        );
+        $record = $this->service($this->app, MaintenanceService::class)->create(
+            $this->golf,
+            new MaintenanceEntryData(new DateTimeImmutable('2026-03-01'), MaintenanceCategory::Repair, 'Exhaust off', '0.000'),
+            $zone,
+            parts: new RecordParts(remove: [$exhaust->id => new PartRemoval()]),
+        );
+        $parts->fit($this->golf, $parts->get($this->golf, $exhaust->id), new DateTimeImmutable('2026-08-01'), null, $zone);
+        $path = '/vehicles/' . $this->golf->id . '/maintenance/' . $record->id;
+        $tag = $this->api->get($path)->getHeaderLine('ETag');
+
+        foreach (['PATCH', 'DELETE'] as $method) {
+            $response = $method === 'PATCH'
+                ? $this->api->patch($path, ['performed_on' => '2026-09-01'])
+                : $this->api->delete($path);
+            self::assertSame(422, $response->getStatusCode(), $method);
+            $problem = ApiClient::json($response);
+            self::assertSame('validation_failed', $problem->get('code'));
+            self::assertSame('part.refused.overlap', $problem->doc('errors')->doc('form')->get('key'), $method);
+        }
+        self::assertSame($tag, $this->api->get($path)->getHeaderLine('ETag'), 'nothing was written');
     }
 
     public function testAnArchivedVehicleRefusesEditsAndDeletes(): void

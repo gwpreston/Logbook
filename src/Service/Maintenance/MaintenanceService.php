@@ -19,6 +19,11 @@ use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Issue\IssueService;
+use Logbook\Service\Part\PartChangeRefused;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\RecordParts;
+use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Service\Tyre\TyreChangeRefused;
@@ -53,6 +58,8 @@ final readonly class MaintenanceService
         private AccessContext $author,
         private WebhookEvents $webhooks,
         private IssueService $issues,
+        private PartService $parts,
+        private FeatureToggles $features,
     ) {
     }
 
@@ -80,6 +87,8 @@ final readonly class MaintenanceService
      *                           reading is recorded at noon on its date there
      * @param list<int>|null $fixes the issues it fixes (the *Fixes* checklist,
      *                              spec.md §7.37); null leaves them alone
+     * @param RecordParts|null $parts *Parts fitted* and *Parts removed* (spec.md §7.39); null leaves parts alone
+     * @throws PartChangeRefused
      */
     public function create(
         Vehicle $vehicle,
@@ -87,8 +96,15 @@ final readonly class MaintenanceService
         DateTimeZone $zone,
         PendingUploads $files = new PendingUploads(),
         ?array $fixes = null,
+        ?RecordParts $parts = null,
     ): MaintenanceEntry {
-        $id = $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $data, $zone, $fixes): int {
+        $id = $this->attachments->saveWithFiles($files, function (array $stored) use (
+            $vehicle,
+            $data,
+            $zone,
+            $fixes,
+            $parts,
+        ): int {
             $by = $this->author->authorId() ?? $vehicle->userId;
             $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
             $this->recordOdometer($vehicle, $id, $data, $zone);
@@ -96,6 +112,9 @@ final readonly class MaintenanceService
             $this->attachments->record($vehicle, AttachmentOwner::Maintenance, $id, $stored);
             if ($fixes !== null) {
                 $this->issues->setFixesOf($vehicle, $this->get($vehicle, $id), $fixes, $zone);
+            }
+            if ($parts !== null && $this->features->isEnabled(Feature::Parts)) {
+                $this->followParts($vehicle, $id, $data, $parts);
             }
             $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Maintenance, $id);
 
@@ -107,7 +126,9 @@ final readonly class MaintenanceService
 
     /**
      * @param list<int>|null $fixes the issues it fixes; null leaves them alone
+     * @param RecordParts|null $parts the parts lists; null only moves the fittings it made
      * @throws TyreChangeRefused when a linked tyre change cannot move to the new date or odometer
+     * @throws PartChangeRefused when a part's fittings would overlap
      */
     public function update(
         Vehicle $vehicle,
@@ -116,8 +137,16 @@ final readonly class MaintenanceService
         DateTimeZone $zone,
         PendingUploads $files = new PendingUploads(),
         ?array $fixes = null,
+        ?RecordParts $parts = null,
     ): MaintenanceEntry {
-        $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $entry, $data, $zone, $fixes): void {
+        $this->attachments->saveWithFiles($files, function (array $stored) use (
+            $vehicle,
+            $entry,
+            $data,
+            $zone,
+            $fixes,
+            $parts,
+        ): void {
             $this->entries->update($vehicle->id, $entry->id, $data, $this->clock->now());
             $this->recordOdometer($vehicle, $entry->id, $data, $zone);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId, $data->scheduleId);
@@ -130,6 +159,8 @@ final readonly class MaintenanceService
             } else {
                 $this->issues->setFixesOf($vehicle, $saved, $fixes, $zone);
             }
+            // The fittings it made follow its date and mileage, whether or not the lists were sent.
+            $this->followParts($vehicle, $entry->id, $data, $this->features->isEnabled(Feature::Parts) ? $parts : null);
             $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Maintenance, $entry->id);
         });
 
@@ -149,12 +180,29 @@ final readonly class MaintenanceService
         $this->transaction->run(function () use ($vehicle, $entry, $zone): void {
             $this->tyres->releaseServiceRecord($vehicle, $entry->id, $zone);
             $this->issues->recordDeleted($vehicle, $entry->id, $zone);
+            $this->parts->forgetRecord($vehicle, PartService::MAINTENANCE, $entry->id);
             $this->odometer->forgetEntry($vehicle, OdometerSource::Maintenance, $entry->id);
             $this->entries->delete($vehicle->id, $entry->id);
             $this->recomputeSchedules($vehicle, $entry->data->scheduleId);
             $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Maintenance, $entry->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Maintenance, $entry->id);
+    }
+
+    /**
+     * @throws PartChangeRefused
+     */
+    private function followParts(Vehicle $vehicle, int $id, MaintenanceEntryData $data, ?RecordParts $parts): void
+    {
+        $this->parts->applyRecord(
+            $vehicle,
+            PartService::MAINTENANCE,
+            $id,
+            $data->performedOn,
+            $data->odometerKm,
+            $parts,
+            $vehicle->data->purchaseDate,
+        );
     }
 
     /**

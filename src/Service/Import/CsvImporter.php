@@ -302,6 +302,11 @@ final readonly class CsvImporter
                         OdometerSource::IssueUpdate->value,
                         // MOT tests are fetched, not imported (Phase 41).
                         OdometerSource::Mot->value,
+                        // Modifications and parts are not imported either (Phase 50.1).
+                        OdometerSource::Modification->value,
+                        OdometerSource::ModificationRevert->value,
+                        OdometerSource::PartFitted->value,
+                        OdometerSource::PartRemoved->value,
                     ];
                     if ($source !== null && !in_array($source, $owned, true)) {
                         return ImportRowStatus::Implied;

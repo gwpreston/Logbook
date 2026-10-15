@@ -39,7 +39,8 @@ final readonly class TotalLoss
             return [];
         }
         $settled = array_values(array_filter(
-            $this->incidents->listForVehicles([$vehicle->id]),
+            // The vehicle's list is read once per request (spec.md §8 *Page budgets*).
+            $this->incidents->listForVehicle($vehicle->id),
             static fn (Incident $incident): bool => $incident->data->writeOff->isWrittenOff()
                 && $incident->data->claim->status === ClaimStatus::Settled,
         ));

@@ -12,7 +12,9 @@ use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\MaintenanceScheduleRepository;
+use Logbook\Repository\ModificationRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Repository\PartRepository;
 use Logbook\Repository\TyreRepository;
 use Logbook\Repository\ValuationRepository;
 
@@ -36,6 +38,8 @@ final readonly class VehicleDataPrimer
         private FinanceAgreementRepository $finance,
         private IncidentRepository $incidents,
         private TyreRepository $tyres,
+        private ModificationRepository $modifications,
+        private PartRepository $parts,
     ) {
     }
 
@@ -59,5 +63,7 @@ final readonly class VehicleDataPrimer
         $this->finance->prime($ids);
         $this->incidents->prime($ids);
         $this->tyres->prime($ids);
+        $this->modifications->prime($ids);
+        $this->parts->prime($ids);
     }
 }

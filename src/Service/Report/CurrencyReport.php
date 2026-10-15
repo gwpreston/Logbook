@@ -27,10 +27,30 @@ final readonly class CurrencyReport
         public array $vehicles,
         /** Kilometres driven by these vehicles in the period, or null. */
         public ?string $distanceKm,
-        /** Total ÷ distance (money per km, canonical decimal), or null. */
+        /** Running costs ÷ distance (money per km, canonical decimal), or null. */
         public ?string $costPerKm,
+        /** Running costs ÷ months: build spend is left out (#419). */
         public Money $averagePerMonth,
+        /** The total less build spend (Phase 50.1): what every rate divides. */
+        public ?Money $running = null,
     ) {
+    }
+
+    /**
+     * The total less build spend, what every rate divides.
+     */
+    public function runningTotal(): Money
+    {
+        return $this->running ?? $this->total;
+    }
+
+    /**
+     * Build spend is in the total but not in the rates (spec.md §7.7): the
+     * report says so beside them.
+     */
+    public function hasBuild(): bool
+    {
+        return !$this->group(CostGroup::Build)->isZero();
     }
 
     public function isEmpty(): bool

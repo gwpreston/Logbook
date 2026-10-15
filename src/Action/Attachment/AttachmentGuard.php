@@ -28,6 +28,10 @@ use Slim\Exception\HttpNotFoundException;
  *   paperwork show an amount: only with *Can see costs*, or to whoever
  *   uploaded it (decided 2026-10-08, #303, #305), as the lists and cards
  *   they appear in.
+ * - A modification's or part's files (Phase 50.1, spec.md §7.39) carry
+ *   invoices, receipts and prices too, and a converted expense's receipt
+ *   moves to its modification: the same rule. While the `parts` module is
+ *   off they are not served at all, as its pages aren't.
  *
  * Other files pass.
  */
@@ -39,6 +43,8 @@ final readonly class AttachmentGuard
         AttachmentOwner::Valuation,
         AttachmentOwner::Purchase,
         AttachmentOwner::Sale,
+        AttachmentOwner::Modification,
+        AttachmentOwner::Part,
     ];
 
     public function __construct(
@@ -61,6 +67,10 @@ final readonly class AttachmentGuard
      */
     public function mayUse(User $user, Vehicle $vehicle, Attachment $attachment): bool
     {
+        $parts = [AttachmentOwner::Modification, AttachmentOwner::Part];
+        if (in_array($attachment->ownerType, $parts, true) && !$this->features->isEnabled(Feature::Parts)) {
+            return false;
+        }
         if (in_array($attachment->ownerType, self::COSTS, true)) {
             return $this->entries->canSeeAmount($user, $vehicle, $attachment->uploadedBy);
         }

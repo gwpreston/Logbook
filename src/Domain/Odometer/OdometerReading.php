@@ -40,6 +40,14 @@ final readonly class OdometerReading
         public ?int $issueUpdateId = null,
         /** The DVSA MOT test whose odometer this is (Phase 41). */
         public ?int $motTestId = null,
+        /** The modification whose mileage this is (Phase 50.1). */
+        public ?int $modificationId = null,
+        /** The modification whose revert's mileage this is (Phase 50.1). */
+        public ?int $modificationRevertId = null,
+        /** The part fitting whose fitted mileage this is, when no record fitted it (Phase 50.1). */
+        public ?int $partFittedId = null,
+        /** The part fitting whose removed mileage this is, when no record removed it (Phase 50.1). */
+        public ?int $partRemovedId = null,
     ) {
     }
 
@@ -63,6 +71,8 @@ final readonly class OdometerReading
             $this->complianceDocumentId !== null => [AttachmentOwner::Compliance, $this->complianceDocumentId],
             $this->incidentId !== null => [AttachmentOwner::Incident, $this->incidentId],
             $this->issueId !== null => [AttachmentOwner::Issue, $this->issueId],
+            $this->modificationId !== null => [AttachmentOwner::Modification, $this->modificationId],
+            $this->modificationRevertId !== null => [AttachmentOwner::Modification, $this->modificationRevertId],
             // Mileage when bought: the purchase paperwork is its receipt.
             $this->source === OdometerSource::Purchase => [AttachmentOwner::Purchase, $this->vehicleId],
             default => [AttachmentOwner::Odometer, $this->id],

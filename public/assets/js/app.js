@@ -955,9 +955,14 @@
                 .then(function () { busy(false); });
         }
 
-        function submit(form) {
+        function submit(form, submitter) {
             busy(true);
-            send(form.action, { method: 'POST', body: new FormData(form) })
+            var data = new FormData(form);
+            // The button pressed, as the browser would send it (e.g. *Add another part*, spec.md §7.39).
+            if (submitter && submitter.name) {
+                data.append(submitter.name, submitter.value);
+            }
+            send(form.action, { method: 'POST', body: data })
                 .then(function (response) {
                     var location = response.headers.get('X-Logbook-Location');
                     if (response.status === 204 && location) {
@@ -1023,7 +1028,7 @@
                     window.location.assign(form.action);
                     return;
                 }
-                submit(form);
+                submit(form, event.submitter);
             });
 
             dialog.addEventListener('close', function () {

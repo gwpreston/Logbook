@@ -91,6 +91,8 @@ final class ReportCalculator
         /** @var array<string, Money> $emptyGroups */
         $emptyGroups = array_fill_keys(array_map(static fn (CostGroup $g): string => $g->value, CostGroup::cases()), $zero);
         $total = $zero;
+        // Build spend is in the totals but never in a rate (spec.md §7.7, #419).
+        $running = $zero;
         $groups = $emptyGroups;
         /** @var array<string, Money> $monthTotals keyed Y-m */
         $monthTotals = [];
@@ -104,6 +106,10 @@ final class ReportCalculator
         $vehicleTotals = [];
         /** @var array<int, int> $vehicleCounts */
         $vehicleCounts = [];
+        /** @var array<int, Money> $vehicleRunning */
+        $vehicleRunning = [];
+        /** @var array<int, int> $vehicleRunningCounts */
+        $vehicleRunningCounts = [];
 
         foreach ($items as $item) {
             $group = $item->group()->value;
@@ -115,6 +121,11 @@ final class ReportCalculator
             $monthGroups[$key][$group] = $monthGroups[$key][$group]->add($item->amount);
             $vehicleTotals[$id] = ($vehicleTotals[$id] ?? $zero)->add($item->amount);
             $vehicleCounts[$id] = ($vehicleCounts[$id] ?? 0) + 1;
+            if ($item->group()->isRunning()) {
+                $running = $running->add($item->amount);
+                $vehicleRunning[$id] = ($vehicleRunning[$id] ?? $zero)->add($item->amount);
+                $vehicleRunningCounts[$id] = ($vehicleRunningCounts[$id] ?? 0) + 1;
+            }
         }
 
         // Distance counts only for vehicles with costs in the period: miles
@@ -129,7 +140,9 @@ final class ReportCalculator
             }
             $span = PeriodDistance::span($readings[$vehicle->id] ?? [], $period, $zone, $vehicle->data->purchaseDate);
             $km = $span?->km;
-            if ($km !== null) {
+            // Only a vehicle with running costs adds its miles: build spend alone is no running cost.
+            $runs = ($vehicleRunningCounts[$vehicle->id] ?? 0) > 0;
+            if ($km !== null && $runs) {
                 $distance = Decimal::add($distance, $km);
             }
             $spent = $vehicleTotals[$vehicle->id] ?? $zero;
@@ -138,9 +151,10 @@ final class ReportCalculator
                 $spent,
                 $count,
                 $km,
-                self::perKm($spent, $km),
+                $runs ? self::perKm($vehicleRunning[$vehicle->id] ?? $zero, $km) : null,
                 self::share($spent, $total),
                 $span,
+                $vehicleRunning[$vehicle->id] ?? $zero,
             );
         }
         usort($vehicleCosts, static fn (VehicleCost $a, VehicleCost $b): int
@@ -165,11 +179,12 @@ final class ReportCalculator
             months: $months,
             vehicles: $vehicleCosts,
             distanceKm: $distanceKm,
-            costPerKm: self::perKm($total, $distanceKm),
+            costPerKm: array_sum($vehicleRunningCounts) > 0 ? self::perKm($running, $distanceKm) : null,
             averagePerMonth: Money::of(
-                Decimal::divide($total->toDecimal(Money::SCALE), (string) max(1, count($months)), self::SCALE),
+                Decimal::divide($running->toDecimal(Money::SCALE), (string) max(1, count($months)), self::SCALE),
                 $currency,
             ),
+            running: $running,
         );
     }
 
@@ -182,8 +197,16 @@ final class ReportCalculator
         return Decimal::divide($amount->toDecimal(Money::SCALE), $km, self::SCALE);
     }
 
+    /**
+     * A bar's share, 0–100: a part sold back (Phase 50.1) can make a group or
+     * a total negative, and no bar is drawn below nothing or past full.
+     */
     private static function share(Money $part, Money $total): float
     {
-        return $total->micros === 0 ? 0.0 : $part->micros / $total->micros * 100;
+        if ($total->micros <= 0 || $part->micros <= 0) {
+            return 0.0;
+        }
+
+        return min(100.0, $part->micros / $total->micros * 100);
     }
 }

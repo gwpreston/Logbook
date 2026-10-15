@@ -52,6 +52,8 @@ final readonly class PrintOptions
      * they are where someone went. Never an issue's *noticed* line (Phase
      * 40.1, §7.37): a fixed issue prints with its fix, an open one not at all.
      * Never an MOT test's line (Phase 41, §7.38): the sale pack summarises them.
+     * Of parts (Phase 50.1, §7.39), modifications only: the part lines are
+     * the owner's own bookkeeping.
      *
      * @return list<ActivityKind>
      */
@@ -66,7 +68,15 @@ final readonly class PrintOptions
             $kinds,
             static fn (ActivityKind $kind): bool => !in_array(
                 $kind,
-                [ActivityKind::Valuation, ActivityKind::Trip, ActivityKind::IssueNoticed, ActivityKind::MotTest],
+                [
+                    ActivityKind::Valuation,
+                    ActivityKind::Trip,
+                    ActivityKind::IssueNoticed,
+                    ActivityKind::MotTest,
+                    ActivityKind::ModificationReverted,
+                    ActivityKind::PartFitted,
+                    ActivityKind::PartRemoved,
+                ],
                 true,
             ),
         ));

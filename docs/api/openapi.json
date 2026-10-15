@@ -2909,7 +2909,8 @@
                 "fuel",
                 "maintenance",
                 "compliance",
-                "other"
+                "other",
+                "build"
               ]
             }
           }
@@ -8782,7 +8783,11 @@
               "purchase",
               "issue",
               "issue_update",
-              "mot"
+              "mot",
+              "modification",
+              "mod_revert",
+              "part_fitted",
+              "part_removed"
             ]
           },
           "source_id": {
@@ -9666,7 +9671,11 @@
                   "purchase",
                   "issue",
                   "issue_update",
-                  "mot"
+                  "mot",
+                  "modification",
+                  "mod_revert",
+                  "part_fitted",
+                  "part_removed"
                 ]
               }
             }
@@ -10085,6 +10094,7 @@
               "incidents",
               "finance",
               "issues",
+              "parts",
               "stations"
             ],
             "properties": {
@@ -10119,6 +10129,9 @@
                 "type": "boolean"
               },
               "stations": {
+                "type": "boolean"
+              },
+              "parts": {
                 "type": "boolean"
               }
             }
@@ -14269,6 +14282,7 @@
               "maintenance",
               "compliance",
               "other",
+              "build",
               null
             ]
           },
@@ -14328,7 +14342,8 @@
                           "fuel",
                           "maintenance",
                           "compliance",
-                          "other"
+                          "other",
+                          "build"
                         ]
                       },
                       "total": {
@@ -19158,7 +19173,9 @@
                   "valuation",
                   "trip",
                   "incident",
-                  "issue"
+                  "issue",
+                  "modification",
+                  "part"
                 ]
               },
               "id": {

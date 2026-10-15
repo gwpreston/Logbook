@@ -16,7 +16,7 @@
         {{- costs ? 'history.valued_at'|trans({price: item.price|money(item.currency)}) : item.labelKey|trans -}}
     {%- elseif item.kind.value == 'document' -%}
         {{- item.label != '' ? item.label : item.labelKey|trans -}}
-    {%- elseif item.kind.value in ['maintenance', 'trip', 'issue_noticed', 'issue_fixed'] -%}
+    {%- elseif item.kind.value in ['maintenance', 'trip', 'issue_noticed', 'issue_fixed', 'modification', 'modification_reverted', 'part_fitted', 'part_removed'] -%}
         {{- item.label -}}
     {%- else -%}
         {{- item.labelKey|trans -}}
@@ -37,6 +37,13 @@
         {%- set parts = item.tyres|map(m => trans(m.message, m.parameters)) -%}
     {%- elseif item.kind.value == 'incident' -%}
         {%- set parts = item.damage is empty ? [] : [item.damage|map(k => k|trans)|join(', ')] -%}
+    {%- elseif item.kind.value == 'modification' -%}
+        {%- set parts = [item.labelKey|trans]|merge(item.vendor ? [item.vendor] : [])|merge(item.reverted ? ['modification.reverted'|trans] : []) -%}
+    {%- elseif item.kind.value == 'modification_reverted' -%}
+        {%- set parts = [item.labelKey|trans]|merge(item.note ? [item.note] : []) -%}
+    {%- elseif item.kind.value in ['part_fitted', 'part_removed'] -%}
+        {#- The note is the outcome's translation key: "Kept". -#}
+        {%- set parts = [item.labelKey|trans]|merge(item.note ? [item.note|trans] : []) -%}
     {%- elseif item.kind.value in ['issue_noticed', 'issue_fixed'] -%}
         {#- The note is a translation key: "Affects safety". -#}
         {%- set parts = [item.labelKey|trans]|merge(item.note ? [item.note|trans] : []) -%}
@@ -70,12 +77,14 @@
     {% import 'macros/attachments.twig' as paperclip %}
     {% import _self as history %}
     {% set costs = (opts.costs ?? true) and can_see_costs(item.vehicle) %}
-    {% set own_amount = (opts.costs ?? true) and can_see_amount(item.vehicle, item.createdBy) %}
+    {# A modification's cost is never the member's own entry (spec.md §7.39 Access). #}
+    {% set own_amount = (opts.costs ?? true) and (item.kind.value == 'modification' ? can_see_costs(item.vehicle) : can_see_amount(item.vehicle, item.createdBy)) %}
     {% set summary = history.summary(item) %}
     {# A milestone opens the vehicle, a valuation its page: both Manage; entries their own rule (spec.md §7.21). #}
     {# An incident opens its page, which anyone who can view the vehicle may see (spec.md §7.29). #}
     {# An issue opens its page too (spec.md §7.37), and an MOT test the MOT history page (§7.38). #}
-    {% set opens_page = item.kind.value in ['incident', 'issue_noticed', 'issue_fixed', 'mot_test'] %}
+    {# A modification and a part open their pages (spec.md §7.39). #}
+    {% set opens_page = item.kind.value in ['incident', 'issue_noticed', 'issue_fixed', 'mot_test', 'modification', 'modification_reverted', 'part_fitted', 'part_removed'] %}
     {% set editable = opens_page or (item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy)) %}
     {% set tag = (opts.link ?? true) and editable ? 'a' : 'div' %}
     <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}"{% if not opens_page %} data-modal{% endif %}{% endif %}>
@@ -89,6 +98,9 @@
             </span>
             {%- if item.kind.value == 'maintenance' and item.tyres is not empty %}
                 <span class="list__meta history-row__tyres">{{ ui.icon('tire_repair') }}{{ item.tyres|map(m => trans(m.message, m.parameters))|join(' · ') }}</span>
+            {%- endif %}
+            {%- if item.parts is not empty %}
+                <span class="list__meta history-row__tyres">{{ ui.icon('inventory_2') }}{{ item.parts|map(m => trans(m.message, m.parameters))|join(' · ') }}</span>
             {%- endif %}
             {%- if item.linked is not empty %}
                 <span class="list__meta history-row__tyres">{{ ui.icon('link') }}{{ item.linked|map(r => (r.isKey ? r.title|trans : r.title) ~ ' (' ~ r.date|local_date ~ ')')|join(' · ') }}</span>

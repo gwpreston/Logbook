@@ -21,7 +21,10 @@ final class DuplicateKey
 {
     public static function of(object $data): string
     {
-        $lower = static fn (?string $text): string => mb_strtolower(trim($text ?? ''));
+        // Line breaks as `\n`: text saved before 3.15.0 may hold `\r\n`, and the same text
+        // sent today is stored with `\n` (#433), so both must give the same key.
+        $lower = static fn (?string $text): string
+            => mb_strtolower(str_replace(["\r\n", "\r"], "\n", trim($text ?? '')));
 
         return match (true) {
             $data instanceof FuelEntryData => implode('|', [

@@ -1,0 +1,60 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # *Fit* / *Fit again* and *Remove* without a record (spec.md §7.39, #418):
+ # a date and a mileage (which joins the mileage log), and on removal what
+ # happened to the part. A sale price only when sold.
+ #}
+{% set active_nav = 'garage' %}
+{% set heading = (remove ? 'part.remove_title' : 'part.fit_title')|trans({name: part.label()}) %}
+{% set distance_symbol = ('units.symbol.' ~ prefs().distanceUnit.value)|trans %}
+{% set back = url_for('parts.show', {id: vehicle.id, part: part.id}) %}
+
+{% block title %}{{ heading }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        <a class="back-link" href="{{ back }}">{{ ui.icon('chevron_left') }}{{ part.label() }}</a>
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        {% block modal_body %}
+        {% if errors is not empty %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ errors.form is defined ? trans(errors.form.key, errors.form.params) : 'form.has_errors'|trans }}</span></div>
+        {% endif %}
+        <form class="form" method="post" action="{{ url_for(remove ? 'parts.remove' : 'parts.fit', {id: vehicle.id, part: part.id}) }}">
+            {{ ui.csrf(csrf) }}
+            {{ ui.return_field(return_to) }}
+            <section class="card">
+                {% if remove %}
+                    <div class="form-row">
+                        {{ ui.input('removed_on', 'part.field.removed_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                        {{ ui.input('odometer', 'part.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                    </div>
+                    <div class="form-row">
+                        {{ ui.select('outcome', 'part.field.outcome'|trans, values, errors, outcomes|map(o => {value: o.value, label: o.labelKey()|trans})) }}
+                        {% if can_see_costs(vehicle) %}
+                            {{ ui.input('sold_price', 'part.field.sold_price'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', hint: 'part.hint.sold_price'|trans}) }}
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="form-row">
+                        {{ ui.input('fit_on', 'part.field.fitted_on'|trans, values, errors, {type: 'date', required: true, max: 'now'|date('Y-m-d')}) }}
+                        {{ ui.input('fit_odometer', 'part.field.odometer'|trans, values, errors, {type: 'number', optional: true, step: 'any', min: 0, inputmode: 'decimal', suffix: distance_symbol}) }}
+                    </div>
+                {% endif %}
+                <p class="field__hint">{{ 'part.hint.without_record'|trans }}</p>
+            </section>
+            <div class="btn-row">
+                <button type="submit" class="btn btn--primary btn--lg">{{ ui.icon('check_circle') }}{{ (remove ? 'part.remove' : 'part.fit')|trans }}</button>
+                <a data-modal-cancel class="btn btn--lg" href="{{ return_to ?: back }}">{{ 'form.cancel'|trans }}</a>
+            </div>
+        </form>
+        {% endblock %}
+    </div>
+{% endblock %}
