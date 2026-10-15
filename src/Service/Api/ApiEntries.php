@@ -37,16 +37,20 @@ final readonly class ApiEntries
     /** The lists that have a single-entry read, as their path segment. */
     public const array LISTS = [
         'fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'schedules', 'valuations',
-        'issues',
+        'issues', 'modifications', 'parts',
     ];
 
     /** The lists whose entries the API edits and deletes (Phase 39.2). */
-    public const array EDITABLE = ['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'issues'];
+    public const array EDITABLE = [
+        'fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips', 'incidents', 'issues', 'modifications', 'parts',
+    ];
 
     public function __construct(
         private ApiReader $reader,
         private ApiIncidents $incidentReader,
         private ApiIssues $issueReader,
+        private ApiModifications $modificationReader,
+        private ApiParts $partReader,
         private FuelService $fuel,
         private OdometerService $odometer,
         private MaintenanceService $maintenance,
@@ -75,6 +79,19 @@ final readonly class ApiEntries
             $state = $this->issueReader->state($vehicle, $id);
 
             return new ApiEntry($this->issueReader->serialize($state), $this->issueReader->tag($state));
+        }
+        if ($list === 'modifications') {
+            $state = $this->modificationReader->state($vehicle, $id);
+
+            return new ApiEntry(
+                $this->modificationReader->serialize($user, $vehicle, $state),
+                $this->modificationReader->tag($state),
+            );
+        }
+        if ($list === 'parts') {
+            $state = $this->partReader->state($vehicle, $id);
+
+            return new ApiEntry($this->partReader->serialize($user, $vehicle, $state), $this->partReader->tag($state));
         }
         try {
             return match ($list) {

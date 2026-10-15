@@ -4024,6 +4024,7 @@ return [
             'issue_status' => 'Verwende open oder watching: Behoben wird mit POST …/fix, „Ist wieder da“ mit POST …/reopen.',
             'issue_fix_either' => 'Sende entweder records oder fixed_on und note, nicht beides.',
             'issue_records' => 'Jede ID muss ein Serviceeintrag dieses Fahrzeugs sein, datiert am oder nach dem Tag, an dem der Mangel bemerkt wurde.',
+            'part_id' => 'Verwende die ID eines Teils dieses Fahrzeugs, das die Liste aufnehmen kann.',
             'instant' => 'Gib Datum und Uhrzeit mit Zeitzone an, z. B. 2026-09-29T07:42:00Z.',
             'boolean' => 'Verwende true oder false.',
             'string' => 'Verwende einen Text.',
@@ -6896,6 +6897,7 @@ return [
             'future' => 'Das Datum darf nicht nach heute liegen.',
             'warranty_ended' => 'Diese Garantie ist bereits abgelaufen, es gibt also nichts, woran du erinnert werden könntest.',
             'reverted_before' => 'Ein Umbau kann nicht vor seinem Datum rückgebaut werden.',
+            'declared_before' => 'Er kann nicht vor seinem Datum gemeldet worden sein.',
         ],
         'refused' => [
             'reverted_before' => 'Dieser Umbau wurde am {reverted} rückgebaut, vor dem neuen Datum. Hebe zuerst den Rückbau auf.',

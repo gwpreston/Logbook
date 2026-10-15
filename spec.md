@@ -5663,7 +5663,8 @@ are absent from every read, and a write that sends them ignores them.
   refused with 422 as §7.39 says). Both answer `unchanged: true` when there
   is nothing to change.
 - `GET …/parts` (`?status=fitted|stored|gone`; without it every status),
-  sorted by name and paged (`limit`, `next`); a part: `id`, `vehicle_id`,
+  newest added first and paged like the other entry lists (`limit`,
+  `cursor`, `since` and `until` on the day added); a part: `id`, `vehicle_id`,
   `name`, `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`,
   `price` and `currency`, `condition`, `origin`, `status`, `warranty`
   (`months`, `distance`, `distance_unit`, `from`, `provider`, `terms`,
@@ -5680,10 +5681,16 @@ are absent from every read, and a write that sends them ignores them.
   `PATCH` and `DELETE …/parts/{part}` with `If-Match`;
   `POST …/parts/{part}/fit` (`fitted_on`, `odometer`) and
   `POST …/parts/{part}/remove` (`removed_on`, `odometer`, `outcome`,
-  `sold_price`, `replaced_by`); `Log`. A refused fit or removal is a 422
-  naming the part and both fittings' dates.
+  `sold_price`); `Log`. A refused fit or removal is a 422 naming the part
+  and both fittings' dates, and each answers the part with its new `ETag`.
 - Files: `…/modifications/{mod}/attachments` and `…/parts/{part}/attachments`
-  as the other entries (§7.12), under the same cost-file rule.
+  as the other entries (§7.12). They are cost files (#429, as the pages'):
+  listing them needs `ViewCosts`, adding one needs `Log` (and `EntryAccess`).
+- **Errors** name the body's fields; a parts-list row's are
+  `parts_fitted.{i}.{field}` (counting new parts only),
+  `parts_removed.{i}.came_off.{field}` and `parts_removed.part_{id}.{field}`,
+  and a part id the list can't take is a 422 on `parts_fitted` or
+  `parts_removed`.
 - **History:** `GET /vehicles/{id}/history` and `/history` carry the kinds
   `modification`, `modification_reverted`, `part_fitted` and `part_removed`
   (`?kind=parts` as the page's chip), with no amount without `ViewCosts`.

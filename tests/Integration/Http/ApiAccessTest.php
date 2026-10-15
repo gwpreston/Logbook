@@ -11,6 +11,11 @@ use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Part\ModificationCategory;
+use Logbook\Domain\Part\ModificationData;
+use Logbook\Domain\Part\PartData;
+use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\RecordParts;
 use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\Valuation\VehicleValuationData;
@@ -56,7 +61,7 @@ final class ApiAccessTest extends AppTestCase
     use VehicleRoutes;
 
     /** Amounts no other figure in these responses can produce by accident. */
-    private const array AMOUNTS = ['14250.370', '61.370', '187.430', '243.190', '12.910', '55.000'];
+    private const array AMOUNTS = ['14250.370', '61.370', '187.430', '243.190', '12.910', '55.000', '777.130', '66.410'];
 
     /** The table of each list with a single-entry read (Phase 39.1). */
     private const array ENTRY_TABLES = [
@@ -68,6 +73,8 @@ final class ApiAccessTest extends AppTestCase
         'trips' => 'trips',
         'incidents' => 'incidents',
         'issues' => 'issues',
+        'modifications' => 'modifications',
+        'parts' => 'parts',
         'schedules' => 'maintenance_schedules',
         'valuations' => 'vehicle_valuations',
     ];
@@ -140,7 +147,7 @@ final class ApiAccessTest extends AppTestCase
         $id = $golf->id;
         $paths = ['/vehicles', '/vehicles/' . $id, '/vehicles/' . $id . '/summary', '/vehicles/' . $id . '/fuel',
             '/vehicles/' . $id . '/maintenance', '/vehicles/' . $id . '/documents', '/vehicles/' . $id . '/tyres',
-            '/upcoming', '/reminders'];
+            '/vehicles/' . $id . '/modifications', '/vehicles/' . $id . '/parts', '/upcoming', '/reminders'];
         $all = implode("\n", array_map(fn (string $path): string => self::body($api->get($path)), $paths));
         foreach (self::AMOUNTS as $amount) {
             self::assertStringContainsString(
@@ -305,6 +312,13 @@ final class ApiAccessTest extends AppTestCase
             'noticed_on' => '2026-08-12',
             'title' => 'Knock from front left',
         ]);
+        // Phase 50.2: a modification with a cost and a part with a price (spec.md §7.39, #429).
+        $this->service($app, ModificationService::class)->create($golf, new ModificationData(
+            'Cat-back exhaust',
+            ModificationCategory::Exhaust,
+            new DateTimeImmutable('2026-09-02', new DateTimeZone('UTC')),
+            cost: '777.130',
+        ), new DateTimeZone('UTC'), parts: new RecordParts(fitNew: [new PartData('Cat-back system', price: '66.410')]));
         // Added by someone else: a user's own entries always carry their amounts (Phase 19).
         $author = $this->createMember($app, 'author');
         foreach (['fuel_entries', 'maintenance_entries', 'compliance_documents', 'expense_entries'] as $table) {

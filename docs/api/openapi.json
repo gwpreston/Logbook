@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Logbook API",
-    "version": "1.25.0",
+    "version": "1.26.0",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
     "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
@@ -7797,6 +7797,1032 @@
           }
         }
       }
+    },
+    "/vehicles/{id}/modifications": {
+      "get": {
+        "operationId": "listModifications",
+        "summary": "Modifications, newest done first",
+        "description": "Needs View on the vehicle and the parts module (Phase 50.2). cost, currency and a removal's sold_price need ViewCosts and are left out without it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "current",
+                "reverted"
+              ]
+            },
+            "description": "current or reverted; without it both."
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logModification",
+        "summary": "Add a modification",
+        "description": "Needs a read and write key and Log on the vehicle. Validated as the modification form validates, with the parts lists in the same transaction (one save for a one-part modification). Only parts the lists offer may be named. One of the vehicle's modifications with the same date and title is not written again: it comes back with duplicate true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already logged (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/modifications/{entry}": {
+      "get": {
+        "operationId": "getModification",
+        "summary": "One modification, as the list returns it",
+        "description": "Its ETag changes when the modification, its revert or the fittings it made change.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Modification"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editModification",
+        "summary": "Edit a modification",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service; the parts lists are not patchable.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteModification",
+        "summary": "Delete a modification",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. The fittings it made go (the parts stay) and the removals it made are reopened; a delete that would overlap two fittings is a 422 naming the part.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/modifications/{entry}/revert": {
+      "post": {
+        "operationId": "revertModification",
+        "summary": "Revert a modification",
+        "description": "Needs a read and write key and Log on the vehicle. The modification stays in the record with reverted_on set. Repeating it on a reverted modification changes nothing: \"unchanged\": true.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationRevertInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationActionResult"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/modifications/{entry}/undo-revert": {
+      "post": {
+        "operationId": "undoRevertModification",
+        "summary": "Undo a revert",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Refused (422) while a part the revert put back has come off again since. Repeating it on a modification that is not reverted changes nothing.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModificationActionResult"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/parts": {
+      "get": {
+        "operationId": "listParts",
+        "summary": "Parts, newest added first",
+        "description": "Needs View on the vehicle and the parts module (Phase 50.2). price, currency and a fitting's sold_price need ViewCosts and are left out without it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fitted",
+                "stored",
+                "gone"
+              ]
+            },
+            "description": "One status; without it every status."
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/since"
+          },
+          {
+            "$ref": "#/components/parameters/until"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadParameter"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logPart",
+        "summary": "Add a part",
+        "description": "Needs a read and write key and Log on the vehicle. Validated as the part form validates. One of the vehicle's parts with the same name, part number and purchase date is not written again: it comes back with duplicate true. Fit it with POST …/fit.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartWrite"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already added (duplicate: true); nothing written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartWrite"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/parts/{entry}": {
+      "get": {
+        "operationId": "getPart",
+        "summary": "One part, as the list returns it",
+        "description": "Its ETag changes when the part or one of its fittings changes; warranty and distance are derived on read.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Part"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editPart",
+        "summary": "Edit a part",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Through the edit form and its service.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartEdit"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePart",
+        "summary": "Delete a part",
+        "description": "Needs a read and write key, and Manage on the vehicle or Log on the key user's own entry. Its fittings, readings and files go; the records that fitted it are kept.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/parts/{entry}/fit": {
+      "post": {
+        "operationId": "fitPart",
+        "summary": "Fit a part",
+        "description": "Needs a read and write key and Log on the vehicle. Fits a stored part without a record (and with no cost), now or on fitted_on. A part that is not stored is a 422 naming it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartFitInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartMoveResult"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/parts/{entry}/remove": {
+      "post": {
+        "operationId": "removePart",
+        "summary": "Remove a part",
+        "description": "Needs a read and write key and Log on the vehicle. Takes a fitted part off without a record, with its outcome (kept by default). A part that is not fitted is a 422 naming it.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          },
+          {
+            "$ref": "#/components/parameters/ifMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartRemoveInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartMoveResult"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadBody"
+          },
+          "409": {
+            "$ref": "#/components/responses/Archived"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/modifications/{entry}/attachments": {
+      "get": {
+        "operationId": "listModificationAttachments",
+        "summary": "List the files of a modification",
+        "description": "Needs ViewCosts on the vehicle and the parts module: a modification's files are cost files (#429).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadModificationAttachment",
+        "summary": "Attach a file to a modification",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping. An archived vehicle is 409. (Phase 50.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/vehicles/{id}/parts/{entry}/attachments": {
+      "get": {
+        "operationId": "listPartAttachments",
+        "summary": "List the files of a part",
+        "description": "Needs ViewCosts on the vehicle and the parts module: a part's files are cost files (#429).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadPartAttachment",
+        "summary": "Attach a file to a part",
+        "description": "Needs a read and write key and Log on the vehicle, with Log only on the key user's own entry. One file per request in the multipart field `file`, with the pages' content check, MAX_UPLOAD_MB and stripping. An archived vehicle is 409. (Phase 50.2)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          },
+          {
+            "$ref": "#/components/parameters/entry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file per request: a PDF, or a JPEG, PNG or WebP image, up to MAX_UPLOAD_MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13541,7 +14567,8 @@
               "manual",
               "finance",
               "finance_end",
-              "issue"
+              "issue",
+              "part"
             ]
           },
           "title": {
@@ -14108,7 +15135,11 @@
               "issue_noticed",
               "issue_fixed",
               "mot_test",
-              "milestone"
+              "milestone",
+              "modification",
+              "modification_reverted",
+              "part_fitted",
+              "part_removed"
             ]
           },
           "milestone": {
@@ -19296,7 +20327,9 @@
               "schedule",
               "finance",
               "vehicle",
-              "reminder"
+              "reminder",
+              "modification",
+              "part"
             ],
             "description": "The history feed's kinds where it has one (`tyre` is a tyre change). `tyre_details`: entry_id is the tyre; `issue`: an update, fix, unlink or reopen updates it; `finance`: the agreement (a payment, quote or End updates it); `vehicle`: the vehicle; `reminder`: reminder.changed only."
           },
@@ -20141,6 +21174,1368 @@
               "null"
             ],
             "description": "The figure as a canonical decimal, when it is a number."
+          }
+        }
+      },
+      "Modification": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A modification (spec §7.39): build work, with the parts it fitted and took off. cost, currency and a removal's sold_price are left out without ViewCosts (#429).",
+        "required": [
+          "id",
+          "vehicle_id",
+          "title",
+          "category",
+          "done_on",
+          "odometer",
+          "distance_unit",
+          "fitted_by",
+          "notes",
+          "declared_on",
+          "reverted_on",
+          "reverted_odometer",
+          "reverted_note",
+          "parts_fitted",
+          "parts_removed",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "exhaust",
+              "suspension",
+              "wheels",
+              "tune",
+              "intake",
+              "audio",
+              "lighting",
+              "body",
+              "engine",
+              "brakes",
+              "interior",
+              "electrical",
+              "security",
+              "other"
+            ]
+          },
+          "done_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km"
+            ]
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fitted_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "declared_on": {
+            "$ref": "#/components/schemas/NullableDate",
+            "description": "When the insurer was told (Mark declared)."
+          },
+          "reverted_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "reverted_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "reverted_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parts_fitted": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "part",
+                "name"
+              ],
+              "properties": {
+                "part": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "parts_removed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "part",
+                "name",
+                "outcome"
+              ],
+              "properties": {
+                "part": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "kept",
+                    "sold",
+                    "returned",
+                    "scrapped",
+                    "other",
+                    null
+                  ]
+                },
+                "sold_price": {
+                  "$ref": "#/components/schemas/NullableDecimal"
+                }
+              }
+            }
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "ModificationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modification"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "ModificationWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Modification"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ModificationEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Modification"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "ModificationActionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "unchanged"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Modification"
+          },
+          "unchanged": {
+            "type": "boolean",
+            "description": "True when a retry changed nothing."
+          }
+        }
+      },
+      "PartInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "description": "Validated as the part form validates. A price needs ViewCosts and is ignored without it. warranty_distance is in distance_unit (the key user's unit when left out). Fitting it is POST …/fit.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "part_number": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "serial_number": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "supplier": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "bought_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "new",
+              "used",
+              "reconditioned"
+            ]
+          },
+          "warranty_months": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 600
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]{1,3}$"
+              }
+            ]
+          },
+          "warranty_distance": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "warranty_from": {
+            "type": "string",
+            "enum": [
+              "purchase",
+              "fitting"
+            ]
+          },
+          "warranty_provider": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "warranty_terms": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "warranty_reminder": {
+            "type": "boolean",
+            "description": "Remind before the warranty ends (a warranty ended already refuses it)."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "PartPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283), validated as the edit form validates; null clears an optional field.",
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "part_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bought_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "used",
+                  "reconditioned"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_months": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 600
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]{1,3}$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_distance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "purchase",
+                  "fitting"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_terms": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warranty_reminder": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Remind before the warranty ends (a warranty ended already refuses it)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "PartRowInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "description": "A new part on a modification's parts_fitted list: the part's own fields.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "part_number": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "serial_number": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "supplier": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "bought_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "new",
+              "used",
+              "reconditioned"
+            ]
+          },
+          "warranty_months": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 600
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]{1,3}$"
+              }
+            ]
+          },
+          "warranty_distance": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "warranty_from": {
+            "type": "string",
+            "enum": [
+              "purchase",
+              "fitting"
+            ]
+          },
+          "warranty_provider": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "warranty_terms": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "warranty_reminder": {
+            "type": "boolean",
+            "description": "Remind before the warranty ends (a warranty ended already refuses it)."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      },
+      "ModificationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "description": "Validated as the modification form validates, with its parts lists in the same transaction. done_on is today when left out; odometer is in distance_unit (the key user's unit when left out). cost needs ViewCosts and is ignored without it. declared_on is when the insurer was told.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "exhaust",
+              "suspension",
+              "wheels",
+              "tune",
+              "intake",
+              "audio",
+              "lighting",
+              "body",
+              "engine",
+              "brakes",
+              "interior",
+              "electrical",
+              "security",
+              "other"
+            ]
+          },
+          "done_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "fitted_by": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2200
+          },
+          "declared_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "parts_fitted": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "New parts, or {\"part\": id} for a stored one fitted again.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/PartRowInput"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "part"
+                  ],
+                  "properties": {
+                    "part": {
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "parts_removed": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "{\"part\": id, \"outcome\", \"sold_price\"} for a fitted part that comes off, or {\"came_off\": {name, brand, part_number, outcome}} to record an original part.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "part"
+                  ],
+                  "properties": {
+                    "part": {
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "kept",
+                        "sold",
+                        "returned",
+                        "scrapped",
+                        "other"
+                      ]
+                    },
+                    "sold_price": {
+                      "$ref": "#/components/schemas/NumberInput"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "came_off"
+                  ],
+                  "properties": {
+                    "came_off": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "name"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "brand": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "part_number": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "kept",
+                            "sold",
+                            "returned",
+                            "scrapped",
+                            "other"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ModificationPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Only the fields sent change (#283), validated as the edit form validates; null clears an optional field. The parts lists are not patchable: use the part endpoints.",
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "exhaust",
+                  "suspension",
+                  "wheels",
+                  "tune",
+                  "intake",
+                  "audio",
+                  "lighting",
+                  "body",
+                  "engine",
+                  "brakes",
+                  "interior",
+                  "electrical",
+                  "security",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "done_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "odometer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumberInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fitted_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declared_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "ModificationRevertInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "reverted_on is today when left out and not before the modification. remove_parts takes off the parts it fitted that are still on (kept); refit_originals fits again the stored original parts it took off. Both default to true.",
+        "properties": {
+          "reverted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "remove_parts": {
+            "type": "boolean"
+          },
+          "refit_originals": {
+            "type": "boolean"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "PartFitting": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "fitted_on",
+          "fitted_odometer",
+          "fitted_by",
+          "removed_on",
+          "removed_odometer",
+          "removed_by",
+          "outcome",
+          "replaced_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "fitted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "fitted_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "fitted_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "maintenance",
+                  "modification"
+                ]
+              },
+              "id": {
+                "type": "integer"
+              }
+            },
+            "description": "The record that fitted it, if any."
+          },
+          "removed_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "removed_odometer": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "removed_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "maintenance",
+                  "modification"
+                ]
+              },
+              "id": {
+                "type": "integer"
+              }
+            }
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "kept",
+              "sold",
+              "returned",
+              "scrapped",
+              "other",
+              null
+            ]
+          },
+          "sold_price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "replaced_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "Part": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A part (spec §7.39) with its fittings, warranty and distance on the vehicle. price, currency and a fitting's sold_price are left out without ViewCosts (#429).",
+        "required": [
+          "id",
+          "vehicle_id",
+          "name",
+          "brand",
+          "part_number",
+          "serial_number",
+          "supplier",
+          "bought_on",
+          "condition",
+          "origin",
+          "status",
+          "warranty",
+          "warranty_reminder",
+          "notes",
+          "distance",
+          "distance_unit",
+          "distance_at_least",
+          "fittings",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "vehicle_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "part_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serial_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supplier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bought_on": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "price": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "new",
+              "used",
+              "reconditioned"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "original",
+              "fitted"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "fitted",
+              "stored",
+              "gone"
+            ]
+          },
+          "warranty": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "months",
+              "distance",
+              "distance_unit",
+              "from",
+              "provider",
+              "terms",
+              "until",
+              "until_odometer",
+              "active"
+            ],
+            "properties": {
+              "months": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "distance": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "distance_unit": {
+                "type": "string",
+                "enum": [
+                  "km"
+                ]
+              },
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "purchase",
+                  "fitting",
+                  null
+                ]
+              },
+              "provider": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "terms": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "until": {
+                "$ref": "#/components/schemas/NullableDate"
+              },
+              "until_odometer": {
+                "$ref": "#/components/schemas/NullableDecimal"
+              },
+              "active": {
+                "type": "boolean",
+                "description": "False once a set limit has passed."
+              }
+            }
+          },
+          "warranty_reminder": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "distance": {
+            "$ref": "#/components/schemas/NullableDecimal"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km"
+            ]
+          },
+          "distance_at_least": {
+            "type": "boolean",
+            "description": "Some spell could not be measured, so the true distance is at least this."
+          },
+          "fittings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartFitting"
+            },
+            "description": "Oldest first."
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "PartPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Part"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The next page, or null."
+          }
+        }
+      },
+      "PartWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "duplicate",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Part"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PartEdit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry",
+          "warnings"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Part"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "PartMoveResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/Part"
+          }
+        }
+      },
+      "PartFitInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "fitted_on is today when left out, not after today and not before the part last came off.",
+        "properties": {
+          "fitted_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          }
+        }
+      },
+      "PartRemoveInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "removed_on is today when left out. A sold_price only goes with outcome sold and needs ViewCosts.",
+        "properties": {
+          "removed_on": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "odometer": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "kept",
+              "sold",
+              "returned",
+              "scrapped",
+              "other"
+            ]
+          },
+          "sold_price": {
+            "$ref": "#/components/schemas/NumberInput"
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
           }
         }
       }

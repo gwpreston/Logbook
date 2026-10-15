@@ -4027,6 +4027,7 @@ return [
             'issue_status' => 'Use open or watching: fixing an issue is POST …/fix, and It\'s back is POST …/reopen.',
             'issue_fix_either' => 'Send either records or fixed_on and note, not both.',
             'issue_records' => 'Each id must be one of this vehicle\'s service records dated on or after the issue was noticed.',
+            'part_id' => 'Use the id of one of this vehicle\'s parts that the list can take.',
             'instant' => 'Enter a date and time with a time zone, e.g. 2026-09-29T07:42:00Z.',
             'boolean' => 'Use true or false.',
             'string' => 'Use a text value.',
@@ -6902,6 +6903,7 @@ return [
         'error' => [
             'future' => 'The date can\'t be after today.',
             'reverted_before' => 'A modification can\'t be reverted before it was done.',
+            'declared_before' => 'It can\'t have been declared before it was done.',
         ],
         'refused' => [
             'reverted_before' => 'This modification was reverted on {reverted}, before the new date. Undo the revert first.',

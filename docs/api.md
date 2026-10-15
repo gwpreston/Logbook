@@ -26,6 +26,7 @@ and other assistants.
 - [Logging fill-ups and readings](#logging-fill-ups-and-readings)
 - [Logging other entries](#logging-other-entries)
 - [Editing and deleting](#editing-and-deleting)
+- [Parts and modifications](#parts-and-modifications)
 - [More writes](#more-writes)
 - [Errors](#errors)
 - [Browser dashboards (CORS)](#browser-dashboards-cors)
@@ -120,7 +121,7 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
 | `POST /vehicles/{id}/fuel` | log a fill-up (read and write key) |
 | `GET /vehicles/{id}/odometer` | readings with their source (manual, fuel, maintenance, document, tyre, incident, purchase, issue, issue_update, from 3.7 `mot`: a DVSA MOT test's odometer, and from 3.15 `modification`, `mod_revert`, `part_fitted` and `part_removed`) (paged) |
 | `POST /vehicles/{id}/odometer` | add a reading (read and write key) |
-| `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `issues`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
+| `GET /vehicles/{id}/{list}/{entry}` | one entry of `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `trips`, `incidents`, `issues`, `modifications`, `parts`, `schedules` or `valuations`, exactly as its list returns it, with an `ETag` ([Reading one entry](#reading-one-entry)) |
 | `GET /vehicles/{id}/maintenance` | service records (paged; `?category=`, and `?q=` for words in the title, vendor or description) |
 | `POST /vehicles/{id}/maintenance` | add a service record (read and write key) |
 | `GET /vehicles/{id}/documents` | compliance documents with their status and days left (paged; `?type=`, and `?current=1` for those in force today) |
@@ -157,7 +158,8 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
 | `GET /fuel-prices/near` | *Cheapest near me*: listed prices near a point, ranked by effective cost for a vehicle ([Fuel prices](#fuel-prices); only while a price provider is enabled) |
 | `GET /fuel-prices/alerts` | your price alerts: station, grade, the price per litre below which it tells you, and whether it is armed (only while a price provider is enabled) |
 | `GET /vehicles/{id}/issues`, `GET /issues` | issues, newest noticed first (paged; `?status=`; [Issues](#issues); issues module) |
-| `PATCH`, `DELETE /vehicles/{id}/{list}/{entry}` | edit or delete a fill-up, manual reading, service record, document, expense, trip, incident or issue ([Editing and deleting](#editing-and-deleting); read and write key) |
+| `GET /vehicles/{id}/modifications`, `…/parts` | modifications and parts, with their `ETag`ed single reads and writes ([Parts and modifications](#parts-and-modifications); parts module) |
+| `PATCH`, `DELETE /vehicles/{id}/{list}/{entry}` | edit or delete a fill-up, manual reading, service record, document, expense, trip, incident, issue, modification or part ([Editing and deleting](#editing-and-deleting); read and write key) |
 | `POST /vehicles/{id}/issues`, `…/issues/{issue}/updates`, `/fix`, `/reopen` | log an issue, add an update, mark it fixed, reopen it ([Issues](#issues); Log) |
 | `PATCH`, `DELETE /reminders/{id}` | edit or delete a manual reminder (Manage) |
 | `POST /vehicles`, `PATCH /vehicles/{id}` | add a vehicle (you own it) or edit one (Manage) ([More writes](#more-writes)) |
@@ -591,7 +593,7 @@ while no provider is enabled.
 
 From 3.5, `PATCH` edits an entry and `DELETE` deletes it, at the address
 it is read from: `/vehicles/{id}/{list}/{entry}` for `fuel`, `odometer`,
-`maintenance`, `documents`, `expenses`, `trips`, `incidents` and (from 3.6) `issues`, and
+`maintenance`, `documents`, `expenses`, `trips`, `incidents`, (from 3.6) `issues` and (from 3.15) `modifications` and `parts`, and
 `/reminders/{id}` for a manual reminder. They go through the page's edit
 form and delete confirmation, so the validation, the messages and the
 knock-on effects are the pages': a fill-up's odometer reading moves with
@@ -671,6 +673,51 @@ curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
      -d '{"records": [57]}' "$BASE/vehicles/1/issues/9/fix"
 ```
 
+## Parts and modifications
+
+From 3.15 (parts module). A **part** is the item (name, brand, part number,
+supplier, price, condition, warranty), fitted and removed more than once; a
+**modification** is the build work (a title, a category, a date, a cost),
+with the parts it fitted and took off. The cost stays on the modification
+and never counts in a cost per distance (see the *Parts* tab's help). A
+modification's `cost`, a part's `price` and a sale's `sold_price` need
+*Can see costs*: without it they are left out of every response, and a
+write that sends one ignores it.
+
+| Endpoint | Needs | Notes |
+|---|---|---|
+| `GET /vehicles/{id}/modifications` | View | newest `done_on` first, paged; `?state=current\|reverted`. Each has its `parts_fitted` and `parts_removed` |
+| `GET /vehicles/{id}/modifications/{modification}` | View | one, with an `ETag` that changes when it, its revert or the fittings it made change |
+| `POST /vehicles/{id}/modifications` | Log | `title` (required), `category` (`exhaust`, `suspension`, `wheels`, `tune`, `intake`, `audio`, `lighting`, `body`, `engine`, `brakes`, `interior`, `electrical`, `security`, `other`), `done_on` (default today), `odometer` and `distance_unit`, `cost`, `fitted_by`, `notes`, `declared_on`, and the parts lists below, all in one save. A retry with the same date and title answers `duplicate: true` |
+| `PATCH`, `DELETE …/modifications/{modification}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting); the parts lists are not patchable |
+| `POST …/modifications/{modification}/revert` | Log | `reverted_on` (default today), `odometer`, `note`, and `remove_parts` and `refit_originals` (both default `true`) |
+| `POST …/modifications/{modification}/undo-revert` | Log (own) or Manage | refused (`422`) while a part the revert put back has come off again |
+| `GET /vehicles/{id}/parts` | View | newest added first, paged; `?status=fitted\|stored\|gone`. Each has its `warranty` (`until`, `until_odometer`, `active`), its `distance` on the vehicle and its `fittings` |
+| `GET /vehicles/{id}/parts/{part}` | View | one, with an `ETag` over the part and its fittings |
+| `POST /vehicles/{id}/parts` | Log | `name` (required), `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`, `price`, `condition`, `warranty_months`, `warranty_distance`, `warranty_from` (`purchase` or `fitting`), `warranty_provider`, `warranty_terms`, `warranty_reminder`, `notes`. A retry with the same name, part number and purchase date answers `duplicate: true` |
+| `PATCH`, `DELETE …/parts/{part}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting) |
+| `POST …/parts/{part}/fit`, `…/remove` | Log | `fitted_on` and `odometer`; or `removed_on`, `odometer`, `outcome` (`kept`, `sold`, `returned`, `scrapped`, `other`) and `sold_price`. Without a record, so with no cost |
+
+A modification's `parts_fitted` takes new parts (the part's fields above)
+or `{"part": 12}` for a stored one fitted again; its `parts_removed` takes
+`{"part": 12, "outcome": "kept"}` for a fitted part that comes off, or
+`{"came_off": {"name": "Standard exhaust", "outcome": "kept"}}` to record
+an original part. A part id the lists can't take is a `422`. Files go to
+`…/modifications/{modification}/attachments` and `…/parts/{part}/attachments`
+like any entry's, but they are cost files: listing them needs *Can see
+costs*.
+
+```sh
+# One save: a cat-back exhaust, the part it fitted and the original it took off.
+curl -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -d '{"title": "Cat-back exhaust", "category": "exhaust", "odometer": 23000, "distance_unit": "mi",
+          "cost": "899.00",
+          "parts_fitted": [{"name": "Cat-back system", "brand": "Milltek", "part_number": "SSXVW123",
+                            "warranty_months": 24, "warranty_reminder": true}],
+          "parts_removed": [{"came_off": {"name": "Standard exhaust", "outcome": "kept"}}]}' \
+     "$BASE/vehicles/1/modifications"
+```
+
 ## More writes
 
 From 3.5, the rest of what the pages write. Each takes the page form's
@@ -735,7 +782,7 @@ of their metadata, except an incident's photos, which are kept as taken.
 
 | Endpoint | Needs | Notes |
 |---|---|---|
-| `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips`, `incidents` or `issues`; `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
+| `GET /vehicles/{id}/{list}/{entry}/attachments` | as reading the entry | `{list}` is `fuel`, `odometer`, `maintenance`, `documents`, `expenses`, `valuations`, `trips`, `incidents`, `issues`, `modifications` or `parts` (the last two need *Can see costs*); `items` with `id`, `filename`, `content_type`, `size`, `uploaded_at`, `uploaded_by` and a `download` link |
 | `POST …/{entry}/attachments` | Log (your own entry) or Manage; Manage for valuations | `multipart/form-data`, **one file** in the field `file`; `201` with the attachment. A reading another entry wrote takes none (`409 reading_derived`) |
 | `GET`, `POST /vehicles/{id}/purchase/attachments` and `…/sale/attachments` | Can see costs; Manage to add | the purchase or sale paperwork; needs the purchase or sale date (`422`) |
 | `GET /attachments/{id}` | View | the file, as the pages serve it: an incident photo is the original only for its author or with *Can see incident details*, otherwise an upright copy without its metadata. `?download=1` downloads an image instead of opening it |
@@ -781,8 +828,11 @@ checked when you read it.
 
 `kind` is the history's kind where there is one (`fuel`, `odometer`,
 `maintenance`, `document`, `expense`, `tyre` for a tyre change,
-`valuation`, `trip`, `incident`, and `issue`, whose updates, fixes,
-unlinks and reopens are `entry.updated` of the issue), else `tread_check`, `tyre_details`
+`valuation`, `trip`, `incident`, `issue`, whose updates, fixes,
+unlinks and reopens are `entry.updated` of the issue, and from 3.15
+`modification` (its revert, undo and *Mark declared* are updates of it)
+and `part` (every fitting and removal, with a record or without one, is an
+update of the part), else `tread_check`, `tyre_details`
 (`entry_id` is the tyre), `schedule`, `finance` (the agreement; a
 payment, quote or *End* updates it) and `vehicle`. `reminder.changed`
 has `kind: "reminder"` and `change`: `due`, `overdue`, `done`,

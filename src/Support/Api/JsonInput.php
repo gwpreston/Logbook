@@ -111,6 +111,40 @@ final class JsonInput
         'look_again_odometer' => 'look_again_odometer',
     ];
 
+    /** API field → form field, for the part form (Phase 50.2). */
+    public const array PART_FIELDS = [
+        'name' => 'name',
+        'brand' => 'brand',
+        'part_number' => 'part_number',
+        'serial_number' => 'serial_number',
+        'supplier' => 'supplier',
+        'bought_on' => 'bought_on',
+        'price' => 'price',
+        'condition' => 'condition',
+        'warranty_months' => 'warranty_months',
+        'warranty_distance' => 'warranty_distance',
+        'warranty_from' => 'warranty_from',
+        'warranty_provider' => 'warranty_provider',
+        'warranty_terms' => 'warranty_terms',
+        'warranty_reminder' => 'warranty_reminder',
+        'notes' => 'notes',
+    ];
+
+    /** API field → form field, for the modification form (Phase 50.2). */
+    public const array MODIFICATION_FIELDS = [
+        'title' => 'title',
+        'category' => 'category',
+        'done_on' => 'done_on',
+        'odometer' => 'odometer',
+        'cost' => 'cost',
+        'fitted_by' => 'fitted_by',
+        'notes' => 'notes',
+        'declared_on' => 'declared_on',
+    ];
+
+    /** The part fields a *Record what came off* row takes over the API. */
+    private const array CAME_OFF_FIELDS = ['name', 'brand', 'part_number', 'outcome'];
+
     /** API field → form field, for the incident form (Phase 27.1). */
     public const array INCIDENT_FIELDS = [
         'occurred_on' => 'occurred_on',
@@ -624,6 +658,299 @@ final class JsonInput
     }
 
     /**
+     * A part body as the part form's input (Phase 50.2): the part's own fields, with
+     * `warranty_reminder` a boolean and `warranty_months` a whole number.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function part(array $body, DisplayPreferences $owner): array|ValidationErrors
+    {
+        $errors = new ValidationErrors();
+        self::unknownFields($body, [...array_keys(self::PART_FIELDS), 'distance_unit'], $errors);
+
+        $input = self::partRow($body, '', $errors);
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * A modification body as the modification form's input, with its parts lists as the form's
+     * flat fields (Phase 50.2, spec.md §7.20): `parts_fitted` (new parts, or `{"part": id}`) and
+     * `parts_removed` (`{"part": id, "outcome": …, "sold_price": …}`, or `{"came_off": {…}}`).
+     * Lists are read only when $withLists, so a `PATCH` sends none.
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function modification(
+        array $body,
+        DisplayPreferences $owner,
+        DateTimeImmutable $today,
+        bool $withLists,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        $lists = $withLists ? ['parts_fitted', 'parts_removed'] : [];
+        self::unknownFields($body, [...array_keys(self::MODIFICATION_FIELDS), 'distance_unit', ...$lists], $errors);
+
+        $input = [];
+        foreach (self::MODIFICATION_FIELDS as $api => $form) {
+            $input[$form] = match ($api) {
+                'done_on' => self::text($body, $api, $errors, $today->format('Y-m-d')),
+                'odometer', 'cost' => self::decimal($body, $api, $errors),
+                default => self::text($body, $api, $errors),
+            };
+        }
+        if ($withLists) {
+            $input = [...$input, ...self::partsLists($body, $errors)];
+        }
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * `…/modifications/{id}/revert`: the date (today by default), a mileage, a note, and whether
+     * the parts it fitted come off and the original parts it took off go back (both on by default).
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences, remove: bool, refit: bool}|ValidationErrors
+     */
+    public static function modificationRevert(
+        array $body,
+        DisplayPreferences $owner,
+        DateTimeImmutable $today,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        $known = ['reverted_on', 'odometer', 'note', 'remove_parts', 'refit_originals', 'distance_unit'];
+        self::unknownFields($body, $known, $errors);
+        $input = [
+            'reverted_on' => self::text($body, 'reverted_on', $errors, $today->format('Y-m-d')),
+            'odometer' => self::decimal($body, 'odometer', $errors),
+            'note' => self::text($body, 'note', $errors),
+        ];
+        $remove = self::flag($body, 'remove_parts', $errors, true) === '1';
+        $refit = self::flag($body, 'refit_originals', $errors, true) === '1';
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit),
+                'remove' => $remove, 'refit' => $refit]
+            : $errors;
+    }
+
+    /**
+     * `…/parts/{id}/fit` (`fitted_on`, today by default, and `odometer`) and
+     * `…/parts/{id}/remove` (`removed_on`, `odometer`, `outcome`, `sold_price`).
+     *
+     * @param array<string, mixed> $body
+     * @return array{input: array<string, string>, preferences: DisplayPreferences}|ValidationErrors
+     */
+    public static function partMove(
+        array $body,
+        DisplayPreferences $owner,
+        DateTimeImmutable $today,
+        bool $remove,
+    ): array|ValidationErrors {
+        $errors = new ValidationErrors();
+        $known = $remove ? ['removed_on', 'odometer', 'outcome', 'sold_price'] : ['fitted_on', 'odometer'];
+        self::unknownFields($body, [...$known, 'distance_unit'], $errors);
+        $day = $today->format('Y-m-d');
+        $input = $remove
+            ? [
+                'removed_on' => self::text($body, 'removed_on', $errors, $day),
+                'odometer' => self::decimal($body, 'odometer', $errors),
+                'outcome' => self::text($body, 'outcome', $errors),
+                'sold_price' => self::decimal($body, 'sold_price', $errors),
+            ]
+            : [
+                'fit_on' => self::text($body, 'fitted_on', $errors, $day),
+                'fit_odometer' => self::decimal($body, 'odometer', $errors),
+            ];
+        $distance = self::distanceUnit($body, $owner, $errors);
+
+        return $errors->isEmpty()
+            ? ['input' => $input, 'preferences' => self::preferences($owner, $distance, $owner->volumeUnit)]
+            : $errors;
+    }
+
+    /**
+     * One part's fields as form input under $prefix; unknown keys are the caller's to refuse.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, string>
+     */
+    private static function partRow(array $row, string $prefix, ValidationErrors $errors): array
+    {
+        $input = [];
+        foreach (self::PART_FIELDS as $api => $form) {
+            $input[$prefix . $form] = match ($api) {
+                'price', 'warranty_distance' => self::decimal($row, $api, $errors),
+                'warranty_months' => self::whole($row, $api, $errors),
+                'warranty_reminder' => self::flag($row, $api, $errors),
+                default => self::text($row, $api, $errors),
+            };
+        }
+
+        return $input;
+    }
+
+    /**
+     * The parts lists of a modification body as `RecordPartsForm`'s flat fields.
+     *
+     * @param array<string, mixed> $body
+     * @return array<string, string>
+     */
+    private static function partsLists(array $body, ValidationErrors $errors): array
+    {
+        $input = ['parts_lists' => '1'];
+        $new = 0;
+        $off = 0;
+        foreach (self::rows($body, 'parts_fitted', $errors) as $i => $row) {
+            $field = 'parts_fitted.' . $i;
+            if (array_key_exists('part', $row)) {
+                $id = self::partId($row, $field, $errors);
+                if ($id !== null) {
+                    $input['fit_' . $id] = '1';
+                }
+                self::onlyKeys($row, ['part'], $field, $errors);
+
+                continue;
+            }
+            $sub = new ValidationErrors();
+            self::unknownFields($row, array_keys(self::PART_FIELDS), $sub);
+            $input = [...$input, ...self::partRow($row, 'new_' . $new . '_', $sub)];
+            self::merge($errors, $sub, $field);
+            $new++;
+        }
+        foreach (self::rows($body, 'parts_removed', $errors) as $i => $row) {
+            $field = 'parts_removed.' . $i;
+            if (array_key_exists('came_off', $row)) {
+                $inner = self::object($row['came_off']);
+                if ($inner === null) {
+                    $errors->add($field . '.came_off', 'api.validation.object');
+
+                    continue;
+                }
+                $sub = new ValidationErrors();
+                self::unknownFields($inner, self::CAME_OFF_FIELDS, $sub);
+                foreach (self::CAME_OFF_FIELDS as $name) {
+                    $input['off_' . $off . '_' . $name] = self::text($inner, $name, $sub);
+                }
+                self::merge($errors, $sub, $field . '.came_off');
+                self::onlyKeys($row, ['came_off'], $field, $errors);
+                $off++;
+
+                continue;
+            }
+            $id = self::partId($row, $field, $errors);
+            if ($id === null) {
+                continue;
+            }
+            $sub = new ValidationErrors();
+            self::unknownFields($row, ['part', 'outcome', 'sold_price'], $sub);
+            $input['remove_' . $id] = '1';
+            $input['remove_' . $id . '_outcome'] = self::text($row, 'outcome', $sub);
+            $input['remove_' . $id . '_sold_price'] = self::decimal($row, 'sold_price', $sub);
+            self::merge($errors, $sub, $field);
+        }
+        $input['new_rows'] = (string) max(1, $new);
+        $input['off_rows'] = (string) max(1, $off);
+
+        return $input;
+    }
+
+    /**
+     * A list of objects: missing is none.
+     *
+     * @param array<string, mixed> $body
+     * @return list<array<string, mixed>>
+     */
+    private static function rows(array $body, string $name, ValidationErrors $errors): array
+    {
+        $value = $body[$name] ?? [];
+        if (!is_array($value) || !array_is_list($value) || count($value) > 20) {
+            $errors->add($name, 'api.validation.list');
+
+            return [];
+        }
+        $rows = [];
+        foreach ($value as $i => $row) {
+            $object = self::object($row);
+            if ($object === null) {
+                $errors->add($name . '.' . $i, 'api.validation.object');
+
+                continue;
+            }
+            $rows[] = $object;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * A JSON object (string keys), or null for anything else.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function object(mixed $value): ?array
+    {
+        if (!is_array($value) || array_is_list($value) && $value !== []) {
+            return null;
+        }
+        $object = [];
+        foreach ($value as $key => $item) {
+            if (!is_string($key)) {
+                return null;
+            }
+            $object[$key] = $item;
+        }
+
+        return $object;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function partId(array $row, string $field, ValidationErrors $errors): ?int
+    {
+        $id = $row['part'] ?? null;
+        if (!is_string($id) || preg_match('/^[1-9][0-9]{0,18}$/', $id) !== 1) {
+            $errors->add($field . '.part', 'api.validation.part_id');
+
+            return null;
+        }
+
+        return (int) $id;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param list<string> $known
+     */
+    private static function onlyKeys(array $row, array $known, string $field, ValidationErrors $errors): void
+    {
+        $sub = new ValidationErrors();
+        self::unknownFields($row, $known, $sub);
+        self::merge($errors, $sub, $field);
+    }
+
+    /**
+     * $inner's errors under a list row's name, e.g. `parts_fitted.0.price`.
+     */
+    private static function merge(ValidationErrors $errors, ValidationErrors $inner, string $field): void
+    {
+        foreach ($inner->all() as $name => $error) {
+            $errors->add($field . '.' . $name, $error['key'], $error['params']);
+        }
+    }
+
+    /**
      * A document body as the document form's input. Dates are optional, as
      * on the form.
      *
@@ -1116,6 +1443,26 @@ final class JsonInput
         }
 
         return $value;
+    }
+
+    /**
+     * A whole number (sent as a number token, so a string here), or empty.
+     *
+     * @param array<string, mixed> $body
+     */
+    private static function whole(array $body, string $name, ValidationErrors $errors): string
+    {
+        $value = $body[$name] ?? null;
+        if ($value === null) {
+            return '';
+        }
+        if (!is_string($value) || preg_match('/^[0-9]{1,6}$/', trim($value)) !== 1) {
+            $errors->add($name, 'validation.integer');
+
+            return '';
+        }
+
+        return trim($value);
     }
 
     /**

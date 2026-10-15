@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Logbook\Support\Api;
 
 use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Part\Modification;
+use Logbook\Domain\Part\Part;
+use Logbook\Domain\Part\PartFitting;
+use Logbook\Service\Part\PartDistance;
+use Logbook\Service\Part\PartWarranty;
 use Logbook\Domain\Issue\IssueUpdate;
 use Logbook\Domain\Attachment\Attachment;
 use Logbook\Domain\Fuel\FuelGrade;
@@ -756,6 +761,141 @@ final class Serializer
             'created_at' => self::instant($issue->createdAt),
             'updated_at' => self::instant($issue->updatedAt),
         ];
+    }
+
+    /**
+     * A modification with the parts it fitted and took off (spec.md §7.20 *Parts and modifications*,
+     * §7.39): the cost only with `ViewCosts`, and a removal's sale price likewise.
+     *
+     * @param list<array{part: Part, fitting: PartFitting}> $made the fittings it made or ended
+     * @return array<string, mixed>
+     */
+    public static function modification(Modification $modification, array $made, string $currency, bool $costs): array
+    {
+        $data = $modification->data;
+        $fitted = [];
+        $removed = [];
+        foreach ($made as ['part' => $part, 'fitting' => $fitting]) {
+            if ($fitting->fittedModificationId === $modification->id) {
+                $fitted[] = ['part' => $part->id, 'name' => $part->label()];
+            }
+            if ($fitting->removedModificationId === $modification->id) {
+                $row = [
+                    'part' => $part->id,
+                    'name' => $part->label(),
+                    'outcome' => $fitting->outcome?->value,
+                ];
+                if ($costs) {
+                    $row['sold_price'] = self::dec($fitting->soldPrice, self::QUANTITY_SCALE);
+                }
+                $removed[] = $row;
+            }
+        }
+        $out = [
+            'id' => $modification->id,
+            'vehicle_id' => $modification->vehicleId,
+            'title' => $data->title,
+            'category' => $data->category->value,
+            'done_on' => self::date($data->doneOn),
+            'odometer' => self::dec($data->odometerKm, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'fitted_by' => $data->fittedBy,
+            'notes' => $data->notes,
+            'declared_on' => $data->declaredOn === null ? null : self::date($data->declaredOn),
+            'reverted_on' => $modification->revertedOn === null ? null : self::date($modification->revertedOn),
+            'reverted_odometer' => self::dec($modification->revertedOdometerKm, self::QUANTITY_SCALE),
+            'reverted_note' => $modification->revertedNote,
+            'parts_fitted' => $fitted,
+            'parts_removed' => $removed,
+            'created_by' => $modification->createdBy,
+            'created_at' => self::instant($modification->createdAt),
+            'updated_at' => self::instant($modification->updatedAt),
+        ];
+        if ($costs) {
+            $out['currency'] = $currency;
+            $out['cost'] = self::dec($data->cost, self::QUANTITY_SCALE);
+        }
+
+        return $out;
+    }
+
+    /**
+     * A part with its warranty, distance and fittings (spec.md §7.20, §7.39): the price and
+     * sale prices only with `ViewCosts`.
+     *
+     * @param list<PartFitting> $fittings oldest first
+     * @return array<string, mixed>
+     */
+    public static function part(
+        Part $part,
+        array $fittings,
+        ?PartWarranty $warranty,
+        PartDistance $distance,
+        string $currency,
+        bool $costs,
+    ): array {
+        $data = $part->data;
+        $record = static fn (?int $maintenance, ?int $modification): ?array => match (true) {
+            $maintenance !== null => ['kind' => 'maintenance', 'id' => $maintenance],
+            $modification !== null => ['kind' => 'modification', 'id' => $modification],
+            default => null,
+        };
+        $out = [
+            'id' => $part->id,
+            'vehicle_id' => $part->vehicleId,
+            'name' => $data->name,
+            'brand' => $data->brand,
+            'part_number' => $data->partNumber,
+            'serial_number' => $data->serialNumber,
+            'supplier' => $data->supplier,
+            'bought_on' => $data->boughtOn === null ? null : self::date($data->boughtOn),
+            'condition' => $data->condition->value,
+            'origin' => $data->origin->value,
+            'status' => $part->status->value,
+            'warranty' => $data->hasWarranty() ? [
+                'months' => $data->warrantyMonths,
+                'distance' => self::dec($data->warrantyKm, self::QUANTITY_SCALE),
+                'distance_unit' => self::DISTANCE_UNIT,
+                'from' => $data->warrantyFrom?->value,
+                'provider' => $data->warrantyProvider,
+                'terms' => $data->warrantyTerms,
+                'until' => $warranty?->until === null ? null : self::date($warranty->until),
+                'until_odometer' => self::dec($warranty?->untilKm, self::QUANTITY_SCALE),
+                'active' => $warranty === null ? true : $warranty->active,
+            ] : null,
+            'warranty_reminder' => $data->warrantyReminder,
+            'notes' => $data->notes,
+            'distance' => self::dec($distance->km, self::QUANTITY_SCALE),
+            'distance_unit' => self::DISTANCE_UNIT,
+            'distance_at_least' => $distance->atLeast,
+            'fittings' => array_map(static function (PartFitting $fitting) use ($record, $costs): array {
+                $row = [
+                    'id' => $fitting->id,
+                    'fitted_on' => self::date($fitting->fittedOn),
+                    'fitted_odometer' => self::dec($fitting->fittedOdometerKm, self::QUANTITY_SCALE),
+                    'fitted_by' => $record($fitting->fittedMaintenanceId, $fitting->fittedModificationId),
+                    'removed_on' => $fitting->removedOn === null ? null : self::date($fitting->removedOn),
+                    'removed_odometer' => self::dec($fitting->removedOdometerKm, self::QUANTITY_SCALE),
+                    'removed_by' => $record($fitting->removedMaintenanceId, $fitting->removedModificationId),
+                    'outcome' => $fitting->outcome?->value,
+                    'replaced_by' => $fitting->replacedByPartId,
+                ];
+                if ($costs) {
+                    $row['sold_price'] = self::dec($fitting->soldPrice, self::QUANTITY_SCALE);
+                }
+
+                return $row;
+            }, $fittings),
+            'created_by' => $part->createdBy,
+            'created_at' => self::instant($part->createdAt),
+            'updated_at' => self::instant($part->updatedAt),
+        ];
+        if ($costs) {
+            $out['currency'] = $currency;
+            $out['price'] = self::dec($data->price, self::QUANTITY_SCALE);
+        }
+
+        return $out;
     }
 
     /**

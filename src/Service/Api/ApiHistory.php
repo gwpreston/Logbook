@@ -87,7 +87,15 @@ final readonly class ApiHistory
     private function item(User $user, ActivityItem $item): array
     {
         $vehicle = $item->vehicle;
-        $amount = $item->amount !== null && $this->entries->canSeeAmount($user, $vehicle, $item->createdBy);
+        // A modification's cost, a part's price and a sale need `ViewCosts` only (spec.md §7.39 *Access*, #429).
+        $buildKind = in_array(
+            $item->kind,
+            [ActivityKind::Modification, ActivityKind::ModificationReverted, ActivityKind::PartFitted, ActivityKind::PartRemoved],
+            true,
+        );
+        $amount = $item->amount !== null && ($buildKind
+            ? $this->reader->costs($user, $vehicle)
+            : $this->entries->canSeeAmount($user, $vehicle, $item->createdBy));
         $price = $item->price !== null && $this->reader->costs($user, $vehicle);
 
         return [
@@ -127,8 +135,9 @@ final readonly class ApiHistory
             // The vehicle's tests are read together (spec.md §7.38).
             ActivityKind::MotTest => 'mot-tests',
             ActivityKind::Milestone => '',
-            ActivityKind::Tyre, ActivityKind::Modification, ActivityKind::ModificationReverted,
-            ActivityKind::PartFitted, ActivityKind::PartRemoved => null,
+            ActivityKind::Modification, ActivityKind::ModificationReverted => 'modifications',
+            ActivityKind::PartFitted, ActivityKind::PartRemoved => 'parts',
+            ActivityKind::Tyre => null,
         };
 
         return match ($list) {
@@ -215,12 +224,7 @@ final readonly class ApiHistory
      */
     private static function kinds(mixed $raw): array
     {
-        // Parts and modifications reach the API in Phase 50.2 (spec.md §7.39), not before.
-        $listed = array_values(array_filter(ActivityKind::cases(), static fn (ActivityKind $k): bool => !in_array(
-            $k,
-            [ActivityKind::Modification, ActivityKind::ModificationReverted, ActivityKind::PartFitted, ActivityKind::PartRemoved],
-            true,
-        )));
+        $listed = ActivityKind::cases();
         if ($raw === null) {
             return $listed;
         }

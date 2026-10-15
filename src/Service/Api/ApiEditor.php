@@ -90,6 +90,8 @@ final readonly class ApiEditor
         private IncidentService $incidents,
         private IncidentChoices $incidentChoices,
         private ApiIssues $issues,
+        private ApiModifications $modifications,
+        private ApiParts $parts,
     ) {
     }
 
@@ -114,6 +116,12 @@ final readonly class ApiEditor
             'issues' => $stored instanceof IssueState
                 ? $this->issues->patch($user, $vehicle, $stored, $body)
                 : throw new \LogicException('Not an issue.'),
+            'modifications' => $stored instanceof ModificationState
+                ? $this->modifications->patch($user, $vehicle, $stored, $body)
+                : throw new \LogicException('Not a modification.'),
+            'parts' => $stored instanceof PartState
+                ? $this->parts->patch($user, $vehicle, $stored, $body)
+                : throw new \LogicException('Not a part.'),
         };
 
         return ['entry' => $this->entries->read($list, $user, $vehicle, $id), 'warnings' => $warnings];
@@ -140,6 +148,8 @@ final readonly class ApiEditor
                 $stored instanceof Trip => $this->trips->delete($vehicle, $stored),
                 $stored instanceof Incident => $this->incidents->delete($vehicle, $stored),
                 $stored instanceof IssueState => $this->issues->delete($vehicle, $stored),
+                $stored instanceof ModificationState => $this->modifications->delete($vehicle, $stored),
+                $stored instanceof PartState => $this->parts->delete($vehicle, $stored),
                 default => throw new \LogicException('No delete for ' . $stored::class . '.'),
             };
         } catch (TyreChangeRefused | PartChangeRefused $refused) {
@@ -179,6 +189,12 @@ final readonly class ApiEditor
     {
         if ($list === 'issues') {
             return $this->issues->state($vehicle, $id);
+        }
+        if ($list === 'modifications') {
+            return $this->modifications->state($vehicle, $id);
+        }
+        if ($list === 'parts') {
+            return $this->parts->state($vehicle, $id);
         }
         try {
             return match ($list) {

@@ -80,6 +80,12 @@ use Logbook\Action\Api\ListJourneysAction as ApiJourneysAction;
 use Logbook\Action\Api\LogIncidentAction as ApiLogIncidentAction;
 use Logbook\Action\Api\ListIssuesAction as ApiIssuesAction;
 use Logbook\Action\Api\LogIssueAction as ApiLogIssueAction;
+use Logbook\Action\Api\ListModificationsAction as ApiModificationsAction;
+use Logbook\Action\Api\ListPartsAction as ApiPartsAction;
+use Logbook\Action\Api\LogModificationAction as ApiLogModificationAction;
+use Logbook\Action\Api\LogPartAction as ApiLogPartAction;
+use Logbook\Action\Api\ModificationWriteAction as ApiModificationWriteAction;
+use Logbook\Action\Api\PartWriteAction as ApiPartWriteAction;
 use Logbook\Action\Api\IssueWriteAction as ApiIssueWriteAction;
 use Logbook\Action\Api\ListMaintenanceAction as ApiMaintenanceAction;
 use Logbook\Action\Api\ListOdometerAction as ApiOdometerAction;
@@ -419,6 +425,9 @@ return static function (App $app): void {
                     'trips' => [VehicleAbility::View, VehicleAbility::Log, Feature::Trips],
                     'incidents' => [VehicleAbility::View, VehicleAbility::Log, Feature::Incidents],
                     'issues' => [VehicleAbility::View, VehicleAbility::Log, Feature::Issues],
+                    // Phase 50.2 (#429): modification and part files are cost files, so their list needs ViewCosts.
+                    'modifications' => [VehicleAbility::ViewCosts, VehicleAbility::Log, Feature::Parts],
+                    'parts' => [VehicleAbility::ViewCosts, VehicleAbility::Log, Feature::Parts],
                     // #305: the paperwork proves a price, so its list needs ViewCosts, as the ownership card.
                     'purchase' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
                     'sale' => [VehicleAbility::ViewCosts, VehicleAbility::Manage, null],
@@ -753,6 +762,42 @@ return static function (App $app): void {
                     }
                     $issues->get('/issues', ApiIssuesAction::class)->setName('api.issues');
                 })->add($module(Feature::Issues));
+                // Parts and modifications (Phase 50.2, spec.md §7.20 *Parts and modifications*, §7.39): View to
+                // read, Log to write; ApiEditor checks EntryAccess for an edit or delete, and ApiModifications
+                // and ApiParts leave costs and prices out without ViewCosts (#429).
+                $keyed->group('', function (Group $parts) use ($ability, $edits): void {
+                    $view = VehicleAbility::View->value;
+                    $log = VehicleAbility::Log->value;
+                    $parts->get('/vehicles/{id:[0-9]+}/modifications', ApiModificationsAction::class)
+                        ->setName('api.modifications.index')->setArgument($ability, $view);
+                    $parts->get('/vehicles/{id:[0-9]+}/modifications/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.modifications.show')->setArgument('list', 'modifications')->setArgument($ability, $view);
+                    $parts->post('/vehicles/{id:[0-9]+}/modifications', ApiLogModificationAction::class)
+                        ->setName('api.modifications.create')->setArgument($ability, $log);
+                    $edits($parts, 'modifications');
+                    foreach (['revert', 'undo-revert'] as $write) {
+                        $path = '/vehicles/{id:[0-9]+}/modifications/{entry:[0-9]+}/' . $write;
+                        $parts->post($path, ApiModificationWriteAction::class)
+                            ->setName('api.modifications.' . $write)
+                            ->setArgument('list', 'modifications')
+                            ->setArgument('write', $write)
+                            ->setArgument($ability, $log);
+                    }
+                    $parts->get('/vehicles/{id:[0-9]+}/parts', ApiPartsAction::class)
+                        ->setName('api.parts.index')->setArgument($ability, $view);
+                    $parts->get('/vehicles/{id:[0-9]+}/parts/{entry:[0-9]+}', ApiShowEntryAction::class)
+                        ->setName('api.parts.show')->setArgument('list', 'parts')->setArgument($ability, $view);
+                    $parts->post('/vehicles/{id:[0-9]+}/parts', ApiLogPartAction::class)
+                        ->setName('api.parts.create')->setArgument($ability, $log);
+                    $edits($parts, 'parts');
+                    foreach (['fit', 'remove'] as $write) {
+                        $parts->post('/vehicles/{id:[0-9]+}/parts/{entry:[0-9]+}/' . $write, ApiPartWriteAction::class)
+                            ->setName('api.parts.' . $write)
+                            ->setArgument('list', 'parts')
+                            ->setArgument('write', $write)
+                            ->setArgument($ability, $log);
+                    }
+                })->add($module(Feature::Parts));
             })->add(VehicleAccessMiddleware::class)
                 ->add(ApiAuthMiddleware::class);
         })->add(ApiErrorMiddleware::class);

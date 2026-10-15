@@ -255,7 +255,8 @@ final class RouteInventoryTest extends AppTestCase
         'issues.show', 'issues.edit', 'issues.delete', 'issues.watch', 'issues.reopen', 'issues.fix',
         'issues.updates.create', 'issues.updates.edit', 'issues.updates.delete', 'issues.fleet',
         // Phase 50.1: parts and modifications (spec.md §7.39).
-        'parts.index', 'parts.create', 'parts.show', 'parts.edit', 'parts.delete', 'parts.fit', 'parts.remove',
+        'parts.index', 'parts.insurer', 'parts.insurer.declare', 'parts.create', 'parts.show', 'parts.edit',
+        'parts.delete', 'parts.fit', 'parts.remove',
         'modifications.create', 'modifications.show', 'modifications.edit', 'modifications.delete',
         'modifications.revert', 'modifications.unrevert', 'modifications.from_maintenance', 'modifications.from_expense',
         'finance.index',
