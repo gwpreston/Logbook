@@ -161,6 +161,7 @@ final readonly class PartService
         foreach ($modifications as $modification) {
             $spend = $spend->add(Money::of($modification->data->cost, $currency));
         }
+        $spend = $spend->subtract($this->buildProceeds($vehicle, $currency));
         $warranted = array_values(array_filter($parts, static fn (Part $p): bool
             => $p->data->hasWarranty() && $p->status !== PartStatus::Gone));
         $inWarranty = 0;
@@ -176,6 +177,34 @@ final readonly class PartService
         }
 
         return new PartsCard(array_slice($current, 0, 5), count($current), $spend, $inWarranty);
+    }
+
+    /**
+     * What parts sold as they came off brought in, for the parts the build fitted (the ledger's
+     * *Modifications* group nets it off, #420; a part a service record fitted nets off *Maintenance*).
+     */
+    public function buildProceeds(Vehicle $vehicle, string $currency): Money
+    {
+        $proceeds = Money::zero($currency);
+        $gone = array_filter(
+            $this->parts->listForVehicle($vehicle->id),
+            static fn (Part $p): bool => $p->status === PartStatus::Gone,
+        );
+        if ($gone === []) {
+            return $proceeds;
+        }
+        $fittings = $this->parts->fittingsForVehicle($vehicle->id);
+        foreach ($gone as $part) {
+            $list = $fittings[$part->id] ?? [];
+            $last = PartTimeline::last($list);
+            $byService = ($list[0] ?? null)?->fittedMaintenanceId !== null;
+            if ($last === null || $last->outcome !== RemovalOutcome::Sold || $last->soldPrice === null || $byService) {
+                continue;
+            }
+            $proceeds = $proceeds->add(Money::of($last->soldPrice, $currency));
+        }
+
+        return $proceeds;
     }
 
     /**

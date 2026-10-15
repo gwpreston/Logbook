@@ -91,6 +91,24 @@ final class PartWarrantyReminderTest extends ReminderTestCase
         self::assertSame('|30000.000', $reminder->occurrence);
     }
 
+    public function testADistanceLimitStopsCountingOnceThePartIsOffTheCar(): void
+    {
+        $part = $this->part('Turbo', km: '20000', fitOn: '2026-01-10', fitKm: '10000');
+        $this->reading('15000', '2026-03-01T09:00:00Z');
+        $this->parts()->remove(
+            $this->golf,
+            $part,
+            new DateTimeImmutable('2026-03-01'),
+            '15000.000',
+            new PartRemoval(RemovalOutcome::Kept),
+            new DateTimeZone('UTC'),
+        );
+        $this->reading('29000', '2026-09-29T09:00:00Z');
+        $this->sync();
+
+        self::assertNull($this->reminderFor($part), 'a spare never reaches a distance limit, whatever the car does');
+    }
+
     public function testTheDateAndTheMileageBothSet(): void
     {
         $part = $this->part('Gearbox', months: 36, km: '60000', bought: '2026-08-01', fitOn: '2026-08-05', fitKm: '40000');

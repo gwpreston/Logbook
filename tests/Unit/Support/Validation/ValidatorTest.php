@@ -84,6 +84,15 @@ final class ValidatorTest extends TestCase
         self::assertSame(['key' => 'validation.max', 'params' => ['max' => '100']], $errors['high']);
     }
 
+    public function testRoundingThatCarriesPastTheColumnIsTooLarge(): void
+    {
+        $v = new Validator(['edge' => '99999999999.9999', 'fits' => '99999999999.9994'], 'en');
+
+        self::assertNull($v->decimal('edge', false, 3, '0', null, 11));
+        self::assertSame('99999999999.999', $v->decimal('fits', false, 3, '0', null, 11));
+        self::assertSame('validation.too_large', $v->errors()->all()['edge']['key']);
+    }
+
     public function testNegativeAllowedWhenAsked(): void
     {
         $v = new Validator(['delta' => '-2.5'], 'en');

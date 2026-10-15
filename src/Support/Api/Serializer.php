@@ -776,10 +776,10 @@ final class Serializer
         $fitted = [];
         $removed = [];
         foreach ($made as ['part' => $part, 'fitting' => $fitting]) {
-            if ($fitting->fittedModificationId === $modification->id) {
+            if ($fitting->fittedModificationId === $modification->id && !$fitting->fittedByRevert) {
                 $fitted[] = ['part' => $part->id, 'name' => $part->label()];
             }
-            if ($fitting->removedModificationId === $modification->id) {
+            if ($fitting->removedModificationId === $modification->id && !$fitting->removedByRevert) {
                 $row = [
                     'part' => $part->id,
                     'name' => $part->label(),

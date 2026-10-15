@@ -47,6 +47,17 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
   *Parts* tab (export only).
 
 ### Fixed (Phase 50.2 review)
+- A price, cost or sale price that rounds past the column's range (for
+  example 99999999999.9999) is refused as too large instead of failing with a
+  500.
+- A distance-limited warranty counts only while the part is on the car: a
+  spare gets no reminder for it, and the limit is read at the mileage the part
+  came off at.
+- A reverted modification's `parts_fitted` and `parts_removed` (API and Ask)
+  list only what the modification itself fitted and took off, not the revert's
+  own fittings.
+- The Parts card's *Build spend* and Ask's `modifications` `build_total` (all
+  states) are net of parts sold as they came off, as Reports are.
 - A part whose reminded warranty has ended stays editable; the refusal is
   only for newly ticking an ended warranty or changing it to another ended one.
 - *For your insurer*: Enter in the date field changes nothing; *Mark all

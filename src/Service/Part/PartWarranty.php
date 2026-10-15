@@ -54,7 +54,10 @@ final readonly class PartWarranty
             : Decimal::add($first->fittedOdometerKm, $data->warrantyKm);
 
         $byDate = $until === null || $today <= $until;
-        $byKm = $untilKm === null || $currentKm === null || Decimal::compare($currentKm, $untilKm) <= 0;
+        // The distance counts only while the part is on the car: off it, the limit is read at
+        // the mileage it came off at (unknown: it can't be measured, so it never ends it).
+        $measuredAt = PartTimeline::open($fittings) !== null ? $currentKm : PartTimeline::last($fittings)?->removedOdometerKm;
+        $byKm = $untilKm === null || $measuredAt === null || Decimal::compare($measuredAt, $untilKm) <= 0;
         // A limit that can't be measured yet (no start, no fitted mileage) never ends it.
         return new self($until, $untilKm, $byDate && $byKm, !$byDate ? $until : null);
     }

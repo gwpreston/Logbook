@@ -275,18 +275,20 @@ final class ReminderGenerator
         ?string $currentKm,
         ?float $kmPerDay,
     ): ?GeneratedReminder {
+        // A distance limit only runs while the part is on the car: a spare never reaches it.
+        $untilKm = $part->status === PartStatus::Fitted ? $warranty?->untilKm : null;
         if (
             !$part->data->warrantyReminder
             || $part->status === PartStatus::Gone
             || $warranty === null
             || !$warranty->active
-            || ($warranty->until === null && $warranty->untilKm === null)
+            || ($warranty->until === null && $untilKm === null)
         ) {
             return null;
         }
         $due = ReminderRules::manual(
             $warranty->until,
-            $warranty->untilKm,
+            $untilKm,
             $today,
             $preferences->documentDays,
             $currentKm,
@@ -298,11 +300,11 @@ final class ReminderGenerator
             vehicleId: $vehicleId,
             source: ReminderSource::Part,
             sourceId: $part->id,
-            occurrence: ($warranty->until?->format('Y-m-d') ?? '') . '|' . ($warranty->untilKm ?? ''),
+            occurrence: ($warranty->until?->format('Y-m-d') ?? '') . '|' . ($untilKm ?? ''),
             category: null,
             title: $title,
             dueOn: $warranty->until,
-            dueKm: $warranty->untilKm,
+            dueKm: $untilKm,
             leadTimeDays: $preferences->documentDays,
             status: $due->status,
         );

@@ -99,4 +99,14 @@ final class PartTimeline
     {
         return $fittings[0] ?? null;
     }
+
+    /**
+     * The latest fitting.
+     *
+     * @param list<PartFitting> $fittings oldest first
+     */
+    public static function last(array $fittings): ?PartFitting
+    {
+        return $fittings === [] ? null : $fittings[array_key_last($fittings)];
+    }
 }

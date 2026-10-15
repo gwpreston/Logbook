@@ -101,6 +101,11 @@ final readonly class Modifications implements AskTool
                 PartService::MODIFICATION,
                 array_map(static fn (Modification $m): int => $m->id, array_slice($listed, 0, ToolKit::LIST_CAP)),
             );
+            if ($costs && $state === 'all' && $listed !== []) {
+                // The ledger nets what sold parts brought in off the build; so does the all-states total.
+                $totals[$currency] = ($totals[$currency] ?? Money::zero($currency))
+                    ->subtract($this->parts->buildProceeds($vehicle, $currency));
+            }
             foreach ($listed as $modification) {
                 $count++;
                 if (!$costs) {
@@ -131,7 +136,8 @@ final readonly class Modifications implements AskTool
                 ...($build === [] ? [] : [
                     'build_total' => $build,
                     'note' => 'build_total is what the modifications cost: it is not a running cost and is in no cost '
-                        . 'per distance.'
+                        . 'per distance. With state all it is net of parts sold as they came off, the figure costs and '
+                        . 'cost_per_distance give; with another state it is those modifications\' costs alone.'
                         . ($hidden ? ' It leaves out vehicles whose costs the user may not see.' : ''),
                 ]),
             ],
@@ -156,10 +162,10 @@ final readonly class Modifications implements AskTool
         $fitted = [];
         $removed = [];
         foreach ($made as ['part' => $part, 'fitting' => $fitting]) {
-            if ($fitting->fittedModificationId === $modification->id) {
+            if ($fitting->fittedModificationId === $modification->id && !$fitting->fittedByRevert) {
                 $fitted[] = $part->label() . ($part->data->partNumber === null ? '' : ' (' . $part->data->partNumber . ')');
             }
-            if ($fitting->removedModificationId === $modification->id) {
+            if ($fitting->removedModificationId === $modification->id && !$fitting->removedByRevert) {
                 $removed[] = $part->label() . ' · ' . $this->kit->t('part.outcome.' . ($fitting->outcome->value ?? 'kept'));
             }
         }

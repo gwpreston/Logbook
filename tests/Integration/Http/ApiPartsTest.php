@@ -294,6 +294,13 @@ final class ApiPartsTest extends AppTestCase
         self::assertSame('2026-07-01', $entry->get('reverted_on'));
         self::assertSame('38000.000', $entry->get('reverted_odometer'));
         self::assertFalse(ApiClient::json($reverted)->get('unchanged'));
+        self::assertSame(
+            ['Milltek Cat-back system'],
+            $entry->column('name', 'parts_fitted'),
+            'the revert\'s own fittings are not its parts',
+        );
+        self::assertNotContains('Milltek Cat-back system', $entry->column('name', 'parts_removed'));
+        self::assertSame(['Standard exhaust'], $entry->column('name', 'parts_removed'));
         $list = ApiClient::json($this->api->get($this->parts));
         $names = $list->column('name', 'items');
         $at = array_search('Cat-back system', $names, true);

@@ -170,9 +170,11 @@ final readonly class Parts implements AskTool
             'active' => $warranty->active,
             'until' => $warranty->until?->format('Y-m-d'),
             'until_odometer' => $this->kit->distance($warranty->untilKm),
-            'display' => $warranty->active
-                ? $this->kit->t('ask.result.in_warranty', ['limits' => implode(' / ', $limits)])
-                : $this->kit->t('part.warranty.ended'),
+            'display' => match (true) {
+                !$warranty->active => $this->kit->t('part.warranty.ended'),
+                $limits === [] => $this->kit->t('part.warranty.active'),
+                default => $this->kit->t('ask.result.in_warranty', ['limits' => implode(' or ', $limits)]),
+            },
         ];
     }
 }
