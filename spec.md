@@ -2440,8 +2440,8 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   from, provider and terms, *Remind before warranty ends*, notes) and
   `part-fittings.csv` (one row per fitting: part, part number, fitted on,
   fitted odometer, fitted by, removed on, removed odometer, removed by,
-  outcome, sold price and currency with `ViewCosts`, replaced by), linked
-  from the *Parts* tab's *Export CSV* menu. Distances are in the owner's
+  outcome, sold price and currency with `ViewCosts`, replaced by), each
+  linked from the *Parts* tab (they need `Manage`, as every export). Distances are in the owner's
   unit, quantities carry 6 places and dates are ISO, as above. The report
   export's *Group* column carries `build` for a modification's line.
 - **Incidents** (Phase 27.1, `incidents` on): a section with the period's
