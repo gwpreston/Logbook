@@ -19,8 +19,8 @@
     <input type="hidden" name="off_rows" value="{{ record_parts.rows.off }}">
 
     {# Phase 50.2 (#440): the scanned invoice's parts lines, unticked; ticked ones are saved as parts fitted by this record. #}
-    {% set scan_rows = values.scan_part_rows ?? '0' %}
-    {% if scan_rows matches '/^[1-9][0-9]*$/' %}
+    {% set scan_rows = min(values.scan_part_rows ?? 0, 20) %}
+    {% if scan_rows > 0 %}
         <input type="hidden" name="scan_part_rows" value="{{ scan_rows }}">
         <section class="card" aria-labelledby="parts-scanned">
             <h2 id="parts-scanned" class="card__title">{{ 'part.scan.title'|trans }}</h2>

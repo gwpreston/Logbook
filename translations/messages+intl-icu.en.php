@@ -1595,6 +1595,8 @@ return [
             'tyre' => 'Tyres',
             'finance' => 'Finance',
             'finance_end' => 'Finance',
+            'part' => 'Part warranty',
+            'issue' => 'Issue',
         ],
         'status' => [
             'upcoming' => 'Upcoming',

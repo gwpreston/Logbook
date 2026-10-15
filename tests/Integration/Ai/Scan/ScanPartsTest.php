@@ -100,6 +100,19 @@ final class ScanPartsTest extends ScanTestCase
         self::assertStringNotContainsString('name="scan_part_0_price"', $html);
     }
 
+    public function testAPostedRowCountNeverDrawsMoreThanTwentyRows(): void
+    {
+        $golf = $this->garage['Golf'];
+        $page = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', [
+            'parts_lists' => '1', 'scan_part_rows' => '200000', 'title' => '',
+        ]);
+        $html = self::body($page);
+
+        self::assertSame(422, $page->getStatusCode());
+        self::assertStringContainsString('name="scan_part_19_add"', $html, 'rows 0 to 19 are drawn');
+        self::assertStringNotContainsString('scan_part_20_add', $html);
+    }
+
     public function testTheListIsGoneWithThePartsModuleOff(): void
     {
         $without = array_values(array_filter(Feature::cases(), static fn (Feature $f): bool => $f !== Feature::Parts));

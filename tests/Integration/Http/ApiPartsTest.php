@@ -148,6 +148,22 @@ final class ApiPartsTest extends AppTestCase
         self::assertSame([], ApiClient::json($this->api->get($this->mods))->column('id', 'items'), 'nothing is written on a 422');
     }
 
+    public function testTheModificationListReadsTheFittingsOnceForThePage(): void
+    {
+        $counter = \Logbook\Tests\Support\QueryCounter::install($this->app);
+        foreach (['A', 'B', 'C', 'D'] as $title) {
+            $this->logged(['title' => $title, 'parts_fitted' => [], 'parts_removed' => []]);
+        }
+        $this->api->get($this->mods);
+        $few = $counter->during(fn () => $this->api->get($this->mods . '?limit=1'));
+        foreach (['E', 'F', 'G', 'H', 'I', 'J'] as $title) {
+            $this->logged(['title' => $title, 'parts_fitted' => [], 'parts_removed' => []]);
+        }
+        $many = $counter->during(fn () => $this->api->get($this->mods . '?limit=1'));
+
+        self::assertSame($few, $many, 'the same queries however many modifications the vehicle holds');
+    }
+
     public function testListsFilterAndOrder(): void
     {
         $first = $this->logged();

@@ -120,6 +120,31 @@ final readonly class PartService
     }
 
     /**
+     * The fittings several records made or ended, with their parts, in one read.
+     *
+     * @param 'maintenance'|'modification' $kind
+     * @param list<int> $recordIds
+     * @return array<int, list<array{part: Part, fitting: PartFitting}>> by record id
+     */
+    public function byRecords(Vehicle $vehicle, string $kind, array $recordIds): array
+    {
+        $parts = [];
+        foreach ($this->parts->listForVehicle($vehicle->id) as $part) {
+            $parts[$part->id] = $part;
+        }
+        $rows = [];
+        foreach ($this->parts->fittingsByRecords($kind, $recordIds) as $recordId => $fittings) {
+            foreach ($fittings as $fitting) {
+                if (isset($parts[$fitting->partId])) {
+                    $rows[$recordId][] = ['part' => $parts[$fitting->partId], 'fitting' => $fitting];
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * The overview card (spec.md §7.39 *Pages*), or null when the vehicle
      * has no modifications and no parts.
      *

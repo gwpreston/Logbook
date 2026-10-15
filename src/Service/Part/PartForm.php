@@ -104,8 +104,14 @@ final class PartForm
         }
         // #446: nothing to remind of once a warranty has ended. Only a time limit counted from the
         // purchase date can be told here; any other warranty simply stops reminding when it ends.
+        // An edit that leaves a tick already stored, and the warranty, as they were is not refused.
+        $old = $stored?->data;
+        $unchanged = $old !== null && $old->warrantyReminder
+            && $old->warrantyMonths === $months
+            && $old->boughtOn?->format('Y-m-d') === $boughtOn?->format('Y-m-d')
+            && $old->warrantyFrom === ($from ?? self::defaultStart($boughtOn));
         if (
-            $remind && $months !== null && $boughtOn !== null
+            $remind && !$unchanged && $months !== null && $boughtOn !== null
             && ($from ?? self::defaultStart($boughtOn)) === WarrantyStart::Purchase
             && LocalTime::addMonths($boughtOn, $months) < $today
         ) {

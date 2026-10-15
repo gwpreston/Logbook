@@ -1593,6 +1593,8 @@ return [
             'finance' => 'Finanzierung',
             'finance_end' => 'Finanzierung',
             'tyre' => 'Reifen',
+            'part' => 'Teilegarantie',
+            'issue' => 'Mangel',
         ],
         'status' => [
             'upcoming' => 'Demnächst',

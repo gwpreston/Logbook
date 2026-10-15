@@ -66,7 +66,7 @@ final readonly class ApiModifications
         $page = $query->page($all, static fn (Modification $m): array => [$m->data->doneOn, $m->id]);
         $costs = $this->costs($user, $vehicle);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
-        $made = $this->madeFor($vehicle);
+        $made = $this->madeFor($vehicle, $page['items']);
 
         return [
             'items' => array_map(
@@ -419,16 +419,18 @@ final readonly class ApiModifications
     }
 
     /**
+     * The fittings each listed modification made or ended, in one read for the page.
+     *
+     * @param list<Modification> $modifications
      * @return array<int, list<array{part: \Logbook\Domain\Part\Part, fitting: \Logbook\Domain\Part\PartFitting}>>
      */
-    private function madeFor(Vehicle $vehicle): array
+    private function madeFor(Vehicle $vehicle, array $modifications): array
     {
-        $made = [];
-        foreach ($this->modifications->list($vehicle) as $modification) {
-            $made[$modification->id] = $this->parts->byRecord($vehicle, PartService::MODIFICATION, $modification->id);
-        }
-
-        return $made;
+        return $this->parts->byRecords(
+            $vehicle,
+            PartService::MODIFICATION,
+            array_map(static fn (Modification $m): int => $m->id, $modifications),
+        );
     }
 
     /**

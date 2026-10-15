@@ -166,6 +166,7 @@ final class PartWarrantyReminderTest extends ReminderTestCase
 
         $html = self::body($this->browser->get('/reminders'));
         self::assertStringContainsString('Warranty ends: Clutch kit', $html);
+        self::assertStringNotContainsString('reminders.source.', $html, 'the source label is translated');
         self::assertStringContainsString('Checked it', $html, 'Done reads Checked it');
         $link = 'href="/vehicles/' . $this->golf->id . '/parts/' . $part->id . '"';
         self::assertStringContainsString($link, $html, 'links to the part');
@@ -215,6 +216,24 @@ final class PartWarrantyReminderTest extends ReminderTestCase
         $allowed = PartForm::parse(['warranty_months' => '60'] + $input, $prefs, $today);
         self::assertInstanceOf(PartData::class, $allowed);
         self::assertTrue($allowed->warrantyReminder);
+
+        // Merge review: an edit that leaves a stored tick and its warranty alone is never refused.
+        $stored = $this->part('Old mount', months: 6, bought: '2026-01-01');
+        $edit = PartForm::parse(
+            ['name' => 'Old mount', 'bought_on' => '2026-01-01', 'warranty_months' => '6', 'warranty_reminder' => '1',
+                'notes' => 'edited'],
+            $prefs,
+            new DateTimeImmutable('2027-09-30'),
+            $stored,
+        );
+        self::assertInstanceOf(PartData::class, $edit, 'an ended warranty with the tick already stored');
+        $moved = PartForm::parse(
+            ['name' => 'Old mount', 'bought_on' => '2026-01-01', 'warranty_months' => '7', 'warranty_reminder' => '1'],
+            $prefs,
+            new DateTimeImmutable('2027-09-30'),
+            $stored,
+        );
+        self::assertInstanceOf(ValidationErrors::class, $moved, 'changing the warranty to another ended one is refused');
 
         $noWarranty = PartForm::parse(['name' => 'Bulb', 'warranty_reminder' => '1'], $prefs, $today);
         self::assertInstanceOf(PartData::class, $noWarranty);
