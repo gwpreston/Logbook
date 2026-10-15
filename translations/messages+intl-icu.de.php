@@ -3052,6 +3052,13 @@ return [
         'module' => [
             'tyres' => 'Reifen exportieren',
             'tyre_changes' => 'Reifenwechsel exportieren',
+            'modifications' => 'Umbauten exportieren',
+            'parts' => 'Teile exportieren',
+            'part_fittings' => 'Ein- und Ausbauten exportieren',
+        ],
+        'record' => [
+            'service' => 'Wartungseintrag',
+            'modification' => 'Umbau',
         ],
         'column' => [
             'brand' => 'Marke',
@@ -3145,6 +3152,16 @@ return [
             'rate' => 'Satz',
             'passenger_amount' => 'Mitfahrerbetrag',
             'build_group' => '{group} (keine Betriebskosten)',
+            'category_code' => 'Kategoriecode',
+            'declared_on' => 'Gemeldet am',
+            'warranty_distance' => 'Garantiestrecke ({unit})',
+            'reverted_odometer' => 'Kilometerstand beim Rückbau ({unit})',
+            'part' => 'Teil',
+            'fitted_odometer' => 'Kilometerstand beim Einbau ({unit})',
+            'removed_odometer' => 'Kilometerstand beim Ausbau ({unit})',
+            'fitted_by_record' => 'Eingebaut durch (Eintrag)',
+            'removed_by_record' => 'Ausgebaut durch (Eintrag)',
+            'replaced_by' => 'Ersetzt durch',
         ],
         'written_off' => 'Totalschaden',
         'returned_lender' => 'an Kreditgeber zurückgegeben',
@@ -7012,6 +7029,7 @@ return [
         ],
         'origin' => [
             'original' => 'Original am Auto',
+            'fitted' => 'Nachträglich',
         ],
         'warranty_from' => [
             'purchase' => 'Kaufdatum',

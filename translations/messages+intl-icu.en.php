@@ -3055,6 +3055,13 @@ return [
         'module' => [
             'tyres' => 'Export tyres',
             'tyre_changes' => 'Export changes',
+            'modifications' => 'Export modifications',
+            'parts' => 'Export parts',
+            'part_fittings' => 'Export fittings',
+        ],
+        'record' => [
+            'service' => 'Service record',
+            'modification' => 'Modification',
         ],
         'column' => [
             'brand' => 'Brand',
@@ -3148,6 +3155,16 @@ return [
             'rate' => 'Rate',
             'passenger_amount' => 'Passenger amount',
             'build_group' => '{group} (not a running cost)',
+            'category_code' => 'Category code',
+            'declared_on' => 'Declared on',
+            'warranty_distance' => 'Warranty distance ({unit})',
+            'reverted_odometer' => 'Reverted odometer ({unit})',
+            'part' => 'Part',
+            'fitted_odometer' => 'Fitted odometer ({unit})',
+            'removed_odometer' => 'Removed odometer ({unit})',
+            'fitted_by_record' => 'Fitted by (record)',
+            'removed_by_record' => 'Removed by (record)',
+            'replaced_by' => 'Replaced by',
         ],
         'written_off' => 'written off',
         'returned_lender' => 'returned to the lender',
@@ -7019,6 +7036,7 @@ return [
         ],
         'origin' => [
             'original' => 'Came with the car',
+            'fitted' => 'Added later',
         ],
         'warranty_from' => [
             'purchase' => 'Purchase date',
