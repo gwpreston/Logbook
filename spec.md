@@ -11293,6 +11293,14 @@ task breakdowns live in the per-phase files; this is the map.
   only what is new; release v3.16.0 (§6 ImportSource, §7.13; #463–#472
   decided 2026-10-16). No migration. See
   [`phase-51.md`](docs/phases/phase-51.md).
+- **Phase 51.4 — Import fixes from the known-issues log + patch
+  release.** A worked-out fuel amount too large for its field is an error
+  on that field (§7.3, K9); `bin/import-app.php --skip-invalid`, Fuelio's
+  column names, unknown fuel codes and the sections not read (§7.13, K11,
+  K12); duplicate times to the minute (§7.13, §7.20), the upload limit
+  named, conversions rounded once and a later backup's photos (K21); a
+  binary file refused on the CSV import (K61). No migration. Release
+  v3.16.1. See [`phase-51.4.md`](docs/phases/phase-51.4.md).
 
 ---
 

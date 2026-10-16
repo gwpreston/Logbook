@@ -4,7 +4,11 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [3.16.1] — 2026-10-16
+
+Phase 51.4: **import fixes** from the known-issues log
+([docs/phases/phase-51.4.md](docs/phases/phase-51.4.md)). No migration:
+pull and restart.
 
 ### Fixed
 - **Fill-ups whose worked-out price, volume or total is too large** (a
@@ -3357,7 +3361,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...HEAD
+[3.16.1]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...v3.16.1
 [3.16.0]: https://github.com/gwpreston16/Logbook/compare/v3.15.0...v3.16.0
 [3.15.0]: https://github.com/gwpreston16/Logbook/compare/v3.14.0...v3.15.0
 [3.14.0]: https://github.com/gwpreston16/Logbook/compare/v3.13.0...v3.14.0
