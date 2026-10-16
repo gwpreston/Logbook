@@ -89,6 +89,7 @@ of a finding, so it isn't counted twice.
 | Whether AI features give the **right result**: Ask Logbook tools and answers, the grounding check, drafting, document reading | **ai-evaluator** |
 | Whether **imported data is right**: CSV and other-app imports, re-imports, dry runs, preview vs result, own-CSV round trip | **import-tester** |
 | Installs (Docker, bare PHP), proxies and **subpaths end to end**, PHP versions, cron and job triggers, the entrypoint, **runtime settings matching the docs** (OPcache, non-root, web configs), built assets current | **deploy-checker** |
+| Whether a reported finding is real, a duplicate, not a bug or needs a decision, before it's recorded in `docs/phases/known-issues.md` (run by the issue-sweep skill) | **finding-reviewer** |
 | Regression tests, coverage, the shared review dataset, committing the AI evaluation set and import fixtures | **test-writer** |
 
 ## 6. Severity

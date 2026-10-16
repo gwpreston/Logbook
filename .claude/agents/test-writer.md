@@ -84,6 +84,17 @@ It must be deterministic (a fixed seed and `MutableClock`), quick to load
 when only the edge rows are wanted, and covered by a test that loads it on
 every engine.
 
+## Evaluation set and import fixtures
+
+When asked, commit what the other agents built in scratch:
+- the AI evaluation cases ai-evaluator lists, under
+  `tests/Fixtures/ai-eval/`, with a test that runs them on
+  `ScriptedProvider`;
+- the files import-tester lists under *Files to commit*, under
+  `tests/Fixtures/import/`, each with a test asserting its imported
+  values.
+Anonymise anything that came from real data before committing it.
+
 ## Conventions
 
 - PSR-12, `declare(strict_types=1);`, namespace `Logbook\Tests\…`
