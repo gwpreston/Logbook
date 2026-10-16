@@ -70,7 +70,7 @@ than guessing an API.
 /tests             # Unit + Integration (run against both DBs in CI)
 /docker            # Dockerfile bits, entrypoint, compose files
 /docs              # user guides (deployment, configuration, API, ...)
-  /phases          # one file per build phase, plus the open-questions log
+  /phases          # one file per build phase, plus the open-questions and known-issues logs
 ```
 
 Keep `public/` tiny: it exposes only the front controller and built static
@@ -211,6 +211,8 @@ admin running the app is the one who changes it.
 7. Docker image builds (multi-arch incl. ARM) and the bare-PHP path still works.
 8. The phase's open questions are decided, or carried into
    `docs/phases/open-questions.md`.
+9. Every bug or problem found in the phase and not fixed is recorded in
+   `docs/phases/known-issues.md` (§12).
 
 ---
 
@@ -234,6 +236,17 @@ admin running the app is the one who changes it.
   reason.
 - When writing a phase file, anything not yet decided goes under *Open
   questions* rather than into the tasks.
+- **When a phase is complete** (its final merge review is done), record
+  every bug or problem it found and didn't fix in
+  `docs/phases/known-issues.md`: the review's *Follow-ups*, findings
+  marked "on master", and anything else noticed while building. One row
+  each, with severity, where, whether this phase introduced it, and
+  *Open*. An issue that needs a choice first also gets an open question.
+  Update a row when a later phase fixes it; never delete one.
+- **Before starting a phase**, also read the *Open* and *Scheduled* rows
+  of `docs/phases/known-issues.md`. Fix the ones the phase touches (mark
+  them *Fixed* with the phase), and offer the owner the rest that fit, as
+  tasks for this phase or a new one.
 
 ---
 

@@ -77,6 +77,12 @@ doesn't describe is a finding, whichever side is "right".
   the status line at the top of the phase file agrees.
 - Prerequisites named in the phase file are ✅.
 
+### Known issues (§12)
+- When the phase is finished, every unfixed bug the phase's reviews found
+  (merge-review *Follow-ups*, findings "on master") has a row in
+  `docs/phases/known-issues.md`, numbered in sequence with no gaps.
+- A row this change fixes is marked *Fixed* with the phase, not deleted.
+
 ### Open questions (§12)
 - Every question in the phase's *Open questions* is marked *Decided*,
   *Answered*, *Scheduled*, *Parked* or *Obsolete*, with a date and reason,
