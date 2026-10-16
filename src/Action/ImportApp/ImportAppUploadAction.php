@@ -119,7 +119,10 @@ final readonly class ImportAppUploadAction
             if ($problem !== null) {
                 return $this->render($request, $response, $problem, 'files');
             }
-            if (!str_starts_with((string) $files->getStream(), "PK\x03\x04")) {
+            $stream = $files->getStream();
+            $head = $stream->read(4);
+            $stream->rewind();
+            if ($head !== "PK\x03\x04") {
                 return $this->render($request, $response, ['key' => 'import_app.error.files_not_zip', 'params' => []], 'files');
             }
             $filesToken = $this->staged->stage($files, ImportAppRoute::FILES_STAGE);
