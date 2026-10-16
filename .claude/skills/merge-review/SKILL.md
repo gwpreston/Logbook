@@ -198,10 +198,7 @@ cases and import files the agents said should be committed.>
 
 ## Follow-ups (don't block this merge)
 <Non-blocking findings grouped by agent, one line each with severity and
-location. Problems already on master are marked "on master". Give the
-`docs/phases/known-issues.md` number (K…) of any that is already listed
-there; the rest are what CLAUDE.md §12 says to record there when the
-phase is complete.>
+location. Problems already on master are marked "on master".>
 
 ## Upgrade notes
 <From upgrade-tester, api-contract-checker and spec-keeper: what
@@ -221,6 +218,13 @@ skips worth knowing about, what wasn't checked. Omit if empty.>
 The verdict line, blocking reasons and *To get to MERGE* must make sense
 on their own: the owner should be able to stop reading there and know
 exactly what to do.
+
+## Recording follow-ups
+
+When this is the phase's final review, offer to run `/issue-sweep` on
+this report, so the follow-ups and problems already on master are checked
+by finding-reviewer and recorded in `docs/phases/known-issues.md`
+(`CLAUDE.md` §12). Don't write that file from this skill.
 
 ## Re-reviews
 

@@ -16,8 +16,8 @@ fields. Then read `CLAUDE.md` and the relevant parts of `spec.md`. The
 spec is the source of truth: behaviour that contradicts it is a bug;
 behaviour it leaves undecided is an open question.
 
-Security, performance, design, docs, upgrades and deployment have their
-own agents (see the ownership table). If you notice something there, put
+Security, performance, design, docs, upgrades, deployment, API
+contracts, AI answers and imports have their own agents (see the ownership table). If you notice something there, put
 it under *Handed over*.
 
 ## How to work
@@ -111,8 +111,6 @@ are hidden from members, is security-scanner's.)
   vehicle, an entry from a removed user, a module switched off later).
 - Jobs and reminders sending twice, or not at all, when run late, early
   or twice in a row.
-- Import and re-import creating duplicates or skipping rows they should
-  add; partial failures leaving half an import.
 - Validation rejecting legitimate edge values (`CLAUDE.md` §8).
 - PHP 8.5 deprecations in the changed code.
 
