@@ -1364,9 +1364,11 @@ In backups (the password is not).
 
 **ImportSource** (Phase 31, §7.13 *Importing from another app*),
 `import_sources`
-- id, app (`fuelio`), source_id (the row's own id in the app's export:
-  Fuelio's `guid`, up to 64 characters), vehicle_id (`ON DELETE CASCADE`),
-  entity_type (`fuel`|`maintenance`|`expense`|`station`|`schedule`),
+- id, app (`fuelio`, from Phase 51 `tracktor`), source_id (the row's own
+  id in the app's export: Fuelio's `guid`, Tracktor's `id`, up to 64
+  characters), vehicle_id (`ON DELETE CASCADE`),
+  entity_type (`fuel`|`maintenance`|`expense`|`station`|`schedule`, and
+  from Phase 51 `document`|`reminder`|`reading`|`vehicle`),
   entity_id (no foreign key: the entry may be edited or deleted and its
   origin is still known), imported_by (user, `ON DELETE SET NULL`),
   imported_at (UTC). Unique `(app, source_id, vehicle_id)`.
@@ -4540,8 +4542,9 @@ a reader). Logbook isn't affiliated with Fuelio.
   19), and the `fuel` module on (cost rows need the module of the category
   they map to).
 - **Web and command line:**
-  - The web page takes a **Fuelio CSV** only (up to `MAX_UPLOAD_MB` and
-    20,000 rows across its sections; staged as CSV imports are). A ZIP
+  - The web page takes a **Fuelio CSV** (up to `MAX_UPLOAD_MB` and
+    20,000 rows across its sections; staged as CSV imports are), or a
+    Tracktor export (below, Phase 51). A Fuelio ZIP
     uploaded there is refused with: "Backups with photos are imported on
     the command line: `php bin/import-app.php <file.zip>`."
   - `php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]
@@ -4631,6 +4634,130 @@ a reader). Logbook isn't affiliated with Fuelio.
   and its `guid`. A later import marks a row with a known `guid` *already
   imported*, even if the Logbook entry was edited or deleted since, so
   importing a newer export adds only the new rows.
+
+**The Tracktor reader** (Phase 51, decided 2026-10-16, #463–#472).
+[Tracktor](https://github.com/javedh-dev/tracktor) is a self-hosted
+vehicle tracker. Its users bring a whole garage across in one import.
+Logbook isn't affiliated with Tracktor.
+
+- **Tracktor's format** (read from real exports of Tracktor 2.1.0 and
+  1.4.1; fixtures in `tests/Fixtures/import/tracktor/`):
+  - One JSON file from *Settings → Export* holds every vehicle:
+    `{version: "1.0", timestamp, encrypted, data}`. Another `version` is
+    refused with the reason.
+  - `data` holds `vehicles`, `fuelLogs`, `maintenanceLogs`,
+    `complianceDocuments`, `reminders` and `configs` (read), and
+    `notifications` and `notificationProviders` (never read: a provider's
+    credentials are encrypted with the Tracktor server's own secret).
+    Exports from before August 2026 (Tracktor 1.x) hold `insurances` and
+    `puccs` instead of `complianceDocuments`, have no `reminders`, and carry
+    `users` and `sessions`, which are never read (#468). Any other key is
+    listed as not read.
+  - Every row has a UUID `id` that stays the same in every export, the
+    vehicle's included, and rows name their vehicle by `vehicleId`.
+  - `configs` is a list of `{key, value}`. Only these are read:
+    `unitOfDistance` (`kilometer` | `mile`), `unitOfVolume` (`liter` |
+    `gallon`, US or UK not stated), `unitOfLpg` and `unitOfCng` (`liter`,
+    `gallon`, `kilogram` or `pound`) and `currency`. Odometers and amounts
+    are in those units, as typed.
+  - Dates are instants at midnight UTC of the calendar date the user
+    picked ("2026-01-04T00:00:00.000Z"). Their first ten characters are the
+    date, read as a calendar date and never shifted by a time zone. Numbers
+    are JSON numbers, read from their text into `Decimal`, never through
+    float arithmetic.
+  - **Files are not in the export.** `image` and `attachment` name files in
+    Tracktor's uploads folder (`/data/uploads` in its Docker image).
+- **Encrypted exports** (#463) are refused before anything is read:
+  "This export is password-protected. Export again from Tracktor without
+  a password." Support is parked (§12).
+- **Where:** the same Settings → *Import from another app* page, which
+  tells a Tracktor JSON from a Fuelio CSV by its contents. The web page
+  takes the JSON (up to `MAX_UPLOAD_MB`, at most 20,000 rows across its
+  lists, a nesting depth of 64) and, optionally, a ZIP of Tracktor's
+  uploads folder (#465, up to `MAX_UPLOAD_MB`). The command line takes
+  both with no size limit:
+  `php bin/import-app.php <export.json> [--files <folder|zip>] [--create]
+  [--as <username>] [--schedules] [--dry-run]`. `--vehicle` is refused for
+  an export with more than one vehicle, as for a Fuelio ZIP.
+- **Uploads** (#465): a ZIP is checked under the ZIP rules above, except
+  that it holds files rather than CSV: at most 5,000 entries, images and
+  PDFs only, any nested archive refusing the whole file. A folder on the
+  command line is read for regular files directly inside it (no
+  subfolders, no links). Files are matched to rows by base name and
+  checked and stripped as any upload is (§7.12). A file that is missing or
+  refused is listed as not imported with its row; the row itself still
+  imports. On the web without the ZIP, the preview says how many files
+  stay behind and how to bring them.
+- **Map** (Phase 31's page, one card per Tracktor vehicle):
+  - **Vehicle** (#469): an existing active vehicle the user can manage,
+    *Create a new vehicle* or *Skip*. Prefilled with the vehicle that
+    already holds this Tracktor vehicle's id or its rows' ids, else one
+    with its registration, else a new one. Choosing another vehicle when
+    one already holds its rows shows a warning naming it, since the rows
+    would come across a second time.
+  - **Units:** distance from the file. For `gallon`, the UK or US gallon
+    (#464), preselected from the owner's volume unit when it is a gallon,
+    else UK for an owner in the United Kingdom or Ireland and US
+    otherwise, and checked by the sanity line per vehicle (Tracktor's
+    export has no economy figure of its own to compare).
+  - **Currency** (#472): a new vehicle takes Tracktor's currency when it
+    differs from the owner's. Importing into an existing vehicle whose
+    currency differs shows a warning. Amounts are never converted.
+  - **Service category:** one maintenance category for every service
+    record (Tracktor has none), *Service* by default, or *Don't import*.
+  - **Document types:** each Tracktor type maps to a Logbook type or
+    *Don't import*: `insurance` to insurance, `emissions` to pollution
+    certificate, `roadworthiness` to inspection, `registration` to
+    registration, `other` to other.
+  - **Reminders:** *Import reminders* (on by default).
+  - **Option:** *Make schedules* (off by default), below.
+- **Mapping rules:**
+  - **Vehicle** (a new one): make, model, year, `licensePlate` as the
+    registration, `vin` (when 17 letters and digits or fewer), the fuel
+    type (`electric` to `ev`, the others to the same code) and the type
+    (#467): `bike` for `motorcycle` and `scooter`, `car` for the rest.
+    `bus`, `farm_vehicle` and `yacht` become `car` and are highlighted.
+    `color` and `customFields` are listed as not imported (#470): a
+    Logbook vehicle has no notes. `image` becomes the vehicle's photo when
+    the file is given, only for a new vehicle or one without a photo.
+  - **Vehicle odometer:** a manual reading at the export's `timestamp`,
+    only when higher than every imported reading and the target's latest.
+  - **Fill-up:** the date (noon in the owner's zone), `odometer`,
+    `fuelAmount` as the volume, `rate` as the price per unit and `cost` as
+    the total, in the vehicle's fuel. Any two of the three derive the
+    third, as the form does. A row with all three keeps them as written and
+    is marked when they disagree by more than a cent. `filled` false is
+    partial; `missedLast` is *missed previous*; `notes`. A fill-up without
+    an odometer fails the form's validation.
+  - **LPG and CNG units** (#471): LPG in litres or gallons and CNG in
+    kilograms come across; CNG in pounds is converted to kilograms. LPG by
+    weight and CNG by volume are listed as not imported, with the reason.
+    An electric vehicle's amounts are kWh.
+  - **Service record:** `date`, `odometer`, `serviceCenter` as the vendor,
+    `cost` (0 is valid), the chosen category. The title is the first line
+    of `notes`, else *Service*; the rest of the notes is the description.
+  - **Document:** the mapped type; `otherLabel` as the title of an
+    `other`; `issuer` as the provider; `documentNumber` as the reference;
+    `startDate` and `endDate`; `cost` (none is 0); `notes`. Tracktor 1.x:
+    an insurance is `provider`, `policyNumber`, `startDate`, `endDate`,
+    `cost` and `notes`; a PUCC is a pollution certificate with
+    `testingCenter`, `certificateNumber`, `issueDate`, `expiryDate` and
+    `notes`. Recurrence is not stored: the dates come across as written.
+  - **Reminder** (#466): every reminder becomes a manual reminder. The
+    title is its type's label, with its note after a colon; the due date;
+    the lead time from `remindSchedule` (same day 0, one day 1, three days
+    3, a week 7, a month 30). A completed one is marked done. Recurrence
+    is not kept: Logbook's manual reminders happen once.
+  - **Make schedules** (the option): an open `maintenance` reminder that
+    recurs monthly or yearly becomes a service schedule (every N months,
+    titled with its note or *Service*) instead of a reminder; and a
+    document that recurs monthly or yearly with no end date takes the next
+    due date Tracktor shows as its expiry, so Logbook's own reminder takes
+    over.
+- **Source ids:** app `tracktor`, each row's `id`, and the vehicle's own
+  `id` (entity `vehicle`). The odometer reading's is
+  `odometer:<vehicle id>:<value>`, so a newer export with a higher reading
+  adds it.
 
 ### 7.14 Internationalisation
 All user-facing strings translatable via symfony/translation. English default
@@ -10474,7 +10601,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   with "Fuelio trip" as both places, so the distances come across
   (decided 2026-10-04, #147; waiting for an export that contains trips,
   since the sample has none to build and test against). Drivvo, Tesla
-  and ABRP readers.
+  and ABRP readers. Password-protected Tracktor exports (Phase 51, #463):
+  scrypt and AES-256-GCM, refused today with "export again without a
+  password".
 - From the Phase 33.2 prototype (decided 2026-10-05, #168): Gotify, Home
   Assistant and generic-webhook formats for reminder pushes (notification
   channel formats; not the Phase 39.3 entry webhooks, §7.20); a *Send at*
@@ -11127,6 +11256,14 @@ task breakdowns live in the per-phase files; this is the map.
   v3.15.0 (§6 Part `warranty_reminder`, §7.6, §7.7, §7.19, §7.20, §7.26,
   §7.27, §7.28, §7.39; #437–#447 decided 2026-10-15). One small
   migration. See [`phase-50.2.md`](docs/phases/phase-50.2.md).
+- **Phase 51 — Import from Tracktor + release.** A Tracktor reader for
+  *Import from another app*: a whole garage's vehicles, fill-ups, service
+  records, documents and reminders from one JSON export, Tracktor 1.x's
+  included, with its uploads folder as a ZIP on the web or a folder or ZIP
+  on the command line; matched by Tracktor's ids so a newer export adds
+  only what is new; release v3.16.0 (§6 ImportSource, §7.13; #463–#472
+  decided 2026-10-16). No migration. See
+  [`phase-51.md`](docs/phases/phase-51.md).
 
 ---
 
