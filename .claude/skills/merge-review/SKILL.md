@@ -198,7 +198,10 @@ cases and import files the agents said should be committed.>
 
 ## Follow-ups (don't block this merge)
 <Non-blocking findings grouped by agent, one line each with severity and
-location. Problems already on master are marked "on master".>
+location. Problems already on master are marked "on master". Give the
+`docs/phases/known-issues.md` number (K…) of any that is already listed
+there; the rest are what CLAUDE.md §12 says to record there when the
+phase is complete.>
 
 ## Upgrade notes
 <From upgrade-tester, api-contract-checker and spec-keeper: what
