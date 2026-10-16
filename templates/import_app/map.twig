@@ -183,6 +183,10 @@
                     {% endif %}
                 {% endfor %}
 
+                {% if export.unread is not empty %}
+                    <p class="muted">{{ 'import_app.not_read'|trans({sections: export.unread|join(', ')}) }}</p>
+                {% endif %}
+
                 <form class="form card" method="post" action="{{ url_for('import_app.map', {token: token}) }}">
                     {{ ui.csrf(csrf) }}
                     {% for name, value in query %}

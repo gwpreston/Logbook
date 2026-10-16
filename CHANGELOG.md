@@ -4,6 +4,31 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [3.16.1] — 2026-10-16
+
+Phase 51.4: **import fixes** from the known-issues log
+([docs/phases/phase-51.4.md](docs/phases/phase-51.4.md)). No migration:
+pull and restart.
+
+### Fixed
+- **Fill-ups whose worked-out price, volume or total is too large** (a
+  total of 99,999,999,999 over 0.001 L) now say so on that field, on the
+  form, the API and the CSV import, instead of a server error (K9).
+- **`php bin/import-app.php`** no longer imports the good rows of a Fuelio
+  file when others have problems: it stops, as the web page does, unless you
+  add the new `--skip-invalid`. Problems name Fuelio's columns (`Data`,
+  not `filled_at`), fuel type codes Logbook doesn't recognise are listed,
+  and the sections it doesn't read are listed there and on the web preview
+  (K11, K12).
+- **A Fuelio backup imported after its CSV** now attaches the photos to the
+  fill-ups the CSV brought in (K21).
+- **CSV import:** a file that isn't text (a Fuelio backup ZIP, an `.xlsx`, a
+  PDF) is refused as not a CSV instead of being read as one (K61); "too
+  large" names the size limit; demo or API fill-ups and readings stored with
+  seconds count as already there when their export is imported back;
+  quantities in miles and gallons are rounded once, as the forms round them
+  (one value in about 1,200 came in 0.001 L out) (K21).
+
 ## [3.16.0] — 2026-10-16
 
 Phase 51: **import from Tracktor.** Bring a whole Tracktor garage across in
@@ -3336,7 +3361,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...HEAD
+[3.16.1]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...v3.16.1
 [3.16.0]: https://github.com/gwpreston16/Logbook/compare/v3.15.0...v3.16.0
 [3.15.0]: https://github.com/gwpreston16/Logbook/compare/v3.14.0...v3.15.0
 [3.14.0]: https://github.com/gwpreston16/Logbook/compare/v3.13.0...v3.14.0

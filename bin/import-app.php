@@ -10,7 +10,7 @@ declare(strict_types=1);
  * come from its uploads folder, or a ZIP of it, with --files.
  *
  *   php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]
- *       [--as <username>] [--schedules] [--dry-run]
+ *       [--as <username>] [--schedules] [--skip-invalid] [--dry-run]
  *   php bin/import-app.php <export.json> [--files <folder|zip>]
  *       [--vehicle <id> | --create] [--as <username>] [--schedules] [--dry-run]
  *
@@ -18,7 +18,9 @@ declare(strict_types=1);
  * holds rows of this export (else the one with its registration, else a
  * new one), the units from the file, and the app's categories, fuel codes
  * or document types by default. --dry-run prints the preview and writes
- * nothing. Everything is written in one transaction, or nothing is.
+ * nothing. Rows with problems in a Fuelio file stop the import unless
+ * --skip-invalid says to import the others. Everything is written in one
+ * transaction, or nothing is.
  *
  * Docker: docker compose exec -u www-data app php bin/import-app.php /data/backup.fuelio.zip
  *

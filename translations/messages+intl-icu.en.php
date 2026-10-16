@@ -788,6 +788,7 @@ return [
         'quick_no_vehicles' => 'Add a vehicle first, then you can log its fill-ups.',
         'need_two' => 'Enter at least two of volume, price and total.',
         'volume_unknown' => 'With a price of 0 the volume cannot be worked out: enter it.',
+        'derived_too_large' => 'Worked out from the other two, this number is too large: check them.',
         'also_as' => 'Also:',
         'full_to_full_note' => 'Economy is measured between full tanks: partial fills count towards the next full one, and a missed fill-up restarts the measurement.',
         'section' => [
@@ -3296,6 +3297,7 @@ return [
         'error' => [
             'no_file' => 'Choose a CSV file to import.',
             'empty' => 'The file has no rows to import (it needs a header row and at least one row below it).',
+            'not_csv' => 'This isn’t a CSV file. Save it from your spreadsheet or app as CSV, then upload that.',
             'too_many_rows' => 'The file has more than {max, number} rows. Split it into smaller files.',
             'nothing' => 'None of the rows can be imported.',
             'skip_required' => '{count, plural, one {One row has a problem.} other {# rows have problems.}} Tick “Skip” to import the others, or fix the file first.',
@@ -3367,6 +3369,7 @@ return [
             'none' => 'There are no full-to-full tanks yet to check the units against.',
         ],
         'new_vehicle_note' => 'A new vehicle will be created: {name}.',
+        'not_read' => 'Not read from the file: {sections}.',
         'section' => [
             'fills' => 'Fill-ups',
             'costs' => 'Costs',

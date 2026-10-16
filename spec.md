@@ -1805,6 +1805,10 @@ math stays correct across gaps. Show per-fill and rolling consumption
   unit; total ÷ volume → price (6 places); total ÷ price → volume (3 places,
   needs a non-zero price). All three given are kept as entered (a loyalty
   discount makes the total differ legitimately); money figures use the total.
+  A derived value gets the same size limit as its field (volume and price
+  up to 999,999, total up to 99,999,999,999): beyond it, that field says
+  "Worked out from the other two, this number is too large: check them."
+  (K9; it was a server error on the form and the CSV import).
 - **Consumption is full-to-full only.** The first full fill is a baseline; a
   partial fill joins the segment the next full fill closes; a fill flagged
   "missed previous" discards the open segment (and, if full, restarts from
@@ -4303,9 +4307,17 @@ vehicles; a disabled module cannot be imported).
 
 - **Three steps, nothing written until the last.** (1) Upload a CSV (UTF-8,
   with or without BOM; Windows-1252 is converted; comma, semicolon or tab
-  detected from the header row; up to `MAX_UPLOAD_MB` and 5,000 rows). The
+  detected from the header row; up to `MAX_UPLOAD_MB`, named in the
+  message when a file is larger, and 5,000 rows). A file that is plainly
+  not text — a known binary format (ZIP, such as a Fuelio backup or an
+  `.xlsx`; old `.xls`; PDF; images; gzip, 7z, RAR; SQLite), or NUL bytes
+  in its first 8 KB without a UTF-16 byte-order mark — is refused with
+  "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
+  then upload that." (K61). The
   file is staged under `var/cache/staged` with a random name bound to the
-  session and deleted after the import or within a day. (2) Map columns and
+  session and deleted after the import or within a day; an import step
+  that is refused (rows to skip, nothing importable) keeps it, so the
+  corrected form can be sent again. (2) Map columns and
   preview (a GET form, so it is bookmarkable and works without JS): each
   field of the module gets a column picker, pre-selected by matching the
   header against the export's column names (in the owner's language and in
@@ -4320,7 +4332,9 @@ vehicles; a disabled module cannot be imported).
   `?check=1`). Imports are where most typing mistakes arrive.
 - **Rows are read exactly as the forms read them** (the same parsers, so
   the same validation and messages): quantities in the chosen units, amounts
-  in the vehicle's currency, times in the owner's time zone. Choice columns
+  in the vehicle's currency, times in the owner's time zone. Miles and
+  gallons are converted straight to the kilometres, litres and price per
+  litre stored, rounded once as the forms round them (K21). Choice columns
   accept the code (`petrol`), the label in the owner's language or in
   English; yes/no columns accept yes/no/true/false/1/0/y/n and the
   translated yes/no. A fill-up row's own unit column ("UK gallons", "kWh")
@@ -4335,8 +4349,10 @@ vehicles; a disabled module cannot be imported).
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid
   rows" tick); *duplicate* (skipped: the same entry already exists or appears
-  earlier in the file — fill-up: same time and odometer; reading: same time
-  and odometer, whatever its source; maintenance: same date, category, title
+  earlier in the file — fill-up: same time (to the minute: forms and the
+  export carry no seconds, so a stored 09:15:37 matches an exported 09:15)
+  and odometer; reading: same time (to the minute) and odometer, whatever
+  its source; maintenance: same date, category, title
   and cost; document: same type, reference, start and expiry; expense: same
   date, category, amount and note), so importing a file twice changes
   nothing; *implied* (odometer rows whose source is a fill-up, service or
@@ -4514,7 +4530,8 @@ a reader). Logbook isn't affiliated with Fuelio.
     line, a header row and its rows: `Vehicle`, `Log` (fill-ups),
     `CostCategories`, `Costs`, `FavStations`, `Pictures` and `Category`
     (trip categories, not read). A section Logbook doesn't know is listed
-    as not read.
+    as not read, with `Category`: "Not read from the file: Category,
+    Trips." under the preview, and on the command line (K12).
   - A **backup ZIP** (`*.fuelio.zip`) holds one `vehicle-<n>-local.csv`
     per vehicle, in the same format, and `pictures.data`, itself a ZIP of
     the photos the `Pictures` sections name.
@@ -4532,7 +4549,8 @@ a reader). Logbook isn't affiliated with Fuelio.
   - Fuel types are numeric codes whose hundreds are the family (the sample
     confirms `100` and `110` as petrol). Every code in the file appears on
     the mapping page; codes Logbook doesn't recognise default to the
-    vehicle's fuel and are highlighted.
+    vehicle's fuel and are highlighted, and the command line prints each
+    one with what it is imported as (K12).
   - Fuelio's own consumption (`mpg (optional)` or its metric equivalent)
     sits on the fill-up that **starts** a full-to-full segment. Logbook
     puts it on the one that closes it. The check pairs them accordingly.
@@ -4548,9 +4566,13 @@ a reader). Logbook isn't affiliated with Fuelio.
     uploaded there is refused with: "Backups with photos are imported on
     the command line: `php bin/import-app.php <file.zip>`."
   - `php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]
-    [--as <username>] [--schedules] [--dry-run]` takes either, with no size
-    limit beyond the archive rules below. It uses the detected and default
-    mappings, prints the preview, and writes only without `--dry-run`. For
+    [--as <username>] [--schedules] [--skip-invalid] [--dry-run]` takes
+    either, with no size limit beyond the archive rules below. It uses the
+    detected and default mappings, prints the preview, and writes only
+    without `--dry-run`. As on the web page, rows with problems stop the
+    import (exit code 1, nothing written) unless `--skip-invalid` says to
+    import the others, and a row's problems name the file's columns
+    (`Data`, `Odo`, `CostTitle`), not Logbook's fields (K11). For
     a ZIP with several vehicles, `--vehicle` is refused and each vehicle is
     created or matched as the mapping page would prefill it.
 - **ZIP safety** (the command line): the archive is read through PHP's
@@ -4628,7 +4650,10 @@ a reader). Logbook isn't affiliated with Fuelio.
   - **Photo** (`Pictures`, command line only): `Type` 1 is a fill-up, by
     its `UniqueId` in `target_id`. Each becomes a `fuel` attachment,
     validated as any upload and stripped (§7.12). Photos of another type,
-    or not in `pictures.data`, are listed as not imported.
+    or not in `pictures.data`, are listed as not imported. A fill-up an
+    earlier import brought in (its CSV on the web page, say) gets the
+    backup's photos it doesn't already have by file name; one it has is
+    *already imported* (K21).
   - Amounts are never converted between currencies.
 - **Source ids** (§6 ImportSource): each imported row remembers the app
   and its `guid`. A later import marks a row with a known `guid` *already
@@ -5639,8 +5664,8 @@ parameter answers 400 (`invalid_parameter`).
   returns it), plus `warnings` (`odometer_backwards`, `odometer_jump`,
   `economy_check`) that never block. Validation errors answer 422.
 - **Retries are safe:** an entry that matches an existing one by the CSV
-  import's duplicate key (fill-up: same time and odometer; reading: same
-  time and odometer, whatever wrote the reading) answers `200` with the
+  import's duplicate key (fill-up: same time, to the minute, and odometer;
+  reading: same time, to the minute, and odometer, whatever wrote the reading) answers `200` with the
   existing entry and `"duplicate": true`. Nothing is written. An
   automation that retries after a timeout never doubles a fill-up, as
   long as it sends the time (a retry without `filled_at` is a new "now").
@@ -11268,6 +11293,14 @@ task breakdowns live in the per-phase files; this is the map.
   only what is new; release v3.16.0 (§6 ImportSource, §7.13; #463–#472
   decided 2026-10-16). No migration. See
   [`phase-51.md`](docs/phases/phase-51.md).
+- **Phase 51.4 — Import fixes from the known-issues log + patch
+  release.** A worked-out fuel amount too large for its field is an error
+  on that field (§7.3, K9); `bin/import-app.php --skip-invalid`, Fuelio's
+  column names, unknown fuel codes and the sections not read (§7.13, K11,
+  K12); duplicate times to the minute (§7.13, §7.20), the upload limit
+  named, conversions rounded once and a later backup's photos (K21); a
+  binary file refused on the CSV import (K61). No migration. Release
+  v3.16.1. See [`phase-51.4.md`](docs/phases/phase-51.4.md).
 
 ---
 

@@ -14,6 +14,14 @@ final class CsvReader
 {
     private const array DELIMITERS = [',', ';', "\t"];
 
+    /** How files that are never text start: ZIP (a Fuelio backup, .xlsx, .ods), old .xls, PDF, images, gzip, 7z, RAR, SQLite. */
+    private const array BINARY_SIGNATURES = [
+        "PK\x03\x04", "PK\x05\x06", "\xD0\xCF\x11\xE0", '%PDF', "\x89PNG", "\xFF\xD8\xFF", 'GIF8', "\x1F\x8B",
+        "7z\xBC\xAF", 'Rar!', "SQLite format 3\x00",
+    ];
+    /** Bytes looked at for NULs. */
+    private const int SNIFF_BYTES = 8192;
+
     private function __construct(
         /** @var list<string> */
         public readonly array $header,
@@ -78,6 +86,25 @@ final class CsvReader
         }
 
         return $header === null ? null : new self($header, $rows);
+    }
+
+    /**
+     * Whether the upload is plainly not text (K61): a known binary format,
+     * or NUL bytes near the start of a file without a UTF-16 byte-order
+     * mark (UTF-16 text has them, and read() keeps reading it as before).
+     */
+    public static function isBinary(string $contents): bool
+    {
+        foreach (self::BINARY_SIGNATURES as $signature) {
+            if (str_starts_with($contents, $signature)) {
+                return true;
+            }
+        }
+        if (str_starts_with($contents, "\xFF\xFE") || str_starts_with($contents, "\xFE\xFF")) {
+            return false;
+        }
+
+        return str_contains(substr($contents, 0, self::SNIFF_BYTES), "\0");
     }
 
     /**

@@ -66,7 +66,9 @@ final readonly class FuelAmounts
             return self::VOLUME_UNKNOWN;
         }
         $derived = Decimal::divide($total, $pricePerUnit, self::VOLUME_SCALE);
-        if (Decimal::compare($derived, '0') <= 0) {
+        // Not compare(): a huge derived volume is beyond a scaled int, and
+        // FuelEntryForm turns it into a field error (K9).
+        if (Decimal::trim($derived) === '0') {
             return self::VOLUME_UNKNOWN;
         }
 

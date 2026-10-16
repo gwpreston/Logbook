@@ -135,6 +135,34 @@ final class FuelEntryFormTest extends TestCase
         self::assertSame('validation.min', $errors->all()['total']['key']);
     }
 
+    /**
+     * K9: a derived value beyond its column was an OverflowException (a 500
+     * on the form and the CSV import preview) or a database error at commit.
+     */
+    public function testADerivedValueTooLargeForItsFieldIsAFieldError(): void
+    {
+        $cases = [
+            'price from total ÷ volume' => [['volume' => '0.001', 'price' => '', 'total' => '99999999999.999'], 'price'],
+            'volume from total ÷ price' => [['volume' => '', 'price' => '0.000001', 'total' => '99999999999.999'], 'volume'],
+            'total from volume × price' => [['volume' => '999999', 'price' => '999999', 'total' => ''], 'total'],
+        ];
+        foreach ([UnitPreset::Metric, UnitPreset::Us] as $preset) {
+            $preferences = self::preferences($preset, 'en_GB', 'Europe/London');
+            foreach ($cases as $name => [$amounts, $field]) {
+                $errors = FuelEntryForm::parse($amounts + self::US_FILL, $preferences, 'GBP');
+                self::assertInstanceOf(ValidationErrors::class, $errors, $name);
+                self::assertSame([$field], array_keys($errors->all()), $name);
+                self::assertSame('fuel.derived_too_large', $errors->all()[$field]['key'], $name);
+            }
+        }
+
+        // The largest that fits is still saved.
+        $metric = self::preferences(UnitPreset::Metric, 'en_GB', 'Europe/London');
+        $data = FuelEntryForm::parse(['volume' => '99999', 'price' => '999999', 'total' => ''] + self::US_FILL, $metric, 'GBP');
+        self::assertInstanceOf(FuelEntryData::class, $data);
+        self::assertSame('99998900001.000', $data->totalCost);
+    }
+
     public function testTheGroupedPickerValueCarriesTheGrade(): void
     {
         $metric = self::preferences(UnitPreset::Metric, 'en_GB', 'Europe/London');

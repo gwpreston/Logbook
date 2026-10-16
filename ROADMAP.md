@@ -1346,6 +1346,21 @@ documents and reminders.*
 
 ---
 
+## Phase 51.4 — Import fixes from the known-issues log + patch release
+*Five open import rows fixed, each with a regression test.*
+
+- A worked-out fuel amount too large for its field is a field error, not
+  a server error (K9). The Fuelio command line stops on rows with
+  problems unless `--skip-invalid`, names Fuelio's columns, and lists
+  unknown fuel codes and the sections it doesn't read (K11, K12).
+- Times match to the minute; the size limit is named; miles and gallons
+  are rounded once; a backup after its CSV brings the photos (K21). A
+  binary file is refused on the CSV import (K61). Patch release v3.16.1.
+
+→ [`phase-51.4.md`](docs/phases/phase-51.4.md)
+
+---
+
 ## Phase 52 — Import from ABRP + release
 *Your EV's charging sessions, mileage and drives from A Better
 Routeplanner, without typing them in.*

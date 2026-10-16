@@ -28,12 +28,31 @@ use Throwable;
 /**
  * `php bin/import-app.php` (spec.md §7.13 *Web and command line*): imports
  * a Fuelio CSV or backup ZIP, photos included, with the detected and
- * default mappings, printing the preview; `--dry-run` writes nothing.
+ * default mappings, printing the preview; `--dry-run` writes nothing, and
+ * rows with problems stop the import unless `--skip-invalid` says to
+ * import the others, as the web page's tick does.
  */
 final readonly class FuelioCommand
 {
     public const string USAGE = "Usage: php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]"
-        . " [--as <username>] [--schedules] [--dry-run]\n";
+        . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n";
+
+    /**
+     * The form fields a row's errors name → the Fuelio column they come
+     * from, per section (K11): the owner knows the file, not Logbook's fields.
+     */
+    private const array COLUMNS = [
+        AppVehiclePreview::FILLS => [
+            'filled_at' => 'Data', 'odometer' => 'Odo', 'fuel' => 'FuelType', 'volume' => 'Fuel',
+            'price' => 'VolumePrice', 'total' => 'Price', 'partial' => 'Full', 'missed_previous' => 'Missed',
+            'notes' => 'Notes', 'station' => 'City', 'station_id' => 'StationID',
+        ],
+        AppVehiclePreview::COSTS => [
+            'performed_on' => 'Date', 'spent_on' => 'Date', 'odometer' => 'Odo', 'category' => 'CostTypeID',
+            'title' => 'CostTitle', 'cost' => 'Cost', 'amount' => 'Cost', 'description' => 'Notes', 'note' => 'Notes',
+        ],
+        AppVehiclePreview::STATIONS => ['name' => 'NameBrand'],
+    ];
 
     public function __construct(
         private FuelioImporter $importer,
@@ -60,6 +79,7 @@ final readonly class FuelioCommand
         $username = null;
         $schedules = false;
         $dryRun = false;
+        $skipInvalid = false;
         for ($i = 0; $i < count($args); $i++) {
             $arg = $args[$i];
             match (true) {
@@ -67,6 +87,7 @@ final readonly class FuelioCommand
                 $arg === '--as' && isset($args[$i + 1]) => $username = $args[++$i],
                 $arg === '--create' => $create = true,
                 $arg === '--schedules' => $schedules = true,
+                $arg === '--skip-invalid' => $skipInvalid = true,
                 $arg === '--dry-run' => $dryRun = true,
                 !str_starts_with($arg, '-') && $path === null => $path = $arg,
                 default => $path = '',
@@ -146,6 +167,16 @@ final readonly class FuelioCommand
                 fwrite($out, $this->translator->trans('import_app.error.nothing') . "\n");
 
                 return 0;
+            }
+            $invalid = array_sum(array_map(static fn (AppVehiclePreview $p): int => $p->total(AppRowStatus::Invalid), $previews));
+            if ($invalid > 0 && !$skipInvalid) {
+                fwrite($err, sprintf(
+                    "%d row(s) have problems (listed above), so nothing was written: fix them,"
+                    . " or run again with --skip-invalid to import the other rows.\n",
+                    $invalid,
+                ));
+
+                return 1;
             }
 
             $done = $this->importer->import($user, $previews, $archive);
@@ -267,6 +298,16 @@ final readonly class FuelioCommand
                 $sanity->isUnusual() ? ' (unusual: check the units)' : '',
             ));
         }
+        // The web page highlights these (K12): the default is only a guess.
+        foreach ($preview->export->fuelCodes() as $code) {
+            if (!FuelioImporter::knownFuelCode($code)) {
+                fwrite($out, sprintf(
+                    "  Fuel type %d: not one Logbook recognises, imported as %s: check it (map it on the web page if wrong)\n",
+                    $code,
+                    $preview->options->fuelTarget($code)?->value() ?? "don't import",
+                ));
+            }
+        }
         foreach (AppVehiclePreview::SECTIONS as $section) {
             $rows = $preview->rows($section);
             if ($rows === []) {
@@ -285,9 +326,11 @@ final readonly class FuelioCommand
                 if ($row->status === AppRowStatus::Import) {
                     continue;
                 }
+                $columns = self::COLUMNS[$section] ?? [];
                 $why = $row->errors !== []
                     ? implode('; ', array_map(
-                        static fn (array $e): string => $e['field'] . ': ' . $t($e['key'], $e['params']),
+                        static fn (array $e): string
+                            => ($columns[$e['field']] ?? $e['field']) . ': ' . $t($e['key'], $e['params']),
                         $row->errors,
                     ))
                     : ($row->note === null
@@ -295,6 +338,11 @@ final readonly class FuelioCommand
                         : $t($row->note['key'], $row->note['params']));
                 fwrite($out, sprintf("    line %d, %s: %s\n", $row->line, $t('import_app.status.' . $row->status->value), $why));
             }
+        }
+        if ($preview->export->unread !== []) {
+            fwrite($out, '  ' . $this->translator->trans('import_app.not_read', [
+                'sections' => implode(', ', $preview->export->unread),
+            ]) . "\n");
         }
     }
 

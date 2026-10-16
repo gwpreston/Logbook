@@ -9,7 +9,9 @@ spreadsheet, another app, or another Logbook.
 
 1. **Choose a file.** A `.csv` with a header row: comma-, semicolon- or
    tab-separated, UTF-8 (Excel's "CSV UTF-8") or Windows-1252, up to
-   `MAX_UPLOAD_MB` and 5,000 rows.
+   `MAX_UPLOAD_MB` and 5,000 rows. A spreadsheet's own file (`.xlsx`), a
+   Fuelio backup ZIP, a PDF or a photo is refused: save it as CSV first (a
+   Fuelio backup goes to the command line, below).
 2. **Match the columns.** Each field gets a drop-down of the file's columns.
    Columns named like Logbook's export (in your language or English) or with a
    common name ("Mileage", "Cost", "Notes") are matched already, and so is an
@@ -31,8 +33,9 @@ spreadsheet, another app, or another Logbook.
 | **Already there** | The same entry is already logged for the vehicle, or appears earlier in the file. Importing the same file twice therefore changes nothing. |
 | **Comes from an entry** | (Mileage only.) A reading whose source is a fill-up, service or document. Fill-ups, maintenance and documents with an odometer create their own readings, so import the fuel, maintenance and documents files instead — readings are never doubled. A reading from a tyre change, the purchase, an issue, an MOT test, a modification or a part fitted or removed imports as an ordinary reading, because those aren't imported. |
 
-What counts as "the same entry": a fill-up with the same time and odometer; a
-reading with the same time and odometer (whatever created it); maintenance on
+What counts as "the same entry": a fill-up with the same time (to the minute)
+and odometer; a reading with the same time (to the minute) and odometer
+(whatever created it); maintenance on
 the same date with the same category, title and cost; a document of the same
 type with the same reference and dates; an expense on the same date with the
 same category, amount and note.
@@ -132,7 +135,13 @@ Coming from Tracktor? The same page takes its JSON export: see
   `--as <username>` when the install has more than one user, `--vehicle
   <id>` or `--create` to choose where a one-vehicle export goes, and
   `--schedules` to turn repeating costs into service schedules.
-  `--dry-run` prints the preview and writes nothing. Like backups, it
+  `--dry-run` prints the preview and writes nothing. If any row has a
+  problem, nothing is imported until you fix it or add `--skip-invalid` to
+  import the other rows (the web page's *Skip the rows with problems*); each
+  problem names Fuelio's column (`Data`, `Odo`, `CostTitle`). Fuel type
+  codes Logbook doesn't recognise are listed with what they are imported
+  as. If you imported the CSV on the web page first, the backup adds the
+  photos those fill-ups don't have yet. Like backups, it
   needs PHP's `zip` extension (the Docker image has it).
 
 ### What the import asks

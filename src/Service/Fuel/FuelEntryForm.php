@@ -130,6 +130,8 @@ final class FuelEntryForm
                 $validator->addError('volume', 'fuel.need_two');
             } elseif ($amounts === FuelAmounts::VOLUME_UNKNOWN) {
                 $validator->addError('volume', 'fuel.volume_unknown');
+            } elseif ($amounts instanceof FuelAmounts) {
+                $amounts = self::withinLimits($amounts, $validator);
             }
         }
 
@@ -166,6 +168,29 @@ final class FuelEntryForm
             grade: $grade,
             stationId: $stationId,
         );
+    }
+
+    /**
+     * A derived value can be far larger than anything typed (a total of
+     * 99,999,999,999 over 0.001 L): it gets the same whole-digit limit as
+     * the field, so it is a field error rather than an overflow (K9).
+     */
+    private static function withinLimits(FuelAmounts $amounts, Validator $validator): ?FuelAmounts
+    {
+        $limits = [
+            'volume' => [$amounts->volume, self::VOLUME_WHOLE_DIGITS],
+            'price' => [$amounts->pricePerUnit, self::PRICE_WHOLE_DIGITS],
+            'total' => [$amounts->total, self::MONEY_WHOLE_DIGITS],
+        ];
+        $fits = true;
+        foreach ($limits as $field => [$value, $wholeDigits]) {
+            if (strlen(explode('.', ltrim($value, '-'))[0]) > $wholeDigits) {
+                $validator->addError($field, 'fuel.derived_too_large');
+                $fits = false;
+            }
+        }
+
+        return $fits ? $amounts : null;
     }
 
     /**

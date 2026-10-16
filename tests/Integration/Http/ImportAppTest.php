@@ -62,6 +62,7 @@ final class ImportAppTest extends AppTestCase
         self::assertStringContainsString('Fuelio’s own figures agree', $preview);
         self::assertStringContainsString('A new vehicle will be created', $preview);
         self::assertStringContainsString('Import 23 rows', $preview, '18 fill-ups, a service and 4 stations');
+        self::assertStringContainsString('Not read from the file: Category.', $preview, 'trip categories (K12)');
 
         $form = Html::element(Html::document($preview), 'form[method="post"]');
         $result = $browser->post($map, Html::formValues($form));
