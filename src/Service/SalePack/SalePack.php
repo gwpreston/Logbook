@@ -8,6 +8,7 @@ use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Issue\Issue;
 use Logbook\Domain\MotHistory\MotTest;
 use Logbook\Service\MotHistory\MotHistoryProvider;
+use Logbook\Service\Part\SaleModifications;
 use DateTimeImmutable;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -81,6 +82,11 @@ final readonly class SalePack
          * @var list<Issue>|null
          */
         public ?array $openIssues = null,
+        /**
+         * The *Modifications*, *Returned to standard* and *Kept with the car* sections, with *Include
+         * modifications* (Phase 50.2, #439); null otherwise. Never a cost or a price.
+         */
+        public ?SaleModifications $modifications = null,
         /**
          * The MOT tests fetched from DVSA, newest first (Phase 41, spec.md
          * §7.38): date, result and mileage, with the provider's attribution;

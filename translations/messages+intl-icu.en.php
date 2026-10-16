@@ -1595,6 +1595,8 @@ return [
             'tyre' => 'Tyres',
             'finance' => 'Finance',
             'finance_end' => 'Finance',
+            'part' => 'Part warranty',
+            'issue' => 'Issue',
         ],
         'status' => [
             'upcoming' => 'Upcoming',
@@ -3055,6 +3057,13 @@ return [
         'module' => [
             'tyres' => 'Export tyres',
             'tyre_changes' => 'Export changes',
+            'modifications' => 'Export modifications',
+            'parts' => 'Export parts',
+            'part_fittings' => 'Export fittings',
+        ],
+        'record' => [
+            'service' => 'Service record',
+            'modification' => 'Modification',
         ],
         'column' => [
             'brand' => 'Brand',
@@ -3148,6 +3157,16 @@ return [
             'rate' => 'Rate',
             'passenger_amount' => 'Passenger amount',
             'build_group' => '{group} (not a running cost)',
+            'category_code' => 'Category code',
+            'declared_on' => 'Declared on',
+            'warranty_distance' => 'Warranty distance ({unit})',
+            'reverted_odometer' => 'Reverted odometer ({unit})',
+            'part' => 'Part',
+            'fitted_odometer' => 'Fitted odometer ({unit})',
+            'removed_odometer' => 'Removed odometer ({unit})',
+            'fitted_by_record' => 'Fitted by (record)',
+            'removed_by_record' => 'Removed by (record)',
+            'replaced_by' => 'Replaced by',
         ],
         'written_off' => 'written off',
         'returned_lender' => 'returned to the lender',
@@ -4027,6 +4046,7 @@ return [
             'issue_status' => 'Use open or watching: fixing an issue is POST …/fix, and It\'s back is POST …/reopen.',
             'issue_fix_either' => 'Send either records or fixed_on and note, not both.',
             'issue_records' => 'Each id must be one of this vehicle\'s service records dated on or after the issue was noticed.',
+            'part_id' => 'Use the id of one of this vehicle\'s parts that the list can take.',
             'instant' => 'Enter a date and time with a time zone, e.g. 2026-09-29T07:42:00Z.',
             'boolean' => 'Use true or false.',
             'string' => 'Use a text value.',
@@ -4213,6 +4233,15 @@ return [
     ],
     'sale_pack' => [
         'issues_notice' => 'Listed because you chose to include them. Logbook never describes a fault beyond your words.',
+        'modifications_notice' => 'Modifications can affect insurance. Tell the buyer what has been changed. Costs and prices are never included.',
+        'modifications' => [
+            'fitted_by' => 'Fitted by {who}',
+            'returned_on' => 'Put back to standard on {date}',
+            'origin' => [
+                'original' => 'Original part',
+                'spare' => 'Spare',
+            ],
+        ],
         'title' => 'Sale pack',
         'title_for' => 'Sale pack · {name}',
         'prepare' => 'Prepare for sale',
@@ -4228,6 +4257,8 @@ return [
             'incidents_hint' => 'What was damaged and how it was repaired. Never the fault, the claim, payouts, the driver or the other party.',
             'issues' => 'Include open issues',
             'issues_hint' => 'Faults you have noticed and not fixed yet, and those you are watching, in your words. Off unless you tick it.',
+            'modifications' => 'Include modifications',
+            'modifications_hint' => 'What has been changed on the car, what was put back to standard and the original parts kept. Never costs or prices. Off unless you tick it.',
             'legend' => 'Include',
             'due' => 'Show what’s due next',
             'due_hint' => 'Buyers ask anyway. Costs are never shown.',
@@ -4302,6 +4333,9 @@ return [
         'history' => [
             'incidents' => 'Incidents',
             'issues' => 'Open issues',
+            'modifications' => 'Modifications',
+            'returned' => 'Returned to standard',
+            'kept' => 'Kept with the car',
             'title' => 'History',
             'services' => 'Service and repairs',
             'documents' => 'Inspections and certificates',
@@ -5201,6 +5235,8 @@ return [
             'stations' => 'Fuel stations',
             'cheapest_fuel' => 'Cheapest fuel',
             'draft' => 'Draft',
+            'modifications' => 'Modifications',
+            'parts' => 'Parts',
         ],
         // Words the tools' results and sources use.
         'result' => [
@@ -5212,6 +5248,7 @@ return [
                 'soon' => 'Tyres due for replacing soon',
                 'overdue' => 'Tyres due for replacing now',
             ],
+            'in_warranty' => 'In warranty until {limits}',
         ],
         // Drafting entries (Phase 26.3, spec.md §7.26).
         'draft' => [
@@ -5227,6 +5264,7 @@ return [
                 'reminder' => 'Reminder',
                 'incident' => 'Incident',
                 'issue' => 'Issue',
+            'modification' => 'Modification',
             ],
             'field' => [
                 'when' => 'When',
@@ -5259,6 +5297,7 @@ return [
                 'status' => 'Status',
                 'look_again' => 'Look again',
                 'affects_safety' => 'Affects safety',
+            'fitted_by' => 'Fitted by',
             ],
             'summary' => [
                 'fuel' => '{volume} {fuel} at {price} = {total}',
@@ -5270,6 +5309,7 @@ return [
                 'reminder' => '{title}, due {due}',
                 'incident' => '{type}, {date}',
                 'issue' => '{title}, noticed {date}',
+            'modification' => '{title}, done {date}',
             ],
             'derived' => [
                 'total' => 'Total worked out from the amount and price.',
@@ -5351,6 +5391,7 @@ return [
                 'synonyms_maintenance' => 'full service=service; interim service=service; annual service=service; major service=service; oil change=oil; oil and filter=oil; brake pads=brakes; brake discs=brakes; new battery=battery; puncture=tyres; puncture repair=tyres; new tyres=tyres; tyre=tyres; tyre change=tyres; body work=bodywork; dent=bodywork; scratch=bodywork; fix=repair',
                 'synonyms_expense' => 'parking ticket=parking; car park=parking; toll=tolls; congestion charge=tolls; bridge toll=tolls; road tax=tax; car tax=tax; ved=tax; car wash=cleaning; valet=cleaning; wash=cleaning; fine=fines; speeding ticket=fines; penalty=fines; parking fine=fines; finance payment=finance; lease payment=finance; pcp=finance; accessory=accessories',
                 'synonyms_documents' => 'mot=inspection; mot test=inspection; mot certificate=inspection; tüv=inspection; inspection=inspection; insurance=insurance; car insurance=insurance; insurance policy=insurance; policy=insurance; v5c=registration; v5=registration; logbook=registration; registration=registration; emissions=pollution; emissions test=pollution; puc=pollution',
+            'synonyms_modifications' => 'cat back=exhaust; catback=exhaust; downpipe=exhaust; remap=tune; ecu remap=tune; ecu tune=tune; stage 1=tune; chip tune=tune; coilovers=suspension; lowering springs=suspension; alloys=wheels; alloy wheels=wheels; air filter=intake; cold air intake=intake; stereo=audio; speakers=audio; led headlights=lighting; light bar=lighting; spoiler=body; body kit=body; wrap=body; tracker=security; alarm=security',
             ],
         ],
         'progress' => [
@@ -5383,6 +5424,9 @@ return [
             'draft_reminder' => 'Drafting the reminder…',
             'draft_incident' => 'Drafting the incident…',
             'draft_issue' => 'Drafting the issue…',
+            'modifications' => 'Looking through modifications…',
+            'parts' => 'Looking through parts…',
+            'draft_modification' => 'Drafting the modification…',
         ],
     ],
     // MCP server (Phase 26.5, spec.md §7.28): what an MCP client's model and its user read.
@@ -5419,6 +5463,9 @@ return [
             'draft_reminder' => 'Draft a manual reminder: a title and a due date, or a time before or after a document expires or a schedule is next due. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
             'draft_incident' => 'Draft an incident (a collision, parked damage, theft, break-in, vandalism, weather, glass, pothole, animal or fire): what happened, the damage and anything about the insurance claim. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
             'draft_issue' => 'Draft an issue: a fault the user has noticed and not fixed yet, in their own words; never add a cause. Nothing is saved yet: the user adds it in Logbook, from the link in the result.',
+            'modifications' => 'Modifications on the user\'s vehicles (an exhaust, coilovers, an ECU tune, wheels): title, category, date and mileage, who fitted it, whether and when it was declared to the insurer, whether it was reverted, and the parts it fitted and took off. Current ones unless a state is given. The cost is only given where the user may see costs, as build_total, and is never a running cost or part of a cost per distance.',
+            'parts' => 'Parts on the user\'s vehicles: name, brand, part number, supplier, status (fitted, stored or gone), condition, warranty (in warranty until a date or mileage, or ended), the distance each has covered on the vehicle and each time it was fitted and removed. Fitted ones unless a status is given. The price is only given where the user may see costs.',
+            'draft_modification' => 'Draft a modification: something the user changed on the car (an exhaust, coilovers, a remap, wheels), in their own words; not servicing, which has its own tool. Nothing is saved yet: the user adds it in Logbook, from the link in the result, and adds its parts there.',
         ],
         'say' => [
             'logged' => 'Logged. It is in Logbook now: {link}',
@@ -6804,6 +6851,37 @@ return [
             'system_generated' => 'System note',
         ],
     ],
+    'insurer' => [
+        'title' => 'For your insurer',
+        'lead' => 'The modifications currently on this car, to read out or print for an insurance quote or a renewal. It is your own record: Logbook doesn\'t judge whether a modification must be declared, or what it would add to a premium.',
+        'vehicle' => 'Vehicle',
+        'registration' => 'Registration',
+        'empty_title' => 'No current modifications',
+        'empty_body' => 'Modifications you log appear here until they are reverted.',
+        'current' => '{count, plural, one {# current modification} other {# current modifications}}',
+        'fitted_on' => 'Date fitted',
+        'changed' => 'What it changed',
+        'replaced' => 'Replaced',
+        'declared' => 'Declared to the insurer',
+        'declared_on' => 'Declared on {date}',
+        'not_declared' => 'Not declared yet',
+        'mark' => 'Mark declared',
+        'clear' => 'Clear',
+        'reverted_count' => '{count, plural, one {# reverted modification is not listed: it is no longer on the car.} other {# reverted modifications are not listed: they are no longer on the car.}}',
+        'link' => 'For your insurer',
+        'declare' => [
+            'title' => 'Mark as declared',
+            'hint' => 'Record the day you told your insurer. The same date is used for every modification you mark.',
+            'date' => 'Declared on',
+            'all' => '{count, plural, one {Mark # undeclared modification declared} other {Mark all # undeclared modifications declared}}',
+        ],
+        'declared_flash' => '{count, plural, one {# modification marked declared on {date}.} other {# modifications marked declared on {date}.}}',
+        'cleared' => '{title} is back to not declared yet.',
+        'error' => [
+            'date' => 'Choose a date that is not in the future.',
+            'future' => 'The date can\'t be after today.',
+        ],
+    ],
     'modification' => [
         'title' => 'Modifications',
         'add' => 'Add modification',
@@ -6857,9 +6935,12 @@ return [
         'error' => [
             'future' => 'The date can\'t be after today.',
             'reverted_before' => 'A modification can\'t be reverted before it was done.',
+            'declared_before' => 'It can\'t have been declared before it was done.',
+            'declared_after' => 'The date can\'t be after the day it was declared to the insurer. Clear that first.',
         ],
         'refused' => [
             'reverted_before' => 'This modification was reverted on {reverted}, before the new date. Undo the revert first.',
+            'declared_before' => '{title} was done on {done}, so it can\'t have been declared before that.',
             'undo_changed_since' => '{part} has come off again since the revert put it back. Undo that first: undoing the revert would erase it.',
         ],
         'card' => [
@@ -6899,9 +6980,24 @@ return [
                 'tyres' => 'This service record is linked to a tyre change, which a modification can\'t be.',
             ],
         ],
+        'state' => [
+            'current' => 'Current',
+            'reverted' => 'Reverted',
+            'all' => 'All',
+        ],
     ],
     'part' => [
         'title' => 'Parts',
+        'reminder_title' => 'Warranty ends: {part}',
+        'scan' => [
+            'title' => 'Add as parts',
+            'hint' => 'Parts lines read from the invoice, as a guess to check. Tick the ones to record as parts fitted by this record: oil and screen wash are parts lines too, so none are ticked for you. Nothing is saved until you save the record.',
+            'line' => 'Parts line {number}',
+            'add' => 'Add line {number} as a part',
+        ],
+        'reminder' => [
+            'checked_it' => 'Checked it',
+        ],
         'tab_title' => 'Parts and modifications',
         'view_all' => 'Show all',
         'add' => 'Add part',
@@ -6943,6 +7039,7 @@ return [
         ],
         'origin' => [
             'original' => 'Came with the car',
+            'fitted' => 'Added later',
         ],
         'warranty_from' => [
             'purchase' => 'Purchase date',
@@ -6996,6 +7093,7 @@ return [
             'warranty_from' => 'Warranty starts from',
             'warranty_provider' => 'Warranty provider',
             'warranty_terms' => 'Warranty terms',
+            'warranty_reminder' => 'Remind me before it ends',
             'on_car' => 'It\'s on the car now',
             'fitted_on' => 'Fitted on',
             'removed_on' => 'Removed on',
@@ -7009,6 +7107,7 @@ return [
             'sold_price' => 'Only when sold: it is taken off what the build cost.',
             'warranty' => 'Months and/or a distance. A distance counts from the mileage when it was first fitted.',
             'warranty_from' => 'A supplier\'s warranty usually runs from the sale, a garage\'s from the fitting.',
+            'warranty_reminder' => 'Adds a reminder before the warranty ends, so you can have it checked while it still covers the part.',
             'on_car' => 'Tick to record it as fitted from the date below, without a record and with no cost.',
             'without_record' => 'Fitted or removed without a record, so with no cost. To cost the job, log it as a service record or a modification.',
             'came_off_example' => 'For example: Standard exhaust',
@@ -7020,6 +7119,7 @@ return [
         ],
         'error' => [
             'archived' => 'This vehicle is archived: its parts and modifications can be read but not changed.',
+            'warranty_ended' => 'This warranty has already ended, so there is nothing to remind you of.',
             'future' => 'The date can\'t be after today.',
             'price_only_sold' => 'A sale price only goes with Sold.',
         ],

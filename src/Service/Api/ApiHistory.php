@@ -87,7 +87,15 @@ final readonly class ApiHistory
     private function item(User $user, ActivityItem $item): array
     {
         $vehicle = $item->vehicle;
-        $amount = $item->amount !== null && $this->entries->canSeeAmount($user, $vehicle, $item->createdBy);
+        // A modification's cost, a part's price and a sale need `ViewCosts` only (spec.md §7.39 *Access*, #429).
+        $buildKind = in_array(
+            $item->kind,
+            [ActivityKind::Modification, ActivityKind::ModificationReverted, ActivityKind::PartFitted, ActivityKind::PartRemoved],
+            true,
+        );
+        $amount = $item->amount !== null && ($buildKind
+            ? $this->reader->costs($user, $vehicle)
+            : $this->entries->canSeeAmount($user, $vehicle, $item->createdBy));
         $price = $item->price !== null && $this->reader->costs($user, $vehicle);
 
         return [
@@ -127,8 +135,9 @@ final readonly class ApiHistory
             // The vehicle's tests are read together (spec.md §7.38).
             ActivityKind::MotTest => 'mot-tests',
             ActivityKind::Milestone => '',
-            ActivityKind::Tyre, ActivityKind::Modification, ActivityKind::ModificationReverted,
-            ActivityKind::PartFitted, ActivityKind::PartRemoved => null,
+            ActivityKind::Modification, ActivityKind::ModificationReverted => 'modifications',
+            ActivityKind::PartFitted, ActivityKind::PartRemoved => 'parts',
+            ActivityKind::Tyre => null,
         };
 
         return match ($list) {
@@ -173,7 +182,7 @@ final readonly class ApiHistory
             return null;
         }
         $decoded = is_string($cursor) ? base64_decode(strtr($cursor, '-_', '+/'), true) : false;
-        $pattern = '/^(-?[0-9]{1,12}):(-?[0-9]{1,3}):(-?[0-9]{1,12}):([0-9]{1,18}):([a-z_]{1,20})$/';
+        $pattern = '/^(-?[0-9]{1,12}):(-?[0-9]{1,3}):(-?[0-9]{1,12}):([0-9]{1,18}):([a-z_]{1,32})$/';
         if ($decoded === false || preg_match($pattern, $decoded, $m) !== 1) {
             throw ApiProblem::invalidParameter('cursor', 'use the "next" URL of the previous page.');
         }
@@ -215,12 +224,7 @@ final readonly class ApiHistory
      */
     private static function kinds(mixed $raw): array
     {
-        // Parts and modifications reach the API in Phase 50.2 (spec.md §7.39), not before.
-        $listed = array_values(array_filter(ActivityKind::cases(), static fn (ActivityKind $k): bool => !in_array(
-            $k,
-            [ActivityKind::Modification, ActivityKind::ModificationReverted, ActivityKind::PartFitted, ActivityKind::PartRemoved],
-            true,
-        )));
+        $listed = ActivityKind::cases();
         if ($raw === null) {
             return $listed;
         }

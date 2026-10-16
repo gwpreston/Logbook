@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Export;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Issue\Issue;
+use Logbook\Domain\Part\Modification;
+use Logbook\Domain\Part\PartFitting;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Logbook\Domain\Fuel\EnergyKind;
@@ -23,6 +26,9 @@ use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Incident\ClaimsHistoryReport;
 use Logbook\Repository\IncidentRepository;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\ModificationRepository;
+use Logbook\Repository\PartRepository;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Repository\MotTestRepository;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Forecast\Forecast;
@@ -75,6 +81,9 @@ final readonly class CsvExporter
         private FinanceCsv $finance,
         private IssueRepository $issues,
         private MotTestRepository $motTests,
+        private ModificationRepository $modifications,
+        private PartRepository $parts,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -94,6 +103,9 @@ final readonly class CsvExporter
             ExportModule::Finance => $this->finance->vehicleTable($user, $vehicle),
             ExportModule::Issues => $this->issuesTable($user, $vehicle),
             ExportModule::MotTests => $this->motTestsTable($user, $vehicle),
+            ExportModule::Modifications => $this->modificationsTable($user, $vehicle),
+            ExportModule::Parts => $this->partsTable($user, $vehicle),
+            ExportModule::PartFittings => $this->partFittingsTable($user, $vehicle),
         };
 
         return new CsvTable(
@@ -780,6 +792,204 @@ final readonly class CsvExporter
             'issue.column.fixed_on',
             'issue.column.fixed_by',
         ]), $rows];
+    }
+
+    /**
+     * Modifications (Phase 50.2, spec.md §7.7, #443), oldest first. The cost and its currency only for a user who
+     * may see costs (#429).
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function modificationsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $costs = $this->access->can($user, VehicleAbility::ViewCosts, $vehicle);
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $all = $this->modifications->listForVehicle($vehicle->id);
+        usort($all, static fn (Modification $a, Modification $b): int
+            => $a->data->doneOn <=> $b->data->doneOn ?: $a->id <=> $b->id);
+        $rows = [];
+        foreach ($all as $modification) {
+            $data = $modification->data;
+            $row = [
+                $data->doneOn->format('Y-m-d'),
+                $this->distance($data->odometerKm, $unit),
+                $data->title,
+                $this->t($data->category->labelKey()),
+                $data->category->value,
+                $data->fittedBy,
+            ];
+            if ($costs) {
+                $row[] = Decimal::trim($data->cost);
+                $row[] = $currency;
+            }
+            $rows[] = [
+                ...$row,
+                $data->notes,
+                $data->declaredOn?->format('Y-m-d'),
+                $modification->revertedOn?->format('Y-m-d'),
+                $this->distance($modification->revertedOdometerKm, $unit),
+                $modification->revertedNote,
+            ];
+        }
+        $unitName = ['unit' => $this->t('units.name.' . $unit->value)];
+
+        return [$this->headers([
+            'export.column.date',
+            ['export.column.odometer', $unitName],
+            'export.column.title',
+            'export.column.category',
+            'export.column.category_code',
+            'modification.field.fitted_by',
+            ...($costs ? ['export.column.cost', 'export.column.currency'] : []),
+            'export.column.notes',
+            'export.column.declared_on',
+            'modification.field.reverted_on',
+            ['export.column.reverted_odometer', $unitName],
+            'modification.field.revert_note',
+        ]), $rows];
+    }
+
+    /**
+     * Parts (Phase 50.2, spec.md §7.7, #443), by name. The price and its currency only for a user who may see
+     * costs (#429).
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function partsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $costs = $this->access->can($user, VehicleAbility::ViewCosts, $vehicle);
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $rows = [];
+        foreach ($this->parts->listForVehicle($vehicle->id) as $part) {
+            $data = $part->data;
+            $row = [
+                $data->name,
+                $data->brand,
+                $data->partNumber,
+                $data->serialNumber,
+                $data->supplier,
+                $data->boughtOn?->format('Y-m-d'),
+            ];
+            if ($costs) {
+                $row[] = $data->price === null ? null : Decimal::trim($data->price);
+                $row[] = $data->price === null ? null : $currency;
+            }
+            $rows[] = [
+                ...$row,
+                $this->t('part.condition.' . $data->condition->value),
+                $this->t('part.origin.' . $data->origin->value),
+                $this->t('part.status.' . $part->status->value),
+                $data->warrantyMonths === null ? null : (string) $data->warrantyMonths,
+                $this->distance($data->warrantyKm, $unit),
+                $data->warrantyFrom === null ? null : $this->t('part.warranty_from.' . $data->warrantyFrom->value),
+                $data->warrantyProvider,
+                $data->warrantyTerms,
+                $this->yesNo($data->warrantyReminder),
+                $data->notes,
+            ];
+        }
+
+        return [$this->headers([
+            'part.field.name',
+            'part.field.brand',
+            'part.field.part_number',
+            'part.field.serial_number',
+            'part.field.supplier',
+            'part.field.bought_on',
+            ...($costs ? ['part.field.price', 'export.column.currency'] : []),
+            'part.field.condition',
+            'part.field.origin',
+            'export.column.status',
+            'part.field.warranty_months',
+            ['export.column.warranty_distance', ['unit' => $this->t('units.name.' . $unit->value)]],
+            'part.field.warranty_from',
+            'part.field.warranty_provider',
+            'part.field.warranty_terms',
+            'part.field.warranty_reminder',
+            'export.column.notes',
+        ]), $rows];
+    }
+
+    /**
+     * Every fitting of every part (Phase 50.2, spec.md §7.7, #443), as its own export: one row per spell, oldest
+     * first, with the record that fitted and removed it named by its kind and title.
+     *
+     * @return array{0: list<string>, 1: list<list<string|null>>}
+     */
+    private function partFittingsTable(User $user, Vehicle $vehicle): array
+    {
+        $unit = $user->preferences->distanceUnit;
+        $costs = $this->access->can($user, VehicleAbility::ViewCosts, $vehicle);
+        $currency = $this->vehicles->currencyFor($user, $vehicle);
+        $parts = [];
+        foreach ($this->parts->listForVehicle($vehicle->id) as $part) {
+            $parts[$part->id] = $part;
+        }
+        $services = [];
+        foreach ($this->maintenance->listForVehicle($vehicle->id) as $entry) {
+            $services[$entry->id] = $entry->data->title;
+        }
+        $mods = [];
+        foreach ($this->modifications->listForVehicle($vehicle->id) as $modification) {
+            $mods[$modification->id] = $modification->data->title;
+        }
+        $record = fn (?int $service, ?int $modification): ?string => match (true) {
+            $service !== null => $this->t('export.record.service') . ': ' . ($services[$service] ?? ''),
+            $modification !== null => $this->t('export.record.modification') . ': ' . ($mods[$modification] ?? ''),
+            default => null,
+        };
+        $all = [];
+        foreach ($this->parts->fittingsForVehicle($vehicle->id) as $fittings) {
+            foreach ($fittings as $fitting) {
+                $all[] = $fitting;
+            }
+        }
+        usort($all, static fn (PartFitting $a, PartFitting $b): int => $a->fittedOn <=> $b->fittedOn ?: $a->id <=> $b->id);
+        $rows = [];
+        foreach ($all as $fitting) {
+            $part = $parts[$fitting->partId] ?? null;
+            $row = [
+                $part?->label(),
+                $part?->data->partNumber,
+                $fitting->fittedOn->format('Y-m-d'),
+                $this->distance($fitting->fittedOdometerKm, $unit),
+                $record($fitting->fittedMaintenanceId, $fitting->fittedModificationId),
+                $fitting->removedOn?->format('Y-m-d'),
+                $this->distance($fitting->removedOdometerKm, $unit),
+                $record($fitting->removedMaintenanceId, $fitting->removedModificationId),
+                $fitting->outcome === null ? null : $this->t('part.outcome.' . $fitting->outcome->value),
+            ];
+            if ($costs) {
+                $row[] = $fitting->soldPrice === null ? null : Decimal::trim($fitting->soldPrice);
+                $row[] = $fitting->soldPrice === null ? null : $currency;
+            }
+            $rows[] = [...$row, ($parts[$fitting->replacedByPartId ?? 0] ?? null)?->label()];
+        }
+        $unitName = ['unit' => $this->t('units.name.' . $unit->value)];
+
+        return [$this->headers([
+            'export.column.part',
+            'part.field.part_number',
+            'part.field.fitted_on',
+            ['export.column.fitted_odometer', $unitName],
+            'export.column.fitted_by_record',
+            'part.field.removed_on',
+            ['export.column.removed_odometer', $unitName],
+            'export.column.removed_by_record',
+            'part.field.outcome',
+            ...($costs ? ['part.field.sold_price', 'export.column.currency'] : []),
+            'export.column.replaced_by',
+        ]), $rows];
+    }
+
+    /**
+     * A distance in the owner's unit, or blank.
+     */
+    private function distance(?string $km, DistanceUnit $unit): ?string
+    {
+        return $km === null ? null : Decimal::trim($unit->fromKmDecimal($km, 3));
     }
 
     /**

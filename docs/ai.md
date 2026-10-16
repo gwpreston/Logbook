@@ -357,6 +357,13 @@ Tell *Ask* what you did, and it drafts the entry for you to check and add:
 | "Front tyres 5.5 and 5.6 mm, rears 6.8." | a tread check |
 | "Remind me to book the MOT two weeks before it expires." | a manual reminder dated 14 days before the current MOT's expiry |
 | "Noticed a knock from the front left of the Golf when braking." | an issue (open), in your words (issues module) |
+| "Fitted a Milltek cat-back exhaust to the Golf last month, £899." | a modification (parts module); you add its parts in the form the card opens |
+
+**Modifications and parts.** *Ask* reads them too ("What have I changed on
+the Golf?", "Which parts are still in warranty?"). A modification's cost is
+only given where you may see costs, as its own figure, and it is never part of a
+running cost: "what does the Golf cost per mile" gives the rate for running
+costs and the modifications' total beside it, so an answer can say both.
 
 **Faults.** *Ask* reads your issues (what you noticed, its status and what
 fixed it) but never guesses what causes a fault, even if you ask: Logbook

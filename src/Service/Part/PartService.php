@@ -21,6 +21,9 @@ use Logbook\Repository\PartRepository;
 use Logbook\Service\Access\AccessContext;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
@@ -50,6 +53,7 @@ final readonly class PartService
         private AccessContext $author,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -116,6 +120,31 @@ final readonly class PartService
     }
 
     /**
+     * The fittings several records made or ended, with their parts, in one read.
+     *
+     * @param 'maintenance'|'modification' $kind
+     * @param list<int> $recordIds
+     * @return array<int, list<array{part: Part, fitting: PartFitting}>> by record id
+     */
+    public function byRecords(Vehicle $vehicle, string $kind, array $recordIds): array
+    {
+        $parts = [];
+        foreach ($this->parts->listForVehicle($vehicle->id) as $part) {
+            $parts[$part->id] = $part;
+        }
+        $rows = [];
+        foreach ($this->parts->fittingsByRecords($kind, $recordIds) as $recordId => $fittings) {
+            foreach ($fittings as $fitting) {
+                if (isset($parts[$fitting->partId])) {
+                    $rows[$recordId][] = ['part' => $parts[$fitting->partId], 'fitting' => $fitting];
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * The overview card (spec.md §7.39 *Pages*), or null when the vehicle
      * has no modifications and no parts.
      *
@@ -132,6 +161,7 @@ final readonly class PartService
         foreach ($modifications as $modification) {
             $spend = $spend->add(Money::of($modification->data->cost, $currency));
         }
+        $spend = $spend->subtract($this->buildProceeds($vehicle, $currency));
         $warranted = array_values(array_filter($parts, static fn (Part $p): bool
             => $p->data->hasWarranty() && $p->status !== PartStatus::Gone));
         $inWarranty = 0;
@@ -150,17 +180,39 @@ final readonly class PartService
     }
 
     /**
+     * What parts sold as they came off brought in, for the parts the build fitted (the ledger's
+     * *Modifications* group nets it off, #420; a part a service record fitted nets off *Maintenance*).
+     */
+    public function buildProceeds(Vehicle $vehicle, string $currency): Money
+    {
+        $proceeds = Money::zero($currency);
+        $gone = array_filter(
+            $this->parts->listForVehicle($vehicle->id),
+            static fn (Part $p): bool => $p->status === PartStatus::Gone,
+        );
+        if ($gone === []) {
+            return $proceeds;
+        }
+        $fittings = $this->parts->fittingsForVehicle($vehicle->id);
+        foreach ($gone as $part) {
+            $list = $fittings[$part->id] ?? [];
+            $last = PartTimeline::last($list);
+            $byService = ($list[0] ?? null)?->fittedMaintenanceId !== null;
+            if ($last === null || $last->outcome !== RemovalOutcome::Sold || $last->soldPrice === null || $byService) {
+                continue;
+            }
+            $proceeds = $proceeds->add(Money::of($last->soldPrice, $currency));
+        }
+
+        return $proceeds;
+    }
+
+    /**
      * The vehicle's latest reading, the end of an open fitting's span.
      */
     public function currentKm(Vehicle $vehicle): ?string
     {
-        $all = $this->readings->listForVehicle($vehicle->id);
-        if ($all === []) {
-            return null;
-        }
-        $latest = $all[count($all) - 1];
-
-        return $latest->readingKm;
+        return $this->readings->latestKm($vehicle->id);
     }
 
     /**
@@ -204,7 +256,7 @@ final readonly class PartService
                 $part = $this->get($vehicle, $id);
                 $fitting = $this->parts->insertFitting($id, $fitOn, $fitKm, null, null, $this->clock->now());
                 $this->reading->record($vehicle, OdometerSource::PartFitted, $fitting, $fitKm, $fitOn, $zone);
-                $this->settle($part);
+                $this->settle($vehicle, $part, false);
             }
 
             return $id;
@@ -232,10 +284,12 @@ final readonly class PartService
             warrantyProvider: $data->warrantyProvider,
             warrantyTerms: $data->warrantyTerms,
             notes: $data->notes,
+            warrantyReminder: $data->warrantyReminder,
         );
         $this->attachments->saveWithFiles($files, function (array $stored) use ($vehicle, $part, $data): void {
             $this->parts->update($vehicle->id, $part->id, $data, $this->clock->now());
             $this->attachments->record($vehicle, AttachmentOwner::Part, $part->id, $stored);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Part, $part->id);
         });
 
         return $this->get($vehicle, $part->id);
@@ -249,6 +303,7 @@ final readonly class PartService
     {
         $this->transaction->run(function () use ($vehicle, $part): void {
             $this->parts->delete($vehicle->id, $part->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Part, $part->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Part, $part->id);
     }
@@ -264,7 +319,7 @@ final readonly class PartService
             $this->requireStatus($part, PartStatus::Stored);
             $id = $this->parts->insertFitting($part->id, $on, $km, null, null, $this->clock->now());
             $this->reading->record($vehicle, OdometerSource::PartFitted, $id, $km, $on, $zone);
-            $this->settle($part);
+            $this->settle($vehicle, $part);
         });
     }
 
@@ -286,7 +341,7 @@ final readonly class PartService
                 ?? throw new PartChangeRefused('part.refused.not_fitted', ['part' => $part->label()]);
             $this->setRemoved($open, $on, $km, null, null, $removal);
             $this->reading->record($vehicle, OdometerSource::PartRemoved, $open->id, $km, $on, $zone);
-            $this->settle($part);
+            $this->settle($vehicle, $part);
         });
     }
 
@@ -314,6 +369,7 @@ final readonly class PartService
             $byId[$part->id] = $part;
         }
         $touched = [];
+        $fresh = [];
         foreach ($this->parts->fittingsByRecord($kind, $recordId) as $fitting) {
             $part = $byId[$fitting->partId] ?? null;
             if ($part === null) {
@@ -374,6 +430,7 @@ final readonly class PartService
                 $id = $this->insertPart($vehicle, $data);
                 $this->parts->insertFitting($id, $on, $km, $kind, $recordId, $now);
                 $touched[$id] = $this->get($vehicle, $id);
+                $fresh[$id] = true;
             }
             foreach ($parts->cameOff as $row) {
                 $data = self::withOrigin($row->part, PartOrigin::Original);
@@ -392,11 +449,13 @@ final readonly class PartService
                     $now,
                 );
                 $touched[$id] = $this->get($vehicle, $id);
+                $fresh[$id] = true;
             }
         }
 
         foreach ($touched as $part) {
-            $this->settle($part);
+            // A part this record just made was announced as created, not as updated.
+            $this->settle($vehicle, $part, !isset($fresh[$part->id]));
         }
     }
 
@@ -421,7 +480,7 @@ final readonly class PartService
             $touched[$part->id] = $part;
         }
         foreach ($touched as $part) {
-            $this->settle($part);
+            $this->settle($vehicle, $part);
         }
     }
 
@@ -461,7 +520,7 @@ final readonly class PartService
             }
         }
         foreach ($touched as $part) {
-            $this->settle($part);
+            $this->settle($vehicle, $part);
         }
     }
 
@@ -511,15 +570,17 @@ final readonly class PartService
             }
         }
         foreach ($touched as $part) {
-            $this->settle($part);
+            $this->settle($vehicle, $part);
         }
     }
 
     private function insertPart(Vehicle $vehicle, PartData $data): int
     {
         $by = $this->author->authorId() ?? $vehicle->userId;
+        $id = $this->parts->insert($vehicle->id, $data, $this->clock->now(), $by);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Part, $id);
 
-        return $this->parts->insert($vehicle->id, $data, $this->clock->now(), $by);
+        return $id;
     }
 
     /**
@@ -553,13 +614,17 @@ final readonly class PartService
      *
      * @throws PartChangeRefused
      */
-    private function settle(Part $part): void
+    private function settle(Vehicle $vehicle, Part $part, bool $notify = true): void
     {
         $fittings = $this->parts->fittingsOf($part->id);
         PartTimeline::check($part, $fittings);
         $status = PartTimeline::status($fittings);
         if ($status !== $part->status) {
             $this->parts->setStatus($part->id, $status);
+        }
+        // A fitting or removal, with or without a record, is an update of the part (#442).
+        if ($notify) {
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Part, $part->id);
         }
     }
 
@@ -610,6 +675,7 @@ final readonly class PartService
             warrantyProvider: $data->warrantyProvider,
             warrantyTerms: $data->warrantyTerms,
             notes: $data->notes,
+            warrantyReminder: $data->warrantyReminder,
         );
     }
 }

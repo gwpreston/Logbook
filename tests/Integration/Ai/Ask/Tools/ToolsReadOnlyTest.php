@@ -77,6 +77,11 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['incidents', ['years' => 10, 'claims_only' => true]],
             ['issues', []],
             ['issues', ['vehicles' => [$golf->id], 'status' => 'all']],
+            // Phase 50.2.
+            ['modifications', []],
+            ['modifications', ['vehicles' => [$golf->id], 'state' => 'all']],
+            ['parts', []],
+            ['parts', ['vehicles' => [$golf->id], 'status' => 'all']],
             ['finance', ['vehicle' => $golf->id]],
             ['stations', []],
             ['stations', ['query' => 'Tesco', 'favourites_only' => true]],
@@ -93,6 +98,7 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
             ['draft_reminder', ['vehicle' => $golf->id, 'title' => 'Wash it', 'due' => '2026-12-01']],
             ['draft_incident', ['vehicle' => $golf->id, 'type' => 'pothole', 'damage_areas' => ['wheels']]],
             ['draft_issue', ['vehicle' => $golf->id, 'title' => 'Knock from front left', 'odometer' => '21000']],
+            ['draft_modification', ['vehicle' => $golf->id, 'title' => 'Cat-back exhaust', 'category' => 'exhaust']],
         ];
         foreach ($calls as [$tool, $arguments]) {
             $run = $this->call($app, $owner, $tool, $arguments);
@@ -104,11 +110,11 @@ final class ToolsReadOnlyTest extends ToolsBTestCase
         unset($before['ai_drafts'], $after['ai_drafts']);
         self::assertSame($before, $after);
         self::assertSame(
-            8,
+            9,
             $drafts,
             'a card for each draft but the tread check (no tyres fitted)',
         );
-        self::assertCount(31, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
+        self::assertCount(34, $this->service($app, ToolRegistry::class)->names(), 'every tool was tried');
     }
 
     /**

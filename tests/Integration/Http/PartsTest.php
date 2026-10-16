@@ -314,10 +314,10 @@ final class PartsTest extends AppTestCase
         self::assertStringContainsString('Cat-back exhaust', self::body($browser->get($v . '/history/print')));
         self::assertStringContainsString('2026', self::body($browser->get($v . '/history?kind=parts&year=2026')));
 
-        // The API still leaves parts out of History until Phase 50.2, and names a reading's owner.
+        // The API carries the parts kinds since Phase 50.2, and names a reading's owner.
         $token = $this->apiKey($app, $this->owner($app));
         $api = $this->api($app, $token);
-        self::assertSame(400, $api->get('/history?kinds=modification')->getStatusCode());
+        self::assertSame(200, $api->get('/history?kinds=modification')->getStatusCode());
         $readings = self::body($api->get('/vehicles/' . $golf->id . '/odometer'));
         self::assertStringContainsString('"source":"modification"', $readings);
         self::assertStringContainsString('"source":"part_fitted"', $readings);

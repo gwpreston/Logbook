@@ -18,7 +18,12 @@ make the car look dearer to run for the year it was bought.
 - [Reverting a modification](#reverting-a-modification)
 - [What counts where](#what-counts-where)
 - [Make this a modification](#make-this-a-modification)
+- [Warranty reminders](#warranty-reminders)
+- [For your insurer](#for-your-insurer)
+- [Selling the car](#selling-the-car)
+- [Scanning an invoice](#scanning-an-invoice)
 - [History and print](#history-and-print)
+- [API, Ask, MCP, CSV and webhooks](#api-ask-mcp-csv-and-webhooks)
 - [Shared and archived vehicles](#shared-and-archived-vehicles)
 - [Backups](#backups)
 
@@ -51,6 +56,9 @@ warranty usually runs from the sale, a garage's from the fitting). A distance
 always counts from the mileage when the part was first fitted. The part page
 says "In warranty until 3 Mar 2028 or 85,400 mi" while every limit holds,
 and "Warranty ended" after.
+
+Tick ***Remind me before it ends*** to be reminded before the warranty runs
+out (see [Warranty reminders](#warranty-reminders)).
 
 A part is ***Fitted***, ***Stored*** (a spare bought ahead, or one you kept
 when it came off) or ***Gone*** (sold, returned under warranty, scrapped).
@@ -133,6 +141,57 @@ done automatically or in bulk (an accessories expense may be a phone holder).
 A service record that completes a service interval, fixes an issue, fits
 parts or is part of an incident can't be converted; take that link off first.
 
+## Warranty reminders
+
+Most parts' warranties need nothing doing, so a part reminds you only when
+you tick **Remind me before it ends** on it (on the part form, or behind
+*More* on a new part's row of a service record or modification). The
+reminder is raised while the part isn't *Gone* and the warranty hasn't
+ended, and is due when the warranty's date is within your **document lead
+time** (Settings → Reminders), or when its mileage, projected from your
+recent driving, is within the **schedule lead distance**. Its title is
+"Warranty ends: Sachs Clutch kit". Press **Checked it** once you've had it
+looked at: it stays done until you edit the warranty, which raises a new one.
+
+It goes (nothing is lost) when you clear the tick, edit the warranty away,
+sell or scrap the part, or the warranty ends. Ticking a time limit counted
+from a purchase date that has already passed is refused; any other warranty
+simply stops reminding once it ends. It is sent through your channels and shows
+in the calendar like any reminder.
+
+## For your insurer
+
+The *Parts* tab's **For your insurer** lists every modification currently on
+the car, **ECU tunes first**: what it is, when it was fitted, the parts it
+fitted (name, brand, part number) and took off, and when you **declared it**
+to your insurer or "Not declared yet". Print it, or read it out for a quote
+or a renewal. It never shows a cost, and anyone who can see the vehicle can
+open it. A reverted modification is left off: it is no longer on the car.
+
+Logbook doesn't judge whether a modification must be declared or what it
+would add to a premium; this is your own record. With *Manage* on the
+vehicle, **Mark declared** records the day you told the insurer (today, or a
+date you choose, not before the modification) for one modification or all
+the undeclared ones; **Clear** puts one back to "Not declared yet". Each
+current modification without a date shows a **Not declared** label on the tab
+and its page.
+
+## Selling the car
+
+The [sale pack](sale-pack.md) has an option, **Include modifications**,
+that lists what has been changed, what was put back to standard (with the
+original parts fitted again) and the parts you keep with the car. It never
+shows costs, prices or what a part sold for.
+
+## Scanning an invoice
+
+When you [scan a service invoice](ai.md), its **parts lines** are offered
+under the prefilled form as **Add as parts**, each with a name, a part number
+and a price read from the line as a guess to check. None are ticked for you:
+oil and screen wash are parts lines too. Tick the ones that should be parts
+fitted by that record; nothing is created until you save the record, and a
+warranty is never read from a line.
+
 ## History and print
 
 History lists modifications (and their revert) and parts fitted or removed
@@ -158,6 +217,16 @@ Backups and `bin/export-user.php` carry modifications, parts and their
 fittings. The schema version moves: restore a backup from before v3.15.0
 with its own version, then upgrade.
 
-Warranty reminders, the list for an insurer, the sale pack, scanning a
-receipt into a part, the API, Ask, MCP, CSV export and webhooks follow in
-Phase 50.2.
+## API, Ask, MCP, CSV and webhooks
+
+- **API:** modifications and parts can be read, added, edited, deleted,
+  fitted, removed and reverted over the [REST API](api.md#parts-and-modifications)
+  (a cost or price needs *Can see costs*, and is ignored without it).
+- **Webhooks:** `modification` and `part` entries; every fitting and removal
+  is an update of the part ([API](api.md#webhooks)).
+- **Ask and MCP:** the `modifications` and `parts` tools, and
+  `draft_modification` for a card you add yourself. `cost_per_distance` gives
+  the build spend beside the rate, so an answer can say both: a modification
+  is never in a cost per mile ([AI](ai.md), [MCP](mcp.md)).
+- **CSV:** the *Parts* tab exports `modifications.csv`, `parts.csv` and
+  `part-fittings.csv` (one row per spell on the car). They can't be imported.

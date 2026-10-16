@@ -25,6 +25,8 @@ enum DraftKind: string
     case Incident = 'incident';
     /** Phase 40.2 (spec.md §7.37). */
     case Issue = 'issue';
+    /** Phase 50.2 (spec.md §7.39). */
+    case Modification = 'modification';
 
     /**
      * The module it needs; null for the core ones.
@@ -39,6 +41,7 @@ enum DraftKind: string
             self::Reminder => Feature::Reminders,
             self::Incident => Feature::Incidents,
             self::Issue => Feature::Issues,
+            self::Modification => Feature::Parts,
             self::Odometer, self::Expense => null,
         };
     }
@@ -63,6 +66,7 @@ enum DraftKind: string
             self::Reminder => 'draft_reminder',
             self::Incident => 'draft_incident',
             self::Issue => 'draft_issue',
+            self::Modification => 'draft_modification',
         };
     }
 

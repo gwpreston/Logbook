@@ -1,0 +1,125 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # *For your insurer* (spec.md §7.39, #438): the current modifications to
+ # read out or print for a quote or a renewal, ECU tunes first, each with
+ # when it was declared. Never a cost: the page needs View only. *Mark
+ # declared* and *Clear* need Manage (#444) and work without JS. Printed
+ # through the browser with its own header (§8 *Printing reports*).
+ #}
+{% set active_nav = 'garage' %}
+{% set can_declare = not vehicle.isArchived() and can_vehicle(vehicle, 'manage') %}
+
+{% block title %}{{ 'insurer.title'|trans }} · {{ vehicle.name() }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack print-report">
+        <header class="print-header print-only">
+            <p class="print-header__eyebrow">{{ 'app.name'|trans }}</p>
+            <p class="print-header__title">{{ 'insurer.title'|trans }}</p>
+            <dl class="print-header__facts">
+                <div><dt>{{ 'insurer.vehicle'|trans }}</dt><dd>{{ vehicle.name() }}</dd></div>
+                {% if vehicle.data.registration %}
+                    <div><dt>{{ 'insurer.registration'|trans }}</dt><dd>{{ ui.plate(vehicle.data.registration, 'sm', plate_style(vehicle)) }}</dd></div>
+                {% endif %}
+                <div><dt>{{ 'print.printed'|trans }}</dt><dd>{{ today|local_date }}</dd></div>
+            </dl>
+        </header>
+
+        <a class="back-link" href="{{ url_for('parts.index', {id: vehicle.id}) }}">{{ ui.icon('chevron_left') }}{{ 'part.tab_title'|trans }}</a>
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ vehicle.name() }}</p>
+                <h1 class="page-header__title">{{ 'insurer.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'insurer.lead'|trans }}</p>
+            </div>
+            <div class="btn-row">{{ ui.print_button() }}</div>
+        </header>
+
+        {% if rows is empty %}
+            <section class="card">
+                <div class="empty">
+                    {{ ui.icon('handyman') }}
+                    <p class="empty__title">{{ 'insurer.empty_title'|trans }}</p>
+                    <p>{{ 'insurer.empty_body'|trans }}</p>
+                </div>
+            </section>
+        {% else %}
+            <form method="post" action="{{ url_for('parts.insurer.declare', {id: vehicle.id}) }}" class="form">
+                {{ ui.csrf(csrf) }}
+                {# Enter in the date field submits the first button: make that one change nothing. #}
+                {% if can_declare %}<button type="submit" name="noop" value="1" hidden tabindex="-1" aria-hidden="true"></button>{% endif %}
+                {% if can_declare %}
+                    <section class="card no-print" aria-labelledby="insurer-declare">
+                        <h2 id="insurer-declare" class="card__title">{{ 'insurer.declare.title'|trans }}</h2>
+                        <p class="field__hint">{{ 'insurer.declare.hint'|trans }}</p>
+                        <div class="form-row">
+                            {{ ui.input('declared_on', 'insurer.declare.date'|trans, values, errors, {type: 'date', required: true, max: today|date('Y-m-d')}) }}
+                        </div>
+                        {% if undeclared > 0 %}
+                            <button type="submit" class="btn btn--primary btn--wrap" name="only" value="all">{{ ui.icon('check_circle') }}{{ 'insurer.declare.all'|trans({count: undeclared}) }}</button>
+                        {% endif %}
+                    </section>
+                {% endif %}
+
+                <section class="card insurer-list" aria-labelledby="insurer-rows">
+                    <h2 id="insurer-rows" class="card__title">{{ 'insurer.current'|trans({count: rows|length}) }}</h2>
+                    <ol class="insurer-list__rows">
+                        {% for row in rows %}
+                            {% set data = row.modification.data %}
+                            <li class="insurer-row">
+                                <div class="insurer-row__head">
+                                    <h3 class="insurer-row__title"><a href="{{ url_for('modifications.show', {id: vehicle.id, modification: row.modification.id}) }}">{{ data.title }}</a></h3>
+                                    <span class="insurer-row__category pill">{{ data.category.labelKey()|trans }}</span>
+                                </div>
+                                <dl class="meta-grid">
+                                    <div><dt>{{ 'insurer.fitted_on'|trans }}</dt><dd>{{ data.doneOn|local_date }}</dd></div>
+                                    {% if data.fittedBy %}<div><dt>{{ 'modification.field.fitted_by'|trans }}</dt><dd>{{ data.fittedBy }}</dd></div>{% endif %}
+                                    {% if row.fitted is not empty %}
+                                        <div class="meta-grid__wide">
+                                            <dt>{{ 'insurer.changed'|trans }}</dt>
+                                            <dd>
+                                                <ul class="insurer-row__parts">
+                                                    {% for part in row.fitted %}
+                                                        <li>{{ part.label() }}{% if part.data.partNumber %}, <span class="tabular">{{ part.data.partNumber }}</span>{% endif %}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </dd>
+                                        </div>
+                                    {% endif %}
+                                    {% if row.replaced is not empty %}
+                                        <div class="meta-grid__wide">
+                                            <dt>{{ 'insurer.replaced'|trans }}</dt>
+                                            <dd>{{ row.replaced|map(p => p.label())|join(', ') }}</dd>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <dt>{{ 'insurer.declared'|trans }}</dt>
+                                        <dd>
+                                            {% if row.isDeclared() %}
+                                                {{ 'insurer.declared_on'|trans({date: data.declaredOn|local_date}) }}
+                                            {% else %}
+                                                <strong>{{ 'insurer.not_declared'|trans }}</strong>
+                                            {% endif %}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                {% if can_declare %}
+                                    <div class="btn-row no-print">
+                                        {% if row.isDeclared() %}
+                                            <button type="submit" class="btn btn--ghost" name="clear" value="{{ row.modification.id }}">{{ ui.icon('undo') }}{{ 'insurer.clear'|trans }}<span class="visually-hidden">: {{ data.title }}</span></button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn--soft" name="only" value="{{ row.modification.id }}">{{ ui.icon('check_circle') }}{{ 'insurer.mark'|trans }}<span class="visually-hidden">: {{ data.title }}</span></button>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+            </form>
+            {% if reverted > 0 %}<p class="muted">{{ 'insurer.reverted_count'|trans({count: reverted}) }}</p>{% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

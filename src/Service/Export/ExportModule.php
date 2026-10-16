@@ -31,12 +31,20 @@ enum ExportModule: string
     case Issues = 'issues';
     /** Export only (Phase 41, spec.md §7.38, #340): one row per defect; only while MOT history is on. */
     case MotTests = 'mot-tests';
+    /** Export only (Phase 50.2, spec.md §7.7, §7.39, #443). */
+    case Modifications = 'modifications';
+    case Parts = 'parts';
+    /** One row per fitting of every part. */
+    case PartFittings = 'part-fittings';
 
     public function isImportable(): bool
     {
         return !in_array(
             $this,
-            [self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues, self::MotTests],
+            [
+                self::Tyres, self::TyreChanges, self::Valuations, self::Incidents, self::Finance, self::Issues,
+                self::MotTests, self::Modifications, self::Parts, self::PartFittings,
+            ],
             true,
         );
     }
@@ -55,6 +63,7 @@ enum ExportModule: string
             self::Incidents => Feature::Incidents,
             self::Finance => Feature::Finance,
             self::Issues => Feature::Issues,
+            self::Modifications, self::Parts, self::PartFittings => Feature::Parts,
             self::Odometer, self::Expenses, self::Valuations => null,
         };
     }
@@ -77,6 +86,7 @@ enum ExportModule: string
             self::Finance => 'finance.index',
             self::Issues => 'issues.index',
             self::MotTests => 'mot_history.show',
+            self::Modifications, self::Parts, self::PartFittings => 'parts.index',
         };
     }
 }

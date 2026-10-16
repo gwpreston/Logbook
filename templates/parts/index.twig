@@ -18,6 +18,13 @@
 
         <div class="toolbar list-toolbar">
             <h1 class="visually-hidden">{{ 'part.tab_title'|trans }}</h1>
+            {% if can_vehicle(vehicle, 'manage') and (modifications is not empty or counts.all > 0) %}
+                <div class="btn-row">
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'modifications'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.modifications'|trans }}</a>
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'parts'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.parts'|trans }}</a>
+                    <a class="btn btn--ghost" href="{{ url_for('export.module', {id: vehicle.id, module: 'part-fittings'}) }}" download>{{ ui.icon('download') }}{{ 'export.module.part_fittings'|trans }}</a>
+                </div>
+            {% endif %}
             {% if can_add %}
                 <div class="btn-row list-toolbar__actions">
                     <a class="btn" href="{{ url_for('parts.create', {id: vehicle.id}) }}" data-modal>{{ ui.icon('add') }}{{ 'part.add'|trans }}</a>
@@ -28,6 +35,9 @@
 
         <section class="card" aria-labelledby="modifications-heading">
             <h2 id="modifications-heading" class="card__title">{{ 'modification.title'|trans }}</h2>
+            {% if modifications is not empty %}
+                <p><a class="btn btn--ghost" href="{{ url_for('parts.insurer', {id: vehicle.id}) }}">{{ ui.icon('shield') }}{{ 'insurer.link'|trans }}</a></p>
+            {% endif %}
             {% if modifications is empty %}
                 <div class="empty">
                     {{ ui.icon('handyman') }}

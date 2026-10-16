@@ -23,6 +23,10 @@ enum WebhookKind: string
     case Incident = 'incident';
     /** An issue; its updates, fixes, unlinks and reopens are updates of it (#317). */
     case Issue = 'issue';
+    /** A modification; its revert, undo, *Mark declared* and *Clear* are updates of it (Phase 50.2, #442). */
+    case Modification = 'modification';
+    /** A part; every fitting and removal of it, with or without a record, is an update of it (#442). */
+    case Part = 'part';
     case TreadCheck = 'tread_check';
     /** A tyre's own details; `entry_id` is the tyre. */
     case TyreDetails = 'tyre_details';
@@ -51,6 +55,8 @@ enum WebhookKind: string
             self::Trip => 'trips',
             self::Incident => 'incidents',
             self::Issue => 'issues',
+            self::Modification => 'modifications',
+            self::Part => 'parts',
             self::Schedule => 'schedules',
             self::Vehicle => '',
             self::Tyre, self::TreadCheck, self::TyreDetails, self::Finance, self::Reminder => null,
@@ -80,6 +86,8 @@ enum WebhookKind: string
             self::Trip => $base . '/trips',
             self::Incident => $base . '/incidents',
             self::Issue => $base . '/issues',
+            self::Modification => $base . '/modifications',
+            self::Part => $base . '/parts',
             self::Schedule => $base . '/schedules',
             self::Tyre => $base . '/tyres/changes',
             self::TreadCheck, self::TyreDetails => $base . '/tyres',

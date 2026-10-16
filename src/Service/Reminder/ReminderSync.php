@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Reminder;
 
+use DateTimeImmutable;
 use Logbook\Service\Webhook\WebhookEvents;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Logbook\Domain\Access\VehicleScope;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Finance\FinanceAgreement;
+use Logbook\Domain\Part\Part;
 use Logbook\Domain\Reminder\Reminder;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
@@ -16,6 +18,8 @@ use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FinanceAgreementRepository;
 use Logbook\Repository\IssueRepository;
+use Logbook\Repository\PartRepository;
+use Logbook\Service\Part\PartWarranty;
 use Logbook\Domain\Issue\IssueStatus;
 use Logbook\Repository\ReminderRepository;
 use Logbook\Repository\VehicleRepository;
@@ -71,6 +75,7 @@ final readonly class ReminderSync
         private WebhookEvents $webhooks,
         private IssueRepository $issues,
         private VehicleDataPrimer $primer,
+        private PartRepository $parts,
     ) {
     }
 
@@ -92,6 +97,7 @@ final readonly class ReminderSync
         $withTyres = $enabled[Feature::Tyres->value];
         $withFinance = $enabled[Feature::Finance->value];
         $withIssues = $enabled[Feature::Issues->value];
+        $withParts = $enabled[Feature::Parts->value];
         $watched = [];
         if ($withIssues) {
             foreach ($this->issues->listForVehicles($active, [IssueStatus::Watching]) as $issue) {
@@ -194,6 +200,11 @@ final readonly class ReminderSync
                         $wanted[] = $look;
                     }
                 }
+            }
+
+            // Phase 50.2: warranties that end (#437).
+            if ($withParts) {
+                $wanted = [...$wanted, ...$this->warranties($owner, $vehicle, $today, $preferences)];
             }
 
             foreach ($wanted as $generated) {
@@ -338,6 +349,55 @@ final readonly class ReminderSync
             // A long lender's name must still fit the title column.
             return [mb_substr($final, 0, 150), mb_substr($ends, 0, 150)];
         });
+    }
+
+    /**
+     * The reminders of a vehicle's parts whose warranty is ticked to remind (spec.md §7.6 *Part
+     * warranty reminders*): read through the primed parts, so a vehicle without any costs no query.
+     *
+     * @return list<GeneratedReminder>
+     */
+    private function warranties(User $owner, Vehicle $vehicle, DateTimeImmutable $today, ReminderPreferences $preferences): array
+    {
+        $ticked = array_values(array_filter(
+            $this->parts->listForVehicle($vehicle->id),
+            static fn (Part $part): bool => $part->data->warrantyReminder,
+        ));
+        if ($ticked === []) {
+            return [];
+        }
+        $fittings = $this->parts->fittingsForVehicle($vehicle->id);
+        $history = $this->odometer->history($vehicle);
+        $currentKm = $history->latest()?->readingKm;
+        $wanted = [];
+        foreach ($ticked as $part) {
+            $reminder = ReminderGenerator::fromPart(
+                $vehicle->id,
+                $part,
+                PartWarranty::of($part, $fittings[$part->id] ?? [], $currentKm, $today),
+                $this->partTitle($owner, $part->label()),
+                $today,
+                $preferences,
+                $currentKm,
+                $history->averageKmPerDay(),
+            );
+            if ($reminder !== null) {
+                $wanted[] = $reminder;
+            }
+        }
+
+        return $wanted;
+    }
+
+    /**
+     * "Warranty ends: Bilstein B14 coilovers", in the owner's language whoever asks.
+     */
+    private function partTitle(User $owner, string $label): string
+    {
+        return $this->scope->run(
+            $owner,
+            fn (): string => mb_substr($this->translator->trans('part.reminder_title', ['part' => $label]), 0, 150),
+        );
     }
 
     /**

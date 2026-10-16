@@ -196,7 +196,14 @@ final class PageQueryBudgetTest extends AppTestCase
             new ModificationData('Coilovers', ModificationCategory::Other, new DateTimeImmutable('2026-04-10'), null, '800.000'),
             $zone,
             parts: new RecordParts(
-                fitNew: [new PartData('Coilovers')],
+                // A warranty with a reminder, so the sync judges it on every page (Phase 50.2).
+                fitNew: [new PartData(
+                    'Coilovers',
+                    boughtOn: new DateTimeImmutable('2026-04-01'),
+                    warrantyMonths: 24,
+                    warrantyFrom: \Logbook\Domain\Part\WarrantyStart::Purchase,
+                    warrantyReminder: true,
+                )],
                 remove: [$springs->id => new PartRemoval(RemovalOutcome::Sold, '60.000')],
             ),
         );

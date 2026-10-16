@@ -3,7 +3,7 @@
 *A reminder before a warranty runs out, a list of modifications to read to
 an insurer, and parts wherever entries go.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 [Phase 50.1](phase-50.1.md) records parts, modifications and their
 warranties on Logbook's own pages, and keeps build spend out of every
@@ -88,44 +88,46 @@ questions below are decided; in outline:
 ## Tasks
 
 ### 50.2.0 Spec first
-- [ ] Open questions A–G decided by the owner and logged in
-      `open-questions.md`.
-- [ ] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
+- [x] Open questions A–G decided by the owner and logged in
+      `open-questions.md` (#437–#443).
+- [x] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
 
 ### 50.2.1 Warranty reminders
-- [ ] The tick on the part form; source `part` in *Sync* (created,
+- [x] The tick on the part form; source `part` in *Sync* (created,
       moved, removed with the warranty and the part's status); *Checked
       it*; the reminders list, calendar and channels.
 
 ### 50.2.2 Insurer's list and sale pack
-- [ ] *For your insurer* page and print layout; *Mark declared*; a
+- [x] *For your insurer* page and print layout; *Mark declared*; a
       *Not declared* badge on the *Parts* tab.
-- [ ] Sale pack *Include modifications*.
+- [x] Sale pack *Include modifications*.
 
 ### 50.2.3 Scanning, API, webhooks, Ask, MCP and CSV
-- [ ] *Add as parts* on scanned service records and modifications.
-- [ ] API endpoints, OpenAPI, contract tests; webhook kinds and events.
-- [ ] Ask read tools and the draft tool; the running cost tools' build
+- [x] *Add as parts* on scanned service records (a modification is made from
+      a record or the form, which never carry the scanned lines).
+- [x] API endpoints, OpenAPI, contract tests; webhook kinds and events.
+- [x] Ask read tools and the draft tool; the running cost tools' build
       line; MCP.
-- [ ] CSV exports.
-- [ ] Translations (every shipped locale).
+- [x] CSV exports.
+- [x] Translations (every shipped locale).
 
 ### 50.2.4 Tests and release
-- [ ] Warranty reminder due dates by date and by projected mileage; the
+- [x] Warranty reminder due dates by date and by projected mileage; the
       lead time; removed, sold, returned or edited away; module off
       neither lists nor sends.
-- [ ] The insurer's list: current only, never costs, `ViewCosts` not
+- [x] The insurer's list: current only, never costs, `ViewCosts` not
       needed; *Mark declared*.
-- [ ] Sale pack: modifications only with the tick; never prices.
-- [ ] Scanning fixtures with parts lines; nothing saved without *Save*.
-- [ ] API contract tests and the access matrix; webhooks signed and
+- [x] Sale pack: modifications only with the tick; never prices.
+- [x] Scanning fixtures with parts lines; nothing saved without *Save*.
+- [x] API contract tests and the access matrix; webhooks signed and
       carrying ids and links only; Ask's grounding check on the build
       figure.
-- [ ] CSV round trips of quantities and dates; formula-injection guard.
+- [x] CSV exports of quantities and dates and the formula-injection guard
+      (export only: no round trip, #443).
 - [ ] Suite green on every engine; coverage at or above the floor.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off; print
       preview; subpath).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
       and 50.2.
 - [ ] Tag once merged.
 
@@ -144,29 +146,42 @@ questions below are decided; in outline:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-15 and logged as #437–#443 in
+`open-questions.md`; each took its recommendation.
 
-- **A. Which warranties remind?** Options: (1) a per-part tick, off by
+- **A. Which warranties remind?** *Decided 2026-10-15 (#437): the recommendation.* Options: (1) a per-part tick, off by
   default; (2) every part with a warranty; (3) none, the badge only.
   *Recommendation:* (1): most parts' warranties need nothing doing, and a
   clutch's or a turbo's is worth a look before it ends.
-- **B. Undeclared modifications.** Options: (1) a *Not declared* badge
+- **B. Undeclared modifications.** *Decided 2026-10-15 (#438): the recommendation.* Options: (1) a *Not declared* badge
   and the insurer's list only; (2) also a *Needs attention* item for a
   modification not declared within 30 days on a vehicle with insurance on
   file. *Recommendation:* (1): Logbook doesn't know the policy's terms,
   and §7.24 keeps to what is certainly wrong.
-- **C. Modifications in the sale pack.** Options: (1) an owner tick, off
+- **C. Modifications in the sale pack.** *Decided 2026-10-15 (#439): the recommendation.* Options: (1) an owner tick, off
   by default, as open issues (#312); (2) on by default. *Recommendation:*
   (1).
-- **D. Scanned parts lines.** Options: (1) offered as *Add as parts*,
+- **D. Scanned parts lines.** *Decided 2026-10-15 (#440): the recommendation.* Options: (1) offered as *Add as parts*,
   unticked; (2) ticked; (3) not offered. *Recommendation:* (1): oil and
   screen wash are parts lines too, and few owners want them as parts.
-- **E. Ask and build spend.** Options: (1) the running cost tools leave
+- **E. Ask and build spend.** *Decided 2026-10-15 (#441): the recommendation.* Options: (1) the running cost tools leave
   build out and return it as its own figure, so an answer can say both;
   (2) a separate tool only. *Recommendation:* (1).
-- **F. Webhook kinds.** Options: (1) `modification` and `part`, with a
+- **F. Webhook kinds.** *Decided 2026-10-15 (#442): the recommendation.* Options: (1) `modification` and `part`, with a
   part's fittings as `part` updates; (2) a third kind for fittings.
   *Recommendation:* (1).
-- **G. CSV import.** Options: (1) export only; (2) import too, matched
+- **G. CSV import.** *Decided 2026-10-15 (#443): the recommendation.* Options: (1) export only; (2) import too, matched
   by date and title as maintenance is. *Recommendation:* (1): few owners
   have a parts list in another app; import can follow when one asks.
+
+- **Who may *Mark declared*?** (found while starting) *Decided 2026-10-15
+  (#444): `Manage`.* Options: `Manage`; `Log`; `EntryAccess` per row.
+- **What date does *Mark declared* set?** (found while starting) *Decided
+  2026-10-15 (#445): a date field, today by default, not in the future and
+  not before the modification's date.* Option: always today.
+- **A warranty already ended when the tick is set** (found while
+  starting) *Decided 2026-10-15 (#446): no reminder.* Option: an overdue
+  reminder at once.
+- **Where the tick goes** (found while starting) *Decided 2026-10-15
+  (#447): the part form and the inline new-part row.* Option: the part form
+  only.

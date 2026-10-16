@@ -23,6 +23,9 @@ use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Issue\IssueService;
 use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Domain\Webhook\WebhookEvent;
+use Logbook\Domain\Webhook\WebhookKind;
+use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Support\Database\Transaction;
 use Psr\Clock\ClockInterface;
 
@@ -51,6 +54,7 @@ final readonly class ModificationService
         private AccessContext $author,
         private Transaction $transaction,
         private ClockInterface $clock,
+        private WebhookEvents $webhooks,
     ) {
     }
 
@@ -121,6 +125,7 @@ final readonly class ModificationService
             $parts,
         ): void {
             $this->modifications->update($vehicle->id, $id, $data, $this->clock->now());
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Modification, $id);
             $this->reading->record($vehicle, OdometerSource::Modification, $id, $data->odometerKm, $data->doneOn, $zone);
             $this->attachments->record($vehicle, AttachmentOwner::Modification, $id, $stored);
             $this->applyParts($vehicle, $id, $data, $parts);
@@ -130,6 +135,34 @@ final readonly class ModificationService
         });
 
         return $this->get($vehicle, $modification->id);
+    }
+
+    /**
+     * *Mark declared* / *Clear* (spec.md §7.39 *For your insurer*, #444, #445): when the insurer
+     * was told, or null for *Not declared yet*. Nothing else about the record changes.
+     *
+     * @throws PartChangeRefused when the date is before the modification's own
+     */
+    public function declare(Vehicle $vehicle, Modification $modification, ?DateTimeImmutable $on): void
+    {
+        $data = $modification->data;
+        if ($on !== null && $on < $data->doneOn) {
+            throw new PartChangeRefused('modification.refused.declared_before', [
+                'title' => $data->title,
+                'done' => $data->doneOn,
+            ]);
+        }
+        $this->modifications->update($vehicle->id, $modification->id, new ModificationData(
+            title: $data->title,
+            category: $data->category,
+            doneOn: $data->doneOn,
+            odometerKm: $data->odometerKm,
+            cost: $data->cost,
+            fittedBy: $data->fittedBy,
+            notes: $data->notes,
+            declaredOn: $on,
+        ), $this->clock->now());
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Modification, $modification->id);
     }
 
     /**
@@ -143,6 +176,7 @@ final readonly class ModificationService
         $this->transaction->run(function () use ($vehicle, $modification): void {
             $this->partService->forgetRecord($vehicle, PartService::MODIFICATION, $modification->id);
             $this->modifications->delete($vehicle->id, $modification->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryDeleted, WebhookKind::Modification, $modification->id);
         });
         $this->attachments->deleteForOwner($vehicle, AttachmentOwner::Modification, $modification->id);
     }
@@ -173,6 +207,7 @@ final readonly class ModificationService
             $this->modifications->setReverted($vehicle->id, $modification->id, $on, $km, $note, $this->clock->now());
             $this->reading->record($vehicle, OdometerSource::ModificationRevert, $modification->id, $km, $on, $zone);
             $this->partService->revert($vehicle, $modification->id, $on, $km, $remove, $refit);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Modification, $modification->id);
         });
 
         return $this->get($vehicle, $modification->id);
@@ -190,6 +225,7 @@ final readonly class ModificationService
             $this->partService->followRevert($vehicle, $modification->id, null, null, true);
             $this->modifications->setReverted($vehicle->id, $modification->id, null, null, null, $this->clock->now());
             $this->reading->forget($vehicle, OdometerSource::ModificationRevert, $modification->id);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryUpdated, WebhookKind::Modification, $modification->id);
         });
 
         return $this->get($vehicle, $modification->id);
@@ -276,6 +312,7 @@ final readonly class ModificationService
     {
         $by = $this->author->authorId() ?? $vehicle->userId;
         $id = $this->modifications->insert($vehicle->id, $data, $this->clock->now(), $by);
+        $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Modification, $id);
         if ($withReading) {
             $this->reading->record($vehicle, OdometerSource::Modification, $id, $data->odometerKm, $data->doneOn, $zone);
         }

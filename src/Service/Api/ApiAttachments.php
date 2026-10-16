@@ -20,6 +20,8 @@ use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Incident\IncidentService;
 use Logbook\Service\Issue\IssueService;
+use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\PartService;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Trip\TripService;
@@ -59,6 +61,8 @@ final readonly class ApiAttachments
         'trips' => AttachmentOwner::Trip,
         'incidents' => AttachmentOwner::Incident,
         'issues' => AttachmentOwner::Issue,
+        'modifications' => AttachmentOwner::Modification,
+        'parts' => AttachmentOwner::Part,
         'purchase' => AttachmentOwner::Purchase,
         'sale' => AttachmentOwner::Sale,
     ];
@@ -81,6 +85,8 @@ final readonly class ApiAttachments
         private TripService $trips,
         private IncidentService $incidents,
         private IssueService $issues,
+        private ModificationService $modifications,
+        private PartService $parts,
     ) {
     }
 
@@ -218,6 +224,8 @@ final readonly class ApiAttachments
             'trips' => $this->trips->get($user, $vehicle, $id),
             'incidents' => $this->incidents->get($vehicle, $id),
             'issues' => $this->issues->get($vehicle, $id),
+            'modifications' => $this->modifications->get($vehicle, $id),
+            'parts' => $this->parts->get($vehicle, $id),
         };
 
         return [

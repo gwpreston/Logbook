@@ -143,6 +143,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 50.2: the warranty reminder tick.
+        self::assertTrue($this->hasColumn('parts', 'warranty_reminder'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('parts', 'warranty_reminder'), 'rollback must drop parts.warranty_reminder');
+
         // Phase 50.1: parts, modifications, fittings and the four reading links.
         self::assertTrue($schema->tablesExist(['modifications', 'parts', 'part_fittings']));
         self::assertTrue($this->hasColumn('odometer_readings', 'modification_id'));

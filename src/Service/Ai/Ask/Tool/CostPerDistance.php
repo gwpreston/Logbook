@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Ask\Tool;
 
+use Logbook\Domain\Expense\CostGroup;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Ai\Ask\AskPeriod;
@@ -32,8 +33,9 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
         return new ToolDefinition(
             $this->name(),
             'Running cost per distance (running costs divided by distance driven) in a period, per vehicle and '
-            . 'for all vehicles together in each currency. Modifications are not running costs and are left out; '
-            . 'each total is the running total the rate divides. Use it for "which car costs most per mile".',
+            . 'for all vehicles together in each currency. Modifications are not running costs and are left out of the '
+            . 'rate; each total is the running total the rate divides, and build_total (modifications) is given beside '
+            . 'it as its own figure, so say both. Use it for "which car costs most per mile".',
             [
                 'type' => 'object',
                 'properties' => [
@@ -65,6 +67,7 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
                     'vehicle' => $this->kit->vehicleRef($row->vehicle),
                     // What the rate divides: build spend (Phase 50.1) is left out.
                     'total' => $this->kit->money($row->running ?? $row->total),
+                    'build_total' => $this->kit->money($row->total->subtract($row->running ?? $row->total)),
                     ...$this->perDistance($section->currency, $row->costPerKm, $row->distanceKm),
                 ], $rows),
             ];
@@ -81,7 +84,8 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
                 'period' => $period->toArray() + ['label' => $this->kit->periodLabel($period)],
                 'currencies' => $currencies,
                 'note' => 'A vehicle without a cost per distance had no distance logged in the period. '
-                    . 'Totals are running costs only: modifications are left out.',
+                    . 'Totals are running costs only: modifications are left out of them and of the rate, and are '
+                    . 'given as build_total.',
                 ...$this->hiddenNote($hidden),
             ],
             $this->kit->source([
@@ -101,7 +105,10 @@ final readonly class CostPerDistance extends ReportTool implements AskTool
     private function perDistance(string $currency, ?string $perKm, ?string $km, ?CurrencyReport $section = null): array
     {
         return [
-            ...($section === null ? [] : ['total' => $this->kit->money($section->runningTotal())]),
+            ...($section === null ? [] : [
+                'total' => $this->kit->money($section->runningTotal()),
+                'build_total' => $this->kit->money($section->group(CostGroup::Build)),
+            ]),
             'distance' => $this->kit->distance($km),
             'cost_per_km' => $perKm === null ? null : Decimal::round($perKm, 4),
             'display' => $perKm === null ? null : $this->kit->format->perDistance($perKm, $currency),

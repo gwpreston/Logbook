@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Part;
 
+use Logbook\Action\Ask\DraftPrefill;
 use Logbook\Action\Attachment\AttachmentUpload;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Action\Odometer\OdometerWarningFlash;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Odometer\OdometerSource;
@@ -40,6 +42,7 @@ final readonly class CreateModificationAction
         private OdometerWarningFlash $warnings,
         private OdometerService $odometer,
         private DisplayFormatter $formatter,
+        private DraftPrefill $prefill,
     ) {
     }
 
@@ -57,7 +60,10 @@ final readonly class CreateModificationAction
             return $refused;
         }
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, $vehicle, ModificationForm::defaults($today));
+            // *Edit* on a draft card (Phase 50.2): the draft's values, marked.
+            $values = $this->prefill->values($request, DraftKind::Modification, $vehicle->id, ModificationForm::defaults($today));
+
+            return $this->page->render($request, $response, $vehicle, $values);
         }
 
         $input = $this->costs->guard($request, $vehicle, RequestContext::form($request));
@@ -97,6 +103,7 @@ final readonly class CreateModificationAction
                 422,
             );
         }
+        $this->prefill->saved($request);
         $session = RequestContext::session($request);
         $session->flash('success', 'modification.created', ['title' => $modification->data->title]);
         $this->warnings->queue(

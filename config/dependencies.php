@@ -418,6 +418,8 @@ return [
         get(Tool\TripsSummary::class),
         get(Tool\Incidents::class),
         get(Tool\Issues::class),
+        get(Tool\Modifications::class),
+        get(Tool\Parts::class),
         get(Tool\MotHistory::class),
         get(Tool\Finance::class),
         get(Tool\Stations::class),
@@ -434,6 +436,7 @@ return [
         get(Tool\Draft\DraftReminder::class),
         get(Tool\Draft\DraftIncident::class),
         get(Tool\Draft\DraftIssue::class),
+        get(Tool\Draft\DraftModification::class),
     ]),
 
     // The MCP server (spec.md §7.28, Phase 26.5): the read tools come from the
@@ -448,6 +451,7 @@ return [
         get(Tool\Draft\DraftReminder::class),
         get(Tool\Draft\DraftIncident::class),
         get(Tool\Draft\DraftIssue::class),
+        get(Tool\Draft\DraftModification::class),
     ]),
 
     // Single sign-on (spec.md §7.9, Phase 23.1).

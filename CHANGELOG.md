@@ -4,13 +4,97 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
-## [Unreleased]
+## [3.15.0] — 2026-10-15
 
-Phase 50.1 (ships with 50.2 as **v3.15.0**): **parts and modifications.**
-What was fitted, what came off, and what the build has cost, kept apart from
-what the car costs to run. See [docs/parts.md](docs/parts.md).
+Phase 50: **parts and modifications.** What was fitted, what came off, and
+what the build has cost, kept apart from what the car costs to run; and, from
+50.2, a reminder before a warranty runs out, a list of modifications for your
+insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
 
-### Added
+### Added (Phase 50.2)
+- **Warranty reminders.** Tick *Remind me before it ends* on a part (the part
+  form, or behind *More* on a new part's row of a service record or
+  modification) to be reminded before its warranty ends: due within your
+  document lead time of the date, or your schedule lead distance of the
+  mileage (projected from your driving). *Done* reads *Checked it*. It goes
+  when you clear the tick, edit the warranty away, or the part is sold,
+  scrapped or its warranty ends; ticking a time limit counted from a purchase
+  date that has already passed is refused (any other warranty just stops
+  reminding when it ends).
+- **For your insurer.** A printable list of the modifications currently on
+  the car, ECU tunes first, with when each was fitted, its parts and when you
+  declared it ("Not declared yet" otherwise), never a cost. With *Manage*,
+  **Mark declared** (a date you choose, for one or all) and **Clear**. A
+  *Not declared* label on the *Parts* tab and a modification's page.
+- **Sale pack:** *Include modifications* (off to start with): what has been
+  changed, what was returned to standard and the parts kept with the car;
+  never costs or prices.
+- **Scanning:** a scanned service invoice's parts lines are offered as
+  **Add as parts**, unticked, with a guessed name, part number and price to
+  check; nothing is created without *Save*, and a warranty is never read from
+  a line.
+- **REST API** (OpenAPI 1.26.0): `modifications` and `parts` lists, single
+  reads with an `ETag`, create with a safe retry (a modification with its parts
+  in one save), `PATCH` and `DELETE` with `If-Match`, `fit`, `remove`,
+  `revert` and `undo-revert`, files, and the History kinds
+  `modification`, `modification_reverted`, `part_fitted` and `part_removed`.
+  Webhooks for `modification` and `part`. See
+  [docs/api.md](docs/api.md#parts-and-modifications).
+- **Ask and MCP:** the `modifications` and `parts` tools and
+  `draft_modification`; `cost_per_distance` returns `build_total` beside the
+  rate so an answer can say both.
+- **CSV:** `modifications.csv`, `parts.csv` and `part-fittings.csv` from the
+  *Parts* tab (export only).
+
+### Fixed (Phase 50.2 review)
+- A price, cost or sale price that rounds past the column's range (for
+  example 99999999999.9999) is refused as too large instead of failing with a
+  500.
+- A distance-limited warranty counts only while the part is on the car: a
+  spare gets no reminder for it, and the limit is read at the mileage the part
+  came off at.
+- A reverted modification's `parts_fitted` and `parts_removed` (API and Ask)
+  list only what the modification itself fitted and took off, not the revert's
+  own fittings.
+- The Parts card's *Build spend* and Ask's `modifications` `build_total` (all
+  states) are net of parts sold as they came off, as Reports are.
+- A part whose reminded warranty has ended stays editable; the refusal is
+  only for newly ticking an ended warranty or changing it to another ended one.
+- *For your insurer*: Enter in the date field changes nothing; *Mark all
+  declared* with a date before any chosen modification refuses the lot;
+  moving a modification's date past its declaration is refused on the page
+  as well as the API; the long *Mark all* label wraps at 375 px.
+- The `parts` tool in Ask and MCP no longer reads the whole mileage log per
+  part (12 s over 20,000 readings, now 0.3 s); the modifications tool and API
+  list read their fittings once for the page.
+- The Reminders list shows "Part warranty" (and "Issue") instead of a raw key;
+  a tampered scanned-rows count draws no more than 20 rows.
+
+- API History's `next` cursor works across a reverted modification (the
+  new kind name was longer than the cursor allowed); rolling back the
+  warranty-reminder migration on SQLite also removes the reminders'
+  delivery rows, so a later backup restores.
+
+- API: a nameless `came_off` row is refused (422) rather than dropped; list
+  errors name the row by its place in the body; a JSON body with a long
+  string (a 2,200-character note, or any long non-ASCII text escaped as
+  `\u…`) no longer fails with "must be a JSON object". A scanned line's quoted
+  evidence no longer shows its price to a member without *Can see costs*.
+
+### Upgrading (Phase 50.2)
+- One small migration (`parts.warranty_reminder`, off for every existing
+  part), reversible on every engine; rolling it back removes the warranty
+  reminders it made, clears every part's *Remind me before it ends* tick
+  (upgrading again leaves them all off, and *Checked it* marks on part
+  reminders are gone), and deletes Ask and MCP modification drafts not yet
+  added, which the older version can't read.
+- API: new paths, the History kinds above, the reminder source `part` and the
+  webhook kinds `modification` and `part` are new enum values; a client that
+  rejects unknown values should accept them. Modification and part files are
+  cost files: listing them over the API needs *Can see costs*.
+- A scanned parts line's price is only shown to a user who may see costs.
+
+### Added (Phase 50.1)
 - **Parts** on each vehicle: name, brand, part number, serial, supplier,
   price, condition, receipt and photos, and a **warranty** (months and/or a
   distance, from the purchase date or the fitting: "In warranty until 3 Mar

@@ -72,7 +72,7 @@ final class WebhooksTest extends ReminderTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createRecordingApp(['FEATURES_TRIPS' => 'true'] + self::NO_CHANNELS);
+        $this->app = $this->createRecordingApp(['FEATURES_TRIPS' => 'true', 'FEATURES_PARTS' => 'true'] + self::NO_CHANNELS);
         $this->clock = $this->pinClock($this->app, self::NOW);
         $this->browser = $this->signedIn($this->app);
         $this->owner = $this->owner($this->app);
@@ -225,6 +225,22 @@ final class WebhooksTest extends ReminderTestCase
         $api->post($base . '/issues/' . $issue . '/reopen', []);
         $api->delete($base . '/maintenance/' . $record);
         $api->delete($base . '/issues/' . $issue);
+        // Parts and modifications (Phase 50.2, #442): a modification that fits a part is one create of
+        // each; a revert, a fitting and a removal are updates of what they touch.
+        $modification = $json($api->post($base . '/modifications', [
+            'title' => 'Coilovers', 'category' => 'suspension', 'done_on' => '2026-09-01',
+            'parts_fitted' => [['name' => 'B14 kit']], 'parts_removed' => [],
+        ]));
+        $mod = $modification->int('entry', 'id');
+        $fitted = $modification->int('entry', 'parts_fitted', 0, 'part');
+        $spare = $json($api->post($base . '/parts', ['name' => 'Spare shock']))->int('entry', 'id');
+        $api->post($base . '/parts/' . $spare . '/fit', ['fitted_on' => '2026-09-02']);
+        $api->post($base . '/parts/' . $spare . '/remove', ['removed_on' => '2026-09-03', 'outcome' => 'kept']);
+        $api->post($base . '/modifications/' . $mod . '/revert', ['reverted_on' => '2026-09-10']);
+        $api->post($base . '/modifications/' . $mod . '/undo-revert', []);
+        $api->patch($base . '/modifications/' . $mod, ['declared_on' => '2026-09-05']);
+        $api->delete($base . '/parts/' . $spare);
+        $api->delete($base . '/modifications/' . $mod);
 
         $seen = array_map(
             static fn (WebhookDelivery $d): string => self::text($d->payload['event'] ?? null) . ' '
@@ -243,6 +259,11 @@ final class WebhooksTest extends ReminderTestCase
             'entry.created incident ' . $incident,
             'entry.created issue ' . $issue,
             'entry.deleted issue ' . $issue,
+            'entry.created modification ' . $mod,
+            'entry.created part ' . $fitted,
+            'entry.created part ' . $spare,
+            'entry.deleted modification ' . $mod,
+            'entry.deleted part ' . $spare,
             'entry.updated vehicle ' . $this->golf->id,
             ] as $expected
         ) {
@@ -251,6 +272,11 @@ final class WebhooksTest extends ReminderTestCase
         self::assertSame(2, count(array_keys($seen, 'entry.updated vehicle ' . $this->golf->id, true)), 'archive and restore');
         $updated = count(array_keys($seen, 'entry.updated issue ' . $issue, true));
         self::assertSame(5, $updated, 'update, fix, reopen, fix, reopen; a repeated fix and a history link are not told');
+        $revised = count(array_keys($seen, 'entry.updated modification ' . $mod, true));
+        self::assertSame(3, $revised, 'revert, undo and the PATCH that sets declared_on');
+        self::assertSame(2, count(array_keys($seen, 'entry.updated part ' . $spare, true)), 'a fitting and a removal');
+        $touched = count(array_keys($seen, 'entry.updated part ' . $fitted, true));
+        self::assertGreaterThanOrEqual(2, $touched, 'revert and undo touch the part it fitted');
         foreach ($this->queued($webhook) as $delivery) {
             self::assertMatchesPayloadSchema($delivery->payload);
         }

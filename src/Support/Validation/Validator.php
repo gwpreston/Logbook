@@ -49,6 +49,14 @@ final class Validator
     /**
      * The submitted value as a trimmed string ('' when absent or not a string).
      */
+    /**
+     * Whether the field was sent at all (even empty): an edit that leaves it out keeps what is stored.
+     */
+    public function has(string $field): bool
+    {
+        return array_key_exists($field, $this->input);
+    }
+
     public function raw(string $field): string
     {
         $value = $this->input[$field] ?? '';
@@ -133,6 +141,12 @@ final class Validator
         }
 
         $rounded = Decimal::round($parsed, $scale);
+        // Rounding can carry into a new whole digit (99999999999.9999 → 100000000000.000).
+        if (strlen(explode('.', ltrim($rounded, '-'))[0]) > $maxWholeDigits) {
+            $this->errors->add($field, 'validation.too_large');
+
+            return null;
+        }
         if ($min !== null && Decimal::compare($rounded, $min) < 0) {
             $this->errors->add($field, 'validation.min', ['min' => Decimal::trim($min)]);
 

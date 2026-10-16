@@ -73,6 +73,22 @@ final class ModificationForm
         if ($doneOn !== null && $doneOn > $today) {
             $validator->addError('done_on', 'modification.error.future');
         }
+        // *Declared on* is not on the page's form (it is *Mark declared*, #444): the API may send it,
+        // and an edit that leaves it out keeps the stored date.
+        $declaredOn = $stored?->data->declaredOn;
+        if ($validator->has('declared_on')) {
+            $declaredOn = $validator->date('declared_on');
+            if ($declaredOn !== null && $declaredOn > $today) {
+                $validator->addError('declared_on', 'modification.error.future');
+            }
+            if ($declaredOn !== null && $doneOn !== null && $declaredOn < $doneOn) {
+                $validator->addError('declared_on', 'modification.error.declared_before');
+            }
+        }
+        // Moving the date past a stored declaration would leave it declared before it was done.
+        if (!$validator->has('declared_on') && $declaredOn !== null && $doneOn !== null && $declaredOn < $doneOn) {
+            $validator->addError('done_on', 'modification.error.declared_after');
+        }
         if ($title === null || $doneOn === null || !$validator->errors()->isEmpty()) {
             return null;
         }
@@ -87,7 +103,7 @@ final class ModificationForm
             cost: $cost ?? Decimal::round('0', PartForm::MONEY_SCALE),
             fittedBy: $fittedBy,
             notes: $notes,
-            declaredOn: $stored?->data->declaredOn,
+            declaredOn: $declaredOn,
         );
     }
 

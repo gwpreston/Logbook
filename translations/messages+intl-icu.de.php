@@ -1593,6 +1593,8 @@ return [
             'finance' => 'Finanzierung',
             'finance_end' => 'Finanzierung',
             'tyre' => 'Reifen',
+            'part' => 'Teilegarantie',
+            'issue' => 'Mangel',
         ],
         'status' => [
             'upcoming' => 'Demnächst',
@@ -3052,6 +3054,13 @@ return [
         'module' => [
             'tyres' => 'Reifen exportieren',
             'tyre_changes' => 'Reifenwechsel exportieren',
+            'modifications' => 'Umbauten exportieren',
+            'parts' => 'Teile exportieren',
+            'part_fittings' => 'Ein- und Ausbauten exportieren',
+        ],
+        'record' => [
+            'service' => 'Wartungseintrag',
+            'modification' => 'Umbau',
         ],
         'column' => [
             'brand' => 'Marke',
@@ -3145,6 +3154,16 @@ return [
             'rate' => 'Satz',
             'passenger_amount' => 'Mitfahrerbetrag',
             'build_group' => '{group} (keine Betriebskosten)',
+            'category_code' => 'Kategoriecode',
+            'declared_on' => 'Gemeldet am',
+            'warranty_distance' => 'Garantiestrecke ({unit})',
+            'reverted_odometer' => 'Kilometerstand beim Rückbau ({unit})',
+            'part' => 'Teil',
+            'fitted_odometer' => 'Kilometerstand beim Einbau ({unit})',
+            'removed_odometer' => 'Kilometerstand beim Ausbau ({unit})',
+            'fitted_by_record' => 'Eingebaut durch (Eintrag)',
+            'removed_by_record' => 'Ausgebaut durch (Eintrag)',
+            'replaced_by' => 'Ersetzt durch',
         ],
         'written_off' => 'Totalschaden',
         'returned_lender' => 'an Kreditgeber zurückgegeben',
@@ -4024,6 +4043,7 @@ return [
             'issue_status' => 'Verwende open oder watching: Behoben wird mit POST …/fix, „Ist wieder da“ mit POST …/reopen.',
             'issue_fix_either' => 'Sende entweder records oder fixed_on und note, nicht beides.',
             'issue_records' => 'Jede ID muss ein Serviceeintrag dieses Fahrzeugs sein, datiert am oder nach dem Tag, an dem der Mangel bemerkt wurde.',
+            'part_id' => 'Verwende die ID eines Teils dieses Fahrzeugs, das die Liste aufnehmen kann.',
             'instant' => 'Gib Datum und Uhrzeit mit Zeitzone an, z. B. 2026-09-29T07:42:00Z.',
             'boolean' => 'Verwende true oder false.',
             'string' => 'Verwende einen Text.',
@@ -4210,6 +4230,15 @@ return [
     ],
     'sale_pack' => [
         'issues_notice' => 'Aufgeführt, weil du sie aufnehmen wolltest. Logbook beschreibt einen Mangel nie über deine Worte hinaus.',
+        'modifications_notice' => 'Umbauten können die Versicherung beeinflussen. Sag dem Käufer, was verändert wurde. Kosten und Preise sind nie enthalten.',
+        'modifications' => [
+            'fitted_by' => 'Eingebaut von {who}',
+            'returned_on' => 'Am {date} auf Serie zurückgebaut',
+            'origin' => [
+                'original' => 'Originalteil',
+                'spare' => 'Ersatzteil',
+            ],
+        ],
         'title' => 'Verkaufsmappe',
         'title_for' => 'Verkaufsmappe · {name}',
         'prepare' => 'Verkauf vorbereiten',
@@ -4225,6 +4254,8 @@ return [
             'incidents_hint' => 'Was beschädigt und wie es repariert wurde. Nie die Schuld, der Versicherungsfall, Zahlungen, der Fahrer oder der Unfallgegner.',
             'issues' => 'Offene Mängel aufnehmen',
             'issues_hint' => 'Bemerkte, noch nicht behobene und beobachtete Mängel, in deinen Worten. Aus, bis du es ankreuzt.',
+            'modifications' => 'Umbauten aufnehmen',
+            'modifications_hint' => 'Was am Fahrzeug verändert wurde, was auf Serie zurückgebaut wurde und welche Originalteile aufbewahrt werden. Nie Kosten oder Preise. Aus, bis du es ankreuzt.',
             'legend' => 'Einschließen',
             'due' => 'Anstehendes zeigen',
             'due_hint' => 'Käufer fragen ohnehin danach. Kosten werden nie gezeigt.',
@@ -4299,6 +4330,9 @@ return [
         'history' => [
             'incidents' => 'Schäden',
             'issues' => 'Offene Mängel',
+            'modifications' => 'Umbauten',
+            'returned' => 'Auf Serie zurückgebaut',
+            'kept' => 'Beim Fahrzeug aufbewahrt',
             'title' => 'Historie',
             'services' => 'Wartung und Reparaturen',
             'documents' => 'Prüfungen und Bescheinigungen',
@@ -5197,6 +5231,8 @@ return [
             'stations' => 'Tankstellen',
             'cheapest_fuel' => 'Günstigster Kraftstoff',
             'draft' => 'Entwurf',
+            'modifications' => 'Umbauten',
+            'parts' => 'Teile',
         ],
         // Einträge entwerfen (Phase 26.3, spec.md §7.26).
         'draft' => [
@@ -5212,6 +5248,7 @@ return [
                 'reminder' => 'Erinnerung',
                 'incident' => 'Schaden',
                 'issue' => 'Mangel',
+            'modification' => 'Umbau',
             ],
             'field' => [
                 'when' => 'Wann',
@@ -5244,6 +5281,7 @@ return [
                 'status' => 'Status',
                 'look_again' => 'Erneut ansehen',
                 'affects_safety' => 'Sicherheitsrelevant',
+            'fitted_by' => 'Eingebaut von',
             ],
             'summary' => [
                 'fuel' => '{volume} {fuel} zu {price} = {total}',
@@ -5255,6 +5293,7 @@ return [
                 'reminder' => '{title}, fällig am {due}',
                 'incident' => '{type}, {date}',
                 'issue' => '{title}, bemerkt am {date}',
+            'modification' => '{title}, durchgeführt am {date}',
             ],
             'derived' => [
                 'total' => 'Gesamtbetrag aus Menge und Preis ausgerechnet.',
@@ -5336,6 +5375,7 @@ return [
                 'synonyms_maintenance' => 'inspektion=service; wartung=service; kundendienst=service; ölwechsel=oil; bremsen=brakes; bremsbeläge=brakes; bremsscheiben=brakes; batterie=battery; reifen=tyres; reifenwechsel=tyres; reparatur=repair; karosserie=bodywork; delle=bodywork; kratzer=bodywork',
                 'synonyms_expense' => 'parken=parking; parkhaus=parking; parkticket=parking; maut=tolls; vignette=tolls; kfz steuer=tax; steuer=tax; autowäsche=cleaning; waschanlage=cleaning; reinigung=cleaning; bußgeld=fines; strafzettel=fines; knöllchen=fines; leasingrate=finance; finanzierung=finance; zubehör=accessories',
                 'synonyms_documents' => 'tüv=inspection; hu=inspection; hauptuntersuchung=inspection; au=pollution; abgasuntersuchung=pollution; versicherung=insurance; kfz versicherung=insurance; police=insurance; fahrzeugschein=registration; zulassung=registration; zulassungsbescheinigung=registration',
+            'synonyms_modifications' => 'sportauspuff=exhaust; auspuffanlage=exhaust; downpipe=exhaust; chiptuning=tune; steuergeraet=tune; steuergerät=tune; softwareoptimierung=tune; gewindefahrwerk=suspension; tieferlegungsfedern=suspension; felgen=wheels; alufelgen=wheels; luftfilter=intake; sportluftfilter=intake; radio=audio; lautsprecher=audio; led scheinwerfer=lighting; spoiler=body; bodykit=body; folierung=body; tracker=security; alarmanlage=security',
             ],
         ],
         'progress' => [
@@ -5368,6 +5408,9 @@ return [
             'draft_reminder' => 'Erinnerung wird entworfen…',
             'draft_incident' => 'Schaden wird entworfen…',
             'draft_issue' => 'Mangel wird entworfen…',
+            'modifications' => 'Umbauten werden durchgesehen…',
+            'parts' => 'Teile werden durchgesehen…',
+            'draft_modification' => 'Umbau wird entworfen…',
         ],
         // Words the tools' results and sources use.
         'result' => [
@@ -5379,6 +5422,7 @@ return [
                 'soon' => 'Reifen bald zu ersetzen',
                 'overdue' => 'Reifen jetzt zu ersetzen',
             ],
+            'in_warranty' => 'In Garantie bis {limits}',
         ],
     ],
     // MCP-Server (Phase 26.5, spec.md §7.28).
@@ -5415,6 +5459,9 @@ return [
             'draft_reminder' => 'Entwirft eine manuelle Erinnerung: einen Titel und ein Fälligkeitsdatum oder eine Zeit vor oder nach dem Ablauf eines Dokuments oder der nächsten Fälligkeit eines Plans. Noch wird nichts gespeichert: Der Nutzer fügt sie in Logbook hinzu, über den Link im Ergebnis.',
             'draft_incident' => 'Entwirft einen Schaden (Unfall, Parkschaden, Diebstahl, Einbruch, Vandalismus, Unwetter, Glas, Schlagloch, Wild oder Brand): was passiert ist, der Schaden und alles zum Versicherungsfall. Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis.',
             'draft_issue' => 'Entwirft einen Mangel: einen Fehler, der der Person aufgefallen und noch nicht behoben ist, in ihren eigenen Worten; füge nie eine Ursache hinzu. Noch wird nichts gespeichert: Der Nutzer fügt ihn in Logbook hinzu, über den Link im Ergebnis.',
+            'modifications' => 'Umbauten an den Fahrzeugen der Person (Auspuff, Gewindefahrwerk, Chiptuning, Räder): Titel, Kategorie, Datum und Kilometerstand, wer sie eingebaut hat, ob und wann sie der Versicherung gemeldet wurden, ob sie zurückgebaut wurden, und die Teile, die sie eingebaut und ausgebaut haben. Aktuelle, wenn kein Status angegeben ist. Die Kosten gibt es nur, wo die Person Kosten sehen darf, als build_total, und sie sind nie laufende Kosten oder Teil der Kosten pro Strecke.',
+            'parts' => 'Teile an den Fahrzeugen der Person: Name, Marke, Teilenummer, Lieferant, Status (eingebaut, eingelagert oder weg), Zustand, Garantie (in Garantie bis zu einem Datum oder Kilometerstand, oder abgelaufen), die Strecke, die jedes am Fahrzeug zurückgelegt hat, und jedes Ein- und Ausbauen. Eingebaute, wenn kein Status angegeben ist. Der Preis wird nur angezeigt, wo die Person Kosten sehen darf.',
+            'draft_modification' => 'Entwirft einen Umbau: etwas, das die Person am Auto verändert hat (Auspuff, Gewindefahrwerk, Chiptuning, Räder), in ihren eigenen Worten; keine Wartung, dafür gibt es ein eigenes Werkzeug. Noch wird nichts gespeichert: Die Person fügt ihn in Logbook hinzu, über den Link im Ergebnis, und ergänzt dort die Teile.',
         ],
         'say' => [
             'logged' => 'Eingetragen. Es steht jetzt in Logbook: {link}',
@@ -6797,6 +6844,37 @@ return [
             'system_generated' => 'Systemhinweis',
         ],
     ],
+    'insurer' => [
+        'title' => 'Für deine Versicherung',
+        'lead' => 'Die Umbauten, die derzeit am Fahrzeug sind, zum Vorlesen oder Ausdrucken für ein Versicherungsangebot oder eine Verlängerung. Es ist deine eigene Aufzeichnung: Logbook beurteilt nicht, ob ein Umbau gemeldet werden muss oder was er an der Prämie ändert.',
+        'vehicle' => 'Fahrzeug',
+        'registration' => 'Kennzeichen',
+        'empty_title' => 'Keine aktuellen Umbauten',
+        'empty_body' => 'Umbauten, die du erfasst, erscheinen hier, bis sie zurückgebaut werden.',
+        'current' => '{count, plural, one {# aktueller Umbau} other {# aktuelle Umbauten}}',
+        'fitted_on' => 'Eingebaut am',
+        'changed' => 'Was geändert wurde',
+        'replaced' => 'Ersetzt',
+        'declared' => 'Der Versicherung gemeldet',
+        'declared_on' => 'Gemeldet am {date}',
+        'not_declared' => 'Noch nicht gemeldet',
+        'mark' => 'Als gemeldet markieren',
+        'clear' => 'Zurücksetzen',
+        'reverted_count' => '{count, plural, one {# zurückgebauter Umbau wird nicht aufgeführt: er ist nicht mehr am Fahrzeug.} other {# zurückgebaute Umbauten werden nicht aufgeführt: sie sind nicht mehr am Fahrzeug.}}',
+        'link' => 'Für deine Versicherung',
+        'declare' => [
+            'title' => 'Als gemeldet markieren',
+            'hint' => 'Halte fest, an welchem Tag du deine Versicherung informiert hast. Dasselbe Datum gilt für jeden Umbau, den du markierst.',
+            'date' => 'Gemeldet am',
+            'all' => '{count, plural, one {# ungemeldeten Umbau als gemeldet markieren} other {Alle # ungemeldeten Umbauten als gemeldet markieren}}',
+        ],
+        'declared_flash' => '{count, plural, one {# Umbau am {date} als gemeldet markiert.} other {# Umbauten am {date} als gemeldet markiert.}}',
+        'cleared' => '{title} gilt wieder als noch nicht gemeldet.',
+        'error' => [
+            'date' => 'Wähle ein Datum, das nicht in der Zukunft liegt.',
+            'future' => 'Das Datum darf nicht nach heute liegen.',
+        ],
+    ],
     'modification' => [
         'title' => 'Umbauten',
         'add' => 'Umbau hinzufügen',
@@ -6850,9 +6928,12 @@ return [
         'error' => [
             'future' => 'Das Datum darf nicht nach heute liegen.',
             'reverted_before' => 'Ein Umbau kann nicht vor seinem Datum rückgebaut werden.',
+            'declared_before' => 'Er kann nicht vor seinem Datum gemeldet worden sein.',
+            'declared_after' => 'Das Datum darf nicht nach dem Tag liegen, an dem der Umbau der Versicherung gemeldet wurde. Setze das zuerst zurück.',
         ],
         'refused' => [
             'reverted_before' => 'Dieser Umbau wurde am {reverted} rückgebaut, vor dem neuen Datum. Hebe zuerst den Rückbau auf.',
+            'declared_before' => '{title} wurde am {done} durchgeführt und kann daher nicht früher gemeldet worden sein.',
             'undo_changed_since' => '{part} wurde seit dem Rückbau wieder ausgebaut. Mach das zuerst rückgängig: Das Aufheben des Rückbaus würde es löschen.',
         ],
         'card' => [
@@ -6892,9 +6973,24 @@ return [
                 'tyres' => 'Dieser Wartungseintrag ist mit einem Reifenwechsel verknüpft, was ein Umbau nicht sein kann.',
             ],
         ],
+        'state' => [
+            'current' => 'Aktuell',
+            'reverted' => 'Zurückgebaut',
+            'all' => 'Alle',
+        ],
     ],
     'part' => [
         'title' => 'Teile',
+        'reminder_title' => 'Garantie endet: {part}',
+        'scan' => [
+            'title' => 'Als Teile hinzufügen',
+            'hint' => 'Teilezeilen aus der Rechnung, als Vorschlag zum Prüfen. Hake die an, die als von diesem Eintrag eingebaute Teile erfasst werden sollen: Öl und Scheibenwaschmittel sind auch Teilezeilen, deshalb ist keine vorab angehakt. Gespeichert wird erst, wenn du den Eintrag speicherst.',
+            'line' => 'Teilezeile {number}',
+            'add' => 'Zeile {number} als Teil hinzufügen',
+        ],
+        'reminder' => [
+            'checked_it' => 'Geprüft',
+        ],
         'tab_title' => 'Teile und Umbauten',
         'view_all' => 'Alle anzeigen',
         'add' => 'Teil hinzufügen',
@@ -6936,6 +7032,7 @@ return [
         ],
         'origin' => [
             'original' => 'Original am Auto',
+            'fitted' => 'Nachträglich',
         ],
         'warranty_from' => [
             'purchase' => 'Kaufdatum',
@@ -6989,6 +7086,7 @@ return [
             'warranty_from' => 'Garantie beginnt mit',
             'warranty_provider' => 'Garantiegeber',
             'warranty_terms' => 'Garantiebedingungen',
+            'warranty_reminder' => 'Vor dem Ablauf erinnern',
             'on_car' => 'Es ist jetzt am Auto',
             'fitted_on' => 'Eingebaut am',
             'removed_on' => 'Ausgebaut am',
@@ -7002,6 +7100,7 @@ return [
             'sold_price' => 'Nur bei Verkauf: Er wird von den Umbaukosten abgezogen.',
             'warranty' => 'Monate und/oder eine Strecke. Eine Strecke zählt ab dem Kilometerstand beim ersten Einbau.',
             'warranty_from' => 'Die Garantie eines Händlers läuft meist ab dem Kauf, die einer Werkstatt ab dem Einbau.',
+            'warranty_reminder' => 'Legt eine Erinnerung vor dem Ablauf der Garantie an, damit du das Teil prüfen lassen kannst, solange sie noch gilt.',
             'on_car' => 'Anhaken, um es ab dem Datum unten als eingebaut zu erfassen, ohne Eintrag und ohne Kosten.',
             'without_record' => 'Ohne Eintrag ein- oder ausgebaut, also ohne Kosten. Um die Arbeit mit Kosten zu erfassen, lege einen Wartungseintrag oder einen Umbau an.',
             'came_off_example' => 'Zum Beispiel: Serienauspuff',
@@ -7014,6 +7113,7 @@ return [
         'error' => [
             'archived' => 'Dieses Fahrzeug ist archiviert: Seine Teile und Umbauten können gelesen, aber nicht geändert werden.',
             'future' => 'Das Datum darf nicht nach heute liegen.',
+            'warranty_ended' => 'Diese Garantie ist bereits abgelaufen, es gibt also nichts, woran du erinnert werden könntest.',
             'price_only_sold' => 'Ein Verkaufspreis gehört nur zu „Verkauft“.',
         ],
         'refused' => [

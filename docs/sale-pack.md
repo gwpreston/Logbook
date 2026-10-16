@@ -30,6 +30,15 @@ records every time you open it.
   and tyres, newest first, with descriptions and the names of the files.
   Optionally, the full timeline after them.
 
+## Modifications
+
+*Include modifications* (off to start with, with the [parts](parts.md)
+module on) adds three short lists to the history: what has been **changed**
+on the car (the parts fitted, with their part numbers), what was **returned
+to standard** with the original parts fitted again, and the parts **kept with
+the car**. Modifications can affect insurance, so tell the buyer. It never
+shows a cost, a price or what a part sold for, whatever the other options.
+
 ## What is never in it
 
 Whatever the options say: the purchase and sale prices, fuel, expenses,

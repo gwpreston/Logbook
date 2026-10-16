@@ -2015,6 +2015,7 @@ final class DemoDataSeeder extends AbstractSeed
             'name' => 'Clutch kit', 'brand' => 'LuK', 'part_number' => '624 3500 00', 'supplier' => 'Main Street Motors',
             'price' => '320.000', 'warranty_months' => 24, 'warranty_from' => 'fitting',
             'warranty_provider' => 'Main Street Motors', 'warranty_terms' => 'Parts and labour, 24 months.',
+            'warranty_reminder' => true,
         ]);
         $this->fittingRow($now, [
             'part_id' => $clutch, 'fitted_on' => $clutchOn, 'fitted_odometer_km' => $clutchKm,
@@ -2031,8 +2032,8 @@ final class DemoDataSeeder extends AbstractSeed
             'vehicle_id' => $vehicle, 'created_by' => $userId, 'brand' => null, 'part_number' => null,
             'serial_number' => null, 'supplier' => null, 'bought_on' => null, 'price' => null,
             'part_condition' => 'new', 'origin' => 'fitted', 'warranty_months' => null, 'warranty_km' => null,
-            'warranty_from' => null, 'warranty_provider' => null, 'warranty_terms' => null, 'notes' => null,
-            'status' => 'fitted', 'created_at' => $now, 'updated_at' => $now,
+            'warranty_from' => null, 'warranty_provider' => null, 'warranty_terms' => null, 'warranty_reminder' => false,
+            'notes' => null, 'status' => 'fitted', 'created_at' => $now, 'updated_at' => $now,
         ]);
     }
 

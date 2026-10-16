@@ -38,6 +38,12 @@ enum ReminderSource: string
      * the source id is the issue. *Done* means *Looked at it*.
      */
     case Issue = 'issue';
+    /**
+     * A part's warranty ending (Phase 50.2, spec.md §7.6 *Part warranty
+     * reminders*, §7.39, #437); the source id is the part. *Done* means
+     * *Checked it*.
+     */
+    case Part = 'part';
     /** Added by hand. */
     case Manual = 'manual';
 
@@ -61,6 +67,7 @@ enum ReminderSource: string
             self::Tyre => Feature::Tyres,
             self::Finance, self::FinanceEnd => Feature::Finance,
             self::Issue => Feature::Issues,
+            self::Part => Feature::Parts,
             self::Manual => null,
         };
     }

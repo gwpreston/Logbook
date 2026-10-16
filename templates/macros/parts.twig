@@ -12,6 +12,11 @@
     {% if modification.isReverted() %}<span class="pill">{{ 'modification.reverted'|trans }}</span>{% endif %}
 {%- endmacro %}
 
+{# *Not declared*: a current modification the insurer hasn't been told about (spec.md §7.39, #438). #}
+{% macro undeclared_pill(modification) -%}
+    {% if not modification.isReverted() and modification.data.declaredOn is null %}<span class="pill pill--soon">{{ 'insurer.not_declared'|trans }}</span>{% endif %}
+{%- endmacro %}
+
 {# "In warranty until 3 Mar 2028 or 85,400 mi" / "Warranty ended 3 Mar 2028". #}
 {% macro warranty(warranty) -%}
     {%- if warranty is null -%}
@@ -59,6 +64,7 @@
             </span>
             <span class="list__end">
                 {{ _self.reverted_pill(modification) }}
+                {{ _self.undeclared_pill(modification) }}
                 {% if data.cost != '0.000' and can_see_costs(vehicle) %}<span class="list__amount tabular">{{ data.cost|money(currency) }}</span>{% endif %}
                 {{ paperclip.count(files) }}
             </span>

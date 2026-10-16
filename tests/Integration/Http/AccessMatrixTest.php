@@ -169,6 +169,9 @@ final class AccessMatrixTest extends AppTestCase
         // Phase 50.1 (spec.md §7.39 *Access*): Log adds, fits, removes and reverts; the
         // owner's part and modification are someone else's under Log, and so is the record made a modification.
         'parts.index' => self::VIEW,
+        // Phase 50.2: reading the insurer's list needs View, marking declared needs Manage (#444).
+        'parts.insurer' => self::VIEW,
+        'parts.insurer.declare' => self::MANAGE,
         'parts.create' => self::LOG,
         'parts.show' => self::VIEW,
         'parts.edit' => self::MANAGE,

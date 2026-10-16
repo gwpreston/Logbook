@@ -59,6 +59,7 @@ final readonly class Reminder
             ReminderSource::FirstInspection => ComplianceType::Inspection->icon(),
             ReminderSource::Finance, ReminderSource::FinanceEnd => 'account_balance',
             ReminderSource::Issue => 'visibility',
+            ReminderSource::Part => 'verified_user',
             ReminderSource::Manual => 'notifications',
         };
     }

@@ -189,4 +189,57 @@ final class PartsMigrationTest extends AppTestCase
 
         return new PendingUploads([new PendingUpload($file, FileUpload::check($file, 1024 * 1024, UploadKind::Document))]);
     }
+
+    /**
+     * Rolling back Phase 50.2's migration removes the part reminders and the deliveries recorded for them, even on
+     * SQLite, where Phinx runs with foreign keys off and the cascade never fires: a backup taken afterwards must
+     * restore (merge review, upgrade-tester).
+     */
+    public function testRollingBackTheWarrantyReminderMigrationLeavesNoOrphanDeliveries(): void
+    {
+        $app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $golf = $this->vehicle($app);
+        $db = $this->connection($app);
+        $db->insert('reminders', [
+            'vehicle_id' => $golf->id, 'source' => 'part', 'source_id' => 1, 'occurrence' => '2028-03-01|',
+            'title' => 'Warranty ends: Clutch', 'due_on' => '2028-03-01', 'lead_time_days' => 30, 'status' => 'due',
+            'created_at' => '2026-10-01 10:00:00', 'updated_at' => '2026-10-01 10:00:00',
+        ]);
+        $id = (int) $db->lastInsertId();
+        $db->insert('reminder_deliveries', [
+            'reminder_id' => $id, 'user_id' => $owner->id, 'status' => 'due', 'created_at' => '2026-10-01 10:00:00',
+        ]);
+
+        Migrator::run('rollback', ['--target' => '20261109100000']);
+
+        self::assertEquals(0, $db->fetchOne("SELECT COUNT(*) FROM reminders WHERE source = 'part'"));
+        self::assertEquals(0, $db->fetchOne('SELECT COUNT(*) FROM reminder_deliveries'), 'no orphan delivery rows');
+    }
+
+    /**
+     * Rolling back Phase 50.2's migration deletes drafts of kind `modification`: the older DraftKind has no such
+     * case, so one pending draft would make its owner's dashboard and Insights return 500 (merge review,
+     * upgrade-tester). Drafts of other kinds stay.
+     */
+    public function testRollingBackTheWarrantyReminderMigrationDeletesModificationDrafts(): void
+    {
+        $app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $golf = $this->vehicle($app);
+        $db = $this->connection($app);
+        foreach (['modification', 'fuel'] as $kind) {
+            $db->insert('ai_drafts', [
+                'user_id' => $owner->id, 'kind' => $kind, 'vehicle_id' => $golf->id, 'source' => 'mcp',
+                'input' => '{}', 'card' => '{}', 'form_values' => '{}',
+                'created_at' => '2026-10-15 12:00:00', 'expires_at' => '2026-10-22 12:00:00',
+            ]);
+        }
+
+        Migrator::run('rollback', ['--target' => '20261109100000']);
+
+        self::assertSame(['fuel'], $db->fetchFirstColumn('SELECT kind FROM ai_drafts'));
+    }
 }

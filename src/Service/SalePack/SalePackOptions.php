@@ -40,6 +40,8 @@ final readonly class SalePackOptions
         public bool $incidents = false,
         /** *Include open issues* (Phase 40.1, #312): off unless ticked. */
         public bool $openIssues = false,
+        /** *Include modifications* (Phase 50.2, #439): off unless ticked. */
+        public bool $modifications = false,
     ) {
     }
 
@@ -69,6 +71,7 @@ final readonly class SalePackOptions
             photo: ($query['photo'] ?? '') === '1',
             incidents: ($query['incidents'] ?? '') === '1',
             openIssues: ($query['issues'] ?? '') === '1',
+            modifications: ($query['modifications'] ?? '') === '1',
         );
     }
 
@@ -106,6 +109,7 @@ final readonly class SalePackOptions
             photo: $this->photo,
             incidents: $this->incidents,
             openIssues: $this->openIssues,
+            modifications: $this->modifications,
         );
     }
 
@@ -143,6 +147,7 @@ final readonly class SalePackOptions
             'photo' => $this->photo ? '1' : '',
             'incidents' => $this->incidents ? '1' : '',
             'issues' => $this->openIssues ? '1' : '',
+            'modifications' => $this->modifications ? '1' : '',
             'kinds' => array_map(static fn (PaperworkKind $kind): string => $kind->value, $this->kinds),
             'exclude' => array_map(strval(...), $this->exclude),
         ], static fn (string|array $value): bool => $value !== '' && $value !== []);

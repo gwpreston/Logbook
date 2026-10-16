@@ -24,7 +24,7 @@
                 <p class="page-header__eyebrow">{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</p>
                 <h1 class="page-header__title">{{ data.title }}</h1>
                 <p class="page-header__lead">{{ data.category.labelKey()|trans }} · {{ data.doneOn|local_date }}{% if data.odometerKm is not null %} · <span class="tabular">{{ data.odometerKm|distance(0) }}</span>{% endif %}</p>
-                {% if modification.isReverted() %}<p class="btn-row">{{ parts_ui.reverted_pill(modification) }}</p>{% endif %}
+                {% if modification.isReverted() or modification.data.declaredOn is null %}<p class="btn-row">{{ parts_ui.reverted_pill(modification) }}{{ parts_ui.undeclared_pill(modification) }}</p>{% endif %}
             </div>
             {# Revert is Log, as Fit and Remove; Undo revert, Edit and Delete are EntryAccess (spec.md §7.39 Access, #430). #}
             {% set can_revert = not vehicle.isArchived() and can_vehicle(vehicle, 'log') %}

@@ -837,7 +837,9 @@ MySQL only.
   car; `fitted`: everything else), warranty_months (optional, 1–600),
   warranty_km (optional `decimal(12,3)`, above 0), warranty_from
   (`purchase` | `fitting`; set when a warranty limit is), warranty_provider
-  (optional, up to 120), warranty_terms (optional, up to 500), notes
+  (optional, up to 120), warranty_terms (optional, up to 500),
+  warranty_reminder (bool, default false; Phase 50.2, #437: raises a
+  reminder before the warranty ends, §7.6; set only with a warranty), notes
   (optional, up to 2,000), the **computed, stored** status (`fitted` |
   `stored` | `gone`), created/updated (UTC). Index `(vehicle_id,
   status)`.
@@ -2310,6 +2312,30 @@ iCal/webcal feed so items appear in the user's calendar.
     `compliance` off it is neither listed nor sent and is kept. The
     reminder links to the vehicle's overview, which everyone it is shared
     with can open (the date itself is changed on the edit form).
+- **Part warranty reminders** (Phase 50.2, #437, #446; §7.39): source
+  `part`, `source_id` = the part. Raised while the `parts` module is on,
+  the vehicle is active, the part's *Remind me before it ends* tick is set
+  (§6 Part `warranty_reminder`), its status is not *Gone* and its warranty
+  has a limit that can be measured and has not ended. Its due date is the
+  warranty's end date and its due distance the end mileage (§7.39
+  *Warranty*), so it follows a schedule's rules (§7.4): it is *due* from
+  the owner's **document** lead time before the date, or the schedule lead
+  distance before the mileage (projected from the vehicle's recent driving,
+  as a schedule's is), and *upcoming* before that. It is never *overdue*:
+  once either limit passes the warranty has ended and the reminder goes
+  (below). Its title, in the owner's language, is "Warranty ends: {part}"
+  (the part's brand and name, cut to the title column).
+  - **Occurrence = the end date and end mileage**, so editing the warranty
+    or the first fitting's date re-opens it and clears its notification
+    state; the projection moving updates it in place.
+  - **It goes** (deleted by sync, as an orphan) when the part is deleted or
+    *Gone*, the tick is cleared, the warranty is edited away or ends. A
+    reminder the owner marked *done* is kept until then.
+  - ***Done* reads *Checked it***; dismiss and reopen are as any reminder's.
+    It links to the part's page. Channels, the digest, the calendar feed
+    and the reminders list treat it like the others and it goes to the
+    owner and to shares with *Send me its reminders* (Phase 19). With
+    `parts` off it is neither listed nor sent and is kept.
 
 ### 7.7 Expenses and reports
 Per-vehicle and fleet cost breakdowns over time (fuel vs maintenance vs
@@ -2404,6 +2430,20 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   The valuations export (Phase 14.1, linked from the valuations page) has
   Date, Amount, Currency, Source and Notes, oldest first; valuations have no
   CSV import (a handful of rows a year).
+  Parts and modifications (Phase 50.2, #443; `parts` on; export only, the
+  importer refuses these files): `/vehicles/{id}/export/modifications.csv`
+  (date, odometer, title, category, *Category code*, fitted by, cost and
+  currency with `ViewCosts`, notes, declared on, reverted on, reverted
+  odometer and note; oldest first), `parts.csv` (name, brand, part number,
+  serial number, supplier, bought on, price and currency with `ViewCosts`,
+  condition, origin, status, warranty months, warranty distance, warranty
+  from, provider and terms, *Remind before warranty ends*, notes) and
+  `part-fittings.csv` (one row per fitting: part, part number, fitted on,
+  fitted odometer, fitted by, removed on, removed odometer, removed by,
+  outcome, sold price and currency with `ViewCosts`, replaced by), each
+  linked from the *Parts* tab (they need `Manage`, as every export). Distances are in the owner's
+  unit, quantities carry 6 places and dates are ISO, as above. The report
+  export's *Group* column carries `build` for a modification's line.
 - **Incidents** (Phase 27.1, `incidents` on): a section with the period's
   incident count, *Incident-related spend* and *Payouts received*; spend
   itself is unchanged, since linked costs are already in their own groups
@@ -5218,6 +5258,9 @@ available for active and archived vehicles.
     group, the write-off line and the seller notice are §7.29's.
   - *Include open issues* (Phase 40.1, #312): off by default; the *Open
     issues* section and its notice are §7.37's.
+  - *Include modifications* (Phase 50.2, #439): off by default; the
+    *Modifications*, *Returned to standard* and *Kept with the car*
+    sections, never costs or prices, are §7.39's.
   - Which kinds of paperwork go in the ZIP (below).
   The options panel and every seller notice are screen-only and are never
   printed.
@@ -5586,6 +5629,76 @@ amounts.
   *watching*); `Log`. On an open issue it answers `unchanged: true`.
 - Archived vehicles: every write is 409 `vehicle_archived`.
 
+**Parts and modifications** (Phase 50.2, §7.39; module `parts`, every path
+404 with it off). Reading needs `View`; writing needs `Log` and a
+`read_write` key; editing and deleting follow `EntryAccess`, as the pages.
+`cost`, `price` and `sold_price` need `ViewCosts` (#429): without it they
+are absent from every read, and a write that sends them ignores them.
+
+- `GET /api/v1/vehicles/{id}/modifications` (`?state=current|reverted`;
+  without it both) newest `done_on` first, paged like the other entry lists
+  (`limit`, `next`, `since` and `until` on `done_on`). A modification:
+  `id`, `vehicle_id`, `title`, `category` (§7.39's codes), `done_on`,
+  `odometer` (km, with `distance_unit`), `cost` and `currency`,
+  `fitted_by`, `notes`, `declared_on`, `reverted_on`, `reverted_odometer`,
+  `reverted_note`, `parts_fitted` and `parts_removed` (each: `part` id,
+  `name`, and for a removal `outcome`), `created_by`, `created_at`,
+  `updated_at`. `GET …/modifications/{mod}` returns the same with an `ETag`
+  that changes whenever the modification, its revert or the fittings it made
+  change.
+- `POST …/modifications`: `title`, `category`, `done_on`, `odometer`,
+  `cost`, `fitted_by`, `notes`, `declared_on`, and the parts lists as the
+  form's: `parts_fitted` (each a new part with the part fields below, or
+  `{"part": id}` for a stored one) and `parts_removed` (each `{"part": id,
+  "outcome": …, "sold_price": …}`, or `{"came_off": {"name": …,
+  "brand": …, "part_number": …, "outcome": …}}`), all in one transaction and
+  parsed by the form. Safe to retry: the same vehicle, `done_on` and title
+  answers the stored modification with `duplicate: true`.
+- `PATCH` and `DELETE …/modifications/{mod}` with `If-Match`, as the other
+  entries; the parts lists are not patchable (use the part endpoints). A
+  refused change is a 422 naming the part and the dates, as the pages say.
+- `POST …/modifications/{mod}/revert`: `reverted_on` (default today),
+  `odometer`, `note`, `remove_parts` and `refit_originals` (both default
+  true); `Log`. `POST …/modifications/{mod}/undo-revert` (`EntryAccess`,
+  refused with 422 as §7.39 says). Both answer `unchanged: true` when there
+  is nothing to change.
+- `GET …/parts` (`?status=fitted|stored|gone`; without it every status),
+  newest added first and paged like the other entry lists (`limit`,
+  `cursor`, `since` and `until` on the day added); a part: `id`, `vehicle_id`,
+  `name`, `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`,
+  `price` and `currency`, `condition`, `origin`, `status`, `warranty`
+  (`months`, `distance`, `distance_unit`, `from`, `provider`, `terms`,
+  `until`, `until_odometer`, `active`; null without one),
+  `warranty_reminder`, `notes`, `distance` (km driven on the vehicle, with
+  `at_least`), `fittings` (oldest first: `id`, `fitted_on`, `fitted_odometer`,
+  `fitted_by` and `removed_by` as `{kind, id}` or null, `removed_on`,
+  `removed_odometer`, `outcome`, `sold_price`, `replaced_by`), `created_by`,
+  `created_at`, `updated_at`. `GET …/parts/{part}` adds an `ETag` over the
+  part and its fittings.
+- `POST …/parts` (the part fields in the key user's units unless
+  `distance_unit` says otherwise; a duplicate by vehicle, name, part number
+  and `bought_on` answers the stored part with `duplicate: true`),
+  `PATCH` and `DELETE …/parts/{part}` with `If-Match`;
+  `POST …/parts/{part}/fit` (`fitted_on`, `odometer`) and
+  `POST …/parts/{part}/remove` (`removed_on`, `odometer`, `outcome`,
+  `sold_price`); `Log`. A refused fit or removal is a 422 naming the part
+  and both fittings' dates, and each answers the part with its new `ETag`.
+- Files: `…/modifications/{mod}/attachments` and `…/parts/{part}/attachments`
+  as the other entries (§7.12). They are cost files (#429, as the pages'):
+  listing them needs `ViewCosts`, adding one needs `Log` (and `EntryAccess`).
+- **Errors** name the body's fields; a parts-list row's are
+  `parts_fitted.{i}.{field}`, `parts_removed.{i}.came_off.{field}` and
+  `parts_removed.{i}.{field}`, `{i}` being the row's place in the body,
+  and a part id the list can't take is a 422 on `parts_fitted` or
+  `parts_removed`.
+- **History:** `GET /vehicles/{id}/history` and `/history` carry the kinds
+  `modification`, `modification_reverted`, `part_fitted` and `part_removed`
+  (`?kinds=parts` is not a kind: name them, e.g. `?kinds=modification,part_fitted`; the page's chip is `?kind=parts`), with no amount without `ViewCosts`.
+- **Ledger reads** (`/reports/costs`, `/vehicles/{id}/ownership`, the
+  summary) carry the group `build` (§7.7), and every per-distance figure
+  there leaves it out, as the pages.
+- Archived vehicles: every write is 409 `vehicle_archived`.
+
 **Finance** (Phase 29.2, §7.32): `GET /api/v1/vehicles/{id}/finance`, the
 active agreement's summary and schedule (the latest ended one when none is
 active), with §7.32's access rules and without the agreement number; no
@@ -5893,7 +6006,12 @@ notification channel and unrelated.
   `maintenance`, `document`, `expense`, `tyre` (a tyre change),
   `valuation`, `trip`, `incident`, `issue` (Phase 40.2, #317: an update,
   a fix from either side, an unlink, a reopen and *Looked at it* are each
-  `entry.updated` of the issue); and otherwise `tread_check`,
+  `entry.updated` of the issue), `modification` and `part` (Phase 50.2,
+  #442: a revert, an undo, *Mark declared* and *Clear* are each
+  `entry.updated` of the modification; a fitting or removal, from a record
+  or without one, is `entry.updated` of the part, so a modification that
+  fits two parts queues one for itself and one for each part; *Checked it*
+  on a warranty reminder is `reminder.changed`); and otherwise `tread_check`,
   `tyre_details` (a tyre's own details; `entry_id` is the tyre),
   `schedule`, `finance` (`entry_id` is the agreement: a payment, quote or
   *End* is `entry.updated` of its agreement) and `vehicle` (create,
@@ -6764,6 +6882,8 @@ request to any model service.
   | `needs_attention(vehicles?)` | Phase 24 and 25 | current items |
   | `incidents(vehicles?, period?, claims_only?)` | claims history (§7.29, module on) | incidents and claims, archived and sold vehicles included, with the access rules of §7.29 |
   | `issues(vehicles?, status?)` | issues (Phase 40.2, §7.37, module on) | the vehicles' issues (open and watching by default; `status` `open`, `watching`, `fixed` or `all`), safety first, then newest noticed: title, the owner's description, status, *Affects safety*, noticed date and mileage, look-again point, what fixed it. Never a cause |
+  | `modifications(vehicles?, state?)` | modifications (Phase 50.2, §7.39, `parts` on) | the vehicles' modifications (`state` `current`, `reverted` or `all`; current by default), then newest first: title, category, date and mileage, fitted by, whether declared to the insurer and when, *Reverted* and when, the parts fitted and what came off (names, brands, part numbers); the cost only with `ViewCosts`, and the build total as its own figure, never in a running cost |
+  | `parts(vehicles?, status?)` | parts (Phase 50.2, §7.39, `parts` on) | the vehicles' parts (`status` `fitted`, `stored`, `gone` or `all`; fitted by default): name, brand, part number, supplier, status, condition, distance on the vehicle, the warranty as the page words it (*In warranty until…* or *Warranty ended*), and the fittings; the price only with `ViewCosts` |
   | `mot_history(vehicle)` | MOT history (Phase 41, §7.38; `compliance` and the provider on, history fetched) | the stored tests (date, result, expiry, mileage, defects by type), the recall state, the issues and documents made from them, and when it was fetched. Never fetches |
   | `finance(vehicle)` | finance agreements (Phase 29.2, §7.32, module on) | the agreement's figures with their labels, estimates marked as such; never the agreement number |
   | `stations(query?, favourites_only?)` | fuel stations (Phase 30.1, §7.33, `stations` on) | stations matching the query, favourites first, each with the user's visits, spend, and average and cheapest price paid per grade over the vehicles they can see; never places |
@@ -6850,6 +6970,7 @@ entries by message*.
   | `draft_tyre_check` | tread check | tyres | positions and depths in the user's depth unit |
   | `draft_incident` | incident | incidents | Phase 27.1: date (not in the future), type and fault matched to the codes, damage areas, claim status, insurer from the policy current on the date unless named |
   | `draft_issue` | issue | issues | Phase 40.2: noticed on (not in the future), title and description in the user's own words, never a cause; status open or watching with an optional look-again point; *Affects safety* only when the user says so; category matched to the maintenance categories |
+  | `draft_modification` | modification | parts | Phase 50.2: date (not in the future), title in the user's own words, category matched to the modification categories, fitted by, notes; the cost only for a user with `ViewCosts` on the vehicle; no parts (the owner adds them in the form the card opens, or on the part pages) |
   | `draft_reminder` | manual reminder | reminders (`Manage`) | due date absolute, or relative to a document's expiry or a schedule's next due date ("two weeks before the MOT expires"), computed by Logbook from that source |
 
   Every draft tool takes a `vehicle` id. Without one, the user's only
@@ -7309,9 +7430,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   redaction) and the answer are logged, never an image.
 - `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
   against the configured models and reports field accuracy per kind.
-- **Not in scope:** saving without the form; a parts inventory or a VAT
-  field (#79); bulk scanning; a warranty entity (warranties scan as
-  `other`); OCR engines (the vision model reads images).
+- **Parts lines** (Phase 50.2, #440): a service invoice's parts lines are
+  offered under the form as *Add as parts*, unticked (§7.39 *Scanning*).
+- **Not in scope:** saving without the form; a parts inventory away from
+  a vehicle or a VAT field (#79); bulk scanning; a warranty entity
+  (warranty papers scan as `other`, and a part's warranty is never read
+  from a line: §7.39); OCR engines (the vision model reads images).
 
 ### 7.28 MCP server (Phase 26.5)
 
@@ -7386,7 +7510,8 @@ with its own model. No connection in Settings → AI is needed or used.
     mileage log.
   - `read_write` keys also get `draft_service_record`, `draft_document`,
     `draft_expense`, `draft_tyre_check`, `draft_reminder`, from Phase
-    27.1 `draft_incident` and from Phase 40.2 `draft_issue`: validated as
+    27.1 `draft_incident`, from Phase 40.2 `draft_issue` and from Phase 50.2
+    `draft_modification`: validated as
     in §7.26 *Drafting entries*, then kept as a draft from MCP (§6
     AiDraft `source = mcp`) for **7 days**. Their result says "Draft
     saved. Open {link} to add it.", the link going to the card on the
@@ -9646,9 +9771,85 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
 - **Backups** and `bin/export-user.php` carry the three tables. The schema
   version moves: a backup from before 3.15.0 is restored with its own
   version, then upgraded (§7.13).
-- **Phase 50.2 — elsewhere:** warranty reminders, the list for an
-  insurer, the sale pack, scanning a receipt into a part, the API, Ask,
-  MCP, CSV and webhooks.
+- **Phase 50.2** (decided 2026-10-15, #437–#447) adds the rest, below.
+- **Warranty reminders** (#437, #446, #447; §7.6 *Part warranty
+  reminders*): a part's tick ***Remind me before it ends*** (§6 Part
+  `warranty_reminder`, off by default) is on the part form and on the
+  inline new-part row of a record's form, behind *More* beside the
+  warranty fields. Saving the tick on a warranty the form can tell has
+  already ended (a time limit counted from a purchase date that is past)
+  is refused with "This warranty has already ended, so there is nothing to
+  remind you of"; any other warranty simply stops reminding once it ends.
+  An edit that leaves a tick already stored, and the warranty, as they were
+  is never refused, so a part whose warranty has since ended stays editable.
+  The tick means nothing without a warranty and is not kept. A reminder is raised only while the
+  tick is set, the part is not *Gone* and the warranty has not ended; a
+  stored spare's warranty runs on, so it still reminds. The reminder's
+  *Done* reads *Checked it*.
+- **For your insurer** (#438, #444, #445): `/vehicles/{id}/parts/insurer`,
+  linked from the *Parts* tab's *Modifications* heading and printable as
+  §8 *Printing reports* (the claims history's layout: the vehicle, its
+  registration drawn as a plate, "Prepared {date}"). It lists every
+  **current** (not reverted) modification, **ECU tunes first**, then in
+  the category order of this section, then oldest first, and for each: its
+  title, category, **date fitted**, **what it changed** (the parts it fitted
+  as "{name}, {brand}, {part number}", and "Replaced {name}" for each part
+  it took off) and **Declared on {date}** or **Not declared yet**. **Never
+  costs, prices or proceeds**: the page needs `View` only and is the same
+  for every viewer. Logbook doesn't judge whether a modification must be
+  declared or what it would add to a premium: the list is the owner's
+  record, and says so in one line under the heading. A reverted
+  modification is left off (it is no longer on the car); the page ends with
+  "Reverted: {n}" only when there are some.
+  - ***Mark declared*** (`Manage`) is a small form on the page: a date,
+    today by default (not in the future, not before the modification's
+    date), and a button for **all** the undeclared listed modifications, or
+    one on each row. Rows already declared are never changed by the bulk
+    button. A row's *Clear* (`Manage`) puts it back to *Not declared yet*.
+    Each is a POST (CSRF, no JS needed), writes `declared_on` and sends
+    the modification's `entry.updated` webhook.
+  - A **Not declared** badge sits on each current modification's row on the
+    *Parts* tab and on its page, for anyone with `View`. There is no
+    *Needs attention* item for it (#438): Logbook doesn't know the policy's
+    terms, and §7.24 keeps to what is certainly wrong.
+  - With `parts` off the page is a 404, as every parts page.
+- **Sale pack** (#439; §7.19): ***Include modifications*** (`modifications=1`,
+  off by default; the option is offered with `parts` on and the sections
+  are not built with it off). Three groups under *History*, after the open
+  issues: ***Modifications*** (current ones: title, category, date,
+  mileage, who fitted it and the parts they fitted, with part numbers),
+  ***Returned to standard*** (reverted modifications whose `original`
+  parts are fitted again, with the date and the parts) and ***Kept with
+  the car*** (the vehicle's *Stored* parts: name, brand, part number and
+  "Original part" or "Spare"). **Never costs, prices or sale proceeds**,
+  whatever the other options: `costs=1` does not add them. A screen-only
+  notice says "Modifications can affect insurance. Tell the buyer what
+  has been changed. Costs and prices are never included." The paperwork
+  ZIP is unchanged: the option only adds to the printed summary.
+- **Scanning** (#440; §7.27 *Mapping to Logbook*): a scanned service
+  invoice's **parts lines** appear under the prefilled service record
+  form as ***Add as parts***, a checklist (the module on and `Log`), up
+  to 20 lines, each an editable name, part number and price read from the
+  line as a **guess to check** (a trailing amount is the price; a token
+  with digits and letters or dashes, but not an oil grade or a tyre size,
+  is the part number; a line that is only an amount keeps its text), all
+  **unticked**: oil and screen wash are parts lines too. A
+  ticked line becomes a new *Parts fitted* row, fitted by that record, on
+  *Save*; nothing is created without *Save*. A line's price shows and is
+  kept only for a user with `ViewCosts` (#429), and **warranty terms are
+  never guessed from a line**. The parts lines are not stored with the
+  record, so the list is on the scanned form only; *Make this a
+  modification* never shows it.
+- **API** (§7.20 *Parts and modifications*), **webhooks** (#442), **Ask**
+  (#441; §7.26), **MCP** (§7.28) and **CSV** (#443; §7.7): parts and
+  modifications over the API with `ETag`/`If-Match`; webhook kinds
+  `modification` and `part`; read tools `modifications` and `parts`, a draft
+  tool `draft_modification`, and the running cost tools say that build
+  spend is left out and give it separately; `modifications.csv`,
+  `parts.csv` and `part-fittings.csv` per vehicle (export only: the
+  importer refuses these files, #443). Costs, prices and sale prices follow
+  #429 on every one of them: without `ViewCosts` they are absent, and a
+  write that sends them ignores them.
 - **Not in scope:** tyres (§7.17 keeps them; wheels are parts, the tyres
   on them are not); a parts inventory away from any vehicle (#79 stays)
   and moving a part to another vehicle; planned modifications or a wish
@@ -10923,7 +11124,9 @@ task breakdowns live in the per-phase files; this is the map.
 - **Phase 50.2 — Warranties, the insurer's list and parts everywhere +
   release.** Warranty reminders, the list for an insurer, the sale pack,
   scanning, the API, Ask, MCP, CSV and webhooks for §7.39; release
-  v3.15.0. See [`phase-50.2.md`](docs/phases/phase-50.2.md).
+  v3.15.0 (§6 Part `warranty_reminder`, §7.6, §7.7, §7.19, §7.20, §7.26,
+  §7.27, §7.28, §7.39; #437–#447 decided 2026-10-15). One small
+  migration. See [`phase-50.2.md`](docs/phases/phase-50.2.md).
 
 ---
 

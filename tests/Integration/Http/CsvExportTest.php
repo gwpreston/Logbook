@@ -199,6 +199,99 @@ final class CsvExportTest extends AppTestCase
         self::assertSame(404, $browser->get('/vehicles/' . $golf->id . '/export/issues.csv')->getStatusCode());
     }
 
+    public function testPartsAndModificationsExportWithTheirFittings(): void
+    {
+        // Phase 50.2 (spec.md §7.7, #443): export only, the cost and prices only with Can see costs.
+        $app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $zone = new \DateTimeZone('Europe/London');
+        $day = static fn (string $date): \DateTimeImmutable => LocalTime::parseDate($date) ?? throw new \LogicException($date);
+        $mods = $this->service($app, \Logbook\Service\Part\ModificationService::class);
+        $mods->create($golf, new \Logbook\Domain\Part\ModificationData(
+            '=Cat-back exhaust',
+            \Logbook\Domain\Part\ModificationCategory::Exhaust,
+            $day('2026-03-01'),
+            '1609.344',
+            '899.000',
+            'Self',
+            declaredOn: $day('2026-03-20'),
+        ), $zone, parts: new \Logbook\Service\Part\RecordParts(
+            fitNew: [new \Logbook\Domain\Part\PartData(
+                'Cat-back system',
+                brand: 'Milltek',
+                partNumber: 'SSXVW123',
+                boughtOn: $day('2026-02-20'),
+                price: '780.000',
+                warrantyMonths: 24,
+                warrantyKm: '16093.440',
+                warrantyFrom: \Logbook\Domain\Part\WarrantyStart::Purchase,
+                warrantyReminder: true,
+            )],
+            cameOff: [new \Logbook\Service\Part\CameOff(new \Logbook\Domain\Part\PartData('Standard exhaust'))],
+        ));
+        $base = '/vehicles/' . $golf->id . '/export/';
+
+        $mod = self::rows(self::body($browser->get($base . 'modifications.csv')));
+        self::assertSame([
+            'Date', 'Odometer (Miles)', 'Title', 'Category', 'Category code', 'Fitted by', 'Cost', 'Currency', 'Notes',
+            'Declared on', 'Reverted on', 'Reverted odometer (Miles)', 'Note',
+        ], $mod[0]);
+        self::assertSame(
+            [
+                '2026-03-01', '1000', "'=Cat-back exhaust", 'Exhaust', 'exhaust', 'Self', '899', 'GBP', '',
+                '2026-03-20', '', '', '',
+            ],
+            $mod[1],
+            'plain decimals, the owner\'s unit, and a formula guard on text',
+        );
+
+        $parts = self::rows(self::body($browser->get($base . 'parts.csv')));
+        self::assertSame('Name', $parts[0][0]);
+        self::assertContains('Price', $parts[0]);
+        self::assertContains('Remind me before it ends', $parts[0]);
+        $byName = [];
+        foreach (array_slice($parts, 1) as $row) {
+            $byName[$row[0]] = array_combine($parts[0], $row);
+        }
+        self::assertSame('780', $byName['Cat-back system']['Price']);
+        self::assertSame('24', $byName['Cat-back system']['Warranty (months)']);
+        self::assertSame('10000', $byName['Cat-back system']['Warranty distance (Miles)']);
+        self::assertSame('yes', $byName['Cat-back system']['Remind me before it ends']);
+        self::assertSame('Fitted', $byName['Cat-back system']['Status']);
+        self::assertSame('Stored', $byName['Standard exhaust']['Status']);
+
+        $fittings = self::rows(self::body($browser->get($base . 'part-fittings.csv')));
+        self::assertContains('Fitted by (record)', $fittings[0]);
+        $fitted = array_filter($fittings, static fn (array $r): bool => in_array('Modification: =Cat-back exhaust', $r, true));
+        self::assertNotEmpty($fitted, 'the record that fitted it, by kind and title');
+
+        // Export is Manage, and Manage always sees costs; a Log share can't export at all.
+        $member = $this->createMember($app, 'logger');
+        $this->service($app, \Logbook\Repository\VehicleShareRepository::class)->insert(
+            $golf->id,
+            $member->id,
+            \Logbook\Domain\Access\ShareLevel::Log,
+            true,
+            false,
+            new DateTimeImmutable(self::NOW),
+        );
+        $theirs = $this->browserFor($app, 'logger');
+        foreach (['modifications', 'parts', 'part-fittings'] as $module) {
+            self::assertSame(403, $theirs->get($base . $module . '.csv')->getStatusCode(), $module);
+        }
+        $html = self::body($browser->get('/vehicles/' . $golf->id . '/parts'));
+        self::assertStringContainsString('href="' . $base . 'part-fittings.csv"', $html);
+
+        $toggles = $this->service($app, \Logbook\Service\Feature\FeatureToggles::class);
+        $toggles->save(array_values(array_filter(
+            \Logbook\Domain\Feature\Feature::cases(),
+            static fn (\Logbook\Domain\Feature\Feature $f): bool => $f !== \Logbook\Domain\Feature\Feature::Parts,
+        )));
+        self::assertSame(404, $browser->get($base . 'parts.csv')->getStatusCode());
+    }
+
     public function testTabsLinkToTheirExport(): void
     {
         $app = $this->createApp();

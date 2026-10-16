@@ -9,6 +9,8 @@ use DateTimeZone;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\Part\ModificationData;
+use Logbook\Domain\Part\PartData;
+use Logbook\Domain\Part\RemovalOutcome;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -16,6 +18,8 @@ use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Part\ModificationService;
+use Logbook\Service\Part\PartRemoval;
+use Logbook\Service\Part\PartService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\AskTestCase;
 use Psr\Container\ContainerInterface;
@@ -63,6 +67,27 @@ final class BuildCostsToolTest extends AskTestCase
         self::assertSame('2780.00', $rate->get('currencies', 0, 'all_vehicles', 'total', 'amount'));
         self::assertSame('2780.00', $rate->get('currencies', 0, 'vehicles', 0, 'total', 'amount'));
         self::assertSame('0.2780', $rate->get('currencies', 0, 'all_vehicles', 'cost_per_km'), '2780 over 10,000 km');
+        // #441: the build spend is given beside it as its own figure, so an answer can say both.
+        self::assertSame('1240.00', $rate->get('currencies', 0, 'all_vehicles', 'build_total', 'amount'));
+        self::assertSame('1240.00', $rate->get('currencies', 0, 'vehicles', 0, 'build_total', 'amount'));
+        self::assertStringContainsString('build_total', $rate->string('note'));
+    }
+
+    public function testTheModificationsTotalIsNetOfPartsSoldLikeTheCostsFigure(): void
+    {
+        [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true']);
+        $golf = $this->golf($app, $owner);
+        $parts = $this->service($app, PartService::class);
+        $zone = new DateTimeZone('UTC');
+        $part = $parts->create($golf, new PartData(name: 'Old springs'), $zone, fitOn: new DateTimeImmutable('2025-06-01'));
+        $sold = new PartRemoval(RemovalOutcome::Sold, '50.000');
+        $parts->remove($golf, $part, new DateTimeImmutable('2025-07-01'), null, $sold, $zone);
+
+        $build = $this->data($app, $owner, 'costs', ['vehicles' => [$golf->id], 'period' => 'last_year', 'category' => 'build']);
+        $mods = $this->data($app, $owner, 'modifications', ['vehicles' => [$golf->id], 'state' => 'all']);
+
+        self::assertSame('1190.00', $build->get('currencies', 0, 'total', 'amount'), '1240 less the 50 it sold for');
+        self::assertSame('1190.00', $mods->get('build_total', 0, 'amount'));
     }
 
     public function testTheDescriptionsSayModificationsAreNotRunningCosts(): void
