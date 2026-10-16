@@ -3,7 +3,7 @@
 *Five open import rows of the known-issues log fixed, each with a
 regression test.*
 
-Status: 🔨 in review ([#115](https://github.com/gwpreston16/Logbook/pull/115)) · releases as **v3.16.1** · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.16.1** ([#115](https://github.com/gwpreston16/Logbook/pull/115)) · file lives in `docs/phases/`
 
 Phase 51's start-of-phase check (CLAUDE.md §12) found K9, K11, K12, K21
 and K61 still open in [`known-issues.md`](known-issues.md). They are all
@@ -102,7 +102,7 @@ already says. Where the spec was silent, it now says:
       `bin/import-app.php`; ROADMAP.
 - [x] Known-issues rows K9, K11, K12, K21 and K61 *Fixed*. K65 recorded.
 - [x] Release: VERSION 3.16.1, CHANGELOG 3.16.1, README status.
-- [ ] Merge, then tag `v3.16.1`.
+- [x] Merge, then tag `v3.16.1`.
 
 ## Acceptance criteria
 
