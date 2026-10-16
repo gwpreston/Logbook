@@ -3,7 +3,7 @@
 *Bring a whole Tracktor garage across: vehicles, fill-ups, services,
 documents and reminders.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.16.0** · file lives in `docs/phases/`
 
 [Tracktor](https://github.com/javedh-dev/tracktor) is the self-hosted
 vehicle tracker (SvelteKit, SQLite, MIT licence) whose feature list
@@ -182,12 +182,12 @@ shown on Phase 31's mapping page.
 - [x] `docs/import-tracktor.md`: exporting from Tracktor, what comes
       across and what doesn't, files on the web and the command line.
 - [x] Translations (every shipped locale).
-- [ ] Tests: each fixture end to end on every engine; a re-import adds
+- [x] Tests: each fixture end to end on every engine; a re-import adds
       nothing; a newer export adds only new rows; amounts to the penny;
       the gallon check; a password-protected and a tampered file refused
       with nothing written; provider credentials never read.
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.16.0` once merged.
 
 ### Design review (2026-10-16)
 
