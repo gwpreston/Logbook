@@ -137,6 +137,43 @@ final class ImportTracktorTest extends AppTestCase
         self::assertSame([], $this->ownedVehicles($app, $this->owner($app)->id));
     }
 
+    public function testInvalidRowsNeedSkippingAndASecondImportHasNothingLeft(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $json = (string) json_encode(['version' => '1.0', 'encrypted' => false, 'data' => [
+            'vehicles' => [['id' => 'v1', 'make' => 'Skoda', 'model' => 'Octavia', 'vehicleType' => 'car']],
+            'fuelLogs' => [
+                ['id' => 'f1', 'vehicleId' => 'v1', 'date' => '2026-05-01T00:00:00.000Z', 'odometer' => 1000,
+                    'fuelAmount' => 40, 'rate' => 1.5, 'cost' => 60, 'filled' => true],
+                ['id' => 'f2', 'vehicleId' => 'v1', 'date' => '2026-05-20T00:00:00.000Z', 'odometer' => null,
+                    'fuelAmount' => 40, 'rate' => 1.5, 'cost' => 60, 'filled' => true],
+            ],
+        ]]);
+        $map = $this->upload($browser, $json, 'one.json');
+        $values = ['vehicle' => ['v1' => 'new'], 'distance_unit' => 'km', 'volume_unit' => 'l', 'reminders' => '1'];
+
+        $refused = $browser->post($map, $values);
+        self::assertSame(422, $refused->getStatusCode());
+        self::assertStringContainsString('Skip the row with problems', self::body($refused));
+        self::assertSame([], $this->ownedVehicles($app, $this->owner($app)->id));
+
+        $done = $browser->post($map, $values + ['skip_invalid' => '1']);
+        self::assertSame(200, $done->getStatusCode(), self::body($done));
+        self::assertStringContainsString('1 row was imported.', self::body($done));
+
+        // The same file again: matched by Tracktor's ids, nothing left to import.
+        $again = $this->upload($browser, $json, 'one.json');
+        $vehicle = $this->ownedVehicles($app, $this->owner($app)->id)[0];
+        $nothing = $browser->post($again, ['vehicle' => ['v1' => (string) $vehicle->id]] + $values + ['skip_invalid' => '1']);
+        self::assertSame(422, $nothing->getStatusCode());
+        self::assertStringContainsString('Nothing to import', self::body($nothing));
+
+        // A staged file that has gone starts over.
+        $this->upload($browser, $json, 'other.json');
+        self::assertSame(303, $browser->get($again)->getStatusCode());
+    }
+
     public function testWorksBehindASubpath(): void
     {
         $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);

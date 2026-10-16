@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Import;
 
+use DateTimeImmutable;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ReminderSource;
 use Logbook\Domain\Reminder\ReminderStatus;
 use Logbook\Domain\User\User;
@@ -26,7 +29,9 @@ use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\MaintenanceScheduleRepository;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Repository\ReminderRepository;
+use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Import\App\AppFiles;
+use Logbook\Service\Import\App\AppRow;
 use Logbook\Service\Import\App\AppRowStatus;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Import\App\Tracktor\TracktorExport;
@@ -35,16 +40,21 @@ use Logbook\Service\Import\App\Tracktor\TracktorImportOptions;
 use Logbook\Service\Import\App\Tracktor\TracktorPreview;
 use Logbook\Service\Import\App\Tracktor\TracktorReader;
 use Logbook\Service\Import\App\Tracktor\TracktorVehiclePreview as V;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Storage\FileUpload;
+use Logbook\Support\Storage\UploadKind;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Tests\Support\AppTestCase;
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Slim\Psr7\UploadedFile;
 use Throwable;
+use ZipArchive;
 
 /**
  * Importing from Tracktor (spec.md §7.13 *The Tracktor reader*, Phase 51)
@@ -393,6 +403,83 @@ final class TracktorImportTest extends AppTestCase
         self::assertSame('2027-03-01', $insurance->data->expiryOn?->format('Y-m-d'), 'the next due date Tracktor shows');
     }
 
+    public function testSwitchedOffModulesAndDontImportLeaveRowsOutWithTheReason(): void
+    {
+        [$app, $owner, $importer] = $this->setUpImport(self::indian());
+        $export = self::fixture('export-metric.json');
+        $guess = $importer->guess($owner, $export, []);
+
+        $skipping = TracktorImportOptions::fromQuery([
+            'vehicle' => [$export->vehicles[1]->id => 'skip'],
+            'service' => 'skip',
+            'doc' => ['insurance' => 'skip', 'emissions' => 'not-a-type'],
+            'reminders' => '',
+        ], $guess);
+        self::assertSame('pollution', $skipping->documents['emissions'], 'an unknown target keeps the guess');
+        $preview = $importer->analyse($owner, $export, $skipping, [], [], $this->uploads());
+        [$car, $bike] = $preview->vehicles;
+        self::assertSame(['import_app.tracktor.reason.service_skipped'], self::reasons($car->rows(V::SERVICES)));
+        self::assertSame('import_app.tracktor.reason.document_skipped', $car->rows(V::DOCUMENTS)[0]->note['key'] ?? null);
+        self::assertSame(['import_app.tracktor.reason.reminders_skipped'], self::reasons($car->rows(V::REMINDERS)));
+        self::assertTrue($bike->skipped);
+        // The car's 8 fill-ups, 2 documents, its reading, and the photo and fill-up file; nothing of the bike.
+        self::assertSame(8 + 2 + 1 + 2, $preview->total(AppRowStatus::Import));
+        $files = self::why($car->rows(V::FILES));
+        self::assertSame('import_app.tracktor.reason.file_row', $files['service-invoice.pdf'], 'its record isn\'t imported');
+        self::assertNull($files['fuel-bill.pdf']);
+
+        $features = $this->service($app, FeatureToggles::class);
+        $features->save(array_values(array_filter(
+            Feature::cases(),
+            static fn (Feature $f): bool => !in_array($f, [Feature::Maintenance, Feature::Compliance, Feature::Reminders], true),
+        )));
+        $off = $importer->analyse($owner, $export, $guess, [], [])->vehicles[0];
+        self::assertSame(['import_app.reason.maintenance_off'], self::reasons($off->rows(V::SERVICES)));
+        self::assertSame(['import_app.tracktor.reason.compliance_off'], self::reasons($off->rows(V::DOCUMENTS)));
+        self::assertSame(['import_app.tracktor.reason.reminders_off'], self::reasons($off->rows(V::REMINDERS)));
+    }
+
+    public function testAnOdometerNotAboveTheTargetsIsLeftOutAndAPhotoIsKept(): void
+    {
+        [$app, $owner, $importer] = $this->setUpImport(self::indian());
+        $export = self::fixture('export-metric.json');
+        $vehicles = $this->service($app, VehicleService::class);
+        $swift = $vehicles->create(
+            $owner,
+            new VehicleData(VehicleType::Car, 'Maruti Suzuki', 'Swift', FuelType::Petrol, registration: 'KA01AB1234'),
+        );
+        $this->service($app, OdometerService::class)
+            ->create($swift, new OdometerReadingData('50000', new DateTimeImmutable('2026-09-01T12:00:00Z')));
+        $png = (string) tempnam(sys_get_temp_dir(), 'logbook-photo-');
+        $pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+        file_put_contents($png, (string) base64_decode($pixel, true));
+        $file = new UploadedFile($png, 'mine.png', 'image/png', (int) filesize($png), UPLOAD_ERR_OK);
+        $vehicles->replacePhoto($owner, $swift, $file, FileUpload::check($file, $vehicles->maxPhotoBytes(), UploadKind::Image));
+        $swift = $vehicles->get($owner, $swift->id);
+        $manageable = $this->manageable($app, $owner);
+
+        // An uploads ZIP without the policy: that one file is missing.
+        $zip = (string) tempnam(sys_get_temp_dir(), 'logbook-uploads-');
+        $archive = new ZipArchive();
+        self::assertTrue($archive->open($zip, ZipArchive::OVERWRITE));
+        $archive->addFromString('uploads/1792132539794-fuel-bill.pdf', "%PDF-1.4\n%%EOF\n");
+        $archive->close();
+        $files = (new ArchiveReader(sys_get_temp_dir() . '/logbook-tracktor-' . bin2hex(random_bytes(6))))->openUploads($zip);
+
+        $options = $importer->guess($owner, $export, $manageable);
+        $preview = $importer->analyse($owner, $export, $options, $this->targets($options, $manageable), $manageable, $files);
+        $car = $preview->vehicles[0];
+        self::assertSame($swift->id, $car->target?->id, 'matched by registration');
+        self::assertSame('import_app.tracktor.reason.reading_lower', $car->rows(V::READINGS)[0]->note['key'] ?? null);
+        $why = self::why($car->rows(V::FILES));
+        self::assertSame('import_app.tracktor.reason.photo_kept', $why['swift.png']);
+        self::assertSame('import_app.tracktor.reason.file_missing', $why['policy.pdf']);
+        self::assertNull($why['fuel-bill.pdf']);
+        $files->close();
+        @unlink($zip);
+        @unlink($png);
+    }
+
     public function testLpgByWeightIsLeftOutAndCngInPoundsBecomesKilograms(): void
     {
         [$app, $owner, $importer] = $this->setUpImport(null);
@@ -555,6 +642,33 @@ final class TracktorImportTest extends AppTestCase
     private function manageable(App $app, User $owner): array
     {
         return $this->service($app, VehicleService::class)->listWith($owner, VehicleAbility::Manage);
+    }
+
+    /**
+     * The different note keys of some rows.
+     *
+     * @param list<AppRow> $rows
+     * @return list<string|null>
+     */
+    private static function reasons(array $rows): array
+    {
+        return array_values(array_unique(self::why($rows)));
+    }
+
+    /**
+     * Each row's note key by its summary.
+     *
+     * @param list<AppRow> $rows
+     * @return array<string, string|null>
+     */
+    private static function why(array $rows): array
+    {
+        $out = [];
+        foreach ($rows as $row) {
+            $out[$row->summary] = $row->note['key'] ?? null;
+        }
+
+        return $out;
     }
 
     private static function path(string $name): string
