@@ -1,0 +1,55 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import_app.twig' as app_import %}
+{#
+ # A Tracktor export imported (spec.md §7.13): per vehicle, the totals per
+ # section, every row not imported with its line and reason, and the
+ # economy check's count. Expects: filename, result (a TracktorPreview with
+ # each vehicle written to), imported, sections, statuses.
+ #}
+
+{% set active_nav = 'settings' %}
+{% set heading = 'import_app.tracktor.result.title'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ filename }}</p>
+                <h1 class="page-header__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        <div class="alert alert--success" role="status">{{ ui.icon('check_circle') }}<span>{{ 'import_app.result.done'|trans({count: imported}) }}</span></div>
+
+        {% for vehicle in result.vehicles|filter(v => v.written) %}
+            {% set written = vehicle.written %}
+            <section class="card" aria-labelledby="result-{{ loop.index }}">
+                <h2 id="result-{{ loop.index }}" class="card__title"><a href="{{ url_for('vehicles.show', {id: written.id}) }}">{{ written.name() }}</a></h2>
+                {% if vehicle.unusualFills > 0 %}
+                    <div class="alert alert--warning" role="status">
+                        {{ ui.icon('warning') }}
+                        <span><a href="{{ url_for('fuel.index', {id: written.id}, {check: 1}) }}">{{ 'import.unusual_fills'|trans({count: vehicle.unusualFills}) }}</a></span>
+                    </div>
+                {% endif %}
+                {% for section in sections %}
+                    {% if vehicle.rows(section) is not empty %}
+                        {% set skipped = vehicle.rows(section)|filter(r => r.status.value != 'import') %}
+                        <h3 class="card__subtitle">{{ ('import_app.section.' ~ section)|trans }}</h3>
+                        <p>{{ app_import.totals(vehicle, section, statuses) }}</p>
+                        {% if skipped is not empty %}
+                            {{ app_import.rows(skipped, ('import_app.section.' ~ section)|trans) }}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </section>
+        {% endfor %}
+
+        <div class="btn-row">
+            <a class="btn btn--primary" href="{{ url_for('garage') }}">{{ 'nav.garage'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url_for('import_app.upload') }}">{{ 'import_app.result.another'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

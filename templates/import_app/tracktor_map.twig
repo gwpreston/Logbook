@@ -1,0 +1,227 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+{% import 'macros/import_app.twig' as app_import %}
+{#
+ # Importing a Tracktor export, steps 2 and 3 (spec.md §7.13 *The Tracktor
+ # reader*): map what the file can't say (a GET form, so the preview is a
+ # plain URL and works without JS), then preview every row of every
+ # vehicle and import them together (POST). See
+ # Action\ImportApp\ImportTracktorPage for the variables.
+ #}
+
+{% set active_nav = 'settings' %}
+{% set heading = 'import_app.title'|trans %}
+
+{% block title %}{{ heading }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack">
+        <a class="back-link" href="{{ url_for('import_app.upload') }}">{{ ui.icon('chevron_left') }}{{ heading }}</a>
+
+        <header class="page-header">
+            <div>
+                <p class="page-header__eyebrow">{{ 'import_app.tracktor.from'|trans }}</p>
+                <h1 class="page-header__title">{{ filename }}</h1>
+                <p class="page-header__lead">
+                    {{ 'import_app.tracktor.file_vehicles'|trans({count: export.vehicles|length}) }}
+                    {% if files_name %}· {{ 'import_app.tracktor.files_given'|trans({name: files_name}) }}{% endif %}
+                </p>
+            </div>
+        </header>
+
+        {% if error %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ trans(error.key, error.params) }}</span></div>
+        {% endif %}
+        {% if export.legacy %}
+            <div class="alert alert--info" role="status">{{ ui.icon('info') }}<span>{{ 'import_app.tracktor.map.legacy'|trans }}</span></div>
+        {% endif %}
+
+        <form class="form" method="get" action="{{ url_for('import_app.map', {token: token}) }}" aria-labelledby="map-heading">
+            <h2 id="map-heading" class="visually-hidden">{{ 'import_app.map.heading'|trans }}</h2>
+            <section class="card" aria-labelledby="vehicles-heading">
+                <h2 id="vehicles-heading" class="card__title">{{ 'import_app.tracktor.map.vehicles_heading'|trans }}</h2>
+                <div class="form-row form-row--2">
+                    {% for vehicle in export.vehicles %}
+                        {% set current = options.vehicles[vehicle.id] ?? 'new' %}
+                        <div class="field">
+                            <label class="field__label" for="f-vehicle-{{ loop.index }}">{{ vehicle.name() }}{% if vehicle.year %} · {{ vehicle.year }}{% endif %}</label>
+                            <select class="select" id="f-vehicle-{{ loop.index }}" name="vehicle[{{ vehicle.id }}]">
+                                {% for target in manageable %}
+                                    <option value="{{ target.id }}"{% if current == target.id ~ '' %} selected{% endif %}>{{ target.name() }}{% if target.data.registration %} · {{ target.data.registration }}{% endif %}</option>
+                                {% endfor %}
+                                <option value="new"{% if current == 'new' %} selected{% endif %}>{{ 'import_app.map.new_vehicle'|trans({name: vehicle.name()}) }}</option>
+                                <option value="skip"{% if current == 'skip' %} selected{% endif %}>{{ 'import_app.map.skip_vehicle'|trans }}</option>
+                            </select>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="units-heading">
+                <h2 id="units-heading" class="card__title">{{ 'import_app.map.units_heading'|trans }}</h2>
+                {% if not units_from_file %}
+                    <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ 'import_app.map.units_guessed'|trans }}</span></div>
+                {% endif %}
+                <div class="form-row form-row--2">
+                    <div class="field">
+                        <label class="field__label" for="f-distance-unit">{{ 'import.distance_unit'|trans }}</label>
+                        <select class="select" id="f-distance-unit" name="distance_unit">
+                            {% for unit in distance_units %}
+                                <option value="{{ unit.value }}"{% if unit == options.distanceUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="f-volume-unit">{{ 'import.volume_unit'|trans }}</label>
+                        <select class="select" id="f-volume-unit" name="volume_unit" aria-describedby="f-volume-unit-hint">
+                            {% for unit in volume_units %}
+                                <option value="{{ unit.value }}"{% if unit == options.volumeUnit %} selected{% endif %}>{{ ('units.name.' ~ unit.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="field__hint" id="f-volume-unit-hint">
+                            {% if export.config.isGallons() %}{{ ui.icon('warning') }}{{ 'import_app.tracktor.map.gallon_hint'|trans }}{% else %}{{ 'import_app.map.volume_hint'|trans }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if export.config.currency %}
+                    <p class="field__hint">{{ 'import_app.tracktor.map.currency'|trans({currency: export.config.currency}) }}</p>
+                {% endif %}
+            </section>
+
+            {% if export.hasServices() %}
+                <section class="card" aria-labelledby="services-heading">
+                    <h2 id="services-heading" class="card__title">{{ 'import_app.tracktor.map.services_heading'|trans }}</h2>
+                    <div class="field">
+                        <label class="field__label" for="f-service">{{ 'import_app.tracktor.map.services_label'|trans }}</label>
+                        <select class="select" id="f-service" name="service" aria-describedby="f-service-hint">
+                            {% for category in maintenance_categories %}
+                                <option value="{{ category.value }}"{% if options.service == category.value %} selected{% endif %}>{{ ('maintenance.category.' ~ category.value)|trans }}</option>
+                            {% endfor %}
+                            <option value="skip"{% if options.service == 'skip' %} selected{% endif %}>{{ 'import_app.map.dont_import'|trans }}</option>
+                        </select>
+                        <p class="field__hint" id="f-service-hint">{{ 'import_app.tracktor.map.services_hint'|trans }}</p>
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if export.documentTypes() is not empty %}
+                <section class="card" aria-labelledby="documents-heading">
+                    <h2 id="documents-heading" class="card__title">{{ 'import_app.tracktor.map.documents_heading'|trans }}</h2>
+                    <div class="form-row form-row--3">
+                        {% for type in export.documentTypes() %}
+                            {% set current = options.documents[type] ?? 'skip' %}
+                            <div class="field">
+                                <label class="field__label" for="f-doc-{{ type }}">{{ ('import_app.tracktor.document_type.' ~ type)|trans }}</label>
+                                <select class="select" id="f-doc-{{ type }}" name="doc[{{ type }}]">
+                                    {% for target in document_types %}
+                                        <option value="{{ target.value }}"{% if current == target.value %} selected{% endif %}>{{ ('compliance.type.' ~ target.value)|trans }}</option>
+                                    {% endfor %}
+                                    <option value="skip"{% if current == 'skip' %} selected{% endif %}>{{ 'import_app.map.dont_import'|trans }}</option>
+                                </select>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="card" aria-labelledby="options-heading">
+                <h2 id="options-heading" class="visually-hidden">{{ 'import_app.tracktor.map.options_heading'|trans }}</h2>
+                {% if export.hasReminders() %}
+                    <label class="toggle">
+                        <input type="checkbox" name="reminders" value="1"{% if options.reminders %} checked{% endif %}>
+                        <span class="toggle__text">
+                            <span class="toggle__title">{{ 'import_app.tracktor.map.reminders'|trans }}</span>
+                            <span class="toggle__hint">{{ 'import_app.tracktor.map.reminders_hint'|trans }}</span>
+                        </span>
+                    </label>
+                {% else %}
+                    <input type="hidden" name="reminders" value="{{ options.reminders ? '1' : '' }}">
+                {% endif %}
+                <label class="toggle">
+                    <input type="checkbox" name="schedules" value="1"{% if options.schedules %} checked{% endif %}>
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'import_app.tracktor.map.schedules'|trans }}</span>
+                        <span class="toggle__hint">{{ 'import_app.tracktor.map.schedules_hint'|trans }}</span>
+                    </span>
+                </label>
+                {% if export.unread is not empty %}
+                    <p class="field__hint">{{ 'import_app.tracktor.map.unread'|trans({lists: export.unread|join(', ')}) }}</p>
+                {% endif %}
+                {% if export.orphans > 0 %}
+                    <p class="field__hint">{{ 'import_app.tracktor.map.orphans'|trans({count: export.orphans}) }}</p>
+                {% endif %}
+                <div class="btn-row">
+                    <button type="submit" class="btn{{ preview is null ? ' btn--primary' }}">{{ ui.icon('visibility') }}{{ 'import.preview'|trans }}</button>
+                </div>
+            </section>
+        </form>
+
+        {% if preview %}
+            <section class="page__stack" aria-labelledby="preview-heading">
+                <h2 id="preview-heading" class="section-title">{{ 'import.preview_heading'|trans }}</h2>
+
+                {% if files_behind > 0 %}
+                    <div class="alert alert--info" role="status">{{ ui.icon('attach_file') }}<span>{{ 'import_app.tracktor.files_behind'|trans({count: files_behind}) }}</span></div>
+                {% endif %}
+
+                {% for card in cards %}
+                    {% set vehicle = card.vehicle %}
+                    <section class="card" aria-labelledby="vehicle-{{ loop.index }}">
+                        <h3 id="vehicle-{{ loop.index }}" class="card__title">{{ vehicle.source.name() }}</h3>
+                        {% if vehicle.skipped %}
+                            <p class="muted">{{ 'import_app.map.skip_vehicle'|trans }}</p>
+                        {% else %}
+                            <p>
+                                {% if vehicle.target %}{{ 'import_app.result.into'|trans({name: vehicle.target.name()}) }}
+                                {% else %}{{ 'import_app.new_vehicle_note'|trans({name: vehicle.source.name()}) }}{% endif %}
+                            </p>
+                            {% for warning in vehicle.warnings %}
+                                <div class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ trans(warning.key, warning.params) }}</span></div>
+                            {% endfor %}
+                            {% if card.sanity %}
+                                <div class="alert {{ card.sanity.unusual ? 'alert--warning' : 'alert--info' }}" role="status">
+                                    {{ ui.icon(card.sanity.unusual ? 'warning' : 'speed') }}
+                                    <span>
+                                        {{ 'import_app.sanity.line'|trans(card.sanity.params) }}
+                                        {{ 'import_app.sanity.change'|trans }}
+                                        {% if card.sanity.unusual %}{{ 'import_app.sanity.unusual'|trans }}{% endif %}
+                                    </span>
+                                </div>
+                            {% endif %}
+                            {% for section in sections %}
+                                {% if vehicle.rows(section) is not empty %}
+                                    <h4 class="card__subtitle">{{ ('import_app.section.' ~ section)|trans }}</h4>
+                                    <p>{{ app_import.totals(vehicle, section, statuses) }}</p>
+                                    {{ app_import.rows(card.listed[section], ('import_app.section.' ~ section)|trans) }}
+                                    {% if card.unlisted[section] > 0 %}
+                                        <p class="muted">{{ 'import.more_rows'|trans({count: card.unlisted[section]}) }}</p>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </section>
+                {% endfor %}
+
+                <form class="form card" method="post" action="{{ url_for('import_app.map', {token: token}) }}">
+                    {{ ui.csrf(csrf) }}
+                    {% for name, value in query %}
+                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                    {% endfor %}
+                    {% if invalid > 0 %}
+                        <label class="toggle">
+                            <input type="checkbox" name="skip_invalid" value="1">
+                            <span class="toggle__text">
+                                <span class="toggle__title">{{ 'import.skip_invalid'|trans({count: invalid}) }}</span>
+                                <span class="toggle__hint">{{ 'import.skip_invalid_hint'|trans }}</span>
+                            </span>
+                        </label>
+                    {% endif %}
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary btn--lg"{% if importable == 0 %} disabled{% endif %}>{{ ui.icon('upload_file') }}{{ 'import_app.submit'|trans({count: importable}) }}</button>
+                        <a class="btn btn--lg btn--ghost" href="{{ url_for('settings') }}">{{ 'form.cancel'|trans }}</a>
+                    </div>
+                </form>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

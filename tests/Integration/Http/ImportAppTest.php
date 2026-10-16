@@ -86,7 +86,7 @@ final class ImportAppTest extends AppTestCase
         $plain = $this->file("Date,Odometer\n2026-01-01,100\n", 'mine.csv');
         $other = $browser->post('/settings/import-app', [], ['file' => $plain]);
         self::assertSame(422, $other->getStatusCode());
-        self::assertStringContainsString('This doesn’t look like a Fuelio export', self::body($other));
+        self::assertStringContainsString('This doesn’t look like a Fuelio or Tracktor export', self::body($other));
 
         $zip = (string) file_get_contents(Kernel::rootDir() . '/tests/Fixtures/import/fuelio/backup.fuelio.zip');
         $backup = $browser->post('/settings/import-app', [], ['file' => $this->file($zip, 'backup.fuelio.zip')]);

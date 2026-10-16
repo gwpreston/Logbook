@@ -106,7 +106,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [49](docs/phases/phase-49.md) | Getting started and household defaults + release | ✅ |
 | [50.1](docs/phases/phase-50.1.md) | Parts and modifications | ✅ |
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | ✅ |
-| [51](docs/phases/phase-51.md) | Import from Tracktor + release | 📋 |
+| [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [52](docs/phases/phase-52.md) | Import from ABRP + release | 📋 |
 | [53](docs/phases/phase-53.md) | The README and the docs, for someone deciding | 📋 |
 

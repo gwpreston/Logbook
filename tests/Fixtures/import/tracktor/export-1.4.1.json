@@ -1,0 +1,245 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-10-16T06:35:50.053Z",
+  "encrypted": false,
+  "data": {
+    "vehicles": [
+      {
+        "id": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "make": "Skoda",
+        "model": "Octavia",
+        "year": 2016,
+        "licensePlate": "B-OC 2016",
+        "vin": null,
+        "color": null,
+        "odometer": 120500,
+        "image": null,
+        "fuelType": "diesel",
+        "customFields": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "fuelLogs": [
+      {
+        "id": "709ae58d-1ac6-4608-83b4-d13ed20070dc",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "date": "2026-01-10T00:00:00.000Z",
+        "odometer": 119200,
+        "fuelAmount": 45.2,
+        "cost": 74.99,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "8dffe080-a6e1-4c84-a641-4fbac98751bb",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "date": "2026-02-05T00:00:00.000Z",
+        "odometer": 119950,
+        "fuelAmount": 42.8,
+        "cost": 72.29,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "a710bdf1-f267-46d7-affe-7485ea7042e8",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "date": "2026-03-01T00:00:00.000Z",
+        "odometer": 120400,
+        "fuelAmount": 30.1,
+        "cost": 51.44,
+        "filled": false,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "maintenanceLogs": [
+      {
+        "id": "2ea29af5-f0b5-4b6f-8bd6-95678b1734a6",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "date": "2026-02-20T00:00:00.000Z",
+        "odometer": 120100,
+        "serviceCenter": "Autohaus Muster",
+        "cost": 389.9,
+        "notes": "Inspektion",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "insurances": [
+      {
+        "id": "c639be6f-4955-4575-80a3-7185cd21f0f5",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "provider": "HUK-Coburg",
+        "policyNumber": "HUK-55512",
+        "startDate": "2026-01-01T00:00:00.000Z",
+        "endDate": null,
+        "recurrenceType": "yearly",
+        "recurrenceInterval": 1,
+        "cost": 412.5,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:50",
+        "updated_at": "2026-10-16 06:35:50"
+      }
+    ],
+    "puccs": [
+      {
+        "id": "421a0159-44e6-4968-b6ba-869b65392f0e",
+        "vehicleId": "c7705c74-01c8-45a0-8235-d747fbbcfa85",
+        "certificateNumber": "AU-2026-77",
+        "issueDate": "2026-02-20T00:00:00.000Z",
+        "expiryDate": "2028-02-19T00:00:00.000Z",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "testingCenter": "DEKRA Berlin",
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:50",
+        "updated_at": "2026-10-16 06:35:50"
+      }
+    ],
+    "configs": [
+      {
+        "key": "dateFormat",
+        "value": "dd/MM/yyyy",
+        "description": "Format for displaying dates",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "currency",
+        "value": "EUR",
+        "description": "Default currency for financial transactions",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "unitOfDistance",
+        "value": "kilometer",
+        "description": "Unit of measure for distance",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "unitOfVolume",
+        "value": "liter",
+        "description": "Unit of measure for volume",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "locale",
+        "value": "en",
+        "description": "Locale for all formatting options",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "timezone",
+        "value": "UTC",
+        "description": "Timezone to be used for all dates",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "customCss",
+        "value": "",
+        "description": "Custom CSS for the application",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featureFuelLog",
+        "value": "true",
+        "description": "Enable/Disable Fuel Log feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featureMaintenance",
+        "value": "true",
+        "description": "Enable/Disable Maintenance feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featurePucc",
+        "value": "true",
+        "description": "Enable/Disable PUCC feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featureReminders",
+        "value": "true",
+        "description": "Enable/Disable Reminders feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featureInsurance",
+        "value": "true",
+        "description": "Enable/Disable Insurance feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "featureOverview",
+        "value": "true",
+        "description": "Enable/Disable Overview feature",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "mileageUnitFormat",
+        "value": "distance-per-fuel",
+        "description": "Format for displaying mileage: distance-per-fuel (e.g., km/L, mpg) or fuel-per-distance (e.g., L/100km)",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "unitOfLpg",
+        "value": "litre",
+        "description": "Unit for measuring LPG Fuel",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "unitOfCng",
+        "value": "kilogram",
+        "description": "Unit for measuring CNG Fuel",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "notificationProcessingEnabled",
+        "value": "true",
+        "description": "Enable scheduled processing of notification providers",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      },
+      {
+        "key": "notificationProcessingSchedule",
+        "value": "0 9 * * *",
+        "description": "Cron schedule for processing queued provider notifications",
+        "created_at": "2026-10-16 06:34:01",
+        "updated_at": "2026-10-16 06:34:01"
+      }
+    ],
+    "users": [],
+    "sessions": []
+  }
+}

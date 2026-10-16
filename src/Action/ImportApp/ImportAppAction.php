@@ -19,6 +19,7 @@ use Logbook\Service\Import\App\Fuelio\FuelioExport;
 use Logbook\Service\Import\App\Fuelio\FuelioImporter;
 use Logbook\Service\Import\App\Fuelio\FuelioReader;
 use Logbook\Service\Import\App\SectionSplitter;
+use Logbook\Service\Import\App\Tracktor\TracktorReader;
 use Logbook\Service\Import\DateOrder;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvTooLong;
@@ -35,11 +36,12 @@ use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * GET|POST /settings/import-app/{token} — importing from another app,
- * steps 2 to 4 (spec.md §7.13): map (a GET form, bookmarkable, working
+ * steps 2 to 4 (spec.md §7.13; a Tracktor export goes to ImportTracktorPage): map (a GET form, bookmarkable, working
  * without JS), preview every row once the form is submitted, and import
  * (POST) in one transaction. Only active vehicles the user can manage are
  * offered; any other vehicle in the form is a 404.
@@ -51,6 +53,7 @@ final readonly class ImportAppAction
 
     public function __construct(
         private FuelioImporter $importer,
+        private ImportTracktorPage $tracktor,
         private VehicleService $vehicles,
         private StagedFiles $staged,
         private DisplayFormatter $format,
@@ -69,6 +72,9 @@ final readonly class ImportAppAction
         $session = RequestContext::session($request);
         $token = $args['token'] ?? '';
         $import = $session->get(ImportAppRoute::SESSION);
+        if (is_array($import) && ($import['token'] ?? null) === $token && ($import['app'] ?? null) === TracktorReader::APP) {
+            return $this->tracktor->handle($request, $response, $token, $import);
+        }
         $path = is_array($import) && ($import['token'] ?? null) === $token
             ? $this->staged->path(ImportAppRoute::STAGE, $token)
             : null;
@@ -222,8 +228,8 @@ final readonly class ImportAppAction
 
         return [
             'params' => [
-                'distance' => mb_strtolower($this->translator->trans('units.name.' . $options->distanceUnit->value)),
-                'volume' => mb_strtolower($this->translator->trans('units.name.' . $options->volumeUnit->value)),
+                'distance' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->distanceUnit->value),
+                'volume' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->volumeUnit->value),
                 'economy' => $this->format->economy($sanity->distanceKm, $sanity->volume, $sanity->kind),
                 'canonical' => $canonical,
             ],
@@ -245,13 +251,29 @@ final readonly class ImportAppAction
     }
 
     /**
+     * A unit's name inside a sentence: "kilometres", but "UK gallons" keeps
+     * its capitals, and German keeps its capitalised nouns.
+     */
+    public static function inSentence(TranslatorInterface $translator, string $key): string
+    {
+        $name = $translator->trans($key);
+        $locale = $translator instanceof LocaleAwareInterface ? $translator->getLocale() : 'en';
+        $second = mb_substr($name, 1, 1);
+        if (str_starts_with($locale, 'de') || ($second !== '' && mb_strtoupper($second) === $second)) {
+            return $name;
+        }
+
+        return mb_strtolower(mb_substr($name, 0, 1)) . mb_substr($name, 1);
+    }
+
+    /**
      * The options as flat form fields ("cat[5]" → "expense:parking"), for the
      * import form's hidden inputs.
      *
      * @param array<string, mixed> $query
      * @return array<string, string>
      */
-    private static function flatten(array $query): array
+    public static function flatten(array $query): array
     {
         $out = [];
         foreach ($query as $key => $value) {

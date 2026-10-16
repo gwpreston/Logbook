@@ -4,6 +4,55 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [3.16.0] — 2026-10-16
+
+Phase 51: **import from Tracktor.** Bring a whole Tracktor garage across in
+one go: every vehicle, fill-up, service record, document and reminder, with
+their attachments and vehicle photos. See
+[docs/import-tracktor.md](docs/import-tracktor.md). Logbook isn't affiliated
+with Tracktor.
+
+### Added
+- **Settings → Import from another app** takes a Tracktor JSON export
+  (*Settings → Export* in Tracktor, without a password), and optionally a ZIP
+  of Tracktor's uploads folder for the attachments and photos. Exports from
+  Tracktor 1.x, with separate insurance and pollution certificates, are read
+  too.
+- **One mapping for the whole garage:** each Tracktor vehicle to one of yours
+  (found again by Tracktor's own ids on a later import), a new one or none;
+  the units from Tracktor's settings, with the UK or US gallon to choose and
+  each vehicle's economy to check them by; one category for the service
+  records; each document type to a Logbook one; reminders on or off; and
+  **Make schedules**, which turns a repeating service reminder into a service
+  schedule and gives a repeating document its next due date as its expiry.
+- **The preview** shows a card per vehicle with every row and what happens to
+  it, and warns when rows are already in another vehicle, when an existing
+  vehicle has another currency, and for a bus, farm vehicle or yacht (which
+  come across as cars). Everything lands in one transaction, or nothing does.
+- **What comes across:** make, model, year, registration, VIN, fuel and type
+  (motorcycles and scooters as bikes; a new vehicle takes Tracktor's currency
+  if it isn't yours); fill-ups, with any two of amount, price and cost giving
+  the third, and a mark where all three disagree by more than a cent; LPG in
+  litres or gallons and CNG in kilograms or pounds; service records titled
+  from the first line of their notes; documents; every reminder, completed
+  ones marked done; the vehicle's odometer as a reading; files on their
+  entries and the vehicle's photo. Colour and custom fields are listed as not
+  imported, and notifications, notification providers (whose credentials stay
+  in Tracktor) and settings are never read.
+- **Importing a newer export later** adds only what's new, into the same
+  vehicles, even if you've edited the imported entries.
+- **Command line:** `php bin/import-app.php <export.json> [--files
+  <folder|zip>]`, with `--create`, `--vehicle`, `--as`, `--schedules` and
+  `--dry-run` as for Fuelio. The script picks the reader by the file.
+
+### Changed
+- The import page's economy line keeps "UK gallons" and "US gallons" (and
+  German nouns) capitalised; it said "uk gallons".
+
+### Notes
+- No migration. Password-protected Tracktor exports are refused with "Export
+  again from Tracktor without a password".
+
 ## [3.15.0] — 2026-10-15
 
 Phase 50: **parts and modifications.** What was fitted, what came off, and
