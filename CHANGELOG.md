@@ -84,7 +84,10 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
 ### Upgrading (Phase 50.2)
 - One small migration (`parts.warranty_reminder`, off for every existing
   part), reversible on every engine; rolling it back removes the warranty
-  reminders it made.
+  reminders it made, clears every part's *Remind me before it ends* tick
+  (upgrading again leaves them all off, and *Checked it* marks on part
+  reminders are gone), and deletes Ask and MCP modification drafts not yet
+  added, which the older version can't read.
 - API: new paths, the History kinds above, the reminder source `part` and the
   webhook kinds `modification` and `part` are new enum values; a client that
   rejects unknown values should accept them. Modification and part files are

@@ -217,4 +217,29 @@ final class PartsMigrationTest extends AppTestCase
         self::assertEquals(0, $db->fetchOne("SELECT COUNT(*) FROM reminders WHERE source = 'part'"));
         self::assertEquals(0, $db->fetchOne('SELECT COUNT(*) FROM reminder_deliveries'), 'no orphan delivery rows');
     }
+
+    /**
+     * Rolling back Phase 50.2's migration deletes drafts of kind `modification`: the older DraftKind has no such
+     * case, so one pending draft would make its owner's dashboard and Insights return 500 (merge review,
+     * upgrade-tester). Drafts of other kinds stay.
+     */
+    public function testRollingBackTheWarrantyReminderMigrationDeletesModificationDrafts(): void
+    {
+        $app = $this->createApp(['FEATURES_PARTS' => 'true']);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $golf = $this->vehicle($app);
+        $db = $this->connection($app);
+        foreach (['modification', 'fuel'] as $kind) {
+            $db->insert('ai_drafts', [
+                'user_id' => $owner->id, 'kind' => $kind, 'vehicle_id' => $golf->id, 'source' => 'mcp',
+                'input' => '{}', 'card' => '{}', 'form_values' => '{}',
+                'created_at' => '2026-10-15 12:00:00', 'expires_at' => '2026-10-22 12:00:00',
+            ]);
+        }
+
+        Migrator::run('rollback', ['--target' => '20261109100000']);
+
+        self::assertSame(['fuel'], $db->fetchFirstColumn('SELECT kind FROM ai_drafts'));
+    }
 }
