@@ -3,7 +3,7 @@
 *What was fitted, what came off, and what the build has cost, kept apart
 from what the car costs to run.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.15.0** · file lives in `docs/phases/`
 
 Logbook records the work done to a car ("Clutch replaced, £780") but not
 the **part**: which clutch, its part number, where it was bought, when it
@@ -274,7 +274,7 @@ the source of truth, and this outline is what was proposed:
       60-query budget on the overview and dashboard. (After the merge
       review fixes: 4,068 tests green on all four engines; line coverage
       95.08%, changed lines 94.1%.)
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; German at
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; German at
       375 px; subpath).
 
 ### Notes from building

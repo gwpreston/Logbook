@@ -3,7 +3,7 @@
 *A reminder before a warranty runs out, a list of modifications to read to
 an insurer, and parts wherever entries go.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.15.0** · file lives in `docs/phases/`
 
 [Phase 50.1](phase-50.1.md) records parts, modifications and their
 warranties on Logbook's own pages, and keeps build spend out of every
@@ -124,12 +124,12 @@ questions below are decided; in outline:
       figure.
 - [x] CSV exports of quantities and dates and the formula-injection guard
       (export only: no round trip, #443).
-- [ ] Suite green on every engine; coverage at or above the floor.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; print
+- [x] Suite green on every engine; coverage at or above the floor.
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; print
       preview; subpath).
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 50.1
       and 50.2.
-- [ ] Tag once merged.
+- [x] Tag `v3.15.0` once merged.
 
 ---
 

@@ -37,7 +37,7 @@ Numbers are sequential and never reused.
 | K11 | MEDIUM | Import | The Fuelio CLI imports the valid rows when others are invalid, without a skip flag, and names internal fields (`filled_at`) instead of the file's columns. | `src/Service/Import/App/Fuelio/FuelioCommand.php` | master | Open |
 | K12 | MEDIUM | Import | The Fuelio CLI doesn't highlight an unknown fuel code; unknown Fuelio sections are never listed as "not read" (web or CLI), as spec §7.13 requires. | `FuelioCommand`, `FuelioReader.php:152` | master | Open |
 | K13 | MEDIUM | Import/Export | Export writes local time with no offset, so two fill-ups in the DST fall-back hour collapse to one time on re-import; nonexistent local times are accepted silently. | CSV exporter, CSV importer | master | Open |
-| K14 | MEDIUM | Docs | Phase 50.1 and 50.2 status lines say "in progress" and some task boxes are unticked while ROADMAP says ✅. | `docs/phases/phase-50.1.md`, `phase-50.2.md` | 50.2 | Open |
+| K14 | MEDIUM | Docs | Phase 50.1 and 50.2 status lines say "in progress" and some task boxes are unticked while ROADMAP says ✅. | `docs/phases/phase-50.1.md`, `phase-50.2.md` | 50.2 | Fixed (release v3.15.0) |
 | K15 | LOW | Docs | CHANGELOG says a rollback deletes modification drafts "not yet added"; it deletes every one (pending, added, discarded). Also: 3.15.0 date, loose paragraphs in *Fixed*, and the rollback/webhook notes listed in the review. | `CHANGELOG.md` | 50.2 | Open |
 | K16 | LOW | UI | Insurer page: a blank date on *Mark all* says "not in the future" and isn't tied to the field; row buttons are 38 px at 375 px; the parts toolbar crowds at 375 px. | `templates/parts/insurer.twig`, `templates/parts/index.twig` | 50.2 | Open |
 | K17 | LOW | Ask | The German `parts` warranty text has a hard-coded English "or", and an ended warranty drops its date. | `src/Service/Ai/Ask/Tool/Parts.php` (`warranty()`) | 50.2 | Open |
@@ -69,3 +69,13 @@ recorded so they aren't lost; confirm before fixing):
 | K32 | LOW | Docs | Spec §8 *Printing reports* lists only the five Phase 17.2 pages and says the print layout is "scoped to these pages by `.print-report`", but six more use `.print-report` and aren't listed: Forecast, Finance, True cost, Trip claim, Claims history and *For your insurer*. | `spec.md:10146-10152`, `spec.md:10175`; `templates/{forecast/index,finance/index,reports/true_cost,trips/claim,incidents/history,parts/insurer}.twig` | master | Open |
 | K33 | LOW | Docs | Open question #438 cites spec §7.24, but §7.24 doesn't mention modifications not declared to an insurer; the decision is only in §7.39. Add a line to §7.24, or point #438 at §7.39 only. | `docs/phases/open-questions.md:543`, `spec.md:6382` (§7.24) | 50.2 | Open |
 | K34 | LOW | Docs | Phase 50.2's task 50.2.0 names only questions #437–#443; the four found while starting (#444–#447) are decided but no task names them, unlike Phase 50.1, which names #428. | `docs/phases/phase-50.2.md:91-92` | 50.2 | Open |
+
+## Found in Phase 50.2 (design review at `2e03b6e0`, 2026-10-16)
+
+| # | Severity | Area | Issue | Where | Since | Status |
+|---|---|---|---|---|---|---|
+| K35 | MEDIUM | UI | Several tap targets on the new pages are under 44 px at 375 px: the breadcrumb links (40–42 px), the part page's fitting-row link (16 px), the insurer page's modification title link (20 px) and the per-row *Mark declared* button (38 px). | `templates/parts/insurer.twig`, `modification_show.twig`, `part_show.twig`, `index.twig` | 50.1/50.2 | Open |
+| K36 | LOW | UI | About 50 px of blank space between the *For your insurer* link and the first modification row on the Parts tab. | `templates/parts/index.twig:39` | 50.2 | Open |
+| K37 | LOW | UI | On a new part, neither *Warranty starts from* radio is selected, and the hint doesn't say which applies when neither is chosen. | `templates/parts/part_form.twig` | 50.2 | Open |
+| K38 | LOW | UI | The demo banner prints above the *For your insurer* report (demo mode only). | `templates/parts/insurer.twig`, print CSS | 50.2 | Open |
+| K39 | LOW | UI | The part page shows the warranty but not whether *Remind me before it ends* is on; the tick appears only on the form. Needs a decision (open question) on whether to show it. | `templates/parts/part_show.twig` | 50.2 | Open |
