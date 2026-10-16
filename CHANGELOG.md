@@ -4,6 +4,27 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
+### Fixed
+- **Fill-ups whose worked-out price, volume or total is too large** (a
+  total of 99,999,999,999 over 0.001 L) now say so on that field, on the
+  form, the API and the CSV import, instead of a server error (K9).
+- **`php bin/import-app.php`** no longer imports the good rows of a Fuelio
+  file when others have problems: it stops, as the web page does, unless you
+  add the new `--skip-invalid`. Problems name Fuelio's columns (`Data`,
+  not `filled_at`), fuel type codes Logbook doesn't recognise are listed,
+  and the sections it doesn't read are listed there and on the web preview
+  (K11, K12).
+- **A Fuelio backup imported after its CSV** now attaches the photos to the
+  fill-ups the CSV brought in (K21).
+- **CSV import:** a file that isn't text (a Fuelio backup ZIP, an `.xlsx`, a
+  PDF) is refused as not a CSV instead of being read as one (K61); "too
+  large" names the size limit; demo or API fill-ups and readings stored with
+  seconds count as already there when their export is imported back;
+  quantities in miles and gallons are rounded once, as the forms round them
+  (one value in about 1,200 came in 0.001 L out) (K21).
+
 ## [3.16.0] — 2026-10-16
 
 Phase 51: **import from Tracktor.** Bring a whole Tracktor garage across in

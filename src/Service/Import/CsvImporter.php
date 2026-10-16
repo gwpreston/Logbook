@@ -27,6 +27,7 @@ use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Export\ExportModule;
+use Logbook\Service\Fuel\FuelAmounts;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
@@ -61,8 +62,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class CsvImporter
 {
     public const int MAX_ROWS = 5000;
-    /** Places kept when converting to km and litres: the forms then round to what is stored. */
-    private const int SI_SCALE = 6;
 
     public function __construct(
         private FuelService $fuel,
@@ -209,10 +208,11 @@ final readonly class CsvImporter
      * One row: the data to save, the errors that stop it, or the status
      * that skips it.
      *
-     * Quantities are converted to kilometres and litres here, precisely
-     * (the export writes 6 places), and handed to the form in those units:
-     * the form rounds to the stored precision, so an exported file imports
-     * back to exactly the stored values whatever the owner's units.
+     * Quantities are converted to kilometres and litres here, straight to
+     * the places stored, and handed to the form in those units: rounded
+     * once, as the form rounds what is typed in miles or gallons (K21), and
+     * an exported file (6 places) imports back to exactly the stored values
+     * whatever the owner's units.
      *
      * @param list<ImportField> $fields
      * @param array<string, string> $values
@@ -316,19 +316,19 @@ final readonly class CsvImporter
                     $number = DecimalParser::parse($value, $owner->locale);
                     $input[$field->key] = $number === null
                         ? $value
-                        : $options->distanceUnit->toKmDecimal($number, self::SI_SCALE);
+                        : $options->distanceUnit->toKmDecimal($number, OdometerReadingForm::KM_SCALE);
                     break;
                 case FieldKind::Volume:
                     $number = DecimalParser::parse($value, $owner->locale);
                     $input[$field->key] = $number === null || $electric
                         ? $value
-                        : $volumeUnit->toLitresDecimal($number, self::SI_SCALE);
+                        : $volumeUnit->toLitresDecimal($number, FuelAmounts::VOLUME_SCALE);
                     break;
                 case FieldKind::UnitPrice:
                     $number = DecimalParser::parse($value, $owner->locale);
                     $input[$field->key] = $number === null || $electric
                         ? $value
-                        : $volumeUnit->pricePerLitre($number, self::SI_SCALE + 3);
+                        : $volumeUnit->pricePerLitre($number, FuelAmounts::PRICE_SCALE);
                     break;
                 case FieldKind::Grade:
                     // The form checks that it belongs to the row's fuel.

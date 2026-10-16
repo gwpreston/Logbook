@@ -134,6 +134,95 @@ final class ImportTest extends AppTestCase
         self::assertCount(3, $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id));
     }
 
+    /**
+     * K9 and K21: a derived amount too large for its column is a row error
+     * (it was a 500), a time stored with seconds matches its exported minute,
+     * and gallons are rounded to litres once, as the form rounds them.
+     */
+    public function testFillUpEdgesAreReadAsTheFormReadsThem(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+
+        $csv = implode("\n", [
+            'Date,Odometer,Fuel,Volume,Price,Total',
+            '2026-06-01 09:00,1000,Petrol,0.001,,99999999999.999',
+            '2026-06-08 09:00,1300,Petrol,,0.000001,99999999999.999',
+            '2026-06-15 09:00,1600,Petrol,999999,999999,',
+            '2026-06-22 09:00,1900,Petrol,40,1.459,',
+        ]) . "\n";
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map, ['volume_unit' => 'l']);
+        self::assertStringContainsString('Import 1 row', $preview);
+        self::assertSame(3, substr_count($preview, 'Worked out from the other two, this number is too large'));
+        $response = $this->commit($browser, $map, $preview, ['skip_invalid' => '1']);
+        self::assertSame(200, $response->getStatusCode(), self::body($response));
+        self::assertCount(1, $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id));
+
+        $gallons = "Date,Odometer,Fuel,Volume,Price\n2026-06-29 09:00,2200,Petrol,11.087,6.63\n";
+        $map = $this->upload($browser, $golf->id, 'fuel', $gallons);
+        $this->commit($browser, $map, $this->preview($browser, $map, ['volume_unit' => 'gal_uk']));
+        $fills = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id);
+        self::assertCount(2, $fills);
+        // 11.087 UK gal × 4.54609 = 50.40249983 L: once rounded 50.402 (twice, via 50.402500, it was 50.403).
+        self::assertSame('50.402', $fills[1]->data->volume);
+
+        // Seconds, as demo data and the API store them: the export writes 09:15.
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $this->service($app, FuelService::class)->create($polo, new FuelEntryData(
+            new DateTimeImmutable('2026-05-02T08:15:37Z', new DateTimeZone('UTC')),
+            '49400.000',
+            Fuel::Petrol,
+            '38.250',
+            '1.529000',
+            '58.48',
+            false,
+            false,
+            null,
+            null,
+        ));
+        $export = self::body($browser->get('/vehicles/' . $polo->id . '/export/fuel.csv'));
+        $again = $this->upload($browser, $polo->id, 'fuel', $export);
+        $preview = $this->preview($browser, $again);
+        self::assertStringContainsString('Nothing to import', $preview);
+        self::assertSame(1, substr_count($preview, 'Already there'));
+    }
+
+    /**
+     * K61 and K21: a binary file is refused as not a CSV (its bytes were
+     * listed as columns), and the size message names the limit.
+     */
+    public function testAnUploadThatIsNotACsvOrTooLargeIsRefusedClearly(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $base = '/vehicles/' . $golf->id . '/import/fuel';
+
+        $zip = "PK\x03\x04\x14\x00\x00\x00\x08\x00z(e.g. x\xFF\xE8\xE8\xF6\x8E\x85";
+        $binaries = [$zip => 'backup.fuelio.zip', "%PDF-1.7\n" => 'receipt.csv', "Date,Odo\x00\n2026,1\n" => 'odd.csv'];
+        foreach ($binaries as $bytes => $name) {
+            $response = $browser->post($base, [], ['file' => $this->file($bytes, $name)]);
+            self::assertSame(422, $response->getStatusCode(), $name);
+            self::assertStringContainsString('This isn’t a CSV file.', self::body($response), $name);
+        }
+        // UTF-16 text (with its byte-order mark) still reads.
+        $utf16 = "\xFF\xFE" . mb_convert_encoding("Date,Litres,Price\n2026-06-01 09:00,40,1.60\n", 'UTF-16LE', 'UTF-8');
+        self::assertSame(303, $browser->post($base, [], ['file' => $this->file($utf16, 'excel.csv')])->getStatusCode());
+
+        $path = (string) tempnam(sys_get_temp_dir(), 'logbook-import-');
+        $this->tempFiles[] = $path;
+        $tooLarge = new UploadedFile($path, 'big.csv', 'text/csv', 0, UPLOAD_ERR_INI_SIZE);
+        $response = $browser->post($base, [], ['file' => $tooLarge]);
+        self::assertSame(422, $response->getStatusCode());
+        $html = self::body($response);
+        self::assertStringNotContainsString('{max}', $html);
+        self::assertMatchesRegularExpression('/The file is too large \(maximum \d+ MB\)/', $html);
+    }
+
     public function testTheGradeColumnTakesCodesLabelsAndShortLabels(): void
     {
         $app = $this->createApp();

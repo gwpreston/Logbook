@@ -59,15 +59,20 @@ final readonly class ImportUploadAction
         ) {
             return $this->render($request, $response, $vehicle, $module, [
                 'key' => 'upload.too_large',
-                'params' => [],
+                'params' => ['max' => $this->settings->maxUploadMb],
             ]);
         }
         if ($file->getError() !== UPLOAD_ERR_OK) {
             return $this->render($request, $response, $vehicle, $module, ['key' => 'upload.failed', 'params' => []]);
         }
 
+        $contents = (string) $file->getStream();
+        // A ZIP (a Fuelio backup, an .xlsx), a PDF or an image isn't a CSV (K61).
+        if (CsvReader::isBinary($contents)) {
+            return $this->render($request, $response, $vehicle, $module, ['key' => 'import.error.not_csv', 'params' => []]);
+        }
         try {
-            $csv = CsvReader::read((string) $file->getStream(), CsvImporter::MAX_ROWS);
+            $csv = CsvReader::read($contents, CsvImporter::MAX_ROWS);
         } catch (CsvTooLong $e) {
             return $this->render($request, $response, $vehicle, $module, [
                 'key' => 'import.error.too_many_rows',

@@ -24,6 +24,7 @@ use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
+use Logbook\Repository\AttachmentRepository;
 use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\ImportSourceRepository;
@@ -36,6 +37,7 @@ use Logbook\Service\Attachment\StoredFile;
 use Logbook\Service\Expense\ExpenseEntryForm;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Fuel\FuelAmounts;
 use Logbook\Service\Fuel\FuelEntryForm;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Import\App\AppArchive;
@@ -50,6 +52,7 @@ use Logbook\Service\Import\ImportVocabulary;
 use Logbook\Service\Maintenance\MaintenanceEntryForm;
 use Logbook\Service\Maintenance\MaintenanceService;
 use Logbook\Service\Maintenance\ScheduleService;
+use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Service\Station\StationService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Database\Transaction;
@@ -94,9 +97,6 @@ final readonly class FuelioImporter
         31 => 'expense:other',           // Insurance
     ];
 
-    /** Places kept when converting to km and litres; the forms round to what is stored. */
-    private const int SI_SCALE = 6;
-
     public function __construct(
         private FuelService $fuel,
         private MaintenanceService $maintenance,
@@ -110,6 +110,7 @@ final readonly class FuelioImporter
         private ExpenseEntryRepository $expenseEntries,
         private ImportSourceRepository $sources,
         private AttachmentService $attachments,
+        private AttachmentRepository $attachmentRows,
         private FileStorage $files,
         private FeatureToggles $features,
         private Transaction $transaction,
@@ -228,7 +229,12 @@ final readonly class FuelioImporter
         $sections[AppVehiclePreview::SCHEDULES] = $options->schedules
             ? $this->scheduleRows($export, $options, $sections[AppVehiclePreview::COSTS])
             : [];
-        $sections[AppVehiclePreview::PHOTOS] = $this->photoRows($export, $sections[AppVehiclePreview::FILLS], $archive);
+        $sections[AppVehiclePreview::PHOTOS] = $this->photoRows(
+            $export,
+            $sections[AppVehiclePreview::FILLS],
+            $archive,
+            $target,
+        );
 
         return new AppVehiclePreview(
             export: $export,
@@ -360,11 +366,20 @@ final readonly class FuelioImporter
         }
 
         $photos = [];
+        $earlierPhotos = [];
         foreach ($preview->withStatus(AppVehiclePreview::PHOTOS, AppRowStatus::Import) as $row) {
             $fill = $row->extra['fill'] ?? null;
+            $entry = $row->extra['entry'] ?? null;
             $file = $row->extra['file'] ?? null;
             if (is_string($fill) && is_string($file)) {
                 $photos[$fill][] = $file;
+            } elseif (is_int($entry) && is_string($file)) {
+                $earlierPhotos[$entry][] = $file;
+            }
+        }
+        foreach ($earlierPhotos as $entryId => $names) {
+            if ($archive !== null) {
+                $this->attachPhotos($vehicle, $entryId, $names, $archive, $storedPhotos);
             }
         }
         $fillIds = [];
@@ -809,26 +824,50 @@ final readonly class FuelioImporter
 
     /**
      * Each photo against the fill-up it belongs to; only a backup ZIP
-     * carries the files.
+     * carries the files. A fill-up an earlier import brought in (its CSV,
+     * say) gets the photos it doesn't have yet by name (K21).
      *
      * @param list<AppRow> $fills
      * @return list<AppRow>
      */
-    private function photoRows(FuelioExport $export, array $fills, ?AppArchive $archive): array
+    private function photoRows(FuelioExport $export, array $fills, ?AppArchive $archive, ?Vehicle $target): array
     {
         $fillByUniqueId = [];
         foreach ($fills as $row) {
             $id = $row->extra['unique_id'] ?? '';
             $fillByUniqueId[is_string($id) ? $id : ''] = $row;
         }
+        // Fill-ups imported earlier that still exist, and the photos they have (two queries, not two a row).
+        $earlier = [];
+        /** @var array<int, array<string, true>> $attached entry id → stems of its photos */
+        $attached = [];
+        if ($archive !== null && $target !== null && $export->photos !== []) {
+            $exists = [];
+            foreach ($this->fuelEntries->listForVehicle($target->id) as $entry) {
+                $exists[$entry->id] = true;
+            }
+            $earlier = array_filter(
+                $this->sources->entities(FuelioReader::APP, $target->id, 'fuel'),
+                static fn (int $id): bool => isset($exists[$id]),
+            );
+            foreach ($this->attachmentRows->listForVehicle($target->id) as $file) {
+                if ($file->ownerType === AttachmentOwner::Fuel) {
+                    $attached[$file->ownerId][self::stem($file->filename)] = true;
+                }
+            }
+        }
 
         $rows = [];
         foreach ($export->photos as $photo) {
             $fill = $fillByUniqueId[$photo->targetId] ?? null;
+            $entryId = $fill !== null && $fill->status === AppRowStatus::AlreadyImported
+                ? $earlier[$fill->sourceId] ?? null
+                : null;
             $reason = match (true) {
                 $archive === null => 'import_app.reason.photos_web',
                 $photo->type !== FuelioPhoto::TYPE_FILL => 'import_app.reason.photo_type',
                 !$archive->hasPhoto($photo->filename) => 'import_app.reason.photo_missing',
+                $entryId !== null => null,
                 $fill === null || $fill->status !== AppRowStatus::Import => 'import_app.reason.photo_no_fill',
                 default => null,
             };
@@ -837,6 +876,24 @@ final readonly class FuelioImporter
                 $rows[] = new AppRow($photo->line, AppRowStatus::NotImported, $photo->guid, $summary, note: self::note($reason));
                 continue;
             }
+            if ($entryId !== null) {
+                $stem = self::stem($photo->filename);
+                if (isset($attached[$entryId][$stem])) {
+                    $rows[] = new AppRow($photo->line, AppRowStatus::AlreadyImported, $photo->guid, $summary);
+                    continue;
+                }
+                $attached[$entryId][$stem] = true;
+                $rows[] = new AppRow(
+                    $photo->line,
+                    AppRowStatus::Import,
+                    $photo->guid,
+                    $summary,
+                    note: self::note('import_app.goes_to.fill', ['line' => (string) $fill->line]),
+                    extra: ['entry' => $entryId, 'file' => $photo->filename],
+                );
+                continue;
+            }
+            assert($fill !== null);
             $rows[] = new AppRow(
                 $photo->line,
                 AppRowStatus::Import,
@@ -882,7 +939,7 @@ final readonly class FuelioImporter
         $nickname = trim($v->name);
         $capacity = self::number($v->tank1Capacity);
         if ($capacity !== null && $type->primaryKind()->followsVolumeUnit()) {
-            $capacity = Decimal::round($options->volumeUnit->toLitresDecimal($capacity, self::SI_SCALE), 1);
+            $capacity = $options->volumeUnit->toLitresDecimal($capacity, 1);
         }
         $vin = strtoupper(preg_replace('/\s+/', '', $v->vin) ?? '');
 
@@ -971,25 +1028,39 @@ final readonly class FuelioImporter
         return preg_match('/^-?\d+(\.\d+)?$/', $value) === 1 ? $value : null;
     }
 
+    /**
+     * A file name without its extension: a stored photo keeps the name's
+     * stem but takes the extension its type says.
+     */
+    private static function stem(string $filename): string
+    {
+        return mb_strtolower((string) preg_replace('/\.[^.]*$/', '', $filename));
+    }
+
+    /**
+     * Converted straight to the places stored, as volume() and unitPrice()
+     * are: rounded once, as the forms round what is typed in miles or
+     * gallons (K21).
+     */
     private static function distance(string $value, DistanceUnit $unit): string
     {
         $number = self::number($value);
 
-        return $number === null ? $value : $unit->toKmDecimal($number, self::SI_SCALE);
+        return $number === null ? $value : $unit->toKmDecimal($number, OdometerReadingForm::KM_SCALE);
     }
 
     private static function volume(string $value, VolumeUnit $unit): string
     {
         $number = self::number($value);
 
-        return $number === null ? $value : $unit->toLitresDecimal($number, self::SI_SCALE);
+        return $number === null ? $value : $unit->toLitresDecimal($number, FuelAmounts::VOLUME_SCALE);
     }
 
     private static function unitPrice(string $value, VolumeUnit $unit): string
     {
         $number = self::number($value);
 
-        return $number === null ? $value : $unit->pricePerLitre($number, self::SI_SCALE + 3);
+        return $number === null ? $value : $unit->pricePerLitre($number, FuelAmounts::PRICE_SCALE);
     }
 
     /**

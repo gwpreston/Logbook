@@ -787,6 +787,7 @@ return [
         'quick_no_vehicles' => 'Füge zuerst ein Fahrzeug hinzu, dann kannst du seine Tankfüllungen erfassen.',
         'need_two' => 'Gib mindestens zwei von Menge, Preis und Betrag ein.',
         'volume_unknown' => 'Bei einem Preis von 0 lässt sich die Menge nicht berechnen: Gib sie ein.',
+        'derived_too_large' => 'Aus den anderen beiden berechnet, ist diese Zahl zu groß: Prüfe sie.',
         'also_as' => 'Auch:',
         'full_to_full_note' => 'Der Verbrauch wird zwischen vollen Tankfüllungen gemessen: Teilfüllungen zählen zur nächsten vollen, und eine vergessene Tankfüllung startet die Messung neu.',
         'section' => [
@@ -3293,6 +3294,7 @@ return [
         'error' => [
             'no_file' => 'Wähle eine CSV-Datei zum Importieren.',
             'empty' => 'Die Datei enthält keine Zeilen zum Importieren (sie braucht eine Kopfzeile und mindestens eine Zeile darunter).',
+            'not_csv' => 'Das ist keine CSV-Datei. Speichere sie in deiner Tabellenkalkulation oder App als CSV und lade diese hoch.',
             'too_many_rows' => 'Die Datei hat mehr als {max, number} Zeilen. Teile sie in kleinere Dateien auf.',
             'nothing' => 'Keine der Zeilen kann importiert werden.',
             'skip_required' => '{count, plural, one {Eine Zeile hat ein Problem.} other {# Zeilen haben Probleme.}} Setze den Haken bei „Überspringen“, um die übrigen zu importieren, oder korrigiere zuerst die Datei.',
@@ -3364,6 +3366,7 @@ return [
             'none' => 'Es gibt noch keine Voll-zu-voll-Tankfüllungen, an denen sich die Einheiten prüfen lassen.',
         ],
         'new_vehicle_note' => 'Ein neues Fahrzeug wird angelegt: {name}.',
+        'not_read' => 'Nicht aus der Datei gelesen: {sections}.',
         'section' => [
             'fills' => 'Tankfüllungen',
             'costs' => 'Kosten',

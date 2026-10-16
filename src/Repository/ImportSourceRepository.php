@@ -44,6 +44,30 @@ final readonly class ImportSourceRepository
     }
 
     /**
+     * The entries of one type that $app's rows became in the vehicle (a
+     * later backup's photos go to fill-ups an earlier CSV imported).
+     *
+     * @return array<string, int> source id → entity id
+     */
+    public function entities(string $app, int $vehicleId, string $entityType): array
+    {
+        $rows = $this->connection->createQueryBuilder()
+            ->select('source_id', 'entity_id')
+            ->from(self::TABLE)
+            ->where('app = :app', 'vehicle_id = :vehicle', 'entity_type = :type')
+            ->setParameter('app', $app)
+            ->setParameter('vehicle', $vehicleId, ParameterType::INTEGER)
+            ->setParameter('type', $entityType)
+            ->fetchAllAssociative();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[Row::string($row, 'source_id')] = Row::int($row, 'entity_id');
+        }
+
+        return $out;
+    }
+
+    /**
      * The vehicle that holds the most of these source ids, if any (to
      * prefill the vehicle for a newer export of the same one).
      *

@@ -86,4 +86,13 @@ final class FuelAmountsTest extends TestCase
         // A total too small to be a volume at this price.
         self::assertSame(FuelAmounts::VOLUME_UNKNOWN, FuelAmounts::complete(null, '9999', '0.001', 2));
     }
+
+    public function testAVolumeBeyondAScaledIntIsReturnedNotThrown(): void
+    {
+        // K9: the zero check used compare(), which overflowed; the form refuses the size.
+        $amounts = FuelAmounts::complete(null, '0.000001', '99999999999.999', 2);
+
+        self::assertInstanceOf(FuelAmounts::class, $amounts);
+        self::assertSame(17, strlen(explode('.', $amounts->volume)[0]));
+    }
 }

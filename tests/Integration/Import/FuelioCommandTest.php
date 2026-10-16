@@ -99,6 +99,82 @@ final class FuelioCommandTest extends AppTestCase
         self::assertSame(3, $this->command($app, [$path, '--vehicle', (string) $vehicles[0]->id])[0]);
     }
 
+    /**
+     * K11 and K12: rows with problems stop the import unless --skip-invalid
+     * says otherwise, errors name the file's columns, an unknown fuel code
+     * is pointed out, and sections Logbook doesn't read are listed.
+     */
+    public function testRowsWithProblemsNeedSkipInvalidAndThePreviewSpeaksFuelio(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+
+        $csv = (new FuelioCsv())->vehicle(['Name' => 'Octavia', 'Plate' => 'OC19 TAV'])
+            ->fill('2026-01-02 08:00', '1000', '40', '60', '1.5')
+            ->fill('not a date', '1500', '35', '52.5', '1.5')
+            ->fill('2026-01-16 08:00', '2000', '35', '52.5', '1.5', ['FuelType' => '999'])
+            ->build() . "\"## Trips\"\n\"Start\",\"End\"\n\"1\",\"2\"\n";
+        $path = (string) tempnam(sys_get_temp_dir(), 'fuelio');
+        $this->temp[] = $path;
+        file_put_contents($path, $csv);
+
+        [$code, $out, $err] = $this->command($app, [$path]);
+        self::assertSame(1, $code, $out . $err);
+        self::assertStringContainsString('--skip-invalid', $err);
+        self::assertStringContainsString('nothing was written', $err);
+        self::assertSame([], $this->ownedVehicles($app, $owner->id));
+        self::assertMatchesRegularExpression('/line \d+, [^:]+: Data: /', $out, 'the column, not filled_at');
+        self::assertStringNotContainsString('filled_at', $out);
+        self::assertStringContainsString('Fuel type 999: not one Logbook recognises, imported as petrol: check it', $out);
+        self::assertStringNotContainsString('Fuel type 110', $out);
+        self::assertStringContainsString('Not read from the file: Category, Trips.', $out);
+
+        [$code, $out] = $this->command($app, [$path, '--skip-invalid']);
+        self::assertSame(0, $code, $out);
+        self::assertStringContainsString('Imported 2 row(s)', $out);
+        $vehicles = $this->ownedVehicles($app, $owner->id);
+        self::assertCount(2, $this->service($app, FuelEntryRepository::class)->listForVehicle($vehicles[0]->id));
+    }
+
+    /**
+     * K21: the CSV imported first (on the web page, say), then the backup
+     * ZIP brings the photos to those fill-ups, once.
+     */
+    public function testABackupAfterItsCsvAttachesThePhotosOnce(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+
+        $zip = new ZipArchive();
+        self::assertTrue($zip->open(self::backup()));
+        $csv = (string) tempnam(sys_get_temp_dir(), 'fuelio');
+        $this->temp[] = $csv;
+        file_put_contents($csv, (string) $zip->getFromName('vehicle-1-local.csv'));
+        $zip->close();
+
+        [$code, $out] = $this->command($app, [$csv]);
+        self::assertSame(0, $code, $out);
+        $vehicles = $this->ownedVehicles($app, $owner->id);
+        self::assertCount(1, $vehicles);
+        $attachments = $this->service($app, AttachmentRepository::class);
+        self::assertSame([], $attachments->listForVehicle($vehicles[0]->id));
+
+        [$code, $out] = $this->command($app, [self::backup()]);
+        self::assertSame(0, $code, $out);
+        self::assertStringContainsString('18 already imported', $out);
+        self::assertStringContainsString('Photos: 45 to import', $out);
+        self::assertCount(1, $this->ownedVehicles($app, $owner->id));
+        self::assertCount(18, $this->service($app, FuelEntryRepository::class)->listForVehicle($vehicles[0]->id));
+        self::assertCount(45, $attachments->listForVehicle($vehicles[0]->id));
+
+        [$code, $out] = $this->command($app, [self::backup()]);
+        self::assertSame(0, $code, $out);
+        self::assertStringContainsString('Nothing to import', $out);
+        self::assertCount(45, $attachments->listForVehicle($vehicles[0]->id));
+    }
+
     public function testUsageAndRefusals(): void
     {
         $app = $this->createApp();

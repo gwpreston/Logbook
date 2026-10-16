@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Import;
 
+use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceDocumentData;
 use Logbook\Domain\Expense\ExpenseEntryData;
 use Logbook\Domain\Fuel\FuelEntryData;
@@ -26,15 +27,19 @@ final class DuplicateKey
         $lower = static fn (?string $text): string
             => mb_strtolower(str_replace(["\r\n", "\r"], "\n", trim($text ?? '')));
 
+        // Times to the minute: the forms and the export carry no seconds, so a
+        // stored 09:15:37 (demo data, the API) and its exported 09:15 are the same (K21).
+        $minute = static fn (DateTimeImmutable $at): int => intdiv($at->getTimestamp(), 60);
+
         return match (true) {
             $data instanceof FuelEntryData => implode('|', [
                 'fuel',
-                $data->filledAt->getTimestamp(),
+                $minute($data->filledAt),
                 Decimal::trim($data->odometerKm),
             ]),
             $data instanceof OdometerReadingData => implode('|', [
                 'odometer',
-                $data->recordedAt->getTimestamp(),
+                $minute($data->recordedAt),
                 Decimal::trim($data->readingKm),
             ]),
             $data instanceof MaintenanceEntryData => implode('|', [
