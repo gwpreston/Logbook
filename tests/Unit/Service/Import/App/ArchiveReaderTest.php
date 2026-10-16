@@ -123,6 +123,67 @@ final class ArchiveReaderTest extends TestCase
         (new ArchiveReader($this->root))->open($path);
     }
 
+    public function testTracktorsUploadsZipOpensByBaseName(): void
+    {
+        $zip = Kernel::rootDir() . '/tests/Fixtures/import/tracktor/uploads.zip';
+        $archive = (new ArchiveReader($this->root))->openUploads($zip);
+
+        self::assertTrue($archive->has('1792132540114-policy.pdf'), 'by base name, whatever folder it was zipped in');
+        self::assertFalse($archive->has('uploads/1792132540114-policy.pdf'));
+        $path = $archive->extract('1792132540114-policy.pdf');
+        self::assertNotNull($path);
+        self::assertStringStartsWith($archive->directory() . '/', $path);
+        self::assertStringStartsWith('%PDF', (string) file_get_contents($path));
+        self::assertNull($archive->extract('missing.pdf'));
+        $directory = $archive->directory();
+        $archive->close();
+        self::assertDirectoryDoesNotExist($directory);
+    }
+
+    public function testAnUploadsZipIgnoresOtherFilesAndRefusesAnArchiveInside(): void
+    {
+        $plain = $this->zip(static function (ZipArchive $zip): void {
+            $zip->addFromString('uploads/a.png', 'png');
+            $zip->addFromString('uploads/notes.txt', 'text');
+            $zip->addFromString('other/a.png', 'second of the same name');
+        });
+        $archive = (new ArchiveReader($this->root))->openUploads($plain);
+        self::assertSame(['uploads/notes.txt', 'other/a.png'], $archive->ignored, 'the first of a name wins');
+        self::assertTrue($archive->has('a.png'));
+        $archive->close();
+
+        $nested = $this->zip(static function (ZipArchive $zip): void {
+            $zip->addFromString('uploads/inner.zip', "PK\x03\x04rest");
+        });
+        $this->expectExceptionObject(new ArchiveRefused('import_app.archive.nested_uploads'));
+        (new ArchiveReader($this->root))->openUploads($nested);
+    }
+
+    public function testAnUploadsFolderIsReadForTheFilesDirectlyInsideIt(): void
+    {
+        $folder = $this->root . '-folder';
+        mkdir($folder . '/sub', 0700, true);
+        file_put_contents($folder . '/1792132539713-swift.png', 'png');
+        file_put_contents($folder . '/readme.txt', 'text');
+        file_put_contents($folder . '/sub/deep.png', 'png');
+
+        $files = (new ArchiveReader($this->root))->openFolder($folder);
+        self::assertTrue($files->has('1792132539713-swift.png'));
+        self::assertFalse($files->has('readme.txt'), 'images and PDFs only');
+        self::assertFalse($files->has('deep.png'), 'no subfolder is followed');
+        $copy = $files->extract('1792132539713-swift.png');
+        self::assertNotNull($copy);
+        self::assertStringStartsNotWith($folder, $copy, 'a copy: the owner\'s folder is only read');
+        self::assertFileExists($folder . '/1792132539713-swift.png');
+        self::assertNull($files->extract('readme.txt'));
+        $files->close();
+        self::assertFileDoesNotExist($copy);
+        ArchiveReader::removeDirectory($folder);
+
+        $this->expectExceptionObject(new ArchiveRefused('import_app.archive.not_folder'));
+        (new ArchiveReader($this->root))->openFolder($folder . '/missing');
+    }
+
     /**
      * @param callable(ZipArchive): void $fill
      */

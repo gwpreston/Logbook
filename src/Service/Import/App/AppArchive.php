@@ -13,7 +13,7 @@ use ZipArchive;
  * Logbook chooses. close() removes the directory; so does dropping the
  * object.
  */
-final class AppArchive
+final class AppArchive implements AppFiles
 {
     private bool $closed = false;
     private int $extracted = 0;
@@ -35,6 +35,16 @@ final class AppArchive
     public function __destruct()
     {
         $this->close();
+    }
+
+    public function has(string $name): bool
+    {
+        return $this->hasPhoto($name);
+    }
+
+    public function extract(string $name): ?string
+    {
+        return $this->extractPhoto($name);
     }
 
     public function hasPhoto(string $name): bool

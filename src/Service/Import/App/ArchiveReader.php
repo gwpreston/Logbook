@@ -109,6 +109,71 @@ final readonly class ArchiveReader
     }
 
     /**
+     * Tracktor's uploads folder as a ZIP (spec.md §7.13 *The Tracktor
+     * reader*): the same checks, up to MAX_PHOTOS entries, images and PDFs
+     * by base name (the first of a name wins), anything else ignored, and
+     * any archive inside refusing the whole file.
+     *
+     * @throws ArchiveRefused
+     */
+    public function openUploads(string $path): AppArchive
+    {
+        $size = is_file($path) ? (int) filesize($path) : 0;
+        $zip = self::openZip($path);
+        try {
+            $files = [];
+            $ignored = [];
+            foreach (self::entries($zip, self::MAX_PHOTOS, $size) as $entry) {
+                if ($entry['directory']) {
+                    continue;
+                }
+                if (self::looksLikeArchive($zip, $entry)) {
+                    throw new ArchiveRefused('import_app.archive.nested_uploads');
+                }
+                $base = basename($entry['name']);
+                $extension = strtolower(pathinfo($base, PATHINFO_EXTENSION));
+                if (!in_array($extension, [...self::PHOTO_EXTENSIONS, 'pdf'], true) || isset($files[$base])) {
+                    $ignored[] = $entry['name'];
+                    continue;
+                }
+                $files[$base] = ['index' => $entry['index'], 'size' => $entry['size']];
+            }
+
+            return new AppArchive([], $ignored, $this->makeDirectory(), $zip, $files);
+        } catch (Throwable $e) {
+            $zip->close();
+            throw $e;
+        }
+    }
+
+    /**
+     * Tracktor's uploads folder on the command line: the regular files
+     * directly inside it, images and PDFs, at most MAX_PHOTOS.
+     *
+     * @throws ArchiveRefused
+     */
+    public function openFolder(string $path): AppFolder
+    {
+        if (!is_dir($path) || is_link($path)) {
+            throw new ArchiveRefused('import_app.archive.not_folder');
+        }
+        $files = [];
+        foreach (scandir($path) ?: [] as $name) {
+            $file = rtrim($path, '/\\') . '/' . $name;
+            $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (!is_file($file) || is_link($file) || !in_array($extension, [...self::PHOTO_EXTENSIONS, 'pdf'], true)) {
+                continue;
+            }
+            if (count($files) >= self::MAX_PHOTOS) {
+                throw new ArchiveRefused('import_app.archive.too_many', ['max' => self::MAX_PHOTOS]);
+            }
+            $files[$name] = $file;
+        }
+
+        return new AppFolder($files, $this->makeDirectory());
+    }
+
+    /**
      * Copy one entry to a new file at $target, stopping (and deleting the
      * copy) as soon as it grows past its listed size: a lying header can't
      * fill the disk.

@@ -4660,11 +4660,13 @@ Logbook isn't affiliated with Tracktor.
     `gallon`, US or UK not stated), `unitOfLpg` and `unitOfCng` (`liter`,
     `gallon`, `kilogram` or `pound`) and `currency`. Odometers and amounts
     are in those units, as typed.
-  - Dates are instants at midnight UTC of the calendar date the user
-    picked ("2026-01-04T00:00:00.000Z"). Their first ten characters are the
-    date, read as a calendar date and never shifted by a time zone. Numbers
-    are JSON numbers, read from their text into `Decimal`, never through
-    float arithmetic.
+  - Dates are the browser's local midnight of the date picked, as an
+    instant in UTC ("2026-03-29T23:00:00.000Z" is 30 March, picked in
+    London in summer). Each is read as a calendar date: its date in the
+    owner's time zone when it is midnight there, otherwise the nearest UTC
+    midnight's (right for every zone from UTC−11 to UTC+12). Numbers are
+    JSON numbers, read from their shortest decimal text into `Decimal`,
+    never through float arithmetic.
   - **Files are not in the export.** `image` and `attachment` name files in
     Tracktor's uploads folder (`/data/uploads` in its Docker image).
 - **Encrypted exports** (#463) are refused before anything is read:
@@ -4680,10 +4682,12 @@ Logbook isn't affiliated with Tracktor.
   [--as <username>] [--schedules] [--dry-run]`. `--vehicle` is refused for
   an export with more than one vehicle, as for a Fuelio ZIP.
 - **Uploads** (#465): a ZIP is checked under the ZIP rules above, except
-  that it holds files rather than CSV: at most 5,000 entries, images and
-  PDFs only, any nested archive refusing the whole file. A folder on the
-  command line is read for regular files directly inside it (no
-  subfolders, no links). Files are matched to rows by base name and
+  that it holds files rather than CSV: at most 5,000 entries, of which
+  images and PDFs are read and anything else is ignored (the first of a
+  name wins), any nested archive refusing the whole file. A folder on the
+  command line is read for the images and PDFs directly inside it (no
+  subfolders, no links), copied before use. Files are matched to rows by
+  base name and
   checked and stripped as any upload is (§7.12). A file that is missing or
   refused is listed as not imported with its row; the row itself still
   imports. On the web without the ZIP, the preview says how many files

@@ -49,9 +49,12 @@ made with Tracktor's own Docker images, 2.1.0 and 1.4.1.
     They are never read, decrypted or stored.
 - **Ids:** every row has a UUID `id` that stays the same in every export
   (a database dump), so re-importing a newer export adds only new rows.
-- **Dates** are ISO instants at midnight UTC of the calendar date picked
-  (`2026-01-04T00:00:00.000Z`): Tracktor's server normalises them, so the
-  first ten characters are the date whatever the browser's zone.
+- **Dates** are the browser's local midnight of the date picked, as an
+  ISO instant in UTC: the London fixture's 30 March is
+  `2026-03-29T23:00:00.000Z`. Tracktor's server doesn't normalise them, so
+  the reader takes the date in the owner's zone when the instant is
+  midnight there, else the nearest UTC midnight's (found by the real
+  exports in 51.1; spec §7.13).
 - **Vehicles:** `make`, `model`, `year`, `licensePlate`, `vin`, `color`,
   `odometer` (a current reading with no date), `image` (a file name),
   `fuelType` (`petrol` | `diesel` | `electric` | `lpg` | `cng`),
@@ -155,20 +158,20 @@ shown on Phase 31's mapping page.
       dependency.
 
 ### 51.1 Fixtures
-- [ ] Real exports from Tracktor 2.1.0 and 1.4.1, made with its own
+- [x] Real exports from Tracktor 2.1.0 and 1.4.1, made with its own
       Docker images and invented data, into
       `tests/Fixtures/import/tracktor/`: metric (two vehicles, files),
       imperial with an EV and a bus, one encrypted, one from before the
       compliance merge (F), and the uploads folder as a ZIP.
 
 ### 51.2 Reader
-- [ ] `Import\App\Tracktor\TracktorReader`: envelope, version check,
+- [x] `Import\App\Tracktor\TracktorReader`: envelope, version check,
       encrypted exports refused (A), configs, rows to typed records;
       unknown keys listed as not read.
-- [ ] Safety: the size limit, JSON depth limit, row limit (20,000 across
+- [x] Safety: the size limit, JSON depth limit, row limit (20,000 across
       sections, as Fuelio) and the uploads folder or ZIP under Phase 31's
       ZIP limits, with paths confined to it.
-- [ ] `TracktorImporter`: guess, analyse and import in one transaction,
+- [x] `TracktorImporter`: guess, analyse and import in one transaction,
       through the same forms and services as typing them in; mapping page
       entries for the gallon, document types, maintenance category and
       reminders; *Make schedules*.
