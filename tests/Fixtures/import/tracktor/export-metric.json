@@ -1,0 +1,521 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-10-16T06:36:20.721Z",
+  "encrypted": false,
+  "data": {
+    "vehicles": [
+      {
+        "id": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "make": "Maruti Suzuki",
+        "model": "Swift",
+        "year": 2019,
+        "licensePlate": "KA01AB1234",
+        "vin": "MA3EWDE1S00123456",
+        "color": "#c0392b",
+        "odometer": 46210,
+        "image": "1792132539713-swift.png",
+        "fuelType": "petrol",
+        "vehicleType": "car",
+        "customFields": "{\"Variant\":\"VXi\",\"Tyre size\":\"185/65 R15\"}",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "make": "Royal Enfield",
+        "model": "Classic 350",
+        "year": 2022,
+        "licensePlate": "KA05XY9876",
+        "vin": null,
+        "color": null,
+        "odometer": 12800,
+        "image": null,
+        "fuelType": "petrol",
+        "vehicleType": "motorcycle",
+        "customFields": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "fuelLogs": [
+      {
+        "id": "af89c435-1ef3-43dd-a8c4-efa10c889a93",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-01-04T00:00:00.000Z",
+        "odometer": 41020,
+        "fuelAmount": 30.5,
+        "rate": 102.86,
+        "cost": 3137.23,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "dae08daa-cbe9-45f9-87d6-bfd9754a5ff4",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-01-21T00:00:00.000Z",
+        "odometer": 41480,
+        "fuelAmount": 28.12,
+        "rate": 102.86,
+        "cost": 2892.42,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": "1792132539794-fuel-bill.pdf",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "3282fb8c-4cb8-4c1b-856c-bdc3dd65e53a",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-02-09T00:00:00.000Z",
+        "odometer": 41890,
+        "fuelAmount": 12,
+        "rate": 103.1,
+        "cost": 1237.2,
+        "filled": false,
+        "missedLast": false,
+        "notes": "Half tank, highway",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "fb607b42-39dc-4676-ac0f-6b94bf84c6e6",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-02-15T00:00:00.000Z",
+        "odometer": 42210,
+        "fuelAmount": 24.75,
+        "rate": 103.1,
+        "cost": 2551.73,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "f66f9ecf-ce96-4e5d-a4be-89bee235f587",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-03-29T23:00:00.000Z",
+        "odometer": 43150,
+        "fuelAmount": 31.2,
+        "rate": 104.05,
+        "cost": 3246.36,
+        "filled": true,
+        "missedLast": true,
+        "notes": "Forgot to log the last one",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "7a5ed659-886e-4c14-918a-fa51a70975ed",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-04-17T23:00:00.000Z",
+        "odometer": 43600,
+        "fuelAmount": 27.4,
+        "rate": null,
+        "cost": 2851,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "ab281f0d-b69c-4960-9d99-8bf4a50be01d",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-05-05T23:00:00.000Z",
+        "odometer": 44090,
+        "fuelAmount": null,
+        "rate": 104.2,
+        "cost": 3000,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "a0175b09-857b-46da-b497-4cfe278cf8a7",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-06-01T23:00:00.000Z",
+        "odometer": 44610,
+        "fuelAmount": 29.876,
+        "rate": 104.333,
+        "cost": 3117.08,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "id": "ff63b264-7db1-4dd8-9bd4-9b0c4fd78b30",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "date": "2026-02-01T00:00:00.000Z",
+        "odometer": 11900,
+        "fuelAmount": 9.8,
+        "rate": 103.1,
+        "cost": 1010.38,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "e122419a-3ea9-442f-94f9-881e922eaa4a",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "date": "2026-03-03T00:00:00.000Z",
+        "odometer": 12250,
+        "fuelAmount": 9.1,
+        "rate": 103.6,
+        "cost": 942.76,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "f2b79a61-6ec4-4c86-9616-f8d0fb2698b8",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "date": "2026-04-04T23:00:00.000Z",
+        "odometer": 12610,
+        "fuelAmount": 9.45,
+        "rate": 104.05,
+        "cost": 983.27,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "maintenanceLogs": [
+      {
+        "id": "4b86a54f-23d8-4cec-9c9c-3917b120d2b8",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-01-15T00:00:00.000Z",
+        "odometer": 41300,
+        "serviceCenter": "Bluebird Motors",
+        "cost": 4850.5,
+        "notes": "Periodic service 40,000 km\nOil, oil filter, air filter",
+        "attachment": "1792132540014-service-invoice.pdf",
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "7bd574c5-2b97-4e28-a084-fce9591414ce",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-04-01T23:00:00.000Z",
+        "odometer": 43300,
+        "serviceCenter": "Quick Tyre Point",
+        "cost": 0,
+        "notes": "Puncture repair (free under warranty)",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "d59ca349-67cd-4b98-b999-f655869810e9",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "date": "2026-06-19T23:00:00.000Z",
+        "odometer": 44900,
+        "serviceCenter": "Bluebird Motors",
+        "cost": 1200,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "aa003785-8b97-4b7b-b98f-653f6cae13ed",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "date": "2026-03-20T00:00:00.000Z",
+        "odometer": 12400,
+        "serviceCenter": "RE Service Centre",
+        "cost": 2250,
+        "notes": "Chain set\nAlso adjusted brakes",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "complianceDocuments": [
+      {
+        "id": "0436d75a-f497-4934-9db3-e323c79da441",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "insurance",
+        "otherLabel": null,
+        "documentNumber": "POL-77812345",
+        "issuer": "Acko General",
+        "startDate": "2026-03-01T00:00:00.000Z",
+        "endDate": null,
+        "recurrenceType": "yearly",
+        "recurrenceInterval": 1,
+        "cost": 9875.4,
+        "notes": "Comprehensive with zero dep",
+        "attachment": "1792132540114-policy.pdf",
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "ba1c5e88-387a-4b00-9e57-3060d2517153",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "emissions",
+        "otherLabel": null,
+        "documentNumber": "PUC-KA01-998877",
+        "issuer": "Shell Indiranagar",
+        "startDate": "2026-05-09T23:00:00.000Z",
+        "endDate": "2026-11-09T00:00:00.000Z",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "cost": 120,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "dbeee85b-da14-4bf2-adb0-886fce706607",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "other",
+        "otherLabel": "FASTag",
+        "documentNumber": "FT-12345",
+        "issuer": "ICICI Bank",
+        "startDate": "2025-07-31T23:00:00.000Z",
+        "endDate": null,
+        "recurrenceType": "no_end",
+        "recurrenceInterval": 1,
+        "cost": null,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "93780502-8677-4338-bfa3-392aa31bf5a3",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "type": "roadworthiness",
+        "otherLabel": null,
+        "documentNumber": "FC-2026-001",
+        "issuer": "RTO Bengaluru",
+        "startDate": "2026-01-10T00:00:00.000Z",
+        "endDate": "2027-01-09T00:00:00.000Z",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "cost": 600,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "reminders": [
+      {
+        "id": "d52567e8-0a66-423d-b6c8-29f7a4871ae2",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "maintenance",
+        "dueDate": "2026-12-15T00:00:00.000Z",
+        "remindSchedule": "one_week_before",
+        "recurrenceType": "yearly",
+        "recurrenceInterval": 1,
+        "recurrenceEndDate": null,
+        "note": "Annual service",
+        "isCompleted": false,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "15bc10ed-dc15-4dd7-a7e2-db3146528fd2",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "custom",
+        "dueDate": "2026-03-01T00:00:00.000Z",
+        "remindSchedule": "same_day",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "recurrenceEndDate": null,
+        "note": "Wash and wax",
+        "isCompleted": true,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      },
+      {
+        "id": "87681bac-aa13-4393-9fd7-3cef72ff264d",
+        "vehicleId": "be9e37a0-f276-45f9-be54-b717c9535c02",
+        "type": "insurance",
+        "dueDate": "2026-11-30T00:00:00.000Z",
+        "remindSchedule": "one_month_before",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "recurrenceEndDate": null,
+        "note": null,
+        "isCompleted": false,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "notifications": [
+      {
+        "id": "6bc0376a-3638-4c07-85bf-cdb5a2b01acc",
+        "vehicleId": "ed397c4e-64b8-44a5-b447-904094087f72",
+        "type": "compliance",
+        "channel": "alert",
+        "notificationKey": "compliance:ba1c5e88-387a-4b00-9e57-3060d2517153:2026-11-09T00:00:00.000Z",
+        "message": "Emissions document PUC-KA01-998877 expires in 24 days",
+        "source": "system",
+        "dueDate": "2026-11-09T00:00:00.000Z",
+        "isRead": false,
+        "clearedAt": null,
+        "created_at": "2026-10-16 06:35:40",
+        "updated_at": "2026-10-16 06:35:40"
+      }
+    ],
+    "notificationProviders": [
+      {
+        "id": "359d8a4f-cc60-4183-a48f-6b45c016a487",
+        "name": "Gotify",
+        "type": "gotify",
+        "config": "{\"iv\":\"d1e076cd316640274c010e4592595de2\",\"salt\":\"d4a1e5781fd10f9d20ac5a3c232776fe\",\"data\":\"71985cfd571f28c31db3369047a5f1280caca0fed93b1ce1378a3697c3bb40c1b80eee09cf8821100a39a6a81eefa8815f35c29b63a88f459c71a356a18e7e21303f96d06f3a4a4250c482132bcf075d1d1ec8e8a334e43a051c614242fe32a6aeecfa260864f09c20d60874316a970193030763c46901:21d99aec3d664f1a09b53b667909b26f\"}",
+        "channels": "[\"reminder\"]",
+        "isEnabled": true,
+        "created_at": "2026-10-16 06:36:20",
+        "updated_at": "2026-10-16 06:36:20"
+      }
+    ],
+    "configs": [
+      {
+        "key": "dateFormat",
+        "value": "dd/MM/yyyy",
+        "description": "Format for displaying dates",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "currency",
+        "value": "INR",
+        "description": "Default currency for financial transactions",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "unitOfDistance",
+        "value": "kilometer",
+        "description": "Unit of measure for distance",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "unitOfVolume",
+        "value": "liter",
+        "description": "Unit of measure for volume",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "locale",
+        "value": "en",
+        "description": "Locale for all formatting options",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "timezone",
+        "value": "Asia/Kolkata",
+        "description": "Timezone to be used for all dates",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "customCss",
+        "value": "",
+        "description": "Custom CSS for the application",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "featureFuelLog",
+        "value": "true",
+        "description": "Enable/Disable Fuel Log feature",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "featureMaintenance",
+        "value": "true",
+        "description": "Enable/Disable Maintenance feature",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "featureReminders",
+        "value": "true",
+        "description": "Enable/Disable Reminders feature",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "featureOverview",
+        "value": "true",
+        "description": "Enable/Disable Overview feature",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "mileageUnitFormat",
+        "value": "distance-per-fuel",
+        "description": "Format for displaying mileage: distance-per-fuel (e.g., km/L, mpg) or fuel-per-distance (e.g., L/100km)",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "unitOfLpg",
+        "value": "litre",
+        "description": "Unit for measuring LPG Fuel",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "unitOfCng",
+        "value": "kilogram",
+        "description": "Unit for measuring CNG Fuel",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "featureCompliance",
+        "value": "true",
+        "description": "Enable/Disable Compliance feature",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "notificationProcessingEnabled",
+        "value": "true",
+        "description": "Enable scheduled processing of notification providers",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      },
+      {
+        "key": "notificationProcessingSchedule",
+        "value": "0 9 * * *",
+        "description": "Cron schedule for processing queued provider notifications",
+        "created_at": "2026-10-16 06:34:00",
+        "updated_at": "2026-10-16 06:34:00"
+      }
+    ]
+  }
+}

@@ -1,0 +1,383 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-10-16T06:35:49.687Z",
+  "encrypted": false,
+  "data": {
+    "vehicles": [
+      {
+        "id": "d48a6678-6677-4517-ac1e-01628a742233",
+        "make": "Volkswagen",
+        "model": "Golf",
+        "year": 2017,
+        "licensePlate": "AB17 CDE",
+        "vin": "WVWZZZAUZHW123456",
+        "color": "#1f3a93",
+        "odometer": 63250,
+        "image": null,
+        "fuelType": "diesel",
+        "vehicleType": "car",
+        "customFields": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "deea548b-d8dc-4a69-8c56-c1ee88abe317",
+        "make": "Nissan",
+        "model": "Leaf",
+        "year": 2020,
+        "licensePlate": "EV20 LEF",
+        "vin": null,
+        "color": null,
+        "odometer": 21000,
+        "image": null,
+        "fuelType": "electric",
+        "vehicleType": "car",
+        "customFields": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "3c0daf11-b19a-4d04-903c-ffa291b64d66",
+        "make": "Volkswagen",
+        "model": "Transporter Camper",
+        "year": 1979,
+        "licensePlate": "OLD 79",
+        "vin": null,
+        "color": null,
+        "odometer": null,
+        "image": null,
+        "fuelType": "petrol",
+        "vehicleType": "bus",
+        "customFields": "{\"Nickname\":\"Bertha\"}",
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "fuelLogs": [
+      {
+        "id": "6b13eee3-5244-48ae-8245-b48a22896560",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "date": "2026-02-03T00:00:00.000Z",
+        "odometer": 61800,
+        "fuelAmount": 9.5,
+        "rate": 6.59,
+        "cost": 62.61,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "c6882eec-cdee-4910-899b-8fd7175f55e1",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "date": "2026-02-24T00:00:00.000Z",
+        "odometer": 62230,
+        "fuelAmount": 9.6,
+        "rate": 6.62,
+        "cost": 63.55,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "86f2dd8c-f9eb-479a-b249-45c7ae2cded1",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "date": "2026-03-18T00:00:00.000Z",
+        "odometer": 62660,
+        "fuelAmount": 9.55,
+        "rate": 6.55,
+        "cost": 62.55,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "80358e3f-238a-475e-a71d-e527f150154d",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "date": "2026-04-08T23:00:00.000Z",
+        "odometer": 63100,
+        "fuelAmount": 9.8,
+        "rate": 6.48,
+        "cost": 63.5,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "cb60d31a-6684-4f21-ab8d-0a41b2bc4948",
+        "vehicleId": "deea548b-d8dc-4a69-8c56-c1ee88abe317",
+        "date": "2026-04-30T23:00:00.000Z",
+        "odometer": 20400,
+        "fuelAmount": 30,
+        "rate": 0.28,
+        "cost": 8.4,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "66ff7f42-195a-49b1-b25f-20ab18b8b082",
+        "vehicleId": "deea548b-d8dc-4a69-8c56-c1ee88abe317",
+        "date": "2026-05-11T23:00:00.000Z",
+        "odometer": 20520,
+        "fuelAmount": 28.5,
+        "rate": 0.28,
+        "cost": 7.98,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "35e18159-b666-4e94-9678-5676c714f04a",
+        "vehicleId": "deea548b-d8dc-4a69-8c56-c1ee88abe317",
+        "date": "2026-05-24T23:00:00.000Z",
+        "odometer": 20640,
+        "fuelAmount": 29,
+        "rate": 0.29,
+        "cost": 8.41,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "94cc7897-6e3a-4e00-89de-212cbd39c8ee",
+        "vehicleId": "3c0daf11-b19a-4d04-903c-ffa291b64d66",
+        "date": "2026-07-03T23:00:00.000Z",
+        "odometer": 98000,
+        "fuelAmount": 11,
+        "rate": 6.4,
+        "cost": 70.4,
+        "filled": true,
+        "missedLast": false,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "maintenanceLogs": [
+      {
+        "id": "3f1c9e9a-7087-4092-8beb-6b592a7c010b",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "date": "2026-03-02T00:00:00.000Z",
+        "odometer": 62400,
+        "serviceCenter": "Halfords Autocentre",
+        "cost": 189.99,
+        "notes": "Interim service",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "complianceDocuments": [
+      {
+        "id": "fd0eb89c-07fa-4cf1-979f-598de85282b7",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "type": "roadworthiness",
+        "otherLabel": null,
+        "documentNumber": "MOT 1234 5678 9012",
+        "issuer": "Kwik Fit",
+        "startDate": "2026-03-02T00:00:00.000Z",
+        "endDate": null,
+        "recurrenceType": "yearly",
+        "recurrenceInterval": 1,
+        "cost": 54.85,
+        "notes": null,
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "id": "b008e94a-aca3-4e5b-b8a9-ffd35fc45bbc",
+        "vehicleId": "d48a6678-6677-4517-ac1e-01628a742233",
+        "type": "registration",
+        "otherLabel": null,
+        "documentNumber": "V5C-0012345",
+        "issuer": "DVLA",
+        "startDate": "2026-03-31T23:00:00.000Z",
+        "endDate": null,
+        "recurrenceType": "yearly",
+        "recurrenceInterval": 1,
+        "cost": 190,
+        "notes": "Road tax",
+        "attachment": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "reminders": [
+      {
+        "id": "7e14051b-31c1-40a4-8519-cb42056bea9f",
+        "vehicleId": "3c0daf11-b19a-4d04-903c-ffa291b64d66",
+        "type": "inspection",
+        "dueDate": "2026-09-30T23:00:00.000Z",
+        "remindSchedule": "one_week_before",
+        "recurrenceType": "none",
+        "recurrenceInterval": 1,
+        "recurrenceEndDate": null,
+        "note": "MOT",
+        "isCompleted": false,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "notifications": [
+      {
+        "id": "83ff1901-1aec-4806-9432-d865ecb77e07",
+        "vehicleId": "3c0daf11-b19a-4d04-903c-ffa291b64d66",
+        "type": "reminder",
+        "channel": "reminder",
+        "notificationKey": "reminder:7e14051b-31c1-40a4-8519-cb42056bea9f:one_week_before",
+        "message": "Inspection reminder: MOT (Due: Sep 30, 2026)",
+        "source": "system",
+        "dueDate": "2026-09-30T23:00:00.000Z",
+        "isRead": false,
+        "clearedAt": null,
+        "created_at": "2026-10-16 06:35:49",
+        "updated_at": "2026-10-16 06:35:49"
+      }
+    ],
+    "notificationProviders": [],
+    "configs": [
+      {
+        "key": "dateFormat",
+        "value": "dd/MM/yyyy",
+        "description": "Format for displaying dates",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "currency",
+        "value": "GBP",
+        "description": "Default currency for financial transactions",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "unitOfDistance",
+        "value": "mile",
+        "description": "Unit of measure for distance",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "unitOfVolume",
+        "value": "gallon",
+        "description": "Unit of measure for volume",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "locale",
+        "value": "en",
+        "description": "Locale for all formatting options",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "timezone",
+        "value": "Europe/London",
+        "description": "Timezone to be used for all dates",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:49"
+      },
+      {
+        "key": "customCss",
+        "value": "",
+        "description": "Custom CSS for the application",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "featureFuelLog",
+        "value": "true",
+        "description": "Enable/Disable Fuel Log feature",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "featureMaintenance",
+        "value": "true",
+        "description": "Enable/Disable Maintenance feature",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "featureReminders",
+        "value": "true",
+        "description": "Enable/Disable Reminders feature",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "featureOverview",
+        "value": "true",
+        "description": "Enable/Disable Overview feature",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "mileageUnitFormat",
+        "value": "distance-per-fuel",
+        "description": "Format for displaying mileage: distance-per-fuel (e.g., km/L, mpg) or fuel-per-distance (e.g., L/100km)",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "unitOfLpg",
+        "value": "litre",
+        "description": "Unit for measuring LPG Fuel",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "unitOfCng",
+        "value": "kilogram",
+        "description": "Unit for measuring CNG Fuel",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "featureCompliance",
+        "value": "true",
+        "description": "Enable/Disable Compliance feature",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "notificationProcessingEnabled",
+        "value": "true",
+        "description": "Enable scheduled processing of notification providers",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      },
+      {
+        "key": "notificationProcessingSchedule",
+        "value": "0 9 * * *",
+        "description": "Cron schedule for processing queued provider notifications",
+        "created_at": "2026-10-16 06:35:39",
+        "updated_at": "2026-10-16 06:35:39"
+      }
+    ]
+  }
+}
