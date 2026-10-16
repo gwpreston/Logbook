@@ -4,7 +4,7 @@ A self-hosted logbook for your cars and bikes: vehicles, mileage, fuel,
 maintenance, insurance and certificate renewals, reminders and costs, all on
 your own server.
 
-> **Status: v3.15.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
+> **Status: v3.16.0.** First-run setup, secure sign-in (with a password or your email address, a forgotten-password link by email, single
 > sign-on through Authelia, Authentik or Keycloak, or the user a forward-auth
 > proxy passes on), several people on one
 > install (admins invite the others) with vehicles shared at View, Log or
@@ -48,7 +48,9 @@ your own server.
 > rearrange; modules you can switch off; CSV import with a preview, and your
 > whole history from Fuelio (its CSV export, or a backup with the fill-up
 > photos on the command line), previewed with Fuelio's own economy beside
-> Logbook's and safe to repeat with a newer export; one-click
+> Logbook's and safe to repeat with a newer export, or a whole garage from
+> Tracktor (every vehicle, fill-up, service, document and reminder, with
+> its attachments and photos); one-click
 > backup and restore of everything; an installable phone app that logs
 > fill-ups and trips offline; a REST API with keys, so Home Assistant, Shortcuts,
 > Grafana and Node-RED can read your garage and log fill-ups and other entries; optional AI with

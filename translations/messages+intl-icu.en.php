@@ -3515,6 +3515,7 @@ return [
             ],
             'map' => [
                 'vehicles_heading' => 'Vehicles',
+                'options_heading' => 'Reminders and schedules',
                 'units_hint' => 'Tracktor says which units it uses, except which gallon. Check the economy line in the preview.',
                 'gallon_hint' => 'Tracktor doesn’t say which gallon. Check the economy line in the preview.',
                 'currency' => 'Tracktor’s amounts are in {currency}. A new vehicle takes it; nothing is converted.',

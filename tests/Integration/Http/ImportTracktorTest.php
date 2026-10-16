@@ -137,6 +137,27 @@ final class ImportTracktorTest extends AppTestCase
         self::assertSame([], $this->ownedVehicles($app, $this->owner($app)->id));
     }
 
+    public function testWorksBehindASubpath(): void
+    {
+        $app = $this->createApp(['APP_BASE_PATH' => '/logbook']);
+        $browser = $this->signedIn($app);
+        $response = $browser->post('/logbook/settings/import-app', [], [
+            'file' => $this->file(self::fixture('export-1.4.1.json'), 'export.json'),
+        ]);
+        self::assertSame(303, $response->getStatusCode(), self::body($response));
+        $map = $response->getHeaderLine('Location');
+        self::assertStringStartsWith('/logbook/settings/import-app/', $map);
+
+        // Hard refresh with the prefix stripped by the proxy.
+        $page = self::body($browser->get(substr($map, strlen('/logbook')) . '?vehicle[x]=new'));
+        self::assertStringContainsString('action="' . $map . '"', $page);
+        self::assertStringContainsString('href="/logbook/settings/import-app"', $page);
+        $form = Html::element(Html::document($page), 'form[method="post"]:not([action$="/theme"])');
+        $result = $browser->post($map, Html::formValues($form));
+        self::assertSame(200, $result->getStatusCode(), self::body($result));
+        self::assertStringContainsString('href="/logbook/garage"', self::body($result));
+    }
+
     public function testOnlyVehiclesTheUserCanManageAreTargets(): void
     {
         $app = $this->createApp();

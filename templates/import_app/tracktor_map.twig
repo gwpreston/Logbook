@@ -125,7 +125,7 @@
             {% endif %}
 
             <section class="card" aria-labelledby="options-heading">
-                <h2 id="options-heading" class="visually-hidden">{{ 'import_app.map.heading'|trans }}</h2>
+                <h2 id="options-heading" class="visually-hidden">{{ 'import_app.tracktor.map.options_heading'|trans }}</h2>
                 {% if export.hasReminders() %}
                     <label class="toggle">
                         <input type="checkbox" name="reminders" value="1"{% if options.reminders %} checked{% endif %}>
@@ -190,7 +190,7 @@
                             {% endif %}
                             {% for section in sections %}
                                 {% if vehicle.rows(section) is not empty %}
-                                    <h4 class="section-title">{{ ('import_app.section.' ~ section)|trans }}</h4>
+                                    <h4 class="card__subtitle">{{ ('import_app.section.' ~ section)|trans }}</h4>
                                     <p>{{ app_import.totals(vehicle, section, statuses) }}</p>
                                     {{ app_import.rows(card.listed[section], ('import_app.section.' ~ section)|trans) }}
                                     {% if card.unlisted[section] > 0 %}

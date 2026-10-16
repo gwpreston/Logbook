@@ -37,7 +37,7 @@
                 {% for section in sections %}
                     {% if vehicle.rows(section) is not empty %}
                         {% set skipped = vehicle.rows(section)|filter(r => r.status.value != 'import') %}
-                        <h3 class="section-title">{{ ('import_app.section.' ~ section)|trans }}</h3>
+                        <h3 class="card__subtitle">{{ ('import_app.section.' ~ section)|trans }}</h3>
                         <p>{{ app_import.totals(vehicle, section, statuses) }}</p>
                         {% if skipped is not empty %}
                             {{ app_import.rows(skipped, ('import_app.section.' ~ section)|trans) }}

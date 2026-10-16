@@ -253,8 +253,8 @@ final readonly class ImportTracktorPage
 
         return [
             'params' => [
-                'distance' => mb_strtolower($this->translator->trans('units.name.' . $options->distanceUnit->value)),
-                'volume' => mb_strtolower($this->translator->trans('units.name.' . $options->volumeUnit->value)),
+                'distance' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->distanceUnit->value),
+                'volume' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->volumeUnit->value),
                 'economy' => $this->format->economy($km, $volume, $sanity->kind),
                 'canonical' => $canonical,
             ],

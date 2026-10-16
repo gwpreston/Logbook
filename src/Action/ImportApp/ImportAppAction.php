@@ -36,6 +36,7 @@ use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -227,8 +228,8 @@ final readonly class ImportAppAction
 
         return [
             'params' => [
-                'distance' => mb_strtolower($this->translator->trans('units.name.' . $options->distanceUnit->value)),
-                'volume' => mb_strtolower($this->translator->trans('units.name.' . $options->volumeUnit->value)),
+                'distance' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->distanceUnit->value),
+                'volume' => ImportAppAction::inSentence($this->translator, 'units.name.' . $options->volumeUnit->value),
                 'economy' => $this->format->economy($sanity->distanceKm, $sanity->volume, $sanity->kind),
                 'canonical' => $canonical,
             ],
@@ -247,6 +248,22 @@ final readonly class ImportAppAction
         }
 
         return $file !== null && FuelioReader::detect($file) ? FuelioReader::read($file) : null;
+    }
+
+    /**
+     * A unit's name inside a sentence: "kilometres", but "UK gallons" keeps
+     * its capitals, and German keeps its capitalised nouns.
+     */
+    public static function inSentence(TranslatorInterface $translator, string $key): string
+    {
+        $name = $translator->trans($key);
+        $locale = $translator instanceof LocaleAwareInterface ? $translator->getLocale() : 'en';
+        $second = mb_substr($name, 1, 1);
+        if (str_starts_with($locale, 'de') || ($second !== '' && mb_strtoupper($second) === $second)) {
+            return $name;
+        }
+
+        return mb_strtolower(mb_substr($name, 0, 1)) . mb_substr($name, 1);
     }
 
     /**

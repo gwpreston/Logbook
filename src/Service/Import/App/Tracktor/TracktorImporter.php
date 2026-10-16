@@ -709,7 +709,10 @@ final readonly class TracktorImporter
 
         $rows = [];
         foreach ($source->documents as $document) {
-            $summary = self::summary([$document->type, $document->number, $document->startDate]);
+            $label = self::knownDocumentType($document->type)
+                ? $this->translator->trans('import_app.tracktor.document_type.' . $document->type)
+                : $document->type;
+            $summary = self::summary([$label, $document->number, $document->startDate]);
             $type = $options->documentType($document->type);
             if (!$enabled || $type === null) {
                 $rows[] = new AppRow($document->line, AppRowStatus::NotImported, $document->id, $summary, note: self::note(

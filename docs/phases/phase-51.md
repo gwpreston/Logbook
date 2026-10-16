@@ -189,6 +189,25 @@ shown on Phase 31's mapping page.
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
       merged.
 
+### Design review (2026-10-16)
+
+On the dev stack (PostgreSQL), with a Tracktor export of three vehicles
+made to show every state: gallons, a row without an odometer, amounts
+that disagree, a bus, files left behind. Upload, map, preview and
+result at 375, 768 and 1280 px, light and dark. The steps are a GET form
+and POST forms, so they work without JS; the subpath is covered by
+`ImportTracktorTest::testWorksBehindASubpath`. No page scrolls sideways;
+the row tables scroll in their own frame, as Fuelio's do.
+
+| # | Severity | Finding | Done |
+|---|---|---|---|
+| 1 | MEDIUM | The section headings inside a vehicle's card used the page-level `section-title`, larger than the card's own title. | Fixed: `card__subtitle`. |
+| 2 | MEDIUM | The sanity line lower-cased the units: "uk gallons", and German nouns too. Fuelio's page had the same. | Fixed for both: `ImportAppAction::inSentence()`. |
+| 3 | LOW | Document rows showed Tracktor's codes ("roadworthiness"). | Fixed: the type's label. |
+| 4 | LOW | The options card repeated the page's hidden heading. | Fixed: its own, "Reminders and schedules". |
+| 5 | LOW | At 375 px a long "A new vehicle: …" option is cut off in its closed select, as on Fuelio's page; the open list shows it whole. | Kept. |
+| 6 | LOW | "Not read: notifications, notificationProviders" uses Tracktor's own names for its lists. | Kept: they are what the export calls them. |
+
 ---
 
 ## Acceptance criteria

@@ -3512,6 +3512,7 @@ return [
             ],
             'map' => [
                 'vehicles_heading' => 'Fahrzeuge',
+                'options_heading' => 'Erinnerungen und Wartungspläne',
                 'units_hint' => 'Tracktor sagt, welche Einheiten es nutzt, nur nicht welche Gallone. Prüfe die Verbrauchszeile in der Vorschau.',
                 'gallon_hint' => 'Tracktor sagt nicht, welche Gallone. Prüfe die Verbrauchszeile in der Vorschau.',
                 'currency' => 'Die Beträge in Tracktor sind in {currency}. Ein neues Fahrzeug übernimmt diese Währung; nichts wird umgerechnet.',
