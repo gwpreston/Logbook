@@ -110,6 +110,9 @@ Fuelio's exports aren't one table per file, so they have their own import:
 Fuelio?* on a vehicle's fill-up import). It needs the fuel module on.
 Logbook isn't affiliated with Fuelio.
 
+Coming from Tracktor? The same page takes its JSON export: see
+[import-tracktor.md](import-tracktor.md).
+
 ### Exporting from Fuelio
 
 - **CSV export**: one file per vehicle. In Fuelio, open the menu and export

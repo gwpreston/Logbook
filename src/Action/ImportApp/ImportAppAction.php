@@ -19,6 +19,7 @@ use Logbook\Service\Import\App\Fuelio\FuelioExport;
 use Logbook\Service\Import\App\Fuelio\FuelioImporter;
 use Logbook\Service\Import\App\Fuelio\FuelioReader;
 use Logbook\Service\Import\App\SectionSplitter;
+use Logbook\Service\Import\App\Tracktor\TracktorReader;
 use Logbook\Service\Import\DateOrder;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvTooLong;
@@ -39,7 +40,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * GET|POST /settings/import-app/{token} — importing from another app,
- * steps 2 to 4 (spec.md §7.13): map (a GET form, bookmarkable, working
+ * steps 2 to 4 (spec.md §7.13; a Tracktor export goes to ImportTracktorPage): map (a GET form, bookmarkable, working
  * without JS), preview every row once the form is submitted, and import
  * (POST) in one transaction. Only active vehicles the user can manage are
  * offered; any other vehicle in the form is a 404.
@@ -51,6 +52,7 @@ final readonly class ImportAppAction
 
     public function __construct(
         private FuelioImporter $importer,
+        private ImportTracktorPage $tracktor,
         private VehicleService $vehicles,
         private StagedFiles $staged,
         private DisplayFormatter $format,
@@ -69,6 +71,9 @@ final readonly class ImportAppAction
         $session = RequestContext::session($request);
         $token = $args['token'] ?? '';
         $import = $session->get(ImportAppRoute::SESSION);
+        if (is_array($import) && ($import['token'] ?? null) === $token && ($import['app'] ?? null) === TracktorReader::APP) {
+            return $this->tracktor->handle($request, $response, $token, $import);
+        }
         $path = is_array($import) && ($import['token'] ?? null) === $token
             ? $this->staged->path(ImportAppRoute::STAGE, $token)
             : null;
@@ -251,7 +256,7 @@ final readonly class ImportAppAction
      * @param array<string, mixed> $query
      * @return array<string, string>
      */
-    private static function flatten(array $query): array
+    public static function flatten(array $query): array
     {
         $out = [];
         foreach ($query as $key => $value) {

@@ -147,6 +147,7 @@ Full instructions, including Apache/nginx configs, reverse proxies, subpaths
 | [docs/ai.md](docs/ai.md) | AI: connecting a model on this server, your network or the internet (Ollama, llama.cpp, LM Studio, vLLM, OpenAI, Anthropic, Gemini, OpenRouter), where data goes, keys, tasks, limits and which model to pick; *Ask Logbook*: what it answers, sources, the grounding check, conversations and privacy; adding entries by message; reading receipts, documents and insurer letters |
 | [docs/sso.md](docs/sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
 | [docs/import.md](docs/import.md) | Importing CSV files and Fuelio exports: columns, units, what is skipped and why |
+| [docs/import-tracktor.md](docs/import-tracktor.md) | Bringing a whole Tracktor garage across: exporting, the uploads folder, what comes across and what doesn't |
 | [docs/api.md](docs/api.md) | The REST API: keys, values, paging, edits, attachments, webhooks and errors, with Home Assistant, Shortcuts, Grafana and Node-RED examples |
 | [docs/mcp.md](docs/mcp.md) | The MCP server: Claude Desktop, Claude Code and other assistants, keys and scopes, on your network or behind your reverse proxy, drafts to review |
 | [docs/sale-pack.md](docs/sale-pack.md) | The sale pack: what a buyer sees, what they never see, saving it as a PDF |

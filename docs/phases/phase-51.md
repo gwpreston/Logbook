@@ -177,11 +177,11 @@ shown on Phase 31's mapping page.
       reminders; *Make schedules*.
 
 ### 51.3 Pages, docs and release
-- [ ] *Tracktor* on Settings → *Import from another app*, with the
+- [x] *Tracktor* on Settings → *Import from another app*, with the
       uploads ZIP (C); the CLI's `--files`.
-- [ ] `docs/import-tracktor.md`: exporting from Tracktor, what comes
+- [x] `docs/import-tracktor.md`: exporting from Tracktor, what comes
       across and what doesn't, files on the web and the command line.
-- [ ] Translations (every shipped locale).
+- [x] Translations (every shipped locale).
 - [ ] Tests: each fixture end to end on every engine; a re-import adds
       nothing; a newer export adds only new rows; amounts to the penny;
       the gallon check; a password-protected and a tampered file refused
