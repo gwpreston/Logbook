@@ -109,6 +109,10 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
+| [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
+| [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
+| [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
+| [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1376,6 +1380,71 @@ and how to try it, and find the right guide for anything deeper.*
   images. No app change; docs-only patch release v3.16.2.
 
 → [`phase-52.md`](docs/phases/phase-52.md)
+
+---
+
+## Phase 53.1 — Reading text from images: the OCR engine
+*Logbook can turn a photo or a scanned PDF into text with positions, on
+its own server.*
+
+- Tesseract as an optional binary, found and switched like Ghostscript
+  (`TESSERACT_BINARY`, `off` to turn it off), in the Docker image with
+  the language packs for every shipped locale.
+- An OCR engine run without a shell, with a timeout, a memory limit and
+  one run per user at a time; the image turned upright, greyscaled,
+  contrast-stretched, deskewed and scaled first.
+- Words, lines and blocks with positions and confidences, plus a layout
+  text that keeps "Total" and its amount on one line. Tesseract's
+  version, languages and a *Test it* button in Settings. No user-facing
+  change yet.
+
+→ [`phase-53.1.md`](docs/phases/phase-53.1.md)
+
+---
+
+## Phase 53.2 — Reading photos with a text model + release
+*An owner with only a text model (a local Ollama model without vision,
+say) can scan a fuel receipt.*
+
+- Photos and scanned PDFs go through OCR and on to the `read_text`
+  model when there's no vision model, chosen per file with no setting
+  to learn; the same schemas, Mapper and prefilled form.
+- Evidence checked against the OCR text with a tolerant match; values
+  read with low confidence marked "Hard to read, check this".
+- The Scan page says how the file was read. Release.
+
+→ [`phase-53.2.md`](docs/phases/phase-53.2.md)
+
+---
+
+## Phase 53.3 — OCR as a check on the vision model, and text instead of images
+*A figure the vision model read is checked against what is actually on
+the page. A photo bound for an Internet provider can go as redacted text
+instead.*
+
+- OCR runs beside the vision model on a photo; a value not found where
+  OCR read confidently is kept but flagged. A fuel receipt's volume ×
+  price is checked against its total, on every route.
+- *Send text, not images*: a per-connection option for Internet
+  connections, sending redacted OCR text instead of the photo. A V5C
+  photo always goes as redacted text when Tesseract is available.
+
+→ [`phase-53.3.md`](docs/phases/phase-53.3.md)
+
+---
+
+## Phase 53.4 — Reading without AI + release
+*No model set up? A fuel receipt still fills the fill-up form, and an
+invoice still gives its date, total and mileage.*
+
+- With Tesseract and no model, *Scan* shows: documents classified by
+  keywords, then read by rules, every field marked "Read without AI,
+  check every field".
+- Fuel receipts: the volume, price and total that agree win; date,
+  grade and station too. Service invoices: date, total, registration,
+  mileage and vendor. Other kinds: the date only. Release.
+
+→ [`phase-53.4.md`](docs/phases/phase-53.4.md)
 
 ---
 
