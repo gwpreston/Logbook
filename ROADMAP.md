@@ -108,7 +108,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | ✅ |
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
-| [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding | 🚧 |
+| [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -1361,7 +1361,7 @@ documents and reminders.*
 
 ---
 
-## Phase 52 — The README and the docs, for someone deciding
+## Phase 52 — The README and the docs, for someone deciding + patch release
 *A stranger can tell in a minute who Logbook is for, what it looks like
 and how to try it, and find the right guide for anything deeper.*
 
@@ -1373,7 +1373,7 @@ and how to try it, and find the right guide for anything deeper.*
   `docs/getting-started.md` added.
 - Screenshots made by a script from demo data, in light and dark, on a
   desktop and a phone. CI checks docs links, orphaned guides and unused
-  images. No app change; noted in the next release.
+  images. No app change; docs-only patch release v3.16.2.
 
 → [`phase-52.md`](docs/phases/phase-52.md)
 

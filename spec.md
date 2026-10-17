@@ -11386,7 +11386,8 @@ task breakdowns live in the per-phase files; this is the map.
   CI (§10 *README and docs*; #473–#478 decided 2026-10-17). With it, the
   docs-only known issues K8 (§7.20 *Unknown values*, #479), K15, K20 and
   K60. No app
-  change and no migration; noted in the next release's changelog. See
+  change and no migration; released on its own as v3.16.2, a docs-only
+  patch (decided 2026-10-17). See
   [`phase-52.md`](docs/phases/phase-52.md).
 
 ---

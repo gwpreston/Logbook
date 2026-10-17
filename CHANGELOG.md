@@ -6,6 +6,12 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.16.2] — 2026-10-17
+
+Phase 52: **the README and the docs, for someone deciding.** A docs-only
+patch release: no app change and no migration; pull and restart. Start at
+the new [docs index](docs/README.md).
+
 ### Documentation
 - **A shorter README** for anyone deciding whether to try Logbook: who it's
   for, screenshots, a quick start that ends with a vehicle and a fill-up,
@@ -3380,7 +3386,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...HEAD
+[3.16.2]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...v3.16.2
 [3.16.1]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...v3.16.1
 [3.16.0]: https://github.com/gwpreston16/Logbook/compare/v3.15.0...v3.16.0
 [3.15.0]: https://github.com/gwpreston16/Logbook/compare/v3.14.0...v3.15.0

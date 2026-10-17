@@ -3,7 +3,7 @@
 *A stranger can tell in a minute who Logbook is for, what it looks like
 and how to try it, and find the right guide for anything deeper.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.16.2** ([#116](https://github.com/gwpreston16/Logbook/pull/116)), a docs-only patch release · file lives in `docs/phases/`
 
 The README has grown one phase at a time, and it shows:
 
@@ -28,8 +28,9 @@ to their own files, adds screenshots that a script keeps current, and
 gives `docs/` an index and a first-run guide.
 
 It changes no app behaviour, no configuration and no API. Like
-[Phase 45](phase-45.md), it is noted in the next release's changelog
-rather than released on its own.
+[Phase 45](phase-45.md), it was to be noted in the next release's
+changelog rather than released on its own; on 2026-10-17 the owner
+chose to ship it as the docs-only patch release v3.16.2.
 
 Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §1
 (overview), §3 (target users) and §10 (deployment) first.
@@ -253,7 +254,11 @@ Settled in §10 (deployment, *README and docs*) and §13 in 52.0:
       once its policy was decided (#479: a standing *Unknown values* rule,
       spec §7.20). OpenAPI description 1.26.1. `CLAUDE.md` points at
       `CONTRIBUTING.md` for `bin/dev-setup.sh`.
-- [ ] `ROADMAP.md` row ✅.
+- [x] `ROADMAP.md` row ✅.
+- [x] Release (the owner chose a docs-only patch release on 2026-10-17,
+      instead of riding with the next feature release): VERSION 3.16.2,
+      CHANGELOG 3.16.2, README status.
+- [x] Tag `v3.16.2` once merged.
 
 ---
 
