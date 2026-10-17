@@ -6712,6 +6712,9 @@ wrong.
     linking to the MOT history page, where *Refresh* (`Own`) asks DVSA
     again. No *Hide*: it goes when a later fetch stops saying `Yes`, or
     with *Stop and remove*. `View` to see it.
+  - **Not an item:** a modification not declared to the insurer (#438,
+    K33). It shows as a *Not declared* badge and on *For your insurer*
+    instead (§7.39).
 - **Thresholds** (Settings → Reminders, a *Needs attention* card shown
   with or without the `reminders` module): *Mileage not updated after*
   (days, 7–365, default 60) and *Valuation is stale after* (months, 1–60,
@@ -9237,7 +9240,8 @@ owner. Decided 2026-10-06 (#212–#217).
   switch modules.
 - **Banner** on every signed-in page: "This is a demo. It resets {in 3
   hours | at 02:00} and nothing here is private." The time is in the
-  viewer's time zone.
+  viewer's time zone. It is chrome, like the navigation, so it never
+  prints (K38).
 - **Sign-in page** (#215): "Try it: username `demo`, password
   `{DEMO_PASSWORD}`", as text, with a *Fill in* button when JavaScript is
   on.
@@ -10320,7 +10324,12 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   fleet), the Ownership report, *Coming up* (`/upcoming`, with or without a
   vehicle), the Fuel tab and the Mileage tab have a *Print* button in their
   toolbar (`ui.print_button()`, shared with History's print view and the
-  sale pack). It calls `window.print()` with JS and is hidden without it;
+  sale pack). So, since, do five more pages with the same `.print-report`
+  layout (K32): a vehicle's Finance tab (§7.32), the True cost report
+  (§7.35), the trip claim (§7.23), the claims history (§7.29) and *For your
+  insurer* (§7.39). Finance and True cost use the shared print header;
+  the other three write their own `.print-header` with what their section
+  says it shows. It calls `window.print()` with JS and is hidden without it;
   the browser's own print gives the same result. Nothing is generated on
   the server: *Save as PDF* in the print dialog makes the PDF.
   - **Print header** (one partial, `templates/print/_header.twig`, fed by
@@ -11410,15 +11419,20 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-17); *Mark* keeps its date check (#480). See
   [`phase-52.1.md`](docs/phases/phase-52.1.md).
 - **Phase 52.2 — More quick wins from the known-issues log: Parts
-  polish and docs** (planned). Ask's and MCP's `parts` tool words a
-  warranty with the part page's strings and keeps an ended warranty's
-  date (§7.26, K17); no gap under *For your insurer* on the Parts tab
-  (K36); a new part's *Warranty starts from* has *Purchase date*
-  selected (§7.39, K37, #482 decided 2026-10-17); the demo banner
-  doesn't print (§7.36, K38). K1's and K3's questions logged for the owner (K30); §8 *Printing
-  reports* lists every printable page (K32); §7.24 covers undeclared
-  modifications (K33); Phase 50.2's start task names #444–#447 (K34).
-  No migration. See [`phase-52.2.md`](docs/phases/phase-52.2.md).
+  polish and docs** (🚧 built; to be released as v3.16.4). Ask's and
+  MCP's `parts` tool words a warranty with the part page's strings and
+  keeps an ended warranty's date (§7.26, K17), and reads the latest
+  mileage once per vehicle (K31); `vehicle_summary`, and MCP's `costs`
+  and `cost_per_distance`, say that build spend is left out and given
+  as `build_total` (§7.26, K68); no gap under *For your insurer* on the
+  Parts tab (K36); a new part's *Warranty starts from* has *Purchase
+  date* selected (§7.39, K37, #482 decided 2026-10-17); the demo banner
+  doesn't print (§7.36, K38). K1's and K3's questions logged for the
+  owner (#484, #485; K30); §8 *Printing reports* lists every printable
+  page (K32); §7.24 covers undeclared modifications (K33); Phase 50.2's
+  start task names #444–#447 (K34). No migration. Released on its own
+  as v3.16.4, a patch (#486, decided 2026-10-17). See
+  [`phase-52.2.md`](docs/phases/phase-52.2.md).
 - **Phase 53.1 — Reading text from images: the OCR engine** (planned).
   Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
   off), in the Docker image with every shipped locale's language pack;

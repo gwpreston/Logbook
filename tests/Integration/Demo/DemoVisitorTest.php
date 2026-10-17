@@ -204,6 +204,26 @@ final class DemoVisitorTest extends DemoTestCase
         self::assertStringContainsString('It resets in 10 minutes', self::body($browser->get('/garage')));
     }
 
+    /**
+     * K38: the banner is chrome, like the navigation, so no printed page shows it (the
+     * *For your insurer* report included).
+     */
+    public function testTheBannerIsNotPrinted(): void
+    {
+        $app = $this->demoApp();
+        $this->pinClock($app, '2026-10-06T08:00:00Z');
+        $body = self::body($this->demoBrowser($app)->get('/'));
+        self::assertMatchesRegularExpression('/<div class="[^"]*\bdemo-banner\b[^"]*"[^>]*data-demo-banner/', $body);
+
+        $css = (string) file_get_contents(__DIR__ . '/../../../assets/css/app.css');
+        preg_match_all('/^@media print \{\n.*?^\}$/ms', $css, $blocks);
+        $hidden = array_filter(
+            $blocks[0],
+            static fn (string $block): bool => preg_match('/\.demo-banner,[^{}]*\{\s*display: none !important;/', $block) === 1,
+        );
+        self::assertNotSame([], $hidden, 'a print rule hides .demo-banner');
+    }
+
     public function testAnAnonymousVisitorIsNotToldTheDemoWasReset(): void
     {
         $app = $this->demoApp();

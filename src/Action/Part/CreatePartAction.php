@@ -47,7 +47,8 @@ final readonly class CreatePartAction
             return $refused;
         }
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, $vehicle, ['condition' => 'new']);
+            // #482: *Purchase date* chosen, so a new part's form always shows where its warranty starts.
+            return $this->page->render($request, $response, $vehicle, ['condition' => 'new', 'warranty_from' => 'purchase']);
         }
 
         $input = $this->costs->guard($request, $vehicle, RequestContext::form($request));

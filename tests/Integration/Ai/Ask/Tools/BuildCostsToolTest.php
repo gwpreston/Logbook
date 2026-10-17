@@ -96,6 +96,10 @@ final class BuildCostsToolTest extends AskTestCase
             $summary->get('running_cost_last_12_months', 'build_total', 'amount'),
         );
         self::assertSame('450.00', $summary->get('running_cost_last_12_months', 'build_total', 'amount'));
+        // K68: the result and the description say the build is left out and given beside it.
+        self::assertStringContainsString('build_total', $summary->string('running_cost_last_12_months', 'note'));
+        $definition = $this->service($app, \Logbook\Service\Ai\Ask\Tool\VehicleSummary::class)->definition();
+        self::assertStringContainsString('build_total', $definition->description);
     }
 
     public function testTheModificationsTotalIsNetOfPartsSoldLikeTheCostsFigure(): void

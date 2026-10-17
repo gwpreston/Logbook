@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 52.2: **more quick wins from the known-issues log: Parts polish and
+docs** ([docs/phases/phase-52.2.md](docs/phases/phase-52.2.md)). No
+migration: pull and restart.
+
+### Changed
+- **A new part's *Warranty starts from*** has *Purchase date* chosen, so
+  the form always shows where the warranty starts. With no bought-on date
+  it still runs from the first fitting. Editing a part shows what's
+  stored; the API and imports are unchanged.
+
+### Fixed
+- **Ask's and MCP's `parts` tool** words a warranty as the part page does:
+  German no longer has an English "or" in it, and an ended warranty keeps
+  its date ("Warranty ended 1 Jan 2025"). It also reads each vehicle's
+  latest mileage once, not twice per part.
+- **Ask's and MCP's `vehicle_summary`, and MCP's `costs` and
+  `cost_per_distance`,** say in their descriptions that running costs
+  leave modifications out and give `build_total` beside them;
+  `vehicle_summary` adds a `note` when there is build spend.
+- **The Parts tab** has no blank gap under *For your insurer*.
+- **The demo banner** no longer prints, on *For your insurer* or any
+  other page.
+
+### Documentation
+- Spec §8 *Printing reports* lists every printable page, and §7.24 says
+  undeclared modifications aren't a *Needs attention* item. Two open
+  questions logged for the owner: how a CSV import reads separators
+  (#484) and who may set *Declared on* (#485).
+
 ## [3.16.3] — 2026-10-17
 
 Phase 52.1: **quick wins from the known-issues log**

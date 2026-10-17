@@ -36,7 +36,8 @@
         <section class="card" aria-labelledby="modifications-heading">
             <h2 id="modifications-heading" class="card__title">{{ 'modification.title'|trans }}</h2>
             {% if modifications is not empty %}
-                <p><a class="btn btn--ghost" href="{{ url_for('parts.insurer', {id: vehicle.id}) }}">{{ ui.icon('shield') }}{{ 'insurer.link'|trans }}</a></p>
+                {# A div, not a p: the card's gap is the only space above the list (K36). #}
+                <div><a class="btn btn--ghost" href="{{ url_for('parts.insurer', {id: vehicle.id}) }}">{{ ui.icon('shield') }}{{ 'insurer.link'|trans }}</a></div>
             {% endif %}
             {% if modifications is empty %}
                 <div class="empty">

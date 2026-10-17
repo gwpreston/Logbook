@@ -88,10 +88,12 @@ final readonly class Parts implements AskTool
                 continue;
             }
             $fittings = $this->parts->fittingsFor($listed);
+            // Read once per vehicle, not twice per part (K31).
+            $currentKm = $this->parts->currentKm($vehicle);
             foreach ($listed as $part) {
                 $count++;
                 if (count($rows) < ToolKit::LIST_CAP) {
-                    $rows[] = $this->row($user, $vehicle, $part, $fittings[$part->id] ?? []);
+                    $rows[] = $this->row($user, $vehicle, $part, $fittings[$part->id] ?? [], $currentKm);
                 }
                 $withParts[$vehicle->id] = $vehicle->id;
             }
@@ -121,12 +123,12 @@ final readonly class Parts implements AskTool
      * @param list<PartFitting> $fittings oldest first
      * @return array<string, mixed>
      */
-    private function row(User $user, Vehicle $vehicle, Part $part, array $fittings): array
+    private function row(User $user, Vehicle $vehicle, Part $part, array $fittings, ?string $currentKm): array
     {
         $data = $part->data;
         $zone = $user->preferences->timeZone();
-        $warranty = $this->parts->warranty($vehicle, $part, $fittings, $zone);
-        $distance = $this->parts->distance($vehicle, $fittings, $zone);
+        $warranty = $this->parts->warrantyAt($part, $fittings, $currentKm, $zone);
+        $distance = $this->parts->distanceAt($fittings, $currentKm, $zone);
 
         return [
             'vehicle' => $this->kit->vehicleRef($vehicle),
@@ -162,19 +164,32 @@ final readonly class Parts implements AskTool
         if (!$has || $warranty === null) {
             return null;
         }
-        $until = $warranty->until === null ? null : $this->kit->format->date($warranty->until);
-        $untilKm = $warranty->untilKm === null ? null : $this->kit->format->distance($warranty->untilKm);
-        $limits = array_values(array_filter([$until, $untilKm]));
 
         return [
             'active' => $warranty->active,
             'until' => $warranty->until?->format('Y-m-d'),
             'until_odometer' => $this->kit->distance($warranty->untilKm),
-            'display' => match (true) {
-                !$warranty->active => $this->kit->t('part.warranty.ended'),
-                $limits === [] => $this->kit->t('part.warranty.active'),
-                default => $this->kit->t('ask.result.in_warranty', ['limits' => implode(' or ', $limits)]),
-            },
+            'display' => $this->display($warranty),
         ];
+    }
+
+    /**
+     * The warranty in the part page's words (`macros/parts.twig` `warranty()`, K17).
+     */
+    private function display(PartWarranty $warranty): string
+    {
+        $until = $warranty->until === null ? null : $this->kit->format->date($warranty->until);
+        $untilKm = $warranty->untilKm === null ? null : $this->kit->format->distance($warranty->untilKm);
+
+        return match (true) {
+            !$warranty->active && $warranty->endedOn !== null
+                => $this->kit->t('part.warranty.ended_on', ['date' => $this->kit->format->date($warranty->endedOn)]),
+            !$warranty->active => $this->kit->t('part.warranty.ended'),
+            $until !== null && $untilKm !== null
+                => $this->kit->t('part.warranty.until_both', ['date' => $until, 'distance' => $untilKm]),
+            $until !== null => $this->kit->t('part.warranty.until_date', ['date' => $until]),
+            $untilKm !== null => $this->kit->t('part.warranty.until_distance', ['distance' => $untilKm]),
+            default => $this->kit->t('part.warranty.active'),
+        };
     }
 }
