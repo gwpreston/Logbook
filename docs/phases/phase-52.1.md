@@ -131,3 +131,10 @@ code's own comments already say:
   anyway.
 - **#481. Decided 2026-10-17:** released on its own as patch v3.16.3
   (option 1), not with Phase 53.2.
+- **#483. Needs a decision** (found in the v3.16.3 release review, K67):
+  how does an owner correct a part removal made without a record (the
+  part page's *Remove*), including sales stored as £0 before 3.16.3?
+  Options: (1) leave it, and the upgrade note says so; (2) an *Undo
+  removal* for the last removal made without a record; (3) an *Edit
+  removal* form, with a matching API write; (4) leave old 0.000 sales
+  alone, with a manual or command way to clear them in the upgrade note.
