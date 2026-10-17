@@ -3,7 +3,7 @@
 *Logbook can turn a photo or a scanned PDF into text with positions,
 on its own server.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Today, reading a file (§7.27, Phase 26.4) has two routes:
 
@@ -18,11 +18,12 @@ images". That leaves three gaps:
 - a photo's evidence can't be checked;
 - with **no AI at all**, nothing can be read.
 
-Phase 53 adds Tesseract as a local OCR engine to fill all three:
+Phase 53 adds OCR to fill all three: Tesseract on this server, and
+PaddleOCR as a service the admin runs, behind one interface (#489):
 
 | Part | What |
 |---|---|
-| **53.1 (this part)** | The engine: binary, preparing the image, text with positions, the admin status. No user-facing change yet. |
+| **53.1 (this part)** | The engines (Tesseract and PaddleOCR), preparing the image, text with positions, the admin status. No user-facing change yet. |
 | [53.2](phase-53.2.md) | Photos and scanned PDFs read through OCR and a text model + release |
 | [53.3](phase-53.3.md) | OCR as a check on the vision model, and redacted text instead of an image |
 | [53.4](phase-53.4.md) | Reading without AI: rules for fuel receipts and a partial fill for invoices + release |
@@ -58,8 +59,12 @@ the pattern for an optional binary) and §9 (`GHOSTSCRIPT_BINARY`) first.
    confidences (Tesseract's TSV), plus a **layout text**: the lines in
    reading order, with wide gaps kept as columns, so "Total" and "£48.20"
    stay on one line.
-5. **Status on Settings → AI** (and Settings → System when AI is off):
-   - Tesseract's version;
+5. **PaddleOCR** (#489, #493) as a second engine behind the same
+   interface, reached over HTTP at `OCR_URL`, chosen by `OCR_ENGINE`
+   (#494), with an optional `ocr` profile in `docker-compose.yml`
+   (#495).
+6. **Status on Settings → AI** (and Settings → System when AI is off):
+   - the engine and its version;
    - its languages;
    - a *Test it* button that reads a bundled sample receipt and shows the
      layout text.
@@ -67,15 +72,18 @@ the pattern for an optional binary) and §9 (`GHOSTSCRIPT_BINARY`) first.
 ## Not in scope
 
 - Any change to what users see when scanning ([53.2](phase-53.2.md)).
-- Other OCR engines (PaddleOCR, docTR, a cloud OCR service). See open
-  question A.
+- Other OCR engines (docTR, a cloud OCR service). PaddleOCR is in
+  scope (open question A, decided 2026-10-17: both engines now).
 - Handwriting.
 
 ---
 
-## Spec (proposed)
+## Spec
 
-Added to §7.27 and §9 in 53.1.0:
+Added to §4, §7.27 (*Reading text from images*) and §9 in 53.1.0. The
+draft below was the starting point; where the spec differs (the TSV goes
+to a temporary file, not stdout, so a long result can't stall a pipe;
+PaddleOCR; `OCR_ENGINE`), the spec wins:
 
 - **The engine** runs as
   `tesseract <in> stdout -l <langs> --psm <mode> tsv` through
@@ -114,10 +122,12 @@ Added to §7.27 and §9 in 53.1.0:
 ## Tasks
 
 ### 53.1.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged. The new
-      decision reverses Phase 26.4's "OCR engines" line.
-- [ ] §4, §7.27, §9 (`TESSERACT_BINARY`, `OCR_TIMEOUT`), §13;
-      `ROADMAP.md` rows for 53.1–53.4.
+- [x] Open questions A–D decided by the owner and logged (#489–#492),
+      with four found while starting (#493–#496). The new decision
+      reverses Phase 26.4's "OCR engines" line.
+- [x] §4, §7.27, §9 (`OCR_ENGINE`, `TESSERACT_BINARY`, `OCR_URL`,
+      `OCR_TIMEOUT`), §13; `ROADMAP.md` rows for 53.1–53.4;
+      `.env.example`; `docs/reading-files.md`.
 
 ### 53.1.1 Engine
 - [ ] `OcrEngine`, its TSV parser and the layout text.
@@ -125,6 +135,11 @@ Added to §7.27 and §9 in 53.1.0:
       scan never runs two heavy jobs at once.
 - [ ] Dockerfile: `tesseract-ocr` and the language packs; image size
       recorded in the release notes.
+- [ ] `PaddleOcrEngine` (#493): the PaddleX serving request and answer,
+      words estimated from lines; `OCR_ENGINE` choosing (#494).
+- [ ] `docker-compose.yml`: an optional `ocr` profile running PaddleOCR,
+      built from `docker/paddleocr/` for amd64 and arm64 (#495: there is
+      no official arm64 serving image).
 
 ### 53.1.2 Preparation
 - [ ] `ImagePreparer`: each step with a unit test on a known image.
@@ -136,8 +151,10 @@ Added to §7.27 and §9 in 53.1.0:
 - [ ] `bin/ai-eval.php --ocr`: character accuracy of the layout text
       against hand-typed transcripts of `tests/Fixtures/scans/`, per
       kind, with and without preparation.
-- [ ] Transcripts added for every existing scan fixture, plus at least
-      ten real fuel receipts (faded, creased, angled).
+- [ ] Transcripts added for every existing scan fixture.
+- [ ] At least ten real fuel receipts (faded, creased, angled), photos
+      supplied by the owner with personal details redacted (#496), and
+      their transcripts. Open until they arrive.
 
 ### 53.1.4 Tests
 - [ ] Engine missing, `off`, timing out, failing, or given an image
@@ -160,9 +177,12 @@ Added to §7.27 and §9 in 53.1.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-17 and logged as #489–#492 in
+`open-questions.md`, before it was built, with #493–#496, found while
+starting it.
 
-- **A. Which OCR engine?**
+- **A. Which OCR engine?** *Decided 2026-10-17 (#489): (3), both now,
+  behind one `OcrEngine` interface. Not the recommendation.*
   - (1) Tesseract 5, a local binary.
   - (2) PaddleOCR or docTR, as a separate container reached over HTTP.
   - (3) Both, behind one `OcrEngine` interface.
@@ -170,7 +190,8 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   *Recommendation:* (1), behind an interface so (2) can be added later.
   Tesseract needs no Python, runs on a Pi, and is packaged everywhere.
 
-- **B. In the Docker image by default?**
+- **B. In the Docker image by default?** *Decided 2026-10-17 (#490):
+  the recommendation.*
   - (1) Yes, with English plus the shipped locales' languages (about
     20–30 MB).
   - (2) A separate `-ocr` image tag.
@@ -178,16 +199,36 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   *Recommendation:* (1). One image is simpler, and the size is
   modest next to Ghostscript.
 
-- **C. Tesseract's model set.**
+- **C. Tesseract's model set.** *Decided 2026-10-17 (#491): the
+  recommendation. Debian's language packs are `tessdata_fast` (their
+  `debian/copyright` names it).*
   - (1) `tessdata_fast`.
   - (2) `tessdata_best` (slower, a little more accurate).
 
   *Recommendation:* (1), unless 53.1.3's eval shows `best` clearly
   better on receipts.
 
-- **D. Deskew in GD, or require Imagick?**
+- **D. Deskew in GD, or require Imagick?** *Decided 2026-10-17 (#492):
+  the recommendation.*
   - (1) GD, as above.
   - (2) Imagick when loaded, GD otherwise.
 
   *Recommendation:* (2). GD remains the guaranteed path, and the eval
   compares the two.
+
+Found while starting it (2026-10-17), after A chose both engines:
+
+- **#493. Which HTTP engine?** *Decided 2026-10-17: PaddleOCR*
+  (PaddleX basic serving, `POST /ocr`), the recommendation. Not chosen:
+  docTR (its API is a sample app); a contract of Logbook's own.
+- **#494. Which engine when both are set up?** *Decided 2026-10-17:*
+  an `OCR_ENGINE` setting, `auto` | `tesseract` | `paddleocr` | `off`;
+  `auto` uses PaddleOCR when `OCR_URL` is set, else Tesseract. The
+  recommendation (offered as `http`; named `paddleocr` for what it
+  speaks). Not chosen: Tesseract first; PaddleOCR first.
+- **#495. PaddleOCR in docker-compose?** *Decided 2026-10-17:* an
+  optional `ocr` profile, off by default. Not chosen: docs only.
+- **#496. Where do the real fuel receipts come from?** *Decided
+  2026-10-17:* the owner supplies photos, personal details redacted;
+  transcripts are typed for them. The task stays open until they
+  arrive. Not chosen: synthetic receipts.

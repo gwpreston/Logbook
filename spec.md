@@ -75,6 +75,7 @@ No per-file SPDX headers (decided 2026-10-13, `docs/phases/open-questions.md`
 | Auth | PHP sessions + Argon2id + slim/csrf | Standard, secure, no external IdP needed |
 | Single sign-on (Phase 23.1; the proxy JWT's HS256 in 23.2) | `firebase/php-jwt` (JWS and JWKS; `phpseclib/phpseclib` for its PS256) + `symfony/http-client` (discovery, token exchange) | Pure PHP, maintained, `openssl` and `sodium` only; every OIDC check is written and tested here rather than hidden in a client library (decided 2026-10-01, `docs/phases/open-questions.md` #49) |
 | AI providers (Phase 26.1) | No SDK: `symfony/http-client` with per-request options, libsodium `secretbox` for stored keys, an in-house JSON Schema subset check | Four small adapters cover every runtime and provider; nothing new to install (§5 *AI adapters*) |
+| Reading text from images (Phase 53.1) | Tesseract 5 (`tesseract-ocr`, Apache-2.0), an optional binary run without a shell, with Debian's `tessdata_fast` models; or PaddleOCR (PaddleX basic serving, Apache-2.0), an optional service reached over HTTP; Imagick, when loaded, for preparing the image, else `gd` | One engine interface, two engines (decided 2026-10-17, `docs/phases/open-questions.md` #489, #493); Tesseract in the Docker image (#490, #491); neither is required |
 | Reading files (Phase 26.4) | `smalot/pdfparser` (PDF text layer, LGPL-3.0, used unmodified through Composer); PHP's `gd` (JPEG, PNG, WebP) and `exif` for rotating, stripping and downscaling photos (**required**); Ghostscript or Imagick, optional, for rendering scanned PDFs | Pure PHP for text PDFs; every photo upload is re-encoded without its metadata, so `gd` and `exif` are required like `intl` (decided 2026-10-01, `docs/phases/open-questions.md` #83, #84) |
 | MCP server (Phase 26.5) | No SDK: Logbook's own Streamable HTTP endpoint (JSON-RPC over POST, JSON responses), protocol versions `2026-07-28` and the legacy `2025-11-25` / `2025-06-18`; conformance tested against the specification's JSON schemas with `justinrainbow/json-schema` (dev only) | The official `mcp/sdk` is experimental before 1.0, adds five dependencies and registers tools by attribute, while Logbook's tool list varies by key and language (decided 2026-10-01, `docs/phases/open-questions.md` #90; §7.28) |
 | Finance arithmetic (Phase 29.1) | `brick/math` (`BigDecimal`, pure PHP; uses `gmp` or `bcmath` when present) | Present values over up to 120 months at a 10-place monthly rate overflow the scaled-integer `Decimal` helper; the phase file allows it (§7.32) |
@@ -7609,7 +7610,88 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Not in scope:** saving without the form; a parts inventory away from
   a vehicle or a VAT field (#79); bulk scanning; a warranty entity
   (warranty papers scan as `other`, and a part's warranty is never read
-  from a line: §7.39); OCR engines (the vision model reads images).
+  from a line: §7.39). OCR engines were out of scope here ("the vision
+  model reads images"); Phase 53.1 reversed that (#489): see *Reading
+  text from images* below.
+
+#### Reading text from images (Phase 53.1)
+
+Logbook turns a photo or scanned PDF into text with positions on its own
+server (or a PaddleOCR service the admin runs). 53.1 builds the engine
+only: nothing users see changes until Phase 53.2 uses it.
+
+- **Engines** (decided 2026-10-17, #489): one `Service\Ocr\OcrEngine`
+  interface, two engines.
+  - **Tesseract 5**, a local binary (`TESSERACT_BINARY`, §9), found and
+    switched off as Ghostscript is. Run without a shell from an argument
+    list: `tesseract <page.png> <tmp>/out -l <langs> --psm <mode> tsv`,
+    its TSV written to a file in a private temporary directory (not a
+    pipe, so a long result can't stall it) and read back, with
+    `OMP_THREAD_LIMIT=1`.
+  - **PaddleOCR** (#493), PaddleX basic serving's general OCR pipeline,
+    reached at `OCR_URL`: `POST {OCR_URL}/ocr` with `{"file": <base64
+    PNG>, "fileType": 1, "visualize": false, "useDocUnwarping": false}`;
+    it answers with text lines (`rec_texts`, `rec_scores`, `rec_boxes`),
+    not words, so each word's box is estimated from its place in its
+    line. No redirect is followed; its languages are set where it runs.
+  - **Which one** (#494): `OCR_ENGINE` = `auto` (default: PaddleOCR when
+    `OCR_URL` is set, else Tesseract) | `tesseract` | `paddleocr` |
+    `off`. The chosen engine missing means no OCR; Logbook never falls
+    back to the other silently.
+- **Limits:**
+  - each page gives up after `OCR_TIMEOUT` seconds (default 30);
+  - a PDF's first **three** pages, rendered at **300 dpi** for OCR
+    (Ghostscript or Imagick, as above; 150 dpi stays for the model);
+  - input over 50 megapixels (`ImageCleaner::MAX_PIXELS`) is refused
+    before it is decoded; the prepared page is at most 4,000 px on its
+    long edge;
+  - "a memory limit": there's no `ulimit` without a shell, so memory is
+    bounded by those sizes and by one Tesseract thread;
+  - **one run per user at a time**, sharing the AI lock (`ai_busy`,
+    §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 + 30 seconds at most. A
+    caller that already holds it (a scan going on to a model, 53.2)
+    reads without taking it again.
+- **Languages:** the user's locale's language and English, as Tesseract
+  codes (`deu+eng`); those not installed are left out, and English is
+  used when none is.
+- **Page segmentation:** mode 4 (one column of text of varying sizes)
+  for a receipt, mode 3 (automatic) otherwise; taller than 2:1 is a
+  receipt.
+- **Preparation** (`Service\Ocr\ImagePreparer`), kept apart from the
+  file sent to a vision model (decided 2026-10-17, #492: Imagick when
+  the extension is loaded, else GD; GD also when Imagick fails on a
+  file):
+  - turned upright by its EXIF orientation, transparency put on white;
+  - greyscale;
+  - a percentile contrast stretch (GD: 1% / 99%; Imagick:
+    `normalize`, 2% / 1%), skipped for a page already near full range;
+  - deskewed: GD by the angle (±10° in 0.5° steps) that maximises the
+    variance of the rows' dark-pixel counts, measured on a copy about
+    1,000 px long; Imagick by its `deskew`. Under a quarter of a degree
+    is left alone;
+  - enlarged when its lines of text are under 20 px high, to about 30
+    px, within the 4,000 px edge.
+- **The result** (`OcrResult`): words (text, confidence 0–100, box,
+  page), lines, blocks, a **layout text**, the mean confidence, the
+  languages and the engine's version. Lines that sit side by side are
+  put on one row and a gap wider than two characters is kept as spaces,
+  so "Total" and "£48.20" stay on one line however the engine split
+  them; pages are separated by a blank line. It is **never stored**: it
+  lives for one request, like the prepared file.
+- **Failures** are a result, never an exception reaching the user:
+  `unavailable` (no engine, `off`), `timeout`, `failed` (an error exit or
+  answer), `too_large`, `unreadable`, `busy`. A later page that fails
+  leaves the pages already read.
+- **Status** on Settings → AI, and on Settings → System when AI is off
+  (`AI_ENABLED=false`): the engine, its version (Tesseract's from
+  `--version`) and languages (`--list-langs`, without `osd`), or the
+  PaddleOCR address; *Test it* reads a bundled sample receipt and shows
+  its layout text, confidence and time. Admins only, CSRF-protected.
+- `bin/ai-eval.php --ocr` reports the character accuracy of the layout
+  text against hand-typed transcripts of `tests/Fixtures/scans/`
+  (`<name>.txt`), per kind, with and without preparation, and with GD
+  and Imagick where loaded. Real fuel receipts (faded, creased, angled)
+  are added by the owner (#496).
 
 ### 7.28 MCP server (Phase 26.5)
 
@@ -10490,6 +10572,13 @@ Real environment variables override `.env`; an empty value counts as unset.
   looked up on `PATH`; `off` turns Ghostscript off). Imagick is used when
   the extension is loaded and Ghostscript is not found. With neither, a
   scanned PDF asks for a photo instead.
+- Reading text from images (§7.27, Phase 53.1): `OCR_ENGINE` (`auto`,
+  the default, | `tesseract` | `paddleocr` | `off`; anything else stops
+  the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up
+  on `PATH`; `off` turns it off), `OCR_URL` (a PaddleOCR service's
+  `http://` or `https://` address; empty for none; anything else stops
+  the app at start), `OCR_TIMEOUT` (seconds per page, default `30`,
+  1–300).
 - Scheduler (§7.30, Phase 28.1): `SCHEDULER_INTERVAL` (seconds between
   passes; default `900`): the Docker loop's spacing, and on every install
   the expected cron frequency for the health warning and the page-visit
@@ -10530,12 +10619,18 @@ Real environment variables override `.env`; an empty value counts as unset.
   (`BACKUP_PATH`); the image includes PHP's `zip` extension for them.
   From Phase 26.4 it also includes `gd` (JPEG, PNG, WebP) and `exif` on
   every architecture, and Ghostscript for reading scanned PDFs (§7.27).
+  From Phase 53.1 it also includes Tesseract with English and German
+  (`tessdata_fast`, #490, #491), adding about 40 MB with its libraries.
+  `docker-compose.yml` has an optional `ocr` profile running PaddleOCR
+  beside it (#495), built from `docker/paddleocr/` on amd64 and arm64.
   The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner
   gives the Docker upgrade line (§7.31).
 - **Bare PHP 8.4:** needs the `intl`, `sodium`, `gd` (JPEG, PNG, WebP)
   and `exif` extensions (`gd` and `exif` from Phase 26.4; Composer refuses
   to install without them); Ghostscript or Imagick is optional
-  (without it a scanned PDF asks for a photo instead). Document web root = `public/`, Composer install, Phinx
+  (without it a scanned PDF asks for a photo instead), and so is
+  Tesseract (`apt install tesseract-ocr tesseract-ocr-deu`, or PaddleOCR
+  at `OCR_URL`; `docs/reading-files.md`). Document web root = `public/`, Composer install, Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
@@ -11433,16 +11528,19 @@ task breakdowns live in the per-phase files; this is the map.
   start task names #444–#447 (K34). No migration. Released on its own
   as v3.16.4, a patch (#486, decided 2026-10-17). See
   [`phase-52.2.md`](docs/phases/phase-52.2.md).
-- **Phase 53.1 — Reading text from images: the OCR engine** (planned).
-  Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
-  off), in the Docker image with every shipped locale's language pack;
-  an OCR engine run without a shell, with a timeout, a memory limit and
-  the per-user lock; the image prepared for OCR apart from the file sent
-  to a vision model; words, lines and blocks with positions and
-  confidences plus a layout text; Tesseract's status and a *Test it*
-  button in Settings. No user-facing change yet. Reverses part of Phase
-  26.4's *Not in scope* (§4, §7.27, §9; open questions A–D in the phase
-  file). See [`phase-53.1.md`](docs/phases/phase-53.1.md).
+- **Phase 53.1 — Reading text from images: the OCR engine** (in
+  progress). Two engines behind one interface (#489): Tesseract as an
+  optional binary (`TESSERACT_BINARY`, `off` to turn it off), in the
+  Docker image with English and German `tessdata_fast` (#490, #491), and
+  PaddleOCR reached at `OCR_URL` (#493), with an optional compose
+  profile (#495); `OCR_ENGINE` picks (#494). Run without a shell, with a
+  timeout, size limits and the per-user lock; the image prepared for OCR
+  (Imagick when loaded, else GD, #492) apart from the file sent to a
+  vision model; words, lines and blocks with positions and confidences
+  plus a layout text; the engine's status and a *Test it* button in
+  Settings; `bin/ai-eval.php --ocr`. No user-facing change yet. Reverses
+  part of Phase 26.4's *Not in scope* (§4, §7.27, §9). See
+  [`phase-53.1.md`](docs/phases/phase-53.1.md).
 - **Phase 53.2 — Reading photos with a text model + release**
   (planned). Photos and scanned PDFs read through OCR and the `read_text`
   model when no vision model is set up, chosen per file; evidence checked

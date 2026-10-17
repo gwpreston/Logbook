@@ -17,6 +17,7 @@ with the [README](../README.md), then [Getting started](getting-started.md).
 |---|---|
 | [deployment.md](deployment.md) | Docker and bare-PHP installs, reverse proxies and subpaths, the phone app, background jobs, backups, the update check, upgrading |
 | [configuration.md](configuration.md) | Every environment variable and its default |
+| [reading-files.md](reading-files.md) | Reading text from photos and scanned PDFs (OCR): Tesseract on your server or PaddleOCR as a service, installing either, checking it works, privacy and limits |
 | [reverse-proxies.md](reverse-proxies.md) | nginx, Apache, Caddy and Traefik in front of Logbook, at the root or a subpath, with HTTPS: tested examples, what to set, what Logbook trusts from a proxy, common failures |
 | [proxmox-lxc.md](proxmox-lxc.md) | Proxmox VE: Logbook in an LXC container, with Docker or PHP 8.4 natively; size, proxy, backups, updates |
 | [sso.md](sso.md) | Single sign-on with Authelia, Authentik or Keycloak: setting up the client, linking accounts, groups, switching passwords off, the break-glass link; header sign-in behind a forward-auth proxy (nginx, Traefik, Caddy, the Authentik outpost) and how to deploy it safely |
