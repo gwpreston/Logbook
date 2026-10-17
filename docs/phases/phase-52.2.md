@@ -150,6 +150,6 @@ owner. Each makes the code or docs say what the spec already says.
   API and imports keep #427's default (the purchase date when there is
   one, else the first fitting). Not chosen: a hint only (1); a chip that
   follows the bought-on date as it's typed, with JS (3). spec §7.39.
-- **Release.** Not decided yet. It could go with Phase 52.1's v3.16.3
-  if both are merged before that tag, or be its own patch. Decide at
-  52.2.0.
+- **Release.** Not decided yet. Phase 52.1 has shipped as v3.16.3, so
+  the options are its own patch (v3.16.4) or with Phase 53.2's release.
+  Decide at 52.2.0.

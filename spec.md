@@ -11414,8 +11414,8 @@ task breakdowns live in the per-phase files; this is the map.
   warranty with the part page's strings and keeps an ended warranty's
   date (§7.26, K17); no gap under *For your insurer* on the Parts tab
   (K36); a new part's *Warranty starts from* has *Purchase date*
-  selected (§7.39, K37, #482 decided 2026-10-17); the demo banner doesn't print (§7.36,
-  K38). K1's and K3's questions logged for the owner (K30); §8 *Printing
+  selected (§7.39, K37, #482 decided 2026-10-17); the demo banner
+  doesn't print (§7.36, K38). K1's and K3's questions logged for the owner (K30); §8 *Printing
   reports* lists every printable page (K32); §7.24 covers undeclared
   modifications (K33); Phase 50.2's start task names #444–#447 (K34).
   No migration. See [`phase-52.2.md`](docs/phases/phase-52.2.md).
