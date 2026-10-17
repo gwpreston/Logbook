@@ -145,6 +145,9 @@ anywhere. It is never part of `docker-compose.yml` or
   (Debian/Ubuntu: `apt install php8.4-gd`; `exif` is usually built in).
 - Optional: **Ghostscript** (`apt install ghostscript`) or Imagick, to read
   scanned PDFs when [reading receipts](ai.md#reading-receipts-and-documents).
+- Optional: **Tesseract** (`apt install tesseract-ocr tesseract-ocr-deu`), to
+  read text from photos on your own server ([reading-files.md](reading-files.md)).
+  The Docker image includes it (about 80 MB).
 - `zip` (`php-zip`) for backup and restore; everything else works without it.
 - PostgreSQL 13+ or MySQL 8.0+ / MariaDB 10.6+ (or SQLite for a trial).
 - Apache 2.4 with `mod_rewrite`, or nginx + php-fpm.

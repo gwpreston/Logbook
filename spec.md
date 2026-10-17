@@ -7691,7 +7691,8 @@ only: nothing users see changes until Phase 53.2 uses it.
   page): the engine, its version (Tesseract's from
   `--version`) and languages (`--list-langs`, without `osd`), or the
   PaddleOCR address; *Test it* reads a bundled sample receipt and shows
-  its layout text, confidence and time. Admins only, CSRF-protected.
+  its layout text, confidence and time, and may run for `OCR_TIMEOUT`
+  plus 30 seconds. Admins only, CSRF-protected.
 - `bin/ai-eval.php --ocr` reports the character accuracy of the layout
   text against hand-typed transcripts of `tests/Fixtures/scans/`
   (`<name>.txt`), per kind, with and without preparation, and with GD

@@ -36,7 +36,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.27
 (*Preparing the file*), §7.25 (tasks), §7.12 (uploads), §4 (Ghostscript,
 the pattern for an optional binary) and §9 (`GHOSTSCRIPT_BINARY`) first.
 
-**Prerequisites:** [Phase 52](phase-52.md) merged (v3.16.2).
+**Prerequisites:** [Phase 52](phase-52.md) merged (v3.16.2); in practice
+built on [Phase 52.2](phase-52.2.md) (v3.16.4).
 
 ---
 
@@ -171,12 +172,16 @@ PaddleOCR; `OCR_ENGINE`), the spec wins:
       their transcripts. Open until they arrive.
 
 ### 53.1.4 Tests
-- [ ] Engine missing, `off`, timing out, failing, or given an image
+- [x] Engine missing, `off`, timing out, failing, or given an image
       that's too large: each a clean "OCR isn't available" result,
-      never an exception reaching the user.
-- [ ] No shell: arguments with spaces and quotes pass through untouched.
-- [ ] The test suite passes without Tesseract installed (the OCR tests
-      are skipped, and run in a CI job with it).
+      never an exception reaching the user (`TesseractEngineTest`,
+      `PaddleOcrEngineTest`, `OcrReaderTest`, `GdImagePreparerTest`).
+- [x] No shell: arguments with spaces and quotes pass through untouched
+      (`ProcessRunnerTest`, `TesseractEngineTest`).
+- [x] The test suite passes without Tesseract installed (a stand-in
+      script for the engine tests; `RealTesseractTest` and the Imagick
+      tests skip, and CI installs Tesseract on every row). PostgreSQL and
+      MySQL runs of the OCR tests pass.
 
 ---
 
@@ -214,6 +219,18 @@ Criterion 2 is measured on the owner's real receipts once they arrive
    fixtures, with the numbers in the eval report.
 3. Without Tesseract, nothing changes and nothing breaks.
 4. Definition of done (CLAUDE.md §11) holds.
+
+Checked so far (2026-10-17):
+
+1. Yes: the image built from this Dockerfile reads the sample receipt;
+   `RealTesseractTest` in CI; the eval above.
+2. Open until #496: preparation lifts degraded copies (42% → 92% for
+   fuel receipts) but costs about a point on clean synthetic ones; the
+   owner's real receipts decide it.
+3. Yes: with `TESSERACT_BINARY=off` (`OcrSettingsTest`,
+   `TesseractEngineTest`) the scan routes are untouched; nothing outside
+   `/settings/ocr` and its links uses OCR yet.
+4. Lint, analyse, tests on SQLite, PostgreSQL and MySQL; coverage in CI.
 
 ## Open questions
 

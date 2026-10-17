@@ -115,7 +115,13 @@ Settled in §7.27 and §7.25 in 53.2.0:
       OCR and the model.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off).
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
-      and 53.2; tag once merged.
+      and 53.2; tag once merged. The CHANGELOG carries 53.1's upgrade
+      notes: the image grows by about 80 MB (Tesseract), the optional
+      `ocr` compose profile, and `OCR_ENGINE`, `TESSERACT_BINARY`,
+      `OCR_URL`, `OCR_TIMEOUT` (all optional).
+- [ ] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
+      AI card in `docs/ai.md` (`docs/deployment.md` names Tesseract from
+      53.1).
 
 ---
 
