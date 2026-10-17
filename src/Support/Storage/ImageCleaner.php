@@ -163,6 +163,16 @@ final class ImageCleaner
             : ['bytes' => $bytes, 'mime' => 'image/jpeg', 'extension' => 'jpg'];
     }
 
+    /**
+     * The image decoded and turned upright by its EXIF orientation, as
+     * every photo upload is, or null when it can't be read or is larger
+     * than MAX_PIXELS. For OCR's preparation (spec.md §7.27).
+     */
+    public static function openUpright(string $path, string $mime): ?GdImage
+    {
+        return self::open($path, $mime);
+    }
+
     private static function open(string $path, string $mime): ?GdImage
     {
         $info = @getimagesize($path);

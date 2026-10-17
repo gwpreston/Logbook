@@ -6,6 +6,7 @@ namespace Logbook\Service\Ai\Scan;
 
 use FilesystemIterator;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Process\Executable;
 
 /**
  * Renders PDF pages with Ghostscript (`GHOSTSCRIPT_BINARY`, default `gs` on
@@ -97,20 +98,8 @@ final class GhostscriptRenderer implements PdfRenderer
             return $this->resolved;
         }
         $this->looked = true;
-        $name = $this->settings->ai->ghostscriptBinary;
-        if ($name === '') {
-            return null;
-        }
-        if (str_contains($name, '/')) {
-            return $this->resolved = is_file($name) && is_executable($name) ? $name : null;
-        }
-        foreach (explode(PATH_SEPARATOR, (string) getenv('PATH')) as $dir) {
-            $candidate = rtrim($dir, '/') . '/' . $name;
-            if ($dir !== '' && is_file($candidate) && is_executable($candidate)) {
-                return $this->resolved = $candidate;
-            }
-        }
+        $this->resolved = Executable::find($this->settings->ai->ghostscriptBinary);
 
-        return null;
+        return $this->resolved;
     }
 }

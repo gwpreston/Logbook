@@ -77,6 +77,8 @@ final readonly class AppSettings
         public int $priceHistoryDays = 1095,
         /** Demo mode (Phase 35.1, §7.36): the environment's switch; the guard decides what it means. */
         public DemoConfig $demo = new DemoConfig(),
+        /** Reading text from images (Phase 53.1, §7.27). */
+        public OcrConfig $ocr = new OcrConfig(),
     ) {
     }
 
@@ -131,6 +133,7 @@ final readonly class AppSettings
             docker: $env->bool('LOGBOOK_DOCKER', false),
             priceHistoryDays: max(30, $env->int('PRICE_HISTORY_DAYS', 1095)),
             demo: DemoConfig::fromEnv($env),
+            ocr: OcrConfig::fromEnv($env),
         );
     }
 

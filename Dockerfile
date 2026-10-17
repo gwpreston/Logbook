@@ -33,12 +33,16 @@ RUN set -eux; \
     php -r 'exit(function_exists("imagecreatefromwebp") && function_exists("imagecreatefromjpeg") ? 0 : 1);'
 
 # Ghostscript renders scanned PDFs for reading (spec §7.27); text PDFs and
-# photos need nothing more.
+# photos need nothing more. Tesseract reads text from photos and scanned
+# PDFs (Phase 53.1, #490): English and German, one per shipped locale,
+# tessdata_fast models as Debian packages them (#491).
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends ghostscript; \
+    apt-get install -y --no-install-recommends ghostscript tesseract-ocr tesseract-ocr-eng tesseract-ocr-deu; \
     rm -rf /var/lib/apt/lists/*; \
-    gs --version
+    gs --version; \
+    tesseract --version; \
+    tesseract --list-langs | grep -qx deu
 
 RUN set -eux; \
     a2enmod rewrite headers; \
