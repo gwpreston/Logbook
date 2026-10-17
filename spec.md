@@ -7032,7 +7032,7 @@ request to any model service.
   | Tool | Backed by | Returns |
   |---|---|---|
   | `find_vehicles(query)` | vehicle repository | matches by name, make, model, registration |
-  | `vehicle_summary(vehicle)` | overview services | odometer, age, economy, running cost, next due |
+  | `vehicle_summary(vehicle)` | overview services | odometer, age, economy, the last 12 months' running cost (modifications left out, with the build total beside it when there is one), next due |
   | `costs(vehicles?, period, group_by?)` | Reports (§7.7) | totals by category group, month or vehicle, per currency, and distance driven; with build spend (Phase 50.1) also the running total and the build total, and a monthly average of running costs only (none for `category=build`) |
   | `cost_per_distance(vehicles?, period)` | Reports | per vehicle and fleet, with distance; each total is the running total the rate divides (modifications left out) |
   | `fuel_stats(vehicle?, period, grade?)` | fuel services, Phase 16 | economy, volume, spend, price per unit, by grade, verdicts |
@@ -11389,6 +11389,15 @@ task breakdowns live in the per-phase files; this is the map.
   change and no migration; released on its own as v3.16.2, a docs-only
   patch (decided 2026-10-17). See
   [`phase-52.md`](docs/phases/phase-52.md).
+- **Phase 52.1 — Quick wins from the known-issues log** (in progress).
+  Modification writes on the API return the odometer warning (§7.20,
+  K4); a sale with no price is stored with none (§6, §7.39, K5);
+  `vehicle_summary`'s 12-month total is running costs only, with
+  `build_total` beside it (§7.26, K6); *Clear* on the insurer page skips
+  the date check (K7); the parts-list limit named in its error (K26);
+  the backup command line finds a bare name in `BACKUP_PATH` (§7.13,
+  K64); K22 and K23. No migration. Release open (#481). See
+  [`phase-52.1.md`](docs/phases/phase-52.1.md).
 - **Phase 53.1 — Reading text from images: the OCR engine** (planned).
   Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
   off), in the Docker image with every shipped locale's language pack;
