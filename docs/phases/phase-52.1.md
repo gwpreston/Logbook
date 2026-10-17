@@ -102,7 +102,8 @@ code's own comments already say:
       ZIP. `bin/backup.php` uses `locate()` (K64).
 - [x] Regression tests: `ApiPartsTest`, `PartsTest`,
       `BuildCostsToolTest`, `InsurerListTest`, `BackupTest`.
-- [x] spec.md §7.26 and §13; ROADMAP; CHANGELOG *Unreleased*.
+- [x] spec.md §7.13, §7.20, §7.26 and §13; ROADMAP; CHANGELOG 3.16.3;
+      `docs/api.md` and `docs/mcp.md`.
 - [x] Known-issues rows K4, K5, K6, K7, K22, K23, K26 and K64 *Fixed*.
       K66 recorded and fixed.
 - [x] The suite on PostgreSQL, MySQL and MariaDB: CI on PR #118 and on
