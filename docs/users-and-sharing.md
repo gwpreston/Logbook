@@ -1,5 +1,9 @@
 # Users and sharing
 
+Several people on one install: admins, invitations and sharing vehicles.
+
+**For:** admins setting up a household, and anyone sharing a vehicle.
+
 From 2.0.0 one Logbook install can have several people on it: a household,
 each with their own account, vehicles, units, language and reminders, and
 vehicles shared between them at a level the owner chooses. Your partner can
@@ -230,3 +234,7 @@ See [notification-channels.md](notification-channels.md).
   (`php bin/backup.php restore <file> --yes`) to give Sam their own. Then
   delete Sam here and roll back. (Docker: prefix the commands with
   `docker compose exec -u www-data app`.)
+
+---
+
+[Back to the docs index](README.md)

@@ -1,5 +1,9 @@
 # Translating Logbook
 
+Adding a language to Logbook or improving one.
+
+**For:** translators and contributors.
+
 Every word Logbook shows comes from a message catalogue in `translations/`.
 English (`messages+intl-icu.en.php`) is complete and is the fallback for
 anything a catalogue does not have. German (`messages+intl-icu.de.php`) ships
@@ -74,3 +78,7 @@ Then switch your account to the new language and click through: long words
   (`'fuel' => ['title' => …]` is `fuel.title`).
 - In production, catalogues are compiled into `var/cache/translations`; clear
   that directory after editing a catalogue on a live install.
+
+---
+
+[Back to the docs index](README.md)

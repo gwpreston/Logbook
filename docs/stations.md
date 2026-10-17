@@ -1,5 +1,9 @@
 # Fuel stations
 
+Fuel stations as records, what you paid at each, and live UK fuel prices.
+
+**For:** anyone who logs fill-ups and wants to know where fuel is cheapest.
+
 A fill-up's station used to be a line of text. From 2.13 it is a
 **station**: a record with a name, and optionally a brand, an address, a
 position, the grades sold and opening hours. Each fill-up links to one.
@@ -625,3 +629,7 @@ client in the provider's tests, so the suite never calls out.
 
 Check the feed's terms, licence and attribution before starting, and
 record its endpoints in `spec.md` §4.
+
+---
+
+[Back to the docs index](README.md)

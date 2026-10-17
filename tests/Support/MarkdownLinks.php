@@ -92,6 +92,9 @@ final class MarkdownLinks
             foreach ([...$inline[1], ...$reference[1]] as $target) {
                 $links[] = [$index + 1, trim($target, '<>')];
             }
+            foreach ($this->htmlTargets($prose) as $target) {
+                $links[] = [$index + 1, $target];
+            }
         }
 
         return $links;
@@ -140,6 +143,33 @@ final class MarkdownLinks
         $text = (string) preg_replace('/[^\p{L}\p{N}\s_-]/u', '', $text);
 
         return str_replace(' ', '-', $text);
+    }
+
+    /**
+     * The targets of HTML in Markdown: `src` and `href` on `<img>`, `<a>` and
+     * `<source>`, and each URL of a `srcset` (as in a `<picture>` that swaps
+     * a screenshot for dark mode).
+     *
+     * @return list<string>
+     */
+    private function htmlTargets(string $prose): array
+    {
+        $targets = [];
+        preg_match_all('/<(?:img|a|source)\b[^>]*>/i', $prose, $tags);
+        foreach ($tags[0] as $tag) {
+            preg_match_all('/\s(src|href|srcset)="([^"]*)"/i', $tag, $attributes, PREG_SET_ORDER);
+            foreach ($attributes as [, $name, $value]) {
+                $urls = strtolower($name) === 'srcset' ? explode(',', $value) : [$value];
+                foreach ($urls as $url) {
+                    $url = (string) strtok(trim($url), " \t");
+                    if ($url !== '') {
+                        $targets[] = html_entity_decode($url, ENT_QUOTES | ENT_HTML5);
+                    }
+                }
+            }
+        }
+
+        return $targets;
     }
 
     private function check(string $file, string $target): ?string

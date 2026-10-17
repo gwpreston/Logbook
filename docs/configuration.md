@@ -1,5 +1,9 @@
 # Configuration reference
 
+Every environment variable Logbook reads, with its default.
+
+**For:** whoever installs and runs Logbook.
+
 Logbook is configured entirely through environment variables. Put them in a
 `.env` file in the project root (bare PHP) or next to the compose file
 (Docker), or set them in the environment; a real environment variable always
@@ -13,6 +17,24 @@ works unedited. For a real deployment set at least `DB_PASSWORD`, `APP_URL` and
 Per-user settings — language, time zone, units, currency, theme, lead times,
 which notification channels to use — are chosen in the app, not here. The
 `APP_*` defaults below only seed the first-run form and signed-out pages.
+
+- [Application](#application)
+- [Database](#database)
+- [Sessions](#sessions)
+- [Single sign-on](#single-sign-on)
+- [Header sign-in](#header-sign-in)
+- [REST API](#rest-api)
+- [MCP server](#mcp-server)
+- [AI](#ai)
+- [Files and backups](#files-and-backups)
+- [Logging](#logging)
+- [Notifications](#notifications)
+- [Modules](#modules)
+- [Update check](#update-check)
+- [Fuel prices](#fuel-prices)
+- [Demo mode](#demo-mode)
+- [Docker entrypoint only](#docker-entrypoint-only)
+- [Test suite only](#test-suite-only)
 
 ## Application
 
@@ -262,3 +284,7 @@ seeded as a demo.
 `TEST_DB_DRIVER`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`,
 `TEST_DB_USER`, `TEST_DB_PASSWORD` — same shape as `DB_*`; default SQLite at
 `var/testing.sqlite`. PHPUnit never reads `DB_*`.
+
+---
+
+[Back to the docs index](README.md)

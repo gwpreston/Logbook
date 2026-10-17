@@ -1,5 +1,9 @@
 # MCP server
 
+Logbook's MCP server, for Claude Desktop, Claude Code and other assistants.
+
+**For:** anyone who wants their own assistant to read and log their garage.
+
 Logbook speaks the [Model Context Protocol](https://modelcontextprotocol.io)
 (MCP), so an assistant can use your logbook with **its own model**: Claude
 Desktop, Claude Code, an IDE agent or a local assistant. It can answer
@@ -250,3 +254,7 @@ want it to see less. Logbook logs each tool call, resource read and prompt
 | 405 | Something sent `GET`; the endpoint takes `POST` only. Point the client at the Streamable HTTP transport, not SSE. |
 | 429 | Too many bad keys from that address; wait 10 minutes. |
 | No write tools | The key is read only, or you can't add that kind of entry to any vehicle. |
+
+---
+
+[Back to the docs index](README.md)

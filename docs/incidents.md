@@ -1,5 +1,9 @@
 # Incidents, damage and insurance claims
 
+Incidents, damage and insurance claims, with their repairs and the claims history.
+
+**For:** anyone recording damage, a break-in or a claim.
+
 Log what happened to a vehicle (a scrape in a car park, a break-in, a
 pothole, a breakdown) and keep the claim with it. Repairs, expenses and tyre changes stay
 ordinary records that you **link** to the incident, so their cost is counted
@@ -221,3 +225,7 @@ costs*. Logging an incident needs *Log*, and changing someone else's needs
   the other party, the repair estimate included. There is no CSV import.
 - **Backups** include incidents, their links, readings and photos, the
   estimate, and a vehicle's *Written off* or *Sold* with its incident.
+
+---
+
+[Back to the docs index](README.md)

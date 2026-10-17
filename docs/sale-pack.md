@@ -1,11 +1,22 @@
 # The sale pack
 
+The sale pack: what a buyer sees, what they never see, and saving it as a PDF.
+
+**For:** anyone selling a vehicle.
+
 *Prepare for sale* (in every vehicle's header, and *Sale pack* in the
 History toolbar) builds what a buyer wants to see: a one-page summary, a
 mileage record they can check, the history by type, and the invoices and
 certificates as a ZIP. It works for active and archived vehicles, and
 without JavaScript. Nothing is stored: the pack is worked out from your
 records every time you open it.
+
+- [What is in it](#what-is-in-it)
+- [Modifications](#modifications)
+- [What is never in it](#what-is-never-in-it)
+- [The paperwork ZIP](#the-paperwork-zip)
+- [Saving it as a PDF](#saving-it-as-a-pdf)
+- [Before you share it](#before-you-share-it)
 
 ## What is in it
 
@@ -90,3 +101,7 @@ If a reading in the mileage record looks wrong (it goes backwards, or jumps
 by more than anyone could drive), the pack says so above the sheet with a
 link to the entry. The warning is never printed; fix the entry, or leave it
 if it is right (a replaced odometer, say).
+
+---
+
+[Back to the docs index](README.md)

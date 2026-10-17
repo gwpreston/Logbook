@@ -1,5 +1,9 @@
 # AI in Logbook
 
+Connecting a language model, *Ask Logbook*, adding entries by message, and reading receipts and documents.
+
+**For:** admins deciding whether and how to switch AI on, and anyone using Ask Logbook.
+
 Logbook can use a language model to answer questions about your garage,
 draft entries from what you say and read receipts. You choose the model and
 where it runs: on this server, on a computer on your network, or with a
@@ -581,3 +585,7 @@ is current, and try a model with **Test** before relying on it.
 
 The full error text, with keys removed, is in Logbook's log and in each
 model's last Test result.
+
+---
+
+[Back to the docs index](README.md)

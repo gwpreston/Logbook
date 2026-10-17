@@ -4,6 +4,20 @@ All notable changes to Logbook are recorded here. Database changes are always
 shipped as reversible migrations; any upgrade step beyond "pull and restart"
 is called out explicitly.
 
+## [Unreleased]
+
+### Documentation
+- **A shorter README** for anyone deciding whether to try Logbook: who it's
+  for, screenshots, a quick start that ends with a vehicle and a fill-up,
+  and the features in nine groups. The full feature list moved to
+  [docs/features.md](docs/features.md), the development setup and release
+  steps to [CONTRIBUTING.md](CONTRIBUTING.md), and the guides gained an
+  index ([docs/README.md](docs/README.md)), a
+  [getting-started guide](docs/getting-started.md), a common opening and a
+  link back to the index (Phase 52). Screenshots are made from the demo
+  data by `npm run screenshots`, and CI checks the docs' links, index and
+  images. No app change.
+
 ## [3.16.1] — 2026-10-16
 
 Phase 51.4: **import fixes** from the known-issues log

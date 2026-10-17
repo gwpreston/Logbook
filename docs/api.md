@@ -1,5 +1,9 @@
 # REST API
 
+The REST API under `/api/v1`: keys, values, paging, edits, attachments, webhooks and errors, with examples.
+
+**For:** anyone connecting Home Assistant, Shortcuts, Grafana, Node-RED or their own scripts.
+
 A small JSON API for automations: Home Assistant sensors, Apple Shortcuts
 and Android automations that log a fill-up, Grafana panels, Node-RED flows
 and OBD tools that post the odometer. It reads what a dashboard needs and
@@ -1170,3 +1174,7 @@ return [{
     headers: {Authorization: 'Bearer ' + env.get('LOGBOOK_KEY')},
 }, msg];
 ```
+
+---
+
+[Back to the docs index](README.md)

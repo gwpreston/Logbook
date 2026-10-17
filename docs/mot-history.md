@@ -1,5 +1,9 @@
 # MOT history
 
+A UK vehicle's MOT history from DVSA: setting it up, fetching and what it adds.
+
+**For:** admins enabling it, and owners of UK vehicles.
+
 Bring a UK vehicle's official MOT record into Logbook from DVSA: every past
 test with its date, result, expiry and mileage, its advisories and defects,
 and whether a manufacturer recall is outstanding. The mileages become
@@ -212,3 +216,7 @@ read and 3 on wrong usage. See `tests/Fixtures/mot-history/README.md`.
 | "You've asked DVSA a lot in a short time" | Each person may look up or fetch 20 times in 10 minutes and 200 times a day, so the install's shared quota lasts. Wait a few minutes. |
 | "No DVSA record for AB12 CDE" | Check the registration. Vehicles first registered recently, or not tested in Great Britain since 2005 or Northern Ireland since 2017, may have none. |
 | "MOT history isn't available right now" (owners) | An admin should look at Settings → MOT history. |
+
+---
+
+[Back to the docs index](README.md)

@@ -1,5 +1,9 @@
 # Issues
 
+The issues log: faults you've noticed and not fixed yet.
+
+**For:** anyone keeping track of what is wrong with a vehicle.
+
 Keep a log of the faults you've noticed and haven't fixed yet: "knock from
 front left under braking", "slow leak, rear right", "advisory: brake pipes
 corroded". Each issue has the date you noticed it, the mileage, your
@@ -153,3 +157,7 @@ issues read-only, and its open ones raise nothing.
 
 Backups and `bin/export-user.php` carry issues, their updates and their
 fixes.
+
+---
+
+[Back to the docs index](README.md)
