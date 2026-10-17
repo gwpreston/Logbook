@@ -42,15 +42,15 @@ tools) and §7.39 (*Parts and modifications*, *Access*) first.
 8. **K64.** `php bin/backup.php check` and `restore` find a bare file
    name in `BACKUP_PATH`, as `docs/deployment.md` shows. A missing file
    says "No such file", not "This is not a ZIP file."
+9. **K66**, found while running the suite: Phase 53.1's prerequisite
+   links to a phase that no longer exists, which fails
+   `MarkdownLinksTest`. It now names Phase 52.
 
 ## Not in scope
 
 - Rows that wait on an open question (K1, K3, K29, K39, K44, K47, K48,
   K54, K56, K57).
 - Larger rows (K40, K41, K42, K43, K49). They need a phase each.
-- The broken link in [`phase-53.1.md`](phase-53.1.md) to a Phase 45.3
-  "hardening" phase that doesn't exist. It's from master, and it fails
-  `MarkdownLinksTest`. Recorded as K66.
 
 ---
 
@@ -71,6 +71,10 @@ code's own comments already say:
 - **Only *Clear* skips the browser's date check** (K7). *Clear* doesn't
   use the date. *Mark* needs one and the server refuses the same dates,
   so its browser check stays (#480, decided 2026-10-17).
+- **Phase 53.1's prerequisite is Phase 52** (K66). It linked to a
+  Phase 45.3 "hardening" phase that `f17b7c63` removed, together with
+  every hardening prerequisite. The Phase 53 plan brought one back by
+  mistake. The phases around it need the phase before them.
 - **Released on its own** as patch v3.16.3 (#481, decided 2026-10-17),
   like Phase 51.4: the fixes are small and don't depend on Phase 53.
 - **The parts-list error gets its own key** (K26),
@@ -100,7 +104,7 @@ code's own comments already say:
       `BuildCostsToolTest`, `InsurerListTest`, `BackupTest`.
 - [x] spec.md §7.26 and §13; ROADMAP; CHANGELOG *Unreleased*.
 - [x] Known-issues rows K4, K5, K6, K7, K22, K23, K26 and K64 *Fixed*.
-      K66 recorded.
+      K66 recorded and fixed.
 - [ ] `bin/test-all-dbs.sh` on PostgreSQL, MySQL and MariaDB (run on
       SQLite so far).
 - [ ] Merge review, then merge.
@@ -111,8 +115,7 @@ code's own comments already say:
 
 - Each row has a regression test that fails without its fix.
 - `composer lint`, `composer analyse` and `bin/test-all-dbs.sh` pass on
-  SQLite, PostgreSQL, MySQL and MariaDB. The one known failure is K66's
-  link, which comes from master.
+  SQLite, PostgreSQL, MySQL and MariaDB.
 - No migration. New strings are translated (English and German).
 
 ## Open questions

@@ -122,4 +122,4 @@ Whole-repository sweep of master before Phase 51 started; performance-auditor wa
 
 | # | Severity | Area | Issue | Where | Since | Status |
 |---|---|---|---|---|---|---|
-| K66 | LOW | Docs | Phase 53.1's prerequisites link to `phase-45.3.md`, a "hardening" phase that doesn't exist (Phase 45.3 is *Contributions*, inside `phase-45.md`), so `MarkdownLinksTest` fails on master. Needs the intended prerequisite named. | `docs/phases/phase-53.1.md:38` | master (`23484fff`) | Open |
+| K66 | LOW | Docs | Phase 53.1's prerequisites link to `phase-45.3.md`, a "hardening" phase that doesn't exist (Phase 45.3 is *Contributions*, inside `phase-45.md`), so `MarkdownLinksTest` fails on master. Needs the intended prerequisite named. | `docs/phases/phase-53.1.md:38` | master (`23484fff`) | Fixed (Phase 52.1: the hardening phases were removed in `f17b7c63` with their prerequisites, so 53.1 now needs Phase 52 merged, like the phases around it) |
