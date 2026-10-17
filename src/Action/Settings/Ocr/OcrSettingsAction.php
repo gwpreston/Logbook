@@ -7,6 +7,7 @@ namespace Logbook\Action\Settings\Ocr;
 use Logbook\Service\Ocr\OcrReader;
 use Logbook\Service\Ocr\OcrSampleTest;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Http\LongRequest;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\View\View;
 use Psr\Http\Message\ResponseInterface;
@@ -33,6 +34,8 @@ final readonly class OcrSettingsAction
     {
         $test = null;
         if ($request->getMethod() === 'POST') {
+            // PaddleOCR on a CPU can take a while: as long as a page may, plus room.
+            LongRequest::allow($this->settings->ocr->timeout + 30);
             $test = $this->sample->run(RequestContext::requireUser($request)->id, RequestContext::locale($request));
         }
 

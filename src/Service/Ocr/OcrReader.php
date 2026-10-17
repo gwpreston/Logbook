@@ -194,13 +194,9 @@ final class OcrReader
      */
     private static function unprepared(string $bytes): ?PreparedImage
     {
-        $image = GdImagePreparer::open($bytes);
-        if ($image === null) {
-            return null;
-        }
         $scale = 1.0;
-        $image = GdImagePreparer::fit($image, GdImagePreparer::MAX_EDGE, $scale);
+        $image = GdImagePreparer::open($bytes, $scale);
 
-        return GdImagePreparer::png($image, 0.0, $scale, 'none');
+        return $image === null ? null : GdImagePreparer::png($image, 0.0, $scale, 'none');
     }
 }

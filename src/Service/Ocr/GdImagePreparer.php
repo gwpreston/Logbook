@@ -39,12 +39,11 @@ final class GdImagePreparer implements ImagePreparer
 
     public function prepare(string $bytes): ?PreparedImage
     {
-        $image = self::open($bytes);
+        $scale = 1.0;
+        $image = self::open($bytes, $scale);
         if ($image === null) {
             return null;
         }
-        $scale = 1.0;
-        $image = self::fit($image, self::MAX_EDGE, $scale);
         imagefilter($image, IMG_FILTER_GRAYSCALE);
         self::stretch($image);
 
@@ -64,9 +63,13 @@ final class GdImagePreparer implements ImagePreparer
     }
 
     /**
-     * Decoded, upright, refused when larger than ImageCleaner::MAX_PIXELS.
+     * Decoded, upright, at most MAX_EDGE on its long edge and on white paper
+     * (any transparency flattened), or null when it can't be read or is
+     * larger than ImageCleaner::MAX_PIXELS. The full-size decode is let go
+     * as soon as it is fitted, and memory is then reserved for the working
+     * copies at the fitted size only.
      */
-    public static function open(string $bytes): ?GdImage
+    public static function open(string $bytes, float &$scale = 1.0): ?GdImage
     {
         $info = @getimagesizefromstring($bytes);
         $mime = is_array($info) ? $info['mime'] : '';
@@ -86,21 +89,29 @@ final class GdImagePreparer implements ImagePreparer
         if ($image === null) {
             return null;
         }
-        // The image, a rotated or rescaled copy, and the small copy for analysis.
-        ImageCleaner::makeRoomFor(imagesx($image) * imagesy($image), 3);
-        if ($mime === 'image/jpeg') {
-            return $image;
+        $long = max(imagesx($image), imagesy($image));
+        $factor = min(1.0, self::MAX_EDGE / $long);
+        if ($factor === 1.0 && $mime === 'image/jpeg') {
+            $paper = $image;
+        } else {
+            // One copy, fitted and put on white paper together.
+            $width = max(1, (int) round(imagesx($image) * $factor));
+            $height = max(1, (int) round(imagesy($image) * $factor));
+            ImageCleaner::makeRoomFor($width * $height);
+            $paper = imagecreatetruecolor($width, $height);
+            if ($paper === false) {
+                return null;
+            }
+            imagefill($paper, 0, 0, (int) imagecolorallocate($paper, 255, 255, 255));
+            imagealphablending($paper, true);
+            imagecopyresampled($paper, $image, 0, 0, 0, 0, $width, $height, imagesx($image), imagesy($image));
+            $scale *= $factor;
         }
-        // Flatten any transparency onto white, as paper is.
-        $flat = imagecreatetruecolor(imagesx($image), imagesy($image));
-        if ($flat === false) {
-            return null;
-        }
-        imagefill($flat, 0, 0, (int) imagecolorallocate($flat, 255, 255, 255));
-        imagealphablending($flat, true);
-        imagecopy($flat, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
+        unset($image);
+        // A rotated or rescaled copy and the small copy for analysis.
+        ImageCleaner::makeRoomFor(imagesx($paper) * imagesy($paper), 3);
 
-        return $flat;
+        return $paper;
     }
 
     /**
