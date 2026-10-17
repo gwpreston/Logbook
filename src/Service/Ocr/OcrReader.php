@@ -37,11 +37,23 @@ final class OcrReader
         private readonly AppSettings $settings,
         private readonly TesseractEngine $tesseract,
         private readonly PaddleOcrEngine $paddleOcr,
-        private readonly ImagePreparer $preparer,
+        private ImagePreparer $preparer,
         private readonly PdfRenderer $renderer,
         private readonly AiBusyRepository $busy,
         private readonly ClockInterface $clock,
     ) {
+    }
+
+    /**
+     * The same reader with another preparer: the eval compares GD's and
+     * Imagick's (`bin/ai-eval.php --ocr`).
+     */
+    public function withPreparer(ImagePreparer $preparer): self
+    {
+        $copy = clone $this;
+        $copy->preparer = $preparer;
+
+        return $copy;
     }
 
     /**
@@ -62,6 +74,20 @@ final class OcrReader
     public function isAvailable(): bool
     {
         return $this->engine() !== null;
+    }
+
+    /**
+     * What Settings shows: the status of the engine `OCR_ENGINE` picks (for
+     * `auto` with neither set up, Tesseract's), or null when it is `off`.
+     */
+    public function status(): ?OcrEngineStatus
+    {
+        return match ($this->settings->ocr->engine) {
+            OcrEngineChoice::Off => null,
+            OcrEngineChoice::Tesseract => $this->tesseract->status(),
+            OcrEngineChoice::PaddleOcr => $this->paddleOcr->status(),
+            OcrEngineChoice::Auto => ($this->paddleOcr->isAvailable() ? $this->paddleOcr : $this->tesseract)->status(),
+        };
     }
 
     /**

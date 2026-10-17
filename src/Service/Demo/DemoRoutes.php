@@ -12,7 +12,7 @@ namespace Logbook\Service\Demo;
 final class DemoRoutes
 {
     /**
-     * Blocked: users, invitations, sign-in providers, header sign-in, API keys and MCP, AI,
+     * Blocked: users, invitations, sign-in providers, header sign-in, API keys and MCP, AI and OCR,
      * fuel price providers, the MOT history provider, the email server, backup and restore, importing,
      * jobs, the update check, and changing the password, email address or avatar. They answer the
      * *Not available in the demo* page.
@@ -37,6 +37,8 @@ final class DemoRoutes
         'insights.questions.delete', 'insights.question', 'insights.question.delete', 'insights.questions.feedback',
         'insights.questions.draft', 'insights.refresh',
         'scan', 'scan.result', 'scan.file', 'scan.reminders', 'scan.vehicle',
+        // Reading text from images (Phase 53.1): its status and Test it run the OCR engine.
+        'settings.ocr',
         // Fuel price providers (the demo's sample prices need no setting).
         'settings.fuel_prices',
         // The MOT history provider (Phase 41): it sends registrations to DVSA.

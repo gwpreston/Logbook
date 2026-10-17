@@ -1,0 +1,8 @@
+Refusal of an MOT test certificate
+Registration number AB12 CDE   Date of test 20/02/2026
+Odometer reading 44,770 miles
+Test result: FAIL
+Reasons for failure (major): Offside rear brake pipe corroded
+Advisories: Exhaust has a minor leak
+Testing station: Exe Valley Test Centre
+The vehicle must not be driven until the defects are repaired.

@@ -44,6 +44,11 @@ services:
       AI_ENABLED: ${AI_ENABLED:-true}
       AI_LOG_CONTENT: ${AI_LOG_CONTENT:-false}
       AI_ALLOW_INSECURE_TLS: ${AI_ALLOW_INSECURE_TLS:-true}
+      # Reading text from images (docs/reading-files.md): Tesseract is in the image.
+      OCR_ENGINE: ${OCR_ENGINE:-auto}
+      TESSERACT_BINARY: ${TESSERACT_BINARY:-tesseract}
+      OCR_URL: ${OCR_URL:-}
+      OCR_TIMEOUT: ${OCR_TIMEOUT:-30}
       # A public demo that resets itself (docs/demo-mode.md); off unless DEMO_MODE=true.
       DEMO_MODE: ${DEMO_MODE:-}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}

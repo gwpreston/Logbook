@@ -63,7 +63,8 @@ the pattern for an optional binary) and §9 (`GHOSTSCRIPT_BINARY`) first.
    interface, reached over HTTP at `OCR_URL`, chosen by `OCR_ENGINE`
    (#494), with an optional `ocr` profile in `docker-compose.yml`
    (#495).
-6. **Status on Settings → AI** (and Settings → System when AI is off):
+6. **Status on Settings → AI** (and Settings' *Installation* group when
+   AI is off; there is no Settings → System page):
    - the engine and its version;
    - its languages;
    - a *Test it* button that reads a bundled sample receipt and shows the
@@ -130,28 +131,41 @@ PaddleOCR; `OCR_ENGINE`), the spec wins:
       `.env.example`; `docs/reading-files.md`.
 
 ### 53.1.1 Engine
-- [ ] `OcrEngine`, its TSV parser and the layout text.
-- [ ] The per-user lock, shared with the AI lock (§7.25 *Limits*), so a
-      scan never runs two heavy jobs at once.
-- [ ] Dockerfile: `tesseract-ocr` and the language packs; image size
-      recorded in the release notes.
-- [ ] `PaddleOcrEngine` (#493): the PaddleX serving request and answer,
-      words estimated from lines; `OCR_ENGINE` choosing (#494).
-- [ ] `docker-compose.yml`: an optional `ocr` profile running PaddleOCR,
-      built from `docker/paddleocr/` for amd64 and arm64 (#495: there is
-      no official arm64 serving image).
+- [x] `OcrEngine`, its TSV parser and the layout text (column gaps kept
+      between words as well as between lines).
+- [x] The per-user lock, shared with the AI lock (§7.25 *Limits*), so a
+      scan never runs two heavy jobs at once (`OcrReader::read()`;
+      `readHeld()` for a caller already holding it).
+- [x] Dockerfile: `tesseract-ocr` and the language packs; image size
+      recorded in the release notes (78 MB uncompressed on arm64,
+      measured 2026-10-17; for 53.2's release notes).
+- [x] `PaddleOcrEngine` (#493): the PaddleX serving request and answer,
+      words estimated from lines; `OCR_ENGINE` choosing (#494). Checked
+      against a live PaddleX 3.7.2 service on arm64.
+- [x] `docker-compose.yml` (and the MySQL file's OCR variables): an
+      optional `ocr` profile running PaddleOCR, built from
+      `docker/paddleocr/` for amd64 and arm64 (#495: there is no official
+      arm64 serving image). 1.5 GB built on arm64.
 
 ### 53.1.2 Preparation
-- [ ] `ImagePreparer`: each step with a unit test on a known image.
-- [ ] Scanned PDFs rendered at 300 dpi for OCR, reusing the Ghostscript
+- [x] `ImagePreparer`: each step with a unit test on a known image (GD;
+      Imagick's tests run where it is loaded).
+- [x] Scanned PDFs rendered at 300 dpi for OCR, reusing the Ghostscript
       or Imagick renderer.
 
 ### 53.1.3 Status and fixtures
-- [ ] Settings status and *Test it*.
-- [ ] `bin/ai-eval.php --ocr`: character accuracy of the layout text
-      against hand-typed transcripts of `tests/Fixtures/scans/`, per
-      kind, with and without preparation.
-- [ ] Transcripts added for every existing scan fixture.
+- [x] Settings status and *Test it* (`/settings/ocr`; a card on Settings
+      → AI; Installation when AI is off), reading
+      `resources/ocr/sample-receipt.png` (made by
+      `bin/tools/make-ocr-sample.php`).
+- [x] `bin/ai-eval.php --ocr`: character accuracy of the layout text
+      against transcripts of `tests/Fixtures/scans/`, per kind, with and
+      without preparation, GD and Imagick; `--degraded` adds faded,
+      tilted, shrunk copies of the photos.
+- [x] Transcripts added for every existing scan fixture (`<name>.txt`).
+      They are what was printed, written from `manifest.php` by
+      `build.php`, so exact rather than hand-typed; real receipts go in
+      `receipts/`, which `build.php` leaves alone.
 - [ ] At least ten real fuel receipts (faded, creased, angled), photos
       supplied by the owner with personal details redacted (#496), and
       their transcripts. Open until they arrive.
@@ -165,6 +179,32 @@ PaddleOCR; `OCR_ENGINE`), the spec wins:
       are skipped, and run in a CI job with it).
 
 ---
+
+## Eval results (2026-10-17)
+
+`bin/ai-eval.php --ocr --degraded`, character accuracy, mean per kind.
+
+Tesseract 5.5.0 (`deu+eng`, Docker, arm64), all 24 fixtures:
+
+| Kind | none | GD | Imagick |
+|---|---|---|---|
+| service invoice (8) | 95.0% | 94.1% | 94.2% |
+| fuel receipt (4) | 93.1% | 92.2% | 92.2% |
+| fuel receipt, degraded (2) | 42.2% | 91.6% | 92.2% |
+| service invoice, degraded (3) | 84.9% | 92.5% | 92.7% |
+| registration, degraded (1) | 74.3% | 90.1% | 93.1% |
+| inspection, degraded (1) | 87.5% | 88.6% | 73.9% |
+
+PaddleOCR (PaddleX 3.7.2, PP-OCRv6, CPU), the 8 photos: 95.5–100%
+unprepared; degraded copies 57.9–100% unprepared and 96.0–98.9% with GD.
+About 8 s a page unprepared and 21 s prepared (enlarged) on this CPU,
+so the docs suggest `OCR_TIMEOUT=120` for it.
+
+On the clean synthetic fixtures preparation costs about one point: their
+bitmap-font lines (17 px) are enlarged by the 20 px rule. On degraded
+copies it is the difference between half and nearly all of the text.
+Criterion 2 is measured on the owner's real receipts once they arrive
+(#496).
 
 ## Acceptance criteria
 

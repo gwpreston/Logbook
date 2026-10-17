@@ -43,6 +43,18 @@ declare(strict_types=1);
  *
  *   php bin/ai-eval.php --insights [--user=demo] [--runs=3] [--verbose]
  *
+ * With --ocr (Phase 53.1, spec.md §7.27 *Reading text from images*) it
+ * reads every scan fixture with the OCR engine OCR_ENGINE picks (no model
+ * and no user needed), and the owner's real receipts in
+ * tests/Fixtures/scans/receipts/ when there are any, and reports the
+ * character accuracy of the layout text against each file's transcript
+ * (<name>.txt), per kind: unprepared, prepared with GD, and with Imagick
+ * when it is loaded. PDFs need Ghostscript or Imagick to render. With
+ * --degraded it also reads a faded, tilted (5°), shrunk (60%) and
+ * recompressed copy of each photo, made in memory, as a hard case.
+ *
+ *   php bin/ai-eval.php --ocr [--degraded] [--only=6,8] [--verbose]
+ *
  * Exit code: 0 ran, 1 could not run, 2 usage.
  */
 
@@ -71,12 +83,16 @@ use Logbook\Service\Ai\Scan\PrintedNumber;
 use Logbook\Service\Ai\Scan\ScanAvailability;
 use Logbook\Service\Ai\Scan\Scrubber;
 use Logbook\Support\Number\Decimal;
+use Logbook\Service\Ocr\GdImagePreparer;
+use Logbook\Service\Ocr\ImagickImagePreparer;
+use Logbook\Service\Ocr\OcrReader;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'insights', 'runs:', 'help']);
+$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'insights', 'ocr', 'degraded', 'runs:', 'help']);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans|--insights [--runs=3]] [--user=demo] [--only=1,5,12] [--verbose]\n");
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans|--insights [--runs=3]|--ocr [--degraded]] [--user=demo]"
+        . " [--only=1,5,12] [--verbose]\n");
     exit(0);
 }
 $username = is_string($options['user'] ?? null) ? $options['user'] : 'demo';
@@ -92,6 +108,9 @@ $get = static function (string $class) use ($container): object {
 
     return $service;
 };
+if (isset($options['ocr'])) {
+    exit(evaluateOcr($get, $only, $verbose, isset($options['degraded'])));
+}
 $users = $get(UserRepository::class);
 assert($users instanceof UserRepository);
 $user = $users->findByUsername(Username::normalise($username));
@@ -608,4 +627,185 @@ function sameValue(string $want, string $got, string $locale): bool
     $plain = static fn (string $t): string => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $t)));
 
     return $plain($want) === $plain($got);
+}
+
+/**
+ * The OCR eval (Phase 53.1): character accuracy of the layout text against
+ * each transcript, per kind and preparation.
+ *
+ * @param list<int> $only
+ */
+function evaluateOcr(Closure $get, array $only, bool $verbose, bool $degraded = false): int
+{
+    $reader = $get(OcrReader::class);
+    assert($reader instanceof OcrReader);
+    $engine = $reader->engine();
+    if ($engine === null) {
+        fwrite(STDERR, "No OCR engine is set up: install Tesseract, or set OCR_URL (docs/reading-files.md).\n");
+
+        return 1;
+    }
+    $status = $engine->status();
+    $root = dirname(__DIR__) . '/tests/Fixtures/scans';
+    $files = [];
+    foreach (glob($root . '/[0-9][0-9]-*.json') ?: [] as $json) {
+        $fixture = json_decode((string) file_get_contents($json), true);
+        $number = (int) basename($json);
+        if (!is_array($fixture) || ($only !== [] && !in_array($number, $only, true))) {
+            continue;
+        }
+        $reply = is_array($fixture['reply'] ?? null) ? $fixture['reply'] : [];
+        $text = static fn (mixed $value, string $default): string => is_string($value) ? $value : $default;
+        $file = [
+            'path' => $root . '/' . $text($fixture['file'] ?? null, ''),
+            'text' => substr($json, 0, -5) . '.txt',
+            'kind' => $text($reply['kind'] ?? null, 'other'),
+            'locale' => $text($fixture['locale'] ?? null, 'en_GB'),
+        ];
+        $files[] = $file;
+        if ($degraded && ($fixture['type'] ?? '') === 'photo') {
+            $copy = degradedCopy($file['path']);
+            if ($copy !== null) {
+                $name = basename($file['path']) . ' (degraded)';
+                $files[] = ['path' => $copy, 'kind' => $file['kind'] . ' (degraded)', 'name' => $name] + $file;
+            }
+        }
+    }
+    foreach (glob($root . '/receipts/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: [] as $photo) {
+        $files[] = [
+            'path' => $photo,
+            'text' => preg_replace('/\.[a-z]+$/i', '.txt', $photo),
+            'kind' => 'fuel_receipt (real)',
+            'locale' => 'en_GB',
+        ];
+    }
+
+    $preparers = ['none' => null, 'gd' => new GdImagePreparer()];
+    $imagick = new ImagickImagePreparer();
+    if ($imagick->isAvailable()) {
+        $preparers['imagick'] = $imagick;
+    }
+    $name = $status->version !== '' ? $status->version : $engine->name();
+    fwrite(STDOUT, sprintf("OCR eval: %s (%s), %d files\n\n", $name, implode('+', $status->languages), count($files)));
+
+    /** @var array<string, array<string, list<float>>> $scores */
+    $scores = [];
+    $seconds = [];
+    foreach ($files as $file) {
+        $want = is_string($file['text']) && is_file($file['text']) ? (string) file_get_contents($file['text']) : null;
+        if ($want === null) {
+            fwrite(STDOUT, sprintf("  %s: no transcript, skipped\n", basename($file['path'])));
+            continue;
+        }
+        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($file['path']);
+        $line = [];
+        foreach ($preparers as $label => $preparer) {
+            $started = microtime(true);
+            $result = $preparer === null
+                ? $reader->readHeld($file['path'], $mime, $file['locale'], false)
+                : $reader->withPreparer($preparer)->readHeld($file['path'], $mime, $file['locale']);
+            $seconds[$label][] = microtime(true) - $started;
+            if (!$result->ok()) {
+                $line[] = sprintf('%s %s', $label, $result->problem?->value);
+                continue;
+            }
+            $accuracy = characterAccuracy($result->layoutText, $want);
+            $scores[$file['kind']][$label][] = $accuracy;
+            $line[] = sprintf('%s %5.1f%%', $label, 100 * $accuracy);
+            if ($verbose) {
+                fwrite(STDOUT, sprintf("--- %s, %s:\n%s\n", basename($file['path']), $label, $result->layoutText));
+            }
+        }
+        $label = $file['name'] ?? basename($file['path']);
+        fwrite(STDOUT, sprintf("  %-40s %-30s %s\n", $label, $file['kind'], implode('  ', $line)));
+        if (str_contains($file['kind'], '(degraded)')) {
+            @unlink($file['path']);
+        }
+    }
+
+    fwrite(STDOUT, "\nCharacter accuracy by kind (mean):\n");
+    ksort($scores);
+    foreach ($scores as $kind => $byPreparer) {
+        $cells = [];
+        foreach (array_keys($preparers) as $label) {
+            $values = $byPreparer[$label] ?? [];
+            $cells[] = $values === []
+                ? sprintf('%s   -  ', $label)
+                : sprintf('%s %5.1f%%', $label, 100 * array_sum($values) / count($values));
+        }
+        $count = max([0, ...array_map('count', $byPreparer)]);
+        fwrite(STDOUT, sprintf("  %-34s %s  (%d)\n", $kind, implode('  ', $cells), $count));
+    }
+    foreach ($seconds as $label => $times) {
+        fwrite(STDOUT, sprintf("  time, %s: %.2f s a file on average\n", $label, array_sum($times) / max(1, count($times))));
+    }
+
+    return 0;
+}
+
+/**
+ * A hard copy of a photo for the OCR eval: ink and paper pulled together
+ * (ink 20 → 148, paper 255 → 242), shrunk to 60%, turned 5° and saved as
+ * a JPEG at quality 60, in a temporary file. Null when it can't be made.
+ */
+function degradedCopy(string $path): ?string
+{
+    $image = @imagecreatefromjpeg($path);
+    if ($image === false) {
+        return null;
+    }
+    $width = max(1, (int) (imagesx($image) * 0.6));
+    $height = max(1, (int) (imagesy($image) * 0.6));
+    $small = imagecreatetruecolor($width, $height);
+    if ($small === false) {
+        return null;
+    }
+    imagecopyresampled($small, $image, 0, 0, 0, 0, $width, $height, imagesx($image), imagesy($image));
+    imagefilter($small, IMG_FILTER_GRAYSCALE);
+    // v → 140 + 0.4·v: GD's contrast then brightness give the same line.
+    imagefilter($small, IMG_FILTER_CONTRAST, (int) round(100 - 100 * sqrt(0.4)));
+    imagefilter($small, IMG_FILTER_BRIGHTNESS, (int) round(140 + 0.4 * 127.5 - 127.5));
+    $paper = (int) imagecolorallocate($small, 242, 242, 242);
+    $turned = imagerotate($small, 5, $paper);
+    $file = tempnam(sys_get_temp_dir(), 'logbook-ocr-eval-');
+    if ($turned === false || $file === false) {
+        return null;
+    }
+    $named = $file . '-degraded.jpg';
+    rename($file, $named);
+    imagejpeg($turned, $named, 60);
+
+    return $named;
+}
+
+/**
+ * 1 − (edit distance ÷ the transcript's length), on both texts with each
+ * line's runs of spaces made one and blank lines dropped, so the layout
+ * text's column padding doesn't count against it. Never below 0.
+ */
+function characterAccuracy(string $got, string $want): float
+{
+    $clean = static fn (string $text): string => implode("\n", array_filter(array_map(
+        static fn (string $line): string => trim((string) preg_replace('/\s+/u', ' ', $line)),
+        preg_split('/\R/u', $text) ?: [],
+    ), static fn (string $line): bool => $line !== ''));
+    $got = $clean($got);
+    $want = $clean($want);
+    if ($want === '') {
+        return $got === '' ? 1.0 : 0.0;
+    }
+    // levenshtein() counts bytes; compare as one byte per character.
+    $map = [];
+    $encode = static function (string $text) use (&$map): string {
+        $out = '';
+        foreach (mb_str_split($text) as $char) {
+            $map[$char] ??= count($map) < 255 ? chr(count($map) + 1) : chr(255);
+            $out .= $map[$char];
+        }
+
+        return $out;
+    };
+    $distance = levenshtein($encode($want), $encode($got));
+
+    return max(0.0, 1 - $distance / mb_strlen($want));
 }

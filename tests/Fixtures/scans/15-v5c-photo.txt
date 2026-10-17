@@ -1,0 +1,6 @@
+VEHICLE REGISTRATION CERTIFICATE V5C
+Document reference number 12345678901
+A Registration mark AB12 CDE
+B Date of first registration 01 03 2018
+D.1 Make VOLKSWAGEN  D.3 Model GOLF
+E VIN WVWZZZ1KZAW123456

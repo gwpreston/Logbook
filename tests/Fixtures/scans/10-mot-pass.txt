@@ -1,0 +1,10 @@
+MOT test certificate
+Registration number AB12 CDE   Make VOLKSWAGEN   Model GOLF
+Date of test 01/03/2026   Expiry date 28/02/2027
+Odometer reading 44,915 miles
+Test result: PASS   MOT test number 4417 2290 1186
+Testing station: Exe Valley Test Centre
+Advisories (monitor and repair if necessary):
+Nearside front tyre worn close to legal limit
+Front brake disc worn, pitted or scored
+Check the MOT history of this vehicle online.

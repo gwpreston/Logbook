@@ -76,6 +76,15 @@ final class TesseractTsvTest extends TestCase
         self::assertSame("One near\n\nTwo", OcrResult::read($lines, 'eng', 'x')->layoutText);
     }
 
+    public function testAWideGapInsideOneLineIsKeptToo(): void
+    {
+        $word = static fn (string $text, int $left): OcrWord
+            => new OcrWord($text, 90.0, new OcrBox($left, 0, 20 * mb_strlen($text), 30), 1);
+        $line = new OcrLine([$word('TOTAL', 50), $word('GBP', 520), $word('48.20', 600)]);
+
+        self::assertSame('TOTAL' . str_repeat(' ', 19) . 'GBP 48.20', OcrResult::read([$line], 'eng', 'x')->layoutText);
+    }
+
     public function testAFailedResultHasNoTextAndSaysWhy(): void
     {
         $result = OcrResult::failed(\Logbook\Service\Ocr\OcrProblem::Timeout, 'eng');

@@ -10,7 +10,8 @@ use Throwable;
  * OCR preparation with Imagick, when the extension is loaded (decided
  * 2026-10-17, #492): the same steps as GdImagePreparer with ImageMagick's
  * own orient, greyscale, contrast stretch and deskew, which are faster and
- * finer. The text height is measured as GD does it, on a small copy. Any
+ * finer. The contrast stretch and text height are measured as GD does
+ * them, on a small copy. Any
  * failure gives null, and the caller falls back to GD.
  */
 final class ImagickImagePreparer implements ImagePreparer
@@ -43,11 +44,9 @@ final class ImagickImagePreparer implements ImagePreparer
                 $scale = GdImagePreparer::MAX_EDGE / $long;
                 self::resize($image, $scale);
             }
-            $image->transformImageColorspace(\Imagick::COLORSPACE_GRAY);
-            // ImageMagick's -normalize: a 2% / 1% percentile stretch. (Its
-            // contrastStretchImage() takes pixel counts that crushed a test
-            // receipt to three grey levels.)
-            $image->normalizeImage();
+            // Greyscale in sRGB (IM7's GRAY colorspace is linear, which pales the print).
+            $image->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
+            $this->stretch($image);
 
             // Measured on a copy, and kept only when worth a resample.
             $deskewed = clone $image;
@@ -104,7 +103,41 @@ final class ImagickImagePreparer implements ImagePreparer
             && $info[0] * $info[1] <= \Logbook\Support\Storage\ImageCleaner::MAX_PIXELS;
     }
 
+    /**
+     * GD's percentile stretch (0.1% / 99%, left alone at good contrast),
+     * measured on a small copy and applied with levelImage. ImageMagick's
+     * own normalize and contrastStretchImage both blanked or crushed test
+     * pages for Tesseract.
+     */
+    private function stretch(\Imagick $image): void
+    {
+        $small = self::small($image);
+        if ($small === null) {
+            return;
+        }
+        [$low, $high] = GdImagePreparer::percentiles($small);
+        if ($high - $low < 8 || $high - $low >= GdImagePreparer::GOOD_CONTRAST) {
+            return;
+        }
+        $quantum = \Imagick::getQuantum() / 255;
+        $image->levelImage($low * $quantum, 1.0, $high * $quantum);
+    }
+
     private function textHeight(\Imagick $image): float
+    {
+        $small = self::small($image);
+        if ($small === null) {
+            return 0.0;
+        }
+        $ratio = max($image->getImageWidth(), $image->getImageHeight()) / max(imagesx($small), imagesy($small));
+
+        return GdImagePreparer::textHeight($small) * $ratio;
+    }
+
+    /**
+     * A GD copy about 1,000 px long, for measuring.
+     */
+    private static function small(\Imagick $image): ?\GdImage
     {
         $copy = clone $image;
         $copy->thumbnailImage(1000, 1000, true);
@@ -112,15 +145,13 @@ final class ImagickImagePreparer implements ImagePreparer
         $small = @imagecreatefromstring($copy->getImageBlob());
         $copy->clear();
         if ($small === false) {
-            return 0.0;
+            return null;
         }
         if (!imageistruecolor($small)) {
             imagepalettetotruecolor($small);
         }
 
-        $ratio = max($image->getImageWidth(), $image->getImageHeight()) / max(imagesx($small), imagesy($small));
-
-        return GdImagePreparer::textHeight($small) * $ratio;
+        return $small;
     }
 
     private static function resize(\Imagick $image, float $factor): void

@@ -7,7 +7,7 @@ namespace Logbook\Service\Ocr;
 /**
  * The layout text of an OCR result (spec.md §7.27): its lines in reading
  * order, with lines that sit side by side on the page put on one row and
- * wide gaps kept as runs of spaces, so a receipt's "Total" and "£48.20" stay
+ * wide gaps between words kept as runs of spaces, so a receipt's "Total" and "£48.20" stay
  * on one line however the engine split them into blocks. Works from boxes
  * only, so every engine shares it. Pages are separated by a blank line.
  */
@@ -49,23 +49,24 @@ final class LayoutText
 
         $rows = [];
         foreach (self::rows($lines) as $row) {
-            usort($row, static fn (OcrLine $a, OcrLine $b): int => $a->box->left <=> $b->box->left);
+            $words = [];
+            foreach ($row as $line) {
+                array_push($words, ...$line->words);
+            }
+            usort($words, static fn (OcrWord $a, OcrWord $b): int => $a->box->left <=> $b->box->left);
             $text = '';
             $end = null;
-            foreach ($row as $line) {
+            foreach ($words as $word) {
                 if ($end === null) {
-                    $text = $line->text;
+                    $text = $word->text;
+                } elseif (($word->box->left - $end) / $charWidth > self::COLUMN_GAP) {
+                    $column = (int) round(($word->box->left - $left) / $charWidth);
+                    $pad = max(2, min($column, self::MAX_WIDTH) - mb_strlen($text));
+                    $text .= str_repeat(' ', $pad) . $word->text;
                 } else {
-                    $gap = ($line->box->left - $end) / $charWidth;
-                    if ($gap > self::COLUMN_GAP) {
-                        $column = (int) round(($line->box->left - $left) / $charWidth);
-                        $pad = max(2, min($column, self::MAX_WIDTH) - mb_strlen($text));
-                        $text .= str_repeat(' ', $pad) . $line->text;
-                    } else {
-                        $text .= ' ' . $line->text;
-                    }
+                    $text .= ' ' . $word->text;
                 }
-                $end = $line->box->right();
+                $end = max($end ?? 0, $word->box->right());
             }
             $rows[] = $text;
         }

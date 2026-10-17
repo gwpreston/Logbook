@@ -7663,8 +7663,10 @@ only: nothing users see changes until Phase 53.2 uses it.
   file):
   - turned upright by its EXIF orientation, transparency put on white;
   - greyscale;
-  - a percentile contrast stretch (GD: 1% / 99%; Imagick:
-    `normalize`, 2% / 1%), skipped for a page already near full range;
+  - a percentile contrast stretch (the darkest 0.1% and lightest 1%
+    clipped: a sparse page has under 1% ink), measured on a small copy and
+    applied by GD or Imagick's `level`, skipped when ink and paper are
+    already 200 grey levels apart;
   - deskewed: GD by the angle (±10° in 0.5° steps) that maximises the
     variance of the rows' dark-pixel counts, measured on a copy about
     1,000 px long; Imagick by its `deskew`. Under a quarter of a degree
@@ -7682,8 +7684,11 @@ only: nothing users see changes until Phase 53.2 uses it.
   `unavailable` (no engine, `off`), `timeout`, `failed` (an error exit or
   answer), `too_large`, `unreadable`, `busy`. A later page that fails
   leaves the pages already read.
-- **Status** on Settings → AI, and on Settings → System when AI is off
-  (`AI_ENABLED=false`): the engine, its version (Tesseract's from
+- **Status** on its own admin page, *Reading text from images*
+  (`/settings/ocr`, the `manage_ai` ability; blocked in the demo),
+  linked from a card on Settings → AI, and from Settings' *Installation*
+  group when AI is off (`AI_ENABLED=false`; there is no Settings → System
+  page): the engine, its version (Tesseract's from
   `--version`) and languages (`--list-langs`, without `osd`), or the
   PaddleOCR address; *Test it* reads a bundled sample receipt and shows
   its layout text, confidence and time. Admins only, CSRF-protected.
@@ -10620,7 +10625,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   From Phase 26.4 it also includes `gd` (JPEG, PNG, WebP) and `exif` on
   every architecture, and Ghostscript for reading scanned PDFs (§7.27).
   From Phase 53.1 it also includes Tesseract with English and German
-  (`tessdata_fast`, #490, #491), adding about 40 MB with its libraries.
+  (`tessdata_fast`, #490, #491), adding about 80 MB uncompressed with
+  its libraries (78 MB measured on arm64, 2026-10-17).
   `docker-compose.yml` has an optional `ocr` profile running PaddleOCR
   beside it (#495), built from `docker/paddleocr/` on amd64 and arm64.
   The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner

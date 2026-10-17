@@ -27,8 +27,9 @@ to check what a vision model read, and to fill a fill-up with no AI at all.
 |---|---|---|
 | Runs | on the Logbook server, as a program | as a separate service, reached over HTTP |
 | Install | in the Docker image already; one package on Debian or Ubuntu | the compose file's `ocr` profile, or your own container |
-| Size | about 40 MB with English and German | about 2 GB with its models |
-| Good at | clear prints, receipts and A4 pages; runs on a Raspberry Pi | photos, curved or creased receipts, small print; much slower on a Pi |
+| Size | about 80 MB with English and German | about 1.5 GB, plus its models |
+| Speed | about a second a page | several seconds a page on a CPU; set `OCR_TIMEOUT=120` |
+| Good at | clear prints, receipts and A4 pages; runs on a Raspberry Pi | photos, curved or creased receipts, small print |
 
 `OCR_ENGINE=auto` (the default) uses PaddleOCR when `OCR_URL` is set, and
 Tesseract otherwise. Set `OCR_ENGINE=tesseract` or `paddleocr` to choose,
@@ -69,7 +70,8 @@ profile that builds one for your machine (amd64 or arm64):
 docker compose --profile ocr up -d
 ```
 
-Then set `OCR_URL=http://paddleocr:8080` for the Logbook container and
+Then set `OCR_URL=http://paddleocr:8080` (and `OCR_TIMEOUT=120`: it
+takes several seconds a page on a CPU) for the Logbook container and
 restart it. The first start downloads its models (a few hundred MB), so
 the first scan can take a minute.
 
@@ -82,8 +84,8 @@ Keep the service on your own network: it has no sign-in of its own.
 
 ## Checking it works
 
-**Settings → AI** (or **Settings → System** when AI is turned off) shows a
-*Reading text from images* card with:
+**Settings → AI** has a *Reading text from images* card; when AI is turned
+off, it's under **Settings → Installation**. Its page shows:
 
 - the engine in use, its version and its languages (for PaddleOCR, the
   address);
@@ -115,8 +117,8 @@ It doesn't change your attachment or what an AI model is sent:
 4. enlarged if the print is small, so letters are about 30 pixels high.
 
 On a faded, tilted, small receipt this is the difference between reading
-nothing and reading every line. `php bin/ai-eval.php --ocr` measures it on
-your install (see [ai.md](ai.md)).
+half of it and nearly all of it. `php bin/ai-eval.php --ocr --degraded`
+measures it on your install (see [ai.md](ai.md#reading-receipts-and-documents)).
 
 ## Limits and privacy
 

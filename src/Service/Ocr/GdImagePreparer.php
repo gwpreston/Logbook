@@ -22,8 +22,16 @@ final class GdImagePreparer implements ImagePreparer
     private const int ANALYSIS_EDGE = 1000;
     private const float MAX_ANGLE = 10.0;
     private const float ANGLE_STEP = 0.5;
-    /** Share of pixels clipped at each end by the contrast stretch. */
-    private const float CLIP = 0.01;
+    /**
+     * Share of pixels clipped at the dark end by the contrast stretch: small,
+     * because on a sparse page (a short letter on A4) under 1% of the pixels
+     * are ink, and clipping 1% there would turn the paper's grey edges black.
+     */
+    private const float CLIP_DARK = 0.001;
+    /** Share clipped at the light (paper) end. */
+    private const float CLIP_LIGHT = 0.01;
+    /** Ink and paper this many grey levels apart need no stretch: it only blurs a clean print. */
+    public const int GOOD_CONTRAST = 200;
     private const int MIN_TEXT_HEIGHT = 20;
     private const int TARGET_TEXT_HEIGHT = 30;
     /** Most dark pixels the deskew search looks at. */
@@ -78,6 +86,11 @@ final class GdImagePreparer implements ImagePreparer
         if ($image === null) {
             return null;
         }
+        // The image, a rotated or rescaled copy, and the small copy for analysis.
+        ImageCleaner::makeRoomFor(imagesx($image) * imagesy($image), 3);
+        if ($mime === 'image/jpeg') {
+            return $image;
+        }
         // Flatten any transparency onto white, as paper is.
         $flat = imagecreatetruecolor(imagesx($image), imagesy($image));
         if ($flat === false) {
@@ -129,14 +142,14 @@ final class GdImagePreparer implements ImagePreparer
     }
 
     /**
-     * The darkest and lightest 1% clipped and the rest spread over the full
+     * The darkest 0.1% and lightest 1% clipped and the rest spread over the full
      * range: a GD brightness shift then contrast, both done in C. Left alone
-     * when it already spans nearly all of it, or is flat (a blank page).
+     * when ink and paper are already far apart, or it is flat (a blank page).
      */
     public static function stretch(GdImage $image): void
     {
         [$low, $high] = self::percentiles(self::thumbnail($image));
-        if ($high - $low < 8 || $high - $low >= 240) {
+        if ($high - $low < 8 || $high - $low >= self::GOOD_CONTRAST) {
             return;
         }
         $factor = 255 / ($high - $low);
@@ -147,7 +160,7 @@ final class GdImagePreparer implements ImagePreparer
     }
 
     /**
-     * The grey levels below which 1% and 99% of the pixels lie.
+     * The grey levels below which 0.1% and 99% of the pixels lie.
      *
      * @return array{int, int}
      */
@@ -167,7 +180,7 @@ final class GdImagePreparer implements ImagePreparer
         $sum = 0;
         for ($v = 0; $v < 256; $v++) {
             $sum += $histogram[$v];
-            if ($sum >= $total * self::CLIP) {
+            if ($sum >= $total * self::CLIP_DARK) {
                 $low = $v;
                 break;
             }
@@ -175,7 +188,7 @@ final class GdImagePreparer implements ImagePreparer
         $sum = 0;
         for ($v = 255; $v >= 0; $v--) {
             $sum += $histogram[$v];
-            if ($sum >= $total * self::CLIP) {
+            if ($sum >= $total * self::CLIP_LIGHT) {
                 $high = $v;
                 break;
             }
@@ -341,8 +354,8 @@ final class GdImagePreparer implements ImagePreparer
     }
 
     /**
-     * Ink versus paper: halfway between the image's 1st and 99th
-     * percentile grey.
+     * Ink versus paper: halfway between the image's darkest 0.1% and its
+     * lightest 1%.
      */
     private static function threshold(GdImage $image): int
     {

@@ -429,6 +429,8 @@ DemoRoutes::BLOCKED or to DEMO_ALLOWED in this test:
             'settings.jobs.run.status' => InstanceAbility::RunJobs,
             'settings.jobs.run_now' => InstanceAbility::RunJobs,
             'settings.jobs.started' => InstanceAbility::RunJobs,
+            // Phase 53.1: reading text from images, with or without AI.
+            'settings.ocr' => InstanceAbility::ManageAi,
             'settings.updates' => InstanceAbility::RunJobs,
             'notices.dismiss' => InstanceAbility::RunJobs,
             // Phase 36.1: the email server.

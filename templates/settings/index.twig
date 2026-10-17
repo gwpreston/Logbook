@@ -144,6 +144,9 @@
                         {% endif %}
                     {% endif %}
                     {{ settings.row(url_for('diagnostics.deep-link'), 'speed', 'home.status_deep_link'|trans, 'home.status_deep_link_hint'|trans) }}
+                    {% if not ai.enabled and can_instance('manage_ai') %}
+                        {{ settings.row(url_for('settings.ocr'), 'document_scanner', 'ocr.title'|trans, 'ocr.link_hint'|trans) }}
+                    {% endif %}
                 </ul>
             </div>
         </section>

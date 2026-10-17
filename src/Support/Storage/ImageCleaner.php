@@ -230,9 +230,13 @@ final class ImageCleaner
         return $image;
     }
 
-    private static function makeRoomFor(int $pixels): void
+    /**
+     * Raises PHP's memory limit, if it is set lower, to hold $copies decoded
+     * images of $pixels each at once (OCR's preparation holds up to three).
+     */
+    public static function makeRoomFor(int $pixels, int $copies = 1): void
     {
-        $needed = $pixels * self::BYTES_PER_PIXEL + memory_get_usage() + 32 * 1024 * 1024;
+        $needed = $pixels * self::BYTES_PER_PIXEL * $copies + memory_get_usage() + 32 * 1024 * 1024;
         $limit = self::bytes((string) ini_get('memory_limit'));
         if ($limit !== -1 && $limit < $needed) {
             @ini_set('memory_limit', (string) $needed);
