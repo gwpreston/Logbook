@@ -1,5 +1,9 @@
 # Single sign-on
 
+Single sign-on with Authelia, Authentik or Keycloak, and header sign-in behind a forward-auth proxy.
+
+**For:** admins who already run an identity provider or forward-auth proxy.
+
 From 2.3.0 Logbook can sign people in with the identity provider you
 already run: **Authelia**, **Authentik** or **Keycloak**, or any other
 provider that speaks standard OpenID Connect. The sign-in page gets a
@@ -584,3 +588,7 @@ break-glass links.
 
 The `docker/sso/` folder has the Docker Compose files used to check
 Logbook against each provider ([docker/sso/README.md](../docker/sso/README.md)).
+
+---
+
+[Back to the docs index](README.md)

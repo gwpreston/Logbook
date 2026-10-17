@@ -5592,6 +5592,15 @@ whole group off: every API path answers 404.
   (`2026-09-29T07:42:00Z`); calendar dates are `YYYY-MM-DD`. Codes
   (fuel, grade, category, status) are the app's enum values. A field with
   no value is `null`, never left out, except the amounts below.
+- **Unknown values** (decided 2026-10-17, #479, K8): every enum the API,
+  its webhooks and the MCP tools return may gain values in any release
+  (History kinds, reminder sources, webhook kinds, attachment owner types,
+  reading sources, cost groups, …). Adding one is not a breaking change
+  and needs no new API version; the CHANGELOG lists it. A client must
+  accept a value it doesn't know, ignoring it or showing it as it is.
+  `docs/api.md` *Unknown values* and the OpenAPI description say so once
+  for every field. Renaming or removing a value is a breaking change, which
+  open question #460 covers.
 - The summary also carries `display`: its figures formatted in the key
   owner's units, locale and currency ("48,730 mi", "52.1 mpg"), for
   sensors that just show text: `odometer`, `economy` (the vehicle's
@@ -10549,6 +10558,69 @@ Real environment variables override `.env`; an empty value counts as unset.
   Docker image inside an LXC container (the route it leads with, #219) and
   running PHP 8.4 natively in one, each with backups and updates. Docs
   only: no install script (#218).
+- **README and docs** (Phase 52, decided 2026-10-17, #473–#478). The
+  README is for someone **deciding whether to try Logbook**: who it's
+  for, what it looks like, how to try it, and where each guide is, in
+  about 120 lines (#473). Nothing in it is the only place a fact lives;
+  details belong in `docs/`, `CONTRIBUTING.md` or `CHANGELOG.md`.
+  - *Order:* who it's for; screenshots; a quick start (Docker with
+    PostgreSQL, one container with SQLite, plain PHP 8.4), each ending
+    with the same four steps (first visit, create the admin, add a
+    vehicle, log a fill-up); features as one line per group, linking to
+    the group in `docs/features.md`; documentation by audience;
+    configuration in three lines; upgrading; licence; contributing.
+  - *Status line:* only the version, linking to `CHANGELOG.md`. A release
+    updates the version there instead of adding to a feature list, and
+    adds new features to `docs/features.md`.
+  - *Who it's for* (§3): people who self-host, run a household's cars and
+    bikes (one vehicle or several), want their records on their own
+    server and want more than a fuel app. Not fleet operators with
+    drivers and cost centres, and not people who want a hosted service.
+  - *Feature groups,* the same in the README, `docs/features.md` and
+    `docs/README.md`: (1) garage, people and sharing
+    (`users-and-sharing.md`, `sso.md`); (2) fuel, charging and economy
+    (`stations.md`); (3) maintenance, tyres, parts and issues
+    (`issues.md`, `parts.md`); (4) documents, renewals and MOT history
+    (`mot-history.md`); (5) costs, reports and finance (`reports.md`,
+    `finance.md`, `trips.md`, `sale-pack.md`); (6) incidents and claims
+    (`incidents.md`); (7) reminders and notifications
+    (`notification-channels.md`); (8) AI, the API and MCP (`ai.md`,
+    `api.md`, `mcp.md`); (9) import, backup and the phone app
+    (`import.md`, `import-tracktor.md`, `deployment.md`). The install and
+    admin guides (`configuration.md`, `reverse-proxies.md`,
+    `proxmox-lxc.md`, `demo-mode.md`) and `translations.md` aren't
+    features; they are linked from *Quick start*, *Documentation* and the
+    index.
+  - *Contributor material* (the stack, `composer` commands,
+    `bin/dev-setup.sh`, tests, assets, translations, the layout) lives in
+    `CONTRIBUTING.md`, with the release steps (#478).
+  - *The docs:* Markdown on GitHub, no generated site (#477, parked in
+    §12). `docs/README.md` is the index, by audience, and links every
+    guide; `docs/getting-started.md` covers the first run after install.
+    Every guide opens with what it covers and who it's for, has a table
+    of contents when it has more than four sections, and ends with a link
+    back to the index. The docs are English; the app's strings stay
+    translated.
+  - *Screenshots* live in `docs/images/`, named by page, viewport and
+    theme (`dashboard-desktop-light.png`). `npm run screenshots`
+    (`bin/screenshots.mjs`, Playwright, maintainer-only like
+    `bin/vendor-assets.mjs`; #474) builds the image, starts it on SQLite
+    with the demo seed (`DEMO_MODE` to seed, then restarted with it off,
+    so no demo banner shows), stores a kept *Ask Logbook* conversation
+    from Logbook's own tools so no model is called, and captures the
+    dashboard, a vehicle's overview, the fuel log, *Add fill-up*,
+    *Coming up*, a cost report, *Needs attention* and *Ask Logbook*
+    (#475) at 1440×900 and 390×844, light and dark. Only demo-seed data,
+    never a real install; the demo seed's dates are relative to today.
+    It fails when any image is over 300 KB. There is no public demo
+    link (#476): the screenshots and `bin/dev-setup.sh
+    --with-sample-data` are the try-before-you-install path. The
+    screenshots are re-made before each release.
+  - *Checks:* `php bin/tools/check-docs.php`, run in CI, fails when a
+    relative link, anchor or image in the README, `CONTRIBUTING.md` or
+    `docs/**/*.md` doesn't resolve, a guide in `docs/` isn't linked from
+    `docs/README.md`, or an image in `docs/images/` isn't used.
+    `docs/phases/` is exempt (the test suite still checks its links).
 
 ---
 
@@ -10645,6 +10717,10 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Registration plates (Phase 34.1, #200): styles for other countries,
   Germany's white plate with a blue EU band and "D" first. Every region
   but GB gets the neutral plate meanwhile.
+- A docs website (Phase 52, #477): a static site generated from `docs/`
+  (MkDocs or similar) on GitHub Pages. The docs stay Markdown on GitHub,
+  with `docs/README.md` as the index, and `bin/tools/check-docs.php`
+  keeps them ready to become one.
 - Page budgets (Phase 41.7, #351): bring the dashboard and the overview
   from 60 queries to 30, by serving the reminder sync's and the activity
   feed's own reads from the lists a page has already read.
@@ -11301,6 +11377,17 @@ task breakdowns live in the per-phase files; this is the map.
   named, conversions rounded once and a later backup's photos (K21); a
   binary file refused on the CSV import (K61). No migration. Release
   v3.16.1. See [`phase-51.4.md`](docs/phases/phase-51.4.md).
+- **Phase 52 — The README and the docs, for someone deciding.** A short
+  README (who it's for, screenshots, a quick start ending with a vehicle
+  and a fill-up, features in nine groups); the full feature list in
+  `docs/features.md`, contributor material and release steps in
+  `CONTRIBUTING.md`, a docs index and `docs/getting-started.md`;
+  screenshots from demo data by `npm run screenshots`; a docs checker in
+  CI (§10 *README and docs*; #473–#478 decided 2026-10-17). With it, the
+  docs-only known issues K8 (§7.20 *Unknown values*, #479), K15, K20 and
+  K60. No app
+  change and no migration; noted in the next release's changelog. See
+  [`phase-52.md`](docs/phases/phase-52.md).
 
 ---
 

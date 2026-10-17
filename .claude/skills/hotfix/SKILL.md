@@ -186,10 +186,10 @@ links yet; `/release` adds them.
 
 **VERSION**: `X.Y.Z`.
 
-**README.md**: only the version in `> **Status: vX.Y.Z.**`. A fix isn't a
-new capability, so no clause goes into the status paragraph (v1.2.1 added
-none). A new `docs/` guide would get a row in the *Documentation* table,
-but a hotfix shouldn't need one.
+**README.md**: only the version in `**Status: vX.Y.Z.**`. A fix isn't a
+new capability, so nothing goes into `docs/features.md`. A new `docs/`
+guide would get a row in `docs/README.md`, but a hotfix shouldn't need
+one.
 
 **Phase file**: tick every task except the tag item, set the status to
 `✅ complete · releases **vX.Y.Z**`. **ROADMAP.md**: the row ✅.

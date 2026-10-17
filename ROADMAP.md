@@ -108,7 +108,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | ✅ |
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
-| [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding | 📋 |
+| [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding | 🚧 |
 
 *Update the status column as each phase lands.*
 

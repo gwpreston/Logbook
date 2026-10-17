@@ -143,7 +143,9 @@ Then the phase's own bookkeeping, in the style of the last phases
 - **A phase that releases** (its title ends `+ vX.Y release`): the
   `CHANGELOG.md` section for every phase the release covers (under an empty
   `## [Unreleased]`, no compare links yet; `/release` adds them), `VERSION`,
-  the README status line and clause, docs guides. Copy the last release's
+  the README status line (the version only), the new features in
+  `docs/features.md`, docs guides (each listed in `docs/README.md`), and
+  the screenshots re-made if a page they show changed. Copy the last release's
   house style (`git show v<last> --stat`, its CHANGELOG section).
 - **A phase that doesn't release:** no `VERSION` or README bump. Follow how
   33.1–33.3 recorded their changes before 33.4 released them.

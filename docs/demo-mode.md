@@ -1,5 +1,9 @@
 # Running a public demo
 
+Running a public demo of Logbook that resets itself.
+
+**For:** anyone hosting a demo for others to try; not needed for a normal install.
+
 Demo mode (Phase 35.1) turns an **empty** Logbook installation into a demo
 that anyone can try: it starts with a sample garage, puts itself back to that
 sample every day, and keeps a stranger away from everything that could hurt
@@ -168,3 +172,7 @@ secret from a visitor asks `DemoMode::blocks(DemoRestriction)` first, and every
 route declares whether the demo allows it (`DemoRoutes::BLOCKED`, and the
 route inventory test makes a new route choose). `spec.md` §7.36 is the
 specification.
+
+---
+
+[Back to the docs index](README.md)

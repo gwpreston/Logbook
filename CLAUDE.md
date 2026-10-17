@@ -96,7 +96,7 @@ vendor/bin/phinx seed:run -e development
 
 docker compose up -d             # full stack (app + db)
 docker compose -f docker-compose.dev.yml up   # dev with hot reload of templates
-bin/dev-setup.sh [--mysql|--mariadb|--sqlite] [--with-sample-data] [--reset] [--stop] # dev stack helper (see README)
+bin/dev-setup.sh [--mysql|--mariadb|--sqlite] [--with-sample-data] [--reset] [--stop] # dev stack helper (see CONTRIBUTING.md)
 ```
 
 Wire these up in `composer.json` scripts so they exist as named commands.

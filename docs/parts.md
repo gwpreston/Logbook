@@ -1,5 +1,9 @@
 # Parts and modifications
 
+Parts and modifications: what was fitted and what came off, warranties, and build spend.
+
+**For:** anyone tracking the parts on a vehicle or a modified car.
+
 Keep track of what is on the car: the **parts** (which clutch, its part
 number, where it was bought, when it went on and at what mileage, what came
 off, and whether it is still under warranty) and the **modifications** (a
@@ -230,3 +234,7 @@ with its own version, then upgrade.
   is never in a cost per mile ([AI](ai.md), [MCP](mcp.md)).
 - **CSV:** the *Parts* tab exports `modifications.csv`, `parts.csv` and
   `part-fittings.csv` (one row per spell on the car). They can't be imported.
+
+---
+
+[Back to the docs index](README.md)

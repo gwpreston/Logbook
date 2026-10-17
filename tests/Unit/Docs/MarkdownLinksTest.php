@@ -68,6 +68,23 @@ final class MarkdownLinksTest extends TestCase
         ], $problems);
     }
 
+    public function testHtmlImageAndPictureTargetsAreChecked(): void
+    {
+        $this->write('sub/target.md', "# Target\n");
+        $this->write('page.md', implode("\n", [
+            '# Page',
+            '<picture><source media="(prefers-color-scheme: dark)" srcset="sub/target.md 1x, sub/gone-dark.png 2x">',
+            '<img src="sub/gone.png" alt="x" width="300"></picture>',
+            '<a href="sub/target.md#target">fine</a> <a href="https://example.com/x.png">web</a>',
+            '`<img src="in-code.png">` is not a link.',
+        ]));
+
+        self::assertSame([
+            'page.md:2: sub/gone-dark.png — no such file',
+            'page.md:3: sub/gone.png — no such file',
+        ], (new MarkdownLinks())->broken($this->dir . '/page.md', $this->dir));
+    }
+
     /**
      * @return iterable<string, array{string, string}>
      */

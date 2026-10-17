@@ -117,9 +117,11 @@ doesn't describe is a finding, whichever side is "right".
   `docs/incidents.md`, `docs/translations.md`, `docs/deployment.md`,
   `docs/reverse-proxies.md`, `docs/proxmox-lxc.md`.
 - New `bin/` commands are documented with their arguments and exit codes.
-- Links between docs resolve (`tests/Unit/Docs` covers some — run
-  `vendor/bin/phpunit tests/Unit/Docs`).
-- README feature list and status line still true.
+- Links between docs resolve, every guide is in `docs/README.md` and every
+  screenshot is used (`php bin/tools/check-docs.php`; `tests/Unit/Docs`
+  covers the rest of the repository's links).
+- README status line still true (the version only); new features are in
+  `docs/features.md` (spec §10 *README and docs*).
 
 ### Translations (§11.4)
 - New user-facing strings are keys in `translations/`, present in every

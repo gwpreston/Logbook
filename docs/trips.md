@@ -1,5 +1,9 @@
 # Trips and mileage claims
 
+Business trips and mileage claims: logging, rates and the claim report.
+
+**For:** anyone who claims business mileage.
+
 Log the business journeys you may claim for, and Logbook works out the
 rest: your private mileage, the claim's value at the approved rates, what
 your employer paid, and whether the allowance covers what the car costs to
@@ -231,3 +235,7 @@ went is personal, so:
   are not covered.
 - Logbook never looks up distances or addresses with a map service, and
   never sends a claim anywhere. Your trips stay on your server.
+
+---
+
+[Back to the docs index](README.md)

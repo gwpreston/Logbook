@@ -72,11 +72,15 @@ class names.
 
 **VERSION** holds `X.Y.Z` (no `v`).
 
-**README.md**
-- `> **Status: vX.Y.Z.**` in the blockquote near the top.
-- One clause per new phase added to that status paragraph, before
-  `in English and German`, in the same style as the clauses before it.
-- A row in the *Documentation* table for each new `docs/*.md` guide.
+**README.md** (spec §10 *README and docs*, from Phase 52)
+- Only the version in `**Status: vX.Y.Z.**` near the top. No feature
+  clauses: the README has no feature list any more.
+- **docs/features.md** gets the release's new features, each in its group
+  and linking to its guide. A new `docs/*.md` guide gets a row in
+  `docs/README.md` (the index); `php bin/tools/check-docs.php` fails
+  without it.
+- Re-make the screenshots (`npm run screenshots`, CONTRIBUTING.md
+  *Docs and screenshots*) when the release changes a page they show.
 
 **ROADMAP.md** rows ✅; **phase files** say `Status: ✅ complete · released
 as **vX.Y.Z**`.

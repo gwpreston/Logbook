@@ -1,5 +1,9 @@
 # Logbook on Proxmox VE (LXC)
 
+Running Logbook in a Proxmox VE container, with Docker or native PHP.
+
+**For:** Proxmox users installing Logbook.
+
 Two ways to run Logbook in a Proxmox container, each from a new container to
 a backed-up, updatable install:
 
@@ -400,3 +404,7 @@ A shell in the container: `pct enter 200` on the host, or the container's
   `/var/log/nginx/error.log`, and `journalctl -u php8.4-fpm`.
 - Either way, **Settings → Jobs** shows whether scheduled tasks run, and
   `<your URL>/health` whether the app and database answer.
+
+---
+
+[Back to the docs index](README.md)

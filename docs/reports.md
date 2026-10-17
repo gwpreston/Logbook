@@ -4,11 +4,21 @@
 made of, and why it changed from one year to the next.* Added in v2.16.0
 (Phase 32; the full rules are in [`spec.md`](../spec.md) §7.35).
 
+**For:** anyone reading the true cost figures on the dashboard, the overview or Reports.
+
 Logbook already works out each vehicle's **cost of ownership**: its running
 costs plus what it has lost in value since you bought it (the overview's
 *Cost of ownership* card and **Reports → Cost of ownership**). True cost
 splits that figure per mile or km into its parts and works it out for
 other periods too.
+
+- [The parts](#the-parts)
+- [Distance starts at the purchase date](#distance-starts-at-the-purchase-date)
+- [The periods](#the-periods)
+- [Where it shows](#where-it-shows)
+- [How it's worked out](#how-its-worked-out)
+- [What changed](#what-changed)
+- [Not included](#not-included)
 
 ## The parts
 
@@ -177,3 +187,7 @@ the causes out itself, and the usual grounding check applies to its answer.
 - Comparisons with other people's cars or published averages.
 - UK tax years beside calendar years, and treating depreciation as
   mileage-based. Both are noted for later (`spec.md` §12).
+
+---
+
+[Back to the docs index](README.md)

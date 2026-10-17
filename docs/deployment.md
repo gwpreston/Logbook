@@ -1,5 +1,9 @@
 # Deploying Logbook
 
+Installing and running Logbook with Docker or plain PHP, behind a proxy, on a phone, with backups and upgrades.
+
+**For:** whoever installs and runs Logbook.
+
 Logbook runs two ways: as a **Docker image** with one persistent volume, or on
 an **ordinary PHP 8.4 web server**. Both use the same environment variables
 (see [`.env.example`](../.env.example) and `spec.md` §9).
@@ -639,3 +643,7 @@ release's upgrade notes say what).
 
 New environment variables always have a default that keeps the old behaviour,
 so an existing `.env` keeps working.
+
+---
+
+[Back to the docs index](README.md)

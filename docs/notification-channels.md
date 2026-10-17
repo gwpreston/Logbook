@@ -1,5 +1,9 @@
 # Notification channels
 
+Where reminders are sent: email, ntfy, Gotify, Telegram, Discord, Pushover, Mattermost, Slack and webhooks.
+
+**For:** everyone choosing where their reminders go, and admins setting up delivery.
+
 Reminders always appear in the app. When they come due (and again if they
 become overdue) the scheduled task also sends them through each recipient's
 **notification channels** (spec.md §7.11). A vehicle's recipients are its
@@ -22,6 +26,15 @@ even an admin, can see or change them.
 | `mattermost` | [Mattermost](#mattermost) incoming webhook | each person: *Webhook URL*, optional *Channel* |
 | `slack` | [Slack](#slack) from your own Slack app | each person: *Bot token*, *Channel* |
 | `webhook` | JSON `POST` to the server's URL | **deprecated**: `WEBHOOK_URL`; receives everyone's notifications |
+
+- [Account → Notifications](#account--notifications)
+- [Where members can send](#where-members-can-send)
+- [Upgrading to v3.3.0](#upgrading-to-v330)
+- [Email](#email)
+- [The services](#the-services)
+- [How it fits together](#how-it-fits-together)
+- [Adding a channel](#adding-a-channel)
+- [What is sent, and when](#what-is-sent-and-when)
 
 ## Account → Notifications
 
@@ -514,3 +527,7 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   insights (in the text and the JSON); distances and open issues stay.
   A member's own channels, their personal webhook included, get the
   whole digest.
+
+---
+
+[Back to the docs index](README.md)

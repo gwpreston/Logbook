@@ -1,9 +1,19 @@
 # Importing from CSV and from Fuelio
 
+Importing records from CSV files and from Fuelio.
+
+**For:** anyone bringing history from a spreadsheet, Fuelio or another Logbook.
+
 Each vehicle tab (Mileage, Fuel, Maintenance, Documents, Expenses, and Trips
 when the trips module is on) has an
 **Import CSV** button next to **Export CSV**. Use it to move records in from a
 spreadsheet, another app, or another Logbook.
+
+- [How it works](#how-it-works)
+- [What happens to each row](#what-happens-to-each-row)
+- [Values](#values)
+- [Fields per list](#fields-per-list)
+- [From Fuelio](#from-fuelio)
 
 ## How it works
 
@@ -188,3 +198,7 @@ whole file lands or nothing does.
 Logbook remembers each imported row by Fuelio's own id. Importing a newer
 export of the same car adds only what's new, even if you've edited the
 imported entries since. Deleted ones aren't brought back.
+
+---
+
+[Back to the docs index](README.md)

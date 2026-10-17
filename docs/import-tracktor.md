@@ -1,5 +1,9 @@
 # Importing from Tracktor
 
+Bringing a whole Tracktor garage into Logbook.
+
+**For:** anyone moving from Tracktor.
+
 [Tracktor](https://github.com/javedh-dev/tracktor) is a self-hosted
 vehicle tracker. Logbook reads its export and brings your whole garage
 across in one go: every vehicle, fill-up, service record, document and
@@ -9,6 +13,12 @@ Tracktor's uploads folder. Logbook isn't affiliated with Tracktor.
 The import is on **Settings → Import from another app**, the same page as
 Fuelio's ([import.md](import.md#from-fuelio)). It needs the fuel module on,
 and `Manage` on every vehicle it writes to.
+
+- [Exporting from Tracktor](#exporting-from-tracktor)
+- [On the web page](#on-the-web-page)
+- [On the command line](#on-the-command-line)
+- [What comes across, and what doesn't](#what-comes-across-and-what-doesnt)
+- [Importing a newer export later](#importing-a-newer-export-later)
 
 ## Exporting from Tracktor
 
@@ -115,3 +125,7 @@ Logbook remembers each imported row by Tracktor's own id, and each
 vehicle too. Importing a newer export adds only what's new, into the same
 vehicles, even if you've edited the imported entries since. Deleted ones
 aren't brought back.
+
+---
+
+[Back to the docs index](README.md)

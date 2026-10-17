@@ -1,5 +1,9 @@
 # Finance and lease agreements
 
+Hire purchase, PCP, loan and lease agreements: entering one, what each figure means, and ending it.
+
+**For:** anyone whose vehicle is on finance or a lease.
+
 If your car is on hire purchase, PCP, a personal loan or a lease, you can
 type the agreement into Logbook from its paperwork. From those figures
 Logbook works out:
@@ -344,3 +348,7 @@ activity*.
 - **Backups** carry agreements, their payment marks and extra payments,
   and settlement quotes. `bin/export-user.php` carries those of your own
   vehicles.
+
+---
+
+[Back to the docs index](README.md)

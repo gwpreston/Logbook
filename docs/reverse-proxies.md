@@ -1,5 +1,9 @@
 # Reverse proxies
 
+Putting Logbook behind nginx, Apache, Caddy or Traefik, at the root or a subpath, with HTTPS.
+
+**For:** whoever runs Logbook behind a reverse proxy.
+
 How to put Logbook behind **nginx**, **Apache**, **Caddy** or **Traefik**,
 at the root of its own domain (`https://logbook.example.com/`) or at a
 subpath of another one (`https://example.com/logbook/`), with HTTPS.
@@ -289,3 +293,7 @@ overlay in `docker/smoke/` removes the certificate resolver, so CI never asks
 Let's Encrypt for a name it can't have, and Traefik serves its default
 certificate. Nothing else is changed. CI runs all four on every change, in
 the same job as the nginx tests.
+
+---
+
+[Back to the docs index](README.md)
