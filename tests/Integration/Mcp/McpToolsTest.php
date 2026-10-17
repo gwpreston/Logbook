@@ -176,6 +176,12 @@ final class McpToolsTest extends AppTestCase
         self::assertTrue($byName->get('log_fill_up', 'annotations', 'idempotentHint'));
         self::assertFalse($byName->get('draft_expense', 'annotations', 'readOnlyHint'));
         self::assertStringNotContainsString('card', $byName->string('log_fill_up', 'description'));
+        // K68: MCP's running cost tools say what Ask's do about build spend (#441).
+        $fields = ['costs' => 'running_total', 'cost_per_distance' => 'build_total', 'vehicle_summary' => 'build_total'];
+        foreach ($fields as $tool => $field) {
+            self::assertStringContainsString($field, $byName->string($tool, 'description'), $tool);
+        }
+        self::assertStringNotContainsString('all costs divided', $byName->string('cost_per_distance', 'description'));
 
         $noFuel = $this->createApp(['FEATURES_FUEL' => 'false']);
         $names = McpClient::result((new McpClient($noFuel, $this->apiKey($noFuel, $owner)))

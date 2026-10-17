@@ -89,7 +89,8 @@ questions below are decided; in outline:
 
 ### 50.2.0 Spec first
 - [x] Open questions A–G decided by the owner and logged in
-      `open-questions.md` (#437–#443).
+      `open-questions.md` (#437–#443), and the four found while starting
+      (#444–#447) decided the same way (K34).
 - [x] §7.39, §7.6, §7.19, §7.20, §7.26, §7.27, §7.28, §7.7 CSV, §13.
 
 ### 50.2.1 Warranty reminders

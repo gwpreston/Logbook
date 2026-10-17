@@ -5360,7 +5360,6 @@ return [
                 'soon' => 'Tyres due for replacing soon',
                 'overdue' => 'Tyres due for replacing now',
             ],
-            'in_warranty' => 'In warranty until {limits}',
         ],
         // Drafting entries (Phase 26.3, spec.md §7.26).
         'draft' => [
@@ -5546,10 +5545,10 @@ return [
         'instructions' => 'Logbook keeps the user\'s vehicles: fuel, mileage, maintenance, documents, tyres, reminders, costs and trips. Use find_vehicles or the logbook://vehicles resource to get vehicle ids. Results carry raw values beside display strings in the user\'s units and currency: quote the display strings, and give the link when the user may want to see the page.',
         'tool' => [
             'find_vehicles' => 'Find the user\'s vehicles by name, make, model or registration, for their ids. Returns every match; when more than one matches, ask the user which they mean.',
-            'costs' => 'Money spent in a period: totals per currency, split by category (fuel, maintenance, compliance, other), by month or by vehicle, plus the distance driven. Leave vehicles out for all of them; use category to count only one kind of cost, e.g. fuel.',
-            'cost_per_distance' => 'Running cost per distance (all costs divided by the distance driven) in a period, per vehicle and for all vehicles together in each currency. Use it for "which car costs most per mile".',
+            'costs' => 'Money spent in a period: totals per currency, split by category (fuel, maintenance, compliance, other, and build for modifications), by month or by vehicle, plus the distance driven. Leave vehicles out for all of them; use category to count only one kind of cost, e.g. fuel. Modifications (build) are in the total but are not running costs: average_per_month and running_total leave them out.',
+            'cost_per_distance' => 'Running cost per distance (running costs divided by the distance driven) in a period, per vehicle and for all vehicles together in each currency. Modifications are not running costs and are left out of the rate; each total is the running total the rate divides, and build_total (modifications) is given beside it as its own figure, so say both. Use it for "which car costs most per mile".',
             'maintenance' => 'A vehicle\'s maintenance records (services, oil changes, repairs, …), newest first. Filter by category, by words in the title, vendor or notes, and by period.',
-            'vehicle_summary' => 'An overview of one vehicle: latest odometer reading, age, fuel economy, running cost per distance over the last 12 months, and the next thing due.',
+            'vehicle_summary' => 'An overview of one vehicle: latest odometer reading, age, fuel economy, running cost per distance over the last 12 months, and the next thing due. Modifications are not running costs and are left out of the running cost; build_total (modifications) is given beside it as its own figure, so say both.',
             'fuel_stats' => 'Fuel (or charging) in a period: fill-ups, volume, spend, average price per unit and economy in the user\'s unit, split by fuel grade, and whether a grade is worth it. Leave vehicle out for every vehicle.',
             'last_done' => 'When a job was last done on a vehicle (date and odometer), by category (e.g. oil) or by a maintenance schedule\'s id or title, and when the schedule is next due.',
             'mileage' => 'Distance driven in a period, from odometer readings, per vehicle and in total; the average per month and per year over the whole mileage log, and the latest reading. Leave vehicle out for every vehicle.',

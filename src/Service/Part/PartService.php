@@ -220,7 +220,17 @@ final readonly class PartService
      */
     public function distance(Vehicle $vehicle, array $fittings, DateTimeZone $zone): PartDistance
     {
-        return PartDistance::of($fittings, $this->currentKm($vehicle), LocalTime::today($this->clock, $zone));
+        return $this->distanceAt($fittings, $this->currentKm($vehicle), $zone);
+    }
+
+    /**
+     * As distance(), with the vehicle's latest reading already read, for a list of its parts (K31).
+     *
+     * @param list<PartFitting> $fittings oldest first
+     */
+    public function distanceAt(array $fittings, ?string $currentKm, DateTimeZone $zone): PartDistance
+    {
+        return PartDistance::of($fittings, $currentKm, LocalTime::today($this->clock, $zone));
     }
 
     /**
@@ -228,7 +238,17 @@ final readonly class PartService
      */
     public function warranty(Vehicle $vehicle, Part $part, array $fittings, DateTimeZone $zone): ?PartWarranty
     {
-        return PartWarranty::of($part, $fittings, $this->currentKm($vehicle), LocalTime::today($this->clock, $zone));
+        return $this->warrantyAt($part, $fittings, $this->currentKm($vehicle), $zone);
+    }
+
+    /**
+     * As warranty(), with the vehicle's latest reading already read, for a list of its parts (K31).
+     *
+     * @param list<PartFitting> $fittings oldest first
+     */
+    public function warrantyAt(Part $part, array $fittings, ?string $currentKm, DateTimeZone $zone): ?PartWarranty
+    {
+        return PartWarranty::of($part, $fittings, $currentKm, LocalTime::today($this->clock, $zone));
     }
 
     /**

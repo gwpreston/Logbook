@@ -20,6 +20,7 @@ use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Part\Modification;
 use Logbook\Domain\Part\Part;
 use Logbook\Domain\Part\PartStatus;
+use Logbook\Domain\Part\WarrantyStart;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\ModificationRepository;
@@ -397,6 +398,43 @@ final class PartsTest extends AppTestCase
         self::assertStringContainsString('LuK Clutch kit', $confirm);
         self::assertSame(303, $browser->post($v . '/maintenance/' . $record->id . '/delete', [])->getStatusCode());
         self::assertSame(PartStatus::Stored, $this->parts($app, $golf)['Clutch kit']->status, 'the part stays');
+    }
+
+    /**
+     * K37, #482: a new part's form has *Purchase date* chosen in *Warranty starts from*; an edit
+     * shows what's stored. Saved with no bought-on date, the warranty runs from the first fitting.
+     */
+    public function testANewPartsWarrantyStartsFromThePurchaseDateUnlessChanged(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $v = '/vehicles/' . $golf->id;
+
+        $form = self::body($browser->get($v . '/parts/new'));
+        self::assertMatchesRegularExpression('/name="warranty_from" value="purchase"[^>]* checked/', $form);
+        self::assertDoesNotMatchRegularExpression('/name="warranty_from" value="fitting"[^>]* checked/', $form);
+
+        $added = $browser->post($v . '/parts/new', [
+            'name' => 'Battery', 'condition' => 'new', 'warranty_months' => '24', 'warranty_from' => 'purchase',
+            'on_car' => '1', 'fit_on' => '2026-02-10', 'fit_odometer' => '30000',
+        ]);
+        self::assertSame(303, $added->getStatusCode());
+        $battery = $this->parts($app, $golf)['Battery'];
+        self::assertSame(WarrantyStart::Purchase, $battery->data->warrantyFrom);
+        $service = $this->service($app, PartService::class);
+        $fittings = $service->fittingsFor([$battery])[$battery->id] ?? [];
+        $warranty = $service->warranty($golf, $battery, $fittings, new DateTimeZone('Europe/London'));
+        self::assertSame('2028-02-10', $warranty?->until?->format('Y-m-d'), 'no bought-on date: from the first fitting');
+
+        $browser->post($v . '/parts/new', [
+            'name' => 'Wipers', 'condition' => 'new', 'warranty_months' => '12', 'warranty_from' => 'fitting',
+        ]);
+        $wipers = $this->parts($app, $golf)['Wipers'];
+        $edit = self::body($browser->get($v . '/parts/' . $wipers->id . '/edit'));
+        self::assertMatchesRegularExpression('/name="warranty_from" value="fitting"[^>]* checked/', $edit, 'what is stored');
+        self::assertDoesNotMatchRegularExpression('/name="warranty_from" value="purchase"[^>]* checked/', $edit);
     }
 
     public function testFitRemoveAndRevert(): void

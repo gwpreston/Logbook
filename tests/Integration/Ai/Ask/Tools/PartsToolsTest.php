@@ -7,6 +7,8 @@ namespace Logbook\Tests\Integration\Ai\Ask\Tools;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Ai\AiTaskName;
+use Logbook\Domain\Ai\Capability;
 use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\Part\ModificationData;
 use Logbook\Domain\Part\PartData;
@@ -21,7 +23,13 @@ use Logbook\Service\Part\PartRemoval;
 use Logbook\Service\Part\PartService;
 use Logbook\Service\Part\RecordParts;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Units\UnitPreset;
+use Logbook\Domain\Api\ApiScope;
+use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\JsonDoc;
+use Logbook\Tests\Support\McpClient;
+use Logbook\Tests\Support\QueryCounter;
 
 /**
  * `modifications`, `parts` and `draft_modification` (Phase 50.2, spec.md §7.26, §7.39, #441): the
@@ -30,6 +38,8 @@ use Logbook\Tests\Support\JsonDoc;
  */
 final class PartsToolsTest extends ToolsBTestCase
 {
+    use ApiFixtures;
+
     public function testModificationsWithTheirPartsAndTheCostOnlyForThoseWhoSeeCosts(): void
     {
         [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true']);
@@ -134,6 +144,93 @@ final class PartsToolsTest extends ToolsBTestCase
             ->insert($golf->id, $member->id, ShareLevel::Log, false, false, new DateTimeImmutable('2026-10-01'));
         $theirs = new JsonDoc($this->toolResult($app, $member, 'parts', ['vehicles' => [$golf->id]])->data);
         self::assertNull($theirs->get('rows', 0, 'price'), 'no price without Can see costs');
+    }
+
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function warrantyWords(): iterable
+    {
+        yield 'English' => ['en_GB', 'Warranty ended 1 Jan 2025', 'In warranty until 1 Mar 2028 or 100,000 km'];
+        yield 'German' => ['de_DE', 'Garantie endete am 01.01.2025', 'Garantie bis 01.03.2028 oder 100.000 km'];
+    }
+
+    /**
+     * K17: the tool words a warranty with the part page's strings, so German has no English "or" and
+     * an ended warranty keeps its end date.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('warrantyWords')]
+    public function testAWarrantyIsWordedAsThePartPageWordsIt(string $locale, string $ended, string $both): void
+    {
+        $metric = UnitPreset::Metric;
+        [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true'], new DisplayPreferences(
+            $locale,
+            'Europe/London',
+            $metric->distance(),
+            $metric->volume(),
+            $metric->consumption(),
+            'GBP',
+        ));
+        $golf = $this->vehicle($app);
+        $zone = new DateTimeZone('Europe/London');
+        $day = static fn (string $date): DateTimeImmutable => LocalTime::parseDate($date) ?? throw new \LogicException($date);
+        $parts = $this->service($app, PartService::class);
+        $parts->create($golf, new PartData(
+            'Battery',
+            boughtOn: $day('2024-01-01'),
+            warrantyMonths: 12,
+            warrantyFrom: WarrantyStart::Purchase,
+        ), $zone, fitOn: $day('2024-01-02'), fitKm: '30000.000');
+        $parts->create($golf, new PartData(
+            'Clutch kit',
+            boughtOn: $day('2026-03-01'),
+            warrantyMonths: 24,
+            warrantyKm: '60000.000',
+            warrantyFrom: WarrantyStart::Purchase,
+        ), $zone, fitOn: $day('2026-03-05'), fitKm: '40000.000');
+
+        $rows = new JsonDoc($this->toolResult($app, $owner, 'parts', ['vehicles' => [$golf->id]])->data);
+        $display = [];
+        foreach ([0, 1] as $i) {
+            $display[$rows->string('rows', $i, 'name')] = $rows->string('rows', $i, 'warranty', 'display');
+        }
+        self::assertSame($ended, $display['Battery'], 'an ended warranty keeps its date');
+        self::assertSame($both, $display['Clutch kit'], 'both limits, joined by the translated "or"');
+    }
+
+    /**
+     * K31: the vehicle's latest reading is read once for its parts, not twice per part.
+     */
+    public function testThePartsToolReadsTheLatestOdometerOncePerVehicle(): void
+    {
+        $app = $this->aiApp(['FEATURES_PARTS' => 'true']);
+        $counter = QueryCounter::install($app);
+        $this->pinClock($app, self::NOW);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app, 'owner');
+        $connection = $this->network($app, 'Ollama on the desktop', 'http://192.168.1.20:11434/v1');
+        $this->assign($app, $connection, 'llama3.2:3b', AiTaskName::Ask, [Capability::Tools]);
+        $golf = $this->vehicle($app);
+        $zone = new DateTimeZone('Europe/London');
+        $on = LocalTime::parseDate('2026-03-05') ?? throw new \LogicException('date');
+        $parts = $this->service($app, PartService::class);
+        foreach (['Clutch kit', 'Battery', 'Wiper blades'] as $name) {
+            $parts->create($golf, new PartData($name, warrantyMonths: 24), $zone, fitOn: $on, fitKm: '40000.000');
+        }
+
+        $latest = static fn (array $sent): int => array_sum(array_filter(
+            $sent,
+            static fn (string $sql): bool => str_contains($sql, 'reading_km') && str_contains($sql, 'odometer_readings'),
+            ARRAY_FILTER_USE_KEY,
+        ));
+        $ask = $counter->histogram(fn () => $this->toolResult($app, $owner, 'parts', ['vehicles' => [$golf->id]]));
+        self::assertSame(1, $latest($ask), 'Ask: one latest-reading query for three parts');
+
+        $mcp = new McpClient($app, $this->apiKey($app, $owner, ApiScope::Read));
+        $call = $counter->histogram(static fn () => McpClient::result(
+            $mcp->modern('tools/call', ['name' => 'parts', 'arguments' => ['vehicles' => [$golf->id]]]),
+        ));
+        self::assertSame(1, $latest($call), 'MCP: the same');
     }
 
     public function testADraftModificationIsACardUntilAddAndHasNoParts(): void

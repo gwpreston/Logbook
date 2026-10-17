@@ -5894,6 +5894,7 @@ a.list__title:hover {
     .flashes,
     .outbox,
     .modal,
+    .demo-banner,
     .no-print {
         display: none !important;
     }

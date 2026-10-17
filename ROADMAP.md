@@ -110,7 +110,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
 | [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | ✅ |
-| [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | 📋 |
+| [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | 🚧 |
 | [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
@@ -1404,13 +1404,15 @@ regression test.*
 ---
 
 ## Phase 52.2 — More quick wins from the known-issues log: Parts polish and docs
-*Eight more small rows of the known-issues log closed: Parts polish and
-docs.*
+*Ten more small rows of the known-issues log closed: Parts polish and
+docs. To be released as v3.16.4, a patch (#486).*
 
 - Ask's `parts` tool words a warranty like the part page, in German too,
-  and keeps an ended warranty's date (K17); no gap under *For your
-  insurer* (K36); a new part's *Warranty starts from* has *Purchase
-  date* selected (K37, #482); the demo banner doesn't print (K38).
+  and keeps an ended warranty's date (K17), reading the mileage once per
+  vehicle (K31); the running cost tools say build spend is beside them
+  (K68); no gap under *For your insurer* (K36); a new part's *Warranty
+  starts from* has *Purchase date* selected (K37, #482); the demo banner
+  doesn't print (K38).
 - K1's and K3's questions logged, not decided (K30); spec §8 lists every
   printable page (K32); §7.24 covers undeclared modifications (K33);
   Phase 50.2's start task names #444–#447 (K34). No migration.

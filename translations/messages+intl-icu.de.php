@@ -5534,7 +5534,6 @@ return [
                 'soon' => 'Reifen bald zu ersetzen',
                 'overdue' => 'Reifen jetzt zu ersetzen',
             ],
-            'in_warranty' => 'In Garantie bis {limits}',
         ],
     ],
     // MCP-Server (Phase 26.5, spec.md §7.28).
@@ -5542,10 +5541,10 @@ return [
         'instructions' => 'Logbook verwaltet die Fahrzeuge des Nutzers: Tanken, Kilometerstand, Wartung, Dokumente, Reifen, Erinnerungen, Kosten und Fahrten. Fahrzeug-IDs liefern find_vehicles oder die Ressource logbook://vehicles. Ergebnisse enthalten Rohwerte neben Anzeigetexten in den Einheiten und der Währung des Nutzers: Zitiere die Anzeigetexte und nenne den Link, wenn der Nutzer die Seite sehen möchte.',
         'tool' => [
             'find_vehicles' => 'Findet die Fahrzeuge des Nutzers nach Name, Marke, Modell oder Kennzeichen, für ihre IDs. Liefert jeden Treffer; passen mehrere, frag den Nutzer, welches gemeint ist.',
-            'costs' => 'Ausgaben in einem Zeitraum: Summen je Währung, nach Kategorie (Kraftstoff, Wartung, Dokumente, Sonstiges), Monat oder Fahrzeug, dazu die gefahrene Strecke. Ohne vehicles für alle Fahrzeuge; mit category nur eine Kostenart, z. B. Kraftstoff.',
-            'cost_per_distance' => 'Laufende Kosten je Strecke (alle Kosten geteilt durch die gefahrene Strecke) in einem Zeitraum, je Fahrzeug und für alle Fahrzeuge zusammen je Währung. Für Fragen wie „welches Auto kostet je Kilometer am meisten“.',
+            'costs' => 'Ausgaben in einem Zeitraum: Summen je Währung, nach Kategorie (Kraftstoff, Wartung, Dokumente, Sonstiges und build für Umbauten), Monat oder Fahrzeug, dazu die gefahrene Strecke. Ohne vehicles für alle Fahrzeuge; mit category nur eine Kostenart, z. B. Kraftstoff. Umbauten (build) sind in der Summe, aber keine laufenden Kosten: average_per_month und running_total lassen sie weg.',
+            'cost_per_distance' => 'Laufende Kosten je Strecke (laufende Kosten geteilt durch die gefahrene Strecke) in einem Zeitraum, je Fahrzeug und für alle Fahrzeuge zusammen je Währung. Umbauten sind keine laufenden Kosten und bleiben aus dem Wert heraus; jede Summe ist die laufende Summe, die geteilt wird, und build_total (Umbauten) steht als eigene Zahl daneben, also nenne beide. Für Fragen wie „welches Auto kostet je Kilometer am meisten“.',
             'maintenance' => 'Die Wartungseinträge eines Fahrzeugs (Inspektionen, Ölwechsel, Reparaturen, …), neueste zuerst. Filter nach Kategorie, nach Wörtern in Titel, Werkstatt oder Notizen und nach Zeitraum.',
-            'vehicle_summary' => 'Überblick über ein Fahrzeug: letzter Kilometerstand, Alter, Verbrauch, laufende Kosten je Strecke der letzten 12 Monate und was als Nächstes fällig ist.',
+            'vehicle_summary' => 'Überblick über ein Fahrzeug: letzter Kilometerstand, Alter, Verbrauch, laufende Kosten je Strecke der letzten 12 Monate und was als Nächstes fällig ist. Umbauten sind keine laufenden Kosten und bleiben aus den laufenden Kosten heraus; build_total (Umbauten) steht als eigene Zahl daneben, also nenne beide.',
             'fuel_stats' => 'Tanken (oder Laden) in einem Zeitraum: Tankvorgänge, Menge, Ausgaben, Durchschnittspreis je Einheit und Verbrauch in der Einheit des Nutzers, nach Kraftstoffsorte, und ob sich eine Sorte lohnt. Ohne vehicle für alle Fahrzeuge.',
             'last_done' => 'Wann eine Arbeit an einem Fahrzeug zuletzt gemacht wurde (Datum und Kilometerstand), nach Kategorie (z. B. Öl) oder nach ID oder Titel eines Wartungsplans, und wann der Plan das nächste Mal fällig ist.',
             'mileage' => 'Gefahrene Strecke in einem Zeitraum aus den Kilometerständen, je Fahrzeug und gesamt; der Durchschnitt je Monat und Jahr über das ganze Fahrtenbuch und der letzte Stand. Ohne vehicle für alle Fahrzeuge.',

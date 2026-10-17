@@ -55,7 +55,8 @@ final readonly class VehicleSummary implements AskTool
         return new ToolDefinition(
             $this->name(),
             'An overview of one vehicle: latest odometer reading, age, fuel economy, running cost per distance '
-            . 'over the last 12 months, and the next thing due.',
+            . 'over the last 12 months, and the next thing due. Modifications are not running costs and are left '
+            . 'out of the running cost; build_total (modifications) is given beside it as its own figure, so say both.',
             [
                 'type' => 'object',
                 'properties' => [
@@ -135,6 +136,9 @@ final readonly class VehicleSummary implements AskTool
                 'total' => $section === null ? null : $this->kit->money($section->runningTotal()),
                 ...($section === null || !$section->hasBuild() ? [] : [
                     'build_total' => $this->kit->money($section->group(CostGroup::Build)),
+                    // K68: as `cost_per_distance` says it (#441).
+                    'note' => 'The total is running costs only: modifications are left out of it and of the rate, '
+                        . 'and are given as build_total.',
                 ]),
                 'distance' => $this->kit->distance($section?->distanceKm),
                 'cost_per_km' => $perKm === null ? null : Decimal::round($perKm, 4),
