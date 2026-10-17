@@ -582,6 +582,8 @@ raised #291–#295, also for 39.3. #296 was found while building 39.1, and #297 
 | 477 | [52](phase-52.md) | E. A docs website? | Decided | (1) No: Markdown on GitHub with `docs/README.md` as the index; a generated site is parked in spec §12. | 2026-10-17 |
 | 478 | [52](phase-52.md) | F. Where does the contributor material go? | Decided | (1) `CONTRIBUTING.md`, with a one-line link from the README. | 2026-10-17 |
 | 479 | [52](phase-52.md) | May the API's enums gain values, and how is a client told? (K8, logged per K30) | Decided | (1) A standing rule: any enum the API, webhooks or MCP return may gain values in any release, not a breaking change, listed in the CHANGELOG; clients must accept unknown values. Stated once in `docs/api.md` *Unknown values* and the OpenAPI description. Not chosen: a note per field; a version per new value. Renaming or removing a value stays with #460. spec §7.20. | 2026-10-17 |
+| 480 | [52.1](phase-52.1.md) | Should *Mark declared* on the insurer page skip the browser's date check too (K7 named both buttons)? | Decided | (1) Leave it: the browser blocks only dates the server would refuse, so *Mark* keeps its date check and only *Clear* has `formnovalidate`. Not chosen: `formnovalidate` on *Mark*. | 2026-10-17 |
+| 481 | [52.1](phase-52.1.md) | Is Phase 52.1 released on its own (v3.16.3) or with Phase 53.2? | Decided | (1) On its own as patch release v3.16.3, like Phase 51.4: the fixes are small and don't depend on Phase 53. Not chosen: with Phase 53.2. | 2026-10-17 |
 
 ## Other loose ends found in the review
 

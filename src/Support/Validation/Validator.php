@@ -47,9 +47,6 @@ final class Validator
     }
 
     /**
-     * The submitted value as a trimmed string ('' when absent or not a string).
-     */
-    /**
      * Whether the field was sent at all (even empty): an edit that leaves it out keeps what is stored.
      */
     public function has(string $field): bool
@@ -57,6 +54,9 @@ final class Validator
         return array_key_exists($field, $this->input);
     }
 
+    /**
+     * The submitted value as a trimmed string ('' when absent or not a string).
+     */
     public function raw(string $field): string
     {
         $value = $this->input[$field] ?? '';

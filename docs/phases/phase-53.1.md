@@ -35,8 +35,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §7.27
 (*Preparing the file*), §7.25 (tasks), §7.12 (uploads), §4 (Ghostscript,
 the pattern for an optional binary) and §9 (`GHOSTSCRIPT_BINARY`) first.
 
-**Prerequisites:** [Phase 45.3](phase-45.3.md) complete: hardening
-passed (no feature phase starts before it).
+**Prerequisites:** [Phase 52](phase-52.md) merged (v3.16.2).
 
 ---
 

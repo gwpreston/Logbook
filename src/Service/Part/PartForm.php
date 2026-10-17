@@ -217,7 +217,8 @@ final class PartForm
 
     /**
      * An outcome and, only when sold, its price (`{prefix}outcome`,
-     * `{prefix}sold_price`).
+     * `{prefix}sold_price`). A sale with no price stays without one (K5):
+     * 0 is a price someone typed, not "not given".
      */
     public static function removal(Validator $validator, string $prefix): ?PartRemoval
     {
@@ -229,9 +230,7 @@ final class PartForm
             return null;
         }
 
-        $sold = $outcome === RemovalOutcome::Sold;
-
-        return new PartRemoval($outcome, $sold ? ($price ?? Decimal::round('0', self::MONEY_SCALE)) : null);
+        return new PartRemoval($outcome, $price);
     }
 
     private static function defaultStart(?DateTimeImmutable $boughtOn): WarrantyStart

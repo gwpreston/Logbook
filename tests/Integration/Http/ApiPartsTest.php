@@ -387,6 +387,35 @@ final class ApiPartsTest extends AppTestCase
         self::assertSame(404, $this->api->get($path)->getStatusCode());
     }
 
+    public function testAPartsListOverTheLimitNamesTheLimit(): void
+    {
+        $rows = array_fill(0, 21, ['name' => 'Bolt']);
+        $response = $this->api->post($this->mods, self::mod(['parts_fitted' => $rows]));
+        self::assertSame(422, $response->getStatusCode());
+        $error = ApiClient::json($response);
+        self::assertSame('api.validation.rows', $error->get('errors', 'parts_fitted', 'key'));
+        // K26: it said "Use a list of text values."
+        self::assertStringContainsString('up to 20 objects', $error->string('errors', 'parts_fitted', 'message'));
+    }
+
+    public function testAModificationWriteReturnsTheOdometerWarning(): void
+    {
+        $this->reading($this->app, $this->golf, '50000', '2026-05-01T08:00:00Z');
+
+        $backwards = $this->api->post($this->mods, self::mod());
+        self::assertSame(201, $backwards->getStatusCode(), self::body($backwards));
+        self::assertSame(['odometer_backwards'], ApiClient::json($backwards)->column('code', 'warnings'), 'K4');
+        $path = $this->mods . '/' . ApiClient::json($backwards)->int('entry', 'id');
+
+        $still = $this->api->patch($path, ['odometer' => '38000', 'distance_unit' => 'km']);
+        self::assertSame(200, $still->getStatusCode(), self::body($still));
+        self::assertSame(['odometer_backwards'], ApiClient::json($still)->column('code', 'warnings'));
+
+        $fixed = $this->api->patch($path, ['odometer' => '50500', 'distance_unit' => 'km']);
+        self::assertSame(200, $fixed->getStatusCode(), self::body($fixed));
+        self::assertSame([], ApiClient::json($fixed)->column('code', 'warnings'));
+    }
+
     public function testCostsNeedViewCostsAndAreIgnoredWithout(): void
     {
         $id = $this->logged();
@@ -414,6 +443,11 @@ final class ApiPartsTest extends AppTestCase
         $at = array_search('LEDs', $parts->column('name', 'items'), true);
         self::assertIsInt($at);
         self::assertNull($parts->get('items', $at, 'price'), 'so is a part price');
+        $leds = $this->parts . '/' . $parts->int('items', $at, 'id');
+        $sale = $theirs->post($leds . '/remove', ['outcome' => 'sold', 'sold_price' => '9999']);
+        self::assertSame(200, $sale->getStatusCode(), self::body($sale));
+        $gone = ApiClient::json($this->api->get($leds));
+        self::assertNull($gone->get('fittings', 0, 'sold_price'), 'a sale they record has no price, not 0 (K5)');
 
         $theirId = ApiClient::json($own)->int('entry', 'id');
         $edit = $theirs->patch($this->mods . '/' . $theirId, ['cost' => '900', 'title' => 'Their lights, fitted']);

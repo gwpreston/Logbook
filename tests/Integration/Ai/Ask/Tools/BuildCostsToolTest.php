@@ -73,6 +73,31 @@ final class BuildCostsToolTest extends AskTestCase
         self::assertStringContainsString('build_total', $rate->string('note'));
     }
 
+    public function testTheVehicleSummaryRunningCostLeavesTheBuildOut(): void
+    {
+        [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true']);
+        $golf = $this->golf($app, $owner);
+        $this->service($app, ModificationService::class)->create($golf, new ModificationData(
+            'Remap',
+            ModificationCategory::Other,
+            new DateTimeImmutable('2026-02-01'),
+            cost: '450.000',
+        ), new DateTimeZone('Europe/London'));
+
+        $summary = $this->data($app, $owner, 'vehicle_summary', ['vehicle' => $golf->id]);
+        $rate = $this->data($app, $owner, 'cost_per_distance', ['vehicles' => [$golf->id], 'period' => 'last_12_months']);
+        // K6: the running total the rate divides, as `cost_per_distance` gives it, with the build beside it.
+        self::assertSame(
+            $rate->get('currencies', 0, 'vehicles', 0, 'total', 'amount'),
+            $summary->get('running_cost_last_12_months', 'total', 'amount'),
+        );
+        self::assertSame(
+            $rate->get('currencies', 0, 'vehicles', 0, 'build_total', 'amount'),
+            $summary->get('running_cost_last_12_months', 'build_total', 'amount'),
+        );
+        self::assertSame('450.00', $summary->get('running_cost_last_12_months', 'build_total', 'amount'));
+    }
+
     public function testTheModificationsTotalIsNetOfPartsSoldLikeTheCostsFigure(): void
     {
         [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true']);

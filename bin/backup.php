@@ -75,7 +75,7 @@ try {
                 fwrite(STDERR, $usage);
                 exit(2);
             }
-            $manifest = $backups->inspect($file);
+            $manifest = $backups->inspect($backups->locate($file));
             fwrite(STDOUT, sprintf(
                 "OK: Logbook %s backup from %s (%d vehicle(s), %d file(s)).\n",
                 $manifest->appVersion,
@@ -90,6 +90,7 @@ try {
                 fwrite(STDERR, "Restoring replaces ALL data with the backup's. Add --yes to confirm.\n" . $usage);
                 exit(2);
             }
+            $file = $backups->locate($file);
             $safety = $backups->restore($file);
             fwrite(STDOUT, "Restored {$file}. The previous data was saved to {$safety}.\n");
             exit(0);
