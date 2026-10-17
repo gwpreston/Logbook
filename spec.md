@@ -11419,7 +11419,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-17); *Mark* keeps its date check (#480). See
   [`phase-52.1.md`](docs/phases/phase-52.1.md).
 - **Phase 52.2 — More quick wins from the known-issues log: Parts
-  polish and docs** (🚧 built; to be released as v3.16.4). Ask's and
+  polish and docs** (✅ released as v3.16.4). Ask's and
   MCP's `parts` tool words a warranty with the part page's strings and
   keeps an ended warranty's date (§7.26, K17), and reads the latest
   mileage once per vehicle (K31); `vehicle_summary`, and MCP's `costs`

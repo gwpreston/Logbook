@@ -6,6 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.16.4] — 2026-10-17
+
 Phase 52.2: **more quick wins from the known-issues log: Parts polish and
 docs** ([docs/phases/phase-52.2.md](docs/phases/phase-52.2.md)). No
 migration: pull and restart.
@@ -34,6 +36,13 @@ migration: pull and restart.
   undeclared modifications aren't a *Needs attention* item. Two open
   questions logged for the owner: how a CSV import reads separators
   (#484) and who may set *Declared on* (#485).
+- **The Parts guide** says a new part starts with *Purchase date* chosen,
+  and gives the "Warranty ended 3 Mar 2028" wording.
+
+### Upgrade notes
+- **MCP and Ask:** the `parts` tool's warranty text has changed (an ended
+  warranty now gives its date), and `vehicle_summary` may return a new
+  `note` field. Nothing else in the tool results changed.
 
 ## [3.16.3] — 2026-10-17
 
@@ -3454,7 +3463,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...HEAD
+[3.16.4]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...v3.16.4
 [3.16.3]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...v3.16.3
 [3.16.2]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...v3.16.2
 [3.16.1]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...v3.16.1

@@ -3,7 +3,7 @@
 *Ten more small rows of the known-issues log closed: six on the Parts
 pages and the Ask and MCP tools, and four in the docs and logs.*
 
-Status: 🚧 in progress (built; merge review next) · to be released as **v3.16.4**, a patch release (#486) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.16.4** ([#121](https://github.com/gwpreston16/Logbook/pull/121)), a patch release · file lives in `docs/phases/`
 
 This is the second batch after [Phase 52.1](phase-52.1.md). Like that
 phase, it takes small open rows that need little or no decision.
@@ -163,7 +163,12 @@ owner. Each makes the code or docs say what the spec already says.
 - [x] CHANGELOG *Unreleased*; spec §13; ROADMAP status.
 - [x] Merge review: MERGE at `bc20036a` (the first, at `55b80920`,
       rejected stale built assets).
-- [ ] Merge.
+- [x] Merge (PR #121).
+
+### Release
+
+- [x] VERSION 3.16.4, CHANGELOG 3.16.4, README status (#486).
+- [x] Tag `v3.16.4` once merged.
 
 ## Acceptance criteria
 

@@ -110,7 +110,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
 | [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | ✅ |
-| [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | 🚧 |
+| [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | ✅ |
 | [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
@@ -1405,7 +1405,7 @@ regression test.*
 
 ## Phase 52.2 — More quick wins from the known-issues log: Parts polish and docs
 *Ten more small rows of the known-issues log closed: Parts polish and
-docs. To be released as v3.16.4, a patch (#486).*
+docs. Released as v3.16.4, a patch (#486).*
 
 - Ask's `parts` tool words a warranty like the part page, in German too,
   and keeps an ended warranty's date (K17), reading the mileage once per
