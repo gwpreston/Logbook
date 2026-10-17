@@ -9780,7 +9780,9 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   distance (each positive), *Starts from* (#427: *Purchase date* or
   *Fitting*, defaulting to the purchase date when there is one, else the
   first fitting; the distance limit always counts from the first
-  fitting's mileage), provider (up to 120) and terms (up to 500). A part
+  fitting's mileage; #482: the form for a new part has *Purchase date*
+  selected, and a purchase-date start with no bought-on date runs from
+  the first fitting, as now), provider (up to 120) and terms (up to 500). A part
   page shows "In warranty until 3 Mar 2028 or 85,400 mi" while every set
   limit holds, "Warranty ended 3 Mar 2028" after, and nothing without a
   warranty. Deleting a part deletes its fittings, their readings and its
@@ -11407,6 +11409,16 @@ task breakdowns live in the per-phase files; this is the map.
   migration. Released on its own as v3.16.3, a patch (#481, decided
   2026-10-17); *Mark* keeps its date check (#480). See
   [`phase-52.1.md`](docs/phases/phase-52.1.md).
+- **Phase 52.2 — More quick wins from the known-issues log: Parts
+  polish and docs** (planned). Ask's and MCP's `parts` tool words a
+  warranty with the part page's strings and keeps an ended warranty's
+  date (§7.26, K17); no gap under *For your insurer* on the Parts tab
+  (K36); a new part's *Warranty starts from* has *Purchase date*
+  selected (§7.39, K37, #482 decided 2026-10-17); the demo banner
+  doesn't print (§7.36, K38). K1's and K3's questions logged for the owner (K30); §8 *Printing
+  reports* lists every printable page (K32); §7.24 covers undeclared
+  modifications (K33); Phase 50.2's start task names #444–#447 (K34).
+  No migration. See [`phase-52.2.md`](docs/phases/phase-52.2.md).
 - **Phase 53.1 — Reading text from images: the OCR engine** (planned).
   Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
   off), in the Docker image with every shipped locale's language pack;
