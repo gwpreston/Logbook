@@ -11389,6 +11389,39 @@ task breakdowns live in the per-phase files; this is the map.
   change and no migration; released on its own as v3.16.2, a docs-only
   patch (decided 2026-10-17). See
   [`phase-52.md`](docs/phases/phase-52.md).
+- **Phase 53.1 — Reading text from images: the OCR engine** (planned).
+  Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
+  off), in the Docker image with every shipped locale's language pack;
+  an OCR engine run without a shell, with a timeout, a memory limit and
+  the per-user lock; the image prepared for OCR apart from the file sent
+  to a vision model; words, lines and blocks with positions and
+  confidences plus a layout text; Tesseract's status and a *Test it*
+  button in Settings. No user-facing change yet. Reverses part of Phase
+  26.4's *Not in scope* (§4, §7.27, §9; open questions A–D in the phase
+  file). See [`phase-53.1.md`](docs/phases/phase-53.1.md).
+- **Phase 53.2 — Reading photos with a text model + release**
+  (planned). Photos and scanned PDFs read through OCR and the `read_text`
+  model when no vision model is set up, chosen per file; evidence checked
+  against the OCR text with a tolerant match; low-confidence values
+  marked "Hard to read, check this"; the Scan page says how the file was
+  read (§7.25, §7.27; open questions A–C in the phase file). See
+  [`phase-53.2.md`](docs/phases/phase-53.2.md).
+- **Phase 53.3 — OCR as a check on the vision model, and text instead
+  of images** (planned). OCR beside the vision model on a photo, flagging
+  a value not found where OCR read confidently; a fuel receipt's volume ×
+  price checked against its total on every route; *Send text, not
+  images*, a per-connection option for Internet connections sending
+  redacted OCR text; a V5C photo always sent as redacted text when
+  Tesseract is available (§6 AiConnection, §7.25, §7.27; open questions
+  A–C in the phase file). See [`phase-53.3.md`](docs/phases/phase-53.3.md).
+- **Phase 53.4 — Reading without AI + release** (planned). With
+  Tesseract and no model, *Scan* shows: documents classified by keywords
+  and read by rules, every field marked "Read without AI, check every
+  field"; fuel receipts filled from the volume, price and total that
+  agree, with date, grade and station; service invoices' date, total,
+  registration, mileage and vendor; other kinds the date only (§7.10,
+  §7.27; open questions A–D in the phase file). See
+  [`phase-53.4.md`](docs/phases/phase-53.4.md).
 
 ---
 
