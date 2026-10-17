@@ -44,7 +44,9 @@ when there is build spend it also returns `running_total` and
 `build_total`, and its `average_per_month`, like `cost_per_distance`'s
 totals and rates, counts running costs only (none for `category=build`);
 `cost_per_distance` gives `build_total` beside each total, so a client can
-say both. `modifications` and `parts` read the build work and its parts
+say both. `vehicle_summary`'s `running_cost_last_12_months.total` is
+running costs only too (since 3.16.3), with `build_total` beside it when
+the 12 months have build spend. `modifications` and `parts` read the build work and its parts
 (costs and prices only where the key's user may see costs).
 `ownership`, `true_cost`, `finance`, `coming_up` and `trips_summary` also
 return a `working` for their headline figures: the dated inputs, the sum in

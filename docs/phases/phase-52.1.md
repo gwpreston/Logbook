@@ -3,7 +3,7 @@
 *Eight open rows of the known-issues log closed, each small, each with a
 regression test.*
 
-Status: 🚧 in progress · to be released as **v3.16.3** · branch `known-issues-batch-1` · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.16.3** ([#118](https://github.com/gwpreston16/Logbook/pull/118)), a patch release · file lives in `docs/phases/`
 
 The known-issues log has more open rows than one phase should take on.
 This phase takes the smallest ones that need no decision from the owner:
@@ -105,11 +105,15 @@ code's own comments already say:
 - [x] spec.md §7.26 and §13; ROADMAP; CHANGELOG *Unreleased*.
 - [x] Known-issues rows K4, K5, K6, K7, K22, K23, K26 and K64 *Fixed*.
       K66 recorded and fixed.
-- [ ] `bin/test-all-dbs.sh` on PostgreSQL, MySQL and MariaDB (run on
-      SQLite so far).
-- [ ] Merge review, then merge.
-- [ ] Release: VERSION 3.16.3, CHANGELOG 3.16.3, README status (#481).
-- [ ] Tag `v3.16.3` after the merge.
+- [x] The suite on PostgreSQL, MySQL and MariaDB: CI on PR #118 and on
+      master (`c98c8757`), PHP 8.4 on all four engines and 8.5 on
+      PostgreSQL and MySQL.
+- [x] Merge (PR #118), then the release check
+      (`/merge-review`, 2026-10-17): first REJECT on paperwork (spec
+      §7.20, §7.13 and `docs/mcp.md` not updated), fixed in the release
+      commit, along with upgrade notes and `docs/api.md`.
+- [x] Release: VERSION 3.16.3, CHANGELOG 3.16.3, README status (#481).
+- [x] Tag `v3.16.3` once merged.
 
 ## Acceptance criteria
 

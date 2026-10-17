@@ -702,7 +702,7 @@ write that sends one ignores it.
 |---|---|---|
 | `GET /vehicles/{id}/modifications` | View | newest `done_on` first, paged; `?state=current\|reverted`. Each has its `parts_fitted` and `parts_removed` |
 | `GET /vehicles/{id}/modifications/{modification}` | View | one, with an `ETag` that changes when it, its revert or the fittings it made change |
-| `POST /vehicles/{id}/modifications` | Log | `title` (required), `category` (`exhaust`, `suspension`, `wheels`, `tune`, `intake`, `audio`, `lighting`, `body`, `engine`, `brakes`, `interior`, `electrical`, `security`, `other`), `done_on` (default today), `odometer` and `distance_unit`, `cost`, `fitted_by`, `notes`, `declared_on`, and the parts lists below, all in one save. A retry with the same date and title answers `duplicate: true` |
+| `POST /vehicles/{id}/modifications` | Log | `title` (required), `category` (`exhaust`, `suspension`, `wheels`, `tune`, `intake`, `audio`, `lighting`, `body`, `engine`, `brakes`, `interior`, `electrical`, `security`, `other`), `done_on` (default today), `odometer` and `distance_unit`, `cost`, `fitted_by`, `notes`, `declared_on`, and the parts lists below, all in one save. Returns `warnings` (`odometer_backwards`, `odometer_jump`), as `PATCH` does. A retry with the same date and title answers `duplicate: true` |
 | `PATCH`, `DELETE …/modifications/{modification}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting); the parts lists are not patchable |
 | `POST …/modifications/{modification}/revert` | Log | `reverted_on` (default today), `odometer`, `note`, and `remove_parts` and `refit_originals` (both default `true`) |
 | `POST …/modifications/{modification}/undo-revert` | Log (own) or Manage | refused (`422`) while a part the revert put back has come off again |
@@ -710,7 +710,7 @@ write that sends one ignores it.
 | `GET /vehicles/{id}/parts/{part}` | View | one, with an `ETag` over the part and its fittings |
 | `POST /vehicles/{id}/parts` | Log | `name` (required), `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`, `price`, `condition`, `warranty_months`, `warranty_distance`, `warranty_from` (`purchase` or `fitting`), `warranty_provider`, `warranty_terms`, `warranty_reminder`, `notes`. A retry with the same name, part number and purchase date answers `duplicate: true` |
 | `PATCH`, `DELETE …/parts/{part}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting) |
-| `POST …/parts/{part}/fit`, `…/remove` | Log | `fitted_on` and `odometer`; or `removed_on`, `odometer`, `outcome` (`kept`, `sold`, `returned`, `scrapped`, `other`) and `sold_price`. Without a record, so with no cost |
+| `POST …/parts/{part}/fit`, `…/remove` | Log | `fitted_on` and `odometer`; or `removed_on`, `odometer`, `outcome` (`kept`, `sold`, `returned`, `scrapped`, `other`) and `sold_price`. Without a record, so with no cost. A sale recorded without a price reads back as `sold_price: null` (one recorded before 3.16.3 as `"0.000"`) |
 
 A modification's `parts_fitted` takes new parts (the part's fields above)
 or `{"part": 12}` for a stored one fitted again; its `parts_removed` takes
