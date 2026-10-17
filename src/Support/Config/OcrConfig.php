@@ -56,10 +56,18 @@ final readonly class OcrConfig
     }
 
     /**
-     * The address without any user name or password, for showing.
+     * The address for showing: scheme, host, port and path only, so no user
+     * name, password (even one with a raw `@`), query or fragment.
      */
     public function paddleOcrAddress(): string
     {
-        return (string) preg_replace('#^(https?://)[^/@]*@#i', '$1', $this->paddleOcrUrl);
+        $parts = parse_url($this->paddleOcrUrl);
+        if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
+            return '';
+        }
+
+        return $parts['scheme'] . '://' . $parts['host']
+            . (isset($parts['port']) ? ':' . $parts['port'] : '')
+            . ($parts['path'] ?? '');
     }
 }

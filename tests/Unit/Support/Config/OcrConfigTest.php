@@ -85,6 +85,11 @@ final class OcrConfigTest extends TestCase
         $ocr = OcrConfig::fromEnv(new Env(['OCR_URL' => 'https://logbook:s3cret@ocr.lan:8443/base']));
 
         self::assertSame('https://ocr.lan:8443/base', $ocr->paddleOcrAddress());
+        $raw = OcrConfig::fromEnv(new Env(['OCR_URL' => 'http://ocr:p@ss@word@paddle_ocr:8080/api?token=SECRET#x']));
+        self::assertSame('http://paddle_ocr:8080/api', $raw->paddleOcrAddress(), 'a raw @, a query and a fragment');
+        $ipv6 = OcrConfig::fromEnv(new Env(['OCR_URL' => 'http://[::1]:8080']));
+        self::assertSame('http://[::1]:8080', $ipv6->paddleOcrAddress());
+        self::assertSame('', (new OcrConfig())->paddleOcrAddress());
         self::assertSame('https://logbook:s3cret@ocr.lan:8443/base', $ocr->paddleOcrUrl, 'still used for the request');
     }
 }

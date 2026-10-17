@@ -75,6 +75,21 @@ final class ImagickImagePreparerTest extends TestCase
         self::assertSame([800, 1000], [$prepared->width, $prepared->height]);
     }
 
+    public function testASmallJpegKeepsItsSizeAndABlankPageIsNotTurned(): void
+    {
+        $small = (new ImagickImagePreparer())->prepare(self::page(30));
+        $blank = imagecreatetruecolor(300, 300);
+        self::assertInstanceOf(GdImage::class, $blank);
+        imagefill($blank, 0, 0, (int) imagecolorallocate($blank, 1, 2, 3));
+        ob_start();
+        imagepng($blank);
+        $flat = (new ImagickImagePreparer())->prepare((string) ob_get_clean());
+
+        self::assertSame([800, 1000, 1.0], [$small?->width, $small?->height, $small?->scale]);
+        self::assertNotNull($flat);
+        self::assertSame([300, 300, 0.0], [$flat->width, $flat->height, $flat->deskewAngle]);
+    }
+
     public function testItIsTurnedUprightByExif(): void
     {
         $prepared = (new ImagickImagePreparer())->prepare(ExifJpeg::make(400, 100, 6));

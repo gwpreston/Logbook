@@ -33,12 +33,15 @@
             {% else %}
                 <dl class="details">
                     <div><dt>{{ 'ocr.engine.label'|trans }}</dt><dd data-ocr-engine>{{ ('ocr.engine.' ~ status.engine)|trans }}{% if choice == 'auto' %} <span class="muted">{{ 'ocr.engine.auto'|trans }}</span>{% endif %}</dd></div>
-                    <div><dt>{{ 'ocr.status.label'|trans }}</dt><dd data-ocr-available="{{ available ? '1' : '0' }}">{{ (available ? 'ocr.status.ready' : ('ocr.status.missing_' ~ status.engine))|trans }}</dd></div>
+                    <div><dt>{{ 'ocr.status.label'|trans }}</dt><dd data-ocr-available="{{ available ? '1' : '0' }}">{% if available %}{{ 'ocr.status.ready'|trans }}{% else %}{{ ui.icon('warning') }}{{ 'ocr.status.not_ready'|trans }}{% endif %}</dd></div>
                     {% if status.version %}<div><dt>{{ 'ocr.version'|trans }}</dt><dd data-ocr-version>{{ status.version }}</dd></div>{% endif %}
                     {% if status.languages is not empty %}<div><dt>{{ 'ocr.languages'|trans }}</dt><dd data-ocr-languages>{{ status.languages|join(', ') }}</dd></div>{% endif %}
                     {% if status.location %}<div><dt>{{ ('ocr.location_' ~ status.engine)|trans }}</dt><dd><code>{{ status.location }}</code></dd></div>{% endif %}
                     <div><dt>{{ 'ocr.timeout'|trans }}</dt><dd>{{ 'ocr.seconds'|trans({seconds: timeout}) }}</dd></div>
                 </dl>
+                {% if not available %}
+                    <div class="alert alert--warning" role="status" data-ocr-missing>{{ ui.icon('warning') }}<span>{{ ('ocr.status.missing_' ~ status.engine)|trans }}</span></div>
+                {% endif %}
             {% endif %}
             <p class="muted">{{ 'ocr.how_to'|trans }}</p>
         </section>
@@ -54,7 +57,8 @@
                 {% if test %}
                     {% if test.result.ok %}
                         <div class="alert alert--success" role="status" data-ocr-test="ok">{{ ui.icon('check_circle') }}<span>{{ 'ocr.test.passed'|trans({confidence: test.result.meanConfidence|round, seconds: test.seconds}) }}</span></div>
-                        <pre data-ocr-text>{{ test.result.layoutText }}</pre>
+                        {# Focusable and labelled, so a keyboard can scroll a wide line. #}
+                        <pre data-ocr-text tabindex="0" role="region" aria-label="{{ 'ocr.test.text_label'|trans }}">{{ test.result.layoutText }}</pre>
                     {% else %}
                         <div class="alert alert--warning" role="status" data-ocr-test="{{ test.result.problem.value }}">{{ ui.icon('warning') }}<span>{{ ('ocr.problem.' ~ test.result.problem.value)|trans }}</span></div>
                     {% endif %}

@@ -5869,6 +5869,7 @@ return [
         'status' => [
             'label' => 'Status',
             'ready' => 'Bereit',
+            'not_ready' => 'Funktioniert nicht',
             'missing_tesseract' => 'Nicht gefunden. Prüfe TESSERACT_BINARY und ob der Webserver es ausführen darf.',
             'missing_paddleocr' => 'Keine Adresse. Setze OCR_URL.',
             'off' => 'OCR ist ausgeschaltet (OCR_ENGINE=off).',
@@ -5885,6 +5886,7 @@ return [
             'lead' => 'Liest einen Beispiel-Tankbeleg, der mit Logbook geliefert wird, und zeigt den gefundenen Text.',
             'button' => 'Beispielbeleg lesen',
             'passed' => 'In {seconds} s gelesen, durchschnittlich zu {confidence} % sicher.',
+            'text_label' => 'Der aus dem Beispielbeleg gelesene Text',
         ],
         'problem' => [
             'unavailable' => 'OCR ist nicht verfügbar.',

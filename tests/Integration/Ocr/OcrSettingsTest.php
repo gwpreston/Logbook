@@ -41,6 +41,9 @@ final class OcrSettingsTest extends AppTestCase
 
         $tested = self::body($admin->post('/settings/ocr'));
         self::assertStringContainsString('data-ocr-test="ok"', $tested);
+        $region = 'tabindex="0" role="region" aria-label="The text read from the sample receipt"';
+        self::assertStringContainsString($region, $tested);
+        self::assertStringNotContainsString('data-ocr-missing', $page);
         self::assertMatchesRegularExpression('/Read in [0-9.]+ s, 92% sure on average\./', $tested);
         self::assertStringContainsString("Total              £48.20", html_entity_decode($tested));
     }
@@ -74,6 +77,9 @@ final class OcrSettingsTest extends AppTestCase
         $page = self::body($admin->get('/settings/ocr'));
         self::assertStringContainsString('data-ocr-available="0"', $page);
         self::assertStringContainsString('Not found. Check TESSERACT_BINARY', $page);
+        self::assertStringContainsString('data-ocr-missing', $page, 'shown as a warning');
+        $warning = '/data-ocr-available="0"><svg class="icon"[^>]*>.*?<\/svg>Not working<\/dd>/s';
+        self::assertMatchesRegularExpression($warning, $page);
         self::assertStringNotContainsString('Read the sample receipt', $page);
         $posted = $admin->post('/settings/ocr');
         self::assertSame(200, $posted->getStatusCode(), 'a post still renders the page');

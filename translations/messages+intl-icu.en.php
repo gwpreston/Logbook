@@ -5873,6 +5873,7 @@ return [
         'status' => [
             'label' => 'Status',
             'ready' => 'Ready',
+            'not_ready' => 'Not working',
             'missing_tesseract' => 'Not found. Check TESSERACT_BINARY, and that the web server can run it.',
             'missing_paddleocr' => 'No address. Set OCR_URL.',
             'off' => 'OCR is turned off (OCR_ENGINE=off).',
@@ -5889,6 +5890,7 @@ return [
             'lead' => 'Reads a sample fuel receipt that comes with Logbook and shows the text it found.',
             'button' => 'Read the sample receipt',
             'passed' => 'Read in {seconds} s, {confidence}% sure on average.',
+            'text_label' => 'The text read from the sample receipt',
         ],
         'problem' => [
             'unavailable' => 'OCR isn\'t available.',

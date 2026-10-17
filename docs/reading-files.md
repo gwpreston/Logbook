@@ -72,7 +72,10 @@ docker compose --profile ocr up -d
 
 Then set `OCR_URL=http://paddleocr:8080` (and `OCR_TIMEOUT=120`: it
 takes several seconds a page on a CPU) for the Logbook container and
-restart it. The first start downloads its models (a few hundred MB), so
+restart it. *Test it* then waits up to `OCR_TIMEOUT` plus 30 seconds, and
+many proxies give up after 60: behind nginx raise `proxy_read_timeout`
+(and `fastcgi_read_timeout` with php-fpm) to at least that, as for
+[Ask Logbook](deployment.md#ask-logbook-behind-a-proxy). The first start downloads its models (a few hundred MB), so
 the first scan can take a minute.
 
 To run it elsewhere, start PaddleX's basic serving for the general OCR
@@ -101,8 +104,15 @@ the web server's user can run it.
 |---|---|---|
 | `OCR_ENGINE` | `auto` | `auto`, `tesseract`, `paddleocr` or `off` |
 | `TESSERACT_BINARY` | `tesseract` | a name on `PATH` or a full path; `off` turns it off |
-| `OCR_URL` | *(empty)* | the PaddleOCR service's address |
+| `OCR_URL` | *(empty)* | the PaddleOCR service's address: `http://` or `https://` with a host name (`paddle_ocr` with an underscore is fine) |
 | `OCR_TIMEOUT` | `30` | seconds one page may take |
+
+An `OCR_ENGINE` other than the four values, or an `OCR_URL` that isn't an
+http(s) address with a host, stops Logbook at start with a message naming
+the variable (never its value, which may hold a password). A user name and
+password in `OCR_URL` (`http://user:pass@paddleocr:8080`) are sent to the
+service but never shown: the status page shows only the scheme, host, port
+and path.
 
 See [configuration.md](configuration.md#ai) for every setting.
 

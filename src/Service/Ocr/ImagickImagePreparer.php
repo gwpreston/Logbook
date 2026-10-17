@@ -42,8 +42,8 @@ final class ImagickImagePreparer implements ImagePreparer
                 return null;
             }
             $image->clear();
-            // A JPEG is decoded straight at about the size used (libjpeg's shrink on load).
-            $image->setOption('jpeg:size', sprintf('%dx%d', GdImagePreparer::MAX_EDGE, GdImagePreparer::MAX_EDGE));
+            // No jpeg:size hint: ImageMagick 7 takes it as a size to reach, and doubled
+            // every JPEG under 4,000 px (merge review, 2026-10-17).
             $image->readImageBlob($bytes);
             $image->autoOrient();
             $image->setImageBackgroundColor('white');
@@ -56,19 +56,20 @@ final class ImagickImagePreparer implements ImagePreparer
             }
             // Greyscale in sRGB (IM7's GRAY colorspace is linear, which pales the print).
             $image->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
-            $this->stretch($image);
+            $flat = $this->stretch($image);
 
-            // Measured on a copy, and kept only when worth a resample.
-            $deskewed = clone $image;
-            $deskewed->deskewImage(\Imagick::getQuantum() * self::DESKEW_THRESHOLD);
-            $artifact = $deskewed->getImageArtifact('deskew:angle');
+            // Measured on a copy, and kept only when worth a resample. A flat
+            // (blank) page has no lines to level: ImageMagick would still turn it.
+            $deskewed = $flat ? null : clone $image;
+            $deskewed?->deskewImage(\Imagick::getQuantum() * self::DESKEW_THRESHOLD);
+            $artifact = $deskewed?->getImageArtifact('deskew:angle');
             $angle = is_numeric($artifact) ? round(-(float) $artifact, 1) : 0.0;
-            if (abs($angle) >= self::MIN_ANGLE) {
+            if ($deskewed !== null && abs($angle) >= self::MIN_ANGLE) {
                 $image->clear();
                 $image = $deskewed;
                 $image->setImagePage(0, 0, 0, 0);
             } else {
-                $deskewed->clear();
+                $deskewed?->clear();
                 $angle = 0.0;
             }
 
@@ -130,20 +131,24 @@ final class ImagickImagePreparer implements ImagePreparer
      * GD's percentile stretch (0.1% / 99%, left alone at good contrast),
      * measured on a small copy and applied with levelImage. ImageMagick's
      * own normalize and contrastStretchImage both blanked or crushed test
-     * pages for Tesseract.
+     * pages for Tesseract. True when the page is flat (nothing on it).
      */
-    private function stretch(\Imagick $image): void
+    private function stretch(\Imagick $image): bool
     {
         $small = self::small($image);
         if ($small === null) {
-            return;
+            return false;
         }
         [$low, $high] = GdImagePreparer::percentiles($small);
-        if ($high - $low < 8 || $high - $low >= GdImagePreparer::GOOD_CONTRAST) {
-            return;
+        if ($high - $low < 8) {
+            return true;
         }
-        $quantum = \Imagick::getQuantum() / 255;
-        $image->levelImage($low * $quantum, 1.0, $high * $quantum);
+        if ($high - $low < GdImagePreparer::GOOD_CONTRAST) {
+            $quantum = \Imagick::getQuantum() / 255;
+            $image->levelImage($low * $quantum, 1.0, $high * $quantum);
+        }
+
+        return false;
     }
 
     private function textHeight(\Imagick $image): float

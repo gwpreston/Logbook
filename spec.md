@@ -7653,8 +7653,9 @@ only: nothing users see changes until Phase 53.2 uses it.
     photo once (as any upload is), fits it to 4,000 px, and then reserves
     room for two working copies at that size only. Imagick's pixel cache,
     outside PHP's limit, is capped at 128 MB in memory, 128 MB mapped and
-    1 GB on disk, a JPEG is decoded at about the size used, and a file
-    with more than one frame goes to GD;
+    1 GB on disk (for the PHP worker's life), and a file with more than
+    one frame goes to GD. No `jpeg:size` hint: ImageMagick 7 enlarged
+    smaller JPEGs to it;
   - **one run per user at a time**, sharing the AI lock (`ai_busy`,
     §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 + 30 seconds at most. A
     caller that already holds it (a scan going on to a model, 53.2)
@@ -7677,8 +7678,8 @@ only: nothing users see changes until Phase 53.2 uses it.
     already 200 grey levels apart;
   - deskewed: GD by the angle (±10° in 0.5° steps) that maximises the
     variance of the rows' dark-pixel counts, measured on a copy about
-    1,000 px long; Imagick by its `deskew`. Under a quarter of a degree
-    is left alone;
+    1,000 px long; Imagick by its `deskew`. Under a quarter of a degree,
+    or a blank (flat) page, is left alone;
   - enlarged when its lines of text are under 20 px high, to about 30
     px, within the 4,000 px edge.
 - **The result** (`OcrResult`): words (text, confidence 0–100, box,
@@ -7698,7 +7699,8 @@ only: nothing users see changes until Phase 53.2 uses it.
   group when AI is off (`AI_ENABLED=false`; there is no Settings → System
   page): the engine, its version (Tesseract's from
   `--version`) and languages (`--list-langs`, without `osd`), or the
-  PaddleOCR address; *Test it* reads a bundled sample receipt and shows
+  PaddleOCR address (shown as scheme, host, port and path only); an
+  engine that isn't working is shown as a warning; *Test it* reads a bundled sample receipt and shows
   its layout text, confidence and time, and may run for `OCR_TIMEOUT`
   plus 30 seconds. Admins only, CSRF-protected.
 - `bin/ai-eval.php --ocr` reports the character accuracy of the layout
