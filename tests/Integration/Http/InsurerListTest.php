@@ -104,8 +104,11 @@ final class InsurerListTest extends AppTestCase
         $page = self::body($browser->get($this->base));
         self::assertStringContainsString('Declared on 1 Oct 2026', $page);
         self::assertStringNotContainsString('Not declared yet', $page);
+        // K7: Clear needs no date, so a blank or future one in the field never blocks it.
+        self::assertMatchesRegularExpression('/<button[^>]*name="clear"[^>]*formnovalidate/', $page);
 
-        $browser->post($this->base, ['declared_on' => '2026-10-01', 'clear' => (string) $a->id]);
+        // No date at all: Clear still works.
+        $browser->post($this->base, ['declared_on' => '', 'clear' => (string) $a->id]);
         self::assertNull($this->declared($a), 'Clear puts it back to not declared');
         self::assertSame('2026-10-01', $this->declared($b));
 
