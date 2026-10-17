@@ -215,13 +215,17 @@ final class DemoVisitorTest extends DemoTestCase
         $body = self::body($this->demoBrowser($app)->get('/'));
         self::assertMatchesRegularExpression('/<div class="[^"]*\bdemo-banner\b[^"]*"[^>]*data-demo-banner/', $body);
 
-        $css = (string) file_get_contents(__DIR__ . '/../../../assets/css/app.css');
-        preg_match_all('/^@media print \{\n.*?^\}$/ms', $css, $blocks);
-        $hidden = array_filter(
-            $blocks[0],
-            static fn (string $block): bool => preg_match('/\.demo-banner,[^{}]*\{\s*display: none !important;/', $block) === 1,
-        );
-        self::assertNotSame([], $hidden, 'a print rule hides .demo-banner');
+        // The source and the copy that is served (`composer build-assets`): a stale build prints it.
+        foreach (['assets/css/app.css', 'public/assets/css/app.css'] as $file) {
+            $css = (string) file_get_contents(__DIR__ . '/../../../' . $file);
+            preg_match_all('/^@media print \{\n.*?^\}$/ms', $css, $blocks);
+            $hidden = array_filter(
+                $blocks[0],
+                static fn (string $block): bool
+                    => preg_match('/\.demo-banner,[^{}]*\{\s*display: none !important;/', $block) === 1,
+            );
+            self::assertNotSame([], $hidden, $file . ': a print rule hides .demo-banner');
+        }
     }
 
     public function testAnAnonymousVisitorIsNotToldTheDemoWasReset(): void

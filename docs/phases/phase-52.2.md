@@ -128,8 +128,9 @@ owner. Each makes the code or docs say what the spec already says.
       no bought-on date runs its warranty from the first fitting.
 - [x] `.demo-banner` hidden under `@media print` (K38), in the shared
       print rule that hides the app shell. `DemoVisitorTest` checks the
-      rule is there. The insurer report in print preview is left to the
-      merge review.
+      rule is in the source and in the built `public/assets` copy (the
+      first merge review found the build stale). The insurer report was
+      checked in print preview in the merge review.
 - [x] The `parts` tool reads the latest odometer once per vehicle
       (`PartService::warrantyAt()`, `distanceAt()`); `PartsToolsTest`
       counts one such query for three parts (seven before), through Ask
