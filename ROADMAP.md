@@ -108,7 +108,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | ✅ |
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
-| [53](docs/phases/phase-53.md) | The README and the docs, for someone deciding | 📋 |
+| [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1361,7 +1361,7 @@ documents and reminders.*
 
 ---
 
-## Phase 53 — The README and the docs, for someone deciding
+## Phase 52 — The README and the docs, for someone deciding
 *A stranger can tell in a minute who Logbook is for, what it looks like
 and how to try it, and find the right guide for anything deeper.*
 
@@ -1375,7 +1375,7 @@ and how to try it, and find the right guide for anything deeper.*
   desktop and a phone. CI checks docs links, orphaned guides and unused
   images. No app change; noted in the next release.
 
-→ [`phase-53.md`](docs/phases/phase-53.md)
+→ [`phase-52.md`](docs/phases/phase-52.md)
 
 ---
 
@@ -1394,8 +1394,9 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
   export or the Tesla API).
 - Import from ABRP (A Better Routeplanner), as another reader on the app
   importer: charging sessions as EV fill-ups, odometer readings thinned to
-  one a day, and drives as private trips only if the owner chooses. Phase
-  52 was planned for it and removed, because ABRP's only way out is a
+  one a day, and drives as private trips only if the owner chooses. A
+  phase was planned for it (then numbered 52; the README and docs phase
+  took that number) and removed, because ABRP's only way out is a
   *My Drives → Export* Excel file (Premium and live data needed) and no
   real export was available to build and test against. Nothing is
   guessed about its columns, so it waits for a real export. The removed

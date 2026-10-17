@@ -144,7 +144,7 @@ Settled in 49.0:
       Chromium (Pixel 7) phone profiles, and WebKit with JavaScript off:
       first-run setup to step 5, one throwaway instance each. Run once
       from a scratch Playwright install on 2026-10-14, not committed (Phase
-      53 question B is still open).
+      52 question B is still open).
 - [ ] A repeat session with two people new to Logbook: both reach
       step 5 without help (owner-run; carried to the loose ends in
       `open-questions.md`, released without it).

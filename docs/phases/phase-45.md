@@ -103,7 +103,7 @@ source-available licence alike.
 
 ### 45.3 Contributions
 - [x] `CONTRIBUTING.md`, following B: issues, private security reports,
-      the DCO sign-off, and the checks before a pull request. Phase 53
+      the DCO sign-off, and the checks before a pull request. Phase 52
       adds the contributor material on top.
 
 ---

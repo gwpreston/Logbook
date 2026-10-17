@@ -1,4 +1,4 @@
-# Phase 53 — The README and the docs, for someone deciding
+# Phase 52 — The README and the docs, for someone deciding
 
 *A stranger can tell in a minute who Logbook is for, what it looks like
 and how to try it, and find the right guide for anything deeper.*
@@ -81,7 +81,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) and [`spec.md`](../../spec.md) §1
 
 ## Spec (proposed)
 
-Settled in §10 (deployment) and §13 in 53.0:
+Settled in §10 (deployment) and §13 in 52.0:
 
 - **The README's job.** Who Logbook is for, what it looks like, how to
   try it, and where each guide is. Nothing in it should be the only
@@ -124,7 +124,7 @@ Settled in §10 (deployment) and §13 in 53.0:
 
 ## Tasks
 
-### 53.0 Spec first
+### 52.0 Spec first
 - [ ] Open questions A–F decided by the owner and logged in
       `open-questions.md`.
 - [ ] `spec.md` §10 (the README's job and status line, the docs index,
@@ -133,9 +133,9 @@ Settled in §10 (deployment) and §13 in 53.0:
       `CHANGELOG.md`, README") reworded to the new status line and
       `docs/features.md`, in `CONTRIBUTING.md`'s release steps.
 
-### 53.1 Content moves, nothing lost
+### 52.1 Content moves, nothing lost
 - [ ] `docs/features.md`: everything in the *Status* sentence as it
-      stands when this phase starts (Phases 46–52 add to it),
+      stands when this phase starts (Phases 46–51 add to it),
       grouped as above, one short paragraph or list per group. Each
       item links to the guide that explains it.
 - [ ] A check, by hand and in the PR description, that every clause of
@@ -147,7 +147,7 @@ Settled in §10 (deployment) and §13 in 53.0:
 - [ ] The 3.0.0 and 3.3.0 upgrade notes stay in `CHANGELOG.md`. The
       README links to them, and to `docs/deployment.md#upgrading`.
 
-### 53.2 Screenshots
+### 52.2 Screenshots
 - [ ] A maintainer-only script (B) that:
   - starts a stack with demo-seed data (`bin/demo-seed.php`) on SQLite;
   - signs in as the demo account;
@@ -169,7 +169,7 @@ Settled in §10 (deployment) and §13 in 53.0:
 - [ ] "Re-make the screenshots" added to `CONTRIBUTING.md`'s release
       steps.
 
-### 53.3 The README
+### 52.3 The README
 - [ ] Rewritten in the order of Goal 1, at the length A settles. The
       header has the logo mark, one line on what Logbook is, and badges
       (version, licence, CI), plus the demo link if D says so.
@@ -191,7 +191,7 @@ Settled in §10 (deployment) and §13 in 53.0:
       move to the getting-started guide.
 - [ ] Every image has alt text that says what it shows.
 
-### 53.4 The docs
+### 52.4 The docs
 - [ ] `docs/README.md`: the index, grouped by audience, one line per
       guide (the current README table, regrouped, with `reports.md`
       added).
@@ -210,7 +210,7 @@ Settled in §10 (deployment) and §13 in 53.0:
       untouched.
 - [ ] A *Back to the docs index* link at the foot of each guide.
 
-### 53.5 Checks and changelog
+### 52.5 Checks and changelog
 - [ ] `bin/tools/check-docs.php`, run in CI. It fails when:
   - a relative link or anchor in the README, `CONTRIBUTING.md` or
     `docs/**/*.md` doesn't resolve;
@@ -271,7 +271,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   *Recommendation:* (1). It keeps them current at no cost to anyone
   installing Logbook, and Node is already a maintainer-only tool here.
 
-- **C. Which pages?** The list in 53.2, or a shorter one (dashboard,
+- **C. Which pages?** The list in 52.2, or a shorter one (dashboard,
   vehicle, fuel on a phone, a report)? Every extra page is another image
   to re-make and check each release.
 
@@ -295,7 +295,7 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     published on GitHub Pages.
 
   *Recommendation:* (1) for this phase, with (2) parked in §12. The
-  checker in 53.5 keeps the Markdown ready to become a site later.
+  checker in 52.5 keeps the Markdown ready to become a site later.
 
 - **F. Where does the contributor material go?** Development commands,
   `bin/dev-setup.sh`, tests, assets, translations and the layout take
