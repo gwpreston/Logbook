@@ -108,7 +108,6 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [50.2](docs/phases/phase-50.2.md) | Warranties, the insurer's list and parts everywhere + release | ✅ |
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
-| [52](docs/phases/phase-52.md) | Import from ABRP + release | 📋 |
 | [53](docs/phases/phase-53.md) | The README and the docs, for someone deciding | 📋 |
 
 *Update the status column as each phase lands.*
@@ -1362,21 +1361,6 @@ documents and reminders.*
 
 ---
 
-## Phase 52 — Import from ABRP + release
-*Your EV's charging sessions, mileage and drives from A Better
-Routeplanner, without typing them in.*
-
-- An ABRP reader for the app importer, on the web and in
-  `bin/import-app.php`: charging sessions as EV fill-ups, odometer
-  readings thinned so the log isn't flooded, and drives as private trips
-  only if the owner chooses.
-- A preview, one transaction, re-imports adding only new activities;
-  `docs/import-abrp.md`, fixtures and release.
-
-→ [`phase-52.md`](docs/phases/phase-52.md)
-
----
-
 ## Phase 53 — The README and the docs, for someone deciding
 *A stranger can tell in a minute who Logbook is for, what it looks like
 and how to try it, and find the right guide for anything deeper.*
@@ -1407,7 +1391,17 @@ Considered for later, not part of the phases above (see [`spec.md`](spec.md)
 - More imports, as further readers on Phase 31's app importer: Drivvo
   (CSV exports, whose headers and values are translated into the phone's
   language) and Tesla (charging history and mileage, from the owner's data
-  export or the Tesla API). ABRP is Phase 52.
+  export or the Tesla API).
+- Import from ABRP (A Better Routeplanner), as another reader on the app
+  importer: charging sessions as EV fill-ups, odometer readings thinned to
+  one a day, and drives as private trips only if the owner chooses. Phase
+  52 was planned for it and removed, because ABRP's only way out is a
+  *My Drives → Export* Excel file (Premium and live data needed) and no
+  real export was available to build and test against. Nothing is
+  guessed about its columns, so it waits for a real export. The removed
+  plan, with its open questions on the `.xlsx` library, readings, cost,
+  full or partial, stations, trips and the re-import key, is in git
+  history as `docs/phases/phase-52.md`.
 
 Not planned: automatic vehicle valuation from online services (third-party
 lookups and paid APIs, against keeping data local) and generic depreciation
