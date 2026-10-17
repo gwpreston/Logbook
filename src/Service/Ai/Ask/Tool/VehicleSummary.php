@@ -18,6 +18,7 @@ use Logbook\Service\Forecast\ComingUp;
 use Logbook\Service\Forecast\ForecastWording;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\Odometer\OdometerService;
+use Logbook\Domain\Expense\CostGroup;
 use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
@@ -130,7 +131,11 @@ final readonly class VehicleSummary implements AskTool
             $data['running_cost_last_12_months'] = [
                 'from' => $report->period->from?->format('Y-m-d'),
                 'to' => $report->period->to->format('Y-m-d'),
-                'total' => $section === null ? null : $this->kit->money($section->total),
+                // Running costs only, like `costs` and `cost_per_distance` (K6): build spend is beside it.
+                'total' => $section === null ? null : $this->kit->money($section->runningTotal()),
+                ...($section === null || !$section->hasBuild() ? [] : [
+                    'build_total' => $this->kit->money($section->group(CostGroup::Build)),
+                ]),
                 'distance' => $this->kit->distance($section?->distanceKm),
                 'cost_per_km' => $perKm === null ? null : Decimal::round($perKm, 4),
                 'display' => $perKm === null ? null : $this->kit->format->perDistance($perKm, $currency),

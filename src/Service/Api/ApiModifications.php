@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Service\Api;
 
 use Logbook\Domain\Access\VehicleAbility;
+use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Part\Modification;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Part\ModificationForm;
 use Logbook\Service\Part\ModificationNotFound;
 use Logbook\Service\Part\ModificationService;
@@ -46,6 +48,7 @@ final readonly class ApiModifications
         private ClockInterface $clock,
         private VehicleAccess $access,
         private VehicleService $vehicles,
+        private OdometerService $odometer,
     ) {
     }
 
@@ -184,7 +187,7 @@ final readonly class ApiModifications
             throw $this->validation->of(ApiWriter::refusal($refused));
         }
 
-        return ['modification' => $modification, 'duplicate' => false, 'warnings' => []];
+        return ['modification' => $modification, 'duplicate' => false, 'warnings' => $this->warnings($vehicle, $modification)];
     }
 
     /**
@@ -215,7 +218,19 @@ final readonly class ApiModifications
             throw $this->validation->of(ApiWriter::refusal($refused));
         }
 
-        return [];
+        return $this->warnings($vehicle, $modification);
+    }
+
+    /**
+     * The odometer warning every other write returns (K4), as the web form flashes it.
+     *
+     * @return list<array{code: string, detail: string}>
+     */
+    private function warnings(Vehicle $vehicle, Modification $modification): array
+    {
+        return ApiWriter::odometerWarnings(
+            $this->odometer->warningForEntry($vehicle, OdometerSource::Modification, $modification->id),
+        );
     }
 
     /**

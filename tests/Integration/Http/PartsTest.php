@@ -663,7 +663,7 @@ final class PartsTest extends AppTestCase
         self::assertSame(303, $sold->getStatusCode(), self::body($sold));
         $fittings = $parts->fittings($this->part($app, $golf, $roofBox->id));
         self::assertSame(RemovalOutcome::Sold, $fittings[count($fittings) - 1]->outcome);
-        self::assertContains($fittings[count($fittings) - 1]->soldPrice, [null, '0.000'], 'not the 9,999 they sent');
+        self::assertNull($fittings[count($fittings) - 1]->soldPrice, 'no price, not the 9,999 they sent nor 0 (K5)');
 
         // The owner, with costs, sees them.
         self::assertStringContainsString('1,234.56', self::body($owner->get($v . '/parts/' . $roofBox->id)));

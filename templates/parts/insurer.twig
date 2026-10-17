@@ -108,7 +108,7 @@
                                 {% if can_declare %}
                                     <div class="btn-row no-print">
                                         {% if row.isDeclared() %}
-                                            <button type="submit" class="btn btn--ghost" name="clear" value="{{ row.modification.id }}">{{ ui.icon('undo') }}{{ 'insurer.clear'|trans }}<span class="visually-hidden">: {{ data.title }}</span></button>
+                                            <button type="submit" class="btn btn--ghost" name="clear" value="{{ row.modification.id }}" formnovalidate>{{ ui.icon('undo') }}{{ 'insurer.clear'|trans }}<span class="visually-hidden">: {{ data.title }}</span></button>
                                         {% else %}
                                             <button type="submit" class="btn btn--soft" name="only" value="{{ row.modification.id }}">{{ ui.icon('check_circle') }}{{ 'insurer.mark'|trans }}<span class="visually-hidden">: {{ data.title }}</span></button>
                                         {% endif %}

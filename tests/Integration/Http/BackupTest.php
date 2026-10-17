@@ -44,6 +44,7 @@ use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Domain\Backup\BackupKind;
 use Logbook\Service\Backup\BackupRecorder;
 use Logbook\Service\Backup\BackupService;
+use Logbook\Service\Backup\InvalidBackup;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Expense\ExpenseService;
 use Logbook\Service\Feature\FeatureToggles;
@@ -281,6 +282,36 @@ final class BackupTest extends AppTestCase
 
         self::assertSame([], array_values(array_diff($tables, $known)), 'a new table needs a place in BackupRepository::TABLES');
         self::assertSame([], array_values(array_diff($known, $tables)));
+    }
+
+    public function testTheCommandLineFindsABareNameInTheBackupPathAndSaysWhenAFileIsMissing(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir . '/']);
+        $backups = $this->service($app, BackupService::class);
+        mkdir($this->backupDir);
+        $backups->create($this->backupDir . '/logbook-backup-x.zip');
+
+        // K64: the bare name docs/deployment.md shows after `create`.
+        $found = $backups->locate('logbook-backup-x.zip');
+        self::assertSame($this->backupDir . '/logbook-backup-x.zip', $found);
+        self::assertSame($found, $backups->locate($found), 'a path that exists is used as given');
+        self::assertNotSame('', $backups->inspect($found)->appVersion, 'and it reads');
+
+        foreach (['missing.zip', $this->backupDir . '/missing.zip', 'elsewhere/logbook-backup-x.zip'] as $missing) {
+            try {
+                $backups->locate($missing);
+                self::fail('expected not_found for ' . $missing);
+            } catch (InvalidBackup $e) {
+                self::assertSame('backup.error.not_found', $e->key);
+                self::assertSame(['file' => $missing], $e->params);
+            }
+        }
+        try {
+            $backups->inspect($this->backupDir . '/missing.zip');
+            self::fail('expected not_found');
+        } catch (InvalidBackup $e) {
+            self::assertSame('backup.error.not_found', $e->key, 'not "This is not a ZIP file."');
+        }
     }
 
     public function testTheCommandLineMakesTheSameBackups(): void

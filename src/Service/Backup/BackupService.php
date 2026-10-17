@@ -150,6 +150,25 @@ final readonly class BackupService
     }
 
     /**
+     * The file a command-line path names: as given when it exists, else a bare
+     * file name in BACKUP_PATH, where `create` writes (K64).
+     *
+     * @throws InvalidBackup `backup.error.not_found` when neither exists
+     */
+    public function locate(string $path): string
+    {
+        if (is_file($path)) {
+            return $path;
+        }
+        $inBackups = rtrim($this->settings->backupPath, '/\\') . '/' . $path;
+        if (basename($path) === $path && is_file($inBackups)) {
+            return $inBackups;
+        }
+
+        throw new InvalidBackup('backup.error.not_found', ['file' => $path]);
+    }
+
+    /**
      * Check a backup completely without changing anything.
      *
      * @throws InvalidBackup
@@ -203,8 +222,11 @@ final readonly class BackupService
     {
         self::requireZip();
 
+        if (!is_file($path)) {
+            throw new InvalidBackup('backup.error.not_found', ['file' => $path]);
+        }
         $zip = new ZipArchive();
-        if (!is_file($path) || $zip->open($path, ZipArchive::RDONLY) !== true) {
+        if ($zip->open($path, ZipArchive::RDONLY) !== true) {
             throw new InvalidBackup('backup.error.not_a_zip');
         }
 

@@ -34,6 +34,8 @@ final class JsonInput
 {
     private const string NUMBER = '/^-?[0-9]+(\.[0-9]+)?$/';
     private const string LOCALE = 'en';
+    /** The most rows a parts list (`parts_fitted`, `parts_removed`) takes in one request. */
+    private const int MAX_ROWS = 20;
 
     /** API field → form field, for the fill-up form. */
     public const array FUEL_FIELDS = [
@@ -883,8 +885,8 @@ final class JsonInput
     private static function rows(array $body, string $name, ValidationErrors $errors): array
     {
         $value = $body[$name] ?? [];
-        if (!is_array($value) || !array_is_list($value) || count($value) > 20) {
-            $errors->add($name, 'api.validation.list');
+        if (!is_array($value) || !array_is_list($value) || count($value) > self::MAX_ROWS) {
+            $errors->add($name, 'api.validation.rows', ['max' => self::MAX_ROWS]);
 
             return [];
         }

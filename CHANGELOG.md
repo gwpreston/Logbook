@@ -6,6 +6,24 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Fixed
+- **A part sold by someone who can't see costs** is stored with no price,
+  not £0, so the owner no longer sees "sold for £0". A sale entered with
+  the price left blank is stored the same way.
+- **The API's modification writes** (`POST` and `PATCH
+  /vehicles/{id}/modifications`) return the `odometer_backwards` and
+  `odometer_jump` warnings, as every other write does.
+- **Ask's and MCP's `vehicle_summary`** counts only running costs in its
+  12-month total, as `costs` and `cost_per_distance` do; modification
+  spend is given beside it as `build_total`.
+- **On the *For your insurer* page,** *Clear* works when the date field is
+  blank or in the future.
+- **The API's error for a parts list that's too long** now says the limit
+  is 20.
+- **`php bin/backup.php check` and `restore`** find a bare file name in
+  `BACKUP_PATH`, as `docs/deployment.md` shows, and say "No such file"
+  for a file that's missing instead of "This is not a ZIP file."
+
 ## [3.16.2] — 2026-10-17
 
 Phase 52: **the README and the docs, for someone deciding.** A docs-only
