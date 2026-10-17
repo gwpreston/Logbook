@@ -76,7 +76,7 @@ recorded so they aren't lost; confirm before fixing):
 |---|---|---|---|---|---|---|
 | K35 | MEDIUM | UI | Several tap targets on the new pages are under 44 px at 375 px: the breadcrumb links (40–42 px), the part page's fitting-row link (16 px), the insurer page's modification title link (20 px) and the per-row *Mark declared* button (38 px). | `templates/parts/insurer.twig`, `modification_show.twig`, `part_show.twig`, `index.twig` | 50.1/50.2 | Open |
 | K36 | LOW | UI | About 50 px of blank space between the *For your insurer* link and the first modification row on the Parts tab. | `templates/parts/index.twig:39` | 50.2 | Scheduled (Phase 52.2) |
-| K37 | LOW | UI | On a new part, neither *Warranty starts from* radio is selected, and the hint doesn't say which applies when neither is chosen. | `templates/parts/part_form.twig` | 50.2 | Scheduled (Phase 52.2, after #482) |
+| K37 | LOW | UI | On a new part, neither *Warranty starts from* radio is selected, and the hint doesn't say which applies when neither is chosen. | `templates/parts/part_form.twig` | 50.2 | Scheduled (Phase 52.2; #482 decided: *Purchase date* selected on a new part) |
 | K38 | LOW | UI | The demo banner prints above the *For your insurer* report (demo mode only). | `templates/parts/insurer.twig`, print CSS | 50.2 | Scheduled (Phase 52.2) |
 | K39 | LOW | UI | The part page shows the warranty but not whether *Remind me before it ends* is on; the tick appears only on the form. Needs a decision (open question) on whether to show it. | `templates/parts/part_show.twig` | 50.2 | Open |
 

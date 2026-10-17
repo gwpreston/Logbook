@@ -30,8 +30,8 @@ modifications*), §7.36 (*Demo mode*), §8 *Printing reports*, and
    Mar 2026").
 2. **K36.** No blank gap of about 50 px between the *For your insurer*
    link and the first modification row on the Parts tab.
-3. **K37.** A new part's *Warranty starts from* says which start applies
-   when neither is chosen. How it says so is open question #482.
+3. **K37.** A new part's *Warranty starts from* has *Purchase date*
+   selected, so a start is always shown (#482, decided 2026-10-17).
 4. **K38.** The demo banner doesn't print on the *For your insurer*
    report, or on any other printed page.
 
@@ -65,8 +65,8 @@ modifications*), §7.36 (*Demo mode*), §8 *Printing reports*, and
 
 ## Decisions (and why)
 
-These need no decision from the owner. Each makes the code or docs say
-what the spec already says.
+Apart from K37, which #482 decided, these need no decision from the
+owner. Each makes the code or docs say what the spec already says.
 
 - **K17 reuses the part page's strings:**
   `part.warranty.until_both`, `until_date`, `until_distance`, `active`,
@@ -75,6 +75,9 @@ what the spec already says.
   away. `ask.result.in_warranty` is removed if nothing else uses it.
   The tool's data fields (`active`, `until`, `until_odometer`) don't
   change, only `display`.
+- **K37 follows #482** (decided by the owner): the form chooses
+  *Purchase date* for a new part. Nothing stored changes for existing
+  parts, and the API's default stays #427's.
 - **K38 hides the demo banner in print on every page,** not only on the
   insurer report. Like the navigation, it is chrome rather than content,
   and every printed page would show it otherwise.
@@ -92,7 +95,8 @@ what the spec already says.
 ### 52.2.0 Start of phase
 
 - [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). Decide #482 with the owner.
+      `known-issues.md` (CLAUDE.md §12). #482 is decided; decide the
+      release.
 
 ### 52.2.1 Parts polish (batch 3)
 
@@ -102,7 +106,11 @@ what the spec already says.
       warranty with a date and one with both limits.
 - [ ] Remove the gap under the *For your insurer* link on the Parts tab
       (K36). Check it at 375 px and 1280 px.
-- [ ] *Warranty starts from* on a new part, as #482 decides (K37).
+- [ ] *Purchase date* selected in *Warranty starts from* on a new part's
+      form: the values for a new part carry `warranty_from=purchase`,
+      and an edit shows what's stored (K37, #482). `PartsTest` checks
+      the chip on the new-part form, and that a part saved with it and
+      no bought-on date runs its warranty from the first fitting.
 - [ ] `.demo-banner` hidden under `@media print` (K38). A test checks
       the rule is there; the insurer report is checked in print preview.
 
@@ -135,21 +143,13 @@ what the spec already says.
 
 ## Open questions
 
-- **#482.** On a new part, neither *Warranty starts from* chip is
-  selected, and the hint doesn't say what happens then. Today the
-  warranty runs from the purchase date when there is one, and from the
-  fitting otherwise (`PartForm::defaultStart()`). Options:
-  1. Keep both chips unselected, and add that rule to the hint: "Left
-     blank: from the purchase date if there is one, otherwise from the
-     fitting."
-  2. Select *Purchase date* on a new part, since a bought-on date is
-     usually entered. The rule still applies when the date is left
-     blank.
-  3. Select the chip that matches as the bought-on date is typed or
-     cleared (JS), with option 1's hint for the no-JS case.
-
-  **Recommended: 1.** It changes no stored data, works without JS, and
-  shows the rule the code already applies.
+- **#482. Decided 2026-10-17:** option 2. A new part's form has
+  *Purchase date* selected in *Warranty starts from*, since a bought-on
+  date is usually entered. A purchase-date start with no bought-on date
+  still runs from the first fitting, as `PartWarranty` already does. The
+  API and imports keep #427's default (the purchase date when there is
+  one, else the first fitting). Not chosen: a hint only (1); a chip that
+  follows the bought-on date as it's typed, with JS (3). spec §7.39.
 - **Release.** Not decided yet. It could go with Phase 52.1's v3.16.3
   if both are merged before that tag, or be its own patch. Decide at
   52.2.0.

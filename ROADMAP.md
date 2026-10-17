@@ -1409,8 +1409,8 @@ docs.*
 
 - Ask's `parts` tool words a warranty like the part page, in German too,
   and keeps an ended warranty's date (K17); no gap under *For your
-  insurer* (K36); *Warranty starts from* says which start applies (K37,
-  #482); the demo banner doesn't print (K38).
+  insurer* (K36); a new part's *Warranty starts from* has *Purchase
+  date* selected (K37, #482); the demo banner doesn't print (K38).
 - K1's and K3's questions logged, not decided (K30); spec §8 lists every
   printable page (K32); §7.24 covers undeclared modifications (K33);
   Phase 50.2's start task names #444–#447 (K34). No migration.
