@@ -1,16 +1,17 @@
-# Phase 52.1 — Quick wins from the known-issues log
+# Phase 52.1 — Quick wins from the known-issues log + patch release
 
 *Eight open rows of the known-issues log closed, each small, each with a
 regression test.*
 
-Status: 🚧 in progress · branch `known-issues-batch-1` · file lives in `docs/phases/`
+Status: 🚧 in progress · to be released as **v3.16.3** · branch `known-issues-batch-1` · file lives in `docs/phases/`
 
 The known-issues log has more open rows than one phase should take on.
 This phase takes the smallest ones that need no decision from the owner:
 a stray comment, an error message, one template attribute, and four
 small logic bugs in parts, the API, Ask and the backup command line. It
 is numbered 52.1 because it branches off master after Phase 52 and
-before Phase 53.1 starts. Later batches can follow the same pattern.
+before Phase 53.1 starts. It ships on its own as patch release v3.16.3
+(#481). Later batches can follow the same pattern.
 
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 (*Backup and restore*), §7.20 (*Writes*, *Warnings*), §7.26 (the Ask
@@ -69,8 +70,9 @@ code's own comments already say:
   description is unchanged, since it already said "running cost".
 - **Only *Clear* skips the browser's date check** (K7). *Clear* doesn't
   use the date. *Mark* needs one and the server refuses the same dates,
-  so its browser check stays. Whether *Mark* should change too is open
-  question #480.
+  so its browser check stays (#480, decided 2026-10-17).
+- **Released on its own** as patch v3.16.3 (#481, decided 2026-10-17),
+  like Phase 51.4: the fixes are small and don't depend on Phase 53.
 - **The parts-list error gets its own key** (K26),
   `api.validation.rows` with `{max}`. `api.validation.list` ("Use a list
   of text values.") stays for the lists of codes and ids it describes.
@@ -102,7 +104,8 @@ code's own comments already say:
 - [ ] `bin/test-all-dbs.sh` on PostgreSQL, MySQL and MariaDB (run on
       SQLite so far).
 - [ ] Merge review, then merge.
-- [ ] Release, once #481 is decided.
+- [ ] Release: VERSION 3.16.3, CHANGELOG 3.16.3, README status (#481).
+- [ ] Tag `v3.16.3` after the merge.
 
 ## Acceptance criteria
 
@@ -114,11 +117,9 @@ code's own comments already say:
 
 ## Open questions
 
-- **#480.** Should *Mark declared* on the insurer page skip the
-  browser's date check as well (K7 named both buttons)? Options: (1)
-  leave it, since the browser blocks only dates the server would refuse;
-  (2) add `formnovalidate` and let the server's message show.
-  Recommended: (1).
-- **#481.** How is this released? Options: (1) on its own as patch
-  v3.16.3, like Phase 51.4; (2) with Phase 53.2's release. Recommended:
-  (1), because the fixes are small and don't depend on Phase 53.
+- **#480. Decided 2026-10-17:** *Mark declared* keeps the browser's date
+  check (option 1). Only *Clear* has `formnovalidate`. K7 named both
+  buttons, but the browser blocks only dates the server would refuse
+  anyway.
+- **#481. Decided 2026-10-17:** released on its own as patch v3.16.3
+  (option 1), not with Phase 53.2.

@@ -109,7 +109,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
-| [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log | 🚧 |
+| [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | 🚧 |
 | [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
@@ -1384,7 +1384,7 @@ and how to try it, and find the right guide for anything deeper.*
 
 ---
 
-## Phase 52.1 — Quick wins from the known-issues log
+## Phase 52.1 — Quick wins from the known-issues log + patch release
 *Eight small open rows of the known-issues log closed, each with a
 regression test.*
 
@@ -1395,7 +1395,8 @@ regression test.*
   blocked by the date field (K7).
 - The parts-list limit named in its error (K26); the backup command line
   finds a bare name in `BACKUP_PATH` and says when a file is missing
-  (K64); a stray docblock (K22); K23 already fixed. No migration.
+  (K64); a stray docblock (K22); K23 already fixed. No migration;
+  patch release v3.16.3.
 
 → [`phase-52.1.md`](docs/phases/phase-52.1.md)
 

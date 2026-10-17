@@ -11389,14 +11389,16 @@ task breakdowns live in the per-phase files; this is the map.
   change and no migration; released on its own as v3.16.2, a docs-only
   patch (decided 2026-10-17). See
   [`phase-52.md`](docs/phases/phase-52.md).
-- **Phase 52.1 — Quick wins from the known-issues log** (in progress).
+- **Phase 52.1 — Quick wins from the known-issues log + patch release**
+  (in progress).
   Modification writes on the API return the odometer warning (§7.20,
   K4); a sale with no price is stored with none (§6, §7.39, K5);
   `vehicle_summary`'s 12-month total is running costs only, with
   `build_total` beside it (§7.26, K6); *Clear* on the insurer page skips
   the date check (K7); the parts-list limit named in its error (K26);
   the backup command line finds a bare name in `BACKUP_PATH` (§7.13,
-  K64); K22 and K23. No migration. Release open (#481). See
+  K64); K22 and K23. No migration. Released on its own as v3.16.3, a
+  patch (#481, decided 2026-10-17); *Mark* keeps its date check (#480). See
   [`phase-52.1.md`](docs/phases/phase-52.1.md).
 - **Phase 53.1 — Reading text from images: the OCR engine** (planned).
   Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
