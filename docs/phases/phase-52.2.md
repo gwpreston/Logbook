@@ -157,8 +157,13 @@ owner. Each makes the code or docs say what the spec already says.
 
 - [x] Known-issues rows K17, K30, K31, K32, K33, K34, K36, K37, K38
       and K68 *Fixed*.
+- [x] The merge review's follow-ups recorded (issue sweep): K69–K72 and
+      #487–#488; K70 (spec §7.26 and `docs/parts.md` warranty wording)
+      fixed here.
 - [x] CHANGELOG *Unreleased*; spec §13; ROADMAP status.
-- [ ] Merge review, then merge.
+- [x] Merge review: MERGE at `bc20036a` (the first, at `55b80920`,
+      rejected stale built assets).
+- [ ] Merge.
 
 ## Acceptance criteria
 
@@ -183,3 +188,9 @@ owner. Each makes the code or docs say what the spec already says.
   owner also added K31 and K68 to the phase.
 - **#484, #485** (K1, K3): logged here per K30, *Needs a decision*. Not
   decided in this phase.
+- **#487** (K71, found in the merge review): which *Warranty starts from*
+  chip the edit form shows for a part with no stored warranty start.
+  *Needs a decision*; not decided in this phase.
+- **#488** (K72, found in the merge review): whether the `note` strings
+  in Ask and MCP tool results follow the user's language. *Needs a
+  decision*; not decided in this phase.
