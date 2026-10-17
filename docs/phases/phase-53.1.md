@@ -146,7 +146,9 @@ PaddleOCR; `OCR_ENGINE`), the spec wins:
 - [x] `docker-compose.yml` (and the MySQL file's OCR variables): an
       optional `ocr` profile running PaddleOCR, built from
       `docker/paddleocr/` for amd64 and arm64 (#495: there is no official
-      arm64 serving image). 1.5 GB built on arm64.
+      arm64 serving image). 1.5 GB built on arm64, 1.9 GB on amd64.
+      PaddlePaddle pinned to 3.2.2 after the merge review found 3.3.1
+      failing every request on amd64 (Paddle #77340).
 
 ### 53.1.2 Preparation
 - [x] `ImagePreparer`: each step with a unit test on a known image (GD;

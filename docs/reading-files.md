@@ -27,7 +27,7 @@ to check what a vision model read, and to fill a fill-up with no AI at all.
 |---|---|---|
 | Runs | on the Logbook server, as a program | as a separate service, reached over HTTP |
 | Install | in the Docker image already; one package on Debian or Ubuntu | the compose file's `ocr` profile, or your own container |
-| Size | about 80 MB with English and German | about 1.5 GB, plus its models |
+| Size | about 80 MB with English and German | 1.5 GB (arm64) to 1.9 GB (amd64), plus its models |
 | Speed | about a second a page | several seconds a page on a CPU; set `OCR_TIMEOUT=120` |
 | Good at | clear prints, receipts and A4 pages; runs on a Raspberry Pi | photos, curved or creased receipts, small print |
 

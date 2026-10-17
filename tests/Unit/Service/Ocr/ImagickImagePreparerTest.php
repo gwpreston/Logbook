@@ -83,6 +83,30 @@ final class ImagickImagePreparerTest extends TestCase
         self::assertSame([100, 400], [$prepared->width, $prepared->height]);
     }
 
+    public function testAnAnimatedImageIsLeftToGd(): void
+    {
+        $frames = new \Imagick();
+        foreach (['white', 'black'] as $colour) {
+            $frame = new \Imagick();
+            $frame->newImage(60, 40, $colour);
+            $frame->setImageFormat('webp');
+            $frames->addImage($frame);
+        }
+        $frames->setFormat('webp');
+        $animated = $frames->getImagesBlob();
+        self::assertSame(2, (new \Imagick())->pingImageBlob($animated) ? self::frames($animated) : 0);
+
+        self::assertNull((new ImagickImagePreparer())->prepare($animated));
+    }
+
+    private static function frames(string $blob): int
+    {
+        $image = new \Imagick();
+        $image->pingImageBlob($blob);
+
+        return $image->getNumberImages();
+    }
+
     public function testFilesGdWouldNotTakeAreRefusedAndTheChooserUsesImagick(): void
     {
         $imagick = new ImagickImagePreparer();

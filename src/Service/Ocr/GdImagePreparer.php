@@ -32,6 +32,8 @@ final class GdImagePreparer implements ImagePreparer
     private const float CLIP_LIGHT = 0.01;
     /** Ink and paper this many grey levels apart need no stretch: it only blurs a clean print. */
     public const int GOOD_CONTRAST = 200;
+    /** Memory a GD truecolor pixel takes, with some slack. */
+    private const int BYTES_PER_COPY_PIXEL = 5;
     private const int MIN_TEXT_HEIGHT = 20;
     private const int TARGET_TEXT_HEIGHT = 30;
     /** Most dark pixels the deskew search looks at. */
@@ -108,8 +110,9 @@ final class GdImagePreparer implements ImagePreparer
             $scale *= $factor;
         }
         unset($image);
-        // A rotated or rescaled copy and the small copy for analysis.
-        ImageCleaner::makeRoomFor(imagesx($paper) * imagesy($paper), 3);
+        // At most two fitted copies alive at once (the page and its rotated or
+        // rescaled copy), at GD's 4 bytes a pixel plus slack; the analysis copy is small.
+        ImageCleaner::makeRoomFor(imagesx($paper) * imagesy($paper), 2, self::BYTES_PER_COPY_PIXEL);
 
         return $paper;
     }

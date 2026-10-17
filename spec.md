@@ -7634,6 +7634,9 @@ only: nothing users see changes until Phase 53.2 uses it.
     it answers with text lines (`rec_texts`, `rec_scores`, `rec_boxes`),
     not words, so each word's box is estimated from its place in its
     line. No redirect is followed; its languages are set where it runs.
+    The admin page shows its address without any user name or password.
+    The compose profile pins PaddlePaddle 3.2.2: 3.3's CPU path fails
+    every request on x86 (Paddle #77340).
   - **Which one** (#494): `OCR_ENGINE` = `auto` (default: PaddleOCR when
     `OCR_URL` is set, else Tesseract) | `tesseract` | `paddleocr` |
     `off`. The chosen engine missing means no OCR; Logbook never falls
@@ -7646,7 +7649,12 @@ only: nothing users see changes until Phase 53.2 uses it.
     before it is decoded; the prepared page is at most 4,000 px on its
     long edge;
   - "a memory limit": there's no `ulimit` without a shell, so memory is
-    bounded by those sizes and by one Tesseract thread;
+    bounded by those sizes and by one Tesseract thread. GD decodes the
+    photo once (as any upload is), fits it to 4,000 px, and then reserves
+    room for two working copies at that size only. Imagick's pixel cache,
+    outside PHP's limit, is capped at 128 MB in memory, 128 MB mapped and
+    1 GB on disk, a JPEG is decoded at about the size used, and a file
+    with more than one frame goes to GD;
   - **one run per user at a time**, sharing the AI lock (`ai_busy`,
     §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 + 30 seconds at most. A
     caller that already holds it (a scan going on to a model, 53.2)
@@ -7694,8 +7702,9 @@ only: nothing users see changes until Phase 53.2 uses it.
   its layout text, confidence and time, and may run for `OCR_TIMEOUT`
   plus 30 seconds. Admins only, CSRF-protected.
 - `bin/ai-eval.php --ocr` reports the character accuracy of the layout
-  text against hand-typed transcripts of `tests/Fixtures/scans/`
-  (`<name>.txt`), per kind, with and without preparation, and with GD
+  text against transcripts of `tests/Fixtures/scans/` (`<name>.txt`,
+  written by `build.php` from what each fixture prints; real receipts'
+  are typed by hand), per kind, with and without preparation, and with GD
   and Imagick where loaded. Real fuel receipts (faded, creased, angled)
   are added by the owner (#496).
 
@@ -10582,8 +10591,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   the default, | `tesseract` | `paddleocr` | `off`; anything else stops
   the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up
   on `PATH`; `off` turns it off), `OCR_URL` (a PaddleOCR service's
-  `http://` or `https://` address; empty for none; anything else stops
-  the app at start), `OCR_TIMEOUT` (seconds per page, default `30`,
+  `http://` or `https://` address with a host, an underscore allowed;
+  empty for none; anything else stops the app at start, with a message
+  that doesn't repeat the value), `OCR_TIMEOUT` (seconds per page, default `30`,
   1–300).
 - Scheduler (§7.30, Phase 28.1): `SCHEDULER_INTERVAL` (seconds between
   passes; default `900`): the Docker loop's spacing, and on every install

@@ -61,10 +61,30 @@ final class OcrConfigTest extends TestCase
         OcrConfig::fromEnv(new Env(['OCR_ENGINE' => 'easyocr']));
     }
 
-    public function testAnAddressThatIsNotHttpStopsTheApp(): void
+    public function testAnAddressThatIsNotHttpStopsTheAppWithoutRepeatingIt(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        foreach (['file:///etc/passwd', 'ftp://user:s3cret@paddle', 'http://', 'paddleocr:8080', 'http://paddle ocr'] as $bad) {
+            try {
+                OcrConfig::fromEnv(new Env(['OCR_URL' => $bad]));
+                self::fail($bad . ' was accepted');
+            } catch (InvalidArgumentException $e) {
+                self::assertSame('OCR_URL must be an http:// or https:// address with a host name.', $e->getMessage());
+            }
+        }
+    }
 
-        OcrConfig::fromEnv(new Env(['OCR_URL' => 'file:///etc/passwd']));
+    public function testDockerStyleHostNamesAreAccepted(): void
+    {
+        foreach (['http://paddle_ocr:8080', 'https://ocr.lan', 'http://[::1]:8080', 'http://192.168.1.5:8080/'] as $good) {
+            self::assertSame(rtrim($good, '/'), OcrConfig::fromEnv(new Env(['OCR_URL' => $good]))->paddleOcrUrl, $good);
+        }
+    }
+
+    public function testThePasswordIsNotShown(): void
+    {
+        $ocr = OcrConfig::fromEnv(new Env(['OCR_URL' => 'https://logbook:s3cret@ocr.lan:8443/base']));
+
+        self::assertSame('https://ocr.lan:8443/base', $ocr->paddleOcrAddress());
+        self::assertSame('https://logbook:s3cret@ocr.lan:8443/base', $ocr->paddleOcrUrl, 'still used for the request');
     }
 }

@@ -20,6 +20,8 @@ final class ImagickImagePreparer implements ImagePreparer
     private const float DESKEW_THRESHOLD = 0.4;
     /** Degrees below which a page is left as it is, as GD's half-step. */
     private const float MIN_ANGLE = 0.25;
+    /** Bytes of ImageMagick pixel cache kept in memory. */
+    private const int MEMORY_LIMIT = 128 * 1024 * 1024;
 
     public function isAvailable(): bool
     {
@@ -32,9 +34,17 @@ final class ImagickImagePreparer implements ImagePreparer
             return null;
         }
         try {
+            self::limitResources();
             $image = new \Imagick();
+            // An animated WebP or multi-frame file would decode every frame: GD takes those.
+            $image->pingImageBlob($bytes);
+            if ($image->getNumberImages() !== 1) {
+                return null;
+            }
+            $image->clear();
+            // A JPEG is decoded straight at about the size used (libjpeg's shrink on load).
+            $image->setOption('jpeg:size', sprintf('%dx%d', GdImagePreparer::MAX_EDGE, GdImagePreparer::MAX_EDGE));
             $image->readImageBlob($bytes);
-            $image->setIteratorIndex(0);
             $image->autoOrient();
             $image->setImageBackgroundColor('white');
             $image->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
@@ -88,6 +98,19 @@ final class ImagickImagePreparer implements ImagePreparer
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * ImageMagick's own memory is outside PHP's memory_limit, so cap it:
+     * past these it pages to disk (itself capped) or fails, and GD is used.
+     */
+    private static function limitResources(): void
+    {
+        \Imagick::setResourceLimit(\Imagick::RESOURCETYPE_MEMORY, self::MEMORY_LIMIT);
+        \Imagick::setResourceLimit(\Imagick::RESOURCETYPE_MAP, self::MEMORY_LIMIT);
+        \Imagick::setResourceLimit(\Imagick::RESOURCETYPE_DISK, 1024 * 1024 * 1024);
+        \Imagick::setResourceLimit(\Imagick::RESOURCETYPE_AREA, \Logbook\Support\Storage\ImageCleaner::MAX_PIXELS);
+        \Imagick::setResourceLimit(\Imagick::RESOURCETYPE_THREAD, 1);
     }
 
     /**

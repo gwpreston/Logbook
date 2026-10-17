@@ -41,9 +41,10 @@ final class PaddleOcrEngine implements OcrEngine
 
     public function status(): OcrEngineStatus
     {
-        $url = $this->settings->ocr->paddleOcrUrl;
+        $set = $this->settings->ocr->paddleOcrUrl !== '';
 
-        return new OcrEngineStatus($this->name(), $url !== '', $url !== '' ? 'PaddleOCR' : '', [], $url);
+        // Shown on the admin page: never with a password in it.
+        return new OcrEngineStatus($this->name(), $set, $set ? 'PaddleOCR' : '', [], $this->settings->ocr->paddleOcrAddress());
     }
 
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult

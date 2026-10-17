@@ -231,12 +231,13 @@ final class ImageCleaner
     }
 
     /**
-     * Raises PHP's memory limit, if it is set lower, to hold $copies decoded
-     * images of $pixels each at once (OCR's preparation holds up to three).
+     * Raises PHP's memory limit, if it is set lower, to hold $copies images
+     * of $pixels each at once, at $bytesPerPixel (the default allows for
+     * decoding; a GD truecolor copy is about 5).
      */
-    public static function makeRoomFor(int $pixels, int $copies = 1): void
+    public static function makeRoomFor(int $pixels, int $copies = 1, int $bytesPerPixel = self::BYTES_PER_PIXEL): void
     {
-        $needed = $pixels * self::BYTES_PER_PIXEL * $copies + memory_get_usage() + 32 * 1024 * 1024;
+        $needed = $pixels * $bytesPerPixel * $copies + memory_get_usage() + 32 * 1024 * 1024;
         $limit = self::bytes((string) ini_get('memory_limit'));
         if ($limit !== -1 && $limit < $needed) {
             @ini_set('memory_limit', (string) $needed);

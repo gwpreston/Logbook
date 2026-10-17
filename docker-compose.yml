@@ -101,7 +101,7 @@ services:
     #           capabilities: [gpu]
 
   # Optional PaddleOCR, started only with --profile ocr (Phase 53.1). Built
-  # here for amd64 or arm64; about 2 GB with its models, fetched on first start.
+  # here for amd64 or arm64; 1.5–1.9 GB, plus its models, fetched on first start.
   # Set OCR_URL=http://paddleocr:8080 for the app. It has no sign-in: keep it
   # off published ports.
   paddleocr:

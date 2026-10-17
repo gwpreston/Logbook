@@ -120,12 +120,14 @@ final class PaddleOcrEngineTest extends TestCase
         self::assertSame([], $this->requests);
     }
 
-    public function testStatusNamesTheService(): void
+    public function testStatusNamesTheServiceWithoutItsPassword(): void
     {
         $status = $this->engine(new MockResponse(self::ANSWER))->status();
+        $secret = $this->engine(new MockResponse(self::ANSWER), 'http://user:s3cret@paddle_ocr:8080')->status();
 
         self::assertTrue($status->available);
         self::assertSame('paddleocr', $status->engine);
         self::assertSame('http://paddleocr:8080', $status->location);
+        self::assertSame('http://paddle_ocr:8080', $secret->location);
     }
 }
