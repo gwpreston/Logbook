@@ -247,6 +247,12 @@ Settled in §10 (deployment, *README and docs*) and §13 in 52.0:
   150 lines rather than 120: the nine feature lines Goal 1 asks for and the
   licence text.
 - [x] `CHANGELOG.md`: a line under the next release.
+- [x] Known issues the owner asked for on 2026-10-17 (docs only): K15
+      (CHANGELOG 3.15.0), K20 (the part `warranty` object and History
+      kinds), K60 (`403 demo` in the API and MCP docs and OpenAPI), and K8
+      once its policy was decided (#479: a standing *Unknown values* rule,
+      spec §7.20). OpenAPI description 1.26.1. `CLAUDE.md` points at
+      `CONTRIBUTING.md` for `bin/dev-setup.sh`.
 - [ ] `ROADMAP.md` row ✅.
 
 ---

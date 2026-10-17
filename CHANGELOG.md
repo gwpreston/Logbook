@@ -17,6 +17,13 @@ is called out explicitly.
   link back to the index (Phase 52). Screenshots are made from the demo
   data by `npm run screenshots`, and CI checks the docs' links, index and
   images. No app change.
+- **API docs** (OpenAPI 1.26.1, descriptions only): an *Unknown values* rule:
+  any list of codes the API, webhooks or MCP return may gain values in a
+  release, and a client should accept ones it doesn't know (K8). A part's
+  whole `warranty` object and the History `kinds` are listed (K20), and a
+  demo install's `403 demo`, given before the key is checked, is in the
+  error tables (K60). The 3.15.0 notes now say a rollback deletes every
+  modification draft, and carry the release's date (K15).
 
 ## [3.16.1] — 2026-10-16
 
@@ -92,7 +99,7 @@ with Tracktor.
 - No migration. Password-protected Tracktor exports are refused with "Export
   again from Tracktor without a password".
 
-## [3.15.0] — 2026-10-15
+## [3.15.0] — 2026-10-16
 
 Phase 50: **parts and modifications.** What was fitted, what came off, and
 what the build has cost, kept apart from what the car costs to run; and, from
@@ -157,12 +164,10 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
   list read their fittings once for the page.
 - The Reminders list shows "Part warranty" (and "Issue") instead of a raw key;
   a tampered scanned-rows count draws no more than 20 rows.
-
 - API History's `next` cursor works across a reverted modification (the
   new kind name was longer than the cursor allowed); rolling back the
   warranty-reminder migration on SQLite also removes the reminders'
   delivery rows, so a later backup restores.
-
 - API: a nameless `came_off` row is refused (422) rather than dropped; list
   errors name the row by its place in the body; a JSON body with a long
   string (a 2,200-character note, or any long non-ASCII text escaped as
@@ -174,8 +179,8 @@ insurer, and parts wherever entries go. See [docs/parts.md](docs/parts.md).
   part), reversible on every engine; rolling it back removes the warranty
   reminders it made, clears every part's *Remind me before it ends* tick
   (upgrading again leaves them all off, and *Checked it* marks on part
-  reminders are gone), and deletes Ask and MCP modification drafts not yet
-  added, which the older version can't read.
+  reminders are gone), and deletes every Ask and MCP modification draft
+  (pending, added or discarded), which the older version can't read.
 - API: new paths, the History kinds above, the reminder source `part` and the
   webhook kinds `modification` and `part` are new enum values; a client that
   rejects unknown values should accept them. Modification and part files are

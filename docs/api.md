@@ -109,6 +109,16 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
   language and currency ("48,730 mi", "44.4 mpg").
 - A field with no value is `null`. Codes (`fuel`, `grade`, `category`,
   `status`, …) are the app's own; `openapi.json` lists them.
+
+### Unknown values
+
+Any list of codes the API, its webhooks or the MCP tools return can **gain
+values in any release**: History kinds, reminder sources, webhook kinds,
+attachment owner types, reading sources, cost groups and the rest. A new
+value is not a breaking change and comes without a new API version; the
+[CHANGELOG](../CHANGELOG.md) lists each one. So a client must **accept a
+value it doesn't know**: ignore the item, or show the code as it is, rather
+than fail.
 - A switched-off module's endpoints answer `404`, and its fields leave the
   summary (Fuel off: no `fuel`, no economy).
 
@@ -139,7 +149,7 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
 | `GET /vehicles/{id}/schedules` | maintenance schedules with their due state, most urgent first, as the Maintenance tab: `status` (`overdue`, `soon`, `ok`, `unknown` in your lead times), the `trigger` that applies (date or distance), `due_on` (the date, or the day the distance is projected to be reached: `due_on_projected`), `days_left`, `distance_left` (maintenance module) |
 | `GET /vehicles/{id}/valuations` | valuations, newest first (paged; cost access) |
 | `GET /vehicles/{id}/ownership` | cost of ownership and depreciation, as the overview's card (cost access, else `403`); from 3.15 `running_costs` leaves modifications out and `total` includes them, so `total` can exceed `running_costs` + depreciation |
-| `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them |
+| `GET /vehicles/{id}/history`, `GET /history` | the history feed of one vehicle or every active one, newest first (`?kinds=fuel,expense`, `?since=` / `?until=` days, paged); amounts only where you may see them. The kinds: `fuel`, `odometer`, `maintenance`, `document`, `expense`, `tyre`, `valuation`, `trip`, `incident`, `issue_noticed`, `issue_fixed`, `mot_test`, `modification`, `modification_reverted`, `part_fitted`, `part_removed`, `milestone` (more may be added: [unknown values](#unknown-values)) |
 | `POST /vehicles/{id}/tyres/checks` | record a tread check (read and write key) |
 | `GET /vehicles/{id}/true-cost` | true cost per km for `?period=last_12_months` (default) or `since_bought`: each part (fuel, maintenance, compliance, other, depreciation) and insurance payouts, adding up exactly, the change against the 12 months before, each calendar year and what changed from the year before, with translated sentences (cost access, else `403`) |
 | `GET /vehicles/{id}/finance` | the active finance agreement's figures and schedule, else the latest ended one's; estimates marked as such, never the agreement number (Manage and cost access, else `404`; finance module) |
@@ -696,7 +706,7 @@ write that sends one ignores it.
 | `PATCH`, `DELETE …/modifications/{modification}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting); the parts lists are not patchable |
 | `POST …/modifications/{modification}/revert` | Log | `reverted_on` (default today), `odometer`, `note`, and `remove_parts` and `refit_originals` (both default `true`) |
 | `POST …/modifications/{modification}/undo-revert` | Log (own) or Manage | refused (`422`) while a part the revert put back has come off again |
-| `GET /vehicles/{id}/parts` | View | newest added first, paged; `?status=fitted\|stored\|gone`. Each has its `warranty` (`until`, `until_odometer`, `active`), its `distance` on the vehicle and its `fittings` |
+| `GET /vehicles/{id}/parts` | View | newest added first, paged; `?status=fitted\|stored\|gone`. Each has its `warranty` (null without one; otherwise `months`, `distance` and `distance_unit` as entered, `from` (`purchase` or `fitting`), `provider`, `terms`, and the worked-out `until` date, `until_odometer` and `active`), `warranty_reminder`, its `distance` on the vehicle and its `fittings` |
 | `GET /vehicles/{id}/parts/{part}` | View | one, with an `ETag` over the part and its fittings |
 | `POST /vehicles/{id}/parts` | Log | `name` (required), `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`, `price`, `condition`, `warranty_months`, `warranty_distance`, `warranty_from` (`purchase` or `fitting`), `warranty_provider`, `warranty_terms`, `warranty_reminder`, `notes`. A retry with the same name, part number and purchase date answers `duplicate: true` |
 | `PATCH`, `DELETE …/parts/{part}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting) |
@@ -912,6 +922,7 @@ Branch on `code`; `detail` and `message` are English text for people.
 | 403 | `insufficient_scope` | a read-only key on a write |
 | 403 | `forbidden` | the user may see the vehicle but not do this with it; or `GET /instance/backup` with a key whose user isn't an admin |
 | 403 | `cors_not_allowed` | a browser preflight from an origin that is not allowed |
+| 403 | `demo` | the install is a [public demo](demo-mode.md): every API request is refused, before the key is checked, so a request with no key gets this too rather than `401` |
 | 404 | `not_found` | no such address or vehicle, a switched-off module, or the API is off |
 | 405 | `method_not_allowed` | see `Allow` |
 | 409 | `vehicle_archived` | writes to an archived vehicle (but a valuation, and *Restore*) |

@@ -5592,6 +5592,15 @@ whole group off: every API path answers 404.
   (`2026-09-29T07:42:00Z`); calendar dates are `YYYY-MM-DD`. Codes
   (fuel, grade, category, status) are the app's enum values. A field with
   no value is `null`, never left out, except the amounts below.
+- **Unknown values** (decided 2026-10-17, #479, K8): every enum the API,
+  its webhooks and the MCP tools return may gain values in any release
+  (History kinds, reminder sources, webhook kinds, attachment owner types,
+  reading sources, cost groups, …). Adding one is not a breaking change
+  and needs no new API version; the CHANGELOG lists it. A client must
+  accept a value it doesn't know, ignoring it or showing it as it is.
+  `docs/api.md` *Unknown values* and the OpenAPI description say so once
+  for every field. Renaming or removing a value is a breaking change, which
+  open question #460 covers.
 - The summary also carries `display`: its figures formatted in the key
   owner's units, locale and currency ("48,730 mi", "52.1 mpg"), for
   sensors that just show text: `odometer`, `economy` (the vehicle's
@@ -11374,7 +11383,9 @@ task breakdowns live in the per-phase files; this is the map.
   `docs/features.md`, contributor material and release steps in
   `CONTRIBUTING.md`, a docs index and `docs/getting-started.md`;
   screenshots from demo data by `npm run screenshots`; a docs checker in
-  CI (§10 *README and docs*; #473–#478 decided 2026-10-17). No app
+  CI (§10 *README and docs*; #473–#478 decided 2026-10-17). With it, the
+  docs-only known issues K8 (§7.20 *Unknown values*, #479), K15, K20 and
+  K60. No app
   change and no migration; noted in the next release's changelog. See
   [`phase-52.md`](docs/phases/phase-52.md).
 
