@@ -25,7 +25,10 @@ use Logbook\Service\Part\RecordParts;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\UnitPreset;
+use Logbook\Domain\Api\ApiScope;
+use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\JsonDoc;
+use Logbook\Tests\Support\McpClient;
 use Logbook\Tests\Support\QueryCounter;
 
 /**
@@ -35,6 +38,8 @@ use Logbook\Tests\Support\QueryCounter;
  */
 final class PartsToolsTest extends ToolsBTestCase
 {
+    use ApiFixtures;
+
     public function testModificationsWithTheirPartsAndTheCostOnlyForThoseWhoSeeCosts(): void
     {
         [$app, $owner] = $this->askApp(['FEATURES_PARTS' => 'true']);
@@ -213,13 +218,19 @@ final class PartsToolsTest extends ToolsBTestCase
             $parts->create($golf, new PartData($name, warrantyMonths: 24), $zone, fitOn: $on, fitKm: '40000.000');
         }
 
-        $sent = $counter->histogram(fn () => $this->toolResult($app, $owner, 'parts', ['vehicles' => [$golf->id]]));
-        $latest = array_sum(array_filter(
+        $latest = static fn (array $sent): int => array_sum(array_filter(
             $sent,
             static fn (string $sql): bool => str_contains($sql, 'reading_km') && str_contains($sql, 'odometer_readings'),
             ARRAY_FILTER_USE_KEY,
         ));
-        self::assertSame(1, $latest, 'one latest-reading query for three parts');
+        $ask = $counter->histogram(fn () => $this->toolResult($app, $owner, 'parts', ['vehicles' => [$golf->id]]));
+        self::assertSame(1, $latest($ask), 'Ask: one latest-reading query for three parts');
+
+        $mcp = new McpClient($app, $this->apiKey($app, $owner, ApiScope::Read));
+        $call = $counter->histogram(static fn () => McpClient::result(
+            $mcp->modern('tools/call', ['name' => 'parts', 'arguments' => ['vehicles' => [$golf->id]]]),
+        ));
+        self::assertSame(1, $latest($call), 'MCP: the same');
     }
 
     public function testADraftModificationIsACardUntilAddAndHasNoParts(): void

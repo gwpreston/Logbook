@@ -132,7 +132,8 @@ owner. Each makes the code or docs say what the spec already says.
       merge review.
 - [x] The `parts` tool reads the latest odometer once per vehicle
       (`PartService::warrantyAt()`, `distanceAt()`); `PartsToolsTest`
-      counts one such query for three parts (seven before) (K31).
+      counts one such query for three parts (seven before), through Ask
+      and through MCP's `tools/call` (K31).
 - [x] `vehicle_summary`'s description and a `note` in
       `running_cost_last_12_months` (when there is build spend), and
       `mcp.tool.costs`, `cost_per_distance` and `vehicle_summary` in
