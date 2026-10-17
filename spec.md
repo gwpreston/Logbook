@@ -11397,8 +11397,9 @@ task breakdowns live in the per-phase files; this is the map.
   `build_total` beside it (§7.26, K6); *Clear* on the insurer page skips
   the date check (K7); the parts-list limit named in its error (K26);
   the backup command line finds a bare name in `BACKUP_PATH` (§7.13,
-  K64); K22 and K23; Phase 53.1's prerequisite link (K66). No migration. Released on its own as v3.16.3, a
-  patch (#481, decided 2026-10-17); *Mark* keeps its date check (#480). See
+  K64); K22 and K23; Phase 53.1's prerequisite link (K66). No
+  migration. Released on its own as v3.16.3, a patch (#481, decided
+  2026-10-17); *Mark* keeps its date check (#480). See
   [`phase-52.1.md`](docs/phases/phase-52.1.md).
 - **Phase 53.1 — Reading text from images: the OCR engine** (planned).
   Tesseract as an optional binary (`TESSERACT_BINARY`, `off` to turn it
