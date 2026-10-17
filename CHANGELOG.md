@@ -6,6 +6,12 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.16.3] — 2026-10-17
+
+Phase 52.1: **quick wins from the known-issues log**
+([docs/phases/phase-52.1.md](docs/phases/phase-52.1.md)). No migration:
+pull and restart.
+
 ### Fixed
 - **A part sold by someone who can't see costs** is stored with no price,
   not £0, so the owner no longer sees "sold for £0". A sale entered with
@@ -23,6 +29,21 @@ is called out explicitly.
 - **`php bin/backup.php check` and `restore`** find a bare file name in
   `BACKUP_PATH`, as `docs/deployment.md` shows, and say "No such file"
   for a file that's missing instead of "This is not a ZIP file."
+
+### Upgrade notes
+- **Sales recorded before this release with no price** keep the £0 they
+  were stored with and still show "Sold · £0": they can't be told apart
+  from a sale really made for £0. Only sales recorded from now on are
+  stored without a price. To clear an old one, clear *Sold for* on the
+  record that took the part off.
+- **API:** a part sold without a price reads back as `sold_price: null`,
+  and the *part fittings* CSV leaves that cell empty. Older sales still
+  read `"0.000"`, so accept both. Modification `POST` and `PATCH` may now
+  return non-empty `warnings`.
+- **MCP and Ask:** `vehicle_summary`'s
+  `running_cost_last_12_months.total` no longer includes modification
+  spend, so it can be lower than before for a modified vehicle. That
+  spend is in the new `build_total`, given when there is some.
 
 ## [3.16.2] — 2026-10-17
 
@@ -3404,7 +3425,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...HEAD
+[3.16.3]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...v3.16.3
 [3.16.2]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...v3.16.2
 [3.16.1]: https://github.com/gwpreston16/Logbook/compare/v3.16.0...v3.16.1
 [3.16.0]: https://github.com/gwpreston16/Logbook/compare/v3.15.0...v3.16.0

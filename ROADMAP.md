@@ -109,7 +109,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [51](docs/phases/phase-51.md) | Import from Tracktor + release | ✅ |
 | [51.4](docs/phases/phase-51.4.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
-| [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | 🚧 |
+| [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | ✅ |
 | [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | 📋 |
 | [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |

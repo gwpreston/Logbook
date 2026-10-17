@@ -4467,7 +4467,10 @@ vehicles; a disabled module cannot be imported).
   moves.
 - CLI: `php bin/backup.php create [file]` (default: into `BACKUP_PATH`)
   and `php bin/backup.php restore <file> --yes` (same checks, same
-  pre-restore backup); suitable for cron.
+  pre-restore backup); suitable for cron. `check <file>` and `restore`
+  take a path; a bare file name that isn't a file where it was typed is
+  looked for in `BACKUP_PATH` (Phase 52.1, K64). A file that can't be
+  found is reported as "No such file", not as "not a ZIP file".
 - **How old is the last backup?** (Phase 47, decided 2026-10-13,
   #396–#402.)
   - **Recorded:** `backup.last` (§6) holds the time (UTC), the kind
@@ -5818,10 +5821,13 @@ are absent from every read, and a write that sends them ignores them.
   "outcome": …, "sold_price": …}`, or `{"came_off": {"name": …,
   "brand": …, "part_number": …, "outcome": …}}`), all in one transaction and
   parsed by the form. Safe to retry: the same vehicle, `done_on` and title
-  answers the stored modification with `duplicate: true`.
+  answers the stored modification with `duplicate: true`. The response
+  carries `warnings` (`odometer_backwards`, `odometer_jump`) for its
+  odometer reading, as the form flashes them (Phase 52.1, K4).
 - `PATCH` and `DELETE …/modifications/{mod}` with `If-Match`, as the other
   entries; the parts lists are not patchable (use the part endpoints). A
   refused change is a 422 naming the part and the dates, as the pages say.
+  A `PATCH` returns the same odometer `warnings` as `POST`.
 - `POST …/modifications/{mod}/revert`: `reverted_on` (default today),
   `odometer`, `note`, `remove_parts` and `refit_originals` (both default
   true); `Log`. `POST …/modifications/{mod}/undo-revert` (`EntryAccess`,
@@ -11392,7 +11398,7 @@ task breakdowns live in the per-phase files; this is the map.
   patch (decided 2026-10-17). See
   [`phase-52.md`](docs/phases/phase-52.md).
 - **Phase 52.1 — Quick wins from the known-issues log + patch release**
-  (in progress).
+  (✅ released as v3.16.3).
   Modification writes on the API return the odometer warning (§7.20,
   K4); a sale with no price is stored with none (§6, §7.39, K5);
   `vehicle_summary`'s 12-month total is running costs only, with
