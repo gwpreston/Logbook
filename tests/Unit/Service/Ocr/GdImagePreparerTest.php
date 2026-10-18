@@ -219,7 +219,8 @@ final class GdImagePreparerTest extends TestCase
         $prepared = (new GdImagePreparer())->prepare((string) ob_get_clean());
 
         self::assertNotNull($prepared);
-        self::assertGreaterThanOrEqual(0xFD, imagecolorat(self::decode($prepared->png), 100, 100) & 0xFF, 'white, within the palette\'s two levels');
+        $white = imagecolorat(self::decode($prepared->png), 100, 100) & 0xFF;
+        self::assertGreaterThanOrEqual(0xFD, $white, 'white, within the palette\'s two levels');
     }
 
     public function testAFileThatIsNotAnImageOrTooLargeGivesNothing(): void

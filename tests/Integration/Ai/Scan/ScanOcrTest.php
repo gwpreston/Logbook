@@ -90,7 +90,8 @@ final class ScanOcrTest extends ScanTestCase
         self::assertSame(1, substr_count($text, 'Hard to read, check this.'), 'only the price');
         self::assertStringContainsString('Not found in the file’s text: “MOONBEAM GARAGE”', $text);
         self::assertSame('', $values['station'] ?? '', 'a value whose evidence is not in the text is dropped');
-        self::assertStringContainsString('Read on this server (text recognition), then by qwen2.5vl:7b on Ollama on the desktop.', $text);
+        $readBy = 'Read on this server (text recognition), then by qwen2.5vl:7b on Ollama on the desktop.';
+        self::assertStringContainsString($readBy, $text);
 
         $task = $this->connection($this->app)->fetchOne("SELECT task FROM ai_requests WHERE outcome = 'ok'");
         self::assertSame('read_document', $task, 'run under the text-only read_document task');
@@ -103,7 +104,7 @@ final class ScanOcrTest extends ScanTestCase
         $this->land($this->scan(ExifJpeg::make(40, 20), 'receipt.jpg', 'image/jpeg'));
 
         self::assertCount(1, $this->provider->requests);
-        self::assertSame('read_text', $this->connection($this->app)->fetchOne("SELECT task FROM ai_requests WHERE outcome = 'ok'"));
+        self::assertSame('read_text', $this->loggedTask());
     }
 
     public function testAVisionModelStaysFirst(): void
@@ -139,7 +140,7 @@ final class ScanOcrTest extends ScanTestCase
         $this->land($this->scan($text, 'receipt.pdf', 'application/pdf'));
 
         self::assertStringNotContainsString('OCR', $this->sentText(0));
-        self::assertSame('read_text', $this->connection($this->app)->fetchOne("SELECT task FROM ai_requests WHERE outcome = 'ok'"));
+        self::assertSame('read_text', $this->loggedTask());
     }
 
     public function testElevenDigitRunsNeverLeaveEvenSplitBySpaces(): void
@@ -189,7 +190,8 @@ final class ScanOcrTest extends ScanTestCase
             'for' => 'fuel',
         ]));
         self::assertSame([], $this->provider->requests);
-        self::assertStringContainsString('needs a model that reads images, or text recognition', html_entity_decode(self::body($page)));
+        $text = html_entity_decode(self::body($page));
+        self::assertStringContainsString('needs a model that reads images, or text recognition', $text);
     }
 
     public function testTheScanPageSaysPhotosAreReadHereFirst(): void
@@ -197,7 +199,8 @@ final class ScanOcrTest extends ScanTestCase
         $form = html_entity_decode(self::body($this->browser->get('/scan')));
 
         self::assertStringContainsString('data-scan-ocr', $form);
-        self::assertStringContainsString('read on this server first (text recognition), and only their text goes to Ollama on the desktop', $form);
+        $where = 'read on this server first (text recognition), and only their text goes to Ollama on the desktop';
+        self::assertStringContainsString($where, $form);
         self::assertStringContainsString('On a phone this opens the camera.', $form, 'photos are offered');
     }
 
@@ -208,7 +211,8 @@ final class ScanOcrTest extends ScanTestCase
         self::assertStringContainsString('<span data-ai-task-ocr>Photos are read with text recognition first.</span>', $page);
 
         $this->scanApp(['TESSERACT_BINARY' => self::FAKE]);
-        self::assertStringNotContainsString('data-ai-task-ocr', self::body($this->browser->get('/settings/ai')), 'not for a vision model');
+        $page = self::body($this->browser->get('/settings/ai'));
+        self::assertStringNotContainsString('data-ai-task-ocr', $page, 'not for a vision model');
     }
 
     public function testTheLockCoversOcrAndTheModel(): void
@@ -238,6 +242,11 @@ final class ScanOcrTest extends ScanTestCase
         self::assertStringContainsString('took too long', html_entity_decode(self::body($page)));
         $logged = $this->connection($this->app)->fetchAllAssociative('SELECT outcome FROM ai_requests');
         self::assertSame([], $logged, 'no model request was made or logged');
+    }
+
+    private function loggedTask(): mixed
+    {
+        return $this->connection($this->app)->fetchOne("SELECT task FROM ai_requests WHERE outcome = 'ok'");
     }
 
     /**

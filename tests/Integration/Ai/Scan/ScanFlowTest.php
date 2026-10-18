@@ -318,7 +318,8 @@ final class ScanFlowTest extends ScanTestCase
         ]));
 
         self::assertSame([], $this->provider->requests, 'nothing is sent to a model that cannot see it');
-        self::assertStringContainsString('needs a model that reads images, or text recognition', html_entity_decode(self::body($page)));
+        $text = html_entity_decode(self::body($page));
+        self::assertStringContainsString('needs a model that reads images, or text recognition', $text);
         self::assertStringContainsString('receipt.jpg will be attached.', self::body($page));
     }
 

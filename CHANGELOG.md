@@ -6,6 +6,76 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.17.0] — 2026-10-18
+
+Phases 53.1 and 53.2: **reading text from images, and scanning photos
+with a text-only model** ([docs/phases/phase-53.1.md](docs/phases/phase-53.1.md),
+[docs/phases/phase-53.2.md](docs/phases/phase-53.2.md)). No migration:
+pull and restart. The Docker image is about 80 MB larger (see *Upgrade
+notes*).
+
+### Added
+- **Reading text from images (OCR).** Logbook can read the text in a
+  photo or scanned PDF on its own server with Tesseract (in the Docker
+  image, with English and German), or with a PaddleOCR service you run
+  (`OCR_URL`; an optional `ocr` compose profile builds one). Settings →
+  AI has a *Reading text from images* card and page showing whether it
+  works, with a *Test it* button.
+- **Scanning photos with a text-only model.** With no model that reads
+  images, a photo or scanned PDF is read by OCR first and only its text
+  goes to your text model, into the same forms as before. The picture is
+  never sent, and runs of 11 digits (a V5C's reference number) are
+  removed from the text first. A vision model, when set up, still comes
+  first. See [docs/reading-files.md](docs/reading-files.md).
+- **"Hard to read, check this"** under a scanned value whose words OCR
+  could hardly read, and each value's words checked against what OCR
+  read, allowing for its usual slips (0 and O, 1 and l).
+- **How a file was read** on the prefilled form ("Read on this server
+  (text recognition), then by *model* on *connection*"); the Scan page
+  says beforehand that photos are read here first, and the task picker
+  says so for a text-only *Reading receipts and documents* model.
+- `bin/ai-eval.php --ocr` (OCR accuracy per kind, GD and Imagick) and
+  `--scans --via=ocr` (the vision and OCR routes side by side).
+
+### Changed
+- **A scanned number that reads two ways**, one separator and three
+  digits (`1,759`, `48.120`), is still read in your locale but marked
+  "Check the number: 1759 or 1.759?".
+- **A scanned value whose words aren't in a text PDF** now says why it
+  was left empty, under its field.
+- **Scanned parts lines** keep a quantity in the name ("Wiper blade ×2"),
+  ignore a VAT note after the price, and read `1 234,56` as one price.
+- **Scanned fill-ups** show their notes (evidence, checks, reasons) under
+  volume, price and total, as other forms do.
+
+### Fixed
+- A receipt's price printed with its unit (`1,759 €/l`, `£1.459/litre`)
+  is read, and an unreadable volume or price says why.
+- A PDF with an oversized page is rendered small instead of to a huge
+  image.
+- An AI or OCR request that runs past its lock no longer frees a later
+  request's lock; the OCR lock covers a slow PDF's render.
+- Settings no longer says Tesseract is ready when it is installed but
+  can't run.
+- `OCR_URL` with a query string or fragment is refused at start; a
+  PaddleOCR answer over 4 MB is refused while it is read.
+- OCR preparation keeps a tilted large photo within 4,000 px, writes an
+  8-bit PNG with GD, and no longer loses a line of a faded photo with
+  Imagick.
+
+### Upgrade notes
+- **Docker image size:** about 80 MB larger (78 MB uncompressed on arm64)
+  for Tesseract and its English and German data.
+- **New, all optional:** `OCR_ENGINE` (`auto`, `tesseract`, `paddleocr`
+  or `off`), `TESSERACT_BINARY`, `OCR_URL`, `OCR_TIMEOUT`. See
+  [docs/configuration.md](docs/configuration.md#ai).
+- **PaddleOCR:** `docker compose --profile ocr up -d` builds and runs it;
+  off by default.
+- **Bare PHP:** `apt install tesseract-ocr tesseract-ocr-deu` to scan
+  photos with a text-only model ([docs/reading-files.md](docs/reading-files.md#bare-php)).
+- **Behaviour:** an install with only a text model (and Tesseract
+  available) now reads photos instead of refusing them.
+
 ## [3.16.4] — 2026-10-17
 
 Phase 52.2: **more quick wins from the known-issues log: Parts polish and

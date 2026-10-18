@@ -203,7 +203,9 @@ the guide to a feature.
   add.
 - **Reading files:** a photo or PDF of an invoice, receipt or certificate
   is read into the right form for you to check, with the file attached.
-  Photos are always stored without their location data.
+  Photos are always stored without their location data. A text-only
+  model can read photos too: OCR on your server reads the text first
+  ([reading-files.md](reading-files.md)).
 - **A REST API with keys** ([api.md](api.md)) that reads, writes, corrects
   and deletes everything the pages do, files included, so Home Assistant,
   Shortcuts, Grafana and Node-RED can read your garage and log fill-ups and

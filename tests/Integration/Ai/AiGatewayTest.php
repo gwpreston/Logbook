@@ -240,7 +240,8 @@ final class AiGatewayTest extends AiTestCase
         self::assertTrue($busy->acquire($owner->id, $now, $second));
 
         $busy->release($owner->id, $first);
-        self::assertFalse($busy->acquire($owner->id, $now, $now->modify('+1 minute')), "the first doesn't free the second's (K76)");
+        $taken = $busy->acquire($owner->id, $now, $now->modify('+1 minute'));
+        self::assertFalse($taken, "the first doesn't free the second's (K76)");
 
         $busy->release($owner->id, $second);
         self::assertTrue($busy->acquire($owner->id, $now, $now->modify('+1 minute')));

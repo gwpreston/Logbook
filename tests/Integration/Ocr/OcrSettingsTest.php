@@ -78,7 +78,8 @@ final class OcrSettingsTest extends AppTestCase
         self::assertStringContainsString('data-ocr-available="0"', $page);
         self::assertStringContainsString('Not found. Check TESSERACT_BINARY', $page);
         self::assertStringContainsString('data-ocr-missing', $page, 'shown as a warning');
-        $warning = '/data-ocr-available="0"><span class="details__flag"><svg class="icon"[^>]*>.*?<\/svg>Not working<\/span><\/dd>/s';
+        $warning = '/data-ocr-available="0"><span class="details__flag"><svg class="icon"[^>]*>.*?<\/svg>'
+            . 'Not working<\/span><\/dd>/s';
         self::assertMatchesRegularExpression($warning, $page);
         self::assertStringNotContainsString('Read the sample receipt', $page);
         $posted = $admin->post('/settings/ocr');
@@ -94,7 +95,8 @@ final class OcrSettingsTest extends AppTestCase
             $admin = $this->signedIn($app);
 
             // K73: found, but it can't run, so it isn't "Ready" or "Set up".
-            self::assertStringContainsString('Set up: Tesseract, on this server, but it doesn', self::body($admin->get('/settings/ai')));
+            $ai = self::body($admin->get('/settings/ai'));
+            self::assertStringContainsString('Set up: Tesseract, on this server, but it doesn', $ai);
             $page = self::body($admin->get('/settings/ocr'));
             self::assertStringContainsString('data-ocr-available="0"', $page);
             self::assertStringContainsString('Found, but it doesn', $page);

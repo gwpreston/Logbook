@@ -111,8 +111,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
 | [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | ✅ |
 | [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | ✅ |
-| [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 🚧 |
-| [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
+| [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | ✅ |
+| [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | ✅ |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
 
@@ -1444,7 +1444,7 @@ its own server.*
 
 ## Phase 53.2 — Reading photos with a text model + release
 *An owner with only a text model (a local Ollama model without vision,
-say) can scan a fuel receipt.*
+say) can scan a fuel receipt. Released with 53.1 as v3.17.0.*
 
 - Photos and scanned PDFs go through OCR and on to the `read_text`
   model when there's no vision model, chosen per file with no setting

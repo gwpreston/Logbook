@@ -29,7 +29,9 @@ final readonly class ReadBy
      */
     public function toArray(): array
     {
-        return ['model' => $this->model, 'connection' => $this->connection] + ($this->engine === null ? [] : ['engine' => $this->engine]);
+        $array = ['model' => $this->model, 'connection' => $this->connection];
+
+        return $this->engine === null ? $array : $array + ['engine' => $this->engine];
     }
 
     /**

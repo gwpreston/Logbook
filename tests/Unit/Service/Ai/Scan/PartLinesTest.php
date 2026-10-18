@@ -30,7 +30,8 @@ final class PartLinesTest extends TestCase
         $rows = PartLines::parse(['Oil filter OC593 12.50', '2 x Brake pads (1K0-698-151) £61.20', 'Wiper blade'], 'en_GB');
 
         self::assertSame(['Oil filter', 'OC593', '12.5'], [$rows[0]['name'], $rows[0]['part_number'], $rows[0]['price']]);
-        self::assertSame(['Brake pads ×2', '1K0-698-151', '61.2'], [$rows[1]['name'], $rows[1]['part_number'], $rows[1]['price']]);
+        $pads = [$rows[1]['name'], $rows[1]['part_number'], $rows[1]['price']];
+        self::assertSame(['Brake pads ×2', '1K0-698-151', '61.2'], $pads);
         self::assertSame(['Wiper blade', null, null], [$rows[2]['name'], $rows[2]['part_number'], $rows[2]['price']]);
     }
 

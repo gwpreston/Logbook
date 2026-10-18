@@ -3,7 +3,7 @@
 *An owner with only a text model (a local Ollama model without vision,
 say) can scan a fuel receipt.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: 🚧 in progress (built; merge review and the owner's eval run to come) · file lives in `docs/phases/`
 
 Today, scanning a photo needs a vision model on the `read_document`
 task. Many self-hosters run a text-only model locally and keep it there
@@ -97,59 +97,60 @@ model does (§7.27 *Routing*). As proposed:
       with #453 (K46) from Phase 51; §7.25, §7.27, §9, §13.
 
 ### 53.2.1 Route
-- [ ] `Service\Ai\Scan\Router`, from configured tasks, capabilities and
+- [x] `Service\Ai\Scan\Router`, from configured tasks, capabilities and
       Tesseract.
-- [ ] The OCR prompt builder: layout text with line numbers, redacted,
+- [x] The OCR prompt builder: layout text with line numbers, redacted,
       within `read_text`'s 20,000-character limit.
-- [ ] The tolerant evidence match and the low-confidence marks.
-- [ ] A value dropped by the evidence check shows its reason (#498).
+- [x] The tolerant evidence match and the low-confidence marks.
+- [x] A value dropped by the evidence check shows its reason (#498).
 
 ### 53.2.1a Known issues this phase touches
 Fixed here because this route reaches them (CLAUDE.md §12), and the
 rest chosen by the owner on 2026-10-18:
-- [ ] K76: the OCR lock covers a slow PDF's render, and a lock is
+- [x] K76: the OCR lock covers a slow PDF's render, and a lock is
       released only by the request that took it.
-- [ ] K73: availability and Settings decide from the engine's real
+- [x] K73: availability and Settings decide from the engine's real
       status, not only from the binary's path.
-- [ ] K80: an oversized PDF page is rendered small.
-- [ ] K81: Imagick's preparation losing a line on a degraded photo.
-- [ ] K46 / #453: a two-way number marked "Check the number".
-- [ ] K58: prices printed with their unit; reasons for an unreadable
+- [x] K80: an oversized PDF page is rendered small.
+- [x] K81: Imagick's preparation losing a line on a degraded photo.
+- [x] K46 / #453: a two-way number marked "Check the number".
+- [x] K58: prices printed with their unit; reasons for an unreadable
       volume or price.
-- [ ] K75: a skewed photo kept within 4,000 px.
-- [ ] K77: `OCR_URL` with a query string or fragment refused at start.
-- [ ] K78: a PaddleOCR answer capped while it is read.
-- [ ] K18: `PartLines` prices and quantities.
-- [ ] K82: GD writes an 8-bit grey PNG.
-- [ ] K83: the Status icon on *Reading text from images*.
-- [ ] K84: see *OCR in the other guides* below.
+- [x] K75: a skewed photo kept within 4,000 px.
+- [x] K77: `OCR_URL` with a query string or fragment refused at start.
+- [x] K78: a PaddleOCR answer capped while it is read.
+- [x] K18: `PartLines` prices and quantities.
+- [x] K82: GD writes an 8-bit grey PNG.
+- [x] K83: the Status icon on *Reading text from images*.
+- [x] K84: see *OCR in the other guides* below.
 
 ### 53.2.2 Pages and docs
-- [ ] The Scan page line naming how the file was read.
-- [ ] The task picker hint.
-- [ ] `docs/reading-files.md`: which models read what, and how to get
+- [x] The Scan page line naming how the file was read.
+- [x] The task picker hint.
+- [x] `docs/reading-files.md`: which models read what, and how to get
       the best photo.
-- [ ] Translations (every shipped locale).
+- [x] Translations (every shipped locale).
 
 ### 53.2.3 Tests and release
-- [ ] Routing for each combination in the table.
-- [ ] Redaction before sending, and the 11-digit rule on OCR text that
+- [x] Routing for each combination in the table (`ScanOcrTest`).
+- [x] Redaction before sending, and the 11-digit rule on OCR text that
       splits the run across a space.
 - [ ] Ten real fuel receipts in the OCR eval, carried from 53.1
       (#496). The release doesn't wait for them (decided 2026-10-18);
       they are added when the owner supplies them.
 - [ ] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
       through OCR and a text model, beside the vision route, in the
-      eval report.
-- [ ] Failure messages; the per-user lock; timeouts counted once across
+      eval report. The option is built; the run needs the owner's
+      models (none is reachable from the build machine).
+- [x] Failure messages; the per-user lock; timeouts counted once across
       OCR and the model.
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
-      and 53.2; tag once merged. The CHANGELOG carries 53.1's upgrade
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
+      and 53.2; tag once merged (v3.17.0, not yet tagged). The CHANGELOG carries 53.1's upgrade
       notes: the image grows by about 80 MB (Tesseract), the optional
       `ocr` compose profile, and `OCR_ENGINE`, `TESSERACT_BINARY`,
       `OCR_URL`, `OCR_TIMEOUT` (all optional).
-- [ ] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
+- [x] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
       AI card in `docs/ai.md` (`docs/deployment.md` names Tesseract from
       53.1).
 

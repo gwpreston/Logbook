@@ -167,7 +167,8 @@ final class ScanMappingTest extends ScanTestCase
             'fields' => ['vat_amount' => ['value' => '£9.99', 'evidence' => 'VAT £9.99']],
         ], 'Total £50.00 and plenty of other text');
 
-        self::assertContains('Not found in the file’s text: “VAT £9.99”, so it was left empty.', $this->map($this->owner, $reading)->warnings);
+        $warnings = $this->map($this->owner, $reading)->warnings;
+        self::assertContains('Not found in the file’s text: “VAT £9.99”, so it was left empty.', $warnings);
     }
 
     public function testANumberThatReadsTwoWaysIsMarked(): void
@@ -206,7 +207,10 @@ final class ScanMappingTest extends ScanTestCase
         $this->scanApp();
         $reading = new Extraction(
             ScanKind::FuelReceipt,
-            ['total' => ['value' => '60.28', 'evidence' => 'TOTAL 60.28'], 'date' => ['value' => '14/10/2026', 'evidence' => '14/10/2026']],
+            [
+                'total' => ['value' => '60.28', 'evidence' => 'TOTAL 60.28'],
+                'date' => ['value' => '14/10/2026', 'evidence' => '14/10/2026'],
+            ],
             hardToRead: ['total'],
         );
         $form = $this->map($this->owner, $reading);

@@ -538,7 +538,8 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
     $extractor = $get(Extractor::class);
     $status = $get(AiStatus::class);
     $ocr = $get(OcrReader::class);
-    assert($preparer instanceof FilePreparer && $extractor instanceof Extractor && $status instanceof AiStatus && $ocr instanceof OcrReader);
+    assert($preparer instanceof FilePreparer && $extractor instanceof Extractor);
+    assert($status instanceof AiStatus && $ocr instanceof OcrReader);
     $connection = $availability->connection();
     printf("Reading with %s (%s)\n", $connection->name ?? '?', $connection?->location->value ?? '?');
 
@@ -593,6 +594,7 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
                         : $extractor->extract($user, $preparer->pictures($path, $mime, $look->pageCount));
                     $seconds = microtime(true) - $started;
                 }
+                $byRoute[$route] ??= [];
                 $leaks += scoreScan($byRoute[$route], $route, $name, $expected, $read, $locale, $seconds, $verbose);
             }
         } finally {
@@ -601,7 +603,8 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
     }
 
     foreach ($byRoute as $route => $byKind) {
-        printf("\n%s\n%-18s %6s %8s %10s %8s %8s\n", $route === 'ocr' ? 'Through OCR and the text model' : 'Vision model', 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
+        printf("\n%s\n", $route === 'ocr' ? 'Through OCR and the text model' : 'Vision model');
+        printf("%-18s %6s %8s %10s %8s %8s\n", 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
         foreach ($byKind as $kind => $row) {
             printf(
                 "%-18s %6d %8d %9d%% %8d %8.1f\n",
@@ -623,12 +626,19 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
  * Scores one reading into $byKind and prints its line; 1 when a
  * registration document's reference survived, else 0.
  *
- * @param array<string, array{files: int, kind_ok: int, fields: int, fields_ok: int, failed: int, seconds: float}>|null $byKind
+ * @param array<string, array{files: int, kind_ok: int, fields: int, fields_ok: int, failed: int, seconds: float}> $byKind
  * @param array<mixed> $expected
  */
-function scoreScan(?array &$byKind, string $route, string $name, array $expected, Extraction|ScanProblem $read, string $locale, float $seconds, bool $verbose): int
-{
-    $byKind ??= [];
+function scoreScan(
+    array &$byKind,
+    string $route,
+    string $name,
+    array $expected,
+    Extraction|ScanProblem $read,
+    string $locale,
+    float $seconds,
+    bool $verbose,
+): int {
     $kind = is_string($expected['kind'] ?? null) ? $expected['kind'] : 'other';
     $byKind[$kind] ??= ['files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0];
     $byKind[$kind]['files']++;

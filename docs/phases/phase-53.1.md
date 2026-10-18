@@ -3,7 +3,7 @@
 *Logbook can turn a photo or a scanned PDF into text with positions,
 on its own server.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ done, released with 53.2 as v3.17.0 · file lives in `docs/phases/`
 
 Today, reading a file (§7.27, Phase 26.4) has two routes:
 
@@ -171,7 +171,9 @@ PaddleOCR; `OCR_ENGINE`), the spec wins:
       `receipts/`, which `build.php` leaves alone.
 - [ ] At least ten real fuel receipts (faded, creased, angled), photos
       supplied by the owner with personal details redacted (#496), and
-      their transcripts. Open until they arrive.
+      their transcripts. Open until they arrive; carried to
+      [53.2](phase-53.2.md) on 2026-10-18, whose release doesn't wait
+      for them.
 
 ### 53.1.4 Tests
 - [x] Engine missing, `off`, timing out, failing, or given an image

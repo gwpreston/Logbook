@@ -11657,7 +11657,7 @@ task breakdowns live in the per-phase files; this is the map.
   part of Phase 26.4's *Not in scope* (§4, §7.27, §9). See
   [`phase-53.1.md`](docs/phases/phase-53.1.md).
 - **Phase 53.2 — Reading photos with a text model + release**
-  (in progress). Photos and scanned PDFs read through OCR and the text
+  (✅ released as v3.17.0). Photos and scanned PDFs read through OCR and the text
   model when no vision model is set up, chosen per file (§7.27
   *Routing*); layout text with line numbers, redacted (#497); evidence
   checked against the OCR text with a tolerant match (#498);
@@ -11668,7 +11668,7 @@ task breakdowns live in the per-phase files; this is the map.
   slow PDF and is released only by its holder (K76); availability from
   the engine's real status (K73); oversized PDF pages rendered small
   (K80); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
-  as v3.17.0 with 53.1. See [`phase-53.2.md`](docs/phases/phase-53.2.md).
+  as v3.17.0 with 53.1 (✅). See [`phase-53.2.md`](docs/phases/phase-53.2.md).
 - **Phase 53.3 — OCR as a check on the vision model, and text instead
   of images** (planned). OCR beside the vision model on a photo, flagging
   a value not found where OCR read confidently; a fuel receipt's volume ×

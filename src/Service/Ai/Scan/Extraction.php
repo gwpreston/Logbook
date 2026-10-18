@@ -72,12 +72,28 @@ final readonly class Extraction
      */
     public function as(ScanKind $kind): self
     {
-        return new self($kind, $this->fields, $this->lines, $this->recommendations, $this->dropped, $this->hardToRead, $this->readBy);
+        return new self(
+            $kind,
+            $this->fields,
+            $this->lines,
+            $this->recommendations,
+            $this->dropped,
+            $this->hardToRead,
+            $this->readBy,
+        );
     }
 
     public function withReadBy(ReadBy $readBy): self
     {
-        return new self($this->kind, $this->fields, $this->lines, $this->recommendations, $this->dropped, $this->hardToRead, $readBy);
+        return new self(
+            $this->kind,
+            $this->fields,
+            $this->lines,
+            $this->recommendations,
+            $this->dropped,
+            $this->hardToRead,
+            $readBy,
+        );
     }
 
     /**

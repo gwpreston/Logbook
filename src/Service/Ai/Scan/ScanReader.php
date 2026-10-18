@@ -87,7 +87,12 @@ final readonly class ScanReader
                 $route = $this->router->picture();
                 $read = match (true) {
                     $route->problem !== null => $route->problem,
-                    $route->ocr && $route->task !== null => $this->extractor->extractViaOcr($user, $path, $upload->mime, $route->task),
+                    $route->ocr && $route->task !== null => $this->extractor->extractViaOcr(
+                        $user,
+                        $path,
+                        $upload->mime,
+                        $route->task,
+                    ),
                     default => $this->extractor->extract(
                         $user,
                         $prepared = $this->preparer->pictures($path, $upload->mime, $prepared->pageCount),
