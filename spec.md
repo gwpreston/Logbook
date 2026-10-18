@@ -11698,6 +11698,18 @@ task breakdowns live in the per-phase files; this is the map.
   registration, mileage and vendor; other kinds the date only (§7.10,
   §7.27; open questions A–D in the phase file). See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
+- **Phase 53.5 — API edges and narrow-screen fixes from the
+  known-issues log + patch release** (planned). Retrying `POST
+  /modifications` with a stored part in its parts lists answers the
+  stored modification with `duplicate: true` (§7.20 "Safe to retry",
+  K27); a too-large `baseline_odometer` or `interval_distance` on the
+  schedule writes is a 422 field error, not a 500 (§7.20, K50); tables
+  in `.table-wrap` keep their hidden text inside their scroll box, so
+  the station pages don't scroll sideways at 375 px (§7.33, §8, K52);
+  the reminders count on the active sidebar link meets 4.5:1 in both
+  themes (§8 *Accessibility*, K53). Released on its own as a patch after
+  53.4's release (#502, decided 2026-10-18). No migration. See
+  [`phase-53.5.md`](docs/phases/phase-53.5.md).
 
 ---
 

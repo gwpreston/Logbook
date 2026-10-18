@@ -115,6 +115,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | ✅ |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
+| [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1485,6 +1486,21 @@ invoice still gives its date, total and mileage.*
   mileage and vendor. Other kinds: the date only. Release.
 
 → [`phase-53.4.md`](docs/phases/phase-53.4.md)
+
+---
+
+## Phase 53.5 — API edges and narrow-screen fixes from the known-issues log + patch release
+*Four open rows of the known-issues log closed: two API writes that
+answer wrongly at their edges, and two pages that break on a phone or at
+low contrast.*
+
+- Retrying `POST /modifications` with a stored part is a duplicate, not
+  a 422 (K27); a 20-digit schedule distance is a 422 field error, not a
+  500 (K50).
+- The station pages don't scroll sideways at 375 px (K52); the active
+  link's reminders count meets 4.5:1 (K53). No migration. Patch release.
+
+→ [`phase-53.5.md`](docs/phases/phase-53.5.md)
 
 ---
 
