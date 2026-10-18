@@ -50,6 +50,17 @@ since older releases send pictures on every connection.
   price follows ("Tyre 205 x 55", "Fuse 10 A"; K96, K97), and `00,759`
   reads as 0.759 in every locale (K98).
 
+### Upgrade notes
+- One migration, adding columns only (well under a second on every
+  engine). Every connection starts with *Send text, not images* off: turn
+  it on per connection (Settings → AI → the connection → *Edit*).
+- Rolling back drops each connection's *Send text, not images* and the
+  per-scan cross-check counts; 3.17 then sends pictures on every
+  connection. Upgrading again brings every connection back with the option
+  **off**, so turn it on again where it was on.
+- Backups from this release carry *Send text, not images*. A 3.17.0 backup
+  restores the usual way: restore with 3.17.0, then upgrade.
+
 ## [3.17.0] — 2026-10-18
 
 Phases 53.1 and 53.2: **reading text from images, and scanning photos

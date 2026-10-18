@@ -132,7 +132,7 @@ Added to §7.27 in 53.3.0:
       --scans --via=ocr` run with the owner's models, its field accuracy
       per kind for both routes recorded in the eval report (53.2's
       acceptance criterion 3).
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; screen
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; screen
       reader).
 
 ---
