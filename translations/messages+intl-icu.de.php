@@ -5111,7 +5111,7 @@ return [
             'ocr_tesseract' => 'Fotos und gescannte PDFs werden zuerst auf diesem Server gelesen (Texterkennung), und nur ihr Text geht an {connection}.',
             'ocr_paddleocr' => 'Fotos und gescannte PDFs werden zuerst von deinem Texterkennungsdienst gelesen, und nur ihr Text geht an {connection}.',
             'ocr_check' => 'Fotos gehen als Bilder an {connection} und werden auf diesem Server per Texterkennung geprüft.',
-            'ocr_check_registration' => 'Ein Fahrzeugschein (V5C) wird stattdessen als Text gesendet, ohne seine Dokumentnummer.',
+            'registration_warning_unrecognised' => 'Ein Fahrzeugschein (V5C), den die Texterkennung erkennt, wird als Text gesendet, ohne seine Dokumentnummer. Einen, den sie nicht erkennt, erhält {connection} weiterhin als Bild, mit der Nummer.',
         ],
         'field' => [
             'file' => 'Foto oder PDF',

@@ -35,7 +35,11 @@
                 <p class="ask-where ask-where--note" data-scan-ocr>{{ ui.icon('document_scanner') }}<span>{{ ('scan.where.ocr_' ~ ocr_engine)|trans({connection: connection.name}) }}</span></p>
             {% elseif ocr_checks %}
                 {# Phase 53.3: pictures, checked by OCR; on the Internet a V5C goes as text (#510). #}
-                <p class="ask-where ask-where--note" data-scan-ocr-check>{{ ui.icon('document_scanner') }}<span>{{ 'scan.where.ocr_check'|trans({connection: connection.name}) }}{% if connection.location.value == 'internet' %} {{ 'scan.where.ocr_check_registration'|trans }}{% endif %}</span></p>
+                <p class="ask-where ask-where--note" data-scan-ocr-check>{{ ui.icon('document_scanner') }}<span>{{ 'scan.where.ocr_check'|trans({connection: connection.name}) }}</span></p>
+                {% if connection.location.value == 'internet' %}
+                    {# #510: a V5C text recognition spots goes as text; one it doesn't still goes as a picture (#85, short form). #}
+                    <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning_unrecognised'|trans({connection: connection.name}) }}</span></p>
+                {% endif %}
             {% elseif connection.location.value == 'internet' %}
                 <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning'|trans({connection: connection.name}) }}</span></p>
             {% endif %}

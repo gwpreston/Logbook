@@ -103,6 +103,36 @@ final class AiSettingsTest extends AiTestCase
         self::assertStringContainsString('You agreed to send data to api.openai.com', $html);
     }
 
+    public function testSendTextIsOffForANewConnectionAndCanBeSwitchedOnAndOff(): void
+    {
+        [$app, $browser] = $this->admin();
+        $form = self::body($browser->get('/settings/ai/connections/new'));
+        self::assertMatchesRegularExpression('/<input[^>]*name="send_text"[^>]*>/', $form);
+        self::assertDoesNotMatchRegularExpression('/<input[^>]*name="send_text"[^>]*checked/', $form, 'unticked');
+        self::assertStringContainsString('Send text, not images', $form);
+
+        $fields = [
+            'name' => 'Home server',
+            'adapter' => 'ollama',
+            'base_url' => 'http://192.168.1.20:11434',
+            'max_request_mb' => '8',
+            'enabled' => '1',
+        ];
+        $show = $browser->post('/settings/ai/connections/new', $fields)->getHeaderLine('Location');
+        self::assertFalse((bool) $this->connection($app)->fetchOne('SELECT send_text FROM ai_connections'));
+        self::assertStringContainsString('Off: photos go as pictures', self::body($browser->get($show)));
+
+        $browser->post($show . '/edit', $fields + ['send_text' => '1']);
+        self::assertTrue((bool) $this->connection($app)->fetchOne('SELECT send_text FROM ai_connections'));
+        self::assertStringContainsString('On: photos go as text', self::body($browser->get($show)));
+        $edit = self::body($browser->get($show . '/edit'));
+        self::assertMatchesRegularExpression('/<input[^>]*name="send_text"[^>]*checked/', $edit);
+
+        $browser->post($show . '/edit', $fields);
+        self::assertFalse((bool) $this->connection($app)->fetchOne('SELECT send_text FROM ai_connections'));
+        self::assertStringContainsString('Off: photos go as pictures', self::body($browser->get($show)));
+    }
+
     public function testTickingTheBoxWhileChangingTheAddressDoesNotAgreeToTheNewOne(): void
     {
         [$app, $browser] = $this->admin();

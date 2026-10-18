@@ -86,6 +86,8 @@ final class ScanCrossCheckTest extends ScanTestCase
         self::assertSame(1, substr_count($text, self::NOT_ON_PAGE), 'only the invented total, which the tolerant match accepts');
         $under = '/id="f-total-scan"[^>]*>.*?' . preg_quote(self::NOT_ON_PAGE, '/') . '/s';
         self::assertMatchesRegularExpression($under, $html, 'under its field');
+        preg_match('/id="f-total-scan".*?<\/div>/s', $html, $note);
+        self::assertSame(2, substr_count($note[0] ?? '', 'class="field__check"'), 'one reason a line, each marked');
         self::assertMatchesRegularExpression('/name="total"[^>]*aria-describedby="[^"]*f-total-scan/', $html, 'tied to it');
         // The sum check says so too, on all three fields.
         self::assertSame(3, substr_count($text, '42.18 L × 142.9p = £60.28, but the total reads £68.28.'));
@@ -195,8 +197,9 @@ final class ScanCrossCheckTest extends ScanTestCase
         self::assertStringContainsString(self::NOT_ON_PAGE, html_entity_decode(self::body($page)));
         $form = html_entity_decode(self::body($this->browser->get('/scan')));
         self::assertStringContainsString('checked on this server by text recognition', $form);
-        self::assertStringContainsString('A registration document (V5C) is sent as text instead', $form);
-        self::assertStringNotContainsString('receives it with the picture', $form, "#85's warning is not needed");
+        self::assertStringContainsString('A registration document (V5C) that text recognition spots is sent as text', $form);
+        self::assertStringNotContainsString('receives it with the picture', $form, "#85's long warning is not needed");
+        self::assertStringContainsString('still goes to OpenAI as a picture', $form, 'its short form is (#510)');
     }
 
     private function scanReceipt(): \Psr\Http\Message\ResponseInterface

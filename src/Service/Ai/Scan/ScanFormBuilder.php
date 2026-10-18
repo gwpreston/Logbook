@@ -359,8 +359,9 @@ final class ScanFormBuilder
 
     private function check(string $field, string $text): void
     {
+        // One reason a line: the form shows each with its own mark (design review of 53.3).
         $this->checks[$field] = isset($this->checks[$field]) && !str_contains($this->checks[$field], $text)
-            ? $this->checks[$field] . ' ' . $text
+            ? $this->checks[$field] . "\n" . $text
             : $text;
     }
 }

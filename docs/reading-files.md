@@ -85,8 +85,9 @@ can't start another scan or question until it's done.
 A vision model reads receipts better than OCR does, but now and then it
 **invents** a value: a plausible total, or a date that isn't printed.
 With OCR working, Logbook reads the same photo with OCR while the model
-reads the picture (it doesn't make the model wait), then looks for each
-value in OCR's text:
+reads the picture, then looks for each value in OCR's text. Preparing
+the photo for OCR (a second or two for a phone photo) happens before
+the model is asked; the reading itself runs alongside. Each value is:
 
 - **Found:** its words are there, allowing for OCR's slips, **and** its
   digits are there exactly. Nothing changes.
@@ -130,8 +131,8 @@ reads the photo and looks for a V5C's markers ("V5C", "Registration
 Certificate", "DVLA", "Document reference"); if it finds one, only the
 text goes, without the reference number. So on an internet connection a
 scan waits for OCR before the model starts. A V5C photo OCR can't read
-well enough to spot a marker still goes as a picture, and the Scan page's
-warning about its reference number is shown only when OCR isn't working.
+well enough to spot a marker still goes as a picture, with its
+reference number, and the Scan page says so on internet connections.
 
 ## Getting the best photo
 

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Ai;
 
 use DateTimeImmutable;
+use Logbook\Domain\Ai\AdapterType;
 use Logbook\Domain\Ai\AiConnection;
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\Capability;
 use Logbook\Domain\Ai\JsonMode;
+use Logbook\Domain\Ai\Location;
 use Logbook\Repository\AiBusyRepository;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiModelRepository;
@@ -103,6 +105,36 @@ final class ConnectionTesterTest extends AiTestCase
         $after = $models->find($modelId);
         self::assertNotNull($after);
         self::assertTrue($after->tools && $after->images && $after->json, 'nothing it did not try is cleared');
+    }
+
+    public function testSendTextSkipsTheImagesStepAndLeavesTheCapabilityAlone(): void
+    {
+        $app = $this->aiApp();
+        $this->pinClock($app, '2026-10-15T12:00:00Z');
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+        $id = $this->addConnection(
+            $app,
+            'Box',
+            AdapterType::OpenAiCompatible,
+            'http://10.0.0.5/v1',
+            Location::Network,
+            sendText: true,
+        );
+        $modelId = $this->assign($app, $id, 'vision-model', AiTaskName::ReadDocument, [Capability::Tools, Capability::Images]);
+        $this->provider->queue('openai/models', 'openai/text', 'openai/tool_call');
+
+        $models = $this->service($app, AiModelRepository::class);
+        $model = $models->find($modelId);
+        self::assertNotNull($model);
+        $report = $this->service($app, ConnectionTester::class)->test($owner, $this->connectionOf($app, $id), $model);
+
+        self::assertTrue($report->passed(), (string) json_encode($report->results));
+        self::assertSame(['list', 'completion', 'tools'], array_column($report->results, 'step'));
+        self::assertCount(3, $this->provider->requests, 'no image request was made');
+        $after = $models->find($modelId);
+        self::assertNotNull($after);
+        self::assertTrue($after->images, 'the images capability is as it was');
     }
 
     /**

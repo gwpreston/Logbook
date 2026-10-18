@@ -219,11 +219,11 @@ final readonly class OcrText
     /**
      * Whether the text carries a V5C's markers (spec.md §7.27 *Where it
      * goes*, #510), so a photo bound for an *Internet* connection goes as
-     * this text instead.
+     * this text instead. `VSC` too: OCR reads a 5 as an S.
      */
     public function looksLikeRegistration(): bool
     {
-        return preg_match('/\bV5C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu', $this->text) === 1;
+        return preg_match('/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu', $this->text) === 1;
     }
 
     /**

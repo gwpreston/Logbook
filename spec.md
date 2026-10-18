@@ -7437,9 +7437,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     sent", with the reference number removed from that text;
   - **as a picture, checked by OCR** (a vision model with OCR working):
     "Photos are sent as pictures and checked on this server by text
-    recognition". On an *Internet* connection it adds that a
-    registration document (V5C) is sent as text instead, with its
-    reference removed (below);
+    recognition". On an *Internet* connection a warning beneath says
+    that a registration document (V5C) text recognition spots is sent as
+    text, without its reference (below), and one it doesn't spot still
+    goes as a picture with it: a short form of #85's warning (decided
+    2026-10-18, #510);
   - **as a picture, no OCR**: on an *Internet* connection only, the
     warning that a photo of a registration document carries its
     reference number to that provider: Logbook removes it from text, but
@@ -7457,11 +7459,13 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   **Registration documents** (Phase 53.3, #510): on an *Internet*
   connection with OCR working, a V5C photo is always sent as redacted
   text, never as an image. It is recognised before anything is sent by
-  a V5C marker in the OCR text (`V5C`, `Registration Certificate`,
-  `DVLA` or `Document reference`, in any case): no entry point starts a
-  scan for the vehicle, so the scan's target can't say so. On an
-  *Internet* vision connection OCR therefore runs first, and the picture
-  is sent only when no marker is found.
+  a V5C marker in the OCR text (`V5C` or OCR's `VSC`, `Registration
+  Certificate`, `DVLA` or `Document reference`, in any case): no entry
+  point starts a scan for the vehicle, so the scan's target can't say so,
+  and an 11-digit run alone isn't taken as one (most UK receipts print an
+  11-digit phone number). On an *Internet* vision connection OCR
+  therefore runs first, and the picture is sent only when no marker is
+  found.
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7610,10 +7614,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   **The cross-check** (Phase 53.3): when a vision model reads a photo or
   scanned PDF and OCR is working, OCR reads the same file, and each
   value is looked for in OCR's text:
-  - **Running alongside:** OCR is started before the vision request and
-    collected after it, so it never delays the request beyond OCR's own
-    work (on an *Internet* connection it finishes first, *Where it
-    goes*). The user's lock is held once for both, as on the OCR route.
+  - **Running alongside:** OCR's preparation (a scanned PDF's render
+    and the first page's clean-up, about a second or two for a phone
+    photo with GD) runs before the vision request; the engine then reads
+    in the background while the request runs, and is collected after it
+    (on an *Internet* connection it finishes first, *Where it goes*).
+    PaddleOCR, over HTTP, reads after the request. The user's lock is held once for both, as on the OCR route.
     If OCR fails, times out or reads too little, the cross-check is
     skipped and the scan carries on as before.
   - **Found:** the value's evidence (or the value, without evidence)

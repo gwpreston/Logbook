@@ -90,7 +90,8 @@ final class ScanOcrTest extends ScanTestCase
         self::assertSame(1, substr_count($text, 'Hard to read, check this.'), 'only the price');
         self::assertStringContainsString('Not found in the file’s text: “MOONBEAM GARAGE”', $text);
         self::assertSame('', $values['station'] ?? '', 'a value whose evidence is not in the text is dropped');
-        self::assertMatchesRegularExpression('/<details class="card disclosure" open>\s*<summary[^>]*>Station and notes/', $html, 'K90: its reason is in view');
+        $open = '/<details class="card disclosure" open>\s*<summary[^>]*>Station and notes/';
+        self::assertMatchesRegularExpression($open, $html, 'K90: its reason is in view');
         $readBy = 'Read on this server (text recognition), then by qwen2.5vl:7b on Ollama on the desktop.';
         self::assertStringContainsString($readBy, $text);
 

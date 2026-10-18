@@ -65,6 +65,7 @@ abstract class AiTestCase extends AppTestCase
         ?string $apiKey = null,
         ?int $cap = null,
         int $maxMb = 8,
+        bool $sendText = false,
     ): int {
         $id = $this->service($app, AiConnectionRepository::class)->insert(new ConnectionSettings(
             name: $name,
@@ -78,6 +79,7 @@ abstract class AiTestCase extends AppTestCase
             maxRequestMb: $maxMb,
             monthlyTokenCap: $cap,
             enabled: true,
+            sendText: $sendText,
         ), new DateTimeImmutable('2026-10-01T00:00:00Z'));
         if ($apiKey !== null) {
             $this->service($app, AiSecretRepository::class)->put(

@@ -91,40 +91,40 @@ Added to §7.27 in 53.3.0:
       and chosen by the owner, K85, K94 and K96–K98.
 
 ### 53.3.1 Cross-check
-- [ ] OCR alongside vision, the per-value match, and confidence by area.
-- [ ] Flags on the prefilled form.
-- [ ] The fuel arithmetic check in the Mapper.
+- [x] OCR alongside vision, the per-value match, and confidence by area.
+- [x] Flags on the prefilled form.
+- [x] The fuel arithmetic check in the Mapper.
 
 ### 53.3.2 Text instead of images
-- [ ] *Send text, not images* on connections (#509: off), refused at
+- [x] *Send text, not images* on connections (#509: off), refused at
       the gateway for any image.
-- [ ] The reference's redaction: punctuation between groups on every
+- [x] The reference's redaction: punctuation between groups on every
       path, look-alikes and wrapped rows on the OCR route, short gaps
       only (#500, #501; K87, K88, K93).
-- [ ] V5C photos always sent as text on *Internet* when OCR is
+- [x] V5C photos always sent as text on *Internet* when OCR is
       available, recognised by the OCR markers (#510).
-- [ ] The Scan page and the connection page wording.
-- [ ] Translations (every shipped locale).
+- [x] The Scan page and the connection page wording.
+- [x] Translations (every shipped locale).
 
 ### 53.3.2a Known issues
-- [ ] K89: the evidence match filters candidates before the edit
+- [x] K89: the evidence match filters candidates before the edit
       distance, with the same matches.
-- [ ] K90: the fill-up's *Station and notes* opens when a scan left a
+- [x] K90: the fill-up's *Station and notes* opens when a scan left a
       reason there. K95: the Scan page's OCR line wraps beside its icon.
-- [ ] K94: a Tesseract that fails its version check isn't asked for
+- [x] K94: a Tesseract that fails its version check isn't asked for
       its languages.
-- [ ] K85: the enlarge rule evaluated across the fixtures, and changed
+- [x] K85: the enlarge rule evaluated across the fixtures, and changed
       if the eval shows a better one.
-- [ ] K96–K98: a size at the end of a parts line, a single capital after
+- [x] K96–K98: a size at the end of a parts line, a single capital after
       a number, and a doubled leading zero.
 
 ### 53.3.3 Tests
-- [ ] Fixtures with planted wrong values (a vision answer edited to
+- [x] Fixtures with planted wrong values (a vision answer edited to
       invent a total): flagged. Correct values: not flagged.
-- [ ] OCR unsure in an area: no flag. OCR failing: scan unchanged.
+- [x] OCR unsure in an area: no flag. OCR failing: scan unchanged.
 - [ ] Arithmetic within and outside 1p; a receipt printing price to
       0.1p.
-- [ ] No image ever sent on a connection with *Send text, not images*,
+- [x] No image ever sent on a connection with *Send text, not images*,
       asserted at the adapter.
 - [ ] `bin/ai-eval.php --scans --crosscheck`: flags per kind and false
       flags, in the eval report.
@@ -221,7 +221,18 @@ recommendation.
   starting (the kind is otherwise only in the model's answer): V5C
   markers in the OCR text, so OCR runs first on *Internet* vision
   connections. The owner also chose the scan target `vehicle`; no entry
-  point stores one, so only the markers apply.*
+  point stores one, so the owner then chose (same day) the markers only,
+  `VSC` too, not an 11-digit run (UK receipts print 11-digit phone
+  numbers), with a short form of #85's warning kept on *Internet*
+  connections (K104).*
+
+Found while building, logged as #511 (K104), not decided:
+
+- **#511. A *Scan the V5C* entry on the vehicle page?** Its target would
+  send an *Internet* V5C photo as text even when OCR doesn't spot its
+  markers.
+  - (1) Yes, in a later phase; the warning can then go.
+  - (2) No: markers only, with the warning, as built.
   - (1) Always as text on *Internet* connections when OCR is available.
   - (2) Follow the connection's option like any file.
 

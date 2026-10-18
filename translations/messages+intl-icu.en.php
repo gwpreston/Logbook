@@ -5115,7 +5115,7 @@ return [
             'ocr_tesseract' => 'Photos and scanned PDFs are read on this server first (text recognition), and only their text goes to {connection}.',
             'ocr_paddleocr' => 'Photos and scanned PDFs are read by your text recognition service first, and only their text goes to {connection}.',
             'ocr_check' => 'Photos are sent to {connection} as pictures, and checked on this server by text recognition.',
-            'ocr_check_registration' => 'A registration document (V5C) is sent as text instead, with its document reference number removed.',
+            'registration_warning_unrecognised' => 'A registration document (V5C) that text recognition spots is sent as text, without its document reference number. One it doesn’t spot still goes to {connection} as a picture, with the number.',
         ],
         'field' => [
             'file' => 'Photo or PDF',

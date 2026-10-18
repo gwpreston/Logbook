@@ -527,8 +527,9 @@ issue*, *Watch*, *Add all as issues*; see
   spaces or punctuation between its groups). Read through OCR, it is
   removed from the text like a PDF's. From 3.18, on an *Internet*
   connection with OCR working, a photo OCR recognises as a V5C is sent as
-  text, never as a picture. Without OCR, a *photo* of a V5C sent to a
-  vision model carries it as pixels, and the Scan page says so.
+  text, never as a picture. One it doesn't recognise, or any V5C photo
+  without OCR, carries the number as pixels to a vision model, and the
+  Scan page says so.
 - With a model on this server or your network, no file leaves your
   machines.
 - The file waits for its entry for 24 hours (only you can see it); then it
