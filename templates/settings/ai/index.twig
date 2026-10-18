@@ -85,6 +85,7 @@
                             {{ ('ai.task.hint.' ~ task.value)|trans }}
                             {% if row.active and row.connection %} {{ 'ai.task.runs_on'|trans({connection: row.connection.name}) }} {{ ai.location(row.connection.location) }}{% endif %}
                             {% if not row.own and row.model and row.active %} {{ 'ai.task.uses_ask'|trans }}{% endif %}
+                            {% if row.via_ocr %} <span data-ai-task-ocr>{{ 'ai.task.via_ocr'|trans }}</span>{% endif %}
                             {% if not row.active %} <strong>{{ 'ai.task.off'|trans }}</strong>{% endif %}
                         </p>
                         <div class="field">

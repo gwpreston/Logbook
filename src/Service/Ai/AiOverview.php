@@ -69,6 +69,7 @@ final readonly class AiOverview
         }
 
         $added = $this->models->listAdded();
+        $ocrWorking = $this->ocr->isWorking();
         $tasks = [];
         $form = [];
         foreach (AiTaskName::cases() as $task) {
@@ -87,6 +88,9 @@ final readonly class AiOverview
                 'connection' => $model === null ? null : ($byId[$model->connectionId] ?? null),
                 'own' => $assignment !== null && $assignment->task === $task,
                 'active' => $this->status->model($task) !== null,
+                // A text-only model reads photos through OCR first (§7.25, Phase 53.2).
+                'via_ocr' => $task === AiTaskName::ReadDocument && $ocrWorking
+                    && $this->status->model($task)?->images === false,
                 'choices' => array_map(fn (AiModel $m): array => [
                     'model' => $m,
                     'connection' => $byId[$m->connectionId] ?? null,
@@ -107,7 +111,7 @@ final readonly class AiOverview
             'no_session_secret' => $this->settings->sessionSecret === '',
             // Reading text from images (§7.27): which engine is set up, and whether it answers (K73).
             'ocr_engine' => $this->ocr->engine()?->name(),
-            'ocr_working' => $this->ocr->isWorking(),
+            'ocr_working' => $ocrWorking,
             'ocr_off' => $this->settings->ocr->engine === OcrEngineChoice::Off,
         ];
     }

@@ -5035,6 +5035,7 @@ return [
             'lacks' => 'needs {needs}',
             'runs_on' => 'Runs on {connection}.',
             'uses_ask' => 'Uses the model for Answering questions.',
+            'via_ocr' => 'Photos are read with text recognition first.',
             'off' => 'Off.',
             'temperature' => 'Temperature',
             'max_tokens' => 'Longest answer (tokens)',

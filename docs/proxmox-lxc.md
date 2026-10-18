@@ -219,8 +219,14 @@ Then one database driver:
   runuser -u postgres -- createdb -O logbook logbook
   ```
 
-Optional: `apt install -y ghostscript` to read scanned PDFs
-([ai.md](ai.md#reading-receipts-and-documents)).
+Optional:
+
+- `apt install -y ghostscript` to read scanned PDFs
+  ([ai.md](ai.md#reading-receipts-and-documents));
+- `apt install -y tesseract-ocr tesseract-ocr-deu` to read text from
+  photos on this container, so a text-only model can scan them
+  ([reading-files.md](reading-files.md)). Settings → AI → *Reading text
+  from images* then says **Ready**.
 
 #### PHP on Debian 12
 

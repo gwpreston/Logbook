@@ -32,7 +32,13 @@ declare(strict_types=1);
  * checks that no 11-digit reference survives a registration document.
  * Nothing is written but the usage log.
  *
- *   php bin/ai-eval.php --scans [--user=demo] [--only=1,15] [--verbose]
+ *   php bin/ai-eval.php --scans [--via=ocr] [--user=demo] [--only=1,15] [--verbose]
+ *
+ * --via=ocr (Phase 53.2, §7.27 *Reading through OCR*) also reads each photo
+ * and scanned PDF through OCR and the text model (read_document's when it
+ * is text-only, else read_text's), and reports both routes side by side:
+ * the vision model (when one is set up) and OCR. Text PDFs go to read_text
+ * either way, so they count the same in both.
  *
  * With --insights (Phase 42, spec.md §7.26 *AI insights*) it makes the
  * user's AI insights --runs times (3 by default) with the configured `ask`
@@ -75,12 +81,15 @@ use Logbook\Service\Ai\Ask\ToolRegistry;
 use Logbook\Service\Ai\Provider\ToolCall;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\UserDisplayScope;
+use Logbook\Domain\Ai\AiTaskName;
+use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Ai\Scan\Extraction;
 use Logbook\Service\Ai\Scan\Extractor;
 use Logbook\Service\Ai\Scan\FilePreparer;
 use Logbook\Service\Ai\Scan\PrintedDate;
 use Logbook\Service\Ai\Scan\PrintedNumber;
 use Logbook\Service\Ai\Scan\ScanAvailability;
+use Logbook\Service\Ai\Scan\ScanProblem;
 use Logbook\Service\Ai\Scan\Scrubber;
 use Logbook\Support\Number\Decimal;
 use Logbook\Service\Ocr\GdImagePreparer;
@@ -89,9 +98,9 @@ use Logbook\Service\Ocr\OcrReader;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'insights', 'ocr', 'degraded', 'runs:', 'help']);
+$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'via:', 'insights', 'ocr', 'degraded', 'runs:', 'help']);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans|--insights [--runs=3]|--ocr [--degraded]] [--user=demo]"
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans [--via=ocr]|--insights [--runs=3]|--ocr [--degraded]] [--user=demo]"
         . " [--only=1,5,12] [--verbose]\n");
     exit(0);
 }
@@ -120,7 +129,12 @@ if (!$user instanceof User) {
     exit(1);
 }
 if (isset($options['scans'])) {
-    exit(evaluateScans($get, $user, $only, $verbose));
+    $via = $options['via'] ?? null;
+    if ($via !== null && $via !== 'ocr') {
+        fwrite(STDERR, "--via takes only ocr.\n");
+        exit(2);
+    }
+    exit(evaluateScans($get, $user, $only, $verbose, $via === 'ocr'));
 }
 if (isset($options['insights'])) {
     $runs = is_string($options['runs'] ?? null) ? max(1, (int) $options['runs']) : 3;
@@ -504,12 +518,14 @@ function evaluateInsights(Closure $get, User $user, int $runs, bool $verbose): i
 }
 
 /**
- * The scan fixture set against the configured models (--scans).
+ * The scan fixture set against the configured models (--scans); with
+ * $viaOcr, photos and scans also through OCR and the text model, each
+ * route reported on its own (Phase 53.2).
  *
  * @param Closure(class-string): object $get
  * @param list<int> $only fixture numbers
  */
-function evaluateScans(Closure $get, User $user, array $only, bool $verbose): int
+function evaluateScans(Closure $get, User $user, array $only, bool $verbose, bool $viaOcr = false): int
 {
     $availability = $get(ScanAvailability::class);
     assert($availability instanceof ScanAvailability);
@@ -520,12 +536,33 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose): in
     }
     $preparer = $get(FilePreparer::class);
     $extractor = $get(Extractor::class);
-    assert($preparer instanceof FilePreparer && $extractor instanceof Extractor);
+    $status = $get(AiStatus::class);
+    $ocr = $get(OcrReader::class);
+    assert($preparer instanceof FilePreparer && $extractor instanceof Extractor && $status instanceof AiStatus && $ocr instanceof OcrReader);
     $connection = $availability->connection();
-    printf("Reading with %s (%s)\n\n", $connection->name ?? '?', $connection?->location->value ?? '?');
+    printf("Reading with %s (%s)\n", $connection->name ?? '?', $connection?->location->value ?? '?');
+
+    $document = $status->model(AiTaskName::ReadDocument);
+    $routes = [];
+    if ($document?->images === true) {
+        $routes[] = 'vision';
+    }
+    if ($viaOcr) {
+        if (!$ocr->isWorking()) {
+            fwrite(STDERR, "--via=ocr needs a working OCR engine: see Settings → Reading text from images.\n");
+
+            return 1;
+        }
+        $routes[] = 'ocr';
+    }
+    if ($routes === []) {
+        $routes[] = 'vision';
+    }
+    $ocrTask = $document !== null && !$document->images ? AiTaskName::ReadDocument : AiTaskName::ReadText;
+    printf("Routes: %s\n\n", implode(', ', $routes));
 
     $dir = dirname(__DIR__) . '/tests/Fixtures/scans';
-    $byKind = [];
+    $byRoute = [];
     $leaks = 0;
     foreach (glob($dir . '/[0-9][0-9]-*.json') ?: [] as $jsonPath) {
         $name = basename($jsonPath, '.json');
@@ -541,72 +578,99 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose): in
         $mime = str_ends_with($fixture['file'], '.pdf') ? 'application/pdf' : 'image/jpeg';
         $path = (string) tempnam(sys_get_temp_dir(), 'logbook-eval-');
         file_put_contents($path, (string) file_get_contents($dir . '/' . $fixture['file']));
-        $started = microtime(true);
         try {
-            $read = $extractor->extract($user, $preparer->prepare($path, $mime));
+            $look = $preparer->look($path, $mime);
+            $text = null;
+            foreach ($routes as $route) {
+                $started = microtime(true);
+                if (!$look->isPicture()) {
+                    // A text PDF (or an unreadable file) reads the same on every route: once.
+                    $text ??= [$extractor->extract($user, $look), microtime(true) - $started];
+                    [$read, $seconds] = $text;
+                } else {
+                    $read = $route === 'ocr'
+                        ? $extractor->extractViaOcr($user, $path, $mime, $ocrTask)
+                        : $extractor->extract($user, $preparer->pictures($path, $mime, $look->pageCount));
+                    $seconds = microtime(true) - $started;
+                }
+                $leaks += scoreScan($byRoute[$route], $route, $name, $expected, $read, $locale, $seconds, $verbose);
+            }
         } finally {
             unlink($path);
         }
-        $seconds = microtime(true) - $started;
-
-        $kind = is_string($expected['kind'] ?? null) ? $expected['kind'] : 'other';
-        $byKind[$kind] ??= ['files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0];
-        $byKind[$kind]['files']++;
-        $byKind[$kind]['seconds'] += $seconds;
-        if (!$read instanceof Extraction) {
-            $byKind[$kind]['failed']++;
-            printf("%-28s  failed: %s\n", $name, $read->value);
-            continue;
-        }
-        $kindOk = $read->kind->value === $kind;
-        $byKind[$kind]['kind_ok'] += $kindOk ? 1 : 0;
-        $fields = is_array($expected['fields'] ?? null) ? $expected['fields'] : [];
-        $wrong = [];
-        foreach ($fields as $field => $want) {
-            if (!is_array($want) || !is_string($want['value'] ?? null) || $field === 'title' && $kind === 'registration') {
-                continue;
-            }
-            $byKind[$kind]['fields']++;
-            $got = $read->value((string) $field);
-            if ($got !== null && sameValue($want['value'], $got, $locale)) {
-                $byKind[$kind]['fields_ok']++;
-            } else {
-                $wrong[] = sprintf('%s: wanted "%s", got "%s"', $field, $want['value'], $got ?? '');
-            }
-        }
-        if ($kind === 'registration' && Scrubber::hasReference((string) json_encode($read->toArray()))) {
-            $leaks++;
-        }
-        printf(
-            "%-28s  kind %s  fields %d/%d  %.1f s\n",
-            $name,
-            $kindOk ? 'ok' : 'WRONG (' . $read->kind->value . ')',
-            count($fields) - count($wrong),
-            count($fields),
-            $seconds,
-        );
-        if ($verbose) {
-            foreach ($wrong as $line) {
-                printf("      %s\n", $line);
-            }
-        }
     }
 
-    printf("\n%-18s %6s %8s %10s %8s %8s\n", 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
-    foreach ($byKind as $kind => $row) {
-        printf(
-            "%-18s %6d %8d %9d%% %8d %8.1f\n",
-            $kind,
-            $row['files'],
-            $row['kind_ok'],
-            (int) round(100 * $row['fields_ok'] / max(1, $row['fields'])),
-            $row['failed'],
-            $row['seconds'] / max(1, $row['files']),
-        );
+    foreach ($byRoute as $route => $byKind) {
+        printf("\n%s\n%-18s %6s %8s %10s %8s %8s\n", $route === 'ocr' ? 'Through OCR and the text model' : 'Vision model', 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
+        foreach ($byKind as $kind => $row) {
+            printf(
+                "%-18s %6d %8d %9d%% %8d %8.1f\n",
+                $kind,
+                $row['files'],
+                $row['kind_ok'],
+                (int) round(100 * $row['fields_ok'] / max(1, $row['fields'])),
+                $row['failed'],
+                $row['seconds'] / max(1, $row['files']),
+            );
+        }
     }
     printf("Registration references in the output: %s\n", $leaks > 0 ? $leaks . ' (WRONG)' : 'none');
 
     return 0;
+}
+
+/**
+ * Scores one reading into $byKind and prints its line; 1 when a
+ * registration document's reference survived, else 0.
+ *
+ * @param array<string, array{files: int, kind_ok: int, fields: int, fields_ok: int, failed: int, seconds: float}>|null $byKind
+ * @param array<mixed> $expected
+ */
+function scoreScan(?array &$byKind, string $route, string $name, array $expected, Extraction|ScanProblem $read, string $locale, float $seconds, bool $verbose): int
+{
+    $byKind ??= [];
+    $kind = is_string($expected['kind'] ?? null) ? $expected['kind'] : 'other';
+    $byKind[$kind] ??= ['files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0];
+    $byKind[$kind]['files']++;
+    $byKind[$kind]['seconds'] += $seconds;
+    if (!$read instanceof Extraction) {
+        $byKind[$kind]['failed']++;
+        printf("%-6s %-28s  failed: %s\n", $route, $name, $read->value);
+
+        return 0;
+    }
+    $kindOk = $read->kind->value === $kind;
+    $byKind[$kind]['kind_ok'] += $kindOk ? 1 : 0;
+    $fields = is_array($expected['fields'] ?? null) ? $expected['fields'] : [];
+    $wrong = [];
+    foreach ($fields as $field => $want) {
+        if (!is_array($want) || !is_string($want['value'] ?? null) || $field === 'title' && $kind === 'registration') {
+            continue;
+        }
+        $byKind[$kind]['fields']++;
+        $got = $read->value((string) $field);
+        if ($got !== null && sameValue($want['value'], $got, $locale)) {
+            $byKind[$kind]['fields_ok']++;
+        } else {
+            $wrong[] = sprintf('%s: wanted "%s", got "%s"', $field, $want['value'], $got ?? '');
+        }
+    }
+    printf(
+        "%-6s %-28s  kind %s  fields %d/%d  %.1f s\n",
+        $route,
+        $name,
+        $kindOk ? 'ok' : 'WRONG (' . $read->kind->value . ')',
+        count($fields) - count($wrong),
+        count($fields),
+        $seconds,
+    );
+    if ($verbose) {
+        foreach ($wrong as $line) {
+            printf("      %s\n", $line);
+        }
+    }
+
+    return $kind === 'registration' && Scrubber::hasReference((string) json_encode($read->toArray())) ? 1 : 0;
 }
 
 /**

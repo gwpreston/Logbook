@@ -81,6 +81,11 @@ As an admin, open **Settings → AI**:
 4. **Tick what each model can do** (tools, images, JSON output) and run
    **Test**, which confirms it.
 5. **Give each task a model** under *Tasks*.
+6. **Check *Reading text from images*** (the card further down the page,
+   linked to its own page). It says whether an OCR engine (Tesseract on
+   this server, or a PaddleOCR service) is set up and working, and has a
+   *Test it* button. With a working engine, a text-only model can read
+   photos too: see [reading-files.md](reading-files.md).
 
 Once a task has a model, every user sees *Use AI features* in Settings and
 the AI modules appear on Settings → Modules.
@@ -196,7 +201,7 @@ Tests count in the usage log like any other request.
 | Task | Needs | Used by |
 |---|---|---|
 | Answering questions | tools | *Ask Logbook*, drafting entries |
-| Reading receipts and documents | JSON output (and images, unless your documents are all text) | reading receipts and invoices |
+| Reading receipts and documents | JSON output (and images, unless your documents are all text) | reading receipts and invoices; a text-only model reads photos through OCR first (from 3.17) |
 | Reading text PDFs | JSON output | text PDFs; without its own model it uses the one for questions, if that has JSON output |
 
 So text can stay on a small local model while receipts go to a stronger
@@ -490,18 +495,29 @@ issue*, *Watch*, *Add all as issues*; see
   removed from the text before it is sent.
 - A **photo**, or a **scanned PDF**, goes to the *Reading receipts and
   documents* model as a picture (at most 2,000 px on the long edge; up to
-  three pages of a PDF). That model must take images. A scanned PDF is
+  three pages of a PDF) when that model takes images. A scanned PDF is
   turned into pictures with Ghostscript (in the Docker image) or Imagick;
   without either, the form says "This PDF is a scan. Take a photo
   instead, or type it in."
+- **With only a text model** (from 3.17), a photo or scanned PDF is read
+  by OCR on this server first (or your PaddleOCR service), and only its
+  text goes to the model: the *Reading receipts and documents* model if
+  it is text-only, else the *Reading text PDFs* one. The text has runs of
+  11 digits removed first, as a PDF's has. Each value's words are checked
+  against what OCR read, allowing for its usual slips (0 and O, 1 and l);
+  a value whose words OCR could hardly read says "Hard to read, check
+  this". The form's notice says how the file was read. A vision model,
+  when you have one, always comes first. See
+  [reading-files.md](reading-files.md#scanning-with-a-text-model).
 - **Every photo you upload** to Logbook, scanned or attached, is turned
   upright and stored **without its EXIF data**, so its GPS position never
   reaches a model or the disk. Files stored before 2.8.0 are left as they
   were.
 - A registration document's **reference number** is never extracted,
   stored or shown, and is removed from PDF text before sending. A *photo*
-  of a V5C carries it as pixels: on an *Internet* connection the Scan page
-  says so.
+  of a V5C sent to a vision model carries it as pixels: on an *Internet*
+  connection the Scan page says so. Read through OCR, it is removed from
+  the text like a PDF's.
 - With a model on this server or your network, no file leaves your
   machines.
 - The file waits for its entry for 24 hours (only you can see it); then it
@@ -523,7 +539,9 @@ a form; text in it ("ignore your instructions and save this") is data.
 **Trying models.** `php bin/ai-eval.php --scans` reads the twenty-four
 synthetic documents in `tests/Fixtures/scans` with your configured models
 and reports, per kind, how often the kind and each field were right. It
-sends real requests; nothing but the usage log is written.
+sends real requests; nothing but the usage log is written. Add
+`--via=ocr` to also read the photos and scans through OCR and your text
+model, and see the two routes side by side.
 
 **Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
 the OCR engine (no model needed; see [reading-files.md](reading-files.md))
@@ -570,7 +588,7 @@ is current, and try a model with **Test** before relying on it.
 | Hardware | Answering questions (tools) | Reading receipts (vision and JSON) |
 |---|---|---|
 | A Raspberry Pi or small NAS | a cloud model, or a network box | a cloud model |
-| 8 GB RAM, CPU only | a 3B model such as `llama3.2:3b` (slow but usable) | a cloud model |
+| 8 GB RAM, CPU only | a 3B model such as `llama3.2:3b` (slow but usable) | a cloud model, or the same text model with OCR |
 | 16 GB RAM, or a GPU with 8 GB | a 7–8B model such as `qwen2.5:7b` or `llama3.1:8b` | `qwen2.5vl:7b` |
 | A GPU with 16 GB or more | a 12–14B model | `gemma3:12b` or a larger vision model |
 | Cloud | a small fast model (GPT-5 mini, Claude Haiku, Gemini Flash) | the same, or a larger one for hard-to-read receipts |

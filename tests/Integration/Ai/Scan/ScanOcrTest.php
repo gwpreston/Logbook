@@ -201,6 +201,16 @@ final class ScanOcrTest extends ScanTestCase
         self::assertStringContainsString('On a phone this opens the camera.', $form, 'photos are offered');
     }
 
+    public function testTheTaskPickerSaysPhotosAreReadWithTextRecognition(): void
+    {
+        $page = self::body($this->browser->get('/settings/ai'));
+
+        self::assertStringContainsString('<span data-ai-task-ocr>Photos are read with text recognition first.</span>', $page);
+
+        $this->scanApp(['TESSERACT_BINARY' => self::FAKE]);
+        self::assertStringNotContainsString('data-ai-task-ocr', self::body($this->browser->get('/settings/ai')), 'not for a vision model');
+    }
+
     public function testTheLockCoversOcrAndTheModel(): void
     {
         $busy = $this->service($this->app, AiBusyRepository::class);

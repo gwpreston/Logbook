@@ -5031,6 +5031,7 @@ return [
             'lacks' => 'braucht {needs}',
             'runs_on' => 'Läuft über {connection}.',
             'uses_ask' => 'Nutzt das Modell von Fragen beantworten.',
+            'via_ocr' => 'Fotos werden zuerst mit Texterkennung gelesen.',
             'off' => 'Aus.',
             'temperature' => 'Temperatur',
             'max_tokens' => 'Längste Antwort (Tokens)',
