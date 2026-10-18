@@ -3,7 +3,7 @@
 *An owner with only a text model (a local Ollama model without vision,
 say) can scan a fuel receipt.*
 
-Status: ✅ done, released as v3.17.0 with 53.1 · file lives in `docs/phases/`. The first `--via=ocr` eval run with the owner's models is carried to [53.3](phase-53.3.md); the ten real receipts (#496) are added when they arrive. · file lives in `docs/phases/`
+Status: ✅ done, released as v3.17.0 with 53.1 · file lives in `docs/phases/`. The first `--via=ocr` eval run with the owner's models is carried to [53.3](phase-53.3.md); the ten real receipts (#496) are added when they arrive.
 
 Today, scanning a photo needs a vision model on the `read_document`
 task. Many self-hosters run a text-only model locally and keep it there
@@ -69,7 +69,8 @@ table decides per file instead; and a text-only model on
 `read_document` reads the OCR text under that task, else `read_text`'s
 model does (§7.27 *Routing*). As proposed:
 
-- **Availability** (§7.27) becomes:
+- **Availability** (§7.27), *as proposed; superseded: the spec keeps
+  today's wider rule (see above)*, was to become:
   - a vision model on `read_document`; or
   - a JSON-output model on `read_text` (or `ask`'s, as now) **with
     Tesseract available**.
@@ -112,7 +113,9 @@ rest chosen by the owner on 2026-10-18:
       released only by the request that took it.
 - [x] K73: availability and Settings decide from the engine's real
       status, not only from the binary's path.
-- [x] K80: an oversized PDF page is rendered small.
+- [x] K80 (partly): a page's own MediaBox caps the render at 5,000 px;
+      a MediaBox inherited from `/Pages`, or `/UserUnit`, is left open
+      (K80 stays Open).
 - [x] K81: Imagick's preparation losing a line on a degraded photo.
 - [x] K46 / #453: a two-way number marked "Check the number".
 - [x] K58: prices printed with their unit; reasons for an unreadable
@@ -159,6 +162,20 @@ rest chosen by the owner on 2026-10-18:
       AI card in `docs/ai.md` (`docs/deployment.md` names Tesseract from
       53.1).
 
+### 53.2.4 Merge review
+- [x] First merge review (2026-10-18, `c195b7a0`): REJECT. Fixed: the
+      11-digit V5C redaction now goes by a row's words, not the layout's
+      gaps, and registration strings have their spaces folded before
+      the scrub; built assets rebuilt; paperwork. Also fixed from its
+      follow-ups: a fill-up filled from a scan or an Ask draft keeps its
+      date with JS on (the offline form's "move now to now" step no
+      longer runs on it). K85 (OCR enlargement reads 0 as 6) found and
+      logged.
+- [x] Second merge review (2026-10-18, `0743796b`): MERGE.
+- [x] Its follow-ups recorded (issue sweep): K86–K103, open questions
+      #500 and #501. Fixed here: K86 (the palette step's memory: pages
+      over 12 MP stay truecolor), K91, K92 and K99–K103 (paperwork).
+
 ---
 
 ## Acceptance criteria
@@ -204,3 +221,27 @@ K46: option 1, built here).
 
   *Recommendation:* (1), but built in [53.3](phase-53.3.md), where
   redaction is handled.
+
+Found in the merge review (2026-10-18), logged as #500 and #501 in
+`open-questions.md`, not decided:
+
+- **#500. Which separators and misreads between digit groups should
+  still count as an 11-digit (V5C) reference, and on which paths?**
+  (K87, K93)
+  - (1) Spaces only, as now; show the V5C warning on the OCR route too
+    and reword spec §7.27's "never leaves".
+  - (2) Also any punctuation (`-` `/` `,` `.` `|` `:`) between groups, on
+    every path.
+  - (3) Option 2 plus #498's look-alike letters (O/0, l/1/I, S/5, B/8)
+    and runs split across adjacent rows, on the OCR route only.
+  - (4) Option 3 on every path.
+- **#501. Which runs of 11 digits should a scan remove before sending,
+  given the document's kind is only known from the model's answer?**
+  (K88)
+  - (1) Every run of 11 digits on a row, however wide the gaps (as now).
+  - (2) Join OCR words into a run only across a short gap or within the
+    same column.
+  - (3) Remove runs only when a server-side check finds the text looks
+    like a V5C.
+  - (4) Remove only runs shaped like a V5C reference (11 digits unbroken,
+    or grouped 4-4-3).

@@ -7535,10 +7535,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Checking values** (`Service\Ai\Scan\Mapper`): every value goes through
   the target form's own parser in the user's locale and units, as typed
   values do. A value that fails is left empty, with the reason under the
-  field ("Couldn't read the total: 'l2.50'"). An evidence string that does
+  field ("Couldn't read "l2.50"."). An evidence string that does
   not appear in the document's text (text PDFs, and OCR text from Phase
   53.2) drops the value, with the reason under its field ("Not found in
-  the file's text: 'Total £48.20'"). Against OCR text the match is
+  the file's text: "Total £48.20", so it was left empty."). Against OCR text the match is
   tolerant (decided 2026-10-18, `docs/phases/open-questions.md` #498):
   both sides are lower-cased, their spaces removed and OCR's usual swaps
   folded (O→0, l and I→1, S→5, B→8), and the evidence must then appear
@@ -7749,7 +7749,10 @@ from Phase 53.2 a scan uses it when there is no vision model
   - "a memory limit": there's no `ulimit` without a shell, so memory is
     bounded by those sizes and by one Tesseract thread. GD decodes the
     photo once (as any upload is), fits it to 4,000 px, and then reserves
-    room for two working copies at that size only. Imagick's pixel cache,
+    room for two working copies at that size; a page of up to 12
+    megapixels is written as an 8-bit palette PNG (Phase 53.2, K82), with
+    room made for two more copies for that step, and a larger page stays
+    truecolor (K86: a 4000×4000 photo ran out of a 256M limit there). Imagick's pixel cache,
     outside PHP's limit, is capped at 128 MB in memory, 128 MB mapped and
     1 GB on disk (for the PHP worker's life), and a file with more than
     one frame goes to GD. No `jpeg:size` hint: ImageMagick 7 enlarged

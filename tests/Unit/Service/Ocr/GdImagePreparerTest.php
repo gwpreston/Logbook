@@ -170,6 +170,20 @@ final class GdImagePreparerTest extends TestCase
         self::assertLessThanOrEqual(8, ord($prepared->png[24]));
     }
 
+    public function testAPageOver12MegapixelsStaysTruecolor(): void
+    {
+        // K86: the palette step's copy and quantiser ran a 4000×4000 photo out of 256M.
+        $page = imagecreatetruecolor(3500, 3500);
+        self::assertInstanceOf(GdImage::class, $page);
+        imagefill($page, 0, 0, (int) imagecolorallocate($page, 255, 255, 255));
+        imagefilledrectangle($page, 200, 200, 3300, 260, (int) imagecolorallocate($page, 0, 0, 0));
+
+        $prepared = (new GdImagePreparer())->prepare(self::jpeg($page));
+
+        self::assertNotNull($prepared);
+        self::assertNotSame(3, ord($prepared->png[25]), 'truecolor, not palette');
+    }
+
     public function testASkewedLargePageStaysWithin4000Pixels(): void
     {
         $page = imagecreatetruecolor(4000, 2400);

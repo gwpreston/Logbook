@@ -36,6 +36,8 @@ final class GdImagePreparer implements ImagePreparer
     private const int BYTES_PER_COPY_PIXEL = 5;
     private const int MIN_TEXT_HEIGHT = 20;
     private const int TARGET_TEXT_HEIGHT = 30;
+    /** Largest page written as an 8-bit palette PNG (4000×3000, a phone photo fitted). */
+    private const int PALETTE_MAX_PIXELS = 12_000_000;
     /** Most dark pixels the deskew search looks at. */
     private const int MAX_SAMPLES = 40000;
 
@@ -333,10 +335,19 @@ final class GdImagePreparer implements ImagePreparer
     /**
      * The grey page as a palette image, so its PNG is 8-bit: under half the
      * size of a truecolor one and quicker to write (K82). The palette is
-     * matched back to the page's own greys, within two levels.
+     * matched back to the page's own greys, within two levels. It needs a
+     * full-size copy beside the page, and GD's quantiser needs more again,
+     * so room is made for two more copies first (`open()` reserved two in
+     * all), and a page over PALETTE_MAX_PIXELS stays truecolor: a 4000×4000
+     * photo ran out of a 256M limit here (K86).
      */
     private static function palette(GdImage $image): GdImage
     {
+        $pixels = imagesx($image) * imagesy($image);
+        if ($pixels > self::PALETTE_MAX_PIXELS) {
+            return $image;
+        }
+        ImageCleaner::makeRoomFor($pixels, 2, self::BYTES_PER_COPY_PIXEL);
         $copy = imagecreatetruecolor(imagesx($image), imagesy($image));
         if ($copy === false || !imagecopy($copy, $image, 0, 0, 0, 0, imagesx($image), imagesy($image))) {
             return $image;

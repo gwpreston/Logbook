@@ -51,11 +51,12 @@ notes*).
 ### Fixed
 - **A scanned or drafted fill-up keeps its date.** With JavaScript on, the
   form replaced the receipt's date and time with the time it opened; it
-  now keeps what was read. A drafted trip keeps its date the same way.
+  now keeps what was read.
 - A receipt's price printed with its unit (`1,759 €/l`, `£1.459/litre`)
   is read, and an unreadable volume or price says why.
 - A PDF whose page gives an oversized size is rendered small instead of
-  to a huge image.
+  to a huge image, except where the size is inherited from the PDF's page
+  tree or scaled by `/UserUnit` (still open).
 - An AI or OCR request that runs past its lock no longer frees a later
   request's lock; the OCR lock covers a slow PDF's render.
 - Settings no longer says Tesseract is ready when it is installed but
@@ -3536,7 +3537,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.17.0...HEAD
+[3.17.0]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...v3.17.0
 [3.16.4]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...v3.16.4
 [3.16.3]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...v3.16.3
 [3.16.2]: https://github.com/gwpreston16/Logbook/compare/v3.16.1...v3.16.2
