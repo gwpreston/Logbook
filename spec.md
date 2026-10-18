@@ -5819,8 +5819,9 @@ are absent from every read, and a write that sends them ignores them.
   `reverted_note`, `parts_fitted` and `parts_removed` (each: `part` id,
   `name`, and for a removal `outcome`), `created_by`, `created_at`,
   `updated_at`. `GET …/modifications/{mod}` returns the same with an `ETag`
-  that changes whenever the modification, its revert or the fittings it made
-  change.
+  that changes whenever the modification, its revert, the fittings it made
+  or the name of a part it fitted or removed change, and not when a part's
+  other fields do (#507).
 - `POST …/modifications`: `title`, `category`, `done_on`, `odometer`,
   `cost`, `fitted_by`, `notes`, `declared_on`, and the parts lists as the
   form's: `parts_fitted` (each a new part with the part fields below, or
@@ -11725,6 +11726,16 @@ task breakdowns live in the per-phase files; this is the map.
   fields (§7.13, K65). Released on its own as a patch after 53.5's
   release (#503, decided 2026-10-18). No migration. See
   [`phase-53.6.md`](docs/phases/phase-53.6.md).
+- **Phase 53.7 — API, webhook and MCP edges from the known-issues log +
+  patch release** (planned). A modification edit that leaves its date,
+  odometer and parts as they were sends no `part` update webhook (§7.39,
+  #442, K24); a modification's `ETag` covers what its body shows, so a
+  part's notes or price don't change it (§7.20, K25, #507); an MCP
+  `tools/call` checks only the tool it runs (§7.28, K69); `Decimal`
+  multiplies and divides past a PHP int exactly through `brick/math`
+  (CLAUDE.md §2, K62). Released on its own as a patch after 53.6's
+  release (#506, decided 2026-10-18). No migration. See
+  [`phase-53.7.md`](docs/phases/phase-53.7.md).
 
 ---
 

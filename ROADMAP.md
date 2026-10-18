@@ -117,6 +117,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
 | [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 📋 |
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 📋 |
+| [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1518,6 +1519,23 @@ command line stops on rows with problems as the web page does.*
   Patch release.
 
 → [`phase-53.6.md`](docs/phases/phase-53.6.md)
+
+---
+
+## Phase 53.7 — API, webhook and MCP edges from the known-issues log + patch release
+*Four open rows of the known-issues log closed: editing a modification's
+title no longer announces its parts as changed, a modification's ETag
+follows what its body shows, an MCP tool call checks only the tool it
+runs, and decimal arithmetic stays exact past a PHP int.*
+
+- A title-only modification edit sends no `part` webhooks (K24); a
+  modification's `ETag` ignores its parts' notes and prices but not
+  their names (K25, #507).
+- MCP `tools/call` checks one tool, not all 36 (K69); `Decimal`'s
+  overflow path uses `brick/math` instead of float (K62). No migration.
+  Patch release.
+
+→ [`phase-53.7.md`](docs/phases/phase-53.7.md)
 
 ---
 
