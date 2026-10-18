@@ -134,6 +134,14 @@ final readonly class ScanPrefill
             );
         }
         $marked = array_keys(array_filter($values, static fn (string $v): bool => $v !== ''));
+        $readBy = $reading->readBy;
+        if ($readBy !== null) {
+            // How it was read (spec.md §7.27, Phase 53.2): a model alone, or OCR first.
+            $meta['_scan_read_by'] = $this->translator->trans(
+                $readBy->engine === null ? 'scan.notice.read_by' : 'scan.notice.read_by_' . $readBy->engine,
+                ['model' => $readBy->model, 'connection' => $readBy->connection],
+            );
+        }
         $meta += [
             '_scan_kind' => $form->kind->value,
             '_from_file' => implode(',', $marked),

@@ -7486,7 +7486,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   **Too little text:** a mean confidence under 40, or under 30 words,
   sends nothing to the model and gives the normal empty form with the
   file attached: "Couldn't make out the text in this photo. Try a
-  flatter, brighter photo, or fill it in by hand." OCR timing out, busy
+  flatter, brighter photo." followed by the usual "It's attached; fill
+  the form in by hand." OCR timing out, busy
   or failing gives the matching *Failures* line.
 - **Classify, then extract, in one request.** The response schema has a
   `kind` (`service_invoice` | `fuel_receipt` | `inspection` | `insurance`
@@ -7536,7 +7537,7 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   tolerant (decided 2026-10-18, `docs/phases/open-questions.md` #498):
   both sides are lower-cased, their spaces removed and OCR's usual swaps
   folded (O→0, l and I→1, S→5, B→8), and the evidence must then appear
-  within an edit distance of 2 per 20 characters (at least 1). A text
+  within an edit distance of 2 per 20 characters, rounded up (evidence under five characters must match exactly). A text
   PDF's text is still matched exactly after lower-casing and folding
   spaces. **Hard to read:** on the OCR route, a value whose evidence
   words have a mean OCR confidence under 60 is marked "Hard to read,

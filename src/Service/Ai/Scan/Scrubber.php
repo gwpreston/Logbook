@@ -13,10 +13,21 @@ namespace Logbook\Service\Ai\Scan;
 final class Scrubber
 {
     private const string ELEVEN_DIGITS = '/(?<![0-9])[0-9](?:[ \x{00A0}]?[0-9]){10}(?![0-9])/u';
+    /** OCR's layout text may put a few spaces where the print had one (Phase 53.2). */
+    private const string ELEVEN_DIGITS_OCR = '/(?<![0-9])[0-9](?:[ \x{00A0}]{0,3}[0-9]){10}(?![0-9])/u';
 
     public static function text(string $text): string
     {
         return (string) preg_replace(self::ELEVEN_DIGITS, '', $text);
+    }
+
+    /**
+     * OCR text before it is sent (Phase 53.2): as text(), allowing up to
+     * three spaces between the digits, since OCR's layout keeps gaps it saw.
+     */
+    public static function ocrText(string $text): string
+    {
+        return (string) preg_replace(self::ELEVEN_DIGITS_OCR, '', $text);
     }
 
     /**

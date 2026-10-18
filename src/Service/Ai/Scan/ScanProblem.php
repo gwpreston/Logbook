@@ -16,8 +16,10 @@ enum ScanProblem: string
     case Unreadable = 'unreadable';
     /** The task has no model (or no model that takes images, for a picture). */
     case Unassigned = 'unassigned';
-    /** The model reading pictures does not take images. */
+    /** Pictures can't be read: no model that takes images, and no OCR with a text model. */
     case NoVision = 'no_vision';
+    /** OCR found too little text to send (Phase 53.2). */
+    case TooLittleText = 'too_little_text';
     /** The model did not answer in time. */
     case Timeout = 'timeout';
     /** Another AI request is running for this user. */

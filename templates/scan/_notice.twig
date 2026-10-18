@@ -22,6 +22,9 @@
             {% else %}
                 <p class="scan-notice__lead">{{ 'scan.notice.check'|trans }}</p>
             {% endif %}
+            {% if values._scan_read_by ?? null %}
+                <p class="scan-notice__read-by muted" data-scan-read-by>{{ values._scan_read_by }}</p>
+            {% endif %}
             {% for warning in (values._scan_warnings ?? '')|split("\n")|filter(w => w != '') %}
                 <p class="alert alert--warning" role="status">{{ ui.icon('warning') }}<span>{{ warning }}{% if loop.first and (values._scan_other_vehicle ?? null) %} <a href="{{ url_for('scan.result', {token: values.scan}, {vehicle: values._scan_other_vehicle} + ((values._scan_kind ?? null) ? {as: values._scan_kind} : {})) }}">{{ 'scan.notice.use_other_vehicle'|trans }}</a>{% endif %}</span></p>
             {% endfor %}

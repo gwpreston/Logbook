@@ -32,18 +32,21 @@ final readonly class FilePreparer
 
     public function prepare(string $path, string $mime): PreparedFile
     {
-        if ($mime === 'application/pdf') {
-            return $this->pdf($path);
-        }
-        $jpeg = ImageCleaner::downscaledJpeg($path, $mime, self::MAX_EDGE);
+        $look = $this->look($path, $mime);
 
-        return $jpeg === null
-            ? PreparedFile::unreadable(ScanProblem::Unreadable)
-            : PreparedFile::images([new ImageInput($jpeg, 'image/jpeg')]);
+        return $look->isPicture() ? $this->pictures($path, $mime, $look->pageCount) : $look;
     }
 
-    private function pdf(string $path): PreparedFile
+    /**
+     * A first look, without rendering anything: a text PDF's text; a
+     * scanned PDF with no renderer as NoRenderer; otherwise a picture for
+     * the route to read (spec.md §7.27 *Routing*).
+     */
+    public function look(string $path, string $mime): PreparedFile
     {
+        if ($mime !== 'application/pdf') {
+            return PreparedFile::picture();
+        }
         $read = $this->pdfText->read($path, self::MAX_PAGES);
         $first = $read['pages'][0] ?? '';
         if (mb_strlen($first) >= self::MIN_TEXT) {
@@ -52,8 +55,23 @@ final readonly class FilePreparer
             return PreparedFile::text(Scrubber::text($text), $read['count']);
         }
 
-        if (!$this->renderer->isAvailable()) {
-            return PreparedFile::unreadable(ScanProblem::NoRenderer, $read['count'] ?: null);
+        return $this->renderer->isAvailable()
+            ? PreparedFile::picture($read['count'] ?: null)
+            : PreparedFile::unreadable(ScanProblem::NoRenderer, $read['count'] ?: null);
+    }
+
+    /**
+     * The images a vision model is sent: the photo downscaled, or a
+     * scanned PDF's first pages rendered.
+     */
+    public function pictures(string $path, string $mime, ?int $pageCount = null): PreparedFile
+    {
+        if ($mime !== 'application/pdf') {
+            $jpeg = ImageCleaner::downscaledJpeg($path, $mime, self::MAX_EDGE);
+
+            return $jpeg === null
+                ? PreparedFile::unreadable(ScanProblem::Unreadable)
+                : PreparedFile::images([new ImageInput($jpeg, 'image/jpeg')]);
         }
         $images = [];
         foreach ($this->renderer->render($path, self::MAX_PAGES, self::DPI) as $page) {
@@ -61,8 +79,8 @@ final readonly class FilePreparer
         }
 
         return $images === []
-            ? PreparedFile::unreadable(ScanProblem::Unreadable, $read['count'] ?: null)
-            : PreparedFile::images($images, $read['count'] ?: count($images));
+            ? PreparedFile::unreadable(ScanProblem::Unreadable, $pageCount)
+            : PreparedFile::images($images, $pageCount ?? count($images));
     }
 
     private function downscaled(string $jpeg): string

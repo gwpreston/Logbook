@@ -15,7 +15,7 @@ use Logbook\Support\Process\Executable;
  */
 final class GhostscriptRenderer implements PdfRenderer
 {
-    private const int TIMEOUT_SECONDS = 60;
+    public const int TIMEOUT_SECONDS = 60;
 
     private ?string $resolved = null;
     private bool $looked = false;

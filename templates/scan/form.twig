@@ -30,7 +30,10 @@
                 {{ ai.location(connection.location) }}
                 <span>{{ ('scan.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
             </p>
-            {% if connection.location.value == 'internet' %}
+            {% if ocr_engine %}
+                {# Photos go as text, with the registration reference removed (§7.27 *Where it goes*). #}
+                <p class="ask-where" data-scan-ocr>{{ ui.icon('document_scanner') }}<span>{{ ('scan.where.ocr_' ~ ocr_engine)|trans({connection: connection.name}) }}</span></p>
+            {% elseif connection.location.value == 'internet' %}
                 <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning'|trans({connection: connection.name}) }}</span></p>
             {% endif %}
         {% endif %}

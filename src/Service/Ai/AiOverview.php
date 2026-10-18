@@ -105,8 +105,9 @@ final readonly class AiOverview
             'log_content' => $this->settings->ai->logContent,
             'set_up' => $this->status->isSetUp(),
             'no_session_secret' => $this->settings->sessionSecret === '',
-            // Reading text from images (§7.27): which engine is set up, without running it.
+            // Reading text from images (§7.27): which engine is set up, and whether it answers (K73).
             'ocr_engine' => $this->ocr->engine()?->name(),
+            'ocr_working' => $this->ocr->isWorking(),
             'ocr_off' => $this->settings->ocr->engine === OcrEngineChoice::Off,
         ];
     }

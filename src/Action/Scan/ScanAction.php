@@ -13,6 +13,7 @@ use Logbook\Service\Ai\Scan\ScanAvailability;
 use Logbook\Service\Ai\Scan\ScanReader;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Attachment\AttachmentService;
+use Logbook\Service\Ocr\OcrReader;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Storage\FileUpload;
@@ -46,6 +47,7 @@ final readonly class ScanAction
         private Redirector $redirect,
         private View $view,
         private TranslatorInterface $translator,
+        private OcrReader $ocr,
     ) {
     }
 
@@ -99,7 +101,7 @@ final readonly class ScanAction
         $upload = $this->reader->keep($user, $file, $checked, $chosen?->id, $target, $incident?->id);
 
         // Kept going if a proxy gives up on the request: /scan/{token} shows the result.
-        set_time_limit(self::READ_SECONDS + AiGateway::LOCK_GRACE);
+        set_time_limit(self::READ_SECONDS + $this->ocr->longestSeconds() + AiGateway::LOCK_GRACE);
         ignore_user_abort(true);
         $this->reader->read($user, $upload);
 
@@ -131,6 +133,7 @@ final readonly class ScanAction
             'has_vehicles' => $vehicles !== [],
             'connection' => $this->availability->connection(),
             'reads_pictures' => $this->availability->readsPictures(),
+            'ocr_engine' => $this->availability->picturesViaOcr(),
             'max_upload_mb' => $this->attachments->maxMegabytes(),
         ], $status);
     }

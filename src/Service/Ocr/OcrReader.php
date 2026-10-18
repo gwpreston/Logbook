@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Ocr;
 
 use Logbook\Repository\AiBusyRepository;
+use Logbook\Service\Ai\Scan\GhostscriptRenderer;
 use Logbook\Service\Ai\Scan\PdfRenderer;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\OcrEngineChoice;
@@ -25,7 +26,7 @@ final class OcrReader
 {
     public const int MAX_PAGES = 3;
     public const int PDF_DPI = 300;
-    /** Seconds a lock outlives its pages' timeouts before another request may take it. */
+    /** Seconds a lock outlives the longest read before another request may take it. */
     private const int LOCK_GRACE = 30;
     /** Tesseract's language codes for Logbook's locales; English is always added. */
     private const array LANGUAGES = [
@@ -71,9 +72,23 @@ final class OcrReader
         return $engine !== null && $engine->isAvailable() ? $engine : null;
     }
 
+    /**
+     * Whether an engine is set up (found, or an address given), without
+     * running it. See isWorking() before relying on it.
+     */
     public function isAvailable(): bool
     {
         return $this->engine() !== null;
+    }
+
+    /**
+     * Whether the engine is set up and answers its status check: a
+     * Tesseract binary that is found but can't run (a missing library)
+     * isn't working (K73). Runs Tesseract's `--version` once per request.
+     */
+    public function isWorking(): bool
+    {
+        return $this->engine()?->status()->available === true;
     }
 
     /**
@@ -99,15 +114,25 @@ final class OcrReader
             return OcrResult::failed(OcrProblem::Unavailable);
         }
         $now = $this->clock->now();
-        $seconds = $this->settings->ocr->timeout * self::MAX_PAGES + self::LOCK_GRACE;
-        if (!$this->busy->acquire($userId, $now, $now->modify(sprintf('+%d seconds', $seconds)))) {
+        $expires = $now->modify(sprintf('+%d seconds', $this->longestSeconds() + self::LOCK_GRACE));
+        if (!$this->busy->acquire($userId, $now, $expires)) {
             return OcrResult::failed(OcrProblem::Busy);
         }
         try {
             return $this->readHeld($path, $mime, $locale, $prepare);
         } finally {
-            $this->busy->release($userId);
+            $this->busy->release($userId, $expires);
         }
+    }
+
+    /**
+     * The longest a read can take: a PDF's render, then each page's
+     * timeout (K76: the lock must outlast it). A scan going on to a model
+     * holds its lock this long plus the model's timeout.
+     */
+    public function longestSeconds(): int
+    {
+        return GhostscriptRenderer::TIMEOUT_SECONDS + $this->settings->ocr->timeout * self::MAX_PAGES;
     }
 
     /**

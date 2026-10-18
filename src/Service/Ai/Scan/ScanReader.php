@@ -19,7 +19,8 @@ use Throwable;
  * A scan from upload to stored reading (spec.md §7.27). The checked (and,
  * for a photo, stripped) file is kept as a pending upload first, marked
  * `reading`, so it survives whatever the model does; then it is prepared,
- * read, and the extraction or the reason it could not be read is stored.
+ * read (a photo or scan by the route Router picks), and the extraction or
+ * the reason it could not be read is stored.
  */
 final readonly class ScanReader
 {
@@ -30,6 +31,7 @@ final readonly class ScanReader
         private FileStorage $files,
         private FilePreparer $preparer,
         private Extractor $extractor,
+        private Router $router,
         private ClockInterface $clock,
     ) {
     }
@@ -78,8 +80,22 @@ final readonly class ScanReader
             return $upload;
         }
         try {
-            $prepared = $this->preparer->prepare($this->files->absolutePath($upload->storedPath), $upload->mime);
-            $read = $this->extractor->extract($user, $prepared);
+            $path = $this->files->absolutePath($upload->storedPath);
+            $prepared = $this->preparer->look($path, $upload->mime);
+            if ($prepared->isPicture()) {
+                // How a photo or scan is read follows what is set up (§7.27 *Routing*).
+                $route = $this->router->picture();
+                $read = match (true) {
+                    $route->problem !== null => $route->problem,
+                    $route->ocr && $route->task !== null => $this->extractor->extractViaOcr($user, $path, $upload->mime, $route->task),
+                    default => $this->extractor->extract(
+                        $user,
+                        $prepared = $this->preparer->pictures($path, $upload->mime, $prepared->pageCount),
+                    ),
+                };
+            } else {
+                $read = $this->extractor->extract($user, $prepared);
+            }
         } catch (Throwable) {
             $prepared = null;
             $read = ScanProblem::Failed;

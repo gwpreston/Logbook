@@ -142,7 +142,7 @@
 
         <section class="card" aria-labelledby="ai-ocr-heading" data-ocr-summary>
             <h2 id="ai-ocr-heading" class="card__title">{{ ui.icon('document_scanner') }}{{ 'ocr.title'|trans }}</h2>
-            <p>{{ (ocr_off ? 'ocr.summary.off' : (ocr_engine ? 'ocr.summary.on' : 'ocr.summary.none'))|trans({engine: ocr_engine ? ('ocr.engine.' ~ ocr_engine)|trans : ''}) }}</p>
+            <p>{{ (ocr_off ? 'ocr.summary.off' : (ocr_engine ? (ocr_working ? 'ocr.summary.on' : 'ocr.summary.not_working') : 'ocr.summary.none'))|trans({engine: ocr_engine ? ('ocr.engine.' ~ ocr_engine)|trans : ''}) }}</p>
             <p><a href="{{ url_for('settings.ocr') }}">{{ 'ocr.summary.link'|trans }}</a></p>
         </section>
 

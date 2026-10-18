@@ -18,12 +18,17 @@ final readonly class Extraction
      * @param array<string, array{value: string, evidence: string}> $fields
      * @param array<string, list<string>> $lines
      * @param list<array{text: string, distance: ?string, distance_unit: ?string, date: ?string}> $recommendations
+     * @param array<string, string> $dropped field → the evidence that wasn't found in the file's text
+     * @param list<string> $hardToRead fields whose evidence OCR read with low confidence
      */
     public function __construct(
         public ScanKind $kind,
         public array $fields = [],
         public array $lines = [],
         public array $recommendations = [],
+        public array $dropped = [],
+        public array $hardToRead = [],
+        public ?ReadBy $readBy = null,
     ) {
     }
 
@@ -50,30 +55,51 @@ final readonly class Extraction
     }
 
     /**
+     * The evidence of a value dropped because it wasn't in the file's text.
+     */
+    public function dropped(string $name): ?string
+    {
+        return $this->dropped[$name] ?? null;
+    }
+
+    public function isHardToRead(string $name): bool
+    {
+        return in_array($name, $this->hardToRead, true);
+    }
+
+    /**
      * The same reading taken as another kind ("This is a fuel receipt").
      */
     public function as(ScanKind $kind): self
     {
-        return new self($kind, $this->fields, $this->lines, $this->recommendations);
+        return new self($kind, $this->fields, $this->lines, $this->recommendations, $this->dropped, $this->hardToRead, $this->readBy);
+    }
+
+    public function withReadBy(ReadBy $readBy): self
+    {
+        return new self($this->kind, $this->fields, $this->lines, $this->recommendations, $this->dropped, $this->hardToRead, $readBy);
     }
 
     /**
      * From the model's object (already checked against the schema). Strings
      * are trimmed and capped; a registration document is scrubbed of
-     * 11-digit runs; with $text (a text PDF) a value whose evidence is not
-     * in the text is dropped.
+     * 11-digit runs; with $text (a text PDF's text, or OCR's) a value whose
+     * evidence is not in the text is dropped, and noted. Against OCR text
+     * the match is tolerant and a value read with low confidence is marked.
      *
      * @param array<string, mixed> $object
      */
-    public static function fromObject(array $object, ?string $text = null): self
+    public static function fromObject(array $object, string|OcrText|null $text = null): self
     {
         $kind = ScanKind::tryFrom(is_string($object['kind'] ?? null) ? $object['kind'] : '') ?? ScanKind::Other;
         if ($kind === ScanKind::Registration) {
             $object = (array) Scrubber::value($object);
         }
-        $haystack = $text === null ? null : self::normal($text);
+        $haystack = is_string($text) ? self::normal($text) : null;
 
         $fields = [];
+        $dropped = [];
+        $hard = [];
         $given = is_array($object['fields'] ?? null) ? $object['fields'] : [];
         foreach (ScanSchema::FIELDS as $name => $_) {
             $field = $given[$name] ?? null;
@@ -86,7 +112,19 @@ final readonly class Extraction
                 continue;
             }
             if ($haystack !== null && $evidence !== '' && !str_contains($haystack, self::normal($evidence))) {
+                $dropped[$name] = $evidence;
                 continue;
+            }
+            if ($text instanceof OcrText) {
+                // Without evidence the value itself is looked for, to judge how well it was read.
+                $confidence = $text->find($evidence !== '' ? $evidence : $value);
+                if ($confidence === null && $evidence !== '') {
+                    $dropped[$name] = $evidence;
+                    continue;
+                }
+                if ($confidence !== null && $confidence < OcrText::HARD_TO_READ) {
+                    $hard[] = $name;
+                }
             }
             $fields[$name] = ['value' => $value, 'evidence' => $evidence];
         }
@@ -119,7 +157,7 @@ final readonly class Extraction
             ];
         }
 
-        return new self($kind, $fields, $lines, $recommendations);
+        return new self($kind, $fields, $lines, $recommendations, $dropped, $hard);
     }
 
     /**
@@ -128,6 +166,9 @@ final readonly class Extraction
      *     fields: array<string, array{value: string, evidence: string}>,
      *     lines: array<string, list<string>>,
      *     recommendations: list<array{text: string, distance: ?string, distance_unit: ?string, date: ?string}>,
+     *     dropped: array<string, string>,
+     *     hard_to_read: list<string>,
+     *     read_by: array<string, string>|null,
      * }
      */
     public function toArray(): array
@@ -137,6 +178,9 @@ final readonly class Extraction
             'fields' => $this->fields,
             'lines' => $this->lines,
             'recommendations' => $this->recommendations,
+            'dropped' => $this->dropped,
+            'hard_to_read' => $this->hardToRead,
+            'read_by' => $this->readBy?->toArray(),
         ];
     }
 
@@ -151,12 +195,32 @@ final readonly class Extraction
             return null;
         }
 
-        return self::fromObject([
+        $read = self::fromObject([
             'kind' => $stored['kind'],
             'fields' => $stored['fields'] ?? [],
             'lines' => ['recommendations' => $stored['recommendations'] ?? []]
                 + (is_array($stored['lines'] ?? null) ? $stored['lines'] : []),
         ]);
+        $dropped = [];
+        foreach (is_array($stored['dropped'] ?? null) ? $stored['dropped'] : [] as $name => $evidence) {
+            if (isset(ScanSchema::FIELDS[$name]) && is_string($evidence)) {
+                $dropped[$name] = self::text($evidence);
+            }
+        }
+        $hard = array_values(array_filter(
+            is_array($stored['hard_to_read'] ?? null) ? $stored['hard_to_read'] : [],
+            static fn (mixed $name): bool => is_string($name) && isset($read->fields[$name]),
+        ));
+
+        return new self(
+            $read->kind,
+            $read->fields,
+            $read->lines,
+            $read->recommendations,
+            $dropped,
+            $hard,
+            ReadBy::fromArray(is_array($stored['read_by'] ?? null) ? $stored['read_by'] : null),
+        );
     }
 
     private static function text(mixed $value): string

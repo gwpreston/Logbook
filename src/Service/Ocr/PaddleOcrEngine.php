@@ -69,7 +69,17 @@ final class PaddleOcrEngine implements OcrEngine
             if ($response->getStatusCode() !== 200) {
                 return OcrResult::failed(OcrProblem::Failed, '', 'PaddleOCR');
             }
-            $body = substr($response->getContent(false), 0, self::MAX_BODY);
+            // Read in chunks and give up past the limit, so a huge answer
+            // never sits in memory whole (K78).
+            $body = '';
+            foreach ($this->http->stream($response) as $chunk) {
+                $body .= $chunk->getContent();
+                if (strlen($body) > self::MAX_BODY) {
+                    $response->cancel();
+
+                    return OcrResult::failed(OcrProblem::Failed, '', 'PaddleOCR');
+                }
+            }
             $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
         } catch (TimeoutExceptionInterface) {
             return OcrResult::failed(OcrProblem::Timeout, '', 'PaddleOCR');

@@ -40,7 +40,7 @@ abstract class ScanTestCase extends AiTestCase
     protected array $garage = [];
     protected FakeRenderer $renderer;
     /** @var list<string> */
-    private array $tempFiles = [];
+    protected array $tempFiles = [];
 
     /**
      * @param array<string, string> $env
@@ -51,7 +51,8 @@ abstract class ScanTestCase extends AiTestCase
         ?DisplayPreferences $preferences = null,
         array $readerCapabilities = [Capability::Json, Capability::Images],
     ): void {
-        $this->app = $this->aiApp($env + ['UPLOAD_PATH' => $this->uploadDir()]);
+        // No OCR unless a test asks for it: CI has Tesseract installed (Phase 53.2 routes to it).
+        $this->app = $this->aiApp($env + ['UPLOAD_PATH' => $this->uploadDir(), 'TESSERACT_BINARY' => 'off']);
         $this->pinClock($this->app, self::NOW);
         $this->resetDatabase($this->app);
         $this->owner = $this->createOwner($this->app, 'owner', $preferences);

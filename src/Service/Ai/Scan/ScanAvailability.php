@@ -11,6 +11,7 @@ use Logbook\Domain\User\User;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Feature\FeatureToggles;
+use Logbook\Service\Ocr\OcrReader;
 
 /**
  * Whether a user can scan (spec.md §7.27 *Available*): AI enabled, the
@@ -24,6 +25,8 @@ final readonly class ScanAvailability
         private AiStatus $status,
         private FeatureToggles $features,
         private AiConnectionRepository $connections,
+        private Router $router,
+        private OcrReader $ocr,
     ) {
     }
 
@@ -43,11 +46,21 @@ final readonly class ScanAvailability
     }
 
     /**
-     * Whether pictures can be read (the `read_document` model takes images).
+     * Whether pictures can be read: by a vision model, or through OCR and
+     * a text model (spec.md §7.27 *Routing*).
      */
     public function readsPictures(): bool
     {
-        return $this->status->model(AiTaskName::ReadDocument)?->images === true;
+        return $this->router->readsPictures();
+    }
+
+    /**
+     * The OCR engine photos are read by first (`tesseract`, `paddleocr`),
+     * or null when a vision model reads them or nothing can.
+     */
+    public function picturesViaOcr(): ?string
+    {
+        return $this->router->picture()->ocr ? $this->ocr->engine()?->name() : null;
     }
 
     /**
