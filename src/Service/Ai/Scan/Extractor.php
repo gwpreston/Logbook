@@ -8,6 +8,7 @@ use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\ErrorCode;
 use Logbook\Domain\User\User;
 use Logbook\Repository\AiConnectionRepository;
+use Logbook\Repository\AiRequestRepository;
 use Logbook\Service\Ai\AiFailure;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\AiSession;
@@ -17,13 +18,16 @@ use Logbook\Service\Ai\Provider\ChatRequest;
 use Logbook\Service\Ai\Provider\ResponseFormat;
 use Logbook\Service\Ocr\OcrProblem;
 use Logbook\Service\Ocr\OcrReader;
+use Logbook\Service\Ocr\OcrResult;
 
 /**
  * Classify and extract in one request (spec.md §7.27): a text PDF through
  * `read_text`, pictures through `read_document` (whose model must take
  * images), or, with no vision model, OCR's text through a text model
- * (Phase 53.2, extractViaOcr()). No tools are offered, so the answer can
- * only ever be a form's values; text in the document is data.
+ * (Phase 53.2, extractViaOcr()). With OCR working, a vision read is
+ * checked against OCR's text of the same file (Phase 53.3,
+ * extractChecked()). No tools are offered, so the answer can only ever be
+ * a form's values; text in the document is data.
  */
 final readonly class Extractor
 {
@@ -32,6 +36,7 @@ final readonly class Extractor
         private AiStatus $status,
         private AiConnectionRepository $connections,
         private OcrReader $ocr,
+        private AiRequestRepository $requests,
     ) {
     }
 
@@ -56,10 +61,7 @@ final readonly class Extractor
 
         $message = $file->isText()
             ? ChatMessage::user("The document's text, between the markers:\n<<<\n" . $file->text . "\n>>>")
-            : ChatMessage::user(
-                count($file->images) > 1 ? 'The document, one image per page.' : 'The document.',
-                $file->images,
-            );
+            : self::pictures($file);
 
         try {
             $result = $this->gateway->run($user, $task, self::request($message));
@@ -92,30 +94,133 @@ final readonly class Extractor
                     $engine = $this->ocr->engine()?->name();
                     $read = $this->ocr->readHeld($path, $mime, $locale);
                     if (!$read->ok() || $engine === null) {
-                        return match ($read->problem) {
-                            OcrProblem::Timeout => ScanProblem::Timeout,
-                            OcrProblem::Busy => ScanProblem::Busy,
-                            OcrProblem::TooLarge, OcrProblem::Unreadable => ScanProblem::Unreadable,
-                            OcrProblem::Unavailable => ScanProblem::NoVision,
-                            default => ScanProblem::Failed,
-                        };
+                        return self::ocrProblem($read);
                     }
                     $text = OcrText::of($read);
                     if ($text->isTooLittle()) {
                         return ScanProblem::TooLittleText;
                     }
-                    $result = $session->chat(self::request(ChatMessage::user($text->message())));
-                    if ($result->object === null) {
-                        return ScanProblem::Failed;
-                    }
 
-                    return Extraction::fromObject($result->object, $text)
-                        ->withReadBy(new ReadBy($session->model, $session->connection->name, $engine));
+                    return $this->fromText($session, $text, $engine);
                 },
             );
         } catch (AiFailure $failure) {
             return self::problem($failure);
         }
+    }
+
+    /**
+     * The vision model reads the pictures while OCR reads the same file
+     * alongside, and each value is then looked for in OCR's text (spec.md
+     * §7.27 *The cross-check*, #508). With $ocrFirst (an *Internet*
+     * connection) OCR finishes before anything is sent, and a registration
+     * document goes as its redacted text instead (#510). OCR failing or
+     * reading too little skips the check; the scan carries on.
+     */
+    public function extractChecked(
+        User $user,
+        string $path,
+        string $mime,
+        PreparedFile $file,
+        bool $ocrFirst,
+    ): Extraction|ScanProblem {
+        if ($file->problem !== null) {
+            return $file->problem;
+        }
+        $model = $this->status->model(AiTaskName::ReadDocument);
+        if ($model === null) {
+            return ScanProblem::Unassigned;
+        }
+        if (!$model->images) {
+            return ScanProblem::NoVision;
+        }
+        $locale = $user->preferences->locale;
+        try {
+            return $this->gateway->session(
+                $user,
+                AiTaskName::ReadDocument,
+                $this->ocr->longestSeconds(),
+                function (AiSession $session) use ($path, $mime, $file, $locale, $ocrFirst): Extraction|ScanProblem {
+                    $engine = $this->ocr->engine()?->name();
+                    $job = $this->ocr->begin($path, $mime, $locale);
+                    if ($ocrFirst) {
+                        $text = self::usable($job->result());
+                        if ($text !== null && $engine !== null && $text->looksLikeRegistration()) {
+                            return $this->fromText($session, $text, $engine);
+                        }
+                    }
+                    $result = $session->chat(self::request(self::pictures($file)));
+                    if ($result->object === null) {
+                        return ScanProblem::Failed;
+                    }
+                    $read = Extraction::fromObject($result->object)
+                        ->withReadBy(new ReadBy($session->model, $session->connection->name));
+                    $text = self::usable($job->result());
+                    if ($text === null) {
+                        return $read;
+                    }
+                    $read = $read->crossChecked($text);
+                    if ($result->requestId !== null && $read->crossCheck !== null) {
+                        $this->requests->setScanCounts(
+                            $result->requestId,
+                            $read->crossCheck['found'],
+                            $read->crossCheck['flagged'],
+                            $read->crossCheck['unchecked'],
+                        );
+                    }
+
+                    return $read;
+                },
+            );
+        } catch (AiFailure $failure) {
+            return self::problem($failure);
+        }
+    }
+
+    /**
+     * OCR's text through the session's model, as the document's text.
+     */
+    private function fromText(AiSession $session, OcrText $text, string $engine): Extraction|ScanProblem
+    {
+        $result = $session->chat(self::request(ChatMessage::user($text->message())));
+        if ($result->object === null) {
+            return ScanProblem::Failed;
+        }
+
+        return Extraction::fromObject($result->object, $text)
+            ->withReadBy(new ReadBy($session->model, $session->connection->name, $engine));
+    }
+
+    /**
+     * OCR's text when it read enough to check against, else null.
+     */
+    private static function usable(OcrResult $read): ?OcrText
+    {
+        if (!$read->ok()) {
+            return null;
+        }
+        $text = OcrText::of($read);
+
+        return $text->isTooLittle() ? null : $text;
+    }
+
+    private static function pictures(PreparedFile $file): ChatMessage
+    {
+        return ChatMessage::user(
+            count($file->images) > 1 ? 'The document, one image per page.' : 'The document.',
+            $file->images,
+        );
+    }
+
+    private static function ocrProblem(OcrResult $read): ScanProblem
+    {
+        return match ($read->problem) {
+            OcrProblem::Timeout => ScanProblem::Timeout,
+            OcrProblem::Busy => ScanProblem::Busy,
+            OcrProblem::TooLarge, OcrProblem::Unreadable => ScanProblem::Unreadable,
+            OcrProblem::Unavailable => ScanProblem::NoVision,
+            default => ScanProblem::Failed,
+        };
     }
 
     private static function request(ChatMessage $message): ChatRequest

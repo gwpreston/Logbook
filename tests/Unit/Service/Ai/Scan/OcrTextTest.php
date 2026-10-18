@@ -69,6 +69,54 @@ final class OcrTextTest extends TestCase
         self::assertSame([], Scrubber::referenceWords(['Tel', '0123', '456789']), 'ten digits');
     }
 
+    public function testMisreadAndPunctuatedReferencesAreRemoved(): void
+    {
+        // K87, #500: OCR's look-alikes and punctuation between the groups.
+        $references = [
+            ['1234', '|', '5678', '901'],
+            ['1234,', '5678,', '901'],
+            ['1234', '5678', '9O1'],
+            ['1234', '5678', '90l'],
+            ['1234', 'S678', '901'],
+            ['1234-5678-901'],
+        ];
+        foreach ($references as $words) {
+            $text = OcrText::of(self::ocr([['Ref', ...$words], ['Make', 'FORD']]))->text;
+
+            self::assertStringNotContainsString('5678', $text, implode(' ', $words));
+            self::assertStringContainsString('1| Ref', $text);
+        }
+        $letters = OcrText::of(self::ocr([['BOSS', 'SOIL', '1234'], ['Make', 'FORD']]))->text;
+        self::assertSame("1| BOSS SOIL 1234\n2| Make FORD", $letters, 'words of letters only are never read as digits');
+    }
+
+    public function testAReferenceWrappedOverThreeRowsIsRemoved(): void
+    {
+        $text = OcrText::of(self::ocr([['Document', 'reference'], ['1234'], ['5678'], ['901'], ['Make', 'FORD']]))->text;
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
+        self::assertStringContainsString('Make FORD', $text);
+    }
+
+    public function testNumbersInOtherColumnsOfARowAreKept(): void
+    {
+        // K88, #501: joined only across a short gap.
+        $at = static fn (string $t, int $x, int $y = 10): OcrWord
+            => new OcrWord($t, 90.0, new OcrBox($x, $y, 10 * mb_strlen($t), 20));
+        $lines = [
+            new OcrLine([$at('12', 10), $at('09', 40), $at('2026', 70), $at('48120', 300)]),
+            new OcrLine([$at('Policy', 10, 40), $at('12345', 80, 40), $at('123456', 400, 40)]),
+            new OcrLine([$at('Tel', 10, 70), $at('01632', 50, 70), $at('960001', 400, 70)]),
+        ];
+
+        $text = OcrText::of(OcrResult::read($lines, 'eng', 'tesseract 5.3.0'))->text;
+
+        self::assertStringContainsString('12 09 2026', $text);
+        self::assertStringContainsString('48120', $text);
+        self::assertStringContainsString('123456', $text);
+        self::assertStringContainsString('960001', $text);
+    }
+
     public function testWholeLinesUpToTheLimit(): void
     {
         $rows = [];

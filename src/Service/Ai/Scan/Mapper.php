@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Scan;
 
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use DateTimeImmutable;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Ai\Scan\ScanKind;
@@ -199,8 +201,73 @@ final readonly class Mapper
             );
         }
         $form->amount('total', 'total');
+        $this->sum($form, $reading);
         $form->text('station', 'vendor');
         $this->station($form, $reading);
+    }
+
+    /**
+     * The money adds up (spec.md §7.27 *Checking values*, Phase 53.3): the
+     * printed volume × price per unit is within 1p of the printed total,
+     * plus what each figure's printed rounding allows; otherwise the three
+     * fields are marked with the sum. In the printed units, on every route.
+     */
+    private function sum(ScanFormBuilder $form, Extraction $reading): void
+    {
+        $locale = $form->locale();
+        $printed = [$reading->value('volume'), $reading->value('price_per_unit'), $reading->value('total')];
+        if (in_array(null, $printed, true)) {
+            return;
+        }
+        [$volume, $price, $total] = array_map(static fn (string $p): ?string => PrintedNumber::read($p, $locale), $printed);
+        if ($volume === null || $price === null || $total === null) {
+            return;
+        }
+        $pence = preg_match('/\d\s*(p|c|ct|cent|cents)\b/i', $printed[1]) === 1;
+        // A figure that reads two ways (#453) is already marked: either reading may add up.
+        $readings = static fn (string $read, string $as): array => array_values(array_unique(array_filter(
+            [$read, PrintedNumber::alternative($as, $locale)],
+            static fn (?string $r): bool => $r !== null,
+        )));
+        $product = null;
+        foreach ($readings($volume, $printed[0]) as $vr) {
+            foreach ($readings($price, $printed[1]) as $pr) {
+                foreach ($readings($total, $printed[2]) as $tr) {
+                    $v = BigDecimal::of($vr);
+                    $p = BigDecimal::of($pr);
+                    if ($pence) {
+                        $p = $p->dividedBy(100, $p->getScale() + 2);
+                    }
+                    // Half a unit in each figure's last printed decimal, times the other.
+                    $allowed = BigDecimal::of('0.01')
+                        ->plus($p->abs()->multipliedBy(self::halfUnit($v)))
+                        ->plus($v->abs()->multipliedBy(self::halfUnit($p)));
+                    if ($v->multipliedBy($p)->minus(BigDecimal::of($tr))->abs()->isLessThanOrEqualTo($allowed)) {
+                        return;
+                    }
+                    $product ??= $v->multipliedBy($p);
+                }
+            }
+        }
+        $shown = trim($printed[0]);
+        $unit = trim((string) $reading->value('volume_unit'));
+        if ($unit !== '' && preg_match('/\p{L}/u', $shown) !== 1) {
+            $shown .= ' ' . $unit;
+        }
+        $text = $this->translator->trans('scan.check_sum', [
+            'volume' => $shown,
+            'price' => trim($printed[1]),
+            'sum' => $form->money((string) $product->toScale(2, RoundingMode::HalfUp)),
+            'total' => $form->money((string) BigDecimal::of($total)->toScale(2, RoundingMode::HalfUp)),
+        ]);
+        foreach (['volume', 'price', 'total'] as $field) {
+            $form->flag($field, $text);
+        }
+    }
+
+    private static function halfUnit(BigDecimal $number): BigDecimal
+    {
+        return BigDecimal::ofUnscaledValue(5, $number->getScale() + 1);
     }
 
     /**

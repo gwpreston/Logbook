@@ -22,6 +22,8 @@ final readonly class ChatResult
         public ?array $object = null,
         /** @var array<mixed>|null the provider's own form of the turn, for tool loops */
         public ?array $raw = null,
+        /** The usage log row it was logged as (AiGateway), for the scan's counts. */
+        public ?int $requestId = null,
     ) {
     }
 
@@ -38,6 +40,11 @@ final readonly class ChatResult
      */
     public function withObject(array $object): self
     {
-        return new self($this->text, $this->toolCalls, $this->finishReason, $this->usage, $object, $this->raw);
+        return new self($this->text, $this->toolCalls, $this->finishReason, $this->usage, $object, $this->raw, $this->requestId);
+    }
+
+    public function withRequestId(int $id): self
+    {
+        return new self($this->text, $this->toolCalls, $this->finishReason, $this->usage, $this->object, $this->raw, $id);
     }
 }

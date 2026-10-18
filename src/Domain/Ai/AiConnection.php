@@ -33,6 +33,8 @@ final readonly class AiConnection
         public ?string $acknowledgedUrl,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        /** *Send text, not images* (Phase 53.3): never an image on this connection. */
+        public bool $sendText = false,
     ) {
     }
 

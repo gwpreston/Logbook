@@ -96,6 +96,9 @@ final class PrintedValuesTest extends TestCase
         yield 'code per litre' => ['1,759 EUR/l', 'de_DE', '1.759'];
         yield 'pence per litre' => ['142.9p/L', 'en_GB', '142.9'];
         yield 'a lone 0 is not a group' => ['0,759', 'en_GB', '0.759'];
+        // K98: nor is a doubled 0, in any locale.
+        yield 'a doubled 0, english' => ['00,759', 'en_GB', '0.759'];
+        yield 'a doubled 0, german' => ['00.759', 'de_DE', '0.759'];
     }
 
     /**
@@ -112,6 +115,7 @@ final class PrintedValuesTest extends TestCase
         yield 'two decimals' => ['184.50', 'en_GB', null];
         yield 'four digits after' => ['1.4590', 'en_GB', null];
         yield 'leading zero' => ['0.759', 'en_GB', null];
+        yield 'doubled leading zero' => ['00,759', 'en_GB', null];
         yield 'no separator' => ['1759', 'en_GB', null];
         yield 'not a number' => ['n/a', 'en_GB', null];
     }

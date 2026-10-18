@@ -7456,12 +7456,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   on such a connection, whatever asked for it.
   **Registration documents** (Phase 53.3, #510): on an *Internet*
   connection with OCR working, a V5C photo is always sent as redacted
-  text, never as an image. It is recognised before anything is sent: the
-  scan was started for the vehicle (*Scan the V5C*, target `vehicle`),
-  or the OCR text carries a V5C marker (`V5C`, `Registration
-  Certificate`, `DVLA` or `Document reference`, in any case). So on an
-  *Internet* vision connection OCR runs first, and the picture is sent
-  only when neither holds.
+  text, never as an image. It is recognised before anything is sent by
+  a V5C marker in the OCR text (`V5C`, `Registration Certificate`,
+  `DVLA` or `Document reference`, in any case): no entry point starts a
+  scan for the vehicle, so the scan's target can't say so. On an
+  *Internet* vision connection OCR therefore runs first, and the picture
+  is sent only when no marker is found.
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7529,10 +7529,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     including a run OCR splits into groups (decided 2026-10-18,
     `docs/phases/open-questions.md` #500, #501; K87, K88):
     - a row's words are joined into one run only across a short gap
-      (at most two character widths, the layout's column gap), so a date
+      (under three character widths), so a date
       beside an odometer, or a policy number in its own column, is kept;
     - a run that ends a row joins one that starts the next row in the
-      same column (starting within two character widths of it), so a
+      same column (starting within three character widths of it), so a
       reference wrapped over two or three rows is still caught;
     - in a word with at least one digit, OCR's look-alikes count as
       digits (O→0, l and I→1, S→5, B→8), so `1234 5678 9O1` and
@@ -7789,8 +7789,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, or
   the OCR text sent, after redaction) and the answer are logged, never an
   image. From Phase 53.3 a cross-checked request also counts its values
-  found, flagged and unchecked (§6 AiRequest), never the text; the usage
-  page shows them on the row.
+  found, flagged and unchecked on its row (§6 AiRequest), never the
+  text, so the false-flag rate can be read from the log.
 - `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
   against the configured models and reports field accuracy per kind.
   `--via=ocr` (Phase 53.2) sends the photos and scans through OCR and
@@ -7882,8 +7882,11 @@ from Phase 53.2 a scan uses it when there is no vision model
     variance of the rows' dark-pixel counts, measured on a copy about
     1,000 px long; Imagick by its `deskew`. Under a quarter of a degree,
     or a blank (flat) page, is left alone;
-  - enlarged when its lines of text are under 20 px high, to about 30
-    px, within the 4,000 px edge.
+  - enlarged when its lines of text are under 15 px high, to about 30
+    px, within the 4,000 px edge (Phase 53.3, K85: from 20 px, enlarging
+    read an MOT photo's 0s as 6s, and the eval over the fixtures found it
+    lowered accuracy on every kind of photo; `bin/ai-eval.php --ocr
+    --enlarge=min:target` compares other rules).
 - **The result** (`OcrResult`): words (text, confidence 0–100, box,
   page), lines, blocks, a **layout text**, the mean confidence, the
   languages and the engine's version. Lines that sit side by side are
@@ -11786,8 +11789,8 @@ task breakdowns live in the per-phase files; this is the map.
   volume × price checked against its total on every route; *Send text,
   not images*, a per-connection option, off by default (#509), sending
   redacted OCR text; a V5C photo always sent as redacted text on
-  *Internet* connections when OCR works, recognised by its scan target
-  or its markers (#510); the reference's redaction widened to punctuation
+  *Internet* connections when OCR works, recognised by its markers
+  (#510); the reference's redaction widened to punctuation
   and look-alikes, and narrowed to short gaps (#500, #501); and K85,
   K87–K90, K93–K98 (§6 AiConnection, AiRequest, §7.25, §7.27). See
   [`phase-53.3.md`](docs/phases/phase-53.3.md).

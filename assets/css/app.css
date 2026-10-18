@@ -919,6 +919,22 @@ a.list__item:hover {
     font-size: var(--fs-sm);
 }
 
+/* An icon beside a sentence (K95): the sentence wraps beside it, never below. */
+.ask-where--note {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+.ask-where--note > .icon {
+    flex: none;
+    margin-top: 0.15em;
+}
+
+.ask-where--note > span {
+    flex: 1;
+    min-width: 0;
+}
+
 .ask-thread {
     display: grid;
     gap: var(--space-4);

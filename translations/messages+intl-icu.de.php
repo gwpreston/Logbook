@@ -4933,6 +4933,11 @@ return [
             'cap' => 'Monatliches Token-Limit',
             'cap_hint' => 'Erreichen die Tokens dieses Monats das Limit, pausiert die Verbindung bis zum 1.',
             'tls' => 'TLS',
+            'privacy' => 'Datenschutz',
+            'send_text' => 'Text statt Bildern senden',
+            'send_text_hint' => 'Fotos und gescannte PDFs werden auf diesem Server per Texterkennung gelesen, und nur ihr Text wird gesendet, ohne die Dokumentnummer eines Fahrzeugscheins. Privater; bei verblassten Belegen etwas ungenauer. Braucht Texterkennung (Einstellungen → KI).',
+            'send_text_on' => 'An: Fotos gehen als Text',
+            'send_text_off' => 'Aus: Fotos gehen als Bilder',
             'verify_tls' => 'TLS-Zertifikate prüfen',
             'verify_tls_hint' => 'Nur für einen Server in deinem Netzwerk mit selbst signiertem Zertifikat ausschalten; ein eigenes CA-Bundle ist sicherer.',
             'verify_tls_forced' => 'Immer an: AI_ALLOW_INSECURE_TLS ist false.',
@@ -5079,6 +5084,7 @@ return [
             'too_large' => 'Das ist zu groß, um es an {connection} zu senden.',
             'cap_reached' => '{connection} hat die Tokens dieses Monats verbraucht und pausiert bis zum 1.',
             'busy' => 'Ich arbeite noch an deiner letzten Frage.',
+            'text_only' => '{connection} ist auf „Text statt Bildern senden“ gestellt, daher wird kein Bild dorthin gesendet.',
             'not_acknowledged' => '{connection} liegt im Internet, und ein Admin hat dem Senden dorthin noch nicht zugestimmt.',
             'secret_unreadable' => 'Der Schlüssel für {connection} muss neu eingegeben werden.',
             'secret_unset' => 'Der Schlüssel für {connection} liest {variable}, die nicht gesetzt ist.',
@@ -5104,6 +5110,8 @@ return [
             'registration_warning' => 'Ein Foto eines Fahrzeugscheins (V5C) zeigt dessen Dokumentnummer, und {connection} erhält sie mit dem Bild. Logbook entfernt sie aus PDF-Text, speichert sie nie und zeigt sie nie an.',
             'ocr_tesseract' => 'Fotos und gescannte PDFs werden zuerst auf diesem Server gelesen (Texterkennung), und nur ihr Text geht an {connection}.',
             'ocr_paddleocr' => 'Fotos und gescannte PDFs werden zuerst von deinem Texterkennungsdienst gelesen, und nur ihr Text geht an {connection}.',
+            'ocr_check' => 'Fotos gehen als Bilder an {connection} und werden auf diesem Server per Texterkennung geprüft.',
+            'ocr_check_registration' => 'Ein Fahrzeugschein (V5C) wird stattdessen als Text gesendet, ohne seine Dokumentnummer.',
         ],
         'field' => [
             'file' => 'Foto oder PDF',
@@ -5112,6 +5120,7 @@ return [
         ],
         'hint' => [
             'file' => 'Ein Foto (JPEG, PNG oder WebP) oder ein PDF, bis {max} MB. Auf dem Handy öffnet sich die Kamera.',
+            'file_send_text' => 'Ein PDF mit Text, bis {max} MB. Diese Verbindung sendet nur Text, daher brauchen Fotos und gescannte PDFs Texterkennung auf diesem Server (Einstellungen → KI).',
             'file_text_only' => 'Ein PDF mit Text, bis {max} MB. Fotos und gescannte PDFs brauchen ein Modell, das Bilder liest, oder Texterkennung auf diesem Server (Einstellungen → KI).',
             'vehicle' => 'Mit „Das Dokument entscheiden lassen“ wählt das Kennzeichen darauf das Fahrzeug.',
             'check' => 'Gespeichert wird erst, wenn du das Formular prüfst und auf Speichern drückst.',
@@ -5162,6 +5171,7 @@ return [
             'thumb_alt' => 'Die gescannte Datei, {name}',
         ],
         'problem' => [
+            'text_only' => 'Diese Verbindung sendet nur Text, und die Texterkennung funktioniert auf diesem Server nicht, daher können Fotos nicht gelesen werden.',
             'no_renderer' => 'Dieses PDF ist ein Scan. Mach stattdessen ein Foto oder tippe es ab.',
             'unreadable' => 'Diese Datei konnte nicht gelesen werden.',
             'unassigned' => 'Das Lesen von Dateien ist für diese Art Datei nicht eingerichtet.',
@@ -5180,6 +5190,8 @@ return [
         'check_date' => 'Prüfe das Datum: {date} oder {other}?',
         'check_number' => 'Prüfe die Zahl: {value} oder {other}?',
         'check_hard_to_read' => 'Schwer lesbar, bitte prüfen.',
+        'check_not_on_page' => 'Nicht auf der Seite gefunden, bitte genau prüfen.',
+        'check_sum' => '{volume} × {price} = {sum}, aber als Summe steht da {total}.',
         'description' => [
             'labour' => 'Arbeitslohn {amount}',
             'parts' => 'Teile {amount}',

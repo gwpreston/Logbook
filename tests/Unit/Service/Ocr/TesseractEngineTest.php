@@ -107,6 +107,30 @@ final class TesseractEngineTest extends TestCase
         }
     }
 
+    public function testABinaryThatFailsItsVersionCheckIsNotAskedForItsLanguages(): void
+    {
+        // K94: a hung or broken binary costs one check, not two.
+        putenv('FAKE_TESSERACT_MODE=broken');
+        $status = $this->engine(self::FAKE)->status();
+
+        self::assertFalse($status->available);
+        self::assertSame('--version', $this->arguments()[0], 'the last run was the version check');
+    }
+
+    public function testAStartedReadRunsInTheBackgroundAndIsCollectedLater(): void
+    {
+        // Phase 53.3: OCR alongside the vision request.
+        putenv('FAKE_TESSERACT_MODE=sleep');
+        $started = microtime(true);
+        $run = $this->engine(self::FAKE, 1)->start('png', ['eng'], PageLayout::Page);
+
+        self::assertLessThan(0.5, microtime(true) - $started, 'start() returns at once');
+        self::assertSame(OcrProblem::Timeout, $run->result()->problem, 'the timeout counts from the start');
+        self::assertSame(OcrProblem::Timeout, $run->result()->problem, 'collected once');
+        putenv('FAKE_TESSERACT_MODE');
+        self::assertTrue($this->engine(self::FAKE)->start('png', ['eng'], PageLayout::Page)->result()->ok());
+    }
+
     public function testRunningPastTheTimeoutIsATimeout(): void
     {
         putenv('FAKE_TESSERACT_MODE=sleep');

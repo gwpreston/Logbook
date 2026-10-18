@@ -138,6 +138,7 @@ final readonly class AiConnectionRepository
             'header_names' => $settings->headerNames === [] ? null : json_encode($settings->headerNames, JSON_THROW_ON_ERROR),
             'timeout_seconds' => $settings->timeoutSeconds,
             'verify_tls' => $settings->verifyTls,
+            'send_text' => $settings->sendText,
             'ca_bundle' => $settings->caBundle,
             'max_request_mb' => $settings->maxRequestMb,
             'monthly_token_cap' => $settings->monthlyTokenCap,
@@ -153,6 +154,7 @@ final readonly class AiConnectionRepository
         return [
             'timeout_seconds' => ParameterType::INTEGER,
             'verify_tls' => ParameterType::BOOLEAN,
+            'send_text' => ParameterType::BOOLEAN,
             'max_request_mb' => ParameterType::INTEGER,
             'monthly_token_cap' => ParameterType::INTEGER,
             'enabled' => ParameterType::BOOLEAN,
@@ -175,6 +177,7 @@ final readonly class AiConnectionRepository
                 'max_request_mb',
                 'monthly_token_cap',
                 'enabled',
+                'send_text',
                 'acknowledged_by',
                 'acknowledged_at',
                 'acknowledged_url',
@@ -217,6 +220,7 @@ final readonly class AiConnectionRepository
             acknowledgedUrl: Row::nullableString($row, 'acknowledged_url'),
             createdAt: UtcDateTime::fromDatabase($row['created_at'] ?? null, $platform),
             updatedAt: UtcDateTime::fromDatabase($row['updated_at'] ?? null, $platform),
+            sendText: Row::bool($row, 'send_text'),
         );
     }
 }

@@ -143,6 +143,15 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 53.3: Send text, not images, and the cross-check's counts.
+        self::assertTrue($this->hasColumn('ai_connections', 'send_text'));
+        self::assertTrue($this->hasColumn('ai_requests', 'scan_flagged'));
+        Migrator::run('rollback');
+        self::assertFalse($this->hasColumn('ai_connections', 'send_text'), 'rollback must drop ai_connections.send_text');
+        foreach (['scan_found', 'scan_flagged', 'scan_unchecked'] as $column) {
+            self::assertFalse($this->hasColumn('ai_requests', $column), sprintf('rollback must drop ai_requests.%s', $column));
+        }
+
         // Phase 50.2: the warranty reminder tick.
         self::assertTrue($this->hasColumn('parts', 'warranty_reminder'));
         Migrator::run('rollback');

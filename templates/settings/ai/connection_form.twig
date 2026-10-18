@@ -105,6 +105,18 @@
                 {{ ui.input('monthly_token_cap', 'ai.connection.cap'|trans, values, errors, {type: 'number', step: 1, min: 1, inputmode: 'numeric', optional: true, hint: 'ai.connection.cap_hint'|trans}) }}
             </section>
 
+            {# Phase 53.3 (spec.md §7.27 *Where it goes*, #499, #509): photos as redacted OCR text only. #}
+            <section class="card" aria-labelledby="privacy-heading">
+                <h2 id="privacy-heading" class="card__title">{{ ui.icon('visibility_off') }}{{ 'ai.connection.privacy'|trans }}</h2>
+                <label class="toggle">
+                    <input type="checkbox" name="send_text" value="1"{% if (values.send_text ?? '') == '1' %} checked{% endif %} aria-describedby="f-send-text-hint">
+                    <span class="toggle__text">
+                        <span class="toggle__title">{{ 'ai.connection.send_text'|trans }}</span>
+                        <span class="toggle__hint" id="f-send-text-hint">{{ 'ai.connection.send_text_hint'|trans }}</span>
+                    </span>
+                </label>
+            </section>
+
             <section class="card" aria-labelledby="tls-heading">
                 <h2 id="tls-heading" class="card__title">{{ ui.icon('lock') }}{{ 'ai.connection.tls'|trans }}</h2>
                 <label class="toggle">

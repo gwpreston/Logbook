@@ -56,9 +56,77 @@ final class EvidenceMatch
             return null;
         }
 
-        // Sellers' algorithm: the edit distance of the needle against any
-        // substring of the haystack ending at each position, carrying where
-        // that substring starts. A column of (distance, start) pairs.
+        // K89: a match within $allowed edits contains one of $allowed + 1
+        // pieces of the needle exactly, so the edit distance is worked only
+        // in windows around where a piece is found.
+        $best = null;
+        foreach (self::windows($needle, $haystack, $allowed) as [$from, $to]) {
+            $found = self::sellers($needle, array_slice($haystack, $from, $to - $from), $allowed);
+            if ($found !== null && ($best === null || $found[2] < $best[2])) {
+                $best = [$found[0] + $from, $found[1] + $from, $found[2]];
+                if ($found[2] === 0) {
+                    break;
+                }
+            }
+        }
+
+        return $best === null ? null : [$best[0], $best[1]];
+    }
+
+    /**
+     * Where a match could be: around each exact hit of one of the needle's
+     * $allowed + 1 pieces, widened by $allowed, merged, in order.
+     *
+     * @param list<string> $needle
+     * @param list<string> $haystack
+     * @return list<array{int, int}>
+     */
+    private static function windows(array $needle, array $haystack, int $allowed): array
+    {
+        $m = count($needle);
+        $n = count($haystack);
+        $at = [];
+        foreach ($haystack as $j => $char) {
+            $at[$char][] = $j;
+        }
+        $size = intdiv($m, $allowed + 1);
+        $windows = [];
+        for ($p = 0; $p <= $allowed; $p++) {
+            $offset = $p * $size;
+            $piece = array_slice($needle, $offset, $p === $allowed ? null : $size);
+            foreach ($at[$piece[0]] ?? [] as $j) {
+                if (array_slice($haystack, $j, count($piece)) === $piece) {
+                    $windows[] = [max(0, $j - $offset - $allowed), min($n, $j - $offset + $m + $allowed)];
+                }
+            }
+        }
+        sort($windows);
+        $merged = [];
+        foreach ($windows as [$from, $to]) {
+            $last = count($merged) - 1;
+            if ($last >= 0 && $from <= $merged[$last][1]) {
+                $merged[$last][1] = max($merged[$last][1], $to);
+            } else {
+                $merged[] = [$from, $to];
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Sellers' algorithm: the edit distance of the needle against any
+     * substring of the haystack ending at each position, carrying where
+     * that substring starts. The first best within $allowed, as [start,
+     * end, distance].
+     *
+     * @param list<string> $needle
+     * @param list<string> $haystack
+     * @return array{int, int, int}|null
+     */
+    private static function sellers(array $needle, array $haystack, int $allowed): ?array
+    {
+        $m = count($needle);
         $dist = range(0, $m);
         $start = array_fill(0, $m + 1, 0);
         $best = null;
@@ -93,7 +161,7 @@ final class EvidenceMatch
             }
         }
 
-        return $best === null ? null : [$best[0], $best[1]];
+        return $best;
     }
 
     /**

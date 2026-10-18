@@ -47,6 +47,15 @@ final class PaddleOcrEngine implements OcrEngine
         return new OcrEngineStatus($this->name(), $set, $set ? 'PaddleOCR' : '', [], $this->settings->ocr->paddleOcrAddress());
     }
 
+    /**
+     * Over HTTP, read when the result is asked for: after the model's
+     * request, never delaying it.
+     */
+    public function start(string $png, array $languages, PageLayout $layout, int $page = 1): OcrRun
+    {
+        return new OcrRun(fn (): OcrResult => $this->read($png, $languages, $layout, $page));
+    }
+
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult
     {
         if (!$this->isAvailable()) {

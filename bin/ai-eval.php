@@ -98,9 +98,12 @@ use Logbook\Service\Ocr\OcrReader;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$options = getopt('', ['user:', 'only:', 'verbose', 'scans', 'via:', 'insights', 'ocr', 'degraded', 'runs:', 'help']);
+$options = getopt('', [
+    'user:', 'only:', 'verbose', 'scans', 'via:', 'crosscheck', 'insights', 'ocr', 'degraded', 'enlarge:', 'runs:', 'help',
+]);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans [--via=ocr]|--insights [--runs=3]|--ocr [--degraded]] [--user=demo]"
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans [--via=ocr|--crosscheck]|--insights [--runs=3]"
+        . "|--ocr [--degraded] [--enlarge=20:24,0:0]] [--user=demo]"
         . " [--only=1,5,12] [--verbose]\n");
     exit(0);
 }
@@ -118,7 +121,8 @@ $get = static function (string $class) use ($container): object {
     return $service;
 };
 if (isset($options['ocr'])) {
-    exit(evaluateOcr($get, $only, $verbose, isset($options['degraded'])));
+    $enlarge = is_string($options['enlarge'] ?? null) ? array_filter(explode(',', $options['enlarge'])) : [];
+    exit(evaluateOcr($get, $only, $verbose, isset($options['degraded']), array_values($enlarge)));
 }
 $users = $get(UserRepository::class);
 assert($users instanceof UserRepository);
@@ -134,7 +138,7 @@ if (isset($options['scans'])) {
         fwrite(STDERR, "--via takes only ocr.\n");
         exit(2);
     }
-    exit(evaluateScans($get, $user, $only, $verbose, $via === 'ocr'));
+    exit(evaluateScans($get, $user, $only, $verbose, $via === 'ocr', isset($options['crosscheck'])));
 }
 if (isset($options['insights'])) {
     $runs = is_string($options['runs'] ?? null) ? max(1, (int) $options['runs']) : 3;
@@ -525,7 +529,7 @@ function evaluateInsights(Closure $get, User $user, int $runs, bool $verbose): i
  * @param Closure(class-string): object $get
  * @param list<int> $only fixture numbers
  */
-function evaluateScans(Closure $get, User $user, array $only, bool $verbose, bool $viaOcr = false): int
+function evaluateScans(Closure $get, User $user, array $only, bool $verbose, bool $viaOcr = false, bool $crossCheck = false): int
 {
     $availability = $get(ScanAvailability::class);
     assert($availability instanceof ScanAvailability);
@@ -555,6 +559,14 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
             return 1;
         }
         $routes[] = 'ocr';
+    }
+    if ($crossCheck) {
+        if ($document?->images !== true || !$ocr->isWorking()) {
+            fwrite(STDERR, "--crosscheck needs a vision model on read_document and a working OCR engine.\n");
+
+            return 1;
+        }
+        $routes[] = 'check';
     }
     if ($routes === []) {
         $routes[] = 'vision';
@@ -589,9 +601,13 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
                     $text ??= [$extractor->extract($user, $look), microtime(true) - $started];
                     [$read, $seconds] = $text;
                 } else {
-                    $read = $route === 'ocr'
-                        ? $extractor->extractViaOcr($user, $path, $mime, $ocrTask)
-                        : $extractor->extract($user, $preparer->pictures($path, $mime, $look->pageCount));
+                    $pictures = static fn () => $preparer->pictures($path, $mime, $look->pageCount);
+                    $read = match ($route) {
+                        'ocr' => $extractor->extractViaOcr($user, $path, $mime, $ocrTask),
+                        // Phase 53.3: the vision model, checked by OCR (never OCR first: the flags are measured).
+                        'check' => $extractor->extractChecked($user, $path, $mime, $pictures(), false),
+                        default => $extractor->extract($user, $pictures()),
+                    };
                     $seconds = microtime(true) - $started;
                 }
                 $byRoute[$route] ??= [];
@@ -603,17 +619,24 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
     }
 
     foreach ($byRoute as $route => $byKind) {
-        printf("\n%s\n", $route === 'ocr' ? 'Through OCR and the text model' : 'Vision model');
-        printf("%-18s %6s %8s %10s %8s %8s\n", 'Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file');
+        printf("\n%s\n", match ($route) {
+            'ocr' => 'Through OCR and the text model',
+            'check' => 'Vision model, checked by OCR (flags: values marked "Not found on the page"; false: marked but right)',
+            default => 'Vision model',
+        });
+        $columns = ['Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file', 'Flags', 'False'];
+        printf("%-18s %6s %8s %10s %8s %8s %7s %7s\n", ...$columns);
         foreach ($byKind as $kind => $row) {
             printf(
-                "%-18s %6d %8d %9d%% %8d %8.1f\n",
+                "%-18s %6d %8d %9d%% %8d %8.1f %7s %7s\n",
                 $kind,
                 $row['files'],
                 $row['kind_ok'],
                 (int) round(100 * $row['fields_ok'] / max(1, $row['fields'])),
                 $row['failed'],
                 $row['seconds'] / max(1, $row['files']),
+                $route === 'check' ? (string) $row['flagged'] : '-',
+                $route === 'check' ? (string) $row['false_flags'] : '-',
             );
         }
     }
@@ -626,7 +649,9 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
  * Scores one reading into $byKind and prints its line; 1 when a
  * registration document's reference survived, else 0.
  *
- * @param array<string, array{files: int, kind_ok: int, fields: int, fields_ok: int, failed: int, seconds: float}> $byKind
+ * @param array<string, array{
+ *     files: int, kind_ok: int, fields: int, fields_ok: int, failed: int, seconds: float, flagged: int, false_flags: int,
+ * }> $byKind
  * @param array<mixed> $expected
  */
 function scoreScan(
@@ -640,7 +665,10 @@ function scoreScan(
     bool $verbose,
 ): int {
     $kind = is_string($expected['kind'] ?? null) ? $expected['kind'] : 'other';
-    $byKind[$kind] ??= ['files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0];
+    $byKind[$kind] ??= [
+        'files' => 0, 'kind_ok' => 0, 'fields' => 0, 'fields_ok' => 0, 'failed' => 0, 'seconds' => 0.0,
+        'flagged' => 0, 'false_flags' => 0,
+    ];
     $byKind[$kind]['files']++;
     $byKind[$kind]['seconds'] += $seconds;
     if (!$read instanceof Extraction) {
@@ -663,6 +691,16 @@ function scoreScan(
             $byKind[$kind]['fields_ok']++;
         } else {
             $wrong[] = sprintf('%s: wanted "%s", got "%s"', $field, $want['value'], $got ?? '');
+        }
+    }
+    // Phase 53.3: a flag on a value the fixture says is right is a false flag.
+    foreach ($read->notOnPage as $field) {
+        $byKind[$kind]['flagged']++;
+        $want = is_array($fields[$field] ?? null) ? ($fields[$field]['value'] ?? null) : null;
+        $got = $read->value($field);
+        if (is_string($want) && $got !== null && sameValue($want, $got, $locale)) {
+            $byKind[$kind]['false_flags']++;
+            $wrong[] = sprintf('%s: flagged, but "%s" is right', $field, $got);
         }
     }
     printf(
@@ -705,11 +743,13 @@ function sameValue(string $want, string $got, string $locale): bool
 
 /**
  * The OCR eval (Phase 53.1): character accuracy of the layout text against
- * each transcript, per kind and preparation.
+ * each transcript, per kind and preparation. $enlarge adds GD preparations
+ * with other enlarge rules (`min:target` text heights, K85).
  *
  * @param list<int> $only
+ * @param list<string> $enlarge
  */
-function evaluateOcr(Closure $get, array $only, bool $verbose, bool $degraded = false): int
+function evaluateOcr(Closure $get, array $only, bool $verbose, bool $degraded = false, array $enlarge = []): int
 {
     $reader = $get(OcrReader::class);
     assert($reader instanceof OcrReader);
@@ -755,6 +795,12 @@ function evaluateOcr(Closure $get, array $only, bool $verbose, bool $degraded = 
     }
 
     $preparers = ['none' => null, 'gd' => new GdImagePreparer()];
+    // K85: other enlarge rules beside the default (`--enlarge=20:24,0:0`, min:target px).
+    foreach ($enlarge as $rule) {
+        if (preg_match('/^(\d+):(\d+)$/', $rule, $m) === 1) {
+            $preparers['gd ' . $rule] = new GdImagePreparer((int) $m[1], (int) $m[2]);
+        }
+    }
     $imagick = new ImagickImagePreparer();
     if ($imagick->isAvailable()) {
         $preparers['imagick'] = $imagick;

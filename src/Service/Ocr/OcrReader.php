@@ -141,38 +141,44 @@ final class OcrReader
      */
     public function readHeld(string $path, string $mime, string $locale, bool $prepare = true): OcrResult
     {
+        return $this->begin($path, $mime, $locale, $prepare)->result();
+    }
+
+    /**
+     * Prepares the first page and starts the engine on it, returning at
+     * once, so a model's request can run while it reads (spec.md §7.27
+     * *The cross-check*, Phase 53.3). The job's result() collects it and
+     * reads any further pages. The caller holds the lock.
+     */
+    public function begin(string $path, string $mime, string $locale, bool $prepare = true): OcrJob
+    {
         $engine = $this->engine();
         if ($engine === null) {
-            return OcrResult::failed(OcrProblem::Unavailable);
+            return OcrJob::failed(OcrResult::failed(OcrProblem::Unavailable));
         }
         $pages = $this->pages($path, $mime);
         if ($pages === null) {
-            return OcrResult::failed(OcrProblem::Unreadable);
+            return OcrJob::failed(OcrResult::failed(OcrProblem::Unreadable));
         }
         if ($pages === []) {
-            return OcrResult::failed(OcrProblem::TooLarge);
+            return OcrJob::failed(OcrResult::failed(OcrProblem::TooLarge));
         }
 
         $languages = self::languages($locale);
-        $lines = [];
-        $read = null;
-        foreach ($pages as $i => $bytes) {
+        $read = function (int $i, bool $background) use ($pages, $prepare, $engine, $languages): OcrRun {
+            $bytes = $pages[$i];
             $image = $prepare ? $this->preparer->prepare($bytes) : self::unprepared($bytes);
-            $result = $image === null
-                ? OcrResult::failed(self::tooLarge($bytes) ? OcrProblem::TooLarge : OcrProblem::Unreadable)
-                : $engine->read($image->png, $languages, PageLayout::of($image->width, $image->height), $i + 1);
-            if (!$result->ok()) {
-                // A later page that fails leaves the pages already read.
-                if ($read === null) {
-                    return $result;
-                }
-                break;
+            if ($image === null) {
+                return OcrRun::done(OcrResult::failed(self::tooLarge($bytes) ? OcrProblem::TooLarge : OcrProblem::Unreadable));
             }
-            $read ??= $result;
-            array_push($lines, ...$result->lines);
-        }
+            $layout = PageLayout::of($image->width, $image->height);
 
-        return OcrResult::read($lines, $read->language, $read->engineVersion);
+            return $background
+                ? $engine->start($image->png, $languages, $layout, $i + 1)
+                : OcrRun::done($engine->read($image->png, $languages, $layout, $i + 1));
+        };
+
+        return new OcrJob($read(0, true), count($pages), static fn (int $i): OcrResult => $read($i, false)->result());
     }
 
     private static function tooLarge(string $bytes): bool

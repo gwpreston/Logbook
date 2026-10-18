@@ -80,7 +80,7 @@ final class ImagickImagePreparer implements ImagePreparer
             }
 
             $height = $this->textHeight($image);
-            if ($height > 0 && $height < 20) {
+            if ($height > 0 && $height < GdImagePreparer::MIN_TEXT_HEIGHT) {
                 $factor = min(30 / $height, GdImagePreparer::MAX_EDGE / max($image->getImageWidth(), $image->getImageHeight()));
                 if ($factor > 1.05) {
                     self::resize($image, $factor);

@@ -20,6 +20,8 @@ final readonly class Extraction
      * @param list<array{text: string, distance: ?string, distance_unit: ?string, date: ?string}> $recommendations
      * @param array<string, string> $dropped field → the evidence that wasn't found in the file's text
      * @param list<string> $hardToRead fields whose evidence OCR read with low confidence
+     * @param list<string> $notOnPage fields OCR's cross-check didn't find where it read confidently (Phase 53.3)
+     * @param array{found: int, flagged: int, unchecked: int}|null $crossCheck the cross-check's counts, when it ran
      */
     public function __construct(
         public ScanKind $kind,
@@ -29,6 +31,8 @@ final readonly class Extraction
         public array $dropped = [],
         public array $hardToRead = [],
         public ?ReadBy $readBy = null,
+        public array $notOnPage = [],
+        public ?array $crossCheck = null,
     ) {
     }
 
@@ -67,6 +71,41 @@ final readonly class Extraction
         return in_array($name, $this->hardToRead, true);
     }
 
+    public function isNotOnPage(string $name): bool
+    {
+        return in_array($name, $this->notOnPage, true);
+    }
+
+    /**
+     * Each value looked for in OCR's text of the same file (spec.md §7.27
+     * *The cross-check*, #508): a value not found where OCR read
+     * confidently is kept and marked; the counts go to the usage log.
+     */
+    public function crossChecked(OcrText $ocr): self
+    {
+        $counts = ['found' => 0, 'flagged' => 0, 'unchecked' => 0];
+        $flagged = [];
+        foreach ($this->fields as $name => $field) {
+            $result = $ocr->check($field['value'], $field['evidence']);
+            $counts[$result->value]++;
+            if ($result === CrossCheck::Flagged) {
+                $flagged[] = $name;
+            }
+        }
+
+        return new self(
+            $this->kind,
+            $this->fields,
+            $this->lines,
+            $this->recommendations,
+            $this->dropped,
+            $this->hardToRead,
+            $this->readBy,
+            $flagged,
+            $counts,
+        );
+    }
+
     /**
      * The same reading taken as another kind ("This is a fuel receipt").
      */
@@ -80,6 +119,8 @@ final readonly class Extraction
             $this->dropped,
             $this->hardToRead,
             $this->readBy,
+            $this->notOnPage,
+            $this->crossCheck,
         );
     }
 
@@ -93,6 +134,8 @@ final readonly class Extraction
             $this->dropped,
             $this->hardToRead,
             $readBy,
+            $this->notOnPage,
+            $this->crossCheck,
         );
     }
 
@@ -185,6 +228,8 @@ final readonly class Extraction
      *     dropped: array<string, string>,
      *     hard_to_read: list<string>,
      *     read_by: array<string, string>|null,
+     *     not_on_page: list<string>,
+     *     cross_check: array{found: int, flagged: int, unchecked: int}|null,
      * }
      */
     public function toArray(): array
@@ -197,6 +242,8 @@ final readonly class Extraction
             'dropped' => $this->dropped,
             'hard_to_read' => $this->hardToRead,
             'read_by' => $this->readBy?->toArray(),
+            'not_on_page' => $this->notOnPage,
+            'cross_check' => $this->crossCheck,
         ];
     }
 
@@ -228,6 +275,13 @@ final readonly class Extraction
             static fn (mixed $name): bool => is_string($name) && isset($read->fields[$name]),
         ));
 
+        $notOnPage = array_values(array_filter(
+            is_array($stored['not_on_page'] ?? null) ? $stored['not_on_page'] : [],
+            static fn (mixed $name): bool => is_string($name) && isset($read->fields[$name]),
+        ));
+        $counts = is_array($stored['cross_check'] ?? null) ? $stored['cross_check'] : null;
+        $count = static fn (string $key): int => is_int($counts[$key] ?? null) ? $counts[$key] : 0;
+
         return new self(
             $read->kind,
             $read->fields,
@@ -236,6 +290,12 @@ final readonly class Extraction
             $dropped,
             $hard,
             ReadBy::fromArray(is_array($stored['read_by'] ?? null) ? $stored['read_by'] : null),
+            $notOnPage,
+            $counts === null ? null : [
+                'found' => $count('found'),
+                'flagged' => $count('flagged'),
+                'unchecked' => $count('unchecked'),
+            ],
         );
     }
 

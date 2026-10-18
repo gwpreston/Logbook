@@ -131,7 +131,9 @@
                 </label>
             </section>
 
-            {% set has_details = (values.station ?? '') != '' or (values.station_id ?? '') != '' or (values.notes ?? '') != '' or errors.station is defined or errors.notes is defined %}
+            {# K90: also open when a scan left a reason under the station (a name not in the file's text). #}
+            {% set has_details = (values.station ?? '') != '' or (values.station_id ?? '') != '' or (values.notes ?? '') != '' or errors.station is defined or errors.notes is defined
+                or (values['_problem:station'] ?? '') != '' or (values['_check:station'] ?? '') != '' or (values['_problem:notes'] ?? '') != '' %}
             <details class="card disclosure"{% if has_details %} open{% endif %}>
                 <summary class="disclosure__summary">{{ 'fuel.section.details'|trans }}</summary>
                 {% include 'fuel/_station_field.twig' %}

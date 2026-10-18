@@ -18,6 +18,8 @@ enum ScanProblem: string
     case Unassigned = 'unassigned';
     /** Pictures can't be read: no model that takes images, and no OCR with a text model. */
     case NoVision = 'no_vision';
+    /** *Send text, not images* is on and OCR isn't working: the image is never sent instead (Phase 53.3). */
+    case TextOnly = 'text_only';
     /** OCR found too little text to send (Phase 53.2). */
     case TooLittleText = 'too_little_text';
     /** The model did not answer in time. */

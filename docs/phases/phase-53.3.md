@@ -102,7 +102,7 @@ Added to §7.27 in 53.3.0:
       path, look-alikes and wrapped rows on the OCR route, short gaps
       only (#500, #501; K87, K88, K93).
 - [ ] V5C photos always sent as text on *Internet* when OCR is
-      available, recognised by the scan target or the OCR markers (#510).
+      available, recognised by the OCR markers (#510).
 - [ ] The Scan page and the connection page wording.
 - [ ] Translations (every shipped locale).
 
@@ -179,9 +179,10 @@ recommendation.
 
 - **C. V5C photos.** *Decided 2026-10-18 (#510): the recommendation,
   with how a V5C is recognised before anything is sent, found while
-  starting (the kind is otherwise only in the model's answer): the scan
-  target `vehicle`, or V5C markers in the OCR text, so OCR runs first on
-  *Internet* vision connections.*
+  starting (the kind is otherwise only in the model's answer): V5C
+  markers in the OCR text, so OCR runs first on *Internet* vision
+  connections. The owner also chose the scan target `vehicle`; no entry
+  point stores one, so only the markers apply.*
   - (1) Always as text on *Internet* connections when OCR is available.
   - (2) Follow the connection's option like any file.
 

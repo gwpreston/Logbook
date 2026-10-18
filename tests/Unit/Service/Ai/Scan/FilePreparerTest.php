@@ -111,5 +111,12 @@ final class FilePreparerTest extends TestCase
         self::assertSame('Ref  end', Scrubber::text('Ref 1234 5678 901 end'));
         self::assertSame('Test 4417 2290 1186', Scrubber::text('Test 4417 2290 1186'), 'twelve digits are not a reference');
         self::assertSame('Policy 1234567890', Scrubber::text('Policy 1234567890'), 'nor are ten');
+        // #500, K93: one punctuation mark between groups, on every path.
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234-5678-901 end'));
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234/5678/901 end'));
+        self::assertSame('Ref: end', Scrubber::text('Ref:1234-5678-901 end'));
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234 - 5678 - 901 end'));
+        self::assertSame('On 12/09/2026 14:30', Scrubber::text('On 12/09/2026 14:30'), 'a date and time is twelve digits');
+        self::assertSame('x ', Scrubber::value('x 1234.5678.901'));
     }
 }

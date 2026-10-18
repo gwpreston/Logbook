@@ -4937,6 +4937,11 @@ return [
             'cap' => 'Monthly token cap',
             'cap_hint' => 'When this month\'s tokens reach it, the connection pauses until the 1st.',
             'tls' => 'TLS',
+            'privacy' => 'Privacy',
+            'send_text' => 'Send text, not images',
+            'send_text_hint' => 'Photos and scanned PDFs are read on this server by text recognition, and only their text is sent, with a registration document’s reference number removed. More private; a little less accurate on faded receipts. Needs text recognition (Settings → AI).',
+            'send_text_on' => 'On: photos go as text',
+            'send_text_off' => 'Off: photos go as pictures',
             'verify_tls' => 'Verify TLS certificates',
             'verify_tls_hint' => 'Switch off only for a server on your network with a self-signed certificate; a custom CA bundle is safer.',
             'verify_tls_forced' => 'Always on: AI_ALLOW_INSECURE_TLS is false.',
@@ -5083,6 +5088,7 @@ return [
             'too_large' => 'This is too large to send to {connection}.',
             'cap_reached' => '{connection} has used this month\'s tokens; it is paused until the 1st.',
             'busy' => 'Still working on your last question.',
+            'text_only' => '{connection} is set to send text only, so no image is sent to it.',
             'not_acknowledged' => '{connection} is on the internet, and an admin hasn\'t agreed to send data there yet.',
             'secret_unreadable' => 'The key for {connection} needs to be entered again.',
             'secret_unset' => 'The key for {connection} reads {variable}, which is not set.',
@@ -5108,6 +5114,8 @@ return [
             'registration_warning' => 'A photo of a registration document (V5C) shows its document reference number, and {connection} receives it with the picture. Logbook removes it from PDF text, never stores it, and never shows it.',
             'ocr_tesseract' => 'Photos and scanned PDFs are read on this server first (text recognition), and only their text goes to {connection}.',
             'ocr_paddleocr' => 'Photos and scanned PDFs are read by your text recognition service first, and only their text goes to {connection}.',
+            'ocr_check' => 'Photos are sent to {connection} as pictures, and checked on this server by text recognition.',
+            'ocr_check_registration' => 'A registration document (V5C) is sent as text instead, with its document reference number removed.',
         ],
         'field' => [
             'file' => 'Photo or PDF',
@@ -5116,6 +5124,7 @@ return [
         ],
         'hint' => [
             'file' => 'A photo (JPEG, PNG or WebP) or a PDF, up to {max} MB. On a phone this opens the camera.',
+            'file_send_text' => 'A PDF with text, up to {max} MB. This connection sends text only, so photos and scanned PDFs need text recognition on this server (Settings → AI).',
             'file_text_only' => 'A PDF with text, up to {max} MB. Photos and scanned PDFs need a model that reads images, or text recognition on this server (Settings → AI).',
             'vehicle' => 'With “Let the document decide”, the registration on it picks the vehicle.',
             'check' => 'Nothing is saved until you check the form and press Save.',
@@ -5166,6 +5175,7 @@ return [
             'thumb_alt' => 'The scanned file, {name}',
         ],
         'problem' => [
+            'text_only' => 'This connection sends text only, and text recognition isn’t working on this server, so photos can’t be read.',
             'no_renderer' => 'This PDF is a scan. Take a photo instead, or type it in.',
             'unreadable' => 'Couldn’t read this file.',
             'unassigned' => 'Reading files isn’t set up for this kind of file.',
@@ -5184,6 +5194,8 @@ return [
         'check_date' => 'Check the date: {date} or {other}?',
         'check_number' => 'Check the number: {value} or {other}?',
         'check_hard_to_read' => 'Hard to read, check this.',
+        'check_not_on_page' => 'Not found on the page, check this carefully.',
+        'check_sum' => '{volume} × {price} = {sum}, but the total reads {total}.',
         'description' => [
             'labour' => 'Labour {amount}',
             'parts' => 'Parts {amount}',
