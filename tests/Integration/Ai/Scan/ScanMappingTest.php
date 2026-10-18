@@ -139,6 +139,17 @@ final class ScanMappingTest extends ScanTestCase
         self::assertSame('AB12 CDE', $reading->value('registration'));
     }
 
+    public function testAReferenceWithWideGapsNeverSurvivesARegistrationDocument(): void
+    {
+        // Merge review of 53.2: the spaces are folded before the scrub, not after.
+        $reading = Extraction::fromObject(['kind' => 'registration', 'fields' => [
+            'registration' => ['value' => 'AB12 CDE', 'evidence' => "AB12 CDE  ref 1234  5678 \t 901"],
+        ]]);
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', (string) json_encode($reading->toArray()));
+        self::assertSame('AB12 CDE', $reading->value('registration'));
+    }
+
     public function testAValueWhoseEvidenceIsNotInTheTextIsDropped(): void
     {
         $text = "Invoice date 12/09/2026\nTotal £50.00";

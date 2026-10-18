@@ -41,9 +41,32 @@ final class OcrTextTest extends TestCase
     {
         $text = OcrText::of(self::ocr([['Ref', '1234', '5678', '901'], ['Tel', '0123', '456789']]));
 
-        self::assertSame("1| Ref \n2| Tel 0123 456789", $text->text);
+        self::assertSame("1| Ref\n2| Tel 0123 456789", $text->text, "the reference's words are dropped");
         self::assertSame('Ref ', Scrubber::ocrText('Ref 1234   5678 901'), 'a gap OCR kept as spaces');
         self::assertSame('Ref 1234    5678 901', Scrubber::ocrText('Ref 1234    5678 901'), 'four spaces is two columns');
+    }
+
+    public function testAReferenceIsRemovedHoweverWideTheLayoutKeepsItsGaps(): void
+    {
+        // Merge review of 53.2: a reference alone on its row, indented, laid
+        // out with a 30-space gap; and one split across two engine lines.
+        $lines = [];
+        for ($r = 0; $r < 3; $r++) {
+            $lines[] = self::line(['padding'], $r, 1);
+        }
+        $at = static fn (string $t, int $x, int $row): OcrWord
+            => new OcrWord($t, 90.0, new OcrBox($x, 10 + 30 * $row, 10 * mb_strlen($t), 20));
+        $lines[] = new OcrLine([$at('1234', 300, 3), $at('5678', 365, 3), $at('901', 430, 3)], 2);
+        $lines[] = new OcrLine([$at('REF', 10, 4), $at('1234', 80, 4)], 3);
+        $lines[] = new OcrLine([$at('5678', 145, 4), $at('901', 210, 4), $at('Tel', 300, 4), $at('0123', 340, 4)], 4);
+
+        $text = OcrText::of(OcrResult::read($lines, 'eng', 'tesseract 5.3.0'))->text;
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
+        self::assertStringContainsString('REF', $text);
+        self::assertStringContainsString('Tel 0123', $text, 'the rest of the row stays');
+        self::assertSame([1, 2, 3], Scrubber::referenceWords(['Ref', '1234', '5678', '901', 'Tel']));
+        self::assertSame([], Scrubber::referenceWords(['Tel', '0123', '456789']), 'ten digits');
     }
 
     public function testWholeLinesUpToTheLimit(): void

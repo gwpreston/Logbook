@@ -7445,6 +7445,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - A page is rendered at the asked resolution, or lower so that its
     long edge stays within 5,000 px: a PDF with an oversized page (a
     200-inch page, K80) is rendered small rather than to a huge image.
+    The size is read from the page's own MediaBox; one inherited from
+    `/Pages` is not read yet (K80 stays open for it).
 - **Routing** (Phase 53.2, `Service\Ai\Scan\Router`): chosen per file
   from what is set up, with no setting to learn. A vision model stays
   first wherever it is set up.
@@ -7475,8 +7477,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - layout text only, without word positions (decided 2026-10-18,
     `docs/phases/open-questions.md` #497);
   - runs of 11 digits removed **before it is sent**, as for text PDFs,
-    including a run OCR splits with spaces; so a V5C photo's reference
-    never leaves the server by this route;
+    including a run OCR splits into groups: each row's words are read
+    with single spaces between them, whatever gaps the layout keeps, and
+    the words of a run are left out; so a V5C photo's reference never
+    leaves the server by this route. Returned strings of a registration
+    document have their spaces folded before the 11-digit scrub;
   - whole lines up to `read_text`'s 20,000 characters; later lines are
     left out.
 
@@ -7624,7 +7629,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   the file as a pending upload for 24 hours. The user can change the kind
   on the result page ("This is a fuel receipt"), which maps the same
   extraction again without a second request.
-- **The prefilled form:** the normal create form, with each scanned field
+- **The prefilled form:** its date and time are kept as read: the step
+  that moves a cached form's untouched "now" to the current time (the
+  phone app's offline fill-up and trip forms) never runs on a form filled
+  from a file or an Ask draft (fixed in Phase 53.2; before, with JS on, a
+  scanned receipt's date was replaced by the time the form opened). The
+  normal create form, with each scanned field
   marked "From the file, check" and its evidence as a hint ("'Total due
   £184.50'"), linked to the field by `aria-describedby`; the file listed
   as already attached (with *Don't attach it*, which saves the entry
@@ -11667,7 +11677,7 @@ task breakdowns live in the per-phase files; this is the map.
   prices printed with their unit read (K58); the OCR lock outlasts a
   slow PDF and is released only by its holder (K76); availability from
   the engine's real status (K73); oversized PDF pages rendered small
-  (K80); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
+  (K80, partly); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
   as v3.17.0 with 53.1 (✅). See [`phase-53.2.md`](docs/phases/phase-53.2.md).
 - **Phase 53.3 — OCR as a check on the vision model, and text instead
   of images** (planned). OCR beside the vision model on a photo, flagging

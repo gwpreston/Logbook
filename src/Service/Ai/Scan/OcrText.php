@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Logbook\Service\Ai\Scan;
 
 use Logbook\Service\Ocr\LayoutText;
+use Logbook\Service\Ocr\OcrLine;
+use Logbook\Service\Ocr\OcrWord;
 use Logbook\Service\Ocr\OcrResult;
 
 /**
@@ -42,7 +44,7 @@ final readonly class OcrText
         $number = 0;
         $folded = [];
         $spans = [];
-        foreach (LayoutText::pages($result->lines) as $p => $rows) {
+        foreach (LayoutText::pages(self::withoutReferences($result->lines)) as $p => $rows) {
             if ($p > 0) {
                 $lines[] = '';
             }
@@ -62,6 +64,40 @@ final readonly class OcrText
         }
 
         return new self(implode("\n", $lines), $result->meanConfidence, count($result->words), $folded, $spans);
+    }
+
+    /**
+     * The lines without any word that is part of an 11-digit run in its
+     * row's words, read with single spaces between them: so a V5C's
+     * reference is removed however wide the gaps OCR's layout would keep
+     * between its groups (merge review of 53.2). Scrubber::ocrText still
+     * runs on each row's text as well.
+     *
+     * @param list<OcrLine> $lines
+     * @return list<OcrLine>
+     */
+    private static function withoutReferences(array $lines): array
+    {
+        $drop = [];
+        foreach (LayoutText::pages($lines) as $rows) {
+            foreach ($rows as $row) {
+                foreach (Scrubber::referenceWords(array_map(static fn (OcrWord $w): string => $w->text, $row['words'])) as $i) {
+                    $drop[spl_object_id($row['words'][$i])] = true;
+                }
+            }
+        }
+        if ($drop === []) {
+            return $lines;
+        }
+        $kept = [];
+        foreach ($lines as $line) {
+            $words = array_values(array_filter($line->words, static fn (OcrWord $w): bool => !isset($drop[spl_object_id($w)])));
+            if ($words !== []) {
+                $kept[] = new OcrLine($words, $line->block, $line->page);
+            }
+        }
+
+        return $kept;
     }
 
     /**

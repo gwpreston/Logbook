@@ -3,7 +3,7 @@
 *An owner with only a text model (a local Ollama model without vision,
 say) can scan a fuel receipt.*
 
-Status: 🚧 in progress (built; merge review and the owner's eval run to come) · file lives in `docs/phases/`
+Status: ✅ done, released as v3.17.0 with 53.1 · file lives in `docs/phases/`. The first `--via=ocr` eval run with the owner's models is carried to [53.3](phase-53.3.md); the ten real receipts (#496) are added when they arrive. · file lives in `docs/phases/`
 
 Today, scanning a photo needs a vision model on the `read_document`
 task. Many self-hosters run a text-only model locally and keep it there
@@ -83,8 +83,9 @@ model does (§7.27 *Routing*). As proposed:
   the server by this route (#85 no longer applies to it).
 - **Failure:** OCR with a mean confidence under 40, or under 30 words,
   gives the normal empty form with the file attached: "Couldn't make
-  out the text in this photo. Try a flatter, brighter photo, or fill it
-  in by hand."
+  out the text in this photo. Try a flatter, brighter photo." followed
+  by the usual "It's attached; fill the form in by hand." (as in spec
+  §7.27; the proposal had the last sentence inside the message).
 - **Logging:** with `AI_LOG_CONTENT=true`, the OCR text sent is logged
   (after redaction), as a text PDF's is.
 
@@ -137,14 +138,18 @@ rest chosen by the owner on 2026-10-18:
       splits the run across a space.
 - [ ] Ten real fuel receipts in the OCR eval, carried from 53.1
       (#496). The release doesn't wait for them (decided 2026-10-18);
-      they are added when the owner supplies them.
-- [ ] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
-      through OCR and a text model, beside the vision route, in the
-      eval report. The option is built; the run needs the owner's
-      models (none is reachable from the build machine).
+      they are added when the owner supplies them. Still open, as the
+      53.1 task.
+- [x] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
+      through OCR and a text model, beside the vision route. The option
+      is built, and the merge review's deterministic pass (2026-10-18)
+      gave the same forms on both routes for all 24 fixtures. The first
+      run with the owner's models is carried to [53.3](phase-53.3.md).
 - [x] Failure messages; the per-user lock; timeouts counted once across
       OCR and the model.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off).
+- [x] Design review (375, 768, 1280 px; light and dark; JS off): the
+      merge review of 2026-10-18 rendered every new state; its findings
+      are fixed or logged.
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
       and 53.2; tag once merged (v3.17.0, not yet tagged). The CHANGELOG carries 53.1's upgrade
       notes: the image grows by about 80 MB (Tesseract), the optional
@@ -162,7 +167,9 @@ rest chosen by the owner on 2026-10-18:
    scanned PDFs fill the same forms they would with a vision model.
 2. Every value sent this way passes the same checks, and its evidence is
    checked against the OCR text.
-3. The eval report shows field accuracy for both routes.
+3. The eval report shows field accuracy for both routes: `--via=ocr`
+   reports them side by side; the deterministic pass matched on all 24
+   fixtures, and the first run with real models is carried to 53.3.
 4. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions

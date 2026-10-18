@@ -49,10 +49,13 @@ notes*).
   volume, price and total, as other forms do.
 
 ### Fixed
+- **A scanned or drafted fill-up keeps its date.** With JavaScript on, the
+  form replaced the receipt's date and time with the time it opened; it
+  now keeps what was read. A drafted trip keeps its date the same way.
 - A receipt's price printed with its unit (`1,759 €/l`, `£1.459/litre`)
   is read, and an unreadable volume or price says why.
-- A PDF with an oversized page is rendered small instead of to a huge
-  image.
+- A PDF whose page gives an oversized size is rendered small instead of
+  to a huge image.
 - An AI or OCR request that runs past its lock no longer frees a later
   request's lock; the OCR lock covers a slow PDF's render.
 - Settings no longer says Tesseract is ready when it is installed but

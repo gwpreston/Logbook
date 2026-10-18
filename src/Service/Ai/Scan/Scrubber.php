@@ -31,12 +31,45 @@ final class Scrubber
     }
 
     /**
-     * Every string in a decoded JSON value.
+     * Which of a row's words are part of an 11-digit run when the words are
+     * read with single spaces between them (OCR's layout may put any gap
+     * there). Returns their indexes.
+     *
+     * @param list<string> $words
+     * @return list<int>
+     */
+    public static function referenceWords(array $words): array
+    {
+        $joined = '';
+        $starts = [];
+        foreach ($words as $i => $word) {
+            $starts[$i] = strlen($joined);
+            $joined .= $word . ' ';
+        }
+        if (preg_match_all(self::ELEVEN_DIGITS, $joined, $matches, PREG_OFFSET_CAPTURE) === 0) {
+            return [];
+        }
+        $hit = [];
+        foreach ($matches[0] as [$text, $at]) {
+            $end = $at + strlen($text);
+            foreach ($words as $i => $word) {
+                if ($starts[$i] < $end && $starts[$i] + strlen($word) > $at) {
+                    $hit[$i] = $i;
+                }
+            }
+        }
+
+        return array_values($hit);
+    }
+
+    /**
+     * Every string in a decoded JSON value, its spaces folded first so a
+     * run with wider gaps (`1234  5678  901`) is still caught.
      */
     public static function value(mixed $value): mixed
     {
         if (is_string($value)) {
-            return self::text($value);
+            return self::text((string) preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', $value));
         }
         if (is_array($value)) {
             return array_map(self::value(...), $value);

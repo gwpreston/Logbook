@@ -93,6 +93,14 @@ final class ScanOcrTest extends ScanTestCase
         $readBy = 'Read on this server (text recognition), then by qwen2.5vl:7b on Ollama on the desktop.';
         self::assertStringContainsString($readBy, $text);
 
+        // The page's script moves an untouched "now" to the real now: never a date read from the file.
+        self::assertStringNotContainsString('data-now-field', $html, 'the scanned date is kept with JS on');
+        self::assertStringContainsString(
+            'data-now-field="filled_at"',
+            self::body($this->browser->get('/vehicles/' . $this->garage['Golf']->id . '/fuel/new')),
+            'a plain new fill-up still starts at now',
+        );
+
         $task = $this->connection($this->app)->fetchOne("SELECT task FROM ai_requests WHERE outcome = 'ok'");
         self::assertSame('read_document', $task, 'run under the text-only read_document task');
     }
