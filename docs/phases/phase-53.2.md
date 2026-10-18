@@ -3,7 +3,7 @@
 *An owner with only a text model (a local Ollama model without vision,
 say) can scan a fuel receipt.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 Today, scanning a photo needs a vision model on the `read_document`
 task. Many self-hosters run a text-only model locally and keep it there
@@ -59,9 +59,15 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.25
 
 ---
 
-## Spec (proposed)
+## Spec
 
-Settled in §7.27 and §7.25 in 53.2.0:
+Settled in §7.27 and §7.25 in 53.2.0 (2026-10-18). Two changes from
+the proposal below, written into the spec: availability keeps today's
+rule (a `read_document` *or* `read_text` model), because narrowing it
+would hide *Scan* from text-PDF installs without OCR, and the routing
+table decides per file instead; and a text-only model on
+`read_document` reads the OCR text under that task, else `read_text`'s
+model does (§7.27 *Routing*). As proposed:
 
 - **Availability** (§7.27) becomes:
   - a vision model on `read_document`; or
@@ -87,8 +93,8 @@ Settled in §7.27 and §7.25 in 53.2.0:
 ## Tasks
 
 ### 53.2.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged; §7.25,
-      §7.27, §13.
+- [x] Open questions A–C decided by the owner and logged (#497–#499),
+      with #453 (K46) from Phase 51; §7.25, §7.27, §9, §13.
 
 ### 53.2.1 Route
 - [ ] `Service\Ai\Scan\Router`, from configured tasks, capabilities and
@@ -96,6 +102,27 @@ Settled in §7.27 and §7.25 in 53.2.0:
 - [ ] The OCR prompt builder: layout text with line numbers, redacted,
       within `read_text`'s 20,000-character limit.
 - [ ] The tolerant evidence match and the low-confidence marks.
+- [ ] A value dropped by the evidence check shows its reason (#498).
+
+### 53.2.1a Known issues this phase touches
+Fixed here because this route reaches them (CLAUDE.md §12), and the
+rest chosen by the owner on 2026-10-18:
+- [ ] K76: the OCR lock covers a slow PDF's render, and a lock is
+      released only by the request that took it.
+- [ ] K73: availability and Settings decide from the engine's real
+      status, not only from the binary's path.
+- [ ] K80: an oversized PDF page is rendered small.
+- [ ] K81: Imagick's preparation losing a line on a degraded photo.
+- [ ] K46 / #453: a two-way number marked "Check the number".
+- [ ] K58: prices printed with their unit; reasons for an unreadable
+      volume or price.
+- [ ] K75: a skewed photo kept within 4,000 px.
+- [ ] K77: `OCR_URL` with a query string or fragment refused at start.
+- [ ] K78: a PaddleOCR answer capped while it is read.
+- [ ] K18: `PartLines` prices and quantities.
+- [ ] K82: GD writes an 8-bit grey PNG.
+- [ ] K83: the Status icon on *Reading text from images*.
+- [ ] K84: see *OCR in the other guides* below.
 
 ### 53.2.2 Pages and docs
 - [ ] The Scan page line naming how the file was read.
@@ -108,6 +135,9 @@ Settled in §7.27 and §7.25 in 53.2.0:
 - [ ] Routing for each combination in the table.
 - [ ] Redaction before sending, and the 11-digit rule on OCR text that
       splits the run across a space.
+- [ ] Ten real fuel receipts in the OCR eval, carried from 53.1
+      (#496). The release doesn't wait for them (decided 2026-10-18);
+      they are added when the owner supplies them.
 - [ ] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
       through OCR and a text model, beside the vision route, in the
       eval report.
@@ -136,16 +166,20 @@ Settled in §7.27 and §7.25 in 53.2.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-18 and logged as #497–#499 in
+`open-questions.md`, before it was built, together with #453 (Phase 51,
+K46: option 1, built here).
 
-- **A. Send positions too, or layout text only?**
+- **A. Send positions too, or layout text only?** *Decided 2026-10-18
+  (#497): the recommendation.*
   - (1) Layout text with line numbers.
   - (2) Also each word's box, as JSON.
 
   *Recommendation:* (1). Small models handle plain lines far better than
   coordinates. The eval can try (2) if receipts score poorly.
 
-- **B. How tolerant is the evidence match?**
+- **B. How tolerant is the evidence match?** *Decided 2026-10-18
+  (#498): the recommendation.*
   - (1) After normalising (case, spaces, and OCR swaps O/0, l/1/I,
     S/5, B/8), within an edit distance of 2 per 20 characters.
   - (2) Exact after normalising.
@@ -154,7 +188,8 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   as today.
 
 - **C. With a vision model set up, should a user be able to choose OCR
-  for privacy?**
+  for privacy?** *Decided 2026-10-18 (#499): the recommendation, built
+  in 53.3.*
   - (1) Yes: a per-connection *Send text, not images* option for
     *Internet* connections.
   - (2) No: the route follows configuration only.
