@@ -38,6 +38,15 @@ final readonly class PreparedFile
         return new self(null, $images, $pageCount);
     }
 
+    /**
+     * A photo or scanned PDF not yet turned into images: how it is read
+     * depends on the route (Phase 53.2).
+     */
+    public static function picture(?int $pageCount = null): self
+    {
+        return new self(null, [], $pageCount);
+    }
+
     public static function unreadable(ScanProblem $problem, ?int $pageCount = null): self
     {
         return new self(null, [], $pageCount, $problem);
@@ -46,5 +55,13 @@ final readonly class PreparedFile
     public function isText(): bool
     {
         return $this->text !== null;
+    }
+
+    /**
+     * A picture left for the route to read (picture()).
+     */
+    public function isPicture(): bool
+    {
+        return $this->text === null && $this->images === [] && $this->problem === null;
     }
 }

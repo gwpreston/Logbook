@@ -228,6 +228,25 @@ final class AiGatewayTest extends AiTestCase
         self::assertTrue($busy->acquire($owner->id, $now, $now->modify('+1 minute')), 'released after the call');
     }
 
+    public function testALockIsReleasedOnlyByTheRequestThatTookIt(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $busy = $this->service($app, AiBusyRepository::class);
+        $now = new DateTimeImmutable(self::NOW);
+        $first = $now->modify('-1 minute');
+        self::assertTrue($busy->acquire($owner->id, $now->modify('-3 minutes'), $first));
+        // The first request ran past its lock; a second one takes it over.
+        $second = $now->modify('+2 minutes');
+        self::assertTrue($busy->acquire($owner->id, $now, $second));
+
+        $busy->release($owner->id, $first);
+        $taken = $busy->acquire($owner->id, $now, $now->modify('+1 minute'));
+        self::assertFalse($taken, "the first doesn't free the second's (K76)");
+
+        $busy->release($owner->id, $second);
+        self::assertTrue($busy->acquire($owner->id, $now, $now->modify('+1 minute')));
+    }
+
     public function testTheUsageLogKeepsNoContentUnlessAsked(): void
     {
         [$app, $owner] = $this->setUpApp();

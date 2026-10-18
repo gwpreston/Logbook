@@ -45,9 +45,24 @@ final readonly class AiBusyRepository
         return $stale > 0 && $this->tryInsert($userId, $now, $expiresAt);
     }
 
-    public function release(int $userId): void
+    /**
+     * Release the user's lock. With $expiresAt, only the lock taken with
+     * that expiry: a request that ran past its lock never removes the lock
+     * a later request took over (K76).
+     */
+    public function release(int $userId, ?DateTimeImmutable $expiresAt = null): void
     {
-        $this->connection->delete(self::TABLE, ['user_id' => $userId], ['user_id' => ParameterType::INTEGER]);
+        if ($expiresAt === null) {
+            $this->connection->delete(self::TABLE, ['user_id' => $userId], ['user_id' => ParameterType::INTEGER]);
+
+            return;
+        }
+        $this->connection->createQueryBuilder()
+            ->delete(self::TABLE)
+            ->where('user_id = :user', 'expires_at = :expires')
+            ->setParameter('user', $userId, ParameterType::INTEGER)
+            ->setParameter('expires', UtcDateTime::toDatabase($expiresAt, $this->connection->getDatabasePlatform()))
+            ->executeStatement();
     }
 
     /**

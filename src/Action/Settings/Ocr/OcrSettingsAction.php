@@ -42,7 +42,9 @@ final readonly class OcrSettingsAction
         return $this->view->render($request, $response, 'settings/ocr.twig', [
             'choice' => $this->settings->ocr->engine->value,
             'status' => $this->reader->status(),
-            'available' => $this->reader->isAvailable(),
+            'available' => $this->reader->isWorking(),
+            // Found but not answering (K73): a broken install, not a missing one.
+            'found' => $this->reader->isAvailable(),
             'timeout' => $this->settings->ocr->timeout,
             'test' => $test,
             'ai_enabled' => $this->settings->ai->enabled,

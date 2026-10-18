@@ -78,12 +78,32 @@ final class OcrSettingsTest extends AppTestCase
         self::assertStringContainsString('data-ocr-available="0"', $page);
         self::assertStringContainsString('Not found. Check TESSERACT_BINARY', $page);
         self::assertStringContainsString('data-ocr-missing', $page, 'shown as a warning');
-        $warning = '/data-ocr-available="0"><svg class="icon"[^>]*>.*?<\/svg>Not working<\/dd>/s';
+        $warning = '/data-ocr-available="0"><span class="details__flag"><svg class="icon"[^>]*>.*?<\/svg>'
+            . 'Not working<\/span><\/dd>/s';
         self::assertMatchesRegularExpression($warning, $page);
         self::assertStringNotContainsString('Read the sample receipt', $page);
         $posted = $admin->post('/settings/ocr');
         self::assertSame(200, $posted->getStatusCode(), 'a post still renders the page');
         self::assertStringNotContainsString('data-ocr-test', self::body($posted));
+    }
+
+    public function testABinaryThatCannotRunIsNotWorking(): void
+    {
+        putenv('FAKE_TESSERACT_MODE=broken');
+        try {
+            $app = $this->createApp(['TESSERACT_BINARY' => self::FAKE]);
+            $admin = $this->signedIn($app);
+
+            // K73: found, but it can't run, so it isn't "Ready" or "Set up".
+            $ai = self::body($admin->get('/settings/ai'));
+            self::assertStringContainsString('Set up: Tesseract, on this server, but it doesn', $ai);
+            $page = self::body($admin->get('/settings/ocr'));
+            self::assertStringContainsString('data-ocr-available="0"', $page);
+            self::assertStringContainsString('Found, but it doesn', $page);
+            self::assertStringNotContainsString('Read the sample receipt', $page);
+        } finally {
+            putenv('FAKE_TESSERACT_MODE');
+        }
     }
 
     public function testOcrEngineOffIsSaid(): void

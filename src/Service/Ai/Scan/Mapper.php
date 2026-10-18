@@ -180,13 +180,13 @@ final readonly class Mapper
         $electric = !($choice?->fuel->kind() ?? $vehicle->data->fuelType->primaryKind())->followsVolumeUnit();
         $printedUnit = self::volumeUnit((string) $reading->value('volume_unit'), $user->preferences->volumeUnit);
         $unit = $electric ? VolumeUnit::Litre : $user->preferences->volumeUnit;
-        $volume = $form->number('volume');
+        $volume = $form->number('volume', 'volume');
         if ($volume !== null && Decimal::compare($volume, '0') > 0) {
             $litres = $electric || $printedUnit === null ? $volume : $printedUnit->toLitresDecimal($volume, 6);
             $shown = $electric ? $volume : $unit->fromLitresDecimal($litres, 3);
             $form->set('volume', Decimal::trim($shown), $reading->evidence('volume'));
         }
-        $price = $form->number('price_per_unit');
+        $price = $form->number('price_per_unit', 'price');
         if ($price !== null) {
             if (preg_match('/\d\s*(p|c|ct|cent|cents)\b/i', (string) $reading->value('price_per_unit')) === 1) {
                 $price = Decimal::divide($price, '100', 6);

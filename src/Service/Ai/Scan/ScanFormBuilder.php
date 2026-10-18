@@ -32,6 +32,10 @@ final class ScanFormBuilder
     private array $warnings = [];
     /** @var array<string, string> */
     private array $hints = [];
+    /** @var array<string, true> evidence of values OCR read with low confidence */
+    private array $hardEvidence = [];
+    /** @var array<string, true> dropped source fields already explained under a form field */
+    private array $explained = [];
 
     public function __construct(
         private readonly TranslatorInterface $translator,
@@ -41,6 +45,12 @@ final class ScanFormBuilder
         /** The user's calendar date (LocalTime::today()). */
         private readonly DateTimeImmutable $today,
     ) {
+        foreach ($reading->hardToRead as $name) {
+            $words = $reading->evidence($name) ?? $reading->value($name);
+            if ($words !== null) {
+                $this->hardEvidence[$words] = true;
+            }
+        }
     }
 
     public function set(string $field, string $value, ?string $evidence = null): void
@@ -51,6 +61,10 @@ final class ScanFormBuilder
         $this->values[$field] = $value;
         if ($evidence !== null && $evidence !== '') {
             $this->evidence[$field] = $evidence;
+            // OCR read these words with low confidence (spec.md §7.27, Phase 53.2).
+            if (isset($this->hardEvidence[$evidence])) {
+                $this->check($field, $this->translator->trans('scan.check_hard_to_read'));
+            }
         }
     }
 
@@ -83,24 +97,44 @@ final class ScanFormBuilder
         $value = $this->reading->value($from);
         if ($value !== null) {
             $this->set($field, mb_substr($value, 0, 150), $this->reading->evidence($from));
+        } else {
+            $this->missing($field, $from);
         }
     }
 
     /**
-     * A printed number as a canonical decimal, or null (a problem is noted
-     * under $from's field only by the callers that set it).
+     * A printed number as a canonical decimal, or null. With $field, the
+     * reasons go under it: not in the file's text, unreadable, or a number
+     * that reads two ways (#453).
      */
-    public function number(string $from): ?string
+    public function number(string $from, ?string $field = null): ?string
     {
         $printed = $this->reading->value($from);
+        if ($printed === null) {
+            if ($field !== null) {
+                $this->missing($field, $from);
+            }
 
-        return $printed === null ? null : PrintedNumber::read($printed, $this->user->preferences->locale);
+            return null;
+        }
+        $number = PrintedNumber::read($printed, $this->user->preferences->locale);
+        if ($field !== null) {
+            if ($number === null) {
+                $this->problem($field, 'scan.problem_field.unreadable', $printed);
+            } else {
+                $this->twoWays($field, $printed);
+            }
+        }
+
+        return $number;
     }
 
     public function amount(string $field, string $from): void
     {
         $printed = $this->reading->value($from);
         if ($printed === null) {
+            $this->missing($field, $from);
+
             return;
         }
         $amount = PrintedNumber::read($printed, $this->user->preferences->locale);
@@ -109,6 +143,7 @@ final class ScanFormBuilder
 
             return;
         }
+        $this->twoWays($field, $printed);
         $this->set($field, Decimal::trim($amount), $this->reading->evidence($from) ?? $printed);
     }
 
@@ -116,6 +151,8 @@ final class ScanFormBuilder
     {
         $printed = $this->reading->value('odometer');
         if ($printed === null) {
+            $this->missing($field, 'odometer');
+
             return;
         }
         $value = PrintedNumber::read($printed, $this->user->preferences->locale);
@@ -124,6 +161,7 @@ final class ScanFormBuilder
 
             return;
         }
+        $this->twoWays($field, $printed);
         $unit = Mapper::distanceUnit((string) $this->reading->value('odometer_unit')) ?? $this->user->preferences->distanceUnit;
         $km = $unit->toKmDecimal($value, 3);
         $this->set(
@@ -200,6 +238,13 @@ final class ScanFormBuilder
 
     public function build(ScanKind $kind): ScanForm
     {
+        // A dropped value no form field explained is said above the form.
+        foreach ($this->reading->dropped as $name => $evidence) {
+            if (!isset($this->explained[$name])) {
+                $this->warnings[] = $this->translator->trans('scan.problem_field.not_in_text', ['printed' => $evidence]);
+            }
+        }
+
         return new ScanForm(
             $kind,
             $kind->target(),
@@ -216,6 +261,8 @@ final class ScanFormBuilder
     {
         $printed = $this->reading->value($from);
         if ($printed === null) {
+            $this->missing($field, $from);
+
             return null;
         }
         $read = PrintedDate::read($printed, $this->user->preferences->locale);
@@ -236,10 +283,10 @@ final class ScanFormBuilder
             return null;
         }
         if ($read->alternative !== null) {
-            $this->checks[$field] = $this->translator->trans('scan.check_date', [
+            $this->check($field, $this->translator->trans('scan.check_date', [
                 'date' => $this->formatDate($read->date),
                 'other' => $this->formatDate($read->alternative),
-            ]);
+            ]));
         }
 
         return $read;
@@ -248,5 +295,46 @@ final class ScanFormBuilder
     private function problem(string $field, string $key, string $printed): void
     {
         $this->problems[$field] = $this->translator->trans($key, ['printed' => $printed]);
+    }
+
+    /**
+     * A value the evidence check dropped (spec.md §7.27): the reason goes
+     * under $field. Only the first field to read a source explains it.
+     */
+    private function missing(string $field, string $from): void
+    {
+        $evidence = $this->reading->dropped($from);
+        if ($evidence !== null && !isset($this->explained[$from])) {
+            $this->explained[$from] = true;
+            $this->problem($field, 'scan.problem_field.not_in_text', $evidence);
+        }
+    }
+
+    /**
+     * A number with one separator and three digits after it is read in the
+     * user's locale and marked, naming the other reading (#453, K46).
+     */
+    private function twoWays(string $field, string $printed): void
+    {
+        $locale = $this->user->preferences->locale;
+        $other = PrintedNumber::alternative($printed, $locale);
+        $read = PrintedNumber::read($printed, $locale);
+        if ($other === null || $read === null) {
+            return;
+        }
+        $formatter = new NumberFormatter($locale, NumberFormatter::DECIMAL);
+        $formatter->setAttribute(NumberFormatter::GROUPING_USED, 0);
+        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, 6);
+        $this->check($field, $this->translator->trans('scan.check_number', [
+            'value' => (string) $formatter->format((float) $read),
+            'other' => (string) $formatter->format((float) $other),
+        ]));
+    }
+
+    private function check(string $field, string $text): void
+    {
+        $this->checks[$field] = isset($this->checks[$field]) && !str_contains($this->checks[$field], $text)
+            ? $this->checks[$field] . ' ' . $text
+            : $text;
     }
 }

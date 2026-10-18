@@ -110,6 +110,20 @@ final class PaddleOcrEngineTest extends TestCase
         }
     }
 
+    public function testAnAnswerPastTheLimitIsRefusedWhileItIsRead(): void
+    {
+        // In chunks, as a real service sends it; read() gives up past 4 MB (K78).
+        $chunks = (static function (): \Generator {
+            for ($i = 0; $i < 6; $i++) {
+                yield '{"errorCode":0,"x":"' . str_repeat('x', 1024 * 1024);
+            }
+        })();
+
+        $result = $this->engine(new MockResponse($chunks))->read('png', ['eng'], PageLayout::Page);
+
+        self::assertSame(OcrProblem::Failed, $result->problem);
+    }
+
     public function testWithNoAddressItIsUnavailable(): void
     {
         $engine = $this->engine(new MockResponse(self::ANSWER), '');

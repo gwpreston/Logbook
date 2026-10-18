@@ -63,12 +63,20 @@ final class OcrConfigTest extends TestCase
 
     public function testAnAddressThatIsNotHttpStopsTheAppWithoutRepeatingIt(): void
     {
-        foreach (['file:///etc/passwd', 'ftp://user:s3cret@paddle', 'http://', 'paddleocr:8080', 'http://paddle ocr'] as $bad) {
+        $bads = [
+            'file:///etc/passwd', 'ftp://user:s3cret@paddle', 'http://', 'paddleocr:8080', 'http://paddle ocr',
+            // Requests go to {OCR_URL}/ocr, which a query or fragment would swallow (K77).
+            'http://h:8080/?k=v', 'http://h:8080/#x', 'http://h:8080?',
+        ];
+        foreach ($bads as $bad) {
             try {
                 OcrConfig::fromEnv(new Env(['OCR_URL' => $bad]));
                 self::fail($bad . ' was accepted');
             } catch (InvalidArgumentException $e) {
-                self::assertSame('OCR_URL must be an http:// or https:// address with a host name.', $e->getMessage());
+                self::assertSame(
+                    'OCR_URL must be an http:// or https:// address with a host name, and no query string or fragment.',
+                    $e->getMessage(),
+                );
             }
         }
     }
@@ -85,7 +93,7 @@ final class OcrConfigTest extends TestCase
         $ocr = OcrConfig::fromEnv(new Env(['OCR_URL' => 'https://logbook:s3cret@ocr.lan:8443/base']));
 
         self::assertSame('https://ocr.lan:8443/base', $ocr->paddleOcrAddress());
-        $raw = OcrConfig::fromEnv(new Env(['OCR_URL' => 'http://ocr:p@ss@word@paddle_ocr:8080/api?token=SECRET#x']));
+        $raw = new OcrConfig(paddleOcrUrl: 'http://ocr:p@ss@word@paddle_ocr:8080/api?token=SECRET#x');
         self::assertSame('http://paddle_ocr:8080/api', $raw->paddleOcrAddress(), 'a raw @, a query and a fragment');
         $ipv6 = OcrConfig::fromEnv(new Env(['OCR_URL' => 'http://[::1]:8080']));
         self::assertSame('http://[::1]:8080', $ipv6->paddleOcrAddress());

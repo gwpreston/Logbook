@@ -1,11 +1,17 @@
 #!/bin/sh
 # A stand-in for Tesseract in the OCR tests (Phase 53.1): no real OCR.
-# FAKE_TESSERACT_MODE: ok (default) | sleep | fail | empty
+# FAKE_TESSERACT_MODE: ok (default) | sleep | fail | empty | broken (exits 127 for
+# everything, as a binary missing a shared library does)
+# FAKE_TESSERACT_TSV: a TSV file to answer with instead of receipt.tsv.
 # FAKE_TESSERACT_ARGS: a file each argument is written to, one per line.
 if [ -n "$FAKE_TESSERACT_ARGS" ]; then
     : > "$FAKE_TESSERACT_ARGS"
     for arg in "$@"; do printf '%s\n' "$arg" >> "$FAKE_TESSERACT_ARGS"; done
     printf 'OMP_THREAD_LIMIT=%s\n' "$OMP_THREAD_LIMIT" >> "$FAKE_TESSERACT_ARGS"
+fi
+if [ "${FAKE_TESSERACT_MODE:-ok}" = broken ]; then
+    echo "tesseract: error while loading shared libraries: libleptonica.so.6" >&2
+    exit 127
 fi
 case "$1" in
     --version) printf 'tesseract 5.3.0\n leptonica-1.82.0\n'; exit 0 ;;
@@ -16,4 +22,4 @@ case "${FAKE_TESSERACT_MODE:-ok}" in
     fail) echo "Error in pixReadStream" >&2; exit 1 ;;
     empty) exit 0 ;;
 esac
-cp "$(dirname "$0")/receipt.tsv" "$2.tsv"
+cp "${FAKE_TESSERACT_TSV:-$(dirname "$0")/receipt.tsv}" "$2.tsv"

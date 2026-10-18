@@ -13,6 +13,8 @@ namespace Logbook\Service\Ai\Scan;
 final class Scrubber
 {
     private const string ELEVEN_DIGITS = '/(?<![0-9])[0-9](?:[ \x{00A0}]?[0-9]){10}(?![0-9])/u';
+    /** OCR's layout text may put a few spaces where the print had one (Phase 53.2). */
+    private const string ELEVEN_DIGITS_OCR = '/(?<![0-9])[0-9](?:[ \x{00A0}]{0,3}[0-9]){10}(?![0-9])/u';
 
     public static function text(string $text): string
     {
@@ -20,12 +22,54 @@ final class Scrubber
     }
 
     /**
-     * Every string in a decoded JSON value.
+     * OCR text before it is sent (Phase 53.2): as text(), allowing up to
+     * three spaces between the digits, since OCR's layout keeps gaps it saw.
+     */
+    public static function ocrText(string $text): string
+    {
+        return (string) preg_replace(self::ELEVEN_DIGITS_OCR, '', $text);
+    }
+
+    /**
+     * Which of a row's words are part of an 11-digit run when the words are
+     * read with single spaces between them (OCR's layout may put any gap
+     * there). Returns their indexes.
+     *
+     * @param list<string> $words
+     * @return list<int>
+     */
+    public static function referenceWords(array $words): array
+    {
+        $joined = '';
+        $starts = [];
+        foreach ($words as $i => $word) {
+            $starts[$i] = strlen($joined);
+            $joined .= $word . ' ';
+        }
+        if (preg_match_all(self::ELEVEN_DIGITS, $joined, $matches, PREG_OFFSET_CAPTURE) === 0) {
+            return [];
+        }
+        $hit = [];
+        foreach ($matches[0] as [$text, $at]) {
+            $end = $at + strlen($text);
+            foreach ($words as $i => $word) {
+                if ($starts[$i] < $end && $starts[$i] + strlen($word) > $at) {
+                    $hit[$i] = $i;
+                }
+            }
+        }
+
+        return array_values($hit);
+    }
+
+    /**
+     * Every string in a decoded JSON value, its spaces folded first so a
+     * run with wider gaps (`1234  5678  901`) is still caught.
      */
     public static function value(mixed $value): mixed
     {
         if (is_string($value)) {
-            return self::text($value);
+            return self::text((string) preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', $value));
         }
         if (is_array($value)) {
             return array_map(self::value(...), $value);

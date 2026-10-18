@@ -105,7 +105,7 @@ final readonly class AiGateway
                 },
             ));
         } finally {
-            $this->busy->release($user->id);
+            $this->busy->release($user->id, $expires);
         }
     }
 
@@ -266,7 +266,7 @@ final readonly class AiGateway
             throw $this->failure($e->error, $detail, $connection, $model);
         } finally {
             if ($locking !== null) {
-                $this->busy->release($locking->id);
+                $this->busy->release($locking->id, $expires);
             }
         }
     }

@@ -139,6 +139,17 @@ final class ScanMappingTest extends ScanTestCase
         self::assertSame('AB12 CDE', $reading->value('registration'));
     }
 
+    public function testAReferenceWithWideGapsNeverSurvivesARegistrationDocument(): void
+    {
+        // Merge review of 53.2: the spaces are folded before the scrub, not after.
+        $reading = Extraction::fromObject(['kind' => 'registration', 'fields' => [
+            'registration' => ['value' => 'AB12 CDE', 'evidence' => "AB12 CDE  ref 1234  5678 \t 901"],
+        ]]);
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', (string) json_encode($reading->toArray()));
+        self::assertSame('AB12 CDE', $reading->value('registration'));
+    }
+
     public function testAValueWhoseEvidenceIsNotInTheTextIsDropped(): void
     {
         $text = "Invoice date 12/09/2026\nTotal £50.00";
@@ -152,6 +163,71 @@ final class ScanMappingTest extends ScanTestCase
 
         self::assertSame('12/09/2026', $reading->value('date'), 'case and spacing do not matter');
         self::assertNull($reading->value('total'), 'evidence the document does not contain');
+
+        // #498: the reason is shown under the field, and survives being stored.
+        $this->scanApp();
+        $form = $this->map($this->owner, Extraction::fromStored($reading->toArray()) ?? $reading);
+        self::assertSame('Not found in the file’s text: “Total £500.00”, so it was left empty.', $form->problems['cost']);
+    }
+
+    public function testADroppedValueNoFieldExplainsIsSaidAboveTheForm(): void
+    {
+        $this->scanApp();
+        $reading = Extraction::fromObject([
+            'kind' => 'service_invoice',
+            'fields' => ['vat_amount' => ['value' => '£9.99', 'evidence' => 'VAT £9.99']],
+        ], 'Total £50.00 and plenty of other text');
+
+        $warnings = $this->map($this->owner, $reading)->warnings;
+        self::assertContains('Not found in the file’s text: “VAT £9.99”, so it was left empty.', $warnings);
+    }
+
+    public function testANumberThatReadsTwoWaysIsMarked(): void
+    {
+        $this->scanApp();
+        // #453, K46: a German receipt's price for an English user.
+        $form = $this->map($this->owner, self::reading([
+            'date' => '14/10/2026',
+            'volume' => '42,180',
+            'price_per_unit' => '1,759 €/l',
+            'total' => '74,19 €',
+        ], ScanKind::FuelReceipt));
+
+        self::assertSame('1759', $form->values['price'], 'read in the user\'s locale, as before');
+        self::assertSame('Check the number: 1759 or 1.759?', $form->checks['price']);
+        self::assertSame('Check the number: 42180 or 42.18?', $form->checks['volume']);
+        self::assertArrayNotHasKey('total', $form->checks, 'two decimals read one way');
+    }
+
+    public function testAnUnreadableVolumeOrPriceSaysWhy(): void
+    {
+        $this->scanApp();
+        // K58: these were left empty with no reason.
+        $form = $this->map($this->owner, self::reading([
+            'date' => '14/10/2026',
+            'volume' => 'l2.5O',
+            'price_per_unit' => 'see pump',
+        ], ScanKind::FuelReceipt));
+
+        self::assertSame('Couldn’t read “l2.5O”.', $form->problems['volume']);
+        self::assertSame('Couldn’t read “see pump”.', $form->problems['price']);
+    }
+
+    public function testAValueOcrReadPoorlyIsMarkedHardToRead(): void
+    {
+        $this->scanApp();
+        $reading = new Extraction(
+            ScanKind::FuelReceipt,
+            [
+                'total' => ['value' => '60.28', 'evidence' => 'TOTAL 60.28'],
+                'date' => ['value' => '14/10/2026', 'evidence' => '14/10/2026'],
+            ],
+            hardToRead: ['total'],
+        );
+        $form = $this->map($this->owner, $reading);
+
+        self::assertSame('Hard to read, check this.', $form->checks['total']);
+        self::assertArrayNotHasKey('filled_at', $form->checks);
     }
 
     public function testAReceiptsStationIsChosenOrNamedAsNew(): void

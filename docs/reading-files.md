@@ -7,11 +7,15 @@ and how to set it up.
 
 Logbook can already read a receipt or invoice with an AI model (see
 [ai.md](ai.md#reading-receipts-and-documents)). From 3.17 it can also read the
-text itself with an OCR engine, without sending the picture anywhere. This
-release adds the engine and a check in Settings. Nothing you see when
-scanning changes yet: later releases use it to scan with a text-only model,
-to check what a vision model read, and to fill a fill-up with no AI at all.
+text itself with an OCR engine, without sending the picture anywhere. With
+a working engine, **a text-only model can scan photos**: a small local
+model that can't see pictures reads the text OCR found instead. Later
+releases also use OCR to check what a vision model read and to fill a
+fill-up with no AI at all.
 
+- [Which models read what](#which-models-read-what)
+- [Scanning with a text model](#scanning-with-a-text-model)
+- [Getting the best photo](#getting-the-best-photo)
 - [The two engines](#the-two-engines)
 - [Docker](#docker)
 - [Bare PHP](#bare-php)
@@ -20,6 +24,71 @@ to check what a vision model read, and to fill a fill-up with no AI at all.
 - [Settings](#settings)
 - [What it does to a picture](#what-it-does-to-a-picture)
 - [Limits and privacy](#limits-and-privacy)
+
+## Which models read what
+
+Logbook picks the way to read each file from what you have set up. There
+is nothing to choose:
+
+| File | A vision model on *Reading receipts and documents* | A text model only, and OCR working | Neither |
+|---|---|---|---|
+| Photo | the vision model sees the picture | OCR reads it here, then the text model reads the text | can't be read: the form opens empty with the photo attached |
+| Scanned PDF | the vision model sees its pages | OCR reads it here, then the text model | as above |
+| PDF with text | the *Reading text PDFs* model reads its text | the same | the same |
+
+- *The text model* is the *Reading receipts and documents* model when it
+  is a text-only model, otherwise the *Reading text PDFs* model (or, with
+  none, the one for *Answering questions*, if it has JSON output).
+- *OCR working* means Settings → AI → *Reading text from images* says
+  **Ready**. A Tesseract that is installed but can't run counts as not
+  working.
+- A vision model, when you have one, is always used for pictures.
+
+## Scanning with a text model
+
+What happens to a photo when there is no vision model:
+
+1. OCR reads it on this server (Tesseract), or on your PaddleOCR service.
+2. If it found too little (under 30 words, or text it was mostly unsure
+   of), nothing is sent. The form opens empty with your photo attached and
+   says: "Couldn't make out the text in this photo. Try a flatter,
+   brighter photo."
+3. Otherwise its text, line by line and numbered, goes to the text model,
+   marked as OCR output that may have misread characters. Runs of 11
+   digits (a V5C's reference number, and many phone numbers) are removed
+   first. The picture itself is never sent.
+4. Every value the model gives back must point to words in that text.
+   Logbook allows for OCR's usual slips (0 and O, 1, l and I, 5 and S, 8
+   and B, and a couple of other differences in a long phrase). A value
+   whose words aren't there is left empty, with "Not found in the file's
+   text" under its field.
+5. A value whose words OCR could hardly read is marked **"Hard to read,
+   check this"** under its field.
+
+The form's notice says how it was read: "Read on this server (text
+recognition), then by *model* on *connection*". The Scan page says before
+you upload that photos are read here first and only their text is sent.
+
+Reading takes OCR's time plus the model's, and counts as one request: you
+can't start another scan or question until it's done.
+
+## Getting the best photo
+
+OCR is more particular than a vision model:
+
+- **Flat and square on.** Lay the receipt on a table and hold the phone
+  straight above it. Logbook straightens a tilt of up to 10°, but creases
+  and curls cost words.
+- **Bright and even.** Daylight or a bright room; no shadow of the phone
+  across the print. Thermal receipts fade: scan them soon.
+- **Fill the frame**, with a little margin round the edges, and keep it
+  sharp: tap to focus.
+- **One document per photo.**
+- A receipt photographed on a dark or busy background reads worse than
+  one on white paper.
+
+If a photo keeps coming back "Hard to read", PaddleOCR (below) copes
+better with curved and creased paper.
 
 ## The two engines
 
@@ -138,5 +207,7 @@ measures it on your install (see [ai.md](ai.md#reading-receipts-and-documents)).
 - Each person runs one scan or AI request at a time.
 - Tesseract runs on your server, and nothing leaves it. PaddleOCR gets the
   prepared picture, so run it where you'd keep the photo.
+- Scanning with a text model sends the model only the text, with 11-digit
+  runs removed, never the picture.
 - What OCR reads is never stored. It is used for one request and
   discarded.

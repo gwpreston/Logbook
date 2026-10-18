@@ -3,7 +3,7 @@
 *An owner with only a text model (a local Ollama model without vision,
 say) can scan a fuel receipt.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: ✅ done, released as v3.17.0 with 53.1 · file lives in `docs/phases/`. The first `--via=ocr` eval run with the owner's models is carried to [53.3](phase-53.3.md); the ten real receipts (#496) are added when they arrive.
 
 Today, scanning a photo needs a vision model on the `read_document`
 task. Many self-hosters run a text-only model locally and keep it there
@@ -59,11 +59,18 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.25
 
 ---
 
-## Spec (proposed)
+## Spec
 
-Settled in §7.27 and §7.25 in 53.2.0:
+Settled in §7.27 and §7.25 in 53.2.0 (2026-10-18). Two changes from
+the proposal below, written into the spec: availability keeps today's
+rule (a `read_document` *or* `read_text` model), because narrowing it
+would hide *Scan* from text-PDF installs without OCR, and the routing
+table decides per file instead; and a text-only model on
+`read_document` reads the OCR text under that task, else `read_text`'s
+model does (§7.27 *Routing*). As proposed:
 
-- **Availability** (§7.27) becomes:
+- **Availability** (§7.27), *as proposed; superseded: the spec keeps
+  today's wider rule (see above)*, was to become:
   - a vision model on `read_document`; or
   - a JSON-output model on `read_text` (or `ask`'s, as now) **with
     Tesseract available**.
@@ -77,8 +84,9 @@ Settled in §7.27 and §7.25 in 53.2.0:
   the server by this route (#85 no longer applies to it).
 - **Failure:** OCR with a mean confidence under 40, or under 30 words,
   gives the normal empty form with the file attached: "Couldn't make
-  out the text in this photo. Try a flatter, brighter photo, or fill it
-  in by hand."
+  out the text in this photo. Try a flatter, brighter photo." followed
+  by the usual "It's attached; fill the form in by hand." (as in spec
+  §7.27; the proposal had the last sentence inside the message).
 - **Logging:** with `AI_LOG_CONTENT=true`, the OCR text sent is logged
   (after redaction), as a text PDF's is.
 
@@ -87,41 +95,86 @@ Settled in §7.27 and §7.25 in 53.2.0:
 ## Tasks
 
 ### 53.2.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged; §7.25,
-      §7.27, §13.
+- [x] Open questions A–C decided by the owner and logged (#497–#499),
+      with #453 (K46) from Phase 51; §7.25, §7.27, §9, §13.
 
 ### 53.2.1 Route
-- [ ] `Service\Ai\Scan\Router`, from configured tasks, capabilities and
+- [x] `Service\Ai\Scan\Router`, from configured tasks, capabilities and
       Tesseract.
-- [ ] The OCR prompt builder: layout text with line numbers, redacted,
+- [x] The OCR prompt builder: layout text with line numbers, redacted,
       within `read_text`'s 20,000-character limit.
-- [ ] The tolerant evidence match and the low-confidence marks.
+- [x] The tolerant evidence match and the low-confidence marks.
+- [x] A value dropped by the evidence check shows its reason (#498).
+
+### 53.2.1a Known issues this phase touches
+Fixed here because this route reaches them (CLAUDE.md §12), and the
+rest chosen by the owner on 2026-10-18:
+- [x] K76: the OCR lock covers a slow PDF's render, and a lock is
+      released only by the request that took it.
+- [x] K73: availability and Settings decide from the engine's real
+      status, not only from the binary's path.
+- [x] K80 (partly): a page's own MediaBox caps the render at 5,000 px;
+      a MediaBox inherited from `/Pages`, or `/UserUnit`, is left open
+      (K80 stays Open).
+- [x] K81: Imagick's preparation losing a line on a degraded photo.
+- [x] K46 / #453: a two-way number marked "Check the number".
+- [x] K58: prices printed with their unit; reasons for an unreadable
+      volume or price.
+- [x] K75: a skewed photo kept within 4,000 px.
+- [x] K77: `OCR_URL` with a query string or fragment refused at start.
+- [x] K78: a PaddleOCR answer capped while it is read.
+- [x] K18: `PartLines` prices and quantities.
+- [x] K82: GD writes an 8-bit grey PNG.
+- [x] K83: the Status icon on *Reading text from images*.
+- [x] K84: see *OCR in the other guides* below.
 
 ### 53.2.2 Pages and docs
-- [ ] The Scan page line naming how the file was read.
-- [ ] The task picker hint.
-- [ ] `docs/reading-files.md`: which models read what, and how to get
+- [x] The Scan page line naming how the file was read.
+- [x] The task picker hint.
+- [x] `docs/reading-files.md`: which models read what, and how to get
       the best photo.
-- [ ] Translations (every shipped locale).
+- [x] Translations (every shipped locale).
 
 ### 53.2.3 Tests and release
-- [ ] Routing for each combination in the table.
-- [ ] Redaction before sending, and the 11-digit rule on OCR text that
+- [x] Routing for each combination in the table (`ScanOcrTest`).
+- [x] Redaction before sending, and the 11-digit rule on OCR text that
       splits the run across a space.
-- [ ] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
-      through OCR and a text model, beside the vision route, in the
-      eval report.
-- [ ] Failure messages; the per-user lock; timeouts counted once across
+- [ ] Ten real fuel receipts in the OCR eval, carried from 53.1
+      (#496). The release doesn't wait for them (decided 2026-10-18);
+      they are added when the owner supplies them. Still open, as the
+      53.1 task.
+- [x] `bin/ai-eval.php --scans --via=ocr`: field accuracy per kind
+      through OCR and a text model, beside the vision route. The option
+      is built, and the merge review's deterministic pass (2026-10-18)
+      gave the same forms on both routes for all 24 fixtures. The first
+      run with the owner's models is carried to [53.3](phase-53.3.md).
+- [x] Failure messages; the per-user lock; timeouts counted once across
       OCR and the model.
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
-      and 53.2; tag once merged. The CHANGELOG carries 53.1's upgrade
+- [x] Design review (375, 768, 1280 px; light and dark; JS off): the
+      merge review of 2026-10-18 rendered every new state; its findings
+      are fixed or logged.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
+      and 53.2; tag once merged (v3.17.0, not yet tagged). The CHANGELOG carries 53.1's upgrade
       notes: the image grows by about 80 MB (Tesseract), the optional
       `ocr` compose profile, and `OCR_ENGINE`, `TESSERACT_BINARY`,
       `OCR_URL`, `OCR_TIMEOUT` (all optional).
-- [ ] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
+- [x] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
       AI card in `docs/ai.md` (`docs/deployment.md` names Tesseract from
       53.1).
+
+### 53.2.4 Merge review
+- [x] First merge review (2026-10-18, `c195b7a0`): REJECT. Fixed: the
+      11-digit V5C redaction now goes by a row's words, not the layout's
+      gaps, and registration strings have their spaces folded before
+      the scrub; built assets rebuilt; paperwork. Also fixed from its
+      follow-ups: a fill-up filled from a scan or an Ask draft keeps its
+      date with JS on (the offline form's "move now to now" step no
+      longer runs on it). K85 (OCR enlargement reads 0 as 6) found and
+      logged.
+- [x] Second merge review (2026-10-18, `0743796b`): MERGE.
+- [x] Its follow-ups recorded (issue sweep): K86–K103, open questions
+      #500 and #501. Fixed here: K86 (the palette step's memory: pages
+      over 12 MP stay truecolor), K91, K92 and K99–K103 (paperwork).
 
 ---
 
@@ -131,21 +184,27 @@ Settled in §7.27 and §7.25 in 53.2.0:
    scanned PDFs fill the same forms they would with a vision model.
 2. Every value sent this way passes the same checks, and its evidence is
    checked against the OCR text.
-3. The eval report shows field accuracy for both routes.
+3. The eval report shows field accuracy for both routes: `--via=ocr`
+   reports them side by side; the deterministic pass matched on all 24
+   fixtures, and the first run with real models is carried to 53.3.
 4. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-18 and logged as #497–#499 in
+`open-questions.md`, before it was built, together with #453 (Phase 51,
+K46: option 1, built here).
 
-- **A. Send positions too, or layout text only?**
+- **A. Send positions too, or layout text only?** *Decided 2026-10-18
+  (#497): the recommendation.*
   - (1) Layout text with line numbers.
   - (2) Also each word's box, as JSON.
 
   *Recommendation:* (1). Small models handle plain lines far better than
   coordinates. The eval can try (2) if receipts score poorly.
 
-- **B. How tolerant is the evidence match?**
+- **B. How tolerant is the evidence match?** *Decided 2026-10-18
+  (#498): the recommendation.*
   - (1) After normalising (case, spaces, and OCR swaps O/0, l/1/I,
     S/5, B/8), within an edit distance of 2 per 20 characters.
   - (2) Exact after normalising.
@@ -154,10 +213,35 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   as today.
 
 - **C. With a vision model set up, should a user be able to choose OCR
-  for privacy?**
+  for privacy?** *Decided 2026-10-18 (#499): the recommendation, built
+  in 53.3.*
   - (1) Yes: a per-connection *Send text, not images* option for
     *Internet* connections.
   - (2) No: the route follows configuration only.
 
   *Recommendation:* (1), but built in [53.3](phase-53.3.md), where
   redaction is handled.
+
+Found in the merge review (2026-10-18), logged as #500 and #501 in
+`open-questions.md`, not decided:
+
+- **#500. Which separators and misreads between digit groups should
+  still count as an 11-digit (V5C) reference, and on which paths?**
+  (K87, K93)
+  - (1) Spaces only, as now; show the V5C warning on the OCR route too
+    and reword spec §7.27's "never leaves".
+  - (2) Also any punctuation (`-` `/` `,` `.` `|` `:`) between groups, on
+    every path.
+  - (3) Option 2 plus #498's look-alike letters (O/0, l/1/I, S/5, B/8)
+    and runs split across adjacent rows, on the OCR route only.
+  - (4) Option 3 on every path.
+- **#501. Which runs of 11 digits should a scan remove before sending,
+  given the document's kind is only known from the model's answer?**
+  (K88)
+  - (1) Every run of 11 digits on a row, however wide the gaps (as now).
+  - (2) Join OCR words into a run only across a short gap or within the
+    same column.
+  - (3) Remove runs only when a server-side check finds the text looks
+    like a V5C.
+  - (4) Remove only runs shaped like a V5C reference (11 digits unbroken,
+    or grouped 4-4-3).

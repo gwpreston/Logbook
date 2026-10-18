@@ -33,14 +33,14 @@
             {% else %}
                 <dl class="details">
                     <div><dt>{{ 'ocr.engine.label'|trans }}</dt><dd data-ocr-engine>{{ ('ocr.engine.' ~ status.engine)|trans }}{% if choice == 'auto' %} <span class="muted">{{ 'ocr.engine.auto'|trans }}</span>{% endif %}</dd></div>
-                    <div><dt>{{ 'ocr.status.label'|trans }}</dt><dd data-ocr-available="{{ available ? '1' : '0' }}">{% if available %}{{ 'ocr.status.ready'|trans }}{% else %}{{ ui.icon('warning') }}{{ 'ocr.status.not_ready'|trans }}{% endif %}</dd></div>
+                    <div><dt>{{ 'ocr.status.label'|trans }}</dt><dd data-ocr-available="{{ available ? '1' : '0' }}">{% if available %}{{ 'ocr.status.ready'|trans }}{% else %}<span class="details__flag">{{ ui.icon('warning') }}{{ 'ocr.status.not_ready'|trans }}</span>{% endif %}</dd></div>
                     {% if status.version %}<div><dt>{{ 'ocr.version'|trans }}</dt><dd data-ocr-version>{{ status.version }}</dd></div>{% endif %}
                     {% if status.languages is not empty %}<div><dt>{{ 'ocr.languages'|trans }}</dt><dd data-ocr-languages>{{ status.languages|join(', ') }}</dd></div>{% endif %}
                     {% if status.location %}<div><dt>{{ ('ocr.location_' ~ status.engine)|trans }}</dt><dd><code>{{ status.location }}</code></dd></div>{% endif %}
                     <div><dt>{{ 'ocr.timeout'|trans }}</dt><dd>{{ 'ocr.seconds'|trans({seconds: timeout}) }}</dd></div>
                 </dl>
                 {% if not available %}
-                    <div class="alert alert--warning" role="status" data-ocr-missing>{{ ui.icon('warning') }}<span>{{ ('ocr.status.missing_' ~ status.engine)|trans }}</span></div>
+                    <div class="alert alert--warning" role="status" data-ocr-missing>{{ ui.icon('warning') }}<span>{{ ((found ? 'ocr.status.broken_' : 'ocr.status.missing_') ~ status.engine)|trans }}</span></div>
                 {% endif %}
             {% endif %}
             <p class="muted">{{ 'ocr.how_to'|trans }}</p>

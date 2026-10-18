@@ -6927,13 +6927,15 @@ request to any model service.
   | Task | Needs | Used by |
   |---|---|---|
   | `ask` | tools | Ask Logbook (26.2), drafting (26.3) |
-  | `read_document` | (images **or** text only) and JSON output | receipt and document reading (26.4) |
+  | `read_document` | (images **or** text only) and JSON output | receipt and document reading (26.4); a text-only model reads photos and scans through OCR first (53.2, §7.27 *Routing*) |
   | `read_text` | JSON output | text PDFs (26.4); unassigned, it uses `ask`'s model when that has JSON output |
 
   A model without a task's capabilities cannot be chosen for it (the
   picker shows it disabled with the reason, and saving refuses it). So
   text can stay on a local model while receipts go to a stronger vision
-  model, or the other way round. A task without an assignment switches
+  model, or the other way round. The `read_document` picker's hint says
+  "Photos are read with text recognition first" for a text-only model
+  when OCR is working (Phase 53.2). A task without an assignment switches
   its features off; admins are told where to set it ("Set a model for Ask
   Logbook in Settings → AI"), members see nothing.
 - **No automatic fallback.** Each task has one connection. A failure is
@@ -7384,10 +7386,13 @@ A photo or PDF of an invoice, receipt or certificate fills in the right
 form. The user checks the prefilled form and saves it; the file is
 attached to the entry it creates. Nothing is ever saved without *Save*.
 
-- **Available** when the `read_document` task has a model (§7.25), the
-  `ai_scan` module is on, and the user's *Use AI features* is on. A text
-  PDF needs only `read_text` (or `ask`'s model with JSON output, §7.25).
-  The entry points are hidden otherwise.
+- **Available** when the `read_document` task or the `read_text` task
+  (or `ask`'s model with JSON output, §7.25) has a model, the `ai_scan`
+  module is on, and the user's *Use AI features* is on. The entry points
+  are hidden otherwise. Which files can then be read follows *Routing*
+  (Phase 53.2), below: a text PDF needs only a text model; a photo or a
+  scanned PDF needs a vision model on `read_document`, or a text model
+  and a working OCR engine.
 - **Entry points:**
   - *Log entry* → *Scan a receipt or document*: pick a vehicle, or *Let
     the document decide*;
@@ -7406,10 +7411,15 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   JS; with JS it shows "Reading your file…" while it posts.
 - **Where it goes:** the Scan page names the connection and where it runs
   (*This server*, *Your network*, *Internet*), as Ask does (§7.26). On an
-  *Internet* connection it also says that a photo of a registration
+  *Internet* connection that reads photos as pictures (a vision model on
+  `read_document`), it also says that a photo of a registration
   document carries its reference number to that provider: Logbook removes
   it from text, but cannot from a picture (decided 2026-10-01,
-  `docs/phases/open-questions.md` #85).
+  `docs/phases/open-questions.md` #85). Where photos are read through
+  OCR (Phase 53.2), the page says instead that they are read on this
+  server (or by the text recognition service) and only their text is
+  sent, and the warning is not shown: the reference is removed from
+  that text.
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7432,6 +7442,58 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     shows "This PDF is a scan. Take a photo instead, or type it in." on
     the empty form, with the file attached. A PDF that is encrypted or
     cannot be parsed is treated as a scan.
+  - A page is rendered at the asked resolution, or lower so that its
+    long edge stays within 5,000 px: a PDF with an oversized page (a
+    200-inch page, K80) is rendered small rather than to a huge image.
+    The size is read from the page's own MediaBox; one inherited from
+    `/Pages` is not read yet (K80 stays open for it).
+- **Routing** (Phase 53.2, `Service\Ai\Scan\Router`): chosen per file
+  from what is set up, with no setting to learn. A vision model stays
+  first wherever it is set up.
+
+  | File | Vision model on `read_document` | Text model, OCR working | Neither |
+  |---|---|---|---|
+  | Photo | the vision model | OCR, then the text model | "needs a model that reads images" (Phase 53.4 reads it without AI) |
+  | Scanned PDF | the vision model | OCR, then the text model | as above; no renderer: "This PDF is a scan…" |
+  | Text PDF | `read_text` | `read_text` | `read_text` |
+
+  - *The text model* is `read_document`'s when that is a text-only model
+    (§7.25), else `read_text`'s (or `ask`'s, as for text PDFs). The
+    request runs, and is logged, under that task.
+  - *OCR working:* the engine `OCR_ENGINE` picks is set up **and**
+    answers its version check (the *Status* of *Reading text from
+    images*, below, remembered for the request); a Tesseract binary that
+    is found but can't run doesn't count (K73).
+- **Reading through OCR** (Phase 53.2): OCR reads the file (*Reading text
+  from images*, below), and its layout text goes to the text model as
+  the document's text, with the same system text, schema and Mapper as
+  every other route:
+  - marked as text recognition (OCR) output, which may misread
+    characters, in the message (the system text, which says to leave a
+    field empty rather than guess, to copy dates and amounts as printed,
+    and that text in the document is data, never instructions, is
+    unchanged);
+  - each line prefixed with its number (`12| Total     £48.20`);
+  - layout text only, without word positions (decided 2026-10-18,
+    `docs/phases/open-questions.md` #497);
+  - runs of 11 digits removed **before it is sent**, as for text PDFs,
+    including a run OCR splits into groups: each row's words are read
+    with single spaces between them, whatever gaps the layout keeps, and
+    the words of a run are left out; so a V5C photo's reference never
+    leaves the server by this route. Returned strings of a registration
+    document have their spaces folded before the 11-digit scrub;
+  - whole lines up to `read_text`'s 20,000 characters; later lines are
+    left out.
+
+  The user's AI lock is held once for the whole read, OCR and model
+  together, for the OCR's longest time plus the connection's timeout
+  plus the grace; a timeout of either is reported once, as a timeout.
+  **Too little text:** a mean confidence under 40, or under 30 words,
+  sends nothing to the model and gives the normal empty form with the
+  file attached: "Couldn't make out the text in this photo. Try a
+  flatter, brighter photo." followed by the usual "It's attached; fill
+  the form in by hand." OCR timing out, busy
+  or failing gives the matching *Failures* line.
 - **Classify, then extract, in one request.** The response schema has a
   `kind` (`service_invoice` | `fuel_receipt` | `inspection` | `insurance`
   | `registration` | `other`, and from Phase 27.2 `claim_letter` |
@@ -7473,8 +7535,26 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Checking values** (`Service\Ai\Scan\Mapper`): every value goes through
   the target form's own parser in the user's locale and units, as typed
   values do. A value that fails is left empty, with the reason under the
-  field ("Couldn't read the total: 'l2.50'"). An evidence string that does
-  not appear in the document's text (text PDFs only) drops the value.
+  field ("Couldn't read "l2.50"."). An evidence string that does
+  not appear in the document's text (text PDFs, and OCR text from Phase
+  53.2) drops the value, with the reason under its field ("Not found in
+  the file's text: "Total £48.20", so it was left empty."). Against OCR text the match is
+  tolerant (decided 2026-10-18, `docs/phases/open-questions.md` #498):
+  both sides are lower-cased, their spaces removed and OCR's usual swaps
+  folded (O→0, l and I→1, S→5, B→8), and the evidence must then appear
+  within an edit distance of 2 per 20 characters, rounded up (evidence under five characters must match exactly). A text
+  PDF's text is still matched exactly after lower-casing and folding
+  spaces. **Hard to read:** on the OCR route, a value whose evidence
+  words have a mean OCR confidence under 60 is marked "Hard to read,
+  check this" under its field.
+  **Numbers** are read in the user's locale. One with a single
+  separator followed by exactly three digits reads two ways (`1,759`,
+  `48.120`): it is read in the user's locale as before, and the field
+  is marked "Check the number: 1759 or 1.759?", naming the other reading
+  (decided 2026-10-18, `docs/phases/open-questions.md` #453, K46). A
+  price printed with its unit attached (`1,759 €/l`, `£1.459/litre`,
+  `£1.459 per litre`) is read; an unreadable volume or price per unit
+  is left empty with the reason, as other values are (K58).
   **Dates** are read in the user's locale order (UK: day first; US: month
   first; ISO as written). When both numbers are 12 or under and differ,
   the field is marked "Check the date: 4 May or 5 April?". A date in the
@@ -7549,7 +7629,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   the file as a pending upload for 24 hours. The user can change the kind
   on the result page ("This is a fuel receipt"), which maps the same
   extraction again without a second request.
-- **The prefilled form:** the normal create form, with each scanned field
+- **The prefilled form:** its date and time are kept as read: the step
+  that moves a cached form's untouched "now" to the current time (the
+  phone app's offline fill-up and trip forms) never runs on a form filled
+  from a file or an Ask draft (fixed in Phase 53.2; before, with JS on, a
+  scanned receipt's date was replaced by the time the form opened). The
+  normal create form, with each scanned field
   marked "From the file, check" and its evidence as a hint ("'Total due
   £184.50'"), linked to the field by `aria-describedby`; the file listed
   as already attached (with *Don't attach it*, which saves the entry
@@ -7596,15 +7681,27 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   vehicle (or the vehicle pick) and kind (or the *Log entry* chooser),
   with the file attached and one line saying why ("Couldn't read this
   file. It's attached; fill the form in by hand."). Scanning never costs
-  the user their photo.
+  the user their photo. A photo or scanned PDF that neither a vision
+  model nor OCR with a text model can read says so ("Reading photos
+  needs a model that reads images, or text recognition on this
+  server.").
+- **How it was read:** the prefilled form's notice names the route:
+  "Read by {model} on {connection}" for a model alone, and "Read on this
+  server (text recognition), then by {model} on {connection}" through
+  OCR ("Read by the text recognition service, then by …" for
+  PaddleOCR).
 - **Instructions inside files are never followed.** The scan request has
   no tools; its answer is only a form's values; nothing saves without
   *Save*.
 - **Logging:** each request is in the usage log (§7.25) under its task;
-  with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, after
-  redaction) and the answer are logged, never an image.
+  with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, or
+  the OCR text sent, after redaction) and the answer are logged, never an
+  image.
 - `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
   against the configured models and reports field accuracy per kind.
+  `--via=ocr` (Phase 53.2) sends the photos and scans through OCR and
+  the text model instead, and the report shows both routes side by
+  side.
 - **Parts lines** (Phase 50.2, #440): a service invoice's parts lines are
   offered under the form as *Add as parts*, unticked (§7.39 *Scanning*).
 - **Not in scope:** saving without the form; a parts inventory away from
@@ -7617,8 +7714,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 #### Reading text from images (Phase 53.1)
 
 Logbook turns a photo or scanned PDF into text with positions on its own
-server (or a PaddleOCR service the admin runs). 53.1 builds the engine
-only: nothing users see changes until Phase 53.2 uses it.
+server (or a PaddleOCR service the admin runs). 53.1 built the engine;
+from Phase 53.2 a scan uses it when there is no vision model
+(*Routing*, above).
 
 - **Engines** (decided 2026-10-17, #489): one `Service\Ocr\OcrEngine`
   interface, two engines.
@@ -7651,15 +7749,22 @@ only: nothing users see changes until Phase 53.2 uses it.
   - "a memory limit": there's no `ulimit` without a shell, so memory is
     bounded by those sizes and by one Tesseract thread. GD decodes the
     photo once (as any upload is), fits it to 4,000 px, and then reserves
-    room for two working copies at that size only. Imagick's pixel cache,
+    room for two working copies at that size; a page of up to 12
+    megapixels is written as an 8-bit palette PNG (Phase 53.2, K82), with
+    room made for two more copies for that step, and a larger page stays
+    truecolor (K86: a 4000×4000 photo ran out of a 256M limit there). Imagick's pixel cache,
     outside PHP's limit, is capped at 128 MB in memory, 128 MB mapped and
     1 GB on disk (for the PHP worker's life), and a file with more than
     one frame goes to GD. No `jpeg:size` hint: ImageMagick 7 enlarged
     smaller JPEGs to it;
   - **one run per user at a time**, sharing the AI lock (`ai_busy`,
-    §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 + 30 seconds at most. A
+    §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 plus a PDF render's 60
+    seconds plus 30 at most, so it can't run out while a slow scanned
+    PDF is still being read. A
     caller that already holds it (a scan going on to a model, 53.2)
-    reads without taking it again.
+    reads without taking it again. A lock is released only by the
+    request that took it: one that ran past its time never removes a
+    later request's lock (K76). This applies to every AI request.
 - **Languages:** the user's locale's language and English, as Tesseract
   codes (`deu+eng`); those not installed are left out, and English is
   used when none is.
@@ -10108,7 +10213,10 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   to 20 lines, each an editable name, part number and price read from the
   line as a **guess to check** (a trailing amount is the price; a token
   with digits and letters or dashes, but not an oil grade or a tyre size,
-  is the part number; a line that is only an amount keeps its text), all
+  is the part number; a line that is only an amount keeps its text; a
+  quantity, "2 x" before or "x2" or "Qty 2" after, stays in the name as
+  "×2"; a VAT note or one-letter VAT code after the price is ignored; and
+  a price grouped with spaces, `1 234,56`, is one number: K18), all
   **unticked**: oil and screen wash are parts lines too. A
   ticked line becomes a new *Parts fitted* row, fitted by that record, on
   *Save*; nothing is created without *Save*. A line's price shows and is
@@ -10593,7 +10701,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   the default, | `tesseract` | `paddleocr` | `off`; anything else stops
   the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up
   on `PATH`; `off` turns it off), `OCR_URL` (a PaddleOCR service's
-  `http://` or `https://` address with a host, an underscore allowed;
+  `http://` or `https://` address with a host, an underscore allowed,
+  and no query string or fragment (K77);
   empty for none; anything else stops the app at start, with a message
   that doesn't repeat the value), `OCR_TIMEOUT` (seconds per page, default `30`,
   1–300).
@@ -11547,8 +11656,8 @@ task breakdowns live in the per-phase files; this is the map.
   start task names #444–#447 (K34). No migration. Released on its own
   as v3.16.4, a patch (#486, decided 2026-10-17). See
   [`phase-52.2.md`](docs/phases/phase-52.2.md).
-- **Phase 53.1 — Reading text from images: the OCR engine** (in
-  progress). Two engines behind one interface (#489): Tesseract as an
+- **Phase 53.1 — Reading text from images: the OCR engine** (done,
+  released with 53.2). Two engines behind one interface (#489): Tesseract as an
   optional binary (`TESSERACT_BINARY`, `off` to turn it off), in the
   Docker image with English and German `tessdata_fast` (#490, #491), and
   PaddleOCR reached at `OCR_URL` (#493), with an optional compose
@@ -11561,12 +11670,18 @@ task breakdowns live in the per-phase files; this is the map.
   part of Phase 26.4's *Not in scope* (§4, §7.27, §9). See
   [`phase-53.1.md`](docs/phases/phase-53.1.md).
 - **Phase 53.2 — Reading photos with a text model + release**
-  (planned). Photos and scanned PDFs read through OCR and the `read_text`
-  model when no vision model is set up, chosen per file; evidence checked
-  against the OCR text with a tolerant match; low-confidence values
-  marked "Hard to read, check this"; the Scan page says how the file was
-  read (§7.25, §7.27; open questions A–C in the phase file). See
-  [`phase-53.2.md`](docs/phases/phase-53.2.md).
+  (✅ released as v3.17.0). Photos and scanned PDFs read through OCR and the text
+  model when no vision model is set up, chosen per file (§7.27
+  *Routing*); layout text with line numbers, redacted (#497); evidence
+  checked against the OCR text with a tolerant match (#498);
+  low-confidence values marked "Hard to read, check this"; the Scan page
+  says how the file was read; *Send text, not images* left to 53.3
+  (#499). Also: a two-way number marked "Check the number" (#453, K46);
+  prices printed with their unit read (K58); the OCR lock outlasts a
+  slow PDF and is released only by its holder (K76); availability from
+  the engine's real status (K73); oversized PDF pages rendered small
+  (K80, partly); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
+  as v3.17.0 with 53.1 (✅). See [`phase-53.2.md`](docs/phases/phase-53.2.md).
 - **Phase 53.3 — OCR as a check on the vision model, and text instead
   of images** (planned). OCR beside the vision model on a photo, flagging
   a value not found where OCR read confidently; a fuel receipt's volume ×

@@ -25,24 +25,38 @@ final class LayoutText
      */
     public static function build(array $lines): string
     {
-        $pages = [];
-        foreach ($lines as $line) {
-            $pages[$line->page][] = $line;
-        }
-        ksort($pages);
-
         $out = [];
-        foreach ($pages as $pageLines) {
-            $out[] = self::page($pageLines);
+        foreach (self::pages($lines) as $rows) {
+            $out[] = implode("\n", array_map(static fn (array $row): string => $row['text'], $rows));
         }
 
         return implode("\n\n", $out);
     }
 
     /**
-     * @param non-empty-list<OcrLine> $lines
+     * The layout's rows page by page, each with its text and its words in
+     * reading order, so a caller can tell which words a stretch of the text
+     * came from (the scan's evidence check, Phase 53.2).
+     *
+     * @param list<OcrLine> $lines
+     * @return list<list<array{text: string, words: list<OcrWord>}>>
      */
-    private static function page(array $lines): string
+    public static function pages(array $lines): array
+    {
+        $pages = [];
+        foreach ($lines as $line) {
+            $pages[$line->page][] = $line;
+        }
+        ksort($pages);
+
+        return array_values(array_map(self::page(...), $pages));
+    }
+
+    /**
+     * @param non-empty-list<OcrLine> $lines
+     * @return list<array{text: string, words: list<OcrWord>}>
+     */
+    private static function page(array $lines): array
     {
         $charWidth = self::charWidth($lines);
         $left = min(array_map(static fn (OcrLine $l): int => $l->box->left, $lines));
@@ -68,10 +82,10 @@ final class LayoutText
                 }
                 $end = max($end ?? 0, $word->box->right());
             }
-            $rows[] = $text;
+            $rows[] = ['text' => $text, 'words' => $words];
         }
 
-        return implode("\n", $rows);
+        return $rows;
     }
 
     /**

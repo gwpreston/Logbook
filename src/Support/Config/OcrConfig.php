@@ -29,7 +29,9 @@ final readonly class OcrConfig
         $url = rtrim($env->string('OCR_URL'), '/');
         if ($url !== '' && !self::isHttpAddress($url)) {
             // The value isn't repeated: it may carry a password.
-            throw new InvalidArgumentException('OCR_URL must be an http:// or https:// address with a host name.');
+            throw new InvalidArgumentException(
+                'OCR_URL must be an http:// or https:// address with a host name, and no query string or fragment.',
+            );
         }
 
         return new self(
@@ -41,7 +43,8 @@ final readonly class OcrConfig
     }
 
     /**
-     * http(s) with a host. Checked with parse_url rather than
+     * http(s) with a host, and no query or fragment: requests go to
+     * `{OCR_URL}/ocr`, which a `?` or `#` would swallow (K77). Checked with parse_url rather than
      * FILTER_VALIDATE_URL, which refuses an underscore in a host name, as
      * Docker service and container names often have (`paddle_ocr`).
      */
@@ -52,6 +55,8 @@ final readonly class OcrConfig
         return is_array($parts)
             && in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
             && ($parts['host'] ?? '') !== ''
+            && !str_contains($url, '?')
+            && !str_contains($url, '#')
             && preg_match('/\s/', $url) !== 1;
     }
 

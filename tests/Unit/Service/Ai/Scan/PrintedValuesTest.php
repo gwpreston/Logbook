@@ -89,6 +89,37 @@ final class PrintedValuesTest extends TestCase
         yield 'german three decimals' => ['45,123', 'de_DE', '45.123'];
         yield 'price per litre' => ['142.9p', 'en_GB', '142.9'];
         yield 'zero' => ['£0.00', 'en_GB', '0.00'];
+        // K58: a price printed with its unit attached.
+        yield 'euro per litre' => ['1,759 €/l', 'de_DE', '1.759'];
+        yield 'pounds per litre' => ['£1.459/litre', 'en_GB', '1.459'];
+        yield 'pounds per spelt out' => ['£1.459 per litre', 'en_GB', '1.459'];
+        yield 'code per litre' => ['1,759 EUR/l', 'de_DE', '1.759'];
+        yield 'pence per litre' => ['142.9p/L', 'en_GB', '142.9'];
+        yield 'a lone 0 is not a group' => ['0,759', 'en_GB', '0.759'];
+    }
+
+    /**
+     * @return iterable<string, array{string, string, ?string}>
+     */
+    public static function twoWays(): iterable
+    {
+        // #453, K46: one separator followed by exactly three digits.
+        yield 'german price for an english user' => ['1,759', 'en_GB', '1.759'];
+        yield 'english price for a german user' => ['1.459', 'de_DE', '1.459'];
+        yield 'german reading for an english user' => ['48.120 km', 'en_GB', '48120'];
+        yield 'german reading for a german user' => ['48.120 km', 'de_DE', '48.12'];
+        yield 'two separators' => ['1,234.567', 'en_GB', null];
+        yield 'two decimals' => ['184.50', 'en_GB', null];
+        yield 'four digits after' => ['1.4590', 'en_GB', null];
+        yield 'leading zero' => ['0.759', 'en_GB', null];
+        yield 'no separator' => ['1759', 'en_GB', null];
+        yield 'not a number' => ['n/a', 'en_GB', null];
+    }
+
+    #[DataProvider('twoWays')]
+    public function testANumberThatReadsTwoWaysNamesTheOther(string $printed, string $locale, ?string $other): void
+    {
+        self::assertSame($other, PrintedNumber::alternative($printed, $locale));
     }
 
     #[DataProvider('numbers')]

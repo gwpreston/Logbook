@@ -6,7 +6,8 @@ namespace Logbook\Service\Ai\Scan;
 
 /**
  * Ghostscript, else Imagick, else nothing (spec.md §7.27): without a
- * renderer a scanned PDF asks for a photo instead.
+ * renderer a scanned PDF asks for a photo instead. Pages are kept within
+ * 5,000 px on their long edge (PdfPageSize).
  */
 final readonly class PdfRenderers implements PdfRenderer
 {
@@ -23,6 +24,8 @@ final readonly class PdfRenderers implements PdfRenderer
 
     public function render(string $pdfPath, int $pages, int $dpi): array
     {
+        // An oversized page is rendered at a lower resolution (K80).
+        $dpi = PdfPageSize::dpi($pdfPath, $pages, $dpi);
         if ($this->ghostscript->isAvailable()) {
             $images = $this->ghostscript->render($pdfPath, $pages, $dpi);
             if ($images !== []) {

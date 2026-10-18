@@ -2167,6 +2167,13 @@ a.segmented__option {
     overflow-wrap: anywhere;
 }
 
+/* An icon beside a value (K83): on its line, not above it (the svg reset is block). */
+.details__flag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
 /* Sidebar account block. */
 .sidebar__account {
     display: flex;
