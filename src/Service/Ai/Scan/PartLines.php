@@ -44,10 +44,29 @@ final class PartLines
      */
     private static function row(string $line, string $locale): array
     {
-        $text = (string) preg_replace('/^\d+\s*[x×]\s*/iu', '', $line);
+        // A quantity, leading ("2 x") or trailing ("x2", "Qty 2"), stays in the name as "×2" (K18).
+        $quantity = null;
+        $text = $line;
+        if (preg_match('/^(\d+)\s*[x×]\s+/iu', $text, $q) === 1) {
+            $quantity = (int) $q[1];
+            $text = substr($text, strlen($q[0]));
+        }
+        // A suffix after the price: a quantity, a VAT note or a one-letter VAT code (K18).
+        $suffix = '/\s+(?:[x×]\s?(\d+)|qty:?\s?(\d+)|\(?(?:inc\.?|incl\.?|ex\.?)?\s?vat(?:\s?@?\s?\d+(?:[.,]\d+)?%)?\)?'
+            . '|\(?\d{1,2}(?:[.,]\d+)?%\)?)$/iu';
+        while (preg_match($suffix, $text, $m) === 1) {
+            $count = ($m[1] ?? '') !== '' ? $m[1] : ($m[2] ?? '');
+            if ($count !== '') {
+                $quantity ??= (int) $count;
+            }
+            $text = substr($text, 0, -strlen($m[0]));
+        }
+        $text = (string) preg_replace('/(?<=\d)\s+[A-Z]$/u', '', $text);
 
         $price = null;
-        $trailing = '/\s((?:[£€$]\s?)?\d[\d.,]*[.,]\d{2}|[£€$]\s?\d[\d.,]*)\s*(?:[£€$]|[A-Z]{3})?$/u';
+        // Groups of three after spaces (`1 234,56`) are one number (K18).
+        $amount = '\d{1,3}(?:[ \x{00A0}\x{202F}]\d{3})+[.,]\d{2}|\d[\d.,]*[.,]\d{2}';
+        $trailing = '/\s((?:[£€$]\s?)?(?:' . $amount . ')|[£€$]\s?\d[\d.,]*)\s*(?:[£€$]|[A-Z]{3})?$/u';
         if (preg_match($trailing, ' ' . $text, $m) === 1) {
             $read = PrintedNumber::read($m[1], $locale);
             if ($read !== null && Decimal::compare($read, '0') >= 0) {
@@ -70,6 +89,10 @@ final class PartLines
         if ($name === '') {
             $name = trim($text, " \t-–—:,;") ?: $line;
             $number = null;
+        }
+
+        if ($quantity !== null && $quantity > 1) {
+            $name .= ' ×' . $quantity;
         }
 
         return [

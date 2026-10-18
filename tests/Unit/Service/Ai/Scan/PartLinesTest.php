@@ -30,7 +30,7 @@ final class PartLinesTest extends TestCase
         $rows = PartLines::parse(['Oil filter OC593 12.50', '2 x Brake pads (1K0-698-151) £61.20', 'Wiper blade'], 'en_GB');
 
         self::assertSame(['Oil filter', 'OC593', '12.5'], [$rows[0]['name'], $rows[0]['part_number'], $rows[0]['price']]);
-        self::assertSame(['Brake pads', '1K0-698-151', '61.2'], [$rows[1]['name'], $rows[1]['part_number'], $rows[1]['price']]);
+        self::assertSame(['Brake pads ×2', '1K0-698-151', '61.2'], [$rows[1]['name'], $rows[1]['part_number'], $rows[1]['price']]);
         self::assertSame(['Wiper blade', null, null], [$rows[2]['name'], $rows[2]['part_number'], $rows[2]['price']]);
     }
 
@@ -54,6 +54,26 @@ final class PartLinesTest extends TestCase
         self::assertCount(2, $odd, 'empty lines are skipped');
         self::assertSame('12.50', $odd[0]['name'], 'a line that is only a price keeps its text');
         self::assertSame('Gasket set', $odd[1]['name']);
+    }
+
+    public function testSpaceGroupedPricesQuantitiesAndSuffixes(): void
+    {
+        // K18.
+        $rows = PartLines::parse([
+            'Turbocharger 1 234,56 €',
+            '2 x Wiper blade 24.00',
+            'Engine oil 5W-30 £42.00 x 5',
+            'Pollen filter £18.00 (VAT 20%)',
+            'Bulb H7 £4.99 Z',
+            'Coolant 9.95 Qty 2',
+        ], 'de_DE');
+
+        self::assertSame(['Turbocharger', '1234.56'], [$rows[0]['name'], $rows[0]['price']]);
+        self::assertSame(['Wiper blade ×2', '24'], [$rows[1]['name'], $rows[1]['price']]);
+        self::assertSame(['Engine oil 5W-30 ×5', '42'], [$rows[2]['name'], $rows[2]['price']]);
+        self::assertSame(['Pollen filter', '18'], [$rows[3]['name'], $rows[3]['price']]);
+        self::assertSame('4.99', $rows[4]['price']);
+        self::assertSame(['Coolant ×2', '9.95'], [$rows[5]['name'], $rows[5]['price']]);
     }
 
     public function testAtMostTwentyLinesAndNamesAreCut(): void

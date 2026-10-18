@@ -64,6 +64,19 @@ final class ScanFiles
     }
 
     /**
+     * A blank page of this size in points (72 to the inch): K80's huge page.
+     */
+    public static function pagePdf(int $width, int $height): string
+    {
+        return self::pdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            sprintf('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Contents 4 0 R >>', $width, $height),
+            self::stream('', "q Q\n"),
+        ]);
+    }
+
+    /**
      * A phone photo of these lines: a JPEG with EXIF orientation 1 and a
      * GPS position, as a receipt photographed on the driveway carries.
      *

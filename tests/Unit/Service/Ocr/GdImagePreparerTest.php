@@ -60,6 +60,8 @@ final class GdImagePreparerTest extends TestCase
     {
         $image = imagecreatefromstring($png);
         self::assertInstanceOf(GdImage::class, $image);
+        // GD's PNG is an 8-bit palette of grey levels (K82): read it as colours.
+        imagepalettetotruecolor($image);
 
         return $image;
     }
@@ -158,6 +160,36 @@ final class GdImagePreparerTest extends TestCase
         self::assertSame(0.8, $prepared->scale);
     }
 
+    public function testTheResultIsAnEightBitPalettePng(): void
+    {
+        $prepared = (new GdImagePreparer())->prepare(self::jpeg(self::page(barHeight: 30)));
+
+        self::assertNotNull($prepared);
+        // Byte 25 of a PNG is its colour type: 3 is a palette of at most 8 bits.
+        self::assertSame(3, ord($prepared->png[25]), 'not 24-bit truecolor (K82)');
+        self::assertLessThanOrEqual(8, ord($prepared->png[24]));
+    }
+
+    public function testASkewedLargePageStaysWithin4000Pixels(): void
+    {
+        $page = imagecreatetruecolor(4000, 2400);
+        self::assertInstanceOf(GdImage::class, $page);
+        imagefill($page, 0, 0, (int) imagecolorallocate($page, 255, 255, 255));
+        $black = (int) imagecolorallocate($page, 0, 0, 0);
+        for ($y = 200; $y < 2200; $y += 60) {
+            imagefilledrectangle($page, 200, $y, 3800, $y + 20, $black);
+        }
+        $skewed = imagerotate($page, 6, (int) imagecolorallocate($page, 255, 255, 255));
+        self::assertInstanceOf(GdImage::class, $skewed);
+        $scale = 1.0;
+        $fitted = GdImagePreparer::fit($skewed, 4000, $scale);
+
+        $rotated = GdImagePreparer::rotate(GdImagePreparer::fitRotated($fitted, -6.0, $scale), -6.0);
+
+        self::assertLessThanOrEqual(4001, max(imagesx($rotated), imagesy($rotated)), 'K75');
+        self::assertLessThan(1.0, $scale);
+    }
+
     public function testEnlargingStopsAt4000Pixels(): void
     {
         $prepared = (new GdImagePreparer())->prepare(self::jpeg(self::page(3000, 600, barHeight: 10)));
@@ -187,7 +219,7 @@ final class GdImagePreparerTest extends TestCase
         $prepared = (new GdImagePreparer())->prepare((string) ob_get_clean());
 
         self::assertNotNull($prepared);
-        self::assertSame(0xFF, imagecolorat(self::decode($prepared->png), 100, 100) & 0xFF);
+        self::assertGreaterThanOrEqual(0xFD, imagecolorat(self::decode($prepared->png), 100, 100) & 0xFF, 'white, within the palette\'s two levels');
     }
 
     public function testAFileThatIsNotAnImageOrTooLargeGivesNothing(): void

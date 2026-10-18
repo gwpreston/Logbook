@@ -52,7 +52,8 @@ final class GdImagePreparer implements ImagePreparer
         $small = self::thumbnail($image);
         $angle = self::skew($small);
         if ($angle !== 0.0) {
-            $image = self::rotate($image, $angle);
+            // Shrunk first if the rotated page would pass MAX_EDGE (K75).
+            $image = self::rotate(self::fitRotated($image, $angle, $scale), $angle);
             $small = self::rotate($small, $angle);
         }
 
@@ -61,7 +62,7 @@ final class GdImagePreparer implements ImagePreparer
             $image = self::enlarge($image, self::TARGET_TEXT_HEIGHT / $height, $scale);
         }
 
-        return self::png($image, $angle, $scale, 'gd');
+        return self::png(self::palette($image), $angle, $scale, 'gd');
     }
 
     /**
@@ -304,6 +305,48 @@ final class GdImagePreparer implements ImagePreparer
         $scale *= $factor;
 
         return $scaled;
+    }
+
+    /**
+     * Shrunk so that, once rotated by $angle, its long edge is at most
+     * MAX_EDGE: rotating widens the page by up to a fifth at 10°.
+     */
+    public static function fitRotated(GdImage $image, float $angle, float &$scale): GdImage
+    {
+        $radians = deg2rad(abs($angle));
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $long = max($width * cos($radians) + $height * sin($radians), $height * cos($radians) + $width * sin($radians));
+        if ($long <= self::MAX_EDGE) {
+            return $image;
+        }
+        $factor = self::MAX_EDGE / $long;
+        $scaled = self::resampled($image, $factor);
+        if ($scaled === null) {
+            return $image;
+        }
+        $scale *= $factor;
+
+        return $scaled;
+    }
+
+    /**
+     * The grey page as a palette image, so its PNG is 8-bit: under half the
+     * size of a truecolor one and quicker to write (K82). The palette is
+     * matched back to the page's own greys, within two levels.
+     */
+    private static function palette(GdImage $image): GdImage
+    {
+        $copy = imagecreatetruecolor(imagesx($image), imagesy($image));
+        if ($copy === false || !imagecopy($copy, $image, 0, 0, 0, 0, imagesx($image), imagesy($image))) {
+            return $image;
+        }
+        if (!imagetruecolortopalette($copy, false, 256)) {
+            return $image;
+        }
+        imagecolormatch($image, $copy);
+
+        return $copy;
     }
 
     public static function rotate(GdImage $image, float $angle): GdImage

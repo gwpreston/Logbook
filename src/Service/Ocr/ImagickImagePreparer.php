@@ -72,6 +72,12 @@ final class ImagickImagePreparer implements ImagePreparer
                 $deskewed?->clear();
                 $angle = 0.0;
             }
+            // Deskewing widens the page: keep it within MAX_EDGE (K75).
+            $long = max($image->getImageWidth(), $image->getImageHeight());
+            if ($long > GdImagePreparer::MAX_EDGE) {
+                self::resize($image, GdImagePreparer::MAX_EDGE / $long);
+                $scale *= GdImagePreparer::MAX_EDGE / $long;
+            }
 
             $height = $this->textHeight($image);
             if ($height > 0 && $height < 20) {
@@ -186,6 +192,6 @@ final class ImagickImagePreparer implements ImagePreparer
     {
         $width = (int) round($image->getImageWidth() * $factor);
         $height = (int) round($image->getImageHeight() * $factor);
-        $image->resizeImage($width, $height, \Imagick::FILTER_LANCZOS, 1);
+        $image->resizeImage($width, $height, \Imagick::FILTER_CATROM, 1);
     }
 }

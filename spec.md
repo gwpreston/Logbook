@@ -10200,7 +10200,10 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   to 20 lines, each an editable name, part number and price read from the
   line as a **guess to check** (a trailing amount is the price; a token
   with digits and letters or dashes, but not an oil grade or a tyre size,
-  is the part number; a line that is only an amount keeps its text), all
+  is the part number; a line that is only an amount keeps its text; a
+  quantity, "2 x" before or "x2" or "Qty 2" after, stays in the name as
+  "×2"; a VAT note or one-letter VAT code after the price is ignored; and
+  a price grouped with spaces, `1 234,56`, is one number: K18), all
   **unticked**: oil and screen wash are parts lines too. A
   ticked line becomes a new *Parts fitted* row, fitted by that record, on
   *Save*; nothing is created without *Save*. A line's price shows and is
