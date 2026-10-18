@@ -116,6 +116,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
 | [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 📋 |
+| [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1501,6 +1502,22 @@ low contrast.*
   link's reminders count meets 4.5:1 (K53). No migration. Patch release.
 
 → [`phase-53.5.md`](docs/phases/phase-53.5.md)
+
+---
+
+## Phase 53.6 — Import fixes from the known-issues log + patch release
+*Three open rows of the known-issues log closed: a CSV import reads the
+volume unit its header names and reads UTF-16 files, and the Tracktor
+command line stops on rows with problems as the web page does.*
+
+- A CSV header's volume unit (`Volume (UK gallons)`) is chosen on the
+  mapping page; a bare gallon takes the owner's (K2, #505). UTF-16 CSVs
+  import with their text intact (K10, #504).
+- `bin/import-app.php <export.json>` stops on rows with problems unless
+  `--skip-invalid`, naming the export's fields (K65). No migration.
+  Patch release.
+
+→ [`phase-53.6.md`](docs/phases/phase-53.6.md)
 
 ---
 

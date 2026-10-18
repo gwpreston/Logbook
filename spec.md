@@ -4307,7 +4307,8 @@ linked as "Import CSV" next to each tab's "Export CSV"; not for archived
 vehicles; a disabled module cannot be imported).
 
 - **Three steps, nothing written until the last.** (1) Upload a CSV (UTF-8,
-  with or without BOM; Windows-1252 is converted; comma, semicolon or tab
+  with or without BOM; UTF-16 with a byte-order mark is converted, #504;
+  Windows-1252 is converted; comma, semicolon or tab
   detected from the header row; up to `MAX_UPLOAD_MB`, named in the
   message when a file is larger, and 5,000 rows). A file that is plainly
   not text — a known binary format (ZIP, such as a Fuelio backup or an
@@ -4323,7 +4324,9 @@ vehicles; a disabled module cannot be imported).
   field of the module gets a column picker, pre-selected by matching the
   header against the export's column names (in the owner's language and in
   English) and the field codes; the file's units (distance, volume) default
-  to the unit named in the header, else the owner's; the date order
+  to the unit named in the header, else the owner's (a gallon that
+  doesn't say which, `(gal)` or `(gallons)`, is the owner's gallon: their
+  volume unit if a gallon, else by region; #505); the date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
   defaults to ISO. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
@@ -4708,7 +4711,10 @@ Logbook isn't affiliated with Tracktor.
   uploads folder (#465, up to `MAX_UPLOAD_MB`). The command line takes
   both with no size limit:
   `php bin/import-app.php <export.json> [--files <folder|zip>] [--create]
-  [--as <username>] [--schedules] [--dry-run]`. `--vehicle` is refused for
+  [--as <username>] [--schedules] [--skip-invalid] [--dry-run]`. As for
+  Fuelio, rows with problems stop the import (exit code 1, nothing
+  written) unless `--skip-invalid`, and a row's problems name the
+  export's fields (K65). `--vehicle` is refused for
   an export with more than one vehicle, as for a Fuelio ZIP.
 - **Uploads** (#465): a ZIP is checked under the ZIP rules above, except
   that it holds files rather than CSV: at most 5,000 entries, of which
@@ -11710,6 +11716,15 @@ task breakdowns live in the per-phase files; this is the map.
   themes (§8 *Accessibility*, K53). Released on its own as a patch after
   53.4's release (#502, decided 2026-10-18). No migration. See
   [`phase-53.5.md`](docs/phases/phase-53.5.md).
+- **Phase 53.6 — Import fixes from the known-issues log + patch
+  release** (planned). A CSV header's volume unit is chosen on the
+  mapping page as its distance unit is, a bare gallon taking the owner's
+  (§7.13, K2, #505); a CSV starting with a UTF-16 byte-order mark is
+  read as UTF-16 (§7.13, K10, #504); the Tracktor command line stops on
+  rows with problems unless `--skip-invalid` and names the export's
+  fields (§7.13, K65). Released on its own as a patch after 53.5's
+  release (#503, decided 2026-10-18). No migration. See
+  [`phase-53.6.md`](docs/phases/phase-53.6.md).
 
 ---
 
