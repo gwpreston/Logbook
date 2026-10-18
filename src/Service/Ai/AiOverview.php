@@ -12,7 +12,9 @@ use Logbook\Domain\Ai\UsageLine;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiModelRepository;
 use Logbook\Repository\AiRequestRepository;
+use Logbook\Service\Ocr\OcrReader;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Config\OcrEngineChoice;
 
 /**
  * What Settings → AI shows (spec.md §7.25): connections with where they
@@ -33,6 +35,7 @@ final readonly class AiOverview
         private AiGateway $gateway,
         private ConnectionLocator $locator,
         private AppSettings $settings,
+        private OcrReader $ocr,
     ) {
     }
 
@@ -102,6 +105,9 @@ final readonly class AiOverview
             'log_content' => $this->settings->ai->logContent,
             'set_up' => $this->status->isSetUp(),
             'no_session_secret' => $this->settings->sessionSecret === '',
+            // Reading text from images (§7.27): which engine is set up, without running it.
+            'ocr_engine' => $this->ocr->engine()?->name(),
+            'ocr_off' => $this->settings->ocr->engine === OcrEngineChoice::Off,
         ];
     }
 

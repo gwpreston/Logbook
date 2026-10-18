@@ -6,6 +6,7 @@ use Logbook\Action\Backup\DownloadScheduledBackupAction;
 use Logbook\Action\Notice\DismissNoticeAction;
 use Logbook\Action\Scheduler\SchedulerTickAction;
 use Logbook\Action\Scheduler\SchedulerUrlAction;
+use Logbook\Action\Settings\Ocr\OcrSettingsAction;
 use Logbook\Action\Settings\Updates\UpdatesAction;
 use Logbook\Action\Api\FuelPricesNearAction;
 use Logbook\Action\Dashboard\CheapestFuelPlaceAction;
@@ -1378,6 +1379,9 @@ return static function (App $app): void {
             $jobs->get('/{job:[a-z_]+}/started', JobStartedAction::class)->setName('settings.jobs.started')
                 ->setArgument($instance, $run);
         });
+        // Reading text from images (spec.md §7.27, Phase 53.1): admins only, with or without AI.
+        $group->map(['GET', 'POST'], '/settings/ocr', OcrSettingsAction::class)->setName('settings.ocr')
+            ->setArgument($instance, InstanceAbility::ManageAi->value);
         // Settings → Updates (spec.md §7.31): admins only; 404 with UPDATE_CHECK_ALLOWED=false.
         $group->map(['GET', 'POST'], '/settings/updates', UpdatesAction::class)->setName('settings.updates')
             ->setArgument($instance, InstanceAbility::RunJobs->value);

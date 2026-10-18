@@ -111,7 +111,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [52](docs/phases/phase-52.md) | The README and the docs, for someone deciding + patch release | ✅ |
 | [52.1](docs/phases/phase-52.1.md) | Quick wins from the known-issues log + patch release | ✅ |
 | [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | ✅ |
-| [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 📋 |
+| [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | 🚧 |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | 📋 |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 📋 |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 📋 |
@@ -1428,6 +1428,8 @@ its own server.*
 - Tesseract as an optional binary, found and switched like Ghostscript
   (`TESSERACT_BINARY`, `off` to turn it off), in the Docker image with
   the language packs for every shipped locale.
+- PaddleOCR as a second engine over HTTP (`OCR_URL`), with an optional
+  compose profile; `OCR_ENGINE` picks between them.
 - An OCR engine run without a shell, with a timeout, a memory limit and
   one run per user at a time; the image turned upright, greyscaled,
   contrast-stretched, deskewed and scaled first.

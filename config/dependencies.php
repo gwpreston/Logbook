@@ -20,6 +20,8 @@ use Doctrine\DBAL\Connection;
 use Logbook\Service\Ai\Ask\AskTwigExtension;
 use Logbook\Service\Ai\Scan\PdfRenderer;
 use Logbook\Service\Ai\Scan\PdfRenderers;
+use Logbook\Service\Ocr\ImagePreparer;
+use Logbook\Service\Ocr\ImagePreparers;
 use Logbook\Service\Ai\Scan\ScanTwigExtension;
 use Logbook\Service\Ai\Ask\Tool;
 use Logbook\Service\Ai\Ask\ToolRegistry;
@@ -168,6 +170,8 @@ return [
     InstanceAccess::class => autowire(DemoInstanceAccess::class)->constructorParameter('inner', get(AdminInstanceAccess::class)),
     // Reading files (spec.md §7.27): Ghostscript, else Imagick, else none.
     PdfRenderer::class => get(PdfRenderers::class),
+    // OCR (Phase 53.1, spec §7.27): Imagick when loaded, else GD (#492).
+    ImagePreparer::class => get(ImagePreparers::class),
 
     LoggerInterface::class => static function (ContainerInterface $c) use ($settingsOf): LoggerInterface {
         $config = $settingsOf($c);

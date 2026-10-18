@@ -1,0 +1,69 @@
+{% extends 'layout.twig' %}
+{% import 'macros/ui.twig' as ui %}
+
+{#
+ # Reading text from images (spec.md §7.27, Phase 53.1; admins only): the
+ # engine OCR_ENGINE picks, its version and languages, and Test it, which
+ # posts here and shows what the sample receipt read as. Not an AI page:
+ # reached from Settings → AI, or from Installation when AI is off.
+ #}
+{% set active_nav = 'settings' %}
+
+{% block title %}{{ 'ocr.title'|trans }} · {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="page__stack page__stack--narrow">
+        {% if ai_enabled %}
+            <a class="back-link" href="{{ url_for('settings.ai') }}">{{ ui.icon('chevron_left') }}{{ 'ai.title'|trans }}</a>
+        {% else %}
+            <a class="back-link" href="{{ url_for('settings') }}#installation">{{ ui.icon('chevron_left') }}{{ 'settings.title'|trans }}</a>
+        {% endif %}
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header__title">{{ 'ocr.title'|trans }}</h1>
+                <p class="page-header__lead">{{ 'ocr.lead'|trans }}</p>
+            </div>
+        </header>
+
+        <section class="card" aria-labelledby="ocr-engine-heading" data-ocr-status>
+            <h2 id="ocr-engine-heading" class="card__title">{{ ui.icon('document_scanner') }}{{ 'ocr.engine.heading'|trans }}</h2>
+            {% if status is null %}
+                <p data-ocr-off>{{ 'ocr.status.off'|trans }}</p>
+            {% else %}
+                <dl class="details">
+                    <div><dt>{{ 'ocr.engine.label'|trans }}</dt><dd data-ocr-engine>{{ ('ocr.engine.' ~ status.engine)|trans }}{% if choice == 'auto' %} <span class="muted">{{ 'ocr.engine.auto'|trans }}</span>{% endif %}</dd></div>
+                    <div><dt>{{ 'ocr.status.label'|trans }}</dt><dd data-ocr-available="{{ available ? '1' : '0' }}">{% if available %}{{ 'ocr.status.ready'|trans }}{% else %}{{ ui.icon('warning') }}{{ 'ocr.status.not_ready'|trans }}{% endif %}</dd></div>
+                    {% if status.version %}<div><dt>{{ 'ocr.version'|trans }}</dt><dd data-ocr-version>{{ status.version }}</dd></div>{% endif %}
+                    {% if status.languages is not empty %}<div><dt>{{ 'ocr.languages'|trans }}</dt><dd data-ocr-languages>{{ status.languages|join(', ') }}</dd></div>{% endif %}
+                    {% if status.location %}<div><dt>{{ ('ocr.location_' ~ status.engine)|trans }}</dt><dd><code>{{ status.location }}</code></dd></div>{% endif %}
+                    <div><dt>{{ 'ocr.timeout'|trans }}</dt><dd>{{ 'ocr.seconds'|trans({seconds: timeout}) }}</dd></div>
+                </dl>
+                {% if not available %}
+                    <div class="alert alert--warning" role="status" data-ocr-missing>{{ ui.icon('warning') }}<span>{{ ('ocr.status.missing_' ~ status.engine)|trans }}</span></div>
+                {% endif %}
+            {% endif %}
+            <p class="muted">{{ 'ocr.how_to'|trans }}</p>
+        </section>
+
+        {% if available %}
+            <section class="card" aria-labelledby="ocr-test-heading">
+                <h2 id="ocr-test-heading" class="card__title">{{ ui.icon('science') }}{{ 'ocr.test.heading'|trans }}</h2>
+                <p>{{ 'ocr.test.lead'|trans }}</p>
+                <form method="post" action="{{ url_for('settings.ocr') }}">
+                    {{ ui.csrf(csrf) }}
+                    <button type="submit" class="btn">{{ ui.icon('receipt_long') }}{{ 'ocr.test.button'|trans }}</button>
+                </form>
+                {% if test %}
+                    {% if test.result.ok %}
+                        <div class="alert alert--success" role="status" data-ocr-test="ok">{{ ui.icon('check_circle') }}<span>{{ 'ocr.test.passed'|trans({confidence: test.result.meanConfidence|round, seconds: test.seconds}) }}</span></div>
+                        {# Focusable and labelled, so a keyboard can scroll a wide line. #}
+                        <pre data-ocr-text tabindex="0" role="region" aria-label="{{ 'ocr.test.text_label'|trans }}">{{ test.result.layoutText }}</pre>
+                    {% else %}
+                        <div class="alert alert--warning" role="status" data-ocr-test="{{ test.result.problem.value }}">{{ ui.icon('warning') }}<span>{{ ('ocr.problem.' ~ test.result.problem.value)|trans }}</span></div>
+                    {% endif %}
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

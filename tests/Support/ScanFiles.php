@@ -96,6 +96,20 @@ final class ScanFiles
     }
 
     /**
+     * The text as printed on a fixture of this type (Phase 53.1, the OCR
+     * eval's transcript): a picture's lines in GD's ASCII, a text PDF's as
+     * they are.
+     *
+     * @param list<string> $lines
+     */
+    public static function printed(array $lines, string $type): string
+    {
+        $lines = $type === 'text_pdf' ? $lines : array_map(self::ascii(...), $lines);
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    /**
      * @param list<string> $objects bodies of objects 1…n
      */
     private static function pdf(array $objects): string

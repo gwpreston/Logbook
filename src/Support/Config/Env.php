@@ -87,6 +87,18 @@ final readonly class Env
         return $this->has($name) ? trim($this->vars[$name]) : null;
     }
 
+    /**
+     * An optional binary's name or path (spec.md §9: `GHOSTSCRIPT_BINARY`,
+     * `TESSERACT_BINARY`): '' when switched off with `off`, `none`, `false`
+     * or `0`. An empty variable counts as unset, so it gives $default.
+     */
+    public function binary(string $name, string $default): string
+    {
+        $value = $this->string($name, $default);
+
+        return in_array(strtolower($value), ['off', 'none', 'false', '0'], true) ? '' : $value;
+    }
+
     public function int(string $name, int $default): int
     {
         if (!$this->has($name)) {

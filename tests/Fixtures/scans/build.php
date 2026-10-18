@@ -5,7 +5,9 @@ declare(strict_types=1);
 /*
  * Writes the scan fixture set (manifest.php) into this directory: each
  * document as a text PDF, a scanned PDF or a phone photo, and beside it
- * the reply a model gives and what the form should hold, as JSON.
+ * the reply a model gives and what the form should hold, as JSON, and
+ * what is printed on it as text (the OCR eval's transcript, Phase 53.1).
+ * Real photos in receipts/ are left alone.
  *
  *     php tests/Fixtures/scans/build.php
  *
@@ -36,6 +38,8 @@ foreach ($manifest as $name => $fixture) {
     };
     $file = $name . '.' . $extension;
     file_put_contents(__DIR__ . '/' . $file, $bytes);
+    // The OCR eval's transcript (Phase 53.1): exactly what was printed.
+    file_put_contents(__DIR__ . '/' . $name . '.txt', ScanFiles::printed($lines, $fixture['type']));
     $expected = [
         'file' => $file,
         'type' => $fixture['type'],

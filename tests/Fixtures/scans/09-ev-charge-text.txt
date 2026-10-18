@@ -1,0 +1,7 @@
+VoltLane charging receipt
+Session 88-1102   Started 11/10/2026 19:20   Charger CP-7 (rapid, 50 kW)
+Vehicle EV70 LTR
+Energy delivered 31.6 kWh at £0.79/kWh
+Total £24.96
+VoltLane Charging Ltd. Prices include VAT at 20%. Thank you for charging with us.
+Questions about this session? Quote the session number above.

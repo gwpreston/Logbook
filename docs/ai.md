@@ -525,6 +525,12 @@ synthetic documents in `tests/Fixtures/scans` with your configured models
 and reports, per kind, how often the kind and each field were right. It
 sends real requests; nothing but the usage log is written.
 
+**Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
+the OCR engine (no model needed; see [reading-files.md](reading-files.md))
+and reports the character accuracy per kind, with and without preparing
+the picture. Add `--degraded` to also read faded, tilted, shrunk copies of
+the photos.
+
 ## Limits and the usage log
 
 Per connection:

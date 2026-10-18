@@ -163,6 +163,16 @@ final class ImageCleaner
             : ['bytes' => $bytes, 'mime' => 'image/jpeg', 'extension' => 'jpg'];
     }
 
+    /**
+     * The image decoded and turned upright by its EXIF orientation, as
+     * every photo upload is, or null when it can't be read or is larger
+     * than MAX_PIXELS. For OCR's preparation (spec.md §7.27).
+     */
+    public static function openUpright(string $path, string $mime): ?GdImage
+    {
+        return self::open($path, $mime);
+    }
+
     private static function open(string $path, string $mime): ?GdImage
     {
         $info = @getimagesize($path);
@@ -220,9 +230,14 @@ final class ImageCleaner
         return $image;
     }
 
-    private static function makeRoomFor(int $pixels): void
+    /**
+     * Raises PHP's memory limit, if it is set lower, to hold $copies images
+     * of $pixels each at once, at $bytesPerPixel (the default allows for
+     * decoding; a GD truecolor copy is about 5).
+     */
+    public static function makeRoomFor(int $pixels, int $copies = 1, int $bytesPerPixel = self::BYTES_PER_PIXEL): void
     {
-        $needed = $pixels * self::BYTES_PER_PIXEL + memory_get_usage() + 32 * 1024 * 1024;
+        $needed = $pixels * $bytesPerPixel * $copies + memory_get_usage() + 32 * 1024 * 1024;
         $limit = self::bytes((string) ini_get('memory_limit'));
         if ($limit !== -1 && $limit < $needed) {
             @ini_set('memory_limit', (string) $needed);

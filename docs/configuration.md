@@ -149,6 +149,10 @@ on **Settings → AI**, not here; nothing is sent to any model until then.
 | `AI_LOG_CONTENT` | `false` | `true` keeps questions, answers and the data sent with them in the usage log, for debugging your own install; Settings → AI shows a warning while it is on. Off, the log has counts, times and outcomes only. |
 | `AI_ALLOW_INSECURE_TLS` | `true` | Allows a connection's *Verify TLS certificates* to be switched off (a LAN server with a self-signed certificate). `false` verifies every connection. |
 | `GHOSTSCRIPT_BINARY` | `gs` | Ghostscript, for reading scanned PDFs (Phase 26.4, [ai.md](ai.md#reading-receipts-and-documents)): a name looked up on `PATH`, or a full path. `off` turns it off; Imagick is used when loaded. Without either, a scanned PDF asks for a photo instead. The Docker image includes Ghostscript. |
+| `OCR_ENGINE` | `auto` | Which engine reads text from photos and scanned PDFs (Phase 53.1, [reading-files.md](reading-files.md)): `auto` (PaddleOCR when `OCR_URL` is set, else Tesseract), `tesseract`, `paddleocr` or `off`. Anything else stops the app at start. Not an AI setting: it works with `AI_ENABLED=false`. |
+| `TESSERACT_BINARY` | `tesseract` | Tesseract, a name looked up on `PATH` or a full path; `off` turns it off. The Docker image includes it with English and German. |
+| `OCR_URL` | *(empty)* | A PaddleOCR (PaddleX serving) address such as `http://paddleocr:8080` (an underscore in the name is fine). Must start `http://` or `https://` and name a host, or the app stops at start. |
+| `OCR_TIMEOUT` | `30` | Seconds one page may take before OCR gives up (1–300). |
 
 A key typed as `env:NAME` on Settings → AI is read from the variable `NAME`
 when it is used, so it can live with the rest of your secrets. A key typed

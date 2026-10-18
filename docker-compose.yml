@@ -3,6 +3,8 @@
 # MySQL instead? docker compose -f docker-compose.mysql.yml up -d
 # A local model beside it (docs/ai.md)?   docker compose --profile ai up -d
 #   then on Settings → AI add Ollama at http://ollama:11434
+# PaddleOCR beside it (docs/reading-files.md)?   docker compose --profile ocr up -d
+#   with OCR_URL=http://paddleocr:8080 in .env
 
 name: logbook
 
@@ -46,6 +48,11 @@ services:
       AI_ENABLED: ${AI_ENABLED:-true}
       AI_LOG_CONTENT: ${AI_LOG_CONTENT:-false}
       AI_ALLOW_INSECURE_TLS: ${AI_ALLOW_INSECURE_TLS:-true}
+      # Reading text from images (docs/reading-files.md): Tesseract is in the image.
+      OCR_ENGINE: ${OCR_ENGINE:-auto}
+      TESSERACT_BINARY: ${TESSERACT_BINARY:-tesseract}
+      OCR_URL: ${OCR_URL:-}
+      OCR_TIMEOUT: ${OCR_TIMEOUT:-30}
       # A public demo that resets itself (docs/demo-mode.md); off unless DEMO_MODE=true.
       DEMO_MODE: ${DEMO_MODE:-}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}
@@ -93,7 +100,21 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
+  # Optional PaddleOCR, started only with --profile ocr (Phase 53.1). Built
+  # here for amd64 or arm64; 1.5–1.9 GB, plus its models, fetched on first start.
+  # Set OCR_URL=http://paddleocr:8080 for the app. It has no sign-in: keep it
+  # off published ports.
+  paddleocr:
+    image: logbook-paddleocr:local
+    build: docker/paddleocr
+    pull_policy: build
+    profiles: ["ocr"]
+    restart: unless-stopped
+    volumes:
+      - paddleocr_models:/root/.paddlex
+
 volumes:
   logbook_data:
   postgres_data:
   ollama_data:
+  paddleocr_models:
