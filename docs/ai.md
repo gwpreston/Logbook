@@ -507,17 +507,28 @@ issue*, *Watch*, *Add all as issues*; see
   against what OCR read, allowing for its usual slips (0 and O, 1 and l);
   a value whose words OCR could hardly read says "Hard to read, check
   this". The form's notice says how the file was read. A vision model,
-  when you have one, always comes first. See
+  when you have one, comes first. See
   [reading-files.md](reading-files.md#scanning-with-a-text-model).
+- **With a vision model and OCR** (from 3.18), OCR reads the photo too,
+  and a value the page clearly doesn't hold is kept but marked "Not found
+  on the page, check this carefully". A fuel receipt whose volume × price
+  doesn't make its total says so on the three fields, on every route.
+  See [reading-files.md](reading-files.md#checking-a-vision-model).
+- **Send text, not images** (from 3.18), on each connection, off by
+  default: photos are read by OCR here and only their text is sent; no
+  picture ever goes on that connection. See
+  [reading-files.md](reading-files.md#send-text-not-images).
 - **Every photo you upload** to Logbook, scanned or attached, is turned
   upright and stored **without its EXIF data**, so its GPS position never
   reaches a model or the disk. Files stored before 2.8.0 are left as they
   were.
 - A registration document's **reference number** is never extracted,
-  stored or shown, and is removed from PDF text before sending. A *photo*
-  of a V5C sent to a vision model carries it as pixels: on an *Internet*
-  connection the Scan page says so. Read through OCR, it is removed from
-  the text like a PDF's.
+  stored or shown, and is removed from PDF text before sending (with
+  spaces or punctuation between its groups). Read through OCR, it is
+  removed from the text like a PDF's. From 3.18, on an *Internet*
+  connection with OCR working, a photo OCR recognises as a V5C is sent as
+  text, never as a picture. Without OCR, a *photo* of a V5C sent to a
+  vision model carries it as pixels, and the Scan page says so.
 - With a model on this server or your network, no file leaves your
   machines.
 - The file waits for its entry for 24 hours (only you can see it); then it
@@ -541,7 +552,9 @@ synthetic documents in `tests/Fixtures/scans` with your configured models
 and reports, per kind, how often the kind and each field were right. It
 sends real requests; nothing but the usage log is written. Add
 `--via=ocr` to also read the photos and scans through OCR and your text
-model, and see the two routes side by side.
+model, and see the two routes side by side, or `--crosscheck` to read
+them with the vision model checked by OCR and count the values marked
+"Not found on the page", and how many of those were right.
 
 **Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
 the OCR engine (no model needed; see [reading-files.md](reading-files.md))

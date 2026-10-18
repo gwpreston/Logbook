@@ -137,6 +137,45 @@ Added to §7.27 in 53.3.0:
 
 ---
 
+## Eval results (2026-10-18)
+
+**K85, the enlarge rule.** `bin/ai-eval.php --ocr
+--enlarge=20:24,20:22,0:0,15:30`, Tesseract 5.5.0 (deu+eng) in the
+Docker image, GD, character accuracy, mean per kind. *gd* is 53.1's rule
+(text under 20 px enlarged to about 30 px); `min:target` the others;
+*0:0* never enlarges.
+
+| Kind (files) | none | gd (20:30) | 20:24 | 20:22 | 0:0 | 15:30 |
+|---|---|---|---|---|---|---|
+| claim_letter (2) | 99.8% | 99.8% | 99.8% | 99.8% | 99.8% | 99.8% |
+| fuel_receipt (4) | 93.1% | 92.2% | 92.8% | 93.1% | 93.1% | 93.1% |
+| inspection (3) | 96.2% | 94.7% | 93.9% | 90.2% | 96.2% | 96.2% |
+| insurance (3) | 93.3% | 92.6% | 92.6% | 92.6% | 92.6% | 92.6% |
+| other (1) | 99.3% | 99.3% | 99.3% | 99.3% | 99.3% | 99.3% |
+| registration (2) | 94.6% | 94.6% | 94.6% | 94.6% | 94.6% | 94.6% |
+| repair_estimate (1) | 93.9% | 93.0% | 93.0% | 93.0% | 93.0% | 93.0% |
+| service_invoice (8) | 95.0% | 94.2% | 91.3% | 88.8% | 95.0% | 95.0% |
+
+Enlarging text of 15–20 px lowered accuracy on every kind it touched,
+and no fixture has text under 15 px. The rule is now 15:30 (equal to
+never enlarging on these fixtures, while still helping very small
+print). The MOT photo's dates now read `12/06/2026` and `11/06/2027`
+(were `12/66/2626`).
+
+**The cross-check and the OCR route with real models.** Not yet run:
+they need the owner's models (agents never call a hosted provider).
+The owner runs, before the merge review:
+
+```bash
+php bin/ai-eval.php --scans --crosscheck --verbose
+php bin/ai-eval.php --scans --via=ocr --verbose
+```
+
+and the results (flags and false flags per kind; field accuracy per kind
+for both routes, 53.2's acceptance criterion 3) are recorded here.
+
+---
+
 ## Acceptance criteria
 
 1. A value the vision model invented is flagged on the form when the

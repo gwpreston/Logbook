@@ -7643,7 +7643,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   separator followed by exactly three digits reads two ways (`1,759`,
   `48.120`): it is read in the user's locale as before, and the field
   is marked "Check the number: 1759 or 1.759?", naming the other reading
-  (decided 2026-10-18, `docs/phases/open-questions.md` #453, K46). A
+  (decided 2026-10-18, `docs/phases/open-questions.md` #453, K46); a
+  thousands group never starts with 0, so `0,759` and `00,759` are
+  0.759 everywhere (Phase 53.3, K98). A
   price printed with its unit attached (`1,759 €/l`, `£1.459/litre`,
   `£1.459 per litre`) is read; an unreadable volume or price per unit
   is left empty with the reason, as other values are (K58).
@@ -10314,8 +10316,10 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   line as a **guess to check** (a trailing amount is the price; a token
   with digits and letters or dashes, but not an oil grade or a tyre size,
   is the part number; a line that is only an amount keeps its text; a
-  quantity, "2 x" before or "x2" or "Qty 2" after, stays in the name as
-  "×2"; a VAT note or one-letter VAT code after the price is ignored; and
+  quantity, "2 x" before or "x2" or "Qty 2" after the price, stays in the
+  name as "×2"; a VAT note or one-letter VAT code after the price is
+  ignored; with no price, the line's end is kept as it is ("Tyre 205 x
+  55", "Fuse 10 A": Phase 53.3, K96, K97); and
   a price grouped with spaces, `1 234,56`, is one number: K18), all
   **unticked**: oil and screen wash are parts lines too. A
   ticked line becomes a new *Parts fitted* row, fitted by that record, on

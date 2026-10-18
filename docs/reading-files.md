@@ -9,12 +9,15 @@ Logbook can already read a receipt or invoice with an AI model (see
 [ai.md](ai.md#reading-receipts-and-documents)). From 3.17 it can also read the
 text itself with an OCR engine, without sending the picture anywhere. With
 a working engine, **a text-only model can scan photos**: a small local
-model that can't see pictures reads the text OCR found instead. Later
-releases also use OCR to check what a vision model read and to fill a
-fill-up with no AI at all.
+model that can't see pictures reads the text OCR found instead. From
+3.18 OCR also **checks what a vision model read**, and a connection can
+**send text, not images**. A later release fills a fill-up with no AI at
+all.
 
 - [Which models read what](#which-models-read-what)
 - [Scanning with a text model](#scanning-with-a-text-model)
+- [Checking a vision model](#checking-a-vision-model)
+- [Send text, not images](#send-text-not-images)
 - [Getting the best photo](#getting-the-best-photo)
 - [The two engines](#the-two-engines)
 - [Docker](#docker)
@@ -32,8 +35,8 @@ is nothing to choose:
 
 | File | A vision model on *Reading receipts and documents* | A text model only, and OCR working | Neither |
 |---|---|---|---|
-| Photo | the vision model sees the picture | OCR reads it here, then the text model reads the text | can't be read: the form opens empty with the photo attached |
-| Scanned PDF | the vision model sees its pages | OCR reads it here, then the text model | as above |
+| Photo | the vision model sees the picture, and OCR checks it | OCR reads it here, then the text model reads the text | can't be read: the form opens empty with the photo attached |
+| Scanned PDF | the vision model sees its pages, and OCR checks them | OCR reads it here, then the text model | as above |
 | PDF with text | the *Reading text PDFs* model reads its text | the same | the same |
 
 - *The text model* is the *Reading receipts and documents* model when it
@@ -42,7 +45,9 @@ is nothing to choose:
 - *OCR working* means Settings → AI → *Reading text from images* says
   **Ready**. A Tesseract that is installed but can't run counts as not
   working.
-- A vision model, when you have one, is always used for pictures.
+- A vision model, when you have one, is used for pictures, unless its
+  connection has *Send text, not images* on, or the picture is a V5C
+  going to the internet (below). Then it is given OCR's text instead.
 
 ## Scanning with a text model
 
@@ -56,7 +61,10 @@ What happens to a photo when there is no vision model:
 3. Otherwise its text, line by line and numbered, goes to the text model,
    marked as OCR output that may have misread characters. Runs of 11
    digits (a V5C's reference number, and many phone numbers) are removed
-   first. The picture itself is never sent.
+   first: with spaces or punctuation between the groups (`1234 5678 901`,
+   `1234-5678-901`), OCR's look-alikes (`1234 5678 9O1`), or wrapped over
+   two or three lines. Numbers in another column of the same line (a date
+   beside a mileage) are kept. The picture itself is never sent.
 4. Every value the model gives back must point to words in that text.
    Logbook allows for OCR's usual slips (0 and O, 1, l and I, 5 and S, 8
    and B, and a couple of other differences in a long phrase). A value
@@ -71,6 +79,59 @@ you upload that photos are read here first and only their text is sent.
 
 Reading takes OCR's time plus the model's, and counts as one request: you
 can't start another scan or question until it's done.
+
+## Checking a vision model
+
+A vision model reads receipts better than OCR does, but now and then it
+**invents** a value: a plausible total, or a date that isn't printed.
+With OCR working, Logbook reads the same photo with OCR while the model
+reads the picture (it doesn't make the model wait), then looks for each
+value in OCR's text:
+
+- **Found:** its words are there, allowing for OCR's slips, **and** its
+  digits are there exactly. Nothing changes.
+- **Not found where OCR read clearly:** the value is kept, and marked
+  **"Not found on the page, check this carefully."** under its field.
+- **Not found where OCR was unsure:** no mark. OCR missing something
+  proves nothing.
+
+A mark never empties a field or stops you saving; you decide. If OCR
+fails or finds too little text, the scan carries on without the check.
+
+On a fuel receipt Logbook also checks that **the money adds up**: volume
+× price per unit must be the total, within a penny and the printed
+rounding. If it isn't, the three fields say so: "45.20 L × 142.9p =
+£64.59, but the total reads £64.95." This check runs however the receipt
+was read.
+
+The usage log counts, for each checked scan, how many values were found,
+marked and left unchecked (never the text). `php bin/ai-eval.php --scans
+--crosscheck` reports the marks per kind, and how many were on values
+that were right.
+
+## Send text, not images
+
+A photo sent to a provider on the internet carries everything printed on
+it. Each connection (Settings → AI → the connection → *Edit*) has **Send
+text, not images**, off by default. With it on:
+
+- every photo and scanned PDF is read by OCR on this server, and only its
+  text goes to the connection's model, with 11-digit runs removed;
+- no picture is ever sent on that connection, whatever asks for it (even
+  *Test* skips its image step);
+- without OCR working, photos can't be read: the Scan page says so, and
+  the picture is not sent instead.
+
+It is more private and a little less accurate on faded receipts.
+
+**V5C photos on an internet connection** always go as text when OCR
+works, whether or not the option is on. Before anything is sent, OCR
+reads the photo and looks for a V5C's markers ("V5C", "Registration
+Certificate", "DVLA", "Document reference"); if it finds one, only the
+text goes, without the reference number. So on an internet connection a
+scan waits for OCR before the model starts. A V5C photo OCR can't read
+well enough to spot a marker still goes as a picture, and the Scan page's
+warning about its reference number is shown only when OCR isn't working.
 
 ## Getting the best photo
 
@@ -193,7 +254,11 @@ It doesn't change your attachment or what an AI model is sent:
 1. turned the right way up, from the photo's orientation;
 2. made greyscale, with the contrast stretched so faded print darkens;
 3. straightened, if it was photographed at an angle of up to 10°;
-4. enlarged if the print is small, so letters are about 30 pixels high.
+4. enlarged if the print is very small (under 15 pixels high), so
+   letters are about 30 pixels high. From 3.18 text 15–20 pixels high is
+   no longer enlarged: it made Tesseract read some 0s as 6s, and the eval
+   showed it lowered accuracy (`php bin/ai-eval.php --ocr
+   --enlarge=min:target` compares rules on your install).
 
 On a faded, tilted, small receipt this is the difference between reading
 half of it and nearly all of it. `php bin/ai-eval.php --ocr --degraded`
@@ -207,7 +272,9 @@ measures it on your install (see [ai.md](ai.md#reading-receipts-and-documents)).
 - Each person runs one scan or AI request at a time.
 - Tesseract runs on your server, and nothing leaves it. PaddleOCR gets the
   prepared picture, so run it where you'd keep the photo.
-- Scanning with a text model sends the model only the text, with 11-digit
-  runs removed, never the picture.
+- Scanning with a text model, or on a connection with *Send text, not
+  images*, sends the model only the text, with 11-digit runs removed,
+  never the picture.
+- Checking a vision model sends nothing extra: OCR's text stays here.
 - What OCR reads is never stored. It is used for one request and
   discarded.
