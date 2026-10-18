@@ -154,13 +154,14 @@ rest chosen by the owner on 2026-10-18:
       merge review of 2026-10-18 rendered every new state; its findings
       are fixed or logged.
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.1
-      and 53.2; tag once merged (v3.17.0, not yet tagged). The CHANGELOG carries 53.1's upgrade
+      and 53.2. The CHANGELOG carries 53.1's upgrade
       notes: the image grows by about 80 MB (Tesseract), the optional
       `ocr` compose profile, and `OCR_ENGINE`, `TESSERACT_BINARY`,
       `OCR_URL`, `OCR_TIMEOUT` (all optional).
 - [x] OCR in the other guides: `docs/proxmox-lxc.md` and the Settings →
       AI card in `docs/ai.md` (`docs/deployment.md` names Tesseract from
       53.1).
+- [x] Tag `v3.17.0` once merged.
 
 ### 53.2.4 Merge review
 - [x] First merge review (2026-10-18, `c195b7a0`): REJECT. Fixed: the
