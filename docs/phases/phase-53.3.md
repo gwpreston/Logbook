@@ -4,7 +4,7 @@
 the page. A photo bound for an Internet provider can go as redacted text
 instead.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 A vision model reads receipts better than OCR does, but it can also
 **invent** a value: a plausible total, or a date that isn't printed.
@@ -82,8 +82,13 @@ Added to §7.27 in 53.3.0:
 ## Tasks
 
 ### 53.3.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged; §6, §7.25,
-      §7.27, §13.
+- [x] Open questions A–C decided by the owner and logged (#508–#510),
+      with #500 and #501, which *Send text, not images* rests on; §6,
+      §7.25, §7.27, §13.
+- [x] Known issues taken into the phase (§12): K87, K88 and K93 (the
+      redaction, #500, #501), K89 (the match's cost, now on every vision
+      value), K90 and K95 (53.5 left them for this phase), and, offered
+      and chosen by the owner, K85, K94 and K96–K98.
 
 ### 53.3.1 Cross-check
 - [ ] OCR alongside vision, the per-value match, and confidence by area.
@@ -91,11 +96,27 @@ Added to §7.27 in 53.3.0:
 - [ ] The fuel arithmetic check in the Mapper.
 
 ### 53.3.2 Text instead of images
-- [ ] *Send text, not images* on *Internet* connections.
+- [ ] *Send text, not images* on connections (#509: off), refused at
+      the gateway for any image.
+- [ ] The reference's redaction: punctuation between groups on every
+      path, look-alikes and wrapped rows on the OCR route, short gaps
+      only (#500, #501; K87, K88, K93).
 - [ ] V5C photos always sent as text on *Internet* when OCR is
-      available (C).
+      available, recognised by the scan target or the OCR markers (#510).
 - [ ] The Scan page and the connection page wording.
 - [ ] Translations (every shipped locale).
+
+### 53.3.2a Known issues
+- [ ] K89: the evidence match filters candidates before the edit
+      distance, with the same matches.
+- [ ] K90: the fill-up's *Station and notes* opens when a scan left a
+      reason there. K95: the Scan page's OCR line wraps beside its icon.
+- [ ] K94: a Tesseract that fails its version check isn't asked for
+      its languages.
+- [ ] K85: the enlarge rule evaluated across the fixtures, and changed
+      if the eval shows a better one.
+- [ ] K96–K98: a size at the end of a parts line, a single capital after
+      a number, and a doubled leading zero.
 
 ### 53.3.3 Tests
 - [ ] Fixtures with planted wrong values (a vision answer edited to
@@ -129,9 +150,17 @@ Added to §7.27 in 53.3.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-18 and logged as #508–#510 in
+`open-questions.md`, before it was built, with #500 and #501 (Phase
+53.2's review: the redaction this phase relies on), both the
+recommendation.
 
-- **A. A value not found on the page: flag or drop?**
+- **A. A value not found on the page: flag or drop?** *Decided
+  2026-10-18 (#508): the recommendation, with how strict "found" is,
+  found while starting: #498's tolerance alone accepts "£68.28" where
+  "£60.28" is printed, so a found value's digits must also appear
+  exactly in the matched stretch. "OCR confident there" is the row
+  sharing most of the evidence's words, else the page.*
   - (1) Keep it and flag it.
   - (2) Drop it, as an unmatched value is dropped for text PDFs.
 
@@ -139,7 +168,8 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   that dropping would lose good values. Revisit once the eval shows the
   false-flag rate.
 
-- **B. *Send text, not images* default.**
+- **B. *Send text, not images* default.** *Decided 2026-10-18 (#509):
+  the recommendation.*
   - (1) Off.
   - (2) On for new *Internet* connections.
 
@@ -147,7 +177,11 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   owner chose that provider. The option is explained where the
   connection is set up.
 
-- **C. V5C photos.**
+- **C. V5C photos.** *Decided 2026-10-18 (#510): the recommendation,
+  with how a V5C is recognised before anything is sent, found while
+  starting (the kind is otherwise only in the model's answer): the scan
+  target `vehicle`, or V5C markers in the OCR text, so OCR runs first on
+  *Internet* vision connections.*
   - (1) Always as text on *Internet* connections when OCR is available.
   - (2) Follow the connection's option like any file.
 

@@ -1070,10 +1070,13 @@ MySQL only.
   last saved or tested: `server` | `network` | `internet`), header_names
   (JSON list; their values are secrets), timeout_seconds, verify_tls
   (bool), ca_bundle (optional path), max_request_mb, monthly_token_cap
-  (optional), enabled (bool), acknowledged_by (optional user id, `ON
-  DELETE SET NULL`), acknowledged_at (optional), acknowledged_url (the
-  URL the acknowledgement was given for), created_at, updated_at (UTC).
-  In backups.
+  (optional), enabled (bool), send_text (bool, default false: *Send
+  text, not images*, Phase 53.3, §7.27 *Where it goes*; decided
+  2026-10-18, `docs/phases/open-questions.md` #499, #509),
+  acknowledged_by (optional user id, `ON DELETE SET NULL`),
+  acknowledged_at (optional), acknowledged_url (the URL the
+  acknowledgement was given for), created_at, updated_at (UTC). In
+  backups.
 
 **AiSecret** (Phase 26.1)
 - id, connection_id (`ON DELETE CASCADE`), slot (`api_key` or
@@ -1101,8 +1104,10 @@ MySQL only.
   `test`), connection_id (optional, `ON DELETE SET NULL`), model (name),
   tokens_in, tokens_out (optional), duration_ms, outcome (`ok` | `error`
   | `timeout` | `refused`), error_code (optional, §7.25 *Errors*),
-  content (optional JSON, only with `AI_LOG_CONTENT=true`), created_at
-  (UTC). Indexes on created_at and (connection_id, created_at). Deleted
+  content (optional JSON, only with `AI_LOG_CONTENT=true`), and from
+  Phase 53.3 scan_found, scan_flagged, scan_unchecked (optional counts:
+  a vision scan's cross-check, §7.27 *Checking values*; never the text),
+  created_at (UTC). Indexes on created_at and (connection_id, created_at). Deleted
   after 90 days. **Not in backups.**
 
 **AiBusy** (Phase 26.1, the one-at-a-time lock)
@@ -6811,7 +6816,14 @@ request to any model service.
   per connection for a LAN server with a self-signed certificate, with a
   warning, unless `AI_ALLOW_INSECURE_TLS=false`), a custom CA bundle path
   (optional; a readable file on the server), the largest request (default
-  8 MB, 1–50), a monthly token cap (optional) and *Enabled*.
+  8 MB, 1–50), a monthly token cap (optional), *Enabled*, and from
+  Phase 53.3 *Send text, not images* (off by default, #509): photos and
+  scanned PDFs are read on this server by text recognition and only
+  their redacted text is sent on this connection, never an image (§7.27
+  *Where it goes*). Its hint says the trade: "More private; a little
+  less accurate on faded receipts." It is offered on every connection
+  and honoured whatever the connection's class; the form explains it for
+  *Internet* ones.
   - **Presets** fill adapter and URL, all editable: OpenAI
     `https://api.openai.com/v1`, Anthropic `https://api.anthropic.com`,
     Gemini `https://generativelanguage.googleapis.com`, OpenRouter
@@ -7417,16 +7429,39 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   point is an ordinary multipart form (`POST /scan`) that works without
   JS; with JS it shows "Reading your file…" while it posts.
 - **Where it goes:** the Scan page names the connection and where it runs
-  (*This server*, *Your network*, *Internet*), as Ask does (§7.26). On an
-  *Internet* connection that reads photos as pictures (a vision model on
-  `read_document`), it also says that a photo of a registration
-  document carries its reference number to that provider: Logbook removes
-  it from text, but cannot from a picture (decided 2026-10-01,
-  `docs/phases/open-questions.md` #85). Where photos are read through
-  OCR (Phase 53.2), the page says instead that they are read on this
-  server (or by the text recognition service) and only their text is
-  sent, and the warning is not shown: the reference is removed from
-  that text.
+  (*This server*, *Your network*, *Internet*), as Ask does (§7.26). Then
+  one line says how a photo goes (Phase 53.3):
+  - **as text** (OCR, then a text model, *Routing* below; or the
+    connection's *Send text, not images*): "Photos and scanned PDFs are
+    read on this server first (text recognition), and only their text is
+    sent", with the reference number removed from that text;
+  - **as a picture, checked by OCR** (a vision model with OCR working):
+    "Photos are sent as pictures and checked on this server by text
+    recognition". On an *Internet* connection it adds that a
+    registration document (V5C) is sent as text instead, with its
+    reference removed (below);
+  - **as a picture, no OCR**: on an *Internet* connection only, the
+    warning that a photo of a registration document carries its
+    reference number to that provider: Logbook removes it from text, but
+    cannot from a picture (decided 2026-10-01,
+    `docs/phases/open-questions.md` #85).
+  **Send text, not images** (Phase 53.3, #499, #509): a connection
+  option (§7.25), off by default. With it on, every photo and scanned
+  PDF for `read_document` is read by OCR on this server, redacted
+  (*Reading through OCR*), and sent as text to `read_document`'s own
+  model on that connection, treated as a text model. Without OCR
+  working, photos are not read at all ("This connection sends text
+  only, and text recognition isn't working on this server."); the image
+  is never sent instead. The gateway refuses any request with an image
+  on such a connection, whatever asked for it.
+  **Registration documents** (Phase 53.3, #510): on an *Internet*
+  connection with OCR working, a V5C photo is always sent as redacted
+  text, never as an image. It is recognised before anything is sent: the
+  scan was started for the vehicle (*Scan the V5C*, target `vehicle`),
+  or the OCR text carries a V5C marker (`V5C`, `Registration
+  Certificate`, `DVLA` or `Document reference`, in any case). So on an
+  *Internet* vision connection OCR runs first, and the picture is sent
+  only when neither holds.
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7443,7 +7478,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     least 200 characters of text on the first page, the file is read as
     **text** (the first three pages' text, up to 20,000 characters)
     through `read_text`. Runs of 11 digits are removed from the text
-    **before it is sent**, so a V5C's reference never leaves as text. Otherwise its first **three** pages are rendered
+    **before it is sent**, so a V5C's reference never leaves as text. A
+    run's digits may be separated by a space, or by one punctuation mark
+    (`-` `/` `,` `.` `|` `:`) with a space either side or none (decided
+    2026-10-18, `docs/phases/open-questions.md` #500, K93), on every path
+    (text PDF, OCR, returned values). Otherwise its first **three** pages are rendered
     at 150 dpi to JPEG (Ghostscript, or Imagick; §9 `GHOSTSCRIPT_BINARY`)
     and read through `read_document`. With no renderer, a scanned PDF
     shows "This PDF is a scan. Take a photo instead, or type it in." on
@@ -7460,13 +7499,16 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 
   | File | Vision model on `read_document` | Text model, OCR working | Neither |
   |---|---|---|---|
-  | Photo | the vision model | OCR, then the text model | "needs a model that reads images" (Phase 53.4 reads it without AI) |
+  | Photo | the vision model (checked by OCR when it works, Phase 53.3) | OCR, then the text model | "needs a model that reads images" (Phase 53.4 reads it without AI) |
   | Scanned PDF | the vision model | OCR, then the text model | as above; no renderer: "This PDF is a scan…" |
   | Text PDF | `read_text` | `read_text` | `read_text` |
 
   - *The text model* is `read_document`'s when that is a text-only model
     (§7.25), else `read_text`'s (or `ask`'s, as for text PDFs). The
     request runs, and is logged, under that task.
+  - From Phase 53.3, a vision model whose connection has *Send text, not
+    images* counts as a text-only model here (*Where it goes*), and so
+    does one on an *Internet* connection for a registration document.
   - *OCR working:* the engine `OCR_ENGINE` picks is set up **and**
     answers its version check (the *Status* of *Reading text from
     images*, below, remembered for the request); a Tesseract binary that
@@ -7484,11 +7526,22 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - layout text only, without word positions (decided 2026-10-18,
     `docs/phases/open-questions.md` #497);
   - runs of 11 digits removed **before it is sent**, as for text PDFs,
-    including a run OCR splits into groups: each row's words are read
-    with single spaces between them, whatever gaps the layout keeps, and
-    the words of a run are left out; so a V5C photo's reference never
-    leaves the server by this route. Returned strings of a registration
-    document have their spaces folded before the 11-digit scrub;
+    including a run OCR splits into groups (decided 2026-10-18,
+    `docs/phases/open-questions.md` #500, #501; K87, K88):
+    - a row's words are joined into one run only across a short gap
+      (at most two character widths, the layout's column gap), so a date
+      beside an odometer, or a policy number in its own column, is kept;
+    - a run that ends a row joins one that starts the next row in the
+      same column (starting within two character widths of it), so a
+      reference wrapped over two or three rows is still caught;
+    - in a word with at least one digit, OCR's look-alikes count as
+      digits (O→0, l and I→1, S→5, B→8), so `1234 5678 9O1` and
+      `1234 S678 901` are caught; a word of letters only is never read
+      as digits;
+    - the words of a run are left out. So a V5C photo's reference never
+      leaves the server by this route. Returned strings of a
+      registration document have their spaces folded before the
+      11-digit scrub;
   - whole lines up to `read_text`'s 20,000 characters; later lines are
     left out.
 
@@ -7554,6 +7607,38 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   spaces. **Hard to read:** on the OCR route, a value whose evidence
   words have a mean OCR confidence under 60 is marked "Hard to read,
   check this" under its field.
+  **The cross-check** (Phase 53.3): when a vision model reads a photo or
+  scanned PDF and OCR is working, OCR reads the same file, and each
+  value is looked for in OCR's text:
+  - **Running alongside:** OCR is started before the vision request and
+    collected after it, so it never delays the request beyond OCR's own
+    work (on an *Internet* connection it finishes first, *Where it
+    goes*). The user's lock is held once for both, as on the OCR route.
+    If OCR fails, times out or reads too little, the cross-check is
+    skipped and the scan carries on as before.
+  - **Found:** the value's evidence (or the value, without evidence)
+    matches OCR's text with #498's tolerance **and** the value's digits
+    appear, in order and unbroken, in the matched stretch, with only
+    O→0 and l, I→1 folded (decided 2026-10-18,
+    `docs/phases/open-questions.md` #508: the tolerance alone accepts
+    "£68.28" where "£60.28" is printed). A value without digits needs
+    the tolerant match only. Marked as today.
+  - **Not found, OCR confident there:** the value is **kept** and marked
+    "Not found on the page, check this carefully." under its field
+    (#508). *There* is the OCR row sharing most of the evidence's words
+    (its label, such as "Total"); with no such row, the whole page. OCR
+    is confident when those words' mean confidence is at least 60.
+  - **Not found, OCR unsure:** no mark; absence proves nothing.
+  A flag never empties or blocks a field; the owner decides on the form.
+  **The money adds up** (Phase 53.3, in the Mapper, so every route uses
+  it): on a fuel receipt with a volume, a price per unit and a total all
+  read, volume × price must be within 1p of the total, plus what the
+  printed rounding of the volume and the price allows (half a unit in
+  each one's last printed decimal, times the other). Worked in
+  `brick/math`. Otherwise the three fields are marked with the sum:
+  "45.20 L × 142.9p = £64.59, but the total reads £64.95." A price in
+  pence is read as such; the check is in the printed units, before any
+  conversion to the user's.
   **Numbers** are read in the user's locale. One with a single
   separator followed by exactly three digits reads two ways (`1,759`,
   `48.120`): it is read in the user's locale as before, and the field
@@ -7703,12 +7788,17 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Logging:** each request is in the usage log (§7.25) under its task;
   with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, or
   the OCR text sent, after redaction) and the answer are logged, never an
-  image.
+  image. From Phase 53.3 a cross-checked request also counts its values
+  found, flagged and unchecked (§6 AiRequest), never the text; the usage
+  page shows them on the row.
 - `bin/ai-eval.php --scans` runs the fixture set (`tests/Fixtures/scans/`)
   against the configured models and reports field accuracy per kind.
   `--via=ocr` (Phase 53.2) sends the photos and scans through OCR and
   the text model instead, and the report shows both routes side by
-  side.
+  side. `--crosscheck` (Phase 53.3) reads the photos and scans with the
+  vision model and OCR's cross-check, and reports per kind the values
+  flagged, and the false flags (a flagged value the fixture says is
+  right).
 - **Parts lines** (Phase 50.2, #440): a service invoice's parts lines are
   offered under the form as *Add as parts*, unticked (§7.39 *Scanning*).
 - **Not in scope:** saving without the form; a parts inventory away from
@@ -11690,13 +11780,17 @@ task breakdowns live in the per-phase files; this is the map.
   (K80, partly); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
   as v3.17.0 with 53.1 (✅). See [`phase-53.2.md`](docs/phases/phase-53.2.md).
 - **Phase 53.3 — OCR as a check on the vision model, and text instead
-  of images** (planned). OCR beside the vision model on a photo, flagging
-  a value not found where OCR read confidently; a fuel receipt's volume ×
-  price checked against its total on every route; *Send text, not
-  images*, a per-connection option for Internet connections sending
-  redacted OCR text; a V5C photo always sent as redacted text when
-  Tesseract is available (§6 AiConnection, §7.25, §7.27; open questions
-  A–C in the phase file). See [`phase-53.3.md`](docs/phases/phase-53.3.md).
+  of images** (in progress). OCR beside the vision model on a photo,
+  keeping but flagging a value not found where OCR read confidently,
+  with the value's digits matched exactly (#508); a fuel receipt's
+  volume × price checked against its total on every route; *Send text,
+  not images*, a per-connection option, off by default (#509), sending
+  redacted OCR text; a V5C photo always sent as redacted text on
+  *Internet* connections when OCR works, recognised by its scan target
+  or its markers (#510); the reference's redaction widened to punctuation
+  and look-alikes, and narrowed to short gaps (#500, #501); and K85,
+  K87–K90, K93–K98 (§6 AiConnection, AiRequest, §7.25, §7.27). See
+  [`phase-53.3.md`](docs/phases/phase-53.3.md).
 - **Phase 53.4 — Reading without AI + release** (planned). With
   Tesseract and no model, *Scan* shows: documents classified by keywords
   and read by rules, every field marked "Read without AI, check every
