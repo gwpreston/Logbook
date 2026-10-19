@@ -214,6 +214,19 @@ final class ScanCrossCheckTest extends ScanTestCase
         self::assertStringContainsString('still goes to OpenAI as a picture', $form, 'its short form is (#510)');
     }
 
+    public function testOnTheInternetSendingTextWarnsOfAMisreadReference(): void
+    {
+        // #512: the wide rule is for V5C-like text only, so the page says so.
+        $form = html_entity_decode(self::body($this->browser->get('/scan')));
+        self::assertStringNotContainsString('data-scan-ocr-registration', $form, 'not on this server');
+
+        $this->onTheInternet();
+        $this->sendTextOnly();
+        $form = html_entity_decode(self::body($this->browser->get('/scan')));
+        self::assertStringContainsString('data-scan-ocr-registration', $form);
+        self::assertStringContainsString('a number it misreads or splits can still reach OpenAI', $form);
+    }
+
     private function scanReceipt(): \Psr\Http\Message\ResponseInterface
     {
         $fields = ['vehicle_id' => (string) $this->garage['Golf']->id];

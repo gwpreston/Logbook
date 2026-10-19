@@ -37,8 +37,12 @@
                 <span>{{ ('scan.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
             </p>
             {% if ocr_engine %}
-                {# Photos go as text, with the registration reference removed (§7.27 *Where it goes*). #}
+                {# Photos go as text, with a spotted V5C's reference removed (§7.27 *Where it goes*). #}
                 <p class="ask-where ask-where--note" data-scan-ocr>{{ ui.icon('document_scanner') }}<span>{{ ('scan.where.ocr_' ~ ocr_engine)|trans({connection: connection.name}) }}</span></p>
+                {% if connection.location.value == 'internet' %}
+                    {# #512: a misread or split reference is caught only in a V5C text recognition spots (#510's short warning). #}
+                    <p class="alert alert--warning" role="note" data-scan-ocr-registration>{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning_ocr'|trans({connection: connection.name}) }}</span></p>
+                {% endif %}
             {% elseif ocr_checks %}
                 {# Phase 53.3: pictures, checked by OCR; on the Internet a V5C goes as text (#510). #}
                 <p class="ask-where ask-where--note" data-scan-ocr-check>{{ ui.icon('document_scanner') }}<span>{{ 'scan.where.ocr_check'|trans({connection: connection.name}) }}</span></p>

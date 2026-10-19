@@ -3,7 +3,7 @@
 *No model set up? A fuel receipt still fills the fill-up form, and an
 invoice still gives its date, total and mileage.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.18.0** with 53.3 · file lives in `docs/phases/`. The eval runs with the owner's models are carried to [53.8](phase-53.8.md).
 
 With no AI set up, the *Scan* entry points are hidden (§7.27). Many
 owners will never set up a model: no GPU, no wish to pay a provider, or
@@ -148,7 +148,8 @@ Added to §7.27 in 53.4.0:
 - [ ] Carried from [53.3](phase-53.3.md): the owner's runs of
       `bin/ai-eval.php --scans --crosscheck` (flags and false flags per
       kind: 53.3's acceptance criterion 1) and `--scans --via=ocr` (53.2's
-      acceptance criterion 3), recorded in 53.3's *Eval results*.
+      acceptance criterion 3), recorded in 53.3's *Eval results*. Not run
+      before the v3.18.0 release: carried to [53.8](phase-53.8.md).
 - [x] `bin/ai-eval.php --scans --via=rules` in the eval report beside the
       other routes (below).
 - [x] No request to any connection on this route, asserted
@@ -158,8 +159,11 @@ Added to §7.27 in 53.4.0:
       notice's read-by line's contrast on its tint; the screen-reader
       prefix of a field read by rules). Not rendered: the `rules_text`
       and PaddleOCR lines, and the invoice's *Copied* hint (tested).
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.3
-      and 53.4; tag once merged.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.3
+      and 53.4.
+
+### Release
+- [x] Tag `v3.18.0` once merged.
 
 ---
 

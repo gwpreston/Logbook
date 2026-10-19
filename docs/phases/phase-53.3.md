@@ -4,7 +4,7 @@
 the page. A photo bound for an Internet provider can go as redacted text
 instead.*
 
-Status: 🚧 in progress · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.18.0** with 53.4 · file lives in `docs/phases/`. The eval runs with the owner's models are carried to [53.8](phase-53.8.md), with #511, #513, #514 and #512's second part.
 
 A vision model reads receipts better than OCR does, but it can also
 **invent** a value: a plausible total, or a date that isn't printed.
@@ -140,9 +140,22 @@ Added to §7.27 in 53.3.0:
       --scans --via=ocr` run with the owner's models, its field accuracy
       per kind for both routes recorded in the eval report (53.2's
       acceptance criterion 3). *Scheduled (Phase 53.4)*: it needs the
-      owner's models, and 53.4 is the release phase.
+      owner's models, and 53.4 is the release phase. Not run before the
+      v3.18.0 release: carried to [53.8](phase-53.8.md).
 - [x] Design review (375, 768, 1280 px; light and dark; JS off; screen
       reader).
+
+### 53.3.4 Before the release (decided 2026-10-19)
+- [x] #512 (1), K108: spec §7.27, the *Send text, not images* hint and
+      the guides (`reading-files.md`, `ai.md`) no longer say a V5C's
+      reference never leaves on the OCR route; the Scan page shows
+      #510's short warning there on *Internet* connections
+      (`ScanCrossCheckTest`). K87's note corrected.
+- [x] #516, K115: the sum line in the receipt's currency, else plain
+      numbers (`ScanMappingTest`).
+
+### Release
+- [x] Tag `v3.18.0` once merged.
 
 ---
 
@@ -266,35 +279,37 @@ recommendation.
   *Recommendation:* (1). Its reference number is the one thing §7.27
   already goes out of its way never to send.
 
-Found while building, logged as #511 (K104). *Needs a decision.*
+Found while building, logged as #511 (K104), and in the merge review's
+issue sweep (2026-10-19), logged as #512–#516 with K108–K115. *Decided
+2026-10-19*, before the v3.18.0 release, all the recommendation.
 
 - **#511. A *Scan the V5C* entry on the vehicle page?** Its target would
   send an *Internet* V5C photo as text even when OCR doesn't spot its
-  markers.
+  markers. *Decided: (1), in [Phase 53.8](phase-53.8.md).*
   - (1) Yes, in a later phase; the warning can then go.
   - (2) No: markers only, with the warning, as built.
-
-  *Recommendation:* (1), in a later phase: it closes K104 without
-  guessing from the photo.
-
-Found in the merge review's issue sweep (2026-10-19), logged as #512–#516
-with K108–K115. *Needs a decision* (options in `open-questions.md`; none
-chosen here):
-
-- **#512. A V5C without markers on text routes** (K108): after #500's
-  narrowing, keep it and fix the wording and warning; apply the wide rule
-  to all text bound for an *Internet* connection (or with *Send text*);
-  wording only; or fold into #511.
-- **#513. Which V5C markers, and how many** (K109): any one, as #510;
-  one blocks the picture but the wide redaction needs a stronger sign;
-  two for both; or drop `VSC`, `DVLA` and `Document reference`.
-- **#514. When is a value "not on the page"?** (K110, revisits #508):
-  keep the rule; also try the value alone; a higher confidence bar; or
-  allow single-digit OCR swaps. Includes whether documents under 30
-  words are checked.
-- **#515. What image the cross-check's OCR reads** (K114): the full-size
-  file; the 2,000 px copy if 53.4's eval shows no loss; full size up to a
-  budget; or set a scan memory budget in spec §8 first.
-- **#516. The sum line's currency on a foreign receipt** (K115): the
-  vehicle's; the receipt's; none; or the price as printed with sum and
-  total in the vehicle's.
+- **#512. A V5C without markers on text routes** (K108). *Decided: (1)
+  now, built before the release (53.3.4): the narrowing kept, the
+  wording corrected and #510's short warning on the OCR route; then (4)
+  in [Phase 53.8](phase-53.8.md): a *Scan the V5C* scan turns the wide
+  rule on.* Not chosen: the wide rule on all *Internet*-bound text;
+  wording only.
+- **#513. Which V5C markers, and how many** (K109). *Decided: (2), in
+  [Phase 53.8](phase-53.8.md): any one marker keeps the picture back,
+  but the wide redaction needs two different markers, or `V5C` or
+  `Registration Certificate` alone.* Not chosen: as #510; two for both;
+  drop `VSC`, `DVLA` and `Document reference`.
+- **#514. When is a value "not on the page"?** (K110, revisits #508).
+  *Decided: (3), in [Phase 53.8](phase-53.8.md): flagged only when each
+  word with a digit in its row reads at 90 or more; documents under 30
+  words stay unchecked.* Not chosen: keep the rule; also try the value
+  alone; allow single-digit OCR swaps.
+- **#515. What image the cross-check's OCR reads** (K114). *Decided:
+  (1) for now, the full-size file; revisited in
+  [Phase 53.8](phase-53.8.md) with (2) once its OCR eval has run.* Not
+  chosen: a budget; a written memory budget in spec §8 first.
+- **#516. The sum line's currency on a foreign receipt** (K115).
+  *Decided: (2), falling back to (3): the receipt's currency when one
+  was read, else plain numbers. Built before the release (53.3.4).*
+  Not chosen: the vehicle's; the price as printed with sum and total in
+  the vehicle's.

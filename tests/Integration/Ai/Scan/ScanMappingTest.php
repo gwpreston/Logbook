@@ -296,6 +296,24 @@ final class ScanMappingTest extends ScanTestCase
         self::assertStringContainsString('60,28', $fails->checks['total']);
     }
 
+    public function testTheSumIsInTheReceiptsCurrencyNotTheVehicles(): void
+    {
+        // #516 (K115): a euro receipt for a vehicle kept in pounds.
+        $this->scanApp();
+        $fails = $this->map($this->owner, self::fuel('40.00', '€1.80', '€75.00', 'L'));
+
+        self::assertSame('40.00 L × €1.80 = €72.00, but the total reads €75.00.', $fails->checks['total']);
+    }
+
+    public function testTheSumHasNoCurrencyWhenNoneWasRead(): void
+    {
+        // #516: plain numbers rather than the vehicle's currency.
+        $this->scanApp();
+        $fails = $this->map($this->owner, self::fuel('45.20', '1.429', '64.95', 'L'));
+
+        self::assertSame('45.20 L × 1.429 = 64.59, but the total reads 64.95.', $fails->checks['total']);
+    }
+
     public function testAFigureThatReadsTwoWaysWhoseOtherReadingAddsUpIsNotFlaggedAsASum(): void
     {
         $this->scanApp();

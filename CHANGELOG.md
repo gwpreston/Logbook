@@ -6,14 +6,15 @@ is called out explicitly.
 
 ## [Unreleased]
 
-Phase 53.3: **OCR as a check on the vision model, and text instead of
-images** ([docs/phases/phase-53.3.md](docs/phases/phase-53.3.md)). One
-migration (a connection option and three usage-log counts); it rolls
-back, but roll back only with *Send text, not images* off everywhere,
-since older releases send pictures on every connection.
+## [3.18.0] — 2026-10-19
 
-Phase 53.4: **Reading without AI** ([docs/phases/phase-53.4.md](docs/phases/phase-53.4.md)).
-No migration.
+Phases 53.3 and 53.4: **OCR as a check on the vision model, text instead
+of images, and reading without AI** ([docs/phases/phase-53.3.md](docs/phases/phase-53.3.md),
+[docs/phases/phase-53.4.md](docs/phases/phase-53.4.md)). See
+[docs/reading-files.md](docs/reading-files.md). One migration (a
+connection option and three usage-log counts); it rolls back, but roll
+back only with *Send text, not images* off everywhere, since older
+releases send pictures on every connection.
 
 ### Added
 - **Scanning without AI.** With OCR working and no model reading for you
@@ -61,8 +62,15 @@ No migration.
   wider rule lowered accuracy and read an MOT photo's 0s as 6s (K85).
 - Checking a value's words against OCR text is much faster on long
   evidence (K89).
+- On an internet connection that gets photos as text, the Scan page now
+  warns that a V5C reference OCR misreads or splits is removed only when
+  OCR recognises the V5C; otherwise it can still be sent (K108). The
+  *Send text, not images* hint says so too.
 
 ### Fixed
+- On a receipt in another currency (euros for a car kept in pounds),
+  the "doesn't add up" line shows the receipt's currency, not the
+  vehicle's; with no currency read, plain numbers (K115).
 - A V5C reference wrapped onto the next row, under its first group and
   beside a label (`Document reference number 1234 5678` / `901`), is now
   removed from OCR text too, so it is never sent to a model or kept.
@@ -3627,7 +3635,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.17.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.18.0...HEAD
+[3.18.0]: https://github.com/gwpreston16/Logbook/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...v3.17.0
 [3.16.4]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...v3.16.4
 [3.16.3]: https://github.com/gwpreston16/Logbook/compare/v3.16.2...v3.16.3

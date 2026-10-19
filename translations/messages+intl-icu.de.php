@@ -4935,7 +4935,7 @@ return [
             'tls' => 'TLS',
             'privacy' => 'Datenschutz',
             'send_text' => 'Text statt Bildern senden',
-            'send_text_hint' => 'Fotos und gescannte PDFs werden auf diesem Server per Texterkennung gelesen, und nur ihr Text wird gesendet, ohne die Dokumentnummer eines Fahrzeugscheins. Privater; bei verblassten Belegen etwas ungenauer. Braucht Texterkennung (Einstellungen → KI).',
+            'send_text_hint' => 'Fotos und gescannte PDFs werden auf diesem Server per Texterkennung gelesen, und nur ihr Text wird gesendet, ohne die Dokumentnummer eines Fahrzeugscheins (eine falsch gelesene oder geteilte nur, wenn die Texterkennung den V5C erkennt). Privater; bei verblassten Belegen etwas ungenauer. Braucht Texterkennung (Einstellungen → KI).',
             'send_text_on' => 'An: Fotos gehen als Text',
             'send_text_off' => 'Aus: Fotos gehen als Bilder',
             'verify_tls' => 'TLS-Zertifikate prüfen',
@@ -5138,6 +5138,7 @@ return [
             'ocr_paddleocr' => 'Fotos und gescannte PDFs werden zuerst von deinem Texterkennungsdienst gelesen, und nur ihr Text geht an {connection}.',
             'ocr_check' => 'Fotos gehen als Bilder an {connection} und werden auf diesem Server per Texterkennung geprüft.',
             'registration_warning_unrecognised' => 'Ein Fahrzeugschein (V5C), den die Texterkennung erkennt, wird als Text gesendet, ohne seine Dokumentnummer. Einen, den sie nicht erkennt, erhält {connection} weiterhin als Bild, mit der Nummer.',
+            'registration_warning_ocr' => 'Die Dokumentnummer eines Fahrzeugscheins (V5C) wird aus dem Text entfernt. Erkennt die Texterkennung den V5C nicht, kann eine falsch gelesene oder geteilte Nummer {connection} trotzdem erreichen.',
         ],
         'field' => [
             'file' => 'Foto oder PDF',

@@ -113,11 +113,12 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [52.2](docs/phases/phase-52.2.md) | More quick wins from the known-issues log: Parts polish and docs | ✅ |
 | [53.1](docs/phases/phase-53.1.md) | Reading text from images: the OCR engine | ✅ |
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | ✅ |
-| [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | 🚧 |
-| [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | 🚧 |
+| [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | ✅ |
+| [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | ✅ |
 | [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 📋 |
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 📋 |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | 📋 |
+| [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1536,6 +1537,23 @@ runs, and decimal arithmetic stays exact past a PHP int.*
   Patch release.
 
 → [`phase-53.7.md`](docs/phases/phase-53.7.md)
+
+---
+
+## Phase 53.8 — V5C privacy and cross-check accuracy from 53.3's review + release
+*A V5C photo scanned from its vehicle never goes to an Internet provider
+as a picture, a passing "DVLA" no longer empties a receipt's figures, and
+the cross-check stops flagging right values on blurred photos.*
+
+- A *Scan the V5C* entry on the vehicle page: such a scan always goes as
+  text, with the wide reference redaction (#511, #512; K104, K108).
+- One V5C marker still blocks the picture; the wide redaction needs a
+  stronger sign (#513, K109). A value is flagged only where each digit
+  word in its row reads at 90 or more (#514, K110).
+- The owner's eval runs carried from 53.2 and 53.3 (`--via=ocr`,
+  `--crosscheck`); #515 (K114) revisited with their results. Release.
+
+→ [`phase-53.8.md`](docs/phases/phase-53.8.md)
 
 ---
 

@@ -7447,7 +7447,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - **as text** (OCR, then a text model, *Routing* below; or the
     connection's *Send text, not images*): "Photos and scanned PDFs are
     read on this server first (text recognition), and only their text is
-    sent", with the reference number removed from that text;
+    sent", with the reference number removed from that text (*Reading
+    through OCR*). On an *Internet* connection a warning beneath says that
+    a misread or split reference is removed only from a registration
+    document (V5C) text recognition spots, and one it doesn't spot can
+    still reach that provider: #510's short warning on this route too
+    (decided 2026-10-19, `docs/phases/open-questions.md` #512, K108);
   - **as a picture, checked by OCR** (a vision model with OCR working):
     "Photos are sent as pictures and checked on this server by text
     recognition". On an *Internet* connection a warning beneath says
@@ -7482,6 +7487,14 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   (*Too little text*), is not sent at all: the form opens empty with the
   file attached and the usual "Couldn't make out the text" line (merge
   review, 2026-10-19).
+  From Phase 53.8 (decided 2026-10-19, `docs/phases/open-questions.md`
+  #511–#513; K104, K108, K109): the vehicle page gets a *Scan the V5C*
+  entry whose scan (target `vehicle`) always goes as redacted text on an
+  *Internet* connection, with the wide redaction, whatever OCR spots, so
+  the warnings above can go for it. Any one marker still keeps the
+  picture from an *Internet* connection, but the wide redaction needs a
+  stronger sign: two different markers, or `V5C` or `Registration
+  Certificate` on its own.
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7498,8 +7511,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     least 200 characters of text on the first page, the file is read as
     **text** (the first three pages' text, up to 20,000 characters)
     through `read_text`. Runs of 11 digits are removed from the text
-    **before it is sent**, so a V5C's reference never leaves as text. A
-    run's digits may be separated by a space. In text that carries a
+    **before it is sent**, so a V5C's reference written as digits and
+    spaces never leaves as text. A run's digits may be separated by a
+    space. In text that carries a
     V5C's markers (*Where it goes*), and in what a registration document
     returns, they may also be separated by one punctuation mark (`-` `/`
     `,` `.` `|` `:`) with a space either side or none (decided
@@ -7571,8 +7585,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       digit, OCR's look-alikes count as digits (O→0, l and I→1, S→5,
       B→8), so `1234 5678 9O1` and `1234 S678 901` are caught; a word of
       letters only is never read as digits;
-    - the words of a run are left out. So a V5C photo's reference never
-      leaves the server by this route. Returned strings of a
+    - the words of a run are left out. So the reference of a V5C photo
+      whose markers OCR reads never leaves the server by this route; in
+      one whose markers it misses, only a run read as digits and spaces
+      is removed, and the Scan page warns of it on *Internet*
+      connections (*Where it goes*; #512, K108). Returned strings of a
       registration document have their spaces folded before the
       11-digit scrub;
   - whole lines up to `read_text`'s 20,000 characters; later lines are
@@ -7663,6 +7680,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     (#508). *There* is the OCR row sharing most of the evidence's words
     (its label, such as "Total"); with no such row, the whole page. OCR
     is confident when those words' mean confidence is at least 60.
+    From Phase 53.8 (decided 2026-10-19, `docs/phases/open-questions.md`
+    #514, K110): a value with digits is flagged only when each word with
+    a digit in that row reads at a confidence of at least 90, since a
+    slightly blurred photo reads wrong digits at about 80; documents of
+    under 30 words stay unchecked (*Too little text*).
   - **Not found, OCR unsure:** no mark; absence proves nothing.
   A flag never empties or blocks a field; the owner decides on the form.
   **The money adds up** (Phase 53.3, in the Mapper, so every route uses
@@ -7673,7 +7695,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   `brick/math`. Otherwise the three fields are marked with the sum:
   "45.20 L × 142.9p = £64.59, but the total reads £64.95." A price in
   pence is read as such; the check is in the printed units, before any
-  conversion to the user's.
+  conversion to the user's. The figures are in the user's locale and in
+  the receipt's currency when one was read, else plain numbers with no
+  currency symbol, never the vehicle's (decided 2026-10-19,
+  `docs/phases/open-questions.md` #516, K115).
   **Numbers** are read in the user's locale. One with a single
   separator followed by exactly three digits reads two ways (`1,759`,
   `48.120`): it is read in the user's locale as before, and the field
@@ -11964,7 +11989,7 @@ task breakdowns live in the per-phase files; this is the map.
   (K80, partly); and K18, K75, K77, K78, K81–K84 (§7.25, §7.27, §9). Released
   as v3.17.0 with 53.1 (✅). See [`phase-53.2.md`](docs/phases/phase-53.2.md).
 - **Phase 53.3 — OCR as a check on the vision model, and text instead
-  of images** (in progress). OCR beside the vision model on a photo,
+  of images** (✅). OCR beside the vision model on a photo,
   keeping but flagging a value not found where OCR read confidently,
   with the value's digits matched exactly (#508); a fuel receipt's
   volume × price checked against its total on every route; *Send text,
@@ -11973,9 +11998,12 @@ task breakdowns live in the per-phase files; this is the map.
   *Internet* connections when OCR works, recognised by its markers
   (#510); the reference's redaction widened to punctuation
   and look-alikes, and narrowed to short gaps (#500, #501); and K85,
-  K87–K90, K93–K98 (§6 AiConnection, AiRequest, §7.25, §7.27). See
+  K87–K90, K93–K98 (§6 AiConnection, AiRequest, §7.25, §7.27); before
+  the release, the Scan page's warning of a misread V5C reference on the
+  OCR route (#512, K108) and the sum line in the receipt's currency
+  (#516, K115). Released as v3.18.0 with 53.4. See
   [`phase-53.3.md`](docs/phases/phase-53.3.md).
-- **Phase 53.4 — Reading without AI + release** (in progress). With
+- **Phase 53.4 — Reading without AI + release** (✅). With
   OCR working and no model reading for the user (none set up, AI off,
   or their *Use AI features* off), *Scan* shows: documents classified by
   keywords and read by rules, every field marked "Read without AI,
@@ -11985,7 +12013,7 @@ task breakdowns live in the per-phase files; this is the map.
   strict total, registration, mileage and work lines, the garage left
   for the owner; a V5C's registration; other kinds the date only. The
   `ai_scan` module becomes `scan` (§7.10, §7.27, §12; #517–#526).
-  K116, K118–K120. See
+  K116, K118–K120. Released as v3.18.0 with 53.3. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
   known-issues log + patch release** (planned). Retrying `POST
@@ -12018,6 +12046,15 @@ task breakdowns live in the per-phase files; this is the map.
   (CLAUDE.md §2, K62). Released on its own as a patch after 53.6's
   release (#506, decided 2026-10-18). No migration. See
   [`phase-53.7.md`](docs/phases/phase-53.7.md).
+- **Phase 53.8 — V5C privacy and cross-check accuracy from 53.3's
+  review + release** (planned). A *Scan the V5C* entry on the vehicle
+  page, whose scan always goes as text with the wide redaction (#511,
+  #512; K104, K108); one V5C marker keeps the picture back but the wide
+  redaction needs a stronger sign (#513, K109); the cross-check flags a
+  value only where each digit word in its row reads at 90 or more
+  (#514, K110); the owner's eval runs carried from 53.2 and 53.3, and
+  the cross-check's image (#515, K114) revisited with their results
+  (§7.27). See [`phase-53.8.md`](docs/phases/phase-53.8.md).
 
 ---
 

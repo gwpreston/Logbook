@@ -71,7 +71,10 @@ What happens to a photo when there is no vision model:
    first. On a V5C (a page with "V5C", "DVLA" or "Registration
    Certificate" on it) they are also caught with punctuation between the
    groups (`1234-5678-901`), OCR's look-alikes (`1234 5678 9O1`), or
-   wrapped over two or three lines. Numbers in another column of the same
+   wrapped over two or three lines. On a V5C whose markers OCR misses,
+   only a reference read cleanly as digits is removed: one it misreads or
+   splits can still be sent, and on an internet connection the Scan page
+   says so. Numbers in another column of the same
    line (a date beside a mileage) are kept. The picture itself is never sent.
 4. Every value the model gives back must point to words in that text.
    Logbook allows for OCR's usual slips (0 and O, 1, l and I, 5 and S, 8
@@ -110,8 +113,9 @@ fails or finds too little text, the scan carries on without the check.
 On a fuel receipt Logbook also checks that **the money adds up**: volume
 × price per unit must be the total, within a penny and the printed
 rounding. If it isn't, the three fields say so: "45.20 L × 142.9p =
-£64.59, but the total reads £64.95." This check runs however the receipt
-was read.
+£64.59, but the total reads £64.95." The figures are in the receipt's
+currency when Logbook read one, and plain numbers otherwise. This check
+runs however the receipt was read.
 
 The usage log counts, for each checked scan, how many values were found,
 marked and left unchecked (never the text). `php bin/ai-eval.php --scans

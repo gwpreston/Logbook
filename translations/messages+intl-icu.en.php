@@ -4940,7 +4940,7 @@ return [
             'tls' => 'TLS',
             'privacy' => 'Privacy',
             'send_text' => 'Send text, not images',
-            'send_text_hint' => 'Photos and scanned PDFs are read on this server by text recognition, and only their text is sent, with a registration document’s reference number removed. More private; a little less accurate on faded receipts. Needs text recognition (Settings → AI).',
+            'send_text_hint' => 'Photos and scanned PDFs are read on this server by text recognition, and only their text is sent, with a registration document’s reference number removed (one misread or split only when text recognition spots the V5C). More private; a little less accurate on faded receipts. Needs text recognition (Settings → AI).',
             'send_text_on' => 'On: photos go as text',
             'send_text_off' => 'Off: photos go as pictures',
             'verify_tls' => 'Verify TLS certificates',
@@ -5146,6 +5146,7 @@ return [
             'ocr_paddleocr' => 'Photos and scanned PDFs are read by your text recognition service first, and only their text goes to {connection}.',
             'ocr_check' => 'Photos are sent to {connection} as pictures, and checked on this server by text recognition.',
             'registration_warning_unrecognised' => 'A registration document (V5C) that text recognition spots is sent as text, without its document reference number. One it doesn’t spot still goes to {connection} as a picture, with the number.',
+            'registration_warning_ocr' => 'A registration document’s (V5C) document reference number is removed from the text. If text recognition doesn’t spot the V5C, a number it misreads or splits can still reach {connection}.',
         ],
         'field' => [
             'file' => 'Photo or PDF',

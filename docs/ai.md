@@ -526,8 +526,11 @@ issue*, *Watch*, *Add all as issues*; see
   were.
 - A registration document's **reference number** is never extracted,
   stored or shown, and is removed from PDF text before sending (with
-  spaces or punctuation between its groups). Read through OCR, it is
-  removed from the text like a PDF's. From 3.18, on an *Internet*
+  spaces between its groups, and on a page with a V5C's markers also
+  with punctuation). Read through OCR, it is removed from the text like
+  a PDF's; on a V5C whose markers OCR misses, a misread or split number
+  can still be sent, and the Scan page says so on an *Internet*
+  connection. From 3.18, on an *Internet*
   connection with OCR working, a photo OCR recognises as a V5C is sent as
   text, never as a picture. One it doesn't recognise, or any V5C photo
   without OCR, carries the number as pixels to a vision model, and the

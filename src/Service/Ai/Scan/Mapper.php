@@ -245,7 +245,9 @@ final readonly class Mapper
                 }
             }
         }
-        // The figures in the user's locale, as the money is (design review of 53.3).
+        // The figures in the user's locale, as the money is (design review of 53.3),
+        // in the receipt's currency, or plain numbers when none was read (#516, K115).
+        $currency = self::receiptCurrency($reading);
         $unit = trim((string) $reading->value('volume_unit'));
         if ($unit === '' && preg_match('/\d\s*(\p{L}+)\s*$/u', $printed[0], $m) === 1) {
             $unit = $m[1];
@@ -254,9 +256,9 @@ final readonly class Mapper
             'volume' => trim(self::decimal($volume, $locale) . ' ' . $unit),
             'price' => $pence
                 ? self::decimal($price, $locale) . (strlen($centsWord[1]) > 1 ? ' ' : '') . $centsWord[1]
-                : self::decimal($price, $locale, $form->currency()),
-            'sum' => $form->money((string) $product->toScale(2, RoundingMode::HalfUp)),
-            'total' => $form->money((string) BigDecimal::of($total)->toScale(2, RoundingMode::HalfUp)),
+                : self::decimal($price, $locale, $currency),
+            'sum' => self::decimal((string) $product->toScale(2, RoundingMode::HalfUp), $locale, $currency),
+            'total' => self::decimal((string) BigDecimal::of($total)->toScale(2, RoundingMode::HalfUp), $locale, $currency),
         ]);
         foreach (['volume', 'price', 'total'] as $field) {
             $form->flag($field, $text);
@@ -459,8 +461,7 @@ final readonly class Mapper
 
     private function currency(ScanFormBuilder $form, Vehicle $vehicle, Extraction $reading): void
     {
-        $printed = $reading->value('currency') ?? $reading->value('total') ?? $reading->value('payout');
-        $code = $printed === null ? null : self::currencyCode($printed);
+        $code = self::receiptCurrency($reading);
         $own = $form->currency();
         if ($code !== null && $code !== $own && $form->has(['cost', 'total', 'payout', 'excess', 'repair_estimate'])) {
             $form->warn($this->translator->trans('scan.warning.currency', ['found' => $code, 'vehicle' => $own]));
@@ -539,6 +540,14 @@ final readonly class Mapper
             str_starts_with($unit, 'gal') => $preferred === VolumeUnit::Litre ? VolumeUnit::UkGallon : $preferred,
             default => null,
         };
+    }
+
+    /** The currency the file prints its money in; null when none was read. */
+    private static function receiptCurrency(Extraction $reading): ?string
+    {
+        $printed = $reading->value('currency') ?? $reading->value('total') ?? $reading->value('payout');
+
+        return $printed === null ? null : self::currencyCode($printed);
     }
 
     private static function currencyCode(string $printed): ?string
