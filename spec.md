@@ -7899,10 +7899,15 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       amount **directly after** a word labelling the grand total
       (`TOTAL`, `AMOUNT DUE`, `AMOUNT PAYABLE`, `BALANCE DUE`,
       `GESAMTBETRAG`…, `scan.keywords.invoice_total`), with at most
-      `:`, a currency or `(inc VAT)` between them, so `Total due £450.00
-      Invoice no 10045` gives 450.00 and `TOTAL £45.26 VISA ending 4821`
-      45.26; never a number printed with a unit or as a price (`42.18 L`,
-      `107.2p/L`); never a label qualified by a word before or after it
+      `:`, `=`, a currency or `(inc VAT)` between them (never a dash: a
+      minus sign is a credit or a refund, `TOTAL -£12.00`, and fills
+      nothing), so `Total due £450.00 Invoice no 10045` gives 450.00 and
+      `TOTAL £45.26 VISA ending 4821` 45.26. The amount must **look like
+      money**: printed with a currency, or with exactly two decimals and
+      no word after it (`Total 3 items £450.00`, `Total 2.5 hrs`, `Total
+      20.00 VAT` and `Balance due 30 days` fill nothing; fourth merge
+      review). Never a number printed with a unit or as a price
+      (`42.18 L`, `107.2p/L`); never a label qualified by a word before or after it
       (`Net total`, `Total excl. VAT`, `Total labour`, `Total mileage`,
       `Total volume`: `scan.keywords.total_qualifier`); when the document
       prints two different such totals, none is filled; and only when
@@ -11975,10 +11980,12 @@ task breakdowns live in the per-phase files; this is the map.
   or their *Use AI features* off), *Scan* shows: documents classified by
   keywords and read by rules, every field marked "Read without AI,
   check"; fuel receipts filled from the volume, price and total that
-  agree, with date, grade and station; service invoices' date, total,
-  registration, mileage, vendor and work lines; a V5C's registration;
-  other kinds the date only. The `ai_scan` module becomes `scan`
-  (§7.10, §7.27, §12; #517–#525). K116, K118–K120. See
+  agree (else only a strict grand total), with date, grade and, when
+  it is one of the install's, the station; service invoices' date,
+  strict total, registration, mileage and work lines, the garage left
+  for the owner; a V5C's registration; other kinds the date only. The
+  `ai_scan` module becomes `scan` (§7.10, §7.27, §12; #517–#526).
+  K116, K118–K120. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
   known-issues log + patch release** (planned). Retrying `POST

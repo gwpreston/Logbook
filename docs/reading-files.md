@@ -165,8 +165,9 @@ What the rules can do:
   volume × price makes the total (within 1p and the printed rounding).
   If no set of figures adds up, or two sets do and disagree, only the
   total is filled: the amount straight after *Total* (or *Amount due*),
-  never a *Net total* or *Total labour*, none if the receipt prints two
-  different totals, and only if OCR read it clearly; you type the volume
+  printed with a currency or two decimals, never a *Net total* or
+  *Total labour*, never a refund (`-£12.00`), none if the receipt prints
+  two different totals, and only if OCR read it clearly; you type the volume
   and price. Also the date
   and time, the grade (through the same words as Ask's drafts), the
   station when its name matches one of your stations (otherwise you

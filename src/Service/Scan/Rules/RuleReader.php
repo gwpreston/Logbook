@@ -82,6 +82,11 @@ final readonly class RuleReader
     public function read(User $user, array $rows, string|OcrText $text, ?string $engine): Extraction
     {
         $locale = $user->preferences->locale;
+        $v5c = $text instanceof OcrText ? $text->looksLikeRegistration() : Scrubber::looksLikeRegistration($text);
+        if ($v5c) {
+            // A V5C's reference never reaches a rule, whatever the gaps between its groups (merge review of 53.4).
+            $rows = array_map(Scrubber::withoutReferenceWords(...), $rows);
+        }
         $rows = array_values(array_filter(array_map('trim', $rows), static fn (string $r): bool => $r !== ''));
         $kind = $this->classifier->kind($rows, $locale, $this->fuel);
 
@@ -99,7 +104,6 @@ final readonly class RuleReader
             && $this->stations->existing(StationName::tidy($name)) !== null;
 
         $readings = [];
-        $v5c = $text instanceof OcrText ? $text->looksLikeRegistration() : Scrubber::looksLikeRegistration($text);
         foreach (ScanKind::cases() as $each) {
             $object = match ($each) {
                 ScanKind::FuelReceipt => ['fields' => $this->fuel->read($rows, $locale, $knownStation, $clear)],

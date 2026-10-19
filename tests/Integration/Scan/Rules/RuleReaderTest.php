@@ -332,6 +332,46 @@ final class RuleReaderTest extends ScanTestCase
         self::assertSame('200.00', $total(['Total £200.00', 'Total paid £200.00']), 'the same total twice');
     }
 
+    public function testAGrandTotalMustLookLikeMoney(): void
+    {
+        // Fourth merge review: a count, a duration, a distance or a refund is never the total.
+        $this->scanApp();
+        $head = ['Garage Ltd', 'Invoice 7', 'Date 01/10/2026'];
+        $total = fn (array $rows): ?string => $this->read(self::lines([...$head, ...$rows]))->value('total');
+
+        $notMoney = [
+            'Total 2.5 hrs  £450.00',
+            'Total 48,120 km',
+            'Total 3 items £450.00',
+            'Balance due 30 days 450',
+            'Total 20.00 VAT',
+        ];
+        foreach ($notMoney as $row) {
+            self::assertNull($total([$row]), $row);
+        }
+        foreach (['TOTAL -£450.00', 'Total - 450.00', 'Total: -450.00', 'Total −£450.00'] as $row) {
+            self::assertNull($total([$row]), $row . ': a credit fills nothing');
+        }
+        self::assertSame('184.50', $total(['Total due 184.50']), 'two decimals and nothing after');
+        self::assertSame('312.40', $total(['Total £312.40 including VAT']), 'words may follow an amount with its currency');
+        self::assertSame('57.56', $total(['TOTAL 57.56 GBP']));
+    }
+
+    public function testAV5csReferenceNeverReachesARule(): void
+    {
+        // Fourth merge review: `Total` on the reference's own row stored its first group as a total.
+        $this->scanApp();
+        $read = $this->read(implode("\n", [
+            'V5C Registration Certificate',
+            'Registration AB12 CDE',
+            'Total GBP 1234          S678 9O1',
+        ]));
+
+        $stored = (string) json_encode($read->toArray());
+        self::assertStringNotContainsString('1234', $stored);
+        self::assertStringContainsString('AB12 CDE', $stored);
+    }
+
     public function testATotalVolumeIsNeverTheTotal(): void
     {
         $this->scanApp();

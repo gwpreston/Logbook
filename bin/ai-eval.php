@@ -32,13 +32,18 @@ declare(strict_types=1);
  * checks that no 11-digit reference survives a registration document.
  * Nothing is written but the usage log.
  *
- *   php bin/ai-eval.php --scans [--via=ocr] [--user=demo] [--only=1,15] [--verbose]
+ *   php bin/ai-eval.php --scans [--via=ocr|rules] [--user=demo] [--only=1,15] [--verbose]
  *
  * --via=ocr (Phase 53.2, §7.27 *Reading through OCR*) also reads each photo
  * and scanned PDF through OCR and the text model (read_document's when it
  * is text-only, else read_text's), and reports both routes side by side:
  * the vision model (when one is set up) and OCR. Text PDFs go to read_text
  * either way, so they count the same in both.
+ *
+ * --via=rules (Phase 53.4, §7.27 *Reading without AI*) reads every fixture
+ * without AI instead: OCR and rules for photos and scans, the text layer
+ * and rules for text PDFs. It needs no model, only a working OCR engine;
+ * without one it says so on stderr and exits 1. Nothing is sent anywhere.
  *
  * With --insights (Phase 42, spec.md §7.26 *AI insights*) it makes the
  * user's AI insights --runs times (3 by default) with the configured `ask`

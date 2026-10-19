@@ -55,16 +55,18 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.27,
    - Date and time in the locale's order, with the existing ambiguous
      date warning.
    - Grade words through the Phase 26.3 grade resolver.
-   - The station's name from the top lines, matched to the owner's
-     stations when one matches (§7.33).
+   - The station, only when it is one of the owner's stations (#526,
+     §7.33).
+   - With no agreeing triple, the total only strictly: the first amount
+     directly after a grand-total label, looking like money, none when
+     two differ (#526, question J).
 4. **Service invoice partial fill:**
    - date;
-   - total (the largest amount next to `TOTAL`, `BALANCE DUE` or
-     `AMOUNT DUE`);
+   - total (strictly, as for a fuel receipt: #526, question J);
    - registration (the UK plate pattern, then matched to a vehicle as
      today);
    - odometer (a number next to `MILEAGE`, `ODO` or `MILES`);
-   - vendor (the first line of text).
+   - the garage is left for the owner (#526).
 
    The work lines go into the description unparsed (open question C).
 5. **Other kinds:** the date only, with the rest left empty.
@@ -130,7 +132,10 @@ Added to §7.27 in 53.4.0:
       first amount directly after a grand-total label, never a qualified
       one, none when two differ (#526); numbers of more than 12 digits
       passed over; amounts scanned in linear time; a V5C reference with
-      look-alikes across a wide gap scrubbed too. Each with a
+      look-alikes across a wide gap scrubbed too. Fourth round: a grand
+      total must look like money (a currency, or two decimals and no
+      word after it), never after a dash; a V5C's reference words are
+      dropped from the rows before any rule reads them. Each with a
       `RuleReaderTest` case. The
       `--via=rules` table below was re-run by the merge review's AI
       evaluator after the first round and matched.
@@ -180,7 +185,10 @@ Added to §7.27 in 53.4.0:
     read clearly (#525). After the third merge review (same day): the
     first amount *directly* after a grand-total label, never a
     qualified label (`Net total`, `Total labour`, `Total mileage`), and
-    nothing when two different such totals are printed.
+    nothing when two different such totals are printed. After the
+    fourth: only an amount that looks like money (a currency, or two
+    decimals with no word after it), and never after a dash (a credit
+    or refund).
   - Not chosen: fixing each layout case by case.
 
 ## Eval results (2026-10-19)

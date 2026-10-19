@@ -561,7 +561,11 @@ sends real requests; nothing but the usage log is written. Add
 `--via=ocr` to also read the photos and scans through OCR and your text
 model, and see the two routes side by side, or `--crosscheck` to read
 them with the vision model checked by OCR and count the values marked
-"Not found on the page", and how many of those were right.
+"Not found on the page", and how many of those were right. With
+`--via=rules` it reads them **without AI** instead, as Scan does when no
+model reads for you ([reading-files.md](reading-files.md#reading-without-ai)):
+no model is needed and nothing is sent, but OCR must be working
+(without it the command says so and exits 1).
 
 **Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
 the OCR engine (no model needed; see [reading-files.md](reading-files.md))

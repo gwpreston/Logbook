@@ -138,18 +138,28 @@ final class Scrubber
     public static function registrationValue(mixed $value): mixed
     {
         if (is_string($value)) {
-            $words = preg_split('/[\s\x{00A0}\x{202F}]+/u', trim($value)) ?: [];
-            $words = array_values(array_filter($words, static fn (string $w): bool => $w !== ''));
-            $drop = array_flip(self::referenceWords($words, true));
-            $kept = array_filter($words, static fn (int $i): bool => !isset($drop[$i]), ARRAY_FILTER_USE_KEY);
-
-            return self::text(implode(' ', $kept), true);
+            return self::text(self::withoutReferenceWords($value), true);
         }
         if (is_array($value)) {
             return array_map(self::registrationValue(...), $value);
         }
 
         return $value;
+    }
+
+    /**
+     * A row of V5C-like text without the words of an 11-digit reference,
+     * read as one stretch whatever the gaps between them, look-alikes
+     * counted in a word with a digit (`1234      S678 9O1`). The other
+     * words are kept, single-spaced.
+     */
+    public static function withoutReferenceWords(string $row): string
+    {
+        $words = preg_split('/[\s\x{00A0}\x{202F}]+/u', trim($row)) ?: [];
+        $words = array_values(array_filter($words, static fn (string $w): bool => $w !== ''));
+        $drop = array_flip(self::referenceWords($words, true));
+
+        return implode(' ', array_filter($words, static fn (int $i): bool => !isset($drop[$i]), ARRAY_FILTER_USE_KEY));
     }
 
     public static function hasReference(string $text): bool

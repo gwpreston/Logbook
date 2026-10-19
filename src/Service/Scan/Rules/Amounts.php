@@ -18,8 +18,12 @@ final readonly class Amounts
     private const string CODES = 'GBP|EUR|USD|CHF';
     private const string UNIT_AFTER = 'litres|liters|litre|liter|ltrs|ltr|kwh|gallons|gallon|gals|gal|l|g'
         . '|pence|cents|cent|ct|p|c|ppl';
-    /** What may stand between a grand-total label and its amount: `:`, `(inc VAT)`, a currency. */
-    private const string BETWEEN = '\s*(?:[:=\-]\s*)?(?:\((?:inc|incl|including|inkl)[^)]{0,20}\)\s*)?';
+    /**
+     * What may stand between a grand-total label and its amount: `:`, `=`,
+     * `(inc VAT)`, a currency. Never a dash: a minus sign is a credit or a
+     * refund (`TOTAL -£12.00`), which fills nothing.
+     */
+    private const string BETWEEN = '\s*(?:[:=]\s*)?(?:\((?:inc|incl|including|inkl)[^)]{0,20}\)\s*)?';
 
     public function __construct(private Keywords $keywords)
     {
@@ -92,7 +96,7 @@ final readonly class Amounts
     public function grandTotal(array $rows, string $locale): ?array
     {
         $label = $this->keywords->pattern('invoice_total', $locale);
-        $after = '/\G' . self::BETWEEN . '(?:(?:[£€$]|(?:' . self::CODES . ')\b)\s?)?(' . RuleText::NUMBER . ')/iu';
+        $after = '/\G' . self::BETWEEN . '(?:([£€$]|(?:' . self::CODES . ')\b)\s?)?(' . RuleText::NUMBER . ')/iu';
         $found = [];
         foreach ($rows as $row) {
             $text = RuleText::withoutDates($row);
@@ -108,15 +112,31 @@ final readonly class Amounts
                 if (preg_match($after, $text, $a, PREG_OFFSET_CAPTURE, $end) !== 1) {
                     continue;
                 }
-                [$printed, $at] = $a[1];
-                $read = self::amount($printed, $text, $at + strlen($printed), $locale);
-                if ($read !== null) {
+                [$printed, $at] = $a[2];
+                $numberEnd = $at + strlen($printed);
+                $read = self::amount($printed, $text, $numberEnd, $locale);
+                if ($read !== null && self::looksLikeMoney($printed, $a[1][1] >= 0, $text, $numberEnd)) {
                     $found[Decimal::trim($read)] ??= ['printed' => $printed, 'read' => $read, 'row' => $row];
                 }
             }
         }
 
         return count($found) === 1 ? array_values($found)[0] : null;
+    }
+
+    /**
+     * A grand total looks like money (fourth merge review): printed with a
+     * currency, before or after it, or with exactly two decimals and no
+     * word after it, so `Total 3 items`, `Total 2.5 hrs` and `Total 20.00
+     * VAT` are never a total.
+     */
+    private static function looksLikeMoney(string $printed, bool $currencyBefore, string $text, int $end): bool
+    {
+        if ($currencyBefore || preg_match('/\G\s?(?:[£€$]|(?:' . self::CODES . ')\b)/iu', $text, $_, 0, $end) === 1) {
+            return true;
+        }
+
+        return preg_match('/[.,]\d{2}$/', $printed) === 1 && preg_match('/\G\s*\p{L}/u', $text, $_, 0, $end) !== 1;
     }
 
     /**
