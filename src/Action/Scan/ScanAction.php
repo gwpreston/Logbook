@@ -134,6 +134,8 @@ final readonly class ScanAction
             'connection' => $this->availability->connection(),
             'reads_pictures' => $this->availability->readsPictures(),
             'ocr_engine' => $this->availability->picturesViaOcr(),
+            'ocr_checks' => $this->availability->picturesCheckedByOcr(),
+            'text_only' => $this->availability->picturesTextOnly(),
             'max_upload_mb' => $this->attachments->maxMegabytes(),
         ], $status);
     }

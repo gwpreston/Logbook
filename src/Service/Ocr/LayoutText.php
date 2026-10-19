@@ -129,13 +129,26 @@ final class LayoutText
      */
     private static function charWidth(array $lines): float
     {
-        $widths = [];
+        $words = [];
         foreach ($lines as $line) {
-            foreach ($line->words as $word) {
-                $length = mb_strlen($word->text);
-                if ($length > 0 && $word->box->width > 0) {
-                    $widths[] = $word->box->width / $length;
-                }
+            array_push($words, ...$line->words);
+        }
+
+        return self::wordsCharWidth($words);
+    }
+
+    /**
+     * The same, for a page's words (the reference check, spec.md §7.27).
+     *
+     * @param list<OcrWord> $words
+     */
+    public static function wordsCharWidth(array $words): float
+    {
+        $widths = [];
+        foreach ($words as $word) {
+            $length = mb_strlen($word->text);
+            if ($length > 0 && $word->box->width > 0) {
+                $widths[] = $word->box->width / $length;
             }
         }
         if ($widths === []) {

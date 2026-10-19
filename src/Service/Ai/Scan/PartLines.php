@@ -51,22 +51,29 @@ final class PartLines
             $quantity = (int) $q[1];
             $text = substr($text, strlen($q[0]));
         }
-        // A suffix after the price: a quantity, a VAT note or a one-letter VAT code (K18).
-        $suffix = '/\s+(?:[x×]\s?(\d+)|qty:?\s?(\d+)|\(?(?:inc\.?|incl\.?|ex\.?)?\s?vat(?:\s?@?\s?\d+(?:[.,]\d+)?%)?\)?'
-            . '|\(?\d{1,2}(?:[.,]\d+)?%\)?)$/iu';
-        while (preg_match($suffix, $text, $m) === 1) {
-            $count = ($m[1] ?? '') !== '' ? $m[1] : ($m[2] ?? '');
-            if ($count !== '') {
-                $quantity ??= (int) $count;
-            }
-            $text = substr($text, 0, -strlen($m[0]));
-        }
-        $text = (string) preg_replace('/(?<=\d)\s+[A-Z]$/u', '', $text);
-
         $price = null;
         // Groups of three after spaces (`1 234,56`) are one number (K18).
         $amount = '\d{1,3}(?:[ \x{00A0}\x{202F}]\d{3})+[.,]\d{2}|\d[\d.,]*[.,]\d{2}';
         $trailing = '/\s((?:[£€$]\s?)?(?:' . $amount . ')|[£€$]\s?\d[\d.,]*)\s*(?:[£€$]|[A-Z]{3})?$/u';
+
+        // A suffix after the price: a quantity, a VAT note or a one-letter VAT code (K18).
+        // Only after a price: "Tyre 205 x 55" and "Fuse 10 A" keep theirs (K96, K97).
+        $suffix = '/\s+(?:[x×]\s?(\d+)|qty:?\s?(\d+)|\(?(?:inc\.?|incl\.?|ex\.?)?\s?vat(?:\s?@?\s?\d+(?:[.,]\d+)?%)?\)?'
+            . '|\(?\d{1,2}(?:[.,]\d+)?%\)?)$/iu';
+        $stripped = $text;
+        $count = null;
+        while (preg_match($suffix, $stripped, $m) === 1) {
+            $found = ($m[1] ?? '') !== '' ? $m[1] : ($m[2] ?? '');
+            if ($found !== '') {
+                $count ??= (int) $found;
+            }
+            $stripped = substr($stripped, 0, -strlen($m[0]));
+        }
+        $stripped = (string) preg_replace('/(?<=\d)\s+[A-Z]$/u', '', $stripped);
+        if ($stripped !== $text && preg_match($trailing, ' ' . $stripped) === 1) {
+            $text = $stripped;
+            $quantity ??= $count;
+        }
         if (preg_match($trailing, ' ' . $text, $m) === 1) {
             $read = PrintedNumber::read($m[1], $locale);
             if ($read !== null && Decimal::compare($read, '0') >= 0) {

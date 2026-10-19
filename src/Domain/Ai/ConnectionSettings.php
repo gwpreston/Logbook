@@ -23,6 +23,8 @@ final readonly class ConnectionSettings
         public int $maxRequestMb,
         public ?int $monthlyTokenCap,
         public bool $enabled,
+        /** *Send text, not images* (Phase 53.3, spec.md §7.27 *Where it goes*). */
+        public bool $sendText = false,
     ) {
     }
 }

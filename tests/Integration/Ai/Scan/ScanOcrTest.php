@@ -90,6 +90,8 @@ final class ScanOcrTest extends ScanTestCase
         self::assertSame(1, substr_count($text, 'Hard to read, check this.'), 'only the price');
         self::assertStringContainsString('Not found in the file’s text: “MOONBEAM GARAGE”', $text);
         self::assertSame('', $values['station'] ?? '', 'a value whose evidence is not in the text is dropped');
+        $open = '/<details class="card disclosure" open>\s*<summary[^>]*>Station and notes/';
+        self::assertMatchesRegularExpression($open, $html, 'K90: its reason is in view');
         $readBy = 'Read on this server (text recognition), then by qwen2.5vl:7b on Ollama on the desktop.';
         self::assertStringContainsString($readBy, $text);
 
@@ -125,10 +127,11 @@ final class ScanOcrTest extends ScanTestCase
         $this->reply($this->fuelReply());
         $this->land($this->scan(ExifJpeg::make(40, 20), 'receipt.jpg', 'image/jpeg'));
 
+        self::assertCount(1, $this->provider->requests);
         self::assertCount(1, $this->sentImages(0), 'the vision model gets the picture');
-        self::assertStringNotContainsString('OCR', $this->sentText(0));
+        self::assertStringNotContainsString('OCR', $this->sentText(0), 'never OCR text as well');
         $ran = is_file($args) ? (string) file_get_contents($args) : '';
-        self::assertStringNotContainsString('tsv', $ran, 'OCR never ran');
+        self::assertStringContainsString('tsv', $ran, 'Phase 53.3: OCR ran alongside, to check the reading');
     }
 
     public function testAScannedPdfIsReadThroughOcr(): void

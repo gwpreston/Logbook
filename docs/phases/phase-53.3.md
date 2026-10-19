@@ -4,7 +4,7 @@
 the page. A photo bound for an Internet provider can go as redacted text
 instead.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 A vision model reads receipts better than OCR does, but it can also
 **invent** a value: a plausible total, or a date that isn't printed.
@@ -82,28 +82,49 @@ Added to §7.27 in 53.3.0:
 ## Tasks
 
 ### 53.3.0 Spec first
-- [ ] Open questions A–C decided by the owner and logged; §6, §7.25,
-      §7.27, §13.
+- [x] Open questions A–C decided by the owner and logged (#508–#510),
+      with #500 and #501, which *Send text, not images* rests on; §6,
+      §7.25, §7.27, §13.
+- [x] Known issues taken into the phase (§12): K87, K88 and K93 (the
+      redaction, #500, #501), K89 (the match's cost, now on every vision
+      value), K90 and K95 (53.5 left them for this phase), and, offered
+      and chosen by the owner, K85, K94 and K96–K98.
 
 ### 53.3.1 Cross-check
-- [ ] OCR alongside vision, the per-value match, and confidence by area.
-- [ ] Flags on the prefilled form.
-- [ ] The fuel arithmetic check in the Mapper.
+- [x] OCR alongside vision, the per-value match, and confidence by area.
+- [x] Flags on the prefilled form.
+- [x] The fuel arithmetic check in the Mapper.
 
 ### 53.3.2 Text instead of images
-- [ ] *Send text, not images* on *Internet* connections.
-- [ ] V5C photos always sent as text on *Internet* when OCR is
-      available (C).
-- [ ] The Scan page and the connection page wording.
-- [ ] Translations (every shipped locale).
+- [x] *Send text, not images* on connections (#509: off), refused at
+      the gateway for any image.
+- [x] The reference's redaction: punctuation between groups on every
+      path, look-alikes and wrapped rows on the OCR route, short gaps
+      only (#500, #501; K87, K88, K93).
+- [x] V5C photos always sent as text on *Internet* when OCR is
+      available, recognised by the OCR markers (#510).
+- [x] The Scan page and the connection page wording.
+- [x] Translations (every shipped locale).
+
+### 53.3.2a Known issues
+- [x] K89: the evidence match filters candidates before the edit
+      distance, with the same matches.
+- [x] K90: the fill-up's *Station and notes* opens when a scan left a
+      reason there. K95: the Scan page's OCR line wraps beside its icon.
+- [x] K94: a Tesseract that fails its version check isn't asked for
+      its languages.
+- [x] K85: the enlarge rule evaluated across the fixtures, and changed
+      if the eval shows a better one.
+- [x] K96–K98: a size at the end of a parts line, a single capital after
+      a number, and a doubled leading zero.
 
 ### 53.3.3 Tests
-- [ ] Fixtures with planted wrong values (a vision answer edited to
+- [x] Fixtures with planted wrong values (a vision answer edited to
       invent a total): flagged. Correct values: not flagged.
-- [ ] OCR unsure in an area: no flag. OCR failing: scan unchanged.
+- [x] OCR unsure in an area: no flag. OCR failing: scan unchanged.
 - [ ] Arithmetic within and outside 1p; a receipt printing price to
       0.1p.
-- [ ] No image ever sent on a connection with *Send text, not images*,
+- [x] No image ever sent on a connection with *Send text, not images*,
       asserted at the adapter.
 - [ ] `bin/ai-eval.php --scans --crosscheck`: flags per kind and false
       flags, in the eval report.
@@ -111,8 +132,47 @@ Added to §7.27 in 53.3.0:
       --scans --via=ocr` run with the owner's models, its field accuracy
       per kind for both routes recorded in the eval report (53.2's
       acceptance criterion 3).
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off; screen
+- [x] Design review (375, 768, 1280 px; light and dark; JS off; screen
       reader).
+
+---
+
+## Eval results (2026-10-18)
+
+**K85, the enlarge rule.** `bin/ai-eval.php --ocr
+--enlarge=20:24,20:22,0:0,15:30`, Tesseract 5.5.0 (deu+eng) in the
+Docker image, GD, character accuracy, mean per kind. *gd* is 53.1's rule
+(text under 20 px enlarged to about 30 px); `min:target` the others;
+*0:0* never enlarges.
+
+| Kind (files) | none | gd (20:30) | 20:24 | 20:22 | 0:0 | 15:30 |
+|---|---|---|---|---|---|---|
+| claim_letter (2) | 99.8% | 99.8% | 99.8% | 99.8% | 99.8% | 99.8% |
+| fuel_receipt (4) | 93.1% | 92.2% | 92.8% | 93.1% | 93.1% | 93.1% |
+| inspection (3) | 96.2% | 94.7% | 93.9% | 90.2% | 96.2% | 96.2% |
+| insurance (3) | 93.3% | 92.6% | 92.6% | 92.6% | 92.6% | 92.6% |
+| other (1) | 99.3% | 99.3% | 99.3% | 99.3% | 99.3% | 99.3% |
+| registration (2) | 94.6% | 94.6% | 94.6% | 94.6% | 94.6% | 94.6% |
+| repair_estimate (1) | 93.9% | 93.0% | 93.0% | 93.0% | 93.0% | 93.0% |
+| service_invoice (8) | 95.0% | 94.2% | 91.3% | 88.8% | 95.0% | 95.0% |
+
+Enlarging text of 15–20 px lowered accuracy on every kind it touched,
+and no fixture has text under 15 px. The rule is now 15:30 (equal to
+never enlarging on these fixtures, while still helping very small
+print). The MOT photo's dates now read `12/06/2026` and `11/06/2027`
+(were `12/66/2626`).
+
+**The cross-check and the OCR route with real models.** Not yet run:
+they need the owner's models (agents never call a hosted provider).
+The owner runs, before the merge review:
+
+```bash
+php bin/ai-eval.php --scans --crosscheck --verbose
+php bin/ai-eval.php --scans --via=ocr --verbose
+```
+
+and the results (flags and false flags per kind; field accuracy per kind
+for both routes, 53.2's acceptance criterion 3) are recorded here.
 
 ---
 
@@ -129,9 +189,17 @@ Added to §7.27 in 53.3.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-18 and logged as #508–#510 in
+`open-questions.md`, before it was built, with #500 and #501 (Phase
+53.2's review: the redaction this phase relies on), both the
+recommendation.
 
-- **A. A value not found on the page: flag or drop?**
+- **A. A value not found on the page: flag or drop?** *Decided
+  2026-10-18 (#508): the recommendation, with how strict "found" is,
+  found while starting: #498's tolerance alone accepts "£68.28" where
+  "£60.28" is printed, so a found value's digits must also appear
+  exactly in the matched stretch. "OCR confident there" is the row
+  sharing most of the evidence's words, else the page.*
   - (1) Keep it and flag it.
   - (2) Drop it, as an unmatched value is dropped for text PDFs.
 
@@ -139,7 +207,8 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   that dropping would lose good values. Revisit once the eval shows the
   false-flag rate.
 
-- **B. *Send text, not images* default.**
+- **B. *Send text, not images* default.** *Decided 2026-10-18 (#509):
+  the recommendation.*
   - (1) Off.
   - (2) On for new *Internet* connections.
 
@@ -147,7 +216,23 @@ Numbered in `open-questions.md` when logged. Not built until decided.
   owner chose that provider. The option is explained where the
   connection is set up.
 
-- **C. V5C photos.**
+- **C. V5C photos.** *Decided 2026-10-18 (#510): the recommendation,
+  with how a V5C is recognised before anything is sent, found while
+  starting (the kind is otherwise only in the model's answer): V5C
+  markers in the OCR text, so OCR runs first on *Internet* vision
+  connections. The owner also chose the scan target `vehicle`; no entry
+  point stores one, so the owner then chose (same day) the markers only,
+  `VSC` too, not an 11-digit run (UK receipts print 11-digit phone
+  numbers), with a short form of #85's warning kept on *Internet*
+  connections (K104).*
+
+Found while building, logged as #511 (K104), not decided:
+
+- **#511. A *Scan the V5C* entry on the vehicle page?** Its target would
+  send an *Internet* V5C photo as text even when OCR doesn't spot its
+  markers.
+  - (1) Yes, in a later phase; the warning can then go.
+  - (2) No: markers only, with the warning, as built.
   - (1) Always as text on *Internet* connections when OCR is available.
   - (2) Follow the connection's option like any file.
 

@@ -96,8 +96,8 @@ final class PrintedNumber
 
     private static function isGrouping(string $number, string $separator, string $locale): bool
     {
-        // A leading lone 0 is never a group of its own: `0,759` is a decimal.
-        $groups = preg_match('/^(?!0[.,])\d{1,3}(' . preg_quote($separator, '/') . '\d{3})+$/', $number) === 1;
+        // A group of thousands never starts with 0: `0,759` and `00,759` are decimals (K98).
+        $groups = preg_match('/^[1-9]\d{0,2}(' . preg_quote($separator, '/') . '\d{3})+$/', $number) === 1;
         if (!$groups) {
             return false;
         }

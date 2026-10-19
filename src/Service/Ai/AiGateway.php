@@ -169,6 +169,11 @@ final readonly class AiGateway
         ChatRequest $request,
         bool $lock,
     ): ChatResult {
+        if ($connection->sendText && $request->hasImages()) {
+            // *Send text, not images* (spec.md §7.27 *Where it goes*): whatever asked.
+            $this->logRefusal($user?->id, $task, $connection->id, $model, ErrorCode::TextOnly);
+            throw $this->failure(ErrorCode::TextOnly, '', $connection, $model);
+        }
         $content = $this->settings->ai->logContent ? $request->transcript() : null;
 
         return $this->guarded(
@@ -221,11 +226,11 @@ final readonly class AiGateway
     }
 
     /**
-     * @template T
-     * @param Closure(OpenedConnection): T $send
-     * @param Closure(T): array{?int, ?int} $usage
-     * @param (Closure(T): string)|null $content
-     * @return T
+     * The answer carries the id of its usage-log row (the scan's counts).
+     *
+     * @param Closure(OpenedConnection): ChatResult $send
+     * @param Closure(ChatResult): array{?int, ?int} $usage
+     * @param (Closure(ChatResult): string)|null $content
      */
     private function guarded(
         ?User $locking,
@@ -236,7 +241,7 @@ final readonly class AiGateway
         Closure $send,
         Closure $usage,
         ?Closure $content,
-    ): mixed {
+    ): ChatResult {
         $opened = $this->prepare($user, $task, $connection, $model, true);
 
         $now = $this->clock->now();
@@ -251,9 +256,9 @@ final readonly class AiGateway
             $result = $send($opened);
             [$in, $out] = $usage($result);
             $logged = $content === null ? null : $opened->redact($content($result));
-            $this->log($user?->id, $task, $connection->id, $model, $started, Outcome::Ok, null, $in, $out, $logged);
+            $id = $this->log($user?->id, $task, $connection->id, $model, $started, Outcome::Ok, null, $in, $out, $logged);
 
-            return $result;
+            return $result->withRequestId($id);
         } catch (ProviderError $e) {
             $detail = $opened->redact($e->detail);
             $this->log($user?->id, $task, $connection->id, $model, $started, $e->error->outcome(), $e->error, null, null, null);
@@ -359,8 +364,8 @@ final readonly class AiGateway
         ?int $tokensIn,
         ?int $tokensOut,
         ?string $content,
-    ): void {
-        $this->requests->log(new RequestRecord(
+    ): int {
+        return $this->requests->log(new RequestRecord(
             userId: $userId,
             task: $task,
             connectionId: $connectionId,

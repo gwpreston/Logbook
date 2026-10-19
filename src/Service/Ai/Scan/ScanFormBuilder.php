@@ -34,6 +34,8 @@ final class ScanFormBuilder
     private array $hints = [];
     /** @var array<string, true> evidence of values OCR read with low confidence */
     private array $hardEvidence = [];
+    /** @var array<string, true> evidence of values the cross-check didn't find on the page (Phase 53.3) */
+    private array $notOnPage = [];
     /** @var array<string, true> dropped source fields already explained under a form field */
     private array $explained = [];
 
@@ -51,6 +53,12 @@ final class ScanFormBuilder
                 $this->hardEvidence[$words] = true;
             }
         }
+        foreach ($reading->notOnPage as $name) {
+            $words = $reading->evidence($name) ?? $reading->value($name);
+            if ($words !== null) {
+                $this->notOnPage[$words] = true;
+            }
+        }
     }
 
     public function set(string $field, string $value, ?string $evidence = null): void
@@ -65,12 +73,30 @@ final class ScanFormBuilder
             if (isset($this->hardEvidence[$evidence])) {
                 $this->check($field, $this->translator->trans('scan.check_hard_to_read'));
             }
+            // OCR read the page confidently and didn't find it (§7.27 *The cross-check*, #508).
+            if (isset($this->notOnPage[$evidence])) {
+                $this->check($field, $this->translator->trans('scan.check_not_on_page'));
+            }
         }
     }
 
     public function hint(string $field, string $text): void
     {
         $this->hints[$field] = $text;
+    }
+
+    /**
+     * A mark under $field that its value needs a careful look (the sum
+     * check, Phase 53.3); the value stays.
+     */
+    public function flag(string $field, string $text): void
+    {
+        $this->check($field, $text);
+    }
+
+    public function locale(): string
+    {
+        return $this->user->preferences->locale;
     }
 
     public function warn(string $text): void
@@ -333,8 +359,9 @@ final class ScanFormBuilder
 
     private function check(string $field, string $text): void
     {
+        // One reason a line: the form shows each with its own mark (design review of 53.3).
         $this->checks[$field] = isset($this->checks[$field]) && !str_contains($this->checks[$field], $text)
-            ? $this->checks[$field] . ' ' . $text
+            ? $this->checks[$field] . "\n" . $text
             : $text;
     }
 }

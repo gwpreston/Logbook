@@ -80,6 +80,7 @@ final readonly class AiAdmin
             'max_request_mb' => (string) $connection->maxRequestMb,
             'monthly_token_cap' => $connection->monthlyTokenCap === null ? '' : (string) $connection->monthlyTokenCap,
             'enabled' => $connection->enabled ? '1' : '',
+            'send_text' => $connection->sendText ? '1' : '',
         ];
     }
 
@@ -134,6 +135,7 @@ final readonly class AiAdmin
                 maxRequestMb: $maxMb,
                 monthlyTokenCap: $cap,
                 enabled: $v->checkbox('enabled'),
+                sendText: $v->checkbox('send_text'),
             ),
             apiKey: $apiKey,
             removeApiKey: $v->checkbox('remove_api_key'),

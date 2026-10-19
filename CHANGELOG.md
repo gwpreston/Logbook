@@ -6,6 +6,61 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 53.3: **OCR as a check on the vision model, and text instead of
+images** ([docs/phases/phase-53.3.md](docs/phases/phase-53.3.md)). One
+migration (a connection option and three usage-log counts); it rolls
+back, but roll back only with *Send text, not images* off everywhere,
+since older releases send pictures on every connection.
+
+### Added
+- **OCR checks the vision model.** With a vision model and OCR working,
+  OCR reads the same photo alongside the model. A value whose words or
+  digits aren't on the page where OCR read clearly is kept and marked
+  "Not found on the page, check this carefully." The usage log counts the
+  values found, marked and unchecked per scan.
+- **The money adds up.** On a fuel receipt read any way, volume × price
+  per unit is checked against the total (within 1p and the printed
+  rounding); if it doesn't add up, the three fields show the sum.
+- **Send text, not images**, a per-connection option, off by default:
+  photos and scanned PDFs are read by OCR on this server and only their
+  redacted text is sent. No image is ever sent on such a connection.
+- **V5C photos on internet connections go as text** when OCR works: OCR
+  reads first, and a photo with a V5C's markers is sent as its text,
+  without the reference number.
+- `bin/ai-eval.php --scans --crosscheck` (marks per kind and false marks)
+  and `--ocr --enlarge=min:target` (compare OCR enlarge rules).
+
+### Changed
+- The V5C reference is removed with punctuation between its groups
+  (`1234-5678-901`, K93) on every path, and on the OCR route also with
+  OCR's look-alikes (`9O1`) or wrapped over rows (K87). Numbers in another
+  column of the same row are no longer removed with it (K88).
+- OCR enlarges only text under 15 px (was 20 px): the eval found the
+  wider rule lowered accuracy and read an MOT photo's 0s as 6s (K85).
+- Checking a value's words against OCR text is much faster on long
+  evidence (K89).
+
+### Fixed
+- A fill-up from a scan whose station name was left empty opens *Station
+  and notes*, so the reason is visible (K90).
+- The Scan page's text-recognition line wraps beside its icon (K95).
+- A Tesseract that fails its version check is not asked for its
+  languages too (K94).
+- Scanned parts lines keep a size or a letter after a number when no
+  price follows ("Tyre 205 x 55", "Fuse 10 A"; K96, K97), and `00,759`
+  reads as 0.759 in every locale (K98).
+
+### Upgrade notes
+- One migration, adding columns only (well under a second on every
+  engine). Every connection starts with *Send text, not images* off: turn
+  it on per connection (Settings → AI → the connection → *Edit*).
+- Rolling back drops each connection's *Send text, not images* and the
+  per-scan cross-check counts; 3.17 then sends pictures on every
+  connection. Upgrading again brings every connection back with the option
+  **off**, so turn it on again where it was on.
+- Backups from this release carry *Send text, not images*. A 3.17.0 backup
+  restores the usual way: restore with 3.17.0, then upgrade.
+
 ## [3.17.0] — 2026-10-18
 
 Phases 53.1 and 53.2: **reading text from images, and scanning photos

@@ -64,6 +64,24 @@ final readonly class ScanAvailability
     }
 
     /**
+     * Photos can't be read because *Send text, not images* is on and OCR
+     * isn't working (Phase 53.3).
+     */
+    public function picturesTextOnly(): bool
+    {
+        return $this->router->picture()->problem === ScanProblem::TextOnly;
+    }
+
+    /**
+     * Whether photos go as pictures checked by OCR (Phase 53.3, spec.md
+     * §7.27 *The cross-check*).
+     */
+    public function picturesCheckedByOcr(): bool
+    {
+        return $this->router->picture()->crossCheck;
+    }
+
+    /**
      * The connection photos and scans go to (else the text one), to name
      * where a file is sent before it is.
      */

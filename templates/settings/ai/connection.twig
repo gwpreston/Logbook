@@ -55,6 +55,7 @@
                 <div><dt>{{ 'ai.connection.timeout'|trans }}</dt><dd>{{ 'ai.connection.seconds'|trans({count: connection.timeoutSeconds}) }}</dd></div>
                 <div><dt>{{ 'ai.connection.max_request'|trans }}</dt><dd>{{ 'units.file.mb'|trans({value: connection.maxRequestMb}) }}</dd></div>
                 <div><dt>{{ 'ai.connection.verify_tls'|trans }}</dt><dd>{{ (connection.verifyTls ? 'ai.connection.tls_on' : 'ai.connection.tls_off')|trans }}</dd></div>
+                <div><dt>{{ 'ai.connection.send_text'|trans }}</dt><dd>{{ (connection.sendText ? 'ai.connection.send_text_on' : 'ai.connection.send_text_off')|trans }}</dd></div>
                 <div><dt>{{ 'ai.usage.this_month'|trans }}</dt><dd>
                     {{- 'ai.usage.line'|trans({calls: usage.calls ?? 0, tokens: usage ? usage.tokens() : 0, failures: usage.failures ?? 0}) -}}
                     {%- if connection.monthlyTokenCap is not null %} · {{ 'ai.usage.cap'|trans({cap: connection.monthlyTokenCap}) }}{% endif -%}

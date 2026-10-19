@@ -77,6 +77,20 @@ final class PartLinesTest extends TestCase
         self::assertSame(['Coolant ×2', '9.95'], [$rows[5]['name'], $rows[5]['price']]);
     }
 
+    public function testASizeOrALetterAfterANumberStaysWithoutAPrice(): void
+    {
+        // K96, K97: a quantity or VAT code is read only after a price.
+        $lines = ['Tyre 205 x 55', 'Spacer 20 x 5', 'Fuse 10 A', 'Bulb 12 V', 'Fuse 10 A 2.50', 'Tyre 205 x 55 89.99 x2'];
+        $rows = PartLines::parse($lines, 'en_GB');
+
+        self::assertSame(['Tyre 205 x 55', null], [$rows[0]['name'], $rows[0]['price']]);
+        self::assertSame('Spacer 20 x 5', $rows[1]['name']);
+        self::assertSame('Fuse 10 A', $rows[2]['name']);
+        self::assertSame('Bulb 12 V', $rows[3]['name']);
+        self::assertSame(['Fuse 10 A', '2.5'], [$rows[4]['name'], $rows[4]['price']]);
+        self::assertSame(['Tyre 205 x 55 ×2', '89.99'], [$rows[5]['name'], $rows[5]['price']]);
+    }
+
     public function testAtMostTwentyLinesAndNamesAreCut(): void
     {
         $many = array_map(static fn (int $i): string => 'Part ' . $i, range(1, 30));

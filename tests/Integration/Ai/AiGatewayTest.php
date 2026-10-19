@@ -174,6 +174,65 @@ final class AiGatewayTest extends AiTestCase
         $this->assertLogged($app, Outcome::Refused, 'too_large');
     }
 
+    public function testAnImageOnASendTextConnectionIsRefusedAndNothingIsSent(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $id = $this->addConnection(
+            $app,
+            'Ollama',
+            AdapterType::Ollama,
+            'http://localhost:11434',
+            Location::Server,
+            sendText: true,
+        );
+        $this->assign($app, $id, 'gemma3:12b', AiTaskName::Ask, [Capability::Tools, Capability::Images]);
+
+        $error = $this->failure($app, $owner, new ChatRequest([
+            ChatMessage::user('Read this', [new ImageInput('jpegbytes', 'image/jpeg')]),
+        ]));
+
+        self::assertSame(ErrorCode::TextOnly, $error->error);
+        self::assertSame([], $this->provider->requests);
+        $this->assertLogged($app, Outcome::Refused, 'text_only');
+    }
+
+    public function testATextOnlyRequestOnASendTextConnectionGoesThrough(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $id = $this->addConnection(
+            $app,
+            'Ollama',
+            AdapterType::Ollama,
+            'http://localhost:11434',
+            Location::Server,
+            sendText: true,
+        );
+        $this->assign($app, $id, 'gemma3:12b', AiTaskName::Ask, [Capability::Tools, Capability::Images]);
+        $this->provider->queue('ollama/chat');
+
+        $result = $this->service($app, AiGateway::class)->run($owner, AiTaskName::Ask, self::hello());
+
+        self::assertSame('OK', $result->text);
+        self::assertCount(1, $this->provider->requests);
+        self::assertSame('ok', $this->connection($app)->fetchOne('SELECT outcome FROM ai_requests'));
+    }
+
+    public function testTheAnswerCarriesTheIdOfItsUsageLogRow(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $id = $this->addConnection($app, 'Ollama', AdapterType::Ollama, 'http://localhost:11434', Location::Server);
+        $this->assign($app, $id, 'llama3.2:3b', AiTaskName::Ask, [Capability::Tools]);
+        $this->provider->queue('ollama/chat', 'ollama/chat');
+        $gateway = $this->service($app, AiGateway::class);
+
+        $first = $gateway->run($owner, AiTaskName::Ask, self::hello());
+        $second = $gateway->run($owner, AiTaskName::Ask, self::hello());
+
+        $ids = $this->connection($app)->fetchFirstColumn('SELECT id FROM ai_requests ORDER BY id');
+        self::assertNotNull($first->requestId);
+        self::assertEquals([$first->requestId, $second->requestId], $ids, 'ids come back as strings on some engines');
+    }
+
     public function testTheMonthlyCapCountsTheCalendarMonthInTheAppTimeZone(): void
     {
         // 23:30 UTC on 31 October is already 1 November in Berlin.

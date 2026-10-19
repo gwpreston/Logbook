@@ -12,8 +12,8 @@ use Logbook\Support\Storage\ImageCleaner;
  * (spec.md §7.27): turned upright (EXIF), at most 4,000 px on the long edge,
  * greyscale, a percentile contrast stretch, deskewed by the angle that
  * maximises the variance of the rows' dark-pixel counts (±10° in 0.5°
- * steps), and enlarged when the text is under 20 px high so it is about
- * 30 px. The analysis runs on a copy about 1,000 px long, so it costs well
+ * steps), and enlarged when the text is under 15 px high so it is about
+ * 30 px (K85: from 20 px, enlarging read printed 0s as 6s). The analysis runs on a copy about 1,000 px long, so it costs well
  * under a second; only the final rotate and scale touch the full image.
  */
 final class GdImagePreparer implements ImagePreparer
@@ -34,12 +34,23 @@ final class GdImagePreparer implements ImagePreparer
     public const int GOOD_CONTRAST = 200;
     /** Memory a GD truecolor pixel takes, with some slack. */
     private const int BYTES_PER_COPY_PIXEL = 5;
-    private const int MIN_TEXT_HEIGHT = 20;
+    /** K85: the eval found enlarging text of 15–20 px lowered accuracy on every kind. */
+    public const int MIN_TEXT_HEIGHT = 15;
     private const int TARGET_TEXT_HEIGHT = 30;
     /** Largest page written as an 8-bit palette PNG (4000×3000, a phone photo fitted). */
     private const int PALETTE_MAX_PIXELS = 12_000_000;
     /** Most dark pixels the deskew search looks at. */
     private const int MAX_SAMPLES = 40000;
+
+    /**
+     * Text under $minTextHeight px is enlarged to about $targetTextHeight px
+     * (0 never enlarges); `bin/ai-eval.php --ocr --enlarge` tries others (K85).
+     */
+    public function __construct(
+        private readonly int $minTextHeight = self::MIN_TEXT_HEIGHT,
+        private readonly int $targetTextHeight = self::TARGET_TEXT_HEIGHT,
+    ) {
+    }
 
     public function prepare(string $bytes): ?PreparedImage
     {
@@ -60,8 +71,8 @@ final class GdImagePreparer implements ImagePreparer
         }
 
         $height = self::textHeight($small) * (max(imagesx($image), imagesy($image)) / max(imagesx($small), imagesy($small)));
-        if ($height > 0 && $height < self::MIN_TEXT_HEIGHT) {
-            $image = self::enlarge($image, self::TARGET_TEXT_HEIGHT / $height, $scale);
+        if ($height > 0 && $height < $this->minTextHeight) {
+            $image = self::enlarge($image, $this->targetTextHeight / $height, $scale);
         }
 
         return self::png(self::palette($image), $angle, $scale, 'gd');

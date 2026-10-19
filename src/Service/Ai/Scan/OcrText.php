@@ -23,10 +23,17 @@ final readonly class OcrText
     public const int MIN_WORDS = 30;
     /** A value whose evidence words average under this is "Hard to read". */
     public const float HARD_TO_READ = 60.0;
+    /** A gap wider than this many characters ends a run of a reference's digit groups (#501). */
+    private const float SHORT_GAP = 3.0;
+
+    /** Folded for a value's digits (#508): only O→0 and l, I→1, not S/5 or B/8. */
+    private const array DIGIT_SWAPS = ['o' => '0', 'l' => '1', 'i' => '1'];
 
     /**
      * @param list<string> $folded the words' text folded (EvidenceMatch::fold), one character per entry
      * @param list<array{int, int, float}> $spans each word's [start, end) in $folded, and its confidence
+     * @param list<string> $digits the same characters folded for digits only (DIGIT_SWAPS)
+     * @param list<array{list<string>, float}> $rows each row's words (lower case, look-alikes folded) and mean confidence
      */
     private function __construct(
         public string $text,
@@ -34,6 +41,8 @@ final readonly class OcrText
         public int $wordCount,
         private array $folded,
         private array $spans,
+        private array $digits = [],
+        private array $rows = [],
     ) {
     }
 
@@ -44,6 +53,8 @@ final readonly class OcrText
         $number = 0;
         $folded = [];
         $spans = [];
+        $digits = [];
+        $tokens = [];
         foreach (LayoutText::pages(self::withoutReferences($result->lines)) as $p => $rows) {
             if ($p > 0) {
                 $lines[] = '';
@@ -55,22 +66,40 @@ final readonly class OcrText
                 }
                 $lines[] = $line;
                 $length += mb_strlen($line) + 1;
+                $words = [];
+                $confidence = 0.0;
                 foreach ($row['words'] as $word) {
                     $chars = EvidenceMatch::fold($word->text);
                     $spans[] = [count($folded), count($folded) + count($chars), $word->confidence];
                     array_push($folded, ...$chars);
+                    array_push($digits, ...self::digitFold($word->text));
+                    array_push($words, ...self::words($word->text));
+                    $confidence += $word->confidence;
+                }
+                if ($row['words'] !== []) {
+                    $tokens[] = [$words, $confidence / count($row['words'])];
                 }
             }
         }
 
-        return new self(implode("\n", $lines), $result->meanConfidence, count($result->words), $folded, $spans);
+        return new self(
+            implode("\n", $lines),
+            $result->meanConfidence,
+            count($result->words),
+            $folded,
+            $spans,
+            $digits,
+            $tokens,
+        );
     }
 
     /**
-     * The lines without any word that is part of an 11-digit run in its
-     * row's words, read with single spaces between them: so a V5C's
-     * reference is removed however wide the gaps OCR's layout would keep
-     * between its groups (merge review of 53.2). Scrubber::ocrText still
+     * The lines without any word that is part of an 11-digit run (spec.md
+     * §7.27 *Reading through OCR*, #500, #501). A row's words are read
+     * with single spaces between them, but only across a short gap, so a
+     * date beside an odometer in another column is kept (K88); a run that
+     * ends a row joins one starting the next row in the same column, so a
+     * reference wrapped over rows is still caught. Scrubber::ocrText still
      * runs on each row's text as well.
      *
      * @param list<OcrLine> $lines
@@ -80,9 +109,14 @@ final readonly class OcrText
     {
         $drop = [];
         foreach (LayoutText::pages($lines) as $rows) {
+            $words = [];
             foreach ($rows as $row) {
-                foreach (Scrubber::referenceWords(array_map(static fn (OcrWord $w): string => $w->text, $row['words'])) as $i) {
-                    $drop[spl_object_id($row['words'][$i])] = true;
+                array_push($words, ...$row['words']);
+            }
+            $charWidth = LayoutText::wordsCharWidth($words);
+            foreach (self::stretches($rows, $charWidth) as $stretch) {
+                foreach (Scrubber::referenceWords(array_map(static fn (OcrWord $w): string => $w->text, $stretch)) as $i) {
+                    $drop[spl_object_id($stretch[$i])] = true;
                 }
             }
         }
@@ -98,6 +132,98 @@ final readonly class OcrText
         }
 
         return $kept;
+    }
+
+    /**
+     * The runs of words a reference could be printed in: each row split at
+     * gaps wider than SHORT_GAP characters; and digit groups ending one row
+     * joined with those starting the next row in the same column, when
+     * together they hold exactly 11 digits (a reference wrapped over two
+     * or three rows, not a VAT number above a date).
+     *
+     * @param list<array{text: string, words: list<OcrWord>}> $rows
+     * @return list<non-empty-list<OcrWord>>
+     */
+    private static function stretches(array $rows, float $charWidth): array
+    {
+        $stretches = [];
+        /** @var array{words: non-empty-list<OcrWord>, left: int, digits: int}|null $open */
+        $open = null;
+        foreach ($rows as $row) {
+            $pieces = [];
+            $piece = [];
+            $end = null;
+            foreach ($row['words'] as $word) {
+                if ($end !== null && ($word->box->left - $end) / $charWidth > self::SHORT_GAP) {
+                    $pieces[] = $piece;
+                    $piece = [];
+                }
+                $piece[] = $word;
+                $end = max($end ?? 0, $word->box->right());
+            }
+            if ($piece === []) {
+                $open = null;
+                continue;
+            }
+            $pieces[] = $piece;
+
+            $first = $pieces[0];
+            [$head, $headDigits] = self::digitGroups($first, false);
+            $carried = null;
+            if ($open !== null && $head !== [] && abs($first[0]->box->left - $open['left']) / $charWidth <= self::SHORT_GAP) {
+                $digits = $open['digits'] + $headDigits;
+                $joined = [...$open['words'], ...$head];
+                if ($digits === 11) {
+                    $stretches[] = $joined;
+                } elseif ($digits < 11 && count($pieces) === 1 && count($head) === count($first)) {
+                    // A row of digit groups only: the run may go on below.
+                    $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $digits];
+                }
+            }
+            array_push($stretches, ...$pieces);
+
+            $last = $pieces[count($pieces) - 1];
+            [$tail, $tailDigits] = self::digitGroups($last, true);
+            $open = $carried ?? ($tail === [] || $tailDigits >= 11
+                ? null
+                : ['words' => $tail, 'left' => $last[0]->box->left, 'digits' => $tailDigits]);
+        }
+
+        return $stretches;
+    }
+
+    /**
+     * The words of digit groups at the end (or start) of a piece, and how
+     * many digits they hold.
+     *
+     * @param non-empty-list<OcrWord> $piece
+     * @return array{list<OcrWord>, int}
+     */
+    private static function digitGroups(array $piece, bool $fromEnd): array
+    {
+        $words = $fromEnd ? array_reverse($piece) : $piece;
+        $found = [];
+        $digits = 0;
+        foreach ($words as $word) {
+            $count = Scrubber::digitsIn($word->text);
+            if ($count === null) {
+                break;
+            }
+            $found[] = $word;
+            $digits += $count;
+        }
+
+        return [$fromEnd ? array_reverse($found) : $found, $digits];
+    }
+
+    /**
+     * Whether the text carries a V5C's markers (spec.md §7.27 *Where it
+     * goes*, #510), so a photo bound for an *Internet* connection goes as
+     * this text instead. `VSC` too: OCR reads a 5 as an S.
+     */
+    public function looksLikeRegistration(): bool
+    {
+        return preg_match('/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu', $this->text) === 1;
     }
 
     /**
@@ -117,6 +243,82 @@ final readonly class OcrText
             . "characters (0 and O, 1 and l, 5 and S, 8 and B) and may split or join words. Each line starts\n"
             . "with its number and a bar, which are not part of the document; leave them out of evidence.\n"
             . "Between the markers:\n<<<\n" . $this->text . "\n>>>";
+    }
+
+    /**
+     * Whether a value a vision model read is on the page (spec.md §7.27
+     * *The cross-check*, #508): its evidence (or the value) matches within
+     * EvidenceMatch's tolerance and the value's digits appear, in order and
+     * unbroken, in that stretch. Otherwise it is Flagged when OCR read
+     * confidently there (the row sharing most of the evidence's words, or
+     * the page when none does), else Unchecked.
+     */
+    public function check(string $value, string $evidence): CrossCheck
+    {
+        $needle = $evidence !== '' ? $evidence : $value;
+        $at = EvidenceMatch::find(EvidenceMatch::fold($needle), $this->folded);
+        if ($at !== null) {
+            $want = self::digitsOf(self::digitFold($value));
+            $span = self::digitsOf(array_slice($this->digits, $at[0], $at[1] - $at[0]));
+            if ($want === '' || str_contains($span, $want)) {
+                return CrossCheck::Found;
+            }
+        }
+
+        return $this->confidenceNear($needle) >= self::HARD_TO_READ ? CrossCheck::Flagged : CrossCheck::Unchecked;
+    }
+
+    /**
+     * The mean confidence of the row sharing most of $words's words, or of
+     * the page when no row shares one.
+     */
+    private function confidenceNear(string $words): float
+    {
+        $wanted = array_flip(self::words($words));
+        $best = 0;
+        $confidence = $this->meanConfidence;
+        foreach ($this->rows as [$row, $mean]) {
+            $shared = count(array_intersect_key(array_flip($row), $wanted));
+            if ($shared > $best) {
+                $best = $shared;
+                $confidence = $mean;
+            }
+        }
+
+        return $confidence;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function digitFold(string $text): array
+    {
+        $chars = mb_str_split(mb_strtolower((string) preg_replace('/[\s\x{00A0}\x{202F}]+/u', '', $text)));
+
+        return array_map(static fn (string $c): string => self::DIGIT_SWAPS[$c] ?? $c, $chars);
+    }
+
+    /**
+     * @param list<string> $chars
+     */
+    private static function digitsOf(array $chars): string
+    {
+        return (string) preg_replace('/[^0-9]/', '', implode('', $chars));
+    }
+
+    /**
+     * A text's words of two characters or more, lower case, look-alikes folded.
+     *
+     * @return list<string>
+     */
+    private static function words(string $text): array
+    {
+        $words = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_filter(
+            array_map(static fn (string $w): string => implode('', EvidenceMatch::fold($w)), $words),
+            static fn (string $w): bool => mb_strlen($w) >= 2,
+        ));
     }
 
     /**

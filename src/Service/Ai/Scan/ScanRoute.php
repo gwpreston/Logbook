@@ -9,7 +9,10 @@ use Logbook\Domain\Ai\AiTaskName;
 /**
  * How a photo or scanned PDF is read (spec.md §7.27 *Routing*, Phase
  * 53.2): by the vision model, by OCR and then a text model ($task names
- * whose), or not at all ($problem says why).
+ * whose), or not at all ($problem says why). From Phase 53.3 the vision
+ * route is checked by OCR when it works ($crossCheck), and on an
+ * *Internet* connection OCR reads first ($ocrFirst), so a registration
+ * document can go as text instead.
  */
 final readonly class ScanRoute
 {
@@ -17,12 +20,14 @@ final readonly class ScanRoute
         public bool $ocr,
         public ?AiTaskName $task,
         public ?ScanProblem $problem,
+        public bool $crossCheck = false,
+        public bool $ocrFirst = false,
     ) {
     }
 
-    public static function vision(): self
+    public static function vision(bool $crossCheck = false, bool $ocrFirst = false): self
     {
-        return new self(false, AiTaskName::ReadDocument, null);
+        return new self(false, AiTaskName::ReadDocument, null, $crossCheck, $crossCheck && $ocrFirst);
     }
 
     public static function viaOcr(AiTaskName $task): self

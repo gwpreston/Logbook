@@ -130,7 +130,8 @@ final readonly class ConnectionTester
             ));
             self::requireText($result);
         };
-        if (!$stopped && $model->images) {
+        // *Send text, not images* (Phase 53.3): not even the test's image is sent.
+        if (!$stopped && $model->images && !$connection->sendText) {
             $worked = $this->step($results, TestStep::Images, $images, $stopped);
             $capabilities[Capability::Images->value] = $stopped ? $model->images : $worked;
         }

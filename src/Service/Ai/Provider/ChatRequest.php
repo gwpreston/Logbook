@@ -51,6 +51,17 @@ final readonly class ChatRequest
         );
     }
 
+    public function hasImages(): bool
+    {
+        foreach ($this->messages as $message) {
+            if ($message->images !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Every message's text, for the usage log with `AI_LOG_CONTENT=true`.
      */

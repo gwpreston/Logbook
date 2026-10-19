@@ -8,6 +8,7 @@ use FilesystemIterator;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Process\Executable;
 use Logbook\Support\Process\ProcessRunner;
+use Logbook\Support\Process\RunningProcess;
 
 /**
  * Tesseract on this server (`TESSERACT_BINARY`, spec.md §9, §7.27). Run
@@ -46,10 +47,11 @@ final class TesseractEngine implements OcrEngine
             return $this->status = new OcrEngineStatus($this->name(), false);
         }
         $version = $this->runner->run([$binary, '--version'], 10);
-        $langs = $this->runner->run([$binary, '--list-langs'], 10);
         if (!$version->ok()) {
+            // K94: one that fails or hangs on its version isn't asked for its languages too.
             return $this->status = new OcrEngineStatus($this->name(), false, location: $binary);
         }
+        $langs = $this->runner->run([$binary, '--list-langs'], 10);
 
         return $this->status = new OcrEngineStatus(
             $this->name(),
@@ -62,43 +64,65 @@ final class TesseractEngine implements OcrEngine
 
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult
     {
+        return $this->start($png, $languages, $layout, $page)->result();
+    }
+
+    /**
+     * Started in the background (Phase 53.3): the run's result waits for
+     * it, with `OCR_TIMEOUT` counted from the start.
+     */
+    public function start(string $png, array $languages, PageLayout $layout, int $page = 1): OcrRun
+    {
         $binary = $this->binary();
         if ($binary === null || !function_exists('proc_open')) {
-            return OcrResult::failed(OcrProblem::Unavailable);
+            return OcrRun::done(OcrResult::failed(OcrProblem::Unavailable));
         }
         $status = $this->status();
         $language = $this->pick($languages, $status->languages);
         $dir = sys_get_temp_dir() . '/logbook-ocr-' . bin2hex(random_bytes(8));
         if (!@mkdir($dir, 0700)) {
-            return OcrResult::failed(OcrProblem::Failed, $language, $status->version);
+            return OcrRun::done(OcrResult::failed(OcrProblem::Failed, $language, $status->version));
         }
+        if (file_put_contents($dir . '/page.png', $png) === false) {
+            self::remove($dir);
 
-        try {
-            if (file_put_contents($dir . '/page.png', $png) === false) {
-                return OcrResult::failed(OcrProblem::Failed, $language, $status->version);
-            }
-            $run = $this->runner->run(
-                [$binary, $dir . '/page.png', $dir . '/out', '-l', $language, '--psm', (string) $layout->tesseractMode(), 'tsv'],
-                $this->settings->ocr->timeout,
-                ['OMP_THREAD_LIMIT' => '1'],
-            );
-            if ($run->timedOut) {
-                return OcrResult::failed(OcrProblem::Timeout, $language, $status->version);
-            }
-            $tsv = is_file($dir . '/out.tsv') ? file_get_contents($dir . '/out.tsv') : false;
-            if (!$run->ok() || !is_string($tsv)) {
-                return OcrResult::failed(OcrProblem::Failed, $language, $status->version);
-            }
+            return OcrRun::done(OcrResult::failed(OcrProblem::Failed, $language, $status->version));
+        }
+        $running = $this->runner->start(
+            [$binary, $dir . '/page.png', $dir . '/out', '-l', $language, '--psm', (string) $layout->tesseractMode(), 'tsv'],
+            $this->settings->ocr->timeout,
+            ['OMP_THREAD_LIMIT' => '1'],
+        );
 
-            return OcrResult::read(TesseractTsv::parse($tsv, $page), $language, $status->version);
-        } finally {
-            foreach (new FilesystemIterator($dir) as $file) {
-                if ($file instanceof \SplFileInfo) {
-                    @unlink($file->getPathname());
+        return new OcrRun(static function () use ($running, $dir, $page, $language, $status): OcrResult {
+            try {
+                $run = $running instanceof RunningProcess ? $running->wait() : $running;
+                if ($run->timedOut) {
+                    return OcrResult::failed(OcrProblem::Timeout, $language, $status->version);
                 }
+                $tsv = is_file($dir . '/out.tsv') ? file_get_contents($dir . '/out.tsv') : false;
+                if (!$run->ok() || !is_string($tsv)) {
+                    return OcrResult::failed(OcrProblem::Failed, $language, $status->version);
+                }
+
+                return OcrResult::read(TesseractTsv::parse($tsv, $page), $language, $status->version);
+            } finally {
+                self::remove($dir);
             }
-            @rmdir($dir);
+        }, static fn () => self::remove($dir));
+    }
+
+    private static function remove(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
         }
+        foreach (new FilesystemIterator($dir) as $file) {
+            if ($file instanceof \SplFileInfo) {
+                @unlink($file->getPathname());
+            }
+        }
+        @rmdir($dir);
     }
 
     /**

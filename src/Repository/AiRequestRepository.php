@@ -26,7 +26,10 @@ final readonly class AiRequestRepository
     {
     }
 
-    public function log(RequestRecord $record): void
+    /**
+     * Returns the row's id.
+     */
+    public function log(RequestRecord $record): int
     {
         $this->connection->insert(self::TABLE, [
             'user_id' => $record->userId,
@@ -48,6 +51,27 @@ final readonly class AiRequestRepository
             'tokens_out' => ParameterType::INTEGER,
             'duration_ms' => ParameterType::INTEGER,
         ]);
+
+        return (int) $this->connection->lastInsertId();
+    }
+
+    /**
+     * A vision scan's cross-check counts on its row (spec.md §6 AiRequest,
+     * Phase 53.3); never the text.
+     */
+    public function setScanCounts(int $id, int $found, int $flagged, int $unchecked): void
+    {
+        $this->connection->update(
+            self::TABLE,
+            ['scan_found' => $found, 'scan_flagged' => $flagged, 'scan_unchecked' => $unchecked],
+            ['id' => $id],
+            [
+                'scan_found' => ParameterType::INTEGER,
+                'scan_flagged' => ParameterType::INTEGER,
+                'scan_unchecked' => ParameterType::INTEGER,
+                'id' => ParameterType::INTEGER,
+            ],
+        );
     }
 
     /**

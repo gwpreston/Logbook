@@ -230,6 +230,91 @@ final class ScanMappingTest extends ScanTestCase
         self::assertArrayNotHasKey('filled_at', $form->checks);
     }
 
+    public function testAFuelSumWithinAPennyPasses(): void
+    {
+        $this->scanApp();
+        foreach (['£64.59', '£64.60', '£64.58'] as $total) {
+            $form = $this->map($this->owner, self::fuel('45.20 L', '142.9p', $total));
+
+            foreach (['volume', 'price', 'total'] as $field) {
+                self::assertArrayNotHasKey($field, $form->checks, "$total, $field");
+            }
+        }
+    }
+
+    public function testAFuelSumOutsideThatIsMarkedOnVolumePriceAndTotal(): void
+    {
+        $this->scanApp();
+        $form = $this->map($this->owner, self::fuel('45.20 L', '142.9p', '£64.95'));
+
+        $message = '45.20 L × 142.9p = £64.59, but the total reads £64.95.';
+        self::assertSame($message, $form->checks['volume']);
+        self::assertSame($message, $form->checks['price']);
+        self::assertSame($message, $form->checks['total']);
+        self::assertSame('64.95', $form->values['total'], 'the value is kept');
+    }
+
+    public function testAPriceToTenthsOfAPennyGetsItsRoundingAllowance(): void
+    {
+        $this->scanApp();
+        // 42.18 L at 142.9p is 60.27522; with 1p, half a penny of volume and
+        // 0.05p of price the allowance is 0.0382: 60.31 is just inside, 60.32 outside.
+        foreach (['£60.28', '£60.31'] as $total) {
+            $passes = $this->map($this->owner, self::fuel('42.18 L', '142.9p', $total));
+            self::assertArrayNotHasKey('total', $passes->checks, $total);
+        }
+
+        $fails = $this->map($this->owner, self::fuel('42.18 L', '142.9p', '£60.32'));
+        self::assertSame('42.18 L × 142.9p = £60.28, but the total reads £60.32.', $fails->checks['total']);
+    }
+
+    public function testTheVolumeUnitIsShownWhenTheVolumeHasNone(): void
+    {
+        $this->scanApp();
+        $form = $this->map($this->owner, self::fuel('45.20', '142.9p', '£64.95', 'L'));
+
+        self::assertSame('45.20 L × 142.9p = £64.59, but the total reads £64.95.', $form->checks['total']);
+    }
+
+    public function testAPricePerLitreInPoundsIsCheckedToo(): void
+    {
+        $this->scanApp();
+        $passes = $this->map($this->owner, self::fuel('45.20', '£1.429/litre', '£64.59', 'L'));
+        self::assertArrayNotHasKey('total', $passes->checks);
+
+        $fails = $this->map($this->owner, self::fuel('45.20', '£1.429/litre', '£64.95', 'L'));
+        self::assertSame('45.20 L × £1.429/litre = £64.59, but the total reads £64.95.', $fails->checks['total']);
+    }
+
+    public function testAFigureThatReadsTwoWaysWhoseOtherReadingAddsUpIsNotFlaggedAsASum(): void
+    {
+        $this->scanApp();
+        // 42.18 × 1.759 = 74.19: the English reading (42180 × 1759) is far off, the other adds up.
+        $form = $this->map($this->owner, self::fuel('42,180', '1,759 €/l', '74,19 €'));
+
+        self::assertSame('Check the number: 1759 or 1.759?', $form->checks['price']);
+        self::assertSame('Check the number: 42180 or 42.18?', $form->checks['volume']);
+        self::assertArrayNotHasKey('total', $form->checks);
+    }
+
+    public function testAMissingFigureMeansNoSumCheck(): void
+    {
+        $this->scanApp();
+        $noTotal = $this->map($this->owner, self::reading(
+            ['date' => '14/10/2026', 'volume' => '45.20 L', 'price_per_unit' => '142.9p'],
+            ScanKind::FuelReceipt,
+        ));
+        $noPrice = $this->map($this->owner, self::reading(
+            ['date' => '14/10/2026', 'volume' => '45.20 L', 'total' => '£99.00'],
+            ScanKind::FuelReceipt,
+        ));
+
+        foreach ([$noTotal, $noPrice] as $form) {
+            self::assertArrayNotHasKey('volume', $form->checks);
+            self::assertArrayNotHasKey('total', $form->checks);
+        }
+    }
+
     public function testAReceiptsStationIsChosenOrNamedAsNew(): void
     {
         $this->scanApp();
@@ -265,6 +350,16 @@ final class ScanMappingTest extends ScanTestCase
     private function map(User $user, Extraction $reading): \Logbook\Service\Ai\Scan\ScanForm
     {
         return $this->service($this->app, Mapper::class)->map($user, $this->garage['Golf'], $reading);
+    }
+
+    private static function fuel(string $volume, string $price, string $total, string $unit = ''): Extraction
+    {
+        $fields = ['date' => '14/10/2026', 'volume' => $volume, 'price_per_unit' => $price, 'total' => $total];
+        if ($unit !== '') {
+            $fields['volume_unit'] = $unit;
+        }
+
+        return self::reading($fields, ScanKind::FuelReceipt);
     }
 
     /**

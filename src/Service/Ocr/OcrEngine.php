@@ -27,4 +27,13 @@ interface OcrEngine
      * @param list<string> $languages Tesseract codes wanted, most wanted first (`deu`, `eng`)
      */
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult;
+
+    /**
+     * Starts reading one page and returns at once where the engine can run
+     * in the background (Tesseract); otherwise the page is read when the
+     * run's result is asked for. Never throws.
+     *
+     * @param list<string> $languages
+     */
+    public function start(string $png, array $languages, PageLayout $layout, int $page = 1): OcrRun;
 }

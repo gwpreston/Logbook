@@ -19,7 +19,8 @@ use Throwable;
  * A scan from upload to stored reading (spec.md §7.27). The checked (and,
  * for a photo, stripped) file is kept as a pending upload first, marked
  * `reading`, so it survives whatever the model does; then it is prepared,
- * read (a photo or scan by the route Router picks), and the extraction or
+ * read (a photo or scan by the route Router picks, checked by OCR on the
+ * vision route when it works), and the extraction or
  * the reason it could not be read is stored.
  */
 final readonly class ScanReader
@@ -92,6 +93,13 @@ final readonly class ScanReader
                         $path,
                         $upload->mime,
                         $route->task,
+                    ),
+                    $route->crossCheck => $this->extractor->extractChecked(
+                        $user,
+                        $path,
+                        $upload->mime,
+                        $prepared = $this->preparer->pictures($path, $upload->mime, $prepared->pageCount),
+                        $route->ocrFirst,
                     ),
                     default => $this->extractor->extract(
                         $user,

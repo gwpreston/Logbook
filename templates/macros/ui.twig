@@ -152,7 +152,7 @@
     {% if evidence or check or problem or hint %}
         <div class="field__scan" id="f-{{ name }}-scan">
             {% if evidence %}<p class="field__evidence">{{ ui.icon('receipt_long') }}<span><span class="visually-hidden">{{ 'scan.evidence_label'|trans }} </span>“{{ evidence }}”</span></p>{% endif %}
-            {% if check %}<p class="field__check">{{ ui.icon('warning') }}<span>{{ check }}</span></p>{% endif %}
+            {% if check %}{% for line in check|split("\n") %}<p class="field__check">{{ ui.icon('warning') }}<span>{{ line }}</span></p>{% endfor %}{% endif %}
             {% if problem %}<p class="field__check">{{ ui.icon('warning') }}<span>{{ problem }}</span></p>{% endif %}
             {% if hint %}<p class="field__hint">{{ hint }}</p>{% endif %}
         </div>

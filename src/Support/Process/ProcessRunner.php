@@ -20,6 +20,25 @@ final class ProcessRunner
      */
     public function run(array $command, float $timeout, array $env = [], int $maxOutput = self::MAX_OUTPUT): ProcessResult
     {
+        $running = $this->start($command, $timeout, $env, $maxOutput);
+
+        return $running instanceof RunningProcess ? $running->wait() : $running;
+    }
+
+    /**
+     * Starts it and returns at once; RunningProcess::wait() collects it,
+     * with $timeout counted from now. A process that can't start is its
+     * result straight away.
+     *
+     * @param non-empty-list<string> $command
+     * @param array<string, string> $env added to the current environment
+     */
+    public function start(
+        array $command,
+        float $timeout,
+        array $env = [],
+        int $maxOutput = self::MAX_OUTPUT,
+    ): RunningProcess|ProcessResult {
         if (!function_exists('proc_open')) {
             return new ProcessResult(-1, '', 'proc_open is disabled');
         }
@@ -28,42 +47,15 @@ final class ProcessRunner
         if ($out === false || $err === false) {
             return new ProcessResult(-1, '', 'no temporary file');
         }
-
-        try {
-            $environment = $env === [] ? null : array_merge(getenv(), $env);
-            $process = @proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => $out, 2 => $err], $pipes, null, $environment);
-            if (!is_resource($process)) {
-                return new ProcessResult(-1, '', 'could not start');
-            }
-            $started = microtime(true);
-            $status = proc_get_status($process);
-            while ($status['running']) {
-                if (microtime(true) - $started > $timeout) {
-                    proc_terminate($process, 9);
-                    proc_close($process);
-
-                    return new ProcessResult(-1, '', '', true);
-                }
-                usleep(20_000);
-                $status = proc_get_status($process);
-            }
-            $code = $status['exitcode'];
-            proc_close($process);
-
-            return new ProcessResult($code, self::read($out, $maxOutput), self::read($err, 65536));
-        } finally {
+        $environment = $env === [] ? null : array_merge(getenv(), $env);
+        $process = @proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => $out, 2 => $err], $pipes, null, $environment);
+        if (!is_resource($process)) {
             fclose($out);
             fclose($err);
+
+            return new ProcessResult(-1, '', 'could not start');
         }
-    }
 
-    /**
-     * @param resource $file
-     */
-    private static function read($file, int $max): string
-    {
-        rewind($file);
-
-        return (string) stream_get_contents($file, $max);
+        return new RunningProcess($process, $out, $err, microtime(true), $timeout, $maxOutput);
     }
 }

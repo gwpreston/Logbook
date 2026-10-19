@@ -26,6 +26,8 @@ enum ErrorCode: string
     case Disabled = 'disabled';
     /** The task has no model, or the model lacks what the task needs. */
     case Unassigned = 'unassigned';
+    /** An image on a connection with *Send text, not images* (Phase 53.3). */
+    case TextOnly = 'text_only';
 
     public function messageKey(): string
     {
@@ -41,7 +43,7 @@ enum ErrorCode: string
         return match ($this) {
             self::Timeout => Outcome::Timeout,
             self::TooLarge, self::CapReached, self::Busy, self::NotAcknowledged,
-            self::SecretUnreadable, self::Disabled, self::Unassigned => Outcome::Refused,
+            self::SecretUnreadable, self::Disabled, self::Unassigned, self::TextOnly => Outcome::Refused,
             default => Outcome::Error,
         };
     }
