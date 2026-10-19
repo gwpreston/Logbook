@@ -201,8 +201,12 @@ four engines. Blocking:
    superseded proposals and this section. **Fixed** here; the real-model
    evals are scheduled to 53.4.
 
-Follow-ups (not blocking) go to `known-issues.md` through the issue
-sweep after the final review.
+**Round 2 at `bacdefd9` (2026-10-19): MERGE.** The three blocking
+reasons are resolved; every gate passes on the four engines.
+
+**Issue sweep (2026-10-19)** of both rounds' follow-ups: 30 items, 14
+recorded as K108–K121, 5 open questions (#512–#516), K105 widened
+(a scanned PDF's later pages are read after the model answers).
 
 ---
 
@@ -272,3 +276,25 @@ Found while building, logged as #511 (K104). *Needs a decision.*
 
   *Recommendation:* (1), in a later phase: it closes K104 without
   guessing from the photo.
+
+Found in the merge review's issue sweep (2026-10-19), logged as #512–#516
+with K108–K115. *Needs a decision* (options in `open-questions.md`; none
+chosen here):
+
+- **#512. A V5C without markers on text routes** (K108): after #500's
+  narrowing, keep it and fix the wording and warning; apply the wide rule
+  to all text bound for an *Internet* connection (or with *Send text*);
+  wording only; or fold into #511.
+- **#513. Which V5C markers, and how many** (K109): any one, as #510;
+  one blocks the picture but the wide redaction needs a stronger sign;
+  two for both; or drop `VSC`, `DVLA` and `Document reference`.
+- **#514. When is a value "not on the page"?** (K110, revisits #508):
+  keep the rule; also try the value alone; a higher confidence bar; or
+  allow single-digit OCR swaps. Includes whether documents under 30
+  words are checked.
+- **#515. What image the cross-check's OCR reads** (K114): the full-size
+  file; the 2,000 px copy if 53.4's eval shows no loss; full size up to a
+  budget; or set a scan memory budget in spec §8 first.
+- **#516. The sum line's currency on a foreign receipt** (K115): the
+  vehicle's; the receipt's; none; or the price as printed with sum and
+  total in the vehicle's.
