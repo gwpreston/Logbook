@@ -11,13 +11,15 @@ text itself with an OCR engine, without sending the picture anywhere. With
 a working engine, **a text-only model can scan photos**: a small local
 model that can't see pictures reads the text OCR found instead. From
 3.18 OCR also **checks what a vision model read**, and a connection can
-**send text, not images**. A later release fills a fill-up with no AI at
-all.
+**send text, not images**. From 3.18 it also **reads without AI**: with
+no model set up (or for someone who switched AI off), a fuel receipt
+still fills the fill-up form, and an invoice its date, total and mileage.
 
 - [Which models read what](#which-models-read-what)
 - [Scanning with a text model](#scanning-with-a-text-model)
 - [Checking a vision model](#checking-a-vision-model)
 - [Send text, not images](#send-text-not-images)
+- [Reading without AI](#reading-without-ai)
 - [Getting the best photo](#getting-the-best-photo)
 - [The two engines](#the-two-engines)
 - [Docker](#docker)
@@ -33,11 +35,16 @@ all.
 Logbook picks the way to read each file from what you have set up. There
 is nothing to choose:
 
-| File | A vision model on *Reading receipts and documents* | A text model only, and OCR working | Neither |
-|---|---|---|---|
-| Photo | the vision model sees the picture, and OCR checks it | OCR reads it here, then the text model reads the text | can't be read: the form opens empty with the photo attached |
-| Scanned PDF | the vision model sees its pages, and OCR checks them | OCR reads it here, then the text model | as above |
-| PDF with text | the *Reading text PDFs* model reads its text | the same | the same |
+| File | A vision model on *Reading receipts and documents* | A text model only, and OCR working | A text model only, no OCR | No model, OCR working |
+|---|---|---|---|---|
+| Photo | the vision model sees the picture, and OCR checks it | OCR reads it here, then the text model reads the text | can't be read: the form opens empty with the photo attached | OCR reads it here, then [rules](#reading-without-ai) |
+| Scanned PDF | the vision model sees its pages, and OCR checks them | OCR reads it here, then the text model | as above | as above |
+| PDF with text | the *Reading text PDFs* model reads its text | the same | the same | its text is read by rules |
+
+- *No model* means none reads for that person: none is set up, AI is
+  switched off (`AI_ENABLED=false`), or they switched off *Use AI
+  features* in their own settings. A model never sees the file of
+  someone who switched AI off.
 
 - *The text model* is the *Reading receipts and documents* model when it
   is a text-only model, otherwise the *Reading text PDFs* model (or, with
@@ -136,6 +143,69 @@ attached. So on an internet connection a scan waits for OCR before the
 model starts. A V5C photo OCR can't read
 well enough to spot a marker still goes as a picture, with its
 reference number, and the Scan page says so on internet connections.
+
+## Reading without AI
+
+With OCR working and no model reading for you, *Scan* still shows, and
+the file is read on this server by **rules**: no model, no request, no
+usage-log entry. Nothing leaves the server. The Scan page says so before
+you choose a file, and the form says "Read without AI on this server.
+Check every field before saving." Each field filled is marked *Read
+without AI, check*.
+
+What the rules can do:
+
+- **Tell the kind of document** from its words: a fuel receipt (litres,
+  kWh, a price per litre, pump, grade names), a service invoice (labour,
+  parts, invoice, VAT, mileage), an MOT certificate, an insurance
+  document, a claim letter, a repair estimate or a V5C. If it guesses
+  wrong, *Not right? Read it as* on the form switches kind without
+  reading again.
+- **Fuel receipts:** the volume, price per unit and total, but only when
+  volume × price makes the total (within 1p and the printed rounding).
+  If no set of figures adds up, or two sets do and disagree, only the
+  total is filled: the amount straight after *Total* (or *Amount due*),
+  printed with a currency or two decimals, never a *Net total* or
+  *Total labour*, never a refund (`-£12.00`), none if the receipt prints
+  two different totals, and only if OCR read it clearly; you type the volume
+  and price. Also the date
+  and time, the grade (through the same words as Ask's drafts), the
+  station when its name matches one of your stations (otherwise you
+  pick it), and the currency.
+- **Service invoices:** the date, the total (the amount straight after
+  *Total*, *Balance due* or *Amount due*, never a net, subtotal or
+  partial total, none if two different totals are printed, and only if
+  OCR read it clearly), the registration (one of your vehicles', else a UK
+  plate) and the mileage (the number after *Mileage*, *Odometer* or
+  *Miles*). The garage's name is left for you. The work lines between the header and the totals are
+  copied into the description as they are, marked "Copied from the
+  invoice, tidy as needed"; the title is left for you.
+- **A V5C:** the registration only. As on every route, the file is kept
+  only if you tick *Keep the file*.
+- **Anything else** (MOT certificates, insurance documents, letters): the
+  date only.
+
+What they can't do:
+
+- Read labour, parts or VAT totals, recommended work, advisories, expiry
+  dates or policy numbers. A model does that.
+- Fix what OCR misread. A faded 0 read as 6 makes a total that doesn't
+  add up, so the volume and price are left empty, and the total too
+  unless OCR was sure of it. A flatter, brighter photo helps
+  ([Getting the best photo](#getting-the-best-photo)).
+- Learn a station's layout from your corrections. That may come later.
+- Read languages other than English and German. The words they look for
+  are in the translation files (`scan.keywords.*`), so a translation can
+  add them; English words are always looked for too.
+
+A short receipt is read even with fewer than 30 words, as long as OCR was
+reasonably sure of what it read: the rules fill only labelled values, so
+there is nothing to mislead. One scan at a time per person still
+applies.
+
+Switch it off with the *Read receipts* module (Settings → Modules), which
+also switches off reading with a model. Settings → Modules lists it
+whenever a model or OCR can read a file, with AI set up or not.
 
 ## Getting the best photo
 

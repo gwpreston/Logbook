@@ -3444,9 +3444,14 @@ Disabled modules are removed from nav, routes, and dashboard.
   `stations` (Phase 30.1,
   on by default, §7.33; off whenever `fuel` is off), and
   from Phase 26.1 the AI
-  modules `ai_ask`, `ai_actions` and `ai_scan` (§7.25: on by default, but
+  modules `ai_ask` and `ai_actions` (§7.25: on by default, but
   doing nothing without an assigned task, and listed on Settings → Modules
-  only while AI is set up). A
+  only while AI is set up), and `scan` (*Reading files*, §7.27: on by
+  default, listed whenever a model or a working OCR engine can read a
+  file, with AI set up or not). `scan` was the AI module `ai_scan` until
+  Phase 53.4 (decided 2026-10-19, `docs/phases/open-questions.md` #517,
+  #521): a stored `ai_scan` choice and `FEATURES_AI_SCAN` still apply
+  when `scan` has none. A
   module is enabled unless the global setting `features` (a JSON object of
   module → bool) says otherwise, falling back to `FEATURES_<MODULE>`
   (default true, except `trips`: default false).
@@ -6993,14 +6998,16 @@ request to any model service.
   features*, a user setting `ai.use`, **on** unless the user switched it
   off. Shown only once AI is set up (at least one task has a working
   assignment). Off hides every AI entry point for that user and sends
-  nothing on their behalf.
+  nothing on their behalf; from Phase 53.4 *Scan* stays for them when
+  OCR works, reading without AI (§7.27, #518).
 - **Admin-only connections** (decided 2026-10-01, #65): members cannot
   add their own connections or keys; every call a member makes uses the
   admins' connections and counts against their caps.
 - **Answers are returned whole** (decided 2026-10-01, #66), with a
   progress indicator in the features; nothing is streamed to the
   browser.
-- **Modules** (§7.10): `ai_ask`, `ai_actions` and `ai_scan`. They default
+- **Modules** (§7.10): `ai_ask`, `ai_actions` and, until Phase 53.4,
+  `ai_scan` (now `scan`, §7.27). They default
   to on but do nothing without an assigned task, and appear on Settings →
   Modules only while AI is set up.
 - **Not in this phase:** any user-facing AI feature (26.2–26.5), running
@@ -7405,10 +7412,16 @@ A photo or PDF of an invoice, receipt or certificate fills in the right
 form. The user checks the prefilled form and saves it; the file is
 attached to the entry it creates. Nothing is ever saved without *Save*.
 
-- **Available** when the `read_document` task or the `read_text` task
-  (or `ask`'s model with JSON output, §7.25) has a model, the `ai_scan`
-  module is on, and the user's *Use AI features* is on. The entry points
-  are hidden otherwise. Which files can then be read follows *Routing*
+- **Available** when the `scan` module is on (`ai_scan` before Phase
+  53.4) and the file can be read: by a model (the `read_document` task
+  or the `read_text` task, or `ask`'s model with JSON output, §7.25, with
+  the user's *Use AI features* on), or, from Phase 53.4, **without AI**
+  by a working OCR engine and rules (*Reading without AI*, below). The
+  entry points are hidden otherwise. Reading without AI needs neither AI
+  set up (`AI_ENABLED=false` included) nor *Use AI features* (decided
+  2026-10-19, `docs/phases/open-questions.md` #518, #521): nothing leaves
+  the server. Never in a demo (§7.36), which takes no file from a
+  visitor. Which files can then be read follows *Routing*
   (Phase 53.2), below: a text PDF needs only a text model; a photo or a
   scanned PDF needs a vision model on `read_document`, or a text model
   and a working OCR engine.
@@ -7508,11 +7521,18 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   from what is set up, with no setting to learn. A vision model stays
   first wherever it is set up.
 
-  | File | Vision model on `read_document` | Text model, OCR working | Neither |
-  |---|---|---|---|
-  | Photo | the vision model (checked by OCR when it works, Phase 53.3) | OCR, then the text model | "needs a model that reads images" (Phase 53.4 reads it without AI) |
-  | Scanned PDF | the vision model | OCR, then the text model | as above; no renderer: "This PDF is a scan…" |
-  | Text PDF | `read_text` | `read_text` | `read_text` |
+  | File | Vision model on `read_document` | Text model, OCR working | Text model, no OCR | No model, OCR working (Phase 53.4) |
+  |---|---|---|---|---|
+  | Photo | the vision model (checked by OCR when it works, Phase 53.3) | OCR, then the text model | "needs a model that reads images" | OCR, then rules |
+  | Scanned PDF | the vision model | OCR, then the text model | as above; no renderer: "This PDF is a scan…" | OCR, then rules; no renderer: "This PDF is a scan…" |
+  | Text PDF | `read_text` | `read_text` | `read_text` | its text, then rules |
+
+  With no model and no OCR, Scan is hidden.
+
+  - The columns are what reads **for this user**: with their *Use AI
+    features* off, or AI off for the install, no model reads for them,
+    and their files take the rules columns (Phase 53.4, #518). A model
+    never sees the file of a user who switched AI off.
 
   - *The text model* is `read_document`'s when that is a text-only model
     (§7.25), else `read_text`'s (or `ask`'s, as for text PDFs). The
@@ -7798,11 +7818,13 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   "Read by {model} on {connection}" for a model alone, and "Read on this
   server (text recognition), then by {model} on {connection}" through
   OCR ("Read by the text recognition service, then by …" for
-  PaddleOCR).
+  PaddleOCR). Read by rules (Phase 53.4): "Read without AI on this
+  server. Check every field before saving."
 - **Instructions inside files are never followed.** The scan request has
   no tools; its answer is only a form's values; nothing saves without
   *Save*.
-- **Logging:** each request is in the usage log (§7.25) under its task;
+- **Logging:** each request is in the usage log (§7.25) under its task
+  (reading without AI makes no request and writes no row);
   with `AI_LOG_CONTENT=true` the request's text (a text PDF's text, or
   the OCR text sent, after redaction) and the answer are logged, never an
   image. From Phase 53.3 a cross-checked request also counts its values
@@ -7815,7 +7837,140 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   side. `--crosscheck` (Phase 53.3) reads the photos and scans with the
   vision model and OCR's cross-check, and reports per kind the values
   flagged, and the false flags (a flagged value the fixture says is
-  right).
+  right). `--via=rules` (Phase 53.4) reads every fixture without AI (OCR
+  for photos and scans, the text layer for text PDFs) and needs no model.
+- **Reading without AI** (Phase 53.4, `Service\Scan\Rules\RuleReader`):
+  with no model reading for the user (*Routing*) and OCR working, a
+  photo or scanned PDF is read by OCR and then by **rules**; a text PDF's
+  text layer is read by the same rules. Nothing leaves the server: no
+  request, no usage-log row, no per-user AI lock; OCR's own
+  one-per-user limit applies (a second scan while one reads is refused
+  with the usual message). OCR's failures give the same lines as on the
+  OCR route; *Too little text* is only a mean confidence under 40 (or no
+  words): the 30-word minimum keeps short text from a model, and rules
+  fill only labelled values, so a short receipt is still read (decided
+  2026-10-19, `docs/phases/open-questions.md` #525).
+  - **The same output as a model:** per kind the schema's fields as
+    `{value, evidence}`, values as printed, the evidence being the line
+    the value came from (after the 11-digit scrub, *Preparing the
+    file*), so the Mapper, the evidence match, *Hard to read*, the sum
+    check, the dates, the numbers and the vehicle match work unchanged.
+    Every kind's reader runs on the text, and the reading keeps each
+    kind's values, so *Read it as* maps the right values for the kind
+    chosen, still with no second read.
+  - **Numbers** of more than 12 significant digits (a card's
+    authorisation code, a barcode) are never an amount, a volume, a price
+    or a reading: they are passed over, so the rest of the file is still
+    read (merge review of 53.4).
+  - **Keywords** live in the locale files (`scan.keywords.*`); the
+    user's locale's words and English are both used, so a German
+    receipt's `GESAMT` and `Liter` work under `de`, and an English one
+    there too. A keyword matches whole words, in any case.
+  - **Classification:** each kind scores the different keywords of its
+    own found in the text: *fuel receipt* (litres, kWh, price per litre,
+    pump, grade words), *service invoice* (labour, parts, invoice, VAT,
+    mileage), *MOT certificate* (MOT, test, expiry, advisory),
+    *insurance* (policy, insurer, cover), *claim letter* (claim, claim
+    number, settlement, excess), *repair estimate* (estimate) and, from
+    #522, *registration
+    document* (`V5C`, `VSC`, `Registration Certificate`, `DVLA`,
+    `Document reference`, keeper). A volume printed with its unit adds
+    one to *fuel receipt*. The highest score of at least 2 wins, a tie
+    going to the kind listed first; otherwise *other*. V5C markers
+    count as keywords like any other, so an invoice's own words can
+    outscore "VSC warning light" (decided 2026-10-19,
+    `docs/phases/open-questions.md` #524); the check that redacts and
+    blocks pictures (*Where it goes*) is separate and unchanged. The
+    form offers *Read it as* the other kinds, as on every route.
+  - **Fuel receipt:**
+    - candidates for the volume (a number followed by `L`, `LTR`,
+      `LITRES`, `kWh`, `G` or `GAL`, or after a volume word), the price
+      per unit (a number with `p/L`, `PPL`, `£/L`, `/kWh`, `per litre`,
+      or after a price word) and the total (a number on a line with a
+      total word: `TOTAL`, `AMOUNT`, `TO PAY`, `GESAMT`…; never a
+      line with a change, discount, points, subtotal or tendered word,
+      such as `Amount tendered`);
+    - the set whose volume × price agrees with the total by *The money
+      adds up*'s own rule (within 1p plus the printed rounding, in
+      `brick/math`) wins. With two agreeing sets that disagree, only
+      their total is filled when they share it. With no agreeing set,
+      only the total is filled, and only **strictly** (decided
+      2026-10-19, `docs/phases/open-questions.md` #526): the first
+      amount **directly after** a word labelling the grand total
+      (`TOTAL`, `AMOUNT DUE`, `AMOUNT PAYABLE`, `BALANCE DUE`,
+      `GESAMTBETRAG`…, `scan.keywords.invoice_total`), with at most
+      `:`, `=`, a currency or `(inc VAT)` between them (never a dash: a
+      minus sign is a credit or a refund, `TOTAL -£12.00`, and fills
+      nothing), so `Total due £450.00 Invoice no 10045` gives 450.00 and
+      `TOTAL £45.26 VISA ending 4821` 45.26. The amount must **look like
+      money**: printed with a currency, or with exactly two decimals and
+      no word after it (`Total 3 items £450.00`, `Total 2.5 hrs`, `Total
+      20.00 VAT` and `Balance due 30 days` fill nothing; fourth merge
+      review). Never a number printed with a unit or as a price
+      (`42.18 L`, `107.2p/L`); never a label qualified by a word before or after it
+      (`Net total`, `Total excl. VAT`, `Total labour`, `Total mileage`,
+      `Total volume`: `scan.keywords.total_qualifier`); when the document
+      prints two different such totals, none is filled; and only when
+      OCR read that amount with a confidence of at least 90 (#525: a faded 0 read as 6 adds up to nothing, and
+      was read less surely); otherwise it too is left. The volume and
+      price are then left for the owner. A wrong agreeing set is never
+      filled: only labelled numbers are candidates, and each number is
+      read in the user's locale as the Mapper reads it. A receipt prints
+      few candidates: amounts printed with a currency but no total word
+      (a shop basket) count only while there are at most 12 different
+      ones, and with more than 12 different volumes, prices or labelled
+      totals (a statement) no set is searched, so a long document is
+      read in bounded time (merge review of 53.4);
+    - the date and time from the first line holding a date (the locale's
+      order, with the usual "Check the date" warning). Words are taken
+      for month names only when they are one; the month names are worked
+      out once per locale, so a long text is read in bounded time;
+    - the grade: the first grade word (`scan.keywords.grade`: unleaded,
+      super, diesel, E10, V-Power…), through the Phase 26.3 grade
+      resolver as on every route;
+    - the station: only one of the install's stations, named on one of
+      the top five lines (the text before its first comma or wide gap,
+      matched by the station's normalised name, §7.33); otherwise it is
+      left for the owner (#526: a first line can be an address or a
+      product as easily as a name);
+    - the currency from `£`, `€`, `$` or a code beside the total.
+  - **Service invoice** (partial): the date (the first line with a date
+    word, else the first date, never one with a word such as *next*,
+    *due* or *expiry* between it and the date or line start before it,
+    `not_date`, so `Next service 01/09/2026 Invoice date 01/03/2025`
+    gives 01/03/2025); the total (strictly, as a fuel receipt's lone
+    total, #526); the
+    registration (a vehicle the user can log to whose
+    registration appears in the text, else the UK plate pattern
+    `AB12 CDE`), matched to a vehicle as today; the odometer (a number
+    on a line with `MILEAGE`, `ODO`, `ODOMETER` or `MILES`, the unit
+    when printed). The garage is left for the owner (#526). The
+    **work lines** (decided 2026-10-19,
+    `docs/phases/open-questions.md` #519): the lines after the header's
+    last labelled line (date, registration, mileage, invoice number)
+    and before the first totals line go into the description, unparsed
+    and marked "Copied from the invoice, tidy as needed"; the title is
+    left for the owner. Labour, parts, VAT, recommendations and parts
+    lines are not read.
+  - **Registration document** (#522): the registration only (a known
+    vehicle's, else the UK plate pattern). The usual V5C page; the file
+    is kept only when ticked.
+  - **Other kinds** (MOT certificate, insurance, claim letter, repair
+    estimate, other): the date only (the first date; an insurance
+    document's as its start), with the rest left empty.
+  - **The notice** at the top of the form: "Read without AI on this
+    server. Check every field before saving." Each field read is marked
+    "Read without AI, check" in place of "From the file, check". The
+    Scan page says *This server* for where the file goes, as for a local
+    model; with PaddleOCR, that the text recognition service reads
+    photos and rules read its text, and nothing goes to an AI model
+    ("Read without AI, by the text recognition service and rules" on
+    the form).
+  - **Not in scope:** learning a station's layout from corrections
+    (parked, §12, #520); falling back to rules when a model's read fails
+    (parked, §12, #523); rules for languages other than the shipped
+    locales'; recommended work, advisories or schedule matching from
+    rules.
 - **Parts lines** (Phase 50.2, #440): a service invoice's parts lines are
   offered under the form as *Add as parts*, unticked (§7.39 *Scanning*).
 - **Not in scope:** saving without the form; a parts inventory away from
@@ -7987,7 +8142,7 @@ with its own model. No connection in Settings → AI is needed or used.
 - **What switches it off for a user** (decided 2026-10-01, #91): only
   `MCP_ENABLED`, `API_ENABLED` and the key. Each tool needs its own
   module (`fuel`, `maintenance`, …) as on the pages and the API; the AI
-  modules (`ai_ask`, `ai_actions`, `ai_scan`) and the user's *Use AI
+  modules (`ai_ask`, `ai_actions`, `scan`) and the user's *Use AI
   features* setting don't apply, because no Logbook model is used.
 - **Tools** (`tools/list` varies only by the key; deterministic order):
   - Every key: the Phase 26.2 read tools, with the same arguments and
@@ -8300,7 +8455,7 @@ Decided 2026-10-01 (`docs/phases/open-questions.md` #93, #98, #99).
 #### Reading claim letters and repair estimates (Phase 27.2)
 Decided 2026-10-01 (`docs/phases/open-questions.md` #95, #100, #101).
 Two scan kinds (§7.27), `claim_letter` and `repair_estimate`, fill an
-incident. They need `ai_scan` and `incidents` on.
+incident. They need `scan` (`ai_scan` before Phase 53.4) and `incidents` on.
 
 - **A claim letter whose claim number matches an incident** of the
   vehicle opens that incident's **edit** form, each changed field marked
@@ -10803,10 +10958,13 @@ Real environment variables override `.env`; an empty value counts as unset.
   `FEATURES_STATIONS` (Phase 30.1; off whenever fuel is)
   (default true; see §7.10),
   `FEATURES_TRIPS` (default false), `FEATURES_AI_ASK`,
-  `FEATURES_AI_ACTIONS`, `FEATURES_AI_SCAN` (default true; §7.25)
+  `FEATURES_AI_ACTIONS` (default true; §7.25), `FEATURES_SCAN` (default
+  true; §7.27; from Phase 53.4, with `FEATURES_AI_SCAN` read when it is
+  unset)
 - AI (§7.25, Phase 26.1): `AI_ENABLED` (default `true`; `false` hides
   Settings → AI, every AI switch and entry point, and sends nothing,
-  whatever is configured), `AI_LOG_CONTENT` (default `false`; `true`
+  whatever is configured; from Phase 53.4 *Scan* stays when OCR works,
+  reading without AI, §7.27, #521), `AI_LOG_CONTENT` (default `false`; `true`
   stores prompts and answers in the usage log, for debugging, with a
   warning on Settings → AI), `AI_ALLOW_INSECURE_TLS` (default `true`:
   allows a connection's *Verify TLS* to be switched off; `false` forbids
@@ -11083,6 +11241,10 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Page budgets (Phase 41.7, #351): bring the dashboard and the overview
   from 60 queries to 30, by serving the reminder sync's and the activity
   feed's own reads from the lists a page has already read.
+- Reading without AI (Phase 53.4): learning a station's receipt layout
+  from the owner's corrections, such as which line held the total
+  (#520); and falling back to rules when a model's read fails, with OCR
+  working (#523).
 
 ---
 
@@ -11813,13 +11975,17 @@ task breakdowns live in the per-phase files; this is the map.
   and look-alikes, and narrowed to short gaps (#500, #501); and K85,
   K87–K90, K93–K98 (§6 AiConnection, AiRequest, §7.25, §7.27). See
   [`phase-53.3.md`](docs/phases/phase-53.3.md).
-- **Phase 53.4 — Reading without AI + release** (planned). With
-  Tesseract and no model, *Scan* shows: documents classified by keywords
-  and read by rules, every field marked "Read without AI, check every
-  field"; fuel receipts filled from the volume, price and total that
-  agree, with date, grade and station; service invoices' date, total,
-  registration, mileage and vendor; other kinds the date only (§7.10,
-  §7.27; open questions A–D in the phase file). See
+- **Phase 53.4 — Reading without AI + release** (in progress). With
+  OCR working and no model reading for the user (none set up, AI off,
+  or their *Use AI features* off), *Scan* shows: documents classified by
+  keywords and read by rules, every field marked "Read without AI,
+  check"; fuel receipts filled from the volume, price and total that
+  agree (else only a strict grand total), with date, grade and, when
+  it is one of the install's, the station; service invoices' date,
+  strict total, registration, mileage and work lines, the garage left
+  for the owner; a V5C's registration; other kinds the date only. The
+  `ai_scan` module becomes `scan` (§7.10, §7.27, §12; #517–#526).
+  K116, K118–K120. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
   known-issues log + patch release** (planned). Retrying `POST

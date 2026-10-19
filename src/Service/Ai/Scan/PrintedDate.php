@@ -106,6 +106,12 @@ final readonly class PrintedDate
      */
     private static function months(string $locale): array
     {
+        // Built once per locale: a long text holds many date-like candidates (merge review of 53.4).
+        /** @var array<string, array<string, int>> $byLocale built once per locale (merge review of 53.4) */
+        static $byLocale = [];
+        if (isset($byLocale[$locale])) {
+            return $byLocale[$locale];
+        }
         $names = [];
         foreach (array_unique([$locale, 'en']) as $language) {
             foreach (['MMMM', 'MMM', 'LLLL', 'LLL'] as $pattern) {
@@ -129,6 +135,8 @@ final readonly class PrintedDate
         $names['sept'] = 9;
         // Longest first, so "june" wins over "jun".
         uksort($names, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+        $byLocale[$locale] = $names;
 
         return $names;
     }

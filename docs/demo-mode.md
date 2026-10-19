@@ -128,7 +128,8 @@ with its link left out of the navigation:
   records *demo: not sent*), calendar feeds cannot be made, and the app makes
   no outbound request at all: the mail transport and the HTTP client refuse.
 - **Uploading a file:** the file fields are not offered and a request that
-  carries a file is refused. Documents, receipts and vehicle photos can still
+  carries a file is refused. *Scan* is never shown, even when text
+  recognition works. Documents, receipts and vehicle photos can still
   be saved without one, so nothing a visitor adds can be seen by the next
   visitor except text, and nothing but text survives a reset.
 

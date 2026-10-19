@@ -1454,6 +1454,15 @@ return static function (App $app): void {
         $group->post('/ask', AskRedirectAction::class)->setName('ask.moved.post');
         $group->get('/ask/threads/{thread:[0-9]+}', AskRedirectAction::class)->setName('ask.moved.thread');
 
+        // Reading files (spec.md §7.27, Phase 26.4): 404 unless scanning is available; a scan is its user's own.
+        // Routed with AI_ENABLED=false too: from Phase 53.4 it reads without AI (#521).
+        $group->map(['GET', 'POST'], '/scan', ScanAction::class)->setName('scan');
+        $group->get('/scan/{token:[0-9a-f]{32}}', ScanResultAction::class)->setName('scan.result');
+        $group->get('/scan/{token:[0-9a-f]{32}}/file', ScanFileAction::class)->setName('scan.file');
+        $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/reminders', ScanRemindersAction::class)
+            ->setName('scan.reminders');
+        $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/vehicle', ScanVehicleAction::class)
+            ->setName('scan.vehicle');
         // AI (spec.md §7.25, Phase 26.1): not routed at all with AI_ENABLED=false.
         if ($settings->ai->enabled) {
             // One's own *Use AI features* switch; 404 until AI is set up.
@@ -1476,14 +1485,6 @@ return static function (App $app): void {
             // Drafting entries (Phase 26.3): a card's buttons; the draft is the user's own or not found.
             $group->post('/insights/questions/drafts/{draft:[0-9]+}/{action:add|discard|undo}', AskDraftAction::class)
                 ->setName('insights.questions.draft');
-            // Reading files (spec.md §7.27, Phase 26.4): 404 unless scanning is available; a scan is its user's own.
-            $group->map(['GET', 'POST'], '/scan', ScanAction::class)->setName('scan');
-            $group->get('/scan/{token:[0-9a-f]{32}}', ScanResultAction::class)->setName('scan.result');
-            $group->get('/scan/{token:[0-9a-f]{32}}/file', ScanFileAction::class)->setName('scan.file');
-            $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/reminders', ScanRemindersAction::class)
-                ->setName('scan.reminders');
-            $group->map(['GET', 'POST'], '/scan/{token:[0-9a-f]{32}}/vehicle', ScanVehicleAction::class)
-                ->setName('scan.vehicle');
             // Settings → AI: admins only, and 404 (not 403) to anyone else.
             $group->group('/settings/ai', function (Group $ai) use ($instance): void {
                 $manage = InstanceAbility::ManageAi->value;

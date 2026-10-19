@@ -4029,9 +4029,9 @@ return [
                 'title' => 'Einträge entwerfen',
                 'hint' => 'Sag, was du getan hast („42 Liter für 61 € getankt“), und prüfe den Entwurf, bevor er gespeichert wird.',
             ],
-            'ai_scan' => [
+            'scan' => [
                 'title' => 'Belege lesen',
-                'hint' => 'Fotos und PDFs von Belegen und Rechnungen werden in ein Formular gelesen, das du vor dem Speichern prüfst.',
+                'hint' => 'Fotos und PDFs von Belegen und Rechnungen werden in ein Formular gelesen, das du vor dem Speichern prüfst, von einem Modell oder ohne KI auf diesem Server.',
             ],
             'parts' => [
                 'title' => 'Teile und Umbauten',
@@ -5097,6 +5097,29 @@ return [
     // Ask Logbook (spec.md §7.26, Phase 26.2).
     // Dateien lesen (spec.md §7.27, Phase 26.4).
     'scan' => [
+        // Reading without AI (Phase 53.4, spec.md §7.27): words and phrases separated by |,
+        // matched as whole words in any case; the user's locale's and English are both used.
+        'keywords' => [
+            'fuel_receipt' => 'liter|ltr|kwh|zapfsäule|säule|benzin|diesel|kraftstoff|tankstelle|ladesäule|literpreis',
+            'service_invoice' => 'rechnung|arbeitslohn|arbeitszeit|teile|ersatzteile|mwst|ust|kilometerstand|inspektion|werkstatt|reparatur|ölwechsel|kennzeichen',
+            'inspection' => 'hauptuntersuchung|tüv|dekra|prüfbericht|prüfplakette|untersuchungsbericht|nächste hu',
+            'insurance' => 'versicherung|versicherungsschein|versicherer|versicherungsnummer|deckung|haftpflicht|vollkasko|teilkasko|beitrag',
+            'claim_letter' => 'schaden|schadennummer|schadensnummer|regulierung|selbstbeteiligung|totalschaden',
+            'repair_estimate' => 'kostenvoranschlag|angebot|gutachten',
+            'registration' => 'zulassungsbescheinigung|fahrzeugschein|fahrzeugbrief|halter',
+            'grade' => 'super plus|super e10|super e5|super|normalbenzin|benzin|diesel|e10|e5|autogas|lpg',
+            'volume' => 'menge|liter|volumen',
+            'price' => 'preis|literpreis|einzelpreis|preis/l',
+            'total' => 'gesamt|gesamtbetrag|summe|betrag|zu zahlen|endbetrag|total',
+            'not_total' => 'zwischensumme|rückgeld|rabatt|nachlass|netto|punkte|gegeben|bar gegeben',
+            'invoice_total' => 'gesamtbetrag|gesamt|endbetrag|rechnungsbetrag|zu zahlen|summe',
+            'total_qualifier' => 'netto|zwischen|arbeit|arbeitslohn|teile|menge|liter|mwst|ust|steuer|ohne|zzgl|kraftstoff|rabatt',
+            'date' => 'datum|rechnungsdatum|leistungsdatum',
+            'not_date' => 'nächste|nächster|fällig|gültig|bis',
+            'odometer' => 'kilometerstand|km-stand|tachostand|laufleistung',
+            'header' => 'rechnung|datum|kennzeichen|fahrzeug|kilometerstand|kunde|auftrag|fahrgestellnummer',
+            'totals' => 'arbeitslohn|teile|mwst|ust|zwischensumme|gesamt|gesamtbetrag|summe|netto|endbetrag',
+        ],
         'title' => 'Beleg oder Dokument scannen',
         'lead' => 'Ein Foto oder PDF einer Rechnung, Quittung oder Bescheinigung füllt das passende Formular aus. Du prüfst und speicherst es; die Datei wird angehängt.',
         'chooser' => 'Beleg oder Dokument scannen',
@@ -5104,6 +5127,9 @@ return [
         'shortcut' => 'Scannen',
         'fill_from_file' => 'Aus einer Datei ausfüllen',
         'where' => [
+            'rules' => 'Ohne KI auf diesem Server gelesen (Texterkennung und Regeln). Die Datei verlässt ihn nicht. Prüfe vor dem Speichern jedes Feld.',
+            'rules_paddleocr' => 'Ohne KI gelesen: dein Texterkennungsdienst liest Fotos und gescannte PDFs, dann Regeln auf diesem Server. Nichts geht an ein KI-Modell. Prüfe vor dem Speichern jedes Feld.',
+            'rules_text' => 'PDFs mit Text werden ohne KI auf diesem Server gelesen. Die Datei verlässt ihn nicht. Prüfe vor dem Speichern jedes Feld.',
             'server' => 'Gelesen von {connection} auf diesem Server. Die Datei verlässt ihn nicht.',
             'network' => 'Gelesen von {connection} in deinem Netzwerk. Die Datei verlässt es nicht.',
             'internet' => 'Gelesen von {connection}, im Internet. Die Datei wird dorthin gesendet (Fotos ohne Standortdaten).',
@@ -5119,6 +5145,7 @@ return [
             'vehicle_any' => 'Das Dokument entscheiden lassen',
         ],
         'hint' => [
+            'work_copied' => 'Aus der Rechnung übernommen, bei Bedarf aufräumen.',
             'file' => 'Ein Foto (JPEG, PNG oder WebP) oder ein PDF, bis {max} MB. Auf dem Handy öffnet sich die Kamera.',
             'file_send_text' => 'Ein PDF mit Text, bis {max} MB. Diese Verbindung sendet nur Text, daher brauchen Fotos und gescannte PDFs Texterkennung auf diesem Server (Einstellungen → KI).',
             'file_text_only' => 'Ein PDF mit Text, bis {max} MB. Fotos und gescannte PDFs brauchen ein Modell, das Bilder liest, oder Texterkennung auf diesem Server (Einstellungen → KI).',
@@ -5154,9 +5181,13 @@ return [
         'pick_lead_registration' => 'Es zeigt {registration}, das keines deiner Fahrzeuge hat.',
         'module_off' => '{module} ist ausgeschaltet, daher gibt es dafür kein Formular. Die Datei wird 24 Stunden aufbewahrt.',
         'cannot_manage' => 'Du kannst die Angaben von {vehicle} nicht ändern. Die Datei wird 24 Stunden aufbewahrt.',
+        'from_rules' => 'Ohne KI gelesen, bitte prüfen',
         'from_file' => 'Aus der Datei, bitte prüfen',
+        'evidence_label_rules' => 'Ohne KI aus der Datei gelesen:',
         'evidence_label' => 'Aus der Datei:',
         'notice' => [
+            'read_by_rules_paddleocr' => 'Ohne KI gelesen, vom Texterkennungsdienst und mit Regeln. Prüfe vor dem Speichern jedes Feld.',
+            'read_by_rules' => 'Ohne KI auf diesem Server gelesen. Prüfe vor dem Speichern jedes Feld.',
             'read_by' => 'Gelesen von {model} auf {connection}.',
             'read_by_tesseract' => 'Auf diesem Server gelesen (Texterkennung), dann von {model} auf {connection}.',
             'read_by_paddleocr' => 'Vom Texterkennungsdienst gelesen, dann von {model} auf {connection}.',

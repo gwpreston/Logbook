@@ -6,6 +6,7 @@ namespace Logbook\Service\Ai\Scan;
 
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\Location;
+use Logbook\Domain\User\User;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Service\Ai\AiStatus;
 use Logbook\Service\Ocr\OcrReader;
@@ -18,8 +19,10 @@ use Logbook\Service\Ocr\OcrReader;
  * text: `read_document`'s when that is a text-only model, else
  * `read_text`'s (or `ask`'s). A vision model whose connection has *Send
  * text, not images* counts as text-only. On an *Internet* connection OCR
- * reads first, so a V5C can go as text (#510). A text PDF never comes
- * here: it always goes to `read_text`.
+ * reads first, so a V5C can go as text (#510). With no model reading for
+ * the user (none set up, AI off, or their *Use AI features* off) and OCR
+ * working, rules read it without AI (Phase 53.4, #518). A page works the
+ * route out once and asks the route (K118).
  */
 final readonly class Router
 {
@@ -30,8 +33,15 @@ final readonly class Router
     ) {
     }
 
-    public function picture(): ScanRoute
+    /**
+     * How $user's photos are read; with no user, the install's route for a
+     * user with AI on (the phone app's quick action).
+     */
+    public function picture(?User $user = null): ScanRoute
     {
+        if (($user !== null && !$this->status->isOnFor($user)) || ($user === null && !$this->status->isSetUp())) {
+            return $this->ocr->isWorking() ? ScanRoute::rules() : ScanRoute::none(ScanProblem::NoVision);
+        }
         $document = $this->status->model(AiTaskName::ReadDocument);
         if ($document?->images === true) {
             $connection = $this->connections->find($document->connectionId);
@@ -47,17 +57,25 @@ final readonly class Router
             default => null,
         };
         if ($task === null) {
-            return ScanRoute::none(ScanProblem::Unassigned);
+            return $this->ocr->isWorking() ? ScanRoute::rules() : ScanRoute::none(ScanProblem::Unassigned);
         }
 
         return $this->ocr->isWorking() ? ScanRoute::viaOcr($task) : ScanRoute::none(ScanProblem::NoVision);
     }
 
     /**
-     * Whether photos can be read at all, by either route.
+     * Whether a model reads $user's text PDFs; else rules do (Phase 53.4).
      */
-    public function readsPictures(): bool
+    public function modelReadsText(User $user): bool
     {
-        return $this->picture()->problem === null;
+        return $this->status->isOnFor($user) && $this->status->model(AiTaskName::ReadText) !== null;
+    }
+
+    /**
+     * Whether photos can be read at all, by any route.
+     */
+    public function readsPictures(?User $user = null): bool
+    {
+        return $this->picture($user)->problem === null;
     }
 }

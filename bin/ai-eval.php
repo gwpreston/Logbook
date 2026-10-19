@@ -32,13 +32,18 @@ declare(strict_types=1);
  * checks that no 11-digit reference survives a registration document.
  * Nothing is written but the usage log.
  *
- *   php bin/ai-eval.php --scans [--via=ocr] [--user=demo] [--only=1,15] [--verbose]
+ *   php bin/ai-eval.php --scans [--via=ocr|rules] [--user=demo] [--only=1,15] [--verbose]
  *
  * --via=ocr (Phase 53.2, §7.27 *Reading through OCR*) also reads each photo
  * and scanned PDF through OCR and the text model (read_document's when it
  * is text-only, else read_text's), and reports both routes side by side:
  * the vision model (when one is set up) and OCR. Text PDFs go to read_text
  * either way, so they count the same in both.
+ *
+ * --via=rules (Phase 53.4, §7.27 *Reading without AI*) reads every fixture
+ * without AI instead: OCR and rules for photos and scans, the text layer
+ * and rules for text PDFs. It needs no model, only a working OCR engine;
+ * without one it says so on stderr and exits 1. Nothing is sent anywhere.
  *
  * With --insights (Phase 42, spec.md §7.26 *AI insights*) it makes the
  * user's AI insights --runs times (3 by default) with the configured `ask`
@@ -95,6 +100,7 @@ use Logbook\Support\Number\Decimal;
 use Logbook\Service\Ocr\GdImagePreparer;
 use Logbook\Service\Ocr\ImagickImagePreparer;
 use Logbook\Service\Ocr\OcrReader;
+use Logbook\Service\Scan\Rules\RuleReader;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -102,7 +108,7 @@ $options = getopt('', [
     'user:', 'only:', 'verbose', 'scans', 'via:', 'crosscheck', 'insights', 'ocr', 'degraded', 'enlarge:', 'runs:', 'help',
 ]);
 if (isset($options['help'])) {
-    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans [--via=ocr|--crosscheck]|--insights [--runs=3]"
+    fwrite(STDOUT, "Usage: php bin/ai-eval.php [--scans [--via=ocr|rules|--crosscheck]|--insights [--runs=3]"
         . "|--ocr [--degraded] [--enlarge=20:24,0:0]] [--user=demo]"
         . " [--only=1,5,12] [--verbose]\n");
     exit(0);
@@ -134,11 +140,11 @@ if (!$user instanceof User) {
 }
 if (isset($options['scans'])) {
     $via = $options['via'] ?? null;
-    if ($via !== null && $via !== 'ocr') {
-        fwrite(STDERR, "--via takes only ocr.\n");
+    if ($via !== null && $via !== 'ocr' && $via !== 'rules') {
+        fwrite(STDERR, "--via takes ocr or rules.\n");
         exit(2);
     }
-    exit(evaluateScans($get, $user, $only, $verbose, $via === 'ocr', isset($options['crosscheck'])));
+    exit(evaluateScans($get, $user, $only, $verbose, $via === 'ocr', isset($options['crosscheck']), $via === 'rules'));
 }
 if (isset($options['insights'])) {
     $runs = is_string($options['runs'] ?? null) ? max(1, (int) $options['runs']) : 3;
@@ -524,16 +530,35 @@ function evaluateInsights(Closure $get, User $user, int $runs, bool $verbose): i
 /**
  * The scan fixture set against the configured models (--scans); with
  * $viaOcr, photos and scans also through OCR and the text model, each
- * route reported on its own (Phase 53.2).
+ * route reported on its own (Phase 53.2). With $viaRules (Phase 53.4),
+ * every fixture is read without AI instead (OCR and rules, a text PDF's
+ * text and rules), and no model is needed.
  *
  * @param Closure(class-string): object $get
  * @param list<int> $only fixture numbers
  */
-function evaluateScans(Closure $get, User $user, array $only, bool $verbose, bool $viaOcr = false, bool $crossCheck = false): int
-{
+function evaluateScans(
+    Closure $get,
+    User $user,
+    array $only,
+    bool $verbose,
+    bool $viaOcr = false,
+    bool $crossCheck = false,
+    bool $viaRules = false,
+): int {
     $availability = $get(ScanAvailability::class);
     assert($availability instanceof ScanAvailability);
-    if (!$availability->isAvailable($user)) {
+    $rules = $get(RuleReader::class);
+    assert($rules instanceof RuleReader);
+    if ($viaRules) {
+        $ocr = $get(OcrReader::class);
+        assert($ocr instanceof OcrReader);
+        if (!$ocr->isWorking()) {
+            fwrite(STDERR, "--via=rules needs a working OCR engine: see Settings → Reading text from images.\n");
+
+            return 1;
+        }
+    } elseif (!$availability->isAvailable($user)) {
         fwrite(STDERR, "Reading files is not available to that user: set a model for reading documents in Settings → AI.\n");
 
         return 1;
@@ -545,11 +570,17 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
     assert($preparer instanceof FilePreparer && $extractor instanceof Extractor);
     assert($status instanceof AiStatus && $ocr instanceof OcrReader);
     $connection = $availability->connection();
-    printf("Reading with %s (%s)\n", $connection->name ?? '?', $connection?->location->value ?? '?');
+    if ($viaRules) {
+        printf("Reading without AI on this server (%s)\n", $ocr->engine()?->name() ?? '?');
+    } else {
+        printf("Reading with %s (%s)\n", $connection->name ?? '?', $connection?->location->value ?? '?');
+    }
 
     $document = $status->model(AiTaskName::ReadDocument);
     $routes = [];
-    if ($document?->images === true) {
+    if ($viaRules) {
+        $routes[] = 'rules';
+    } elseif ($document?->images === true) {
         $routes[] = 'vision';
     }
     if ($viaOcr) {
@@ -596,7 +627,12 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
             $text = null;
             foreach ($routes as $route) {
                 $started = microtime(true);
-                if (!$look->isPicture()) {
+                if ($route === 'rules') {
+                    $read = $look->isPicture()
+                        ? $rules->readPicture($user, $path, $mime)
+                        : $rules->readText($user, $look);
+                    $seconds = microtime(true) - $started;
+                } elseif (!$look->isPicture()) {
                     // A text PDF (or an unreadable file) reads the same on every route: once.
                     $text ??= [$extractor->extract($user, $look), microtime(true) - $started];
                     [$read, $seconds] = $text;
@@ -622,6 +658,7 @@ function evaluateScans(Closure $get, User $user, array $only, bool $verbose, boo
         printf("\n%s\n", match ($route) {
             'ocr' => 'Through OCR and the text model',
             'check' => 'Vision model, checked by OCR (flags: values marked "Not found on the page"; false: marked but right)',
+            'rules' => 'Without AI: OCR (or a PDF\'s text) and rules (fields ok: of every field a model would fill)',
             default => 'Vision model',
         });
         $columns = ['Kind', 'Files', 'Kind ok', 'Fields ok', 'Failed', 's/file', 'Flags', 'False'];

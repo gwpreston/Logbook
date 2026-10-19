@@ -85,7 +85,9 @@ final readonly class Mapper
         $form->odometer('odometer');
         $form->text('vendor', 'vendor');
         $work = $reading->lines('work');
-        if ($work !== []) {
+        // Read without AI (#519): the lines are copied unparsed, so the title is left for the owner.
+        $rules = $reading->readBy?->rules === true;
+        if ($work !== [] && !$rules) {
             $form->set('title', mb_substr($work[0], 0, self::TITLE_MAX), $work[0]);
         }
         $form->amount('cost', 'total');
@@ -119,6 +121,9 @@ final readonly class Mapper
         }
         if ($description !== []) {
             $form->set('description', mb_substr(implode("\n\n", $description), 0, self::TEXT_MAX));
+            if ($rules && $work !== []) {
+                $form->hint('description', $this->translator->trans('scan.hint.work_copied'));
+            }
         }
 
         // Phase 50.2 (#440): the parts lines, offered as parts, unticked.
@@ -233,19 +238,10 @@ final readonly class Mapper
         foreach ($readings($volume, $printed[0]) as $vr) {
             foreach ($readings($price, $printed[1]) as $pr) {
                 foreach ($readings($total, $printed[2]) as $tr) {
-                    $v = BigDecimal::of($vr);
-                    $p = BigDecimal::of($pr);
-                    if ($pence) {
-                        $p = $p->dividedBy(100, $p->getScale() + 2);
-                    }
-                    // Half a unit in each figure's last printed decimal, times the other.
-                    $allowed = BigDecimal::of('0.01')
-                        ->plus($p->abs()->multipliedBy(self::halfUnit($v)))
-                        ->plus($v->abs()->multipliedBy(self::halfUnit($p)));
-                    if ($v->multipliedBy($p)->minus(BigDecimal::of($tr))->abs()->isLessThanOrEqualTo($allowed)) {
+                    if (FuelSum::agrees($vr, $pr, $tr, $pence)) {
                         return;
                     }
-                    $product ??= $v->multipliedBy($p);
+                    $product ??= FuelSum::product($vr, $pr, $pence);
                 }
             }
         }
@@ -281,11 +277,6 @@ final readonly class Mapper
         return (string) ($currency === null
             ? $formatter->format((float) $number)
             : $formatter->formatCurrency((float) $number, $currency));
-    }
-
-    private static function halfUnit(BigDecimal $number): BigDecimal
-    {
-        return BigDecimal::ofUnscaledValue(5, $number->getScale() + 1);
     }
 
     /**

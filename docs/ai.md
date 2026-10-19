@@ -88,7 +88,9 @@ As an admin, open **Settings → AI**:
    photos too: see [reading-files.md](reading-files.md).
 
 Once a task has a model, every user sees *Use AI features* in Settings and
-the AI modules appear on Settings → Modules.
+the AI modules appear on Settings → Modules. Switching *Use AI features* off keeps
+your files from every model; with OCR working, *Scan* still reads them
+without AI, on this server.
 
 ## Connection recipes
 
@@ -540,8 +542,12 @@ an answer that doesn't fit), you get the normal empty form with the file
 attached and one line saying why. Scanning never costs you the photo.
 
 **Who can scan.** The *Read receipts* module must be on (Settings →
-Modules), a model must be set for reading documents or text PDFs, and
-*Use AI features* must be on for you. You need *Log* on the vehicle, as
+Modules), and either a model must be set for reading documents or text
+PDFs with *Use AI features* on for you, or OCR must be working on this
+server. With no model reading for you (none set, AI switched off, or
+your *Use AI features* off), Scan reads the file without AI, by rules
+on this server, and no model ever sees it
+([reading-files.md](reading-files.md#reading-without-ai)). You need *Log* on the vehicle, as
 for the form; the reminders card needs *Manage*, and the V5C page
 *Manage*.
 
@@ -555,7 +561,11 @@ sends real requests; nothing but the usage log is written. Add
 `--via=ocr` to also read the photos and scans through OCR and your text
 model, and see the two routes side by side, or `--crosscheck` to read
 them with the vision model checked by OCR and count the values marked
-"Not found on the page", and how many of those were right.
+"Not found on the page", and how many of those were right. With
+`--via=rules` it reads them **without AI** instead, as Scan does when no
+model reads for you ([reading-files.md](reading-files.md#reading-without-ai)):
+no model is needed and nothing is sent, but OCR must be working
+(without it the command says so and exits 1).
 
 **Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
 the OCR engine (no model needed; see [reading-files.md](reading-files.md))

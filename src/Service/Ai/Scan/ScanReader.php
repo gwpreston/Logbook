@@ -9,6 +9,7 @@ use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\Ai\Scan\ScanUpload;
 use Logbook\Domain\User\User;
 use Logbook\Repository\PendingUploadRepository;
+use Logbook\Service\Scan\Rules\RuleReader;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
 use Psr\Clock\ClockInterface;
@@ -20,8 +21,9 @@ use Throwable;
  * for a photo, stripped) file is kept as a pending upload first, marked
  * `reading`, so it survives whatever the model does; then it is prepared,
  * read (a photo or scan by the route Router picks, checked by OCR on the
- * vision route when it works), and the extraction or
- * the reason it could not be read is stored.
+ * vision route when it works; with no model reading for the user, by OCR
+ * and rules without AI, Phase 53.4), and the extraction or the reason it
+ * could not be read is stored.
  */
 final readonly class ScanReader
 {
@@ -33,6 +35,7 @@ final readonly class ScanReader
         private FilePreparer $preparer,
         private Extractor $extractor,
         private Router $router,
+        private RuleReader $rules,
         private ClockInterface $clock,
     ) {
     }
@@ -85,9 +88,10 @@ final readonly class ScanReader
             $prepared = $this->preparer->look($path, $upload->mime);
             if ($prepared->isPicture()) {
                 // How a photo or scan is read follows what is set up (§7.27 *Routing*).
-                $route = $this->router->picture();
+                $route = $this->router->picture($user);
                 $read = match (true) {
                     $route->problem !== null => $route->problem,
+                    $route->rules => $this->rules->readPicture($user, $path, $upload->mime),
                     $route->ocr && $route->task !== null => $this->extractor->extractViaOcr(
                         $user,
                         $path,
@@ -107,7 +111,10 @@ final readonly class ScanReader
                     ),
                 };
             } else {
-                $read = $this->extractor->extract($user, $prepared);
+                // A text PDF: by `read_text`'s model, or without AI when none reads for the user.
+                $read = $this->router->modelReadsText($user)
+                    ? $this->extractor->extract($user, $prepared)
+                    : $this->rules->readText($user, $prepared);
             }
         } catch (Throwable) {
             $prepared = null;

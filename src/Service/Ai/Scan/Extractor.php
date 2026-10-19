@@ -51,8 +51,9 @@ final readonly class Extractor
             return $file->problem;
         }
         $task = $this->task($file);
-        $model = $this->status->model($task);
+        $model = $this->status->isOnFor($user) ? $this->status->model($task) : null;
         if ($model === null) {
+            // Never a model for a user who switched AI off (#518).
             return ScanProblem::Unassigned;
         }
         if (!$file->isText() && !$model->images) {
@@ -60,7 +61,7 @@ final readonly class Extractor
         }
 
         $message = $file->isText()
-            ? ChatMessage::user("The document's text, between the markers:\n<<<\n" . $file->text . "\n>>>")
+            ? ChatMessage::user(self::between("The document's text, between the markers:", (string) $file->text))
             : self::pictures($file);
 
         try {
@@ -84,6 +85,9 @@ final readonly class Extractor
      */
     public function extractViaOcr(User $user, string $path, string $mime, AiTaskName $task): Extraction|ScanProblem
     {
+        if (!$this->status->isOnFor($user)) {
+            return ScanProblem::Unassigned;
+        }
         $locale = $user->preferences->locale;
         try {
             return $this->gateway->session(
@@ -128,7 +132,7 @@ final readonly class Extractor
         if ($file->problem !== null) {
             return $file->problem;
         }
-        $model = $this->status->model(AiTaskName::ReadDocument);
+        $model = $this->status->isOnFor($user) ? $this->status->model(AiTaskName::ReadDocument) : null;
         if ($model === null) {
             return ScanProblem::Unassigned;
         }
@@ -219,13 +223,19 @@ final readonly class Extractor
 
     private static function ocrProblem(OcrResult $read): ScanProblem
     {
-        return match ($read->problem) {
-            OcrProblem::Timeout => ScanProblem::Timeout,
-            OcrProblem::Busy => ScanProblem::Busy,
-            OcrProblem::TooLarge, OcrProblem::Unreadable => ScanProblem::Unreadable,
-            OcrProblem::Unavailable => ScanProblem::NoVision,
-            default => ScanProblem::Failed,
-        };
+        return ScanProblem::fromOcr($read->problem);
+    }
+
+    /**
+     * The document's text between markers it can't contain (K120): each
+     * marker carries a hash of the text, so a `>>>` in the document doesn't
+     * end the block.
+     */
+    public static function between(string $lead, string $text): string
+    {
+        $tag = 'document ' . substr(hash('sha256', $text), 0, 12);
+
+        return $lead . "\n<<<" . $tag . "\n" . $text . "\n>>>" . $tag;
     }
 
     private static function request(ChatMessage $message): ChatRequest

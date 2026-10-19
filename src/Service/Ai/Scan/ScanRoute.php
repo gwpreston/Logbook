@@ -12,7 +12,8 @@ use Logbook\Domain\Ai\AiTaskName;
  * whose), or not at all ($problem says why). From Phase 53.3 the vision
  * route is checked by OCR when it works ($crossCheck), and on an
  * *Internet* connection OCR reads first ($ocrFirst), so a registration
- * document can go as text instead.
+ * document can go as text instead. From Phase 53.4, $rules: OCR and then
+ * rules read it without AI.
  */
 final readonly class ScanRoute
 {
@@ -22,7 +23,16 @@ final readonly class ScanRoute
         public ?ScanProblem $problem,
         public bool $crossCheck = false,
         public bool $ocrFirst = false,
+        public bool $rules = false,
     ) {
+    }
+
+    /**
+     * Read without AI: OCR, then rules (Phase 53.4).
+     */
+    public static function rules(): self
+    {
+        return new self(true, null, null, false, false, true);
     }
 
     public static function vision(bool $crossCheck = false, bool $ocrFirst = false): self

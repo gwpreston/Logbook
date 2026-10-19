@@ -12,7 +12,21 @@ migration (a connection option and three usage-log counts); it rolls
 back, but roll back only with *Send text, not images* off everywhere,
 since older releases send pictures on every connection.
 
+Phase 53.4: **Reading without AI** ([docs/phases/phase-53.4.md](docs/phases/phase-53.4.md)).
+No migration.
+
 ### Added
+- **Scanning without AI.** With OCR working and no model reading for you
+  (none set up, `AI_ENABLED=false`, or your *Use AI features* off), *Scan*
+  still shows and reads the file on this server by rules: nothing is
+  sent anywhere and nothing is logged. A fuel receipt fills its volume,
+  price and total only when they add up (else just the total), with the
+  date, grade, currency and, when it is one of yours, the station; an
+  invoice its date, total, registration and mileage, with its work
+  lines copied into the description; a V5C its registration; anything else its date. Every
+  field is marked *Read without AI, check*, and *Read it as* switches
+  kind without reading again ([reading-files.md](docs/reading-files.md#reading-without-ai)).
+- `bin/ai-eval.php --scans --via=rules`: the fixture set read without AI.
 - **OCR checks the vision model.** With a vision model and OCR working,
   OCR reads the same photo alongside the model. A value whose words or
   digits aren't on the page where OCR read clearly is kept and marked
@@ -31,6 +45,14 @@ since older releases send pictures on every connection.
   and `--ocr --enlarge=min:target` (compare OCR enlarge rules).
 
 ### Changed
+- The *Read receipts* module is now `scan` (was `ai_scan`), listed on
+  Settings → Modules whenever a model or OCR can read a file, AI set up
+  or not. A saved `ai_scan` choice and `FEATURES_AI_SCAN` still apply;
+  `FEATURES_SCAN` wins when both are set.
+- A user with *Use AI features* off never has a file sent to a model,
+  even with Scan open to them.
+- The document's text sent to a model is fenced by markers it can't
+  contain, so a `>>>` in a document no longer ends the block (K120).
 - On a V5C (text with its markers) the reference is removed with
   punctuation between its groups (`1234-5678-901`, K93), and on the OCR
   route also with OCR's look-alikes (`9O1`) or wrapped over rows (K87). Numbers in another
@@ -41,6 +63,15 @@ since older releases send pictures on every connection.
   evidence (K89).
 
 ### Fixed
+- A V5C reference wrapped onto the next row, under its first group and
+  beside a label (`Document reference number 1234 5678` / `901`), is now
+  removed from OCR text too, so it is never sent to a model or kept.
+- An OCR run abandoned when a vision request failed is stopped before its
+  temporary directory is removed, so its text is never left behind
+  (K116).
+- The Scan page works out how photos are read once, and reads each AI
+  model and connection once per page: 11 queries instead of 26 (K118).
+  OCR text no longer builds its layout twice (K119).
 - A fill-up from a scan whose station name was left empty opens *Station
   and notes*, so the reason is visible (K90).
 - The Scan page's text-recognition line wraps beside its icon (K95).
@@ -58,6 +89,10 @@ since older releases send pictures on every connection.
   per-scan cross-check counts; 3.17 then sends pictures on every
   connection. Upgrading again brings every connection back with the option
   **off**, so turn it on again where it was on.
+- If you set `FEATURES_AI_SCAN` in your environment, it still works;
+  rename it to `FEATURES_SCAN` when convenient.
+- With OCR working, Scan now shows to users with AI off, and on installs
+  with no AI. Switch the *Read receipts* module off if you don't want it.
 - Backups from this release carry *Send text, not images*. A 3.17.0 backup
   restores the usual way: restore with 3.17.0, then upgrade.
 

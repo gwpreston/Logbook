@@ -23,6 +23,12 @@ complete as the second language.
 2. Translate the **values**, never the keys. Keep every `{placeholder}`
    exactly as it is; you may move it within the sentence.
 
+   The `scan.keywords.*` lists are not sentences: they are the words a
+   receipt or invoice in your language prints (`total`, `litre`, `date`,
+   grade names…), separated by `|`, which reading without AI looks for
+   ([reading-files.md](reading-files.md#reading-without-ai)). Give the
+   words your documents use; English ones are always looked for too.
+
 3. That's it. The language appears in **Profile → Language and region**
    (with each country variant ICU knows, e.g. *français (Belgique)*, which
    also sets date, number and currency formats), and visitors whose browser

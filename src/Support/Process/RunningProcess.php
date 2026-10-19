@@ -57,15 +57,25 @@ final class RunningProcess
         }
     }
 
-    public function __destruct()
+    /**
+     * Stop a run nobody will collect, and wait until it has ended, so it
+     * writes nothing after this returns (K116). Does nothing once collected.
+     */
+    public function stop(): void
     {
-        // Never left behind: a run nobody collected is stopped.
         if ($this->result === null && is_resource($this->process)) {
             proc_terminate($this->process, 9);
             proc_close($this->process);
             fclose($this->out);
             fclose($this->err);
+            $this->result = new ProcessResult(-1, '', '', true);
         }
+    }
+
+    public function __destruct()
+    {
+        // Never left behind: a run nobody collected is stopped.
+        $this->stop();
     }
 
     /**
