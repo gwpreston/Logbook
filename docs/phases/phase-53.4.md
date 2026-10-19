@@ -123,6 +123,10 @@ Added to §7.27 in 53.4.0:
 - [ ] Invoices: date, total, registration and mileage accuracy. No value
       filled from the wrong label.
 - [ ] Classification accuracy per kind; *Read it as* re-mapping.
+- [ ] Carried from [53.3](phase-53.3.md): the owner's runs of
+      `bin/ai-eval.php --scans --crosscheck` (flags and false flags per
+      kind: 53.3's acceptance criterion 1) and `--scans --via=ocr` (53.2's
+      acceptance criterion 3), recorded in 53.3's *Eval results*.
 - [ ] `bin/ai-eval.php --scans --via=rules` in the eval report beside the
       other routes.
 - [ ] No request to any connection on this route, asserted.

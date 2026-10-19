@@ -43,6 +43,8 @@ final readonly class OcrText
         private array $spans,
         private array $digits = [],
         private array $rows = [],
+        /** OCR's text carries a V5C's markers (before redaction), #510. */
+        private bool $registration = false,
     ) {
     }
 
@@ -55,12 +57,14 @@ final readonly class OcrText
         $spans = [];
         $digits = [];
         $tokens = [];
-        foreach (LayoutText::pages(self::withoutReferences($result->lines)) as $p => $rows) {
+        // The V5C rule (punctuation, look-alikes, wrapped rows) only for V5C-like text (#500).
+        $wide = Scrubber::looksLikeRegistration(LayoutText::build($result->lines));
+        foreach (LayoutText::pages(self::withoutReferences($result->lines, $wide)) as $p => $rows) {
             if ($p > 0) {
                 $lines[] = '';
             }
             foreach ($rows as $row) {
-                $line = sprintf('%d| %s', ++$number, Scrubber::ocrText($row['text']));
+                $line = sprintf('%d| %s', ++$number, Scrubber::ocrText($row['text'], $wide));
                 if ($length + mb_strlen($line) + 1 > FilePreparer::MAX_TEXT) {
                     break 2;
                 }
@@ -90,6 +94,7 @@ final readonly class OcrText
             $spans,
             $digits,
             $tokens,
+            $wide,
         );
     }
 
@@ -97,7 +102,8 @@ final readonly class OcrText
      * The lines without any word that is part of an 11-digit run (spec.md
      * §7.27 *Reading through OCR*, #500, #501). A row's words are read
      * with single spaces between them, but only across a short gap, so a
-     * date beside an odometer in another column is kept (K88); a run that
+     * date beside an odometer in another column is kept (K88). With $wide
+     * (V5C-like text) punctuation and look-alikes count, and a run that
      * ends a row joins one starting the next row in the same column, so a
      * reference wrapped over rows is still caught. Scrubber::ocrText still
      * runs on each row's text as well.
@@ -105,7 +111,7 @@ final readonly class OcrText
      * @param list<OcrLine> $lines
      * @return list<OcrLine>
      */
-    private static function withoutReferences(array $lines): array
+    private static function withoutReferences(array $lines, bool $wide): array
     {
         $drop = [];
         foreach (LayoutText::pages($lines) as $rows) {
@@ -114,8 +120,9 @@ final readonly class OcrText
                 array_push($words, ...$row['words']);
             }
             $charWidth = LayoutText::wordsCharWidth($words);
-            foreach (self::stretches($rows, $charWidth) as $stretch) {
-                foreach (Scrubber::referenceWords(array_map(static fn (OcrWord $w): string => $w->text, $stretch)) as $i) {
+            foreach (self::stretches($rows, $charWidth, $wide) as $stretch) {
+                $texts = array_map(static fn (OcrWord $w): string => $w->text, $stretch);
+                foreach (Scrubber::referenceWords($texts, $wide) as $i) {
                     $drop[spl_object_id($stretch[$i])] = true;
                 }
             }
@@ -136,15 +143,15 @@ final readonly class OcrText
 
     /**
      * The runs of words a reference could be printed in: each row split at
-     * gaps wider than SHORT_GAP characters; and digit groups ending one row
-     * joined with those starting the next row in the same column, when
-     * together they hold exactly 11 digits (a reference wrapped over two
-     * or three rows, not a VAT number above a date).
+     * gaps wider than SHORT_GAP characters; and, with $wide, digit groups
+     * ending one row joined with those starting the next row in the same
+     * column, when together they hold exactly 11 digits (a reference
+     * wrapped over two or three rows, not a VAT number above a date).
      *
      * @param list<array{text: string, words: list<OcrWord>}> $rows
      * @return list<non-empty-list<OcrWord>>
      */
-    private static function stretches(array $rows, float $charWidth): array
+    private static function stretches(array $rows, float $charWidth, bool $wide): array
     {
         $stretches = [];
         /** @var array{words: non-empty-list<OcrWord>, left: int, digits: int}|null $open */
@@ -170,7 +177,8 @@ final readonly class OcrText
             $first = $pieces[0];
             [$head, $headDigits] = self::digitGroups($first, false);
             $carried = null;
-            if ($open !== null && $head !== [] && abs($first[0]->box->left - $open['left']) / $charWidth <= self::SHORT_GAP) {
+            $sameColumn = $open !== null && abs($first[0]->box->left - $open['left']) / $charWidth <= self::SHORT_GAP;
+            if ($wide && $open !== null && $head !== [] && $sameColumn) {
                 $digits = $open['digits'] + $headDigits;
                 $joined = [...$open['words'], ...$head];
                 if ($digits === 11) {
@@ -223,7 +231,7 @@ final readonly class OcrText
      */
     public function looksLikeRegistration(): bool
     {
-        return preg_match('/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu', $this->text) === 1;
+        return $this->registration;
     }
 
     /**

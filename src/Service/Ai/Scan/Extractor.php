@@ -114,7 +114,8 @@ final readonly class Extractor
      * alongside, and each value is then looked for in OCR's text (spec.md
      * §7.27 *The cross-check*, #508). With $ocrFirst (an *Internet*
      * connection) OCR finishes before anything is sent, and a registration
-     * document goes as its redacted text instead (#510). OCR failing or
+     * document goes as its redacted text instead, or, when OCR read too
+     * little of it, not at all (#510). OCR failing or
      * reading too little skips the check; the scan carries on.
      */
     public function extractChecked(
@@ -144,9 +145,13 @@ final readonly class Extractor
                     $engine = $this->ocr->engine()?->name();
                     $job = $this->ocr->begin($path, $mime, $locale);
                     if ($ocrFirst) {
-                        $text = self::usable($job->result());
-                        if ($text !== null && $engine !== null && $text->looksLikeRegistration()) {
-                            return $this->fromText($session, $text, $engine);
+                        $read = $job->result();
+                        $text = $read->ok() ? OcrText::of($read) : null;
+                        if ($text !== null && $text->looksLikeRegistration()) {
+                            // A V5C never goes as a picture here, even when OCR read too little (#510).
+                            return $text->isTooLittle() || $engine === null
+                                ? ScanProblem::TooLittleText
+                                : $this->fromText($session, $text, $engine);
                         }
                     }
                     $result = $session->chat(self::request(self::pictures($file)));

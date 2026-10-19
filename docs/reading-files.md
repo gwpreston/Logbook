@@ -61,10 +61,11 @@ What happens to a photo when there is no vision model:
 3. Otherwise its text, line by line and numbered, goes to the text model,
    marked as OCR output that may have misread characters. Runs of 11
    digits (a V5C's reference number, and many phone numbers) are removed
-   first: with spaces or punctuation between the groups (`1234 5678 901`,
-   `1234-5678-901`), OCR's look-alikes (`1234 5678 9O1`), or wrapped over
-   two or three lines. Numbers in another column of the same line (a date
-   beside a mileage) are kept. The picture itself is never sent.
+   first. On a V5C (a page with "V5C", "DVLA" or "Registration
+   Certificate" on it) they are also caught with punctuation between the
+   groups (`1234-5678-901`), OCR's look-alikes (`1234 5678 9O1`), or
+   wrapped over two or three lines. Numbers in another column of the same
+   line (a date beside a mileage) are kept. The picture itself is never sent.
 4. Every value the model gives back must point to words in that text.
    Logbook allows for OCR's usual slips (0 and O, 1, l and I, 5 and S, 8
    and B, and a couple of other differences in a long phrase). A value
@@ -129,8 +130,10 @@ It is more private and a little less accurate on faded receipts.
 works, whether or not the option is on. Before anything is sent, OCR
 reads the photo and looks for a V5C's markers ("V5C", "Registration
 Certificate", "DVLA", "Document reference"); if it finds one, only the
-text goes, without the reference number. So on an internet connection a
-scan waits for OCR before the model starts. A V5C photo OCR can't read
+text goes, without the reference number; if OCR could read too little
+of it to send, nothing is sent and the form opens empty with the photo
+attached. So on an internet connection a scan waits for OCR before the
+model starts. A V5C photo OCR can't read
 well enough to spot a marker still goes as a picture, with its
 reference number, and the Scan page says so on internet connections.
 
@@ -258,7 +261,7 @@ It doesn't change your attachment or what an AI model is sent:
 4. enlarged if the print is very small (under 15 pixels high), so
    letters are about 30 pixels high. From 3.18 text 15–20 pixels high is
    no longer enlarged: it made Tesseract read some 0s as 6s, and the eval
-   showed it lowered accuracy (`php bin/ai-eval.php --ocr
+   showed it lowered accuracy on five of eight kinds of document (`php bin/ai-eval.php --ocr
    --enlarge=min:target` compares rules on your install).
 
 On a faded, tilted, small receipt this is the difference between reading

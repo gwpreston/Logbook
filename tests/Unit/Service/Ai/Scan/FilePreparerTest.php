@@ -111,12 +111,29 @@ final class FilePreparerTest extends TestCase
         self::assertSame('Ref  end', Scrubber::text('Ref 1234 5678 901 end'));
         self::assertSame('Test 4417 2290 1186', Scrubber::text('Test 4417 2290 1186'), 'twelve digits are not a reference');
         self::assertSame('Policy 1234567890', Scrubber::text('Policy 1234567890'), 'nor are ten');
-        // #500, K93: one punctuation mark between groups, on every path.
-        self::assertSame('Ref  end', Scrubber::text('Ref 1234-5678-901 end'));
-        self::assertSame('Ref  end', Scrubber::text('Ref 1234/5678/901 end'));
-        self::assertSame('Ref: end', Scrubber::text('Ref:1234-5678-901 end'));
-        self::assertSame('Ref  end', Scrubber::text('Ref 1234 - 5678 - 901 end'));
-        self::assertSame('On 12/09/2026 14:30', Scrubber::text('On 12/09/2026 14:30'), 'a date and time is twelve digits');
-        self::assertSame('x ', Scrubber::value('x 1234.5678.901'));
+        // #500, K93: in V5C-like text, one punctuation mark between groups counts too.
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234-5678-901 end', true));
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234/5678/901 end', true));
+        self::assertSame('Ref: end', Scrubber::text('Ref:1234-5678-901 end', true));
+        self::assertSame('Ref  end', Scrubber::text('Ref 1234 - 5678 - 901 end', true));
+        self::assertSame('On 12/09/2026 14:30', Scrubber::text('On 12/09/2026 14:30', true), 'a date and time is twelve digits');
+        self::assertSame('x ', Scrubber::value('x 1234.5678.901'), "a registration document's answer");
+        // Merge review of 53.3: elsewhere, small fill-ups and dates with seconds are kept.
+        foreach (['Diesel 9.21 1.459 13.44', 'Date 5/3/2024 14:32:10', '15/03/2024 9:05:33', '1.3.2024 9:05:33'] as $line) {
+            self::assertSame($line, Scrubber::text($line), $line);
+            self::assertSame($line, Scrubber::ocrText($line), $line);
+        }
+        self::assertTrue(Scrubber::looksLikeRegistration('DVLA Swansea'));
+        self::assertTrue(Scrubber::looksLikeRegistration('VSC Registration'), "OCR's S for 5");
+        self::assertFalse(Scrubber::looksLikeRegistration('SHORELINE FUELS LTD'));
+    }
+
+    public function testATextPdfThatLooksLikeAV5cGetsTheWideRule(): void
+    {
+        $v5c = 'V5C Vehicle Registration Certificate. Document reference 1234-5678-901. ' . str_repeat('Keep it safe. ', 20);
+        $receipt = 'SHORELINE FUELS Diesel 9.21 1.459 13.44 ' . str_repeat('Thank you. ', 20);
+
+        self::assertStringNotContainsString('5678', Scrubber::text($v5c, Scrubber::looksLikeRegistration($v5c)));
+        self::assertStringContainsString('9.21 1.459 13.44', Scrubber::text($receipt, Scrubber::looksLikeRegistration($receipt)));
     }
 }

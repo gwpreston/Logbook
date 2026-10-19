@@ -174,6 +174,18 @@ final class ScanCrossCheckTest extends ScanTestCase
         self::assertStringNotContainsString('5678', $sent, 'the reference is removed');
     }
 
+    public function testOnTheInternetACroppedV5cWithItsMarkersIsNeverSentAsAPicture(): void
+    {
+        // Merge review of 53.3: too few words to read, but OCR saw it is a V5C, so nothing is sent.
+        $this->onTheInternet();
+        $this->ocrReads(['V5C Vehicle Registration Certificate', 'Document reference number', '1234 5678 901', 'Reg AB12 CDE']);
+        $this->reply($this->registrationReply());
+        [$page] = $this->land($this->scan(ExifJpeg::make(40, 20), 'v5c.jpg', 'image/jpeg'));
+
+        self::assertSame([], $this->provider->requests, 'neither the picture nor the text');
+        self::assertStringContainsString('Couldn’t make out the text in this photo', html_entity_decode(self::body($page)));
+    }
+
     public function testOnTheInternetAV5cWithoutMarkersStillGoesAsAPicture(): void
     {
         // Its markers are all Logbook has to go on before sending (#510).
