@@ -3,7 +3,7 @@
 *No model set up? A fuel receipt still fills the fill-up form, and an
 invoice still gives its date, total and mileage.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 🚧 in progress · file lives in `docs/phases/`
 
 With no AI set up, the *Scan* entry points are hidden (§7.27). Many
 owners will never set up a model: no GPU, no wish to pay a provider, or
@@ -80,7 +80,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.27,
 
 ---
 
-## Spec (proposed)
+## Spec (written into §7.27 in 53.4.0)
 
 Added to §7.27 in 53.4.0:
 
@@ -102,8 +102,10 @@ Added to §7.27 in 53.4.0:
 ## Tasks
 
 ### 53.4.0 Spec first
-- [ ] Open questions A–D decided by the owner and logged; §7.10 if A,
-      §7.27, §13.
+- [x] Open questions A–H decided by the owner and logged (#517–#524);
+      §7.10, §7.27, §12, §13.
+- [ ] Known issues K116, K118, K119 and K120 (53.3's merge review),
+      chosen by the owner for this phase.
 
 ### 53.4.1 Rules
 - [ ] The classifier and its keyword lists per shipped locale.
@@ -149,39 +151,65 @@ Added to §7.27 in 53.4.0:
 
 ## Open questions
 
-Numbered in `open-questions.md` when logged. Not built until decided.
+Decided by the owner on 2026-10-19 and logged as #517–#524 in
+`open-questions.md`, before it was built: A–D as the phase file
+recommended, and E–H, found while starting it, also the recommendation.
 
-- **A. Which module switches it?** `ai_scan` is listed only while AI is
-  set up.
+- **A. Which module switches it?** *Decided 2026-10-19 (#517): (1).
+  `ai_scan` becomes `scan` ("Reading files"), listed on Settings →
+  Modules whenever a model or a working OCR engine can read a file. The
+  stored `ai_scan` setting and `FEATURES_AI_SCAN` still work, as aliases.*
   - (1) Rename to `scan`, listed whenever any reading route exists, with
     `ai_scan` kept as an alias.
   - (2) A new `scan_rules` module.
   - (3) Always on with OCR, with no switch.
 
-  *Recommendation:* (1). It is one switch for "reading files", whatever
-  reads them.
-
 - **B. Does the user's *Use AI features* setting cover reading without
-  AI?**
+  AI?** *Decided 2026-10-19 (#518): (1). A user with it off is read by
+  rules, and no model ever sees their file, whatever is set up.*
   - (1) No: nothing is sent anywhere, so it needs no consent.
   - (2) Yes, for one simple rule.
 
-  *Recommendation:* (1). The setting exists to keep data from models.
-  The scan page's notice still says how the file was read.
-
-- **C. Invoice work lines.**
+- **C. Invoice work lines.** *Decided 2026-10-19 (#519): (1), marked
+  "Copied from the invoice, tidy as needed".*
   - (1) The OCR lines between the header and the totals go into the
     description, unparsed.
   - (2) Nothing; the owner types the work.
 
-  *Recommendation:* (1), marked "Copied from the invoice, tidy as
-  needed".
-
-- **D. Learning a station's layout from corrections?**
+- **D. Learning a station's layout from corrections?** *Decided
+  2026-10-19 (#520): (1), parked in spec §12.*
   - (1) Not now, parked in §12.
   - (2) Remember, per station, which line held the total after the owner
     corrects it.
 
-  *Recommendation:* (1). The agreeing-triple check already does most of
-  the work, and stored layouts would be a new kind of data to keep and
-  back up.
+- **E. With AI switched off for the install (`AI_ENABLED=false`), does
+  reading without AI still show?** (found while starting) *Decided
+  2026-10-19 (#521): (1).*
+  - (1) Yes: the `scan` module alone decides; OCR is not an AI feature
+    (`.env.example` already says so).
+  - (2) No: AI off hides every Scan entry point.
+
+- **F. A V5C read without AI.** (found while starting: the classifier's
+  list had no registration kind, so a V5C would be *other* and attached
+  to an `other` document with its reference) *Decided 2026-10-19 (#522):
+  (1).*
+  - (1) Classified as a registration document; only the registration is
+    read (the UK plate pattern); the usual V5C page, the file kept only
+    when ticked.
+  - (2) Classified, nothing read.
+  - (3) *Other*, date only.
+
+- **G. Fall back to rules when a model's read fails?** (found while
+  starting) *Decided 2026-10-19 (#523): (1), parked in spec §12.*
+  - (1) No: failures stay as today; rules read only when no model reads
+    for this user.
+  - (2) Yes, with OCR working.
+
+- **H. How strong is a V5C marker in the classifier?** (found while
+  starting; bears on #513, K109) *Decided 2026-10-19 (#524): (1). The
+  check that redacts and blocks pictures (#510) is unchanged until #513
+  is decided.*
+  - (1) A registration keyword like any other: an invoice's or an
+    insurance document's own words can outscore it, so "VSC warning
+    light" on a Toyota invoice stays an invoice.
+  - (2) A marker wins outright.
