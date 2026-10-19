@@ -113,12 +113,25 @@ spec already says.
 
 ### 53.5.2 Layout and contrast (batch 2)
 
-- [ ] `.table-wrap` positioned in `assets/css/app.css` (K52). A test
+- [x] `.table-wrap` positioned in `assets/css/app.css` (K52). A test
       checks the rule; `/stations/near` and `/stations/{id}` checked at
       375 px with no sideways page scroll.
-- [ ] The badge on `.nav-link[aria-current="page"]` meets 4.5:1 (K53).
+- [x] The badge on `.nav-link[aria-current="page"]` meets 4.5:1 (K53).
       `ColourContrastTest` covers `red` on `surface` + `accent-soft` +
-      `red-soft` in both themes and every accent.
+      `red-soft` in both themes and every accent. The active badge lays
+      its `red-soft` over an opaque `surface`, so the test reads the
+      badge's own layers from its rule and puts them over the link's
+      tint.
+
+**Design review (2026-10-19, sample data, PostgreSQL dev stack).**
+`/stations/near` and `/stations/3` at 375 px: the page is 375 px wide
+(453 px on `/stations/3` with the new `position` switched off), and the
+tables scroll inside their boxes (965 px and 546 px of content in a
+321 px box). At 768 px neither page scrolls sideways. On `/reminders`
+at 1280 px the active link's badge measures 4.98:1 in the light theme
+and 5.21:1 in the dark theme with every accent (it was 4.35:1, and
+3.93–4.15:1). It looks the same as the badge on other pages. No HIGH or
+MEDIUM items. No new page or link, so the subpath is unchanged.
 
 ### 53.5.3 Finish
 
