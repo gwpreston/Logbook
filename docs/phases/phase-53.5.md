@@ -4,7 +4,7 @@
 answer wrongly at their edges, and two pages that break on a phone or at
 low contrast.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.4's release, a patch release
 
 This is the next batch after [Phase 52.2](phase-52.2.md). Like 52.1 and
@@ -96,7 +96,7 @@ spec already says.
 
 ### 53.5.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.5.1 The REST API (batch 1)

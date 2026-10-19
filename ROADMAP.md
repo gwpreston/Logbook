@@ -115,7 +115,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | ✅ |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | ✅ |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | ✅ |
-| [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 📋 |
+| [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 🚧 |
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 📋 |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | 📋 |
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | 📋 |

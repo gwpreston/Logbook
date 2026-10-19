@@ -12016,7 +12016,7 @@ task breakdowns live in the per-phase files; this is the map.
   K116, K118–K120. Released as v3.18.0 with 53.3. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
-  known-issues log + patch release** (planned). Retrying `POST
+  known-issues log + patch release** (in progress). Retrying `POST
   /modifications` with a stored part in its parts lists answers the
   stored modification with `duplicate: true` (§7.20 "Safe to retry",
   K27); a too-large `baseline_odometer` or `interval_distance` on the
