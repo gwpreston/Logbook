@@ -68,7 +68,7 @@ final class HouseholdDefaultsTest extends AppTestCase
         self::assertSame(7, substr_count($page, 'Switched off when Logbook was installed; switch on any time.'));
         $browser->post('/settings/modules', [
             'fuel' => '1', 'maintenance' => '1', 'compliance' => '1', 'reminders' => '1', 'reports' => '1',
-            'tyres' => '1', 'ai_ask' => '1', 'ai_actions' => '1', 'ai_scan' => '1',
+            'tyres' => '1', 'ai_ask' => '1', 'ai_actions' => '1', 'scan' => '1',
         ]);
         self::assertCount(6, $this->service($app, FeatureToggles::class)->offSinceInstall());
     }

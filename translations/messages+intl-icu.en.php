@@ -4032,9 +4032,10 @@ return [
                 'title' => 'Draft entries',
                 'hint' => 'Say what you did ("filled up 42 litres for £61") and check the drafted entry before it is saved.',
             ],
-            'ai_scan' => [
+            // Phase 53.4 (#517): `ai_scan` until then; listed whenever a model or text recognition can read a file.
+            'scan' => [
                 'title' => 'Read receipts',
-                'hint' => 'Photos and PDFs of receipts and invoices read into a form you check before saving.',
+                'hint' => 'Photos and PDFs of receipts and invoices read into a form you check before saving, by a model or, without AI, on this server.',
             ],
             'parts' => [
                 'title' => 'Parts and modifications',
@@ -5101,6 +5102,27 @@ return [
     // Ask Logbook (spec.md §7.26, Phase 26.2).
     // Reading files (spec.md §7.27, Phase 26.4).
     'scan' => [
+        // Reading without AI (Phase 53.4, spec.md §7.27): words and phrases separated by |,
+        // matched as whole words in any case; the user's locale's and English are both used.
+        'keywords' => [
+            'fuel_receipt' => 'litre|litres|liter|liters|ltr|ltrs|kwh|ppl|pump|unleaded|diesel|petrol|fuel|forecourt|charger|charging receipt|price per litre',
+            'service_invoice' => 'invoice|labour|labor|parts|vat|mileage|service|repair|reg|work carried out|total due|balance due',
+            'inspection' => 'mot|mot test|test certificate|expiry|advisory|advisories|testing station|test result|dvsa|inspection',
+            'insurance' => 'insurance|insurer|insured|policy|policy number|policyholder|cover from|level of cover|type of cover|premium|motor insurance|comprehensive',
+            'claim_letter' => 'claim|claim number|settlement|settled|excess|write-off|written off|total loss|loss adjuster',
+            'repair_estimate' => 'estimate|estimate total|repair estimate|quotation',
+            'registration' => 'v5c|vsc|registration certificate|dvla|document reference|registered keeper|keeper',
+            'grade' => 'super unleaded|premium unleaded|premium diesel|unleaded|diesel|petrol|super|v-power|ultimate|supreme|momentum 99|e10|e5|b7|lpg|autogas',
+            'volume' => 'volume|litres|liters|ltrs|ltr|qty|quantity',
+            'price' => 'price|unit price|price per litre|price/l',
+            'total' => 'total|amount|to pay|amount due|balance due|total due|grand total|total paid',
+            'not_total' => 'subtotal|sub-total|sub total|change|cashback|discount|saving|savings|points|net',
+            'invoice_total' => 'total|balance due|amount due|total due|grand total',
+            'date' => 'date|dated|invoice date|tax point',
+            'odometer' => 'mileage|odometer|odometer reading|odo|miles',
+            'header' => 'invoice|date|reg|registration|vehicle|mileage|odometer|odo|make|model|vin|chassis|customer|account|job|order',
+            'totals' => 'labour|labor|parts|vat|subtotal|sub-total|total|amount due|balance due|net',
+        ],
         'title' => 'Scan a receipt or document',
         'lead' => 'A photo or PDF of an invoice, receipt or certificate fills in the right form. You check it and save it; the file is attached.',
         'chooser' => 'Scan a receipt or document',
@@ -5108,6 +5130,9 @@ return [
         'shortcut' => 'Scan',
         'fill_from_file' => 'Fill from a file',
         'where' => [
+            // Phase 53.4 (spec.md §7.27 *Reading without AI*): no model reads for this user.
+            'rules' => 'Read without AI on this server (text recognition and rules). The file doesn’t leave it. Check every field before saving.',
+            'rules_text' => 'PDFs with text are read without AI on this server. The file doesn’t leave it. Check every field before saving.',
             'server' => 'Read by {connection} on this server. The file doesn’t leave it.',
             'network' => 'Read by {connection} on your network. The file doesn’t leave it.',
             'internet' => 'Read by {connection}, on the internet. The file is sent there (photos without their location data).',
@@ -5123,6 +5148,7 @@ return [
             'vehicle_any' => 'Let the document decide',
         ],
         'hint' => [
+            'work_copied' => 'Copied from the invoice, tidy as needed.',
             'file' => 'A photo (JPEG, PNG or WebP) or a PDF, up to {max} MB. On a phone this opens the camera.',
             'file_send_text' => 'A PDF with text, up to {max} MB. This connection sends text only, so photos and scanned PDFs need text recognition on this server (Settings → AI).',
             'file_text_only' => 'A PDF with text, up to {max} MB. Photos and scanned PDFs need a model that reads images, or text recognition on this server (Settings → AI).',
@@ -5158,9 +5184,11 @@ return [
         'pick_lead_registration' => 'It shows {registration}, which none of your vehicles has.',
         'module_off' => '{module} is switched off, so there is no form for this. The file is kept for 24 hours.',
         'cannot_manage' => 'You can’t change the details of {vehicle}. The file is kept for 24 hours.',
+        'from_rules' => 'Read without AI, check',
         'from_file' => 'From the file, check',
         'evidence_label' => 'From the file:',
         'notice' => [
+            'read_by_rules' => 'Read without AI on this server. Check every field before saving.',
             'read_by' => 'Read by {model} on {connection}.',
             'read_by_tesseract' => 'Read on this server (text recognition), then by {model} on {connection}.',
             'read_by_paddleocr' => 'Read by the text recognition service, then by {model} on {connection}.',

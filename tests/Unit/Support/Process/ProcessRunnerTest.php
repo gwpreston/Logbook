@@ -156,4 +156,24 @@ final class ProcessRunnerTest extends TestCase
         self::assertNotNull($sh);
         self::assertStringEndsWith('/sh', $sh);
     }
+
+    public function testAStoppedRunWritesNothingAfterwards(): void
+    {
+        $file = (string) tempnam(sys_get_temp_dir(), 'logbook-stop-');
+        $script = '$f = $argv[1]; while (true) { file_put_contents($f, "x", FILE_APPEND); usleep(1000); }';
+        $running = (new ProcessRunner())->start([PHP_BINARY, '-r', $script, $file], 10);
+        self::assertInstanceOf(RunningProcess::class, $running);
+        usleep(100_000);
+
+        // K116: the OCR temp directory is removed only after this returns.
+        $running->stop();
+        clearstatcache();
+        $size = filesize($file);
+        usleep(100_000);
+        clearstatcache();
+
+        self::assertSame($size, filesize($file), 'nothing written once stopped');
+        self::assertTrue($running->wait()->timedOut, 'a stopped run reads as one that never finished');
+        unlink($file);
+    }
 }

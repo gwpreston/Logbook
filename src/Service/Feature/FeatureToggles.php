@@ -65,7 +65,7 @@ final readonly class FeatureToggles
         $off = [];
         foreach (Feature::cases() as $feature) {
             $byInstall = in_array($feature, self::OFF_ON_NEW_INSTALL, true) && !$this->env->has($feature->envName());
-            $states[$feature->value] = $byInstall ? false : $this->env->bool($feature->envName(), $feature->isOnByDefault());
+            $states[$feature->value] = $byInstall ? false : $this->default($feature);
             if ($byInstall) {
                 $off[] = $feature->value;
             }
@@ -125,10 +125,9 @@ final readonly class FeatureToggles
         $stored = $this->settings->find(self::SETTING)?->value;
         $states = [];
         foreach (Feature::cases() as $feature) {
-            $value = is_array($stored) ? ($stored[$feature->value] ?? null) : null;
-            $states[$feature->value] = is_bool($value)
-                ? $value
-                : $this->env->bool($feature->envName(), $feature->isOnByDefault());
+            $former = $feature->formerName();
+            $value = is_array($stored) ? $stored[$feature->value] ?? ($former === null ? null : $stored[$former] ?? null) : null;
+            $states[$feature->value] = is_bool($value) ? $value : $this->default($feature);
         }
 
         return $states;
@@ -149,5 +148,19 @@ final readonly class FeatureToggles
         }
 
         $this->settings->save(self::SETTING, $states);
+    }
+
+    /**
+     * FEATURES_<MODULE>, else the variable under the module's former name
+     * (FEATURES_AI_SCAN, #517), else the module's own default.
+     */
+    private function default(Feature $feature): bool
+    {
+        $former = $feature->formerName();
+        if ($former !== null && !$this->env->has($feature->envName())) {
+            return $this->env->bool('FEATURES_' . strtoupper($former), $feature->isOnByDefault());
+        }
+
+        return $this->env->bool($feature->envName(), $feature->isOnByDefault());
     }
 }

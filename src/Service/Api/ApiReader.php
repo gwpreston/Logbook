@@ -123,10 +123,10 @@ final readonly class ApiReader
                 'scope' => $key->scope->value,
                 'created_at' => Serializer::instant($key->createdAt),
             ],
-            // The AI modules have no API yet (spec.md §7.25), so they are not listed.
+            // The AI modules and reading files have no API yet (spec.md §7.25), so they are not listed.
             'modules' => array_filter(
                 $this->features->all(),
-                static fn (string $module): bool => !(Feature::tryFrom($module)?->isAi() ?? false),
+                static fn (string $module): bool => Feature::tryFrom($module)?->hasApi() ?? true,
                 ARRAY_FILTER_USE_KEY,
             ),
         ];

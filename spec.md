@@ -7843,8 +7843,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   text layer is read by the same rules. Nothing leaves the server: no
   request, no usage-log row, no per-user AI lock; OCR's own
   one-per-user limit applies (a second scan while one reads is refused
-  with the usual message). *Too little text* and OCR's failures give
-  the same lines as on the OCR route.
+  with the usual message). OCR's failures give the same lines as on the
+  OCR route; *Too little text* is only a mean confidence under 40 (or no
+  words): the 30-word minimum keeps short text from a model, and rules
+  fill only labelled values, so a short receipt is still read.
   - **The same output as a model:** per kind the schema's fields as
     `{value, evidence}`, values as printed, the evidence being the line
     the value came from (after the 11-digit scrub, *Preparing the
@@ -7914,8 +7916,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     vehicle's, else the UK plate pattern). The usual V5C page; the file
     is kept only when ticked.
   - **Other kinds** (MOT certificate, insurance, claim letter, repair
-    estimate, other): the date only (the first date), with the rest left
-    empty.
+    estimate, other): the date only (the first date; an insurance
+    document's as its start), with the rest left empty.
   - **The notice** at the top of the form: "Read without AI on this
     server. Check every field before saving." Each field read is marked
     "Read without AI, check" in place of "From the file, check". The

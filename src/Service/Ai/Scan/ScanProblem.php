@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Scan;
 
+use Logbook\Service\Ocr\OcrProblem;
+
 /**
  * Why a scan gave an empty form (spec.md §7.27 *Failures*). The file is
  * attached either way.
@@ -32,5 +34,19 @@ enum ScanProblem: string
     public function messageKey(): string
     {
         return 'scan.problem.' . $this->value;
+    }
+
+    /**
+     * OCR's failure as a scan's (spec.md §7.27 *Reading through OCR*).
+     */
+    public static function fromOcr(?OcrProblem $problem): self
+    {
+        return match ($problem) {
+            OcrProblem::Timeout => self::Timeout,
+            OcrProblem::Busy => self::Busy,
+            OcrProblem::TooLarge, OcrProblem::Unreadable => self::Unreadable,
+            OcrProblem::Unavailable => self::NoVision,
+            default => self::Failed,
+        };
     }
 }

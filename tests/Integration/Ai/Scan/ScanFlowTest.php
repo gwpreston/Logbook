@@ -533,7 +533,7 @@ final class ScanFlowTest extends ScanTestCase
         self::assertIsArray($shortcuts);
         self::assertContains(['name' => 'Scan', 'url' => '/scan'], $shortcuts);
 
-        $this->switchOff(Feature::AiScan);
+        $this->switchOff(Feature::Scan);
         self::assertSame(404, $this->browser->get('/scan')->getStatusCode());
         self::assertStringNotContainsString('Scan a receipt or document', self::body($this->browser->get('/log/new')));
         self::assertStringNotContainsString('Fill from a file', self::body($this->browser->get($form)));

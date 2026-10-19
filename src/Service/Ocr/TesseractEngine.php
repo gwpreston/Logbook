@@ -109,7 +109,13 @@ final class TesseractEngine implements OcrEngine
             } finally {
                 self::remove($dir);
             }
-        }, static fn () => self::remove($dir));
+        }, static function () use ($running, $dir): void {
+            // Stopped before its directory goes, so a late write can't leave the OCR text behind (K116).
+            if ($running instanceof RunningProcess) {
+                $running->stop();
+            }
+            self::remove($dir);
+        });
     }
 
     private static function remove(string $dir): void

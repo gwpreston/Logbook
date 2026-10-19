@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Scan;
 
+use Logbook\Domain\Ai\Location;
 use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\Scan\IncidentMatcher;
 use Logbook\Service\Ai\Scan\ScanAvailability;
+use Logbook\Service\Ai\Scan\ScanProblem;
 use Logbook\Service\Ai\Scan\ScanReader;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Attachment\AttachmentService;
@@ -126,16 +128,23 @@ final readonly class ScanAction
             $options[] = ['value' => (string) $vehicle->id, 'label' => $vehicle->name()];
         }
 
+        // Worked out once for the page (K118).
+        $route = $this->availability->route($user);
+
         return $this->view->render($request, $response, 'scan/form.twig', [
             'values' => $values,
             'errors' => $error === null ? [] : [self::FIELD => ['key' => $error, 'params' => []]],
             'vehicle_options' => $options,
             'has_vehicles' => $vehicles !== [],
-            'connection' => $this->availability->connection(),
-            'reads_pictures' => $this->availability->readsPictures(),
-            'ocr_engine' => $this->availability->picturesViaOcr(),
-            'ocr_checks' => $this->availability->picturesCheckedByOcr(),
-            'text_only' => $this->availability->picturesTextOnly(),
+            'connection' => $this->availability->connection($user),
+            'reads_pictures' => $route->problem === null,
+            'ocr_engine' => $route->rules ? null : $this->availability->picturesViaOcr($route),
+            'ocr_checks' => $route->crossCheck,
+            'text_only' => $route->problem === ScanProblem::TextOnly,
+            // Phase 53.4: photos (and text PDFs) read without AI on this server.
+            'rules' => $route->rules,
+            'rules_text' => $this->availability->readsTextByRules($user),
+            'this_server' => Location::Server,
             'max_upload_mb' => $this->attachments->maxMegabytes(),
         ], $status);
     }

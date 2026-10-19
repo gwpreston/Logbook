@@ -58,7 +58,7 @@ final readonly class OcrText
         $digits = [];
         $tokens = [];
         // The V5C rule (punctuation, look-alikes, wrapped rows) only for V5C-like text (#500).
-        $wide = Scrubber::looksLikeRegistration(LayoutText::build($result->lines));
+        $wide = Scrubber::looksLikeRegistration($result->layoutText);
         foreach (LayoutText::pages(self::withoutReferences($result->lines, $wide)) as $p => $rows) {
             if ($p > 0) {
                 $lines[] = '';
@@ -237,6 +237,21 @@ final readonly class OcrText
     /**
      * Too little to send: a mean confidence under 40, or under 30 words.
      */
+    /**
+     * The text's rows without their numbers, as sent (11-digit runs
+     * removed), pages separated by an empty row: what reading without AI
+     * reads (Phase 53.4).
+     *
+     * @return list<string>
+     */
+    public function rows(): array
+    {
+        return array_map(
+            static fn (string $line): string => (string) preg_replace('/^\d+\| /', '', $line),
+            $this->text === '' ? [] : explode("\n", $this->text),
+        );
+    }
+
     public function isTooLittle(): bool
     {
         return $this->wordCount < self::MIN_WORDS || $this->meanConfidence < self::MIN_MEAN_CONFIDENCE;
@@ -250,7 +265,7 @@ final readonly class OcrText
         return "The document's text, read by text recognition (OCR) from a photo or scan. OCR can misread\n"
             . "characters (0 and O, 1 and l, 5 and S, 8 and B) and may split or join words. Each line starts\n"
             . "with its number and a bar, which are not part of the document; leave them out of evidence.\n"
-            . "Between the markers:\n<<<\n" . $this->text . "\n>>>";
+            . Extractor::between('Between the markers:', $this->text);
     }
 
     /**

@@ -22,6 +22,8 @@ final readonly class Extraction
      * @param list<string> $hardToRead fields whose evidence OCR read with low confidence
      * @param list<string> $notOnPage fields OCR's cross-check didn't find where it read confidently (Phase 53.3)
      * @param array{found: int, flagged: int, unchecked: int}|null $crossCheck the cross-check's counts, when it ran
+     * @param array<string, self> $alternatives read without AI (Phase 53.4): each other kind's own reading of
+     *     the same text, keyed by kind, so *Read it as* maps that kind's values
      */
     public function __construct(
         public ScanKind $kind,
@@ -33,6 +35,7 @@ final readonly class Extraction
         public ?ReadBy $readBy = null,
         public array $notOnPage = [],
         public ?array $crossCheck = null,
+        public array $alternatives = [],
     ) {
     }
 
@@ -103,6 +106,7 @@ final readonly class Extraction
             $this->readBy,
             $flagged,
             $counts,
+            $this->alternatives,
         );
     }
 
@@ -111,6 +115,34 @@ final readonly class Extraction
      */
     public function as(ScanKind $kind): self
     {
+        $own = $this->alternatives[$kind->value] ?? null;
+        if ($own !== null) {
+            // Read without AI: that kind's own reading of the same text, keeping this one to come back to.
+            $alternatives = $this->alternatives;
+            unset($alternatives[$kind->value]);
+            $alternatives[$this->kind->value] = new self(
+                $this->kind,
+                $this->fields,
+                $this->lines,
+                $this->recommendations,
+                $this->dropped,
+                $this->hardToRead,
+            );
+
+            return new self(
+                $kind,
+                $own->fields,
+                $own->lines,
+                $own->recommendations,
+                $own->dropped,
+                $own->hardToRead,
+                $this->readBy,
+                $own->notOnPage,
+                $own->crossCheck,
+                $alternatives,
+            );
+        }
+
         return new self(
             $kind,
             $this->fields,
@@ -121,6 +153,7 @@ final readonly class Extraction
             $this->readBy,
             $this->notOnPage,
             $this->crossCheck,
+            $this->alternatives,
         );
     }
 
@@ -136,6 +169,35 @@ final readonly class Extraction
             $readBy,
             $this->notOnPage,
             $this->crossCheck,
+            $this->alternatives,
+        );
+    }
+
+    /**
+     * With each other kind's own reading (read without AI, Phase 53.4).
+     *
+     * @param array<string, self> $alternatives keyed by kind
+     */
+    public function withAlternatives(array $alternatives): self
+    {
+        unset($alternatives[$this->kind->value]);
+
+        return new self(
+            $this->kind,
+            $this->fields,
+            $this->lines,
+            $this->recommendations,
+            $this->dropped,
+            $this->hardToRead,
+            $this->readBy,
+            $this->notOnPage,
+            $this->crossCheck,
+            // Only what a reading of that kind holds, never a further level.
+            array_map(
+                static fn (self $a): self
+                    => new self($a->kind, $a->fields, $a->lines, $a->recommendations, $a->dropped, $a->hardToRead),
+                $alternatives,
+            ),
         );
     }
 
@@ -230,11 +292,12 @@ final readonly class Extraction
      *     read_by: array<string, string>|null,
      *     not_on_page: list<string>,
      *     cross_check: array{found: int, flagged: int, unchecked: int}|null,
+     *     alternatives?: array<string, array<string, mixed>>,
      * }
      */
     public function toArray(): array
     {
-        return [
+        $array = [
             'kind' => $this->kind->value,
             'fields' => $this->fields,
             'lines' => $this->lines,
@@ -245,6 +308,10 @@ final readonly class Extraction
             'not_on_page' => $this->notOnPage,
             'cross_check' => $this->crossCheck,
         ];
+
+        return $this->alternatives === []
+            ? $array
+            : $array + ['alternatives' => array_map(static fn (self $a): array => $a->toArray(), $this->alternatives)];
     }
 
     /**
@@ -282,6 +349,16 @@ final readonly class Extraction
         $counts = is_array($stored['cross_check'] ?? null) ? $stored['cross_check'] : null;
         $count = static fn (string $key): int => is_int($counts[$key] ?? null) ? $counts[$key] : 0;
 
+        $alternatives = [];
+        foreach (is_array($stored['alternatives'] ?? null) ? $stored['alternatives'] : [] as $kind => $alternative) {
+            $other = is_string($kind) && ScanKind::tryFrom($kind) !== null && is_array($alternative)
+                ? self::fromStored(['kind' => $kind] + self::keyed($alternative))
+                : null;
+            if ($other !== null && $kind !== $read->kind->value) {
+                $alternatives[$kind] = $other;
+            }
+        }
+
         return new self(
             $read->kind,
             $read->fields,
@@ -296,7 +373,17 @@ final readonly class Extraction
                 'flagged' => $count('flagged'),
                 'unchecked' => $count('unchecked'),
             ],
+            $alternatives,
         );
+    }
+
+    /**
+     * @param array<mixed> $array
+     * @return array<string, mixed>
+     */
+    private static function keyed(array $array): array
+    {
+        return array_filter($array, static fn (int|string $key): bool => is_string($key), ARRAY_FILTER_USE_KEY);
     }
 
     private static function text(mixed $value): string

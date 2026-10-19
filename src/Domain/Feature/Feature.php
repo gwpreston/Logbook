@@ -29,7 +29,9 @@ enum Feature: string
     // not listed, until a task is assigned.
     case AiAsk = 'ai_ask';
     case AiActions = 'ai_actions';
-    case AiScan = 'ai_scan';
+    // Reading files (spec.md §7.27): `ai_scan` until Phase 53.4 (#517), now
+    // also read without AI, so listed whenever a model or OCR can read.
+    case Scan = 'scan';
 
     /**
      * The environment variable holding the default, e.g. FEATURES_FUEL.
@@ -37,6 +39,16 @@ enum Feature: string
     public function envName(): string
     {
         return 'FEATURES_' . strtoupper($this->value);
+    }
+
+    /**
+     * The module's name before it was renamed (Phase 53.4, #517): a stored
+     * choice or a FEATURES_ variable under it still applies when the new
+     * name has none.
+     */
+    public function formerName(): ?string
+    {
+        return $this === self::Scan ? 'ai_scan' : null;
     }
 
     /**
@@ -65,7 +77,7 @@ enum Feature: string
             self::Stations => 'pin_drop',
             self::AiAsk => 'forum',
             self::AiActions => 'smart_toy',
-            self::AiScan => 'document_scanner',
+            self::Scan => 'document_scanner',
         };
     }
 
@@ -87,6 +99,15 @@ enum Feature: string
      */
     public function isAi(): bool
     {
-        return in_array($this, [self::AiAsk, self::AiActions, self::AiScan], true);
+        return in_array($this, [self::AiAsk, self::AiActions], true);
+    }
+
+    /**
+     * Not in the API's module list (`GET /me`): the AI modules and reading
+     * files have no API (spec.md §7.20, §7.25).
+     */
+    public function hasApi(): bool
+    {
+        return !$this->isAi() && $this !== self::Scan;
     }
 }

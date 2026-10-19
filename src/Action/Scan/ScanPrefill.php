@@ -135,7 +135,11 @@ final readonly class ScanPrefill
         }
         $marked = array_keys(array_filter($values, static fn (string $v): bool => $v !== ''));
         $readBy = $reading->readBy;
-        if ($readBy !== null) {
+        if ($readBy?->rules === true) {
+            // Read without AI (Phase 53.4): said at the top, and on each field read.
+            $meta['_scan_read_by'] = $this->translator->trans('scan.notice.read_by_rules');
+            $meta['_scan_rules'] = '1';
+        } elseif ($readBy !== null) {
             // How it was read (spec.md §7.27, Phase 53.2): a model alone, or OCR first.
             $meta['_scan_read_by'] = $this->translator->trans(
                 $readBy->engine === null ? 'scan.notice.read_by' : 'scan.notice.read_by_' . $readBy->engine,

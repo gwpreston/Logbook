@@ -25,7 +25,13 @@
             <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
-        {% if connection %}
+        {% if rules %}
+            {# Phase 53.4 (§7.27 *Reading without AI*): nothing leaves the server. #}
+            <p class="ask-where" data-scan-rules>
+                {{ ai.location(this_server) }}
+                <span>{{ 'scan.where.rules'|trans }}</span>
+            </p>
+        {% elseif connection %}
             <p class="ask-where">
                 {{ ai.location(connection.location) }}
                 <span>{{ ('scan.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
@@ -42,6 +48,9 @@
                 {% endif %}
             {% elseif connection.location.value == 'internet' %}
                 <p class="alert alert--warning" role="note">{{ ui.icon('warning') }}<span>{{ 'scan.where.registration_warning'|trans({connection: connection.name}) }}</span></p>
+            {% endif %}
+            {% if rules_text %}
+                <p class="ask-where ask-where--note" data-scan-rules-text>{{ ui.icon('document_scanner') }}<span>{{ 'scan.where.rules_text'|trans }}</span></p>
             {% endif %}
         {% endif %}
 

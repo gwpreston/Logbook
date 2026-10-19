@@ -35,8 +35,8 @@ final class FeatureToggleTest extends ReminderTestCase
 
         $html = self::body($browser->get('/settings/modules'));
         foreach (Feature::cases() as $feature) {
-            if ($feature->isAi()) {
-                // Not listed until AI is set up (Phase 26.1).
+            if ($feature->isAi() || $feature === Feature::Scan) {
+                // Not listed until AI is set up (Phase 26.1), or for reading files OCR works (Phase 53.4).
                 self::assertStringNotContainsString('name="' . $feature->value . '"', $html);
                 continue;
             }
@@ -68,7 +68,7 @@ final class FeatureToggleTest extends ReminderTestCase
                 // Not on the page, so kept as they were.
                 'ai_ask' => true,
                 'ai_actions' => true,
-                'ai_scan' => true,
+                'scan' => true,
             ],
             $this->service($app, FeatureToggles::class)->all(),
         );

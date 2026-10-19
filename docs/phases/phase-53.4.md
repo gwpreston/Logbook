@@ -104,40 +104,78 @@ Added to §7.27 in 53.4.0:
 ### 53.4.0 Spec first
 - [x] Open questions A–H decided by the owner and logged (#517–#524);
       §7.10, §7.27, §12, §13.
-- [ ] Known issues K116, K118, K119 and K120 (53.3's merge review),
-      chosen by the owner for this phase.
+- [x] Known issues K116, K118, K119 and K120 (53.3's merge review),
+      chosen by the owner for this phase: fixed.
 
 ### 53.4.1 Rules
-- [ ] The classifier and its keyword lists per shipped locale.
-- [ ] The fuel receipt reader with the agreeing-triple search.
-- [ ] The service invoice partial reader, and the date-only reader for
-      other kinds.
+- [x] The classifier and its keyword lists per shipped locale.
+- [x] The fuel receipt reader with the agreeing-triple search.
+- [x] The service invoice partial reader, and the date-only reader for
+      other kinds (and the V5C's registration, #522).
 
 ### 53.4.2 Pages
-- [ ] Scan entry points shown without AI when OCR is available.
-- [ ] The notice; *Read it as*; the field marks.
-- [ ] `docs/reading-files.md`: what reading without AI can and can't do.
-- [ ] Translations (every shipped locale).
+- [x] Scan entry points shown without AI when OCR is available (routed
+      with `AI_ENABLED=false` too, #521).
+- [x] The notice; *Read it as*; the field marks.
+- [x] `docs/reading-files.md`: what reading without AI can and can't do.
+- [x] Translations (every shipped locale).
 
 ### 53.4.3 Tests and release
-- [ ] The fuel fixtures (53.1.3's real receipts): volume, price, total
-      and date accuracy, and **no wrong agreeing triple** on any fixture.
-- [ ] Invoices: date, total, registration and mileage accuracy. No value
+- [x] The fuel fixtures: volume, price, total and date accuracy, and **no
+      wrong agreeing triple** on any fixture (`RuleReaderTest`, the eval
+      below). The real receipts (#496) haven't arrived: run again on them.
+- [x] Invoices: date, total, registration and mileage accuracy. No value
       filled from the wrong label.
-- [ ] Classification accuracy per kind; *Read it as* re-mapping.
+- [x] Classification accuracy per kind; *Read it as* re-mapping.
 - [ ] Carried from [53.3](phase-53.3.md): the owner's runs of
       `bin/ai-eval.php --scans --crosscheck` (flags and false flags per
       kind: 53.3's acceptance criterion 1) and `--scans --via=ocr` (53.2's
       acceptance criterion 3), recorded in 53.3's *Eval results*.
-- [ ] `bin/ai-eval.php --scans --via=rules` in the eval report beside the
-      other routes.
-- [ ] No request to any connection on this route, asserted.
+- [x] `bin/ai-eval.php --scans --via=rules` in the eval report beside the
+      other routes (below).
+- [x] No request to any connection on this route, asserted
+      (`ScanWithoutAiTest`).
 - [ ] Design review (375, 768, 1280 px; light and dark; JS off;
       German at 375 px).
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.3
       and 53.4; tag once merged.
 
 ---
+
+## Eval results (2026-10-19)
+
+**`bin/ai-eval.php --scans --via=rules`**, Tesseract 5.5.0 (deu+eng) in
+the dev Docker image, GD, the `demo` user (en_GB). *Fields ok* counts
+every field a model would fill, so the rules' partial reading scores low
+by design.
+
+| Kind (files) | Kind ok | Fields ok |
+|---|---|---|
+| service_invoice (8) | 7 | 43% |
+| fuel_receipt (4) | 4 | 53% |
+| inspection (3) | 3 | 17% |
+| insurance (3) | 3 | 11% |
+| registration (2) | 2 | 10% |
+| other (1) | 1 | 20% |
+| claim_letter (2) | 2 | 12% |
+| repair_estimate (1) | 0 | 25% |
+
+- **No wrong agreeing set** on any fixture. The two text-PDF receipts
+  (07, 09) fill volume, price, total and date exactly. On the two
+  synthetic photos (06, 08) Tesseract reads 0 as 6 or 8 and `.` as `,`
+  (`TOTAL GBP 66,28`, `14/16/2026 68:42`), so no set adds up: volume and
+  price are left for the owner, and the misread total is filled, marked
+  for checking, as the rule says. The owner's real receipts (#496) are
+  the better test.
+- The German invoice (20) is *other* for an English user: the German
+  keywords are read only under `de` (with English always). Under `de` it
+  is an invoice (`RuleReaderTest`).
+- The repair estimate photo (23) reads as an invoice: OCR reads
+  `ESTIHATE` and `Estinate`, so no estimate word is found, and `Reg` and
+  `repair` count for an invoice. *Read it as* puts it right.
+- No registration reference in any output.
+- Before the change to *Too little text* for rules (a confidence floor
+  only), every photo fixture failed the 30-word minimum.
 
 ## Acceptance criteria
 

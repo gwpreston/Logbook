@@ -135,10 +135,11 @@
 {%- endmacro %}
 
 {# "from your message" beside a field an Ask draft filled in (spec.md §7.26 *Edit*),
-   "from the file, check" beside one a scan filled in (§7.27). #}
+   "from the file, check" beside one a scan filled in (§7.27), "read without AI, check"
+   when rules read it (Phase 53.4). #}
 {% macro from_message(name, values) -%}
     {% if name in ((values._from_message ?? '')|split(',')) %} <span class="field__from-message">{{ 'ask.draft.from_message'|trans }}</span>{% endif %}
-    {%- if name in ((values._from_file ?? '')|split(',')) %} <span class="field__from-message field__from-file">{{ 'scan.from_file'|trans }}</span>{% endif %}
+    {%- if name in ((values._from_file ?? '')|split(',')) %} <span class="field__from-message field__from-file">{{ ((values._scan_rules ?? '') == '1' ? 'scan.from_rules' : 'scan.from_file')|trans }}</span>{% endif %}
 {%- endmacro %}
 
 {# Under a field a scan touched (spec.md §7.27): the words its value came

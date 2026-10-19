@@ -231,7 +231,7 @@ start on the *Household* dashboard layout (*Reset layout* offers it and the full
 | `FEATURES_STATIONS` | `true` | Fuel stations: stations as records linked from fill-ups, the stations list and pages with what you paid, favourites, Settings → Places and straight-line distances, merging and duplicates, the Fuel tab's *By station* card, the station API endpoints and the Ask tool ([stations.md](stations.md)). Part of fuel: off whenever `FEATURES_FUEL` is. Nothing is fetched from outside, unless an admin enables a fuel price provider (see [Fuel prices](#fuel-prices)). |
 | `FEATURES_AI_ASK` | `true` | Ask Logbook (Phase 26.2). Does nothing, and is not listed on Settings → Modules, until AI is set up ([ai.md](ai.md)). |
 | `FEATURES_AI_ACTIONS` | `true` | Drafting entries from what you say (Phase 26.3). As above. |
-| `FEATURES_AI_SCAN` | `true` | Reading receipts and documents (Phase 26.4). As above. |
+| `FEATURES_SCAN` | `true` | Reading receipts and documents (Phase 26.4): with a model, or without AI on this server when OCR works (3.18). Listed on Settings → Modules whenever a model or OCR can read a file. Called `FEATURES_AI_SCAN` before 3.18, which still works when `FEATURES_SCAN` isn't set ([reading-files.md](reading-files.md#reading-without-ai)). |
 
 These are defaults: once an owner saves **Settings → Modules**, that choice
 wins. A switched-off module disappears from menus, pages (404), the dashboard,

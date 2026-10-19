@@ -199,7 +199,7 @@ final class ClaimScanTest extends ScanTestCase
         $toggles = $this->service($this->app, FeatureToggles::class);
         $on = [];
         foreach (Feature::cases() as $feature) {
-            if ($feature !== Feature::AiScan) {
+            if ($feature !== Feature::Scan) {
                 $on[] = $feature;
             }
         }
