@@ -21,9 +21,9 @@ No migration.
   still shows and reads the file on this server by rules: nothing is
   sent anywhere and nothing is logged. A fuel receipt fills its volume,
   price and total only when they add up (else just the total), with the
-  date, grade, station and currency; an invoice its date, total,
-  registration, mileage and garage, with its work lines copied into the
-  description; a V5C its registration; anything else its date. Every
+  date, grade, currency and, when it is one of yours, the station; an
+  invoice its date, total, registration and mileage, with its work
+  lines copied into the description; a V5C its registration; anything else its date. Every
   field is marked *Read without AI, check*, and *Read it as* switches
   kind without reading again ([reading-files.md](docs/reading-files.md#reading-without-ai)).
 - `bin/ai-eval.php --scans --via=rules`: the fixture set read without AI.

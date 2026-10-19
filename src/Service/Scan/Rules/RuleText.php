@@ -34,19 +34,39 @@ final class RuleText
      */
     public static function date(string $line, string $locale): ?string
     {
-        $found = null;
+        foreach (self::dates($line, $locale) as [$text]) {
+            return $text;
+        }
+
+        return null;
+    }
+
+    /**
+     * Every date printed on the line that reads as one, in order, as
+     * printed with its byte offset. Candidates are checked in order, and
+     * one inside a date already found is skipped.
+     *
+     * @return \Generator<int, array{string, int}>
+     */
+    public static function dates(string $line, string $locale): \Generator
+    {
+        $candidates = [];
         foreach (self::DATES as $pattern) {
-            if (preg_match_all($pattern, $line, $m, PREG_OFFSET_CAPTURE) === false) {
-                continue;
-            }
-            foreach ($m[0] as [$text, $offset]) {
-                if (($found === null || $offset < $found[1]) && PrintedDate::read($text, $locale) !== null) {
-                    $found = [$text, $offset];
+            if (preg_match_all($pattern, $line, $m, PREG_OFFSET_CAPTURE) > 0) {
+                foreach ($m[0] as [$text, $offset]) {
+                    $candidates[] = [$text, $offset];
                 }
             }
         }
-
-        return $found[0] ?? null;
+        usort($candidates, static fn (array $a, array $b): int => $a[1] <=> $b[1]);
+        $end = 0;
+        foreach ($candidates as [$text, $offset]) {
+            if ($offset < $end || PrintedDate::read($text, $locale) === null) {
+                continue;
+            }
+            $end = $offset + strlen($text);
+            yield [$text, $offset];
+        }
     }
 
     /**

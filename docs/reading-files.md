@@ -164,17 +164,16 @@ What the rules can do:
 - **Fuel receipts:** the volume, price per unit and total, but only when
   volume × price makes the total (within 1p and the printed rounding).
   If no set of figures adds up, or two sets do and disagree, only the
-  total is filled, and only if OCR read it clearly; you type the volume
-  and price. Also the date and
-  time, the grade (through the same words as Ask's drafts), the station
-  (matched to one of your stations by name when one matches) and the
-  currency.
-- **Service invoices:** the date, the total (the largest amount on a
-  *Total*, *Balance due* or *Amount due* line, never a subtotal or VAT
-  line, if OCR read it clearly), the registration (one of your
-  vehicles', else a UK plate), the
-  mileage (the number after *Mileage*, *Odometer* or *Miles*) and the
-  garage's name. The work lines between the header and the totals are
+  total is filled, and only an amount after *Total* (or *Amount due*)
+  that OCR read clearly; you type the volume and price. Also the date
+  and time, the grade (through the same words as Ask's drafts), the
+  station when its name matches one of your stations (otherwise you
+  pick it), and the currency.
+- **Service invoices:** the date, the total (an amount after *Total*,
+  *Balance due* or *Amount due*, never a subtotal or VAT line, if OCR
+  read it clearly), the registration (one of your vehicles', else a UK
+  plate) and the mileage (the number after *Mileage*, *Odometer* or
+  *Miles*). The garage's name is left for you. The work lines between the header and the totals are
   copied into the description as they are, marked "Copied from the
   invoice, tidy as needed"; the title is left for you.
 - **A V5C:** the registration only. As on every route, the file is kept

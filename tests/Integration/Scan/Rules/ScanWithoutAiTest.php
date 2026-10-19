@@ -87,7 +87,7 @@ final class ScanWithoutAiTest extends ScanTestCase
         self::assertSame('42.18', $values['volume']);
         self::assertSame('1.429', $values['price']);
         self::assertSame('60.28', $values['total']);
-        self::assertSame('SHORELINE FUELS LTD', $values['station']);
+        self::assertSame('', $values['station'] ?? '', 'not one of the install\'s stations: left for the owner (#526)');
 
         $text = html_entity_decode($html);
         self::assertStringContainsString('Read without AI on this server. Check every field before saving.', $text);
@@ -178,7 +178,7 @@ final class ScanWithoutAiTest extends ScanTestCase
         $values = Html::formValues(Html::element(Html::document($html), 'form.form'));
         self::assertSame('2026-09-12', $values['performed_on']);
         self::assertSame('184.5', $values['cost']);
-        self::assertSame('Brightwater Motors Ltd', $values['vendor']);
+        self::assertSame('', $values['vendor'] ?? '', 'the garage is left for the owner (#526)');
         self::assertSame("Full service\nOil and filter change", $values['description']);
         self::assertSame('', $values['title'] ?? '', 'the title is left for the owner');
         self::assertStringContainsString('Copied from the invoice, tidy as needed.', html_entity_decode($html));

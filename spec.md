@@ -7420,7 +7420,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   entry points are hidden otherwise. Reading without AI needs neither AI
   set up (`AI_ENABLED=false` included) nor *Use AI features* (decided
   2026-10-19, `docs/phases/open-questions.md` #518, #521): nothing leaves
-  the server. Which files can then be read follows *Routing*
+  the server. Never in a demo (§7.36), which takes no file from a
+  visitor. Which files can then be read follows *Routing*
   (Phase 53.2), below: a text PDF needs only a text model; a photo or a
   scanned PDF needs a vision model on `read_document`, or a text model
   and a working OCR engine.
@@ -7887,41 +7888,49 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       adds up*'s own rule (within 1p plus the printed rounding, in
       `brick/math`) wins. With two agreeing sets that disagree, only
       their total is filled when they share it. With no agreeing set,
-      only the total is filled (the largest amount on a line labelled
-      as the total, `TOTAL` or `AMOUNT DUE`, else on any total line), and
-      only when OCR read that amount with a confidence of at least 90
-      (#525: a faded 0 read as 6 adds up to nothing, and was read less
-      surely); otherwise it too is left. The volume and price are then
-      left for the owner. A wrong agreeing set is never filled: only
-      labelled numbers are candidates, and each number is read in the
-      user's locale as the Mapper reads it. A receipt prints few
-      candidates: with more than 12 different volumes, prices or totals
-      (a statement), no set is searched, so a long document is read in
-      bounded time (merge review of 53.4);
+      only the total is filled, and only **strictly** (decided
+      2026-10-19, `docs/phases/open-questions.md` #526): an amount
+      after a word labelling the total itself (`TOTAL`, `AMOUNT DUE`,
+      `BALANCE DUE`, `GESAMTBETRAG`…, `scan.keywords.invoice_total`),
+      never a number printed with a unit or as a price (`42.18 L`,
+      `107.2p/L`), never one after a change, discount, saving, points,
+      subtotal or tendered word between the label and it, the largest
+      such amount, and only when OCR read that amount with a confidence
+      of at least 90 (#525: a faded 0 read as 6 adds up to nothing, and
+      was read less surely); otherwise it too is left. The volume and
+      price are then left for the owner. A wrong agreeing set is never
+      filled: only labelled numbers are candidates, and each number is
+      read in the user's locale as the Mapper reads it. A receipt prints
+      few candidates: amounts printed with a currency but no total word
+      (a shop basket) count only while there are at most 12 different
+      ones, and with more than 12 different volumes, prices or labelled
+      totals (a statement) no set is searched, so a long document is
+      read in bounded time (merge review of 53.4);
     - the date and time from the first line holding a date (the locale's
-      order, with the usual "Check the date" warning);
+      order, with the usual "Check the date" warning). Words are taken
+      for month names only when they are one; the month names are worked
+      out once per locale, so a long text is read in bounded time;
     - the grade: the first grade word (`scan.keywords.grade`: unleaded,
       super, diesel, E10, V-Power…), through the Phase 26.3 grade
       resolver as on every route;
-    - the station: the first of the top five lines that names one of
-      the install's stations, else the first line with three letters in
-      a row (or a short name in capitals, `BP`), never a line with a
-      date, an amount, a volume, a grade or a pump (`not_vendor`); the
-      Mapper then links it to that station or offers it as a
-      new one (§7.33);
+    - the station: only one of the install's stations, named on one of
+      the top five lines (the text before its first comma or wide gap,
+      matched by the station's normalised name, §7.33); otherwise it is
+      left for the owner (#526: a first line can be an address or a
+      product as easily as a name);
     - the currency from `£`, `€`, `$` or a code beside the total.
   - **Service invoice** (partial): the date (the first line with a date
-    word, else the first date, never one after a word such as *next*,
-    *due* or *expiry* on its line, `not_date`); the total (the largest amount on a line
-    with `TOTAL`, `BALANCE DUE` or `AMOUNT DUE`, never a subtotal or VAT
-    line, when OCR read it with a confidence of at least 90, #525); the
+    word, else the first date, never one with a word such as *next*,
+    *due* or *expiry* between it and the date or line start before it,
+    `not_date`, so `Next service 01/09/2026 Invoice date 01/03/2025`
+    gives 01/03/2025); the total (strictly, as a fuel receipt's lone
+    total, #526); the
     registration (a vehicle the user can log to whose
     registration appears in the text, else the UK plate pattern
     `AB12 CDE`), matched to a vehicle as today; the odometer (a number
     on a line with `MILEAGE`, `ODO`, `ODOMETER` or `MILES`, the unit
-    when printed); the vendor (the first line with three letters in a
-    row above the first header line, never a header or totals line).
-    The **work lines** (decided 2026-10-19,
+    when printed). The garage is left for the owner (#526). The
+    **work lines** (decided 2026-10-19,
     `docs/phases/open-questions.md` #519): the lines after the header's
     last labelled line (date, registration, mileage, invoice number)
     and before the first totals line go into the description, unparsed

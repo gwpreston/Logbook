@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Scan\Rules;
 
+use DateTimeImmutable;
 use Logbook\Domain\Ai\Scan\ScanKind;
+use Logbook\Domain\Station\StationData;
+use Logbook\Repository\StationRepository;
 use Logbook\Service\Ai\Scan\Extraction;
 use Logbook\Service\Ai\Scan\PrintedDate;
 use Logbook\Service\Ai\Scan\PrintedNumber;
@@ -248,17 +251,102 @@ final class RuleReaderTest extends ScanTestCase
         ]));
 
         self::assertSame('02/10/2026', $read->value('date'));
-        self::assertNull($read->value('vendor'), 'a header row is never the garage');
+        self::assertNull($read->value('vendor'), "the garage is left for the owner (#526)");
     }
 
-    public function testAShortStationNameIsKeptAndAProductLineIsNeverTheStation(): void
+    public function testTheStationIsOnlyOneOfTheInstallsStations(): void
+    {
+        // #526: a first row is as often an address or a product as a name.
+        $this->scanApp();
+        $receipt = static fn (string $first): string => implode("\n", [
+            $first,
+            '12 High Street, Leeds',
+            '14/10/2026',
+            'Diesel 30.00 L',
+            '155.9p/L',
+            'Total £46.77',
+        ]);
+        self::assertNull($this->read($receipt('SHELL PETROL STATION'))->value('vendor'), 'not one of ours: left for the owner');
+
+        $stations = $this->service($this->app, StationRepository::class);
+        $stations->insert(new StationData('BP'), $this->owner->id, new DateTimeImmutable(self::NOW));
+        $stations->insert(new StationData('Shell Petrol Station'), $this->owner->id, new DateTimeImmutable(self::NOW));
+        self::assertSame('BP', $this->read($receipt('BP'))->value('vendor'), 'a short name in capitals');
+        self::assertSame('SHELL PETROL STATION', $this->read($receipt('SHELL PETROL STATION'))->value('vendor'));
+        self::assertNull($this->read($receipt('Pump 4'))->value('vendor'));
+    }
+
+    public function testALongTextOfDateLikeWordsIsReadInBoundedTime(): void
+    {
+        // Merge review of 53.4: month names were rebuilt for every date-like candidate (3.6 s here).
+        $this->scanApp();
+        $text = mb_substr(str_repeat('12 abc 34 ', 2000), 0, 20000);
+
+        $started = microtime(true);
+        $this->read($text);
+
+        self::assertLessThan(0.5, microtime(true) - $started);
+    }
+
+    public function testAnInvoiceDateBesideANextServiceDateIsRead(): void
     {
         $this->scanApp();
-        $read = $this->read(implode("\n", ['BP', '14/10/2026', 'Diesel 30.00 L', '155.9p/L', 'Total £46.77']));
-        self::assertSame('BP', $read->value('vendor'));
+        $read = $this->read(implode("\n", [
+            'Garage Ltd',
+            'Invoice 55',
+            'Next service due 01/09/2026 Invoice date 01/03/2025',
+            'Total £120.00',
+        ]));
 
-        $read = $this->read(implode("\n", ['14/10/2026', 'Pump 4', 'Diesel 30.00 L', '155.9p/L', 'Total £46.77']));
-        self::assertNull($read->value('vendor'), 'no row names a station');
+        self::assertSame('01/03/2025', $read->value('date'));
+    }
+
+    public function testALoneTotalIsStrict(): void
+    {
+        // #526: never a number with a unit or a price, never after a saving or tendered word.
+        $this->scanApp();
+        $read = $this->read(implode("\n", ['BP', '01/03/2025', 'Fuel total 42.18 L 107.2p/L £45.99', 'Pump 4']));
+        self::assertSame('45.99', $read->value('total'));
+
+        $read = $this->read(implode("\n", ['Aral', '01.03.2025', 'Total 42,18 L 1,859 EUR/L 78,51 EUR']));
+        self::assertSame('78,51', $read->value('total'));
+
+        $saving = ['ESSO', '01/03/2025', 'Unleaded 42.18 L', '107.3 p/L', 'TOTAL £45.26 (saving £2.00)'];
+        $read = $this->read(implode("\n", $saving));
+        self::assertSame('45.26', $read->value('total'), 'the saving after it is never the total, nor hides it');
+
+        $read = $this->read(implode("\n", ['ESSO', '01/03/2025', 'Amount £45.26']));
+        self::assertNull($read->value('total'), 'a total word that is not the total itself, with no set agreeing');
+    }
+
+    public function testAShopBasketDoesNotHideTheFuelSet(): void
+    {
+        $this->scanApp();
+        $rows = ['ESSO', '01/03/2025 08:42', 'Unleaded 42.18 L @ 107.2 p/L', 'TOTAL £45.22'];
+        for ($i = 1; $i <= 13; $i++) {
+            $rows[] = sprintf('Item %d £%d.49', $i, $i);
+        }
+        $read = $this->read(implode("\n", $rows));
+
+        self::assertSame('42.18', $read->value('volume'));
+        self::assertSame('107.2p', $read->value('price_per_unit'));
+        self::assertSame('45.22', $read->value('total'));
+    }
+
+    public function testAV5csReferenceIsInNoKindsReading(): void
+    {
+        // Merge review of 53.4: the other kinds' readings kept the reference in their evidence.
+        $this->scanApp();
+        $read = $this->read(implode("\n", [
+            'V5C Registration Certificate',
+            'Registration AB12 CDE',
+            'Issued 01/02/2026 1234      5678 901',
+        ]));
+
+        self::assertSame(ScanKind::Registration, $read->kind);
+        $stored = (string) json_encode($read->toArray());
+        self::assertDoesNotMatchRegularExpression('/1234\s*5678\s*901/', $stored);
+        self::assertNotSame([], $read->alternatives, 'the other kinds are still read');
     }
 
     public function testReadItAsKeepsEachKindsOwnValues(): void

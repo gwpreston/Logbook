@@ -5115,7 +5115,6 @@ return [
             'invoice_total' => 'gesamtbetrag|gesamt|endbetrag|rechnungsbetrag|zu zahlen|summe',
             'date' => 'datum|rechnungsdatum|leistungsdatum',
             'not_date' => 'nächste|nächster|fällig|gültig|bis',
-            'not_vendor' => 'säule|zapfsäule|gesamt|mwst|betrag|liter|kwh',
             'odometer' => 'kilometerstand|km-stand|tachostand|laufleistung',
             'header' => 'rechnung|datum|kennzeichen|fahrzeug|kilometerstand|kunde|auftrag|fahrgestellnummer',
             'totals' => 'arbeitslohn|teile|mwst|ust|zwischensumme|gesamt|gesamtbetrag|summe|netto|endbetrag',

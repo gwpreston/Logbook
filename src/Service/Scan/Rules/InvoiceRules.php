@@ -9,15 +9,18 @@ use Logbook\Support\Number\Decimal;
 /**
  * A service invoice read without AI, in part (spec.md §7.27 *Reading
  * without AI*, Phase 53.4): the date, the total, the registration, the
- * odometer, the vendor and the work lines (#519). Each from a labelled
+ * odometer and the work lines (#519); the garage is left for the owner
+ * (#526). Each from a labelled
  * line only, so no value is filled from the wrong label.
  */
 final readonly class InvoiceRules
 {
     private const int MAX_WORK_LINES = 20;
 
-    public function __construct(private Keywords $keywords)
-    {
+    public function __construct(
+        private Keywords $keywords,
+        private Amounts $amounts,
+    ) {
     }
 
     /**
@@ -48,17 +51,6 @@ final readonly class InvoiceRules
         }
         foreach ($this->odometer($rows, $locale) as $name => $field) {
             $fields[$name] = $field;
-        }
-        foreach ($rows as $row) {
-            // The letterhead: rows above the first header row (`Invoice 55`, `Date …`), never the work.
-            if ($this->keywords->has('header', $locale, $row) || $this->keywords->has('not_vendor', $locale, $row)) {
-                break;
-            }
-            $name = RuleText::name($row);
-            if ($name !== null) {
-                $fields['vendor'] = ['value' => $name, 'evidence' => RuleText::evidence($row)];
-                break;
-            }
         }
         $work = $this->work($rows, $locale, $registration['value'] ?? null);
 
@@ -102,8 +94,8 @@ final readonly class InvoiceRules
     {
         $first = null;
         foreach ($rows as $row) {
-            $date = RuleText::date($row, $locale);
-            if ($date === null || $this->isOtherDate($row, $date, $locale)) {
+            $date = $this->ownDate($row, $locale);
+            if ($date === null) {
                 continue;
             }
             $field = ['value' => $date, 'evidence' => RuleText::evidence($row)];
@@ -125,23 +117,10 @@ final readonly class InvoiceRules
      */
     private function total(array $rows, string $locale): ?array
     {
-        $best = null;
-        foreach ($rows as $row) {
-            if (!$this->keywords->has('invoice_total', $locale, $row) || $this->keywords->has('not_total', $locale, $row)) {
-                continue;
-            }
-            foreach (RuleText::numbers($row) as $number) {
-                $read = RuleText::read($number, $locale);
-                if ($read === null || Decimal::compare($read, '0') <= 0) {
-                    continue;
-                }
-                if ($best === null || Decimal::compare($read, $best[1]) > 0) {
-                    $best = [$number, $read, $row];
-                }
-            }
-        }
+        // Strictly (#526): an amount after a word labelling the total itself, never a subtotal's.
+        $best = Amounts::largestExact($this->amounts->of($rows, $locale));
 
-        return $best === null ? null : ['value' => $best[0], 'evidence' => RuleText::evidence($best[2])];
+        return $best === null ? null : ['value' => $best['printed'], 'evidence' => RuleText::evidence($best['row'])];
     }
 
     /**
@@ -210,14 +189,22 @@ final readonly class InvoiceRules
     }
 
     /**
-     * A date after a word such as *next*, *due* or *expiry* on its row is
-     * another date, not the invoice's (merge review of 53.4).
+     * The row's first date that is the document's own: a date with a word
+     * such as *next*, *due* or *expiry* between it and the date (or row
+     * start) before it is another date (`Next service due 01/09/2026
+     * Invoice date 01/03/2025` gives 01/03/2025; merge review of 53.4).
      */
-    private function isOtherDate(string $row, string $date, string $locale): bool
+    private function ownDate(string $row, string $locale): ?string
     {
-        $before = mb_substr($row, 0, max(0, (int) mb_strpos($row, $date)));
+        $from = 0;
+        foreach (RuleText::dates($row, $locale) as [$date, $offset]) {
+            if (!$this->keywords->has('not_date', $locale, substr($row, $from, $offset - $from))) {
+                return $date;
+            }
+            $from = $offset + strlen($date);
+        }
 
-        return $this->keywords->has('not_date', $locale, $before);
+        return null;
     }
 
     private function isTotals(string $row, string $locale): bool

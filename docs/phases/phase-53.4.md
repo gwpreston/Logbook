@@ -121,6 +121,14 @@ Added to §7.27 in 53.4.0:
 - [x] Translations (every shipped locale).
 
 ### 53.4.3 Tests and release
+- [x] Merge-review fixes (2026-10-19, two rounds): the set search bounded
+      (12 candidates of each, shop-basket amounts counted only below
+      that); month names built once per locale; an invoice's own date
+      beside a *next service* date; strict lone totals and no rules
+      vendor except a known station (#526); a V5C's reference scrubbed
+      from every kind's reading. Each with a `RuleReaderTest` case. The
+      `--via=rules` table below was re-run by the merge review's AI
+      evaluator after the first round and matched.
 - [x] The fuel fixtures: volume, price, total and date accuracy, and **no
       wrong agreeing triple** on any fixture (`RuleReaderTest`, the eval
       below). The real receipts (#496) haven't arrived: run again on them.
@@ -156,24 +164,41 @@ Added to §7.27 in 53.4.0:
   - (2) No minimum, a lone total always filled.
   - (3) Keep the 30-word minimum.
 
+- **J. When does reading without AI fill a vendor, and a total no sum
+  checks?** (found in the merge review: each round of label rules gave
+  new wrong values, an address as the station, a price as the total)
+  *Decided 2026-10-19 (#526): fill less, more surely.*
+  - The station only when it matches one of the install's stations; an
+    invoice's garage never.
+  - A lone total only after a word labelling the total itself, never a
+    number with a unit or a price, never after a not-total word, and
+    read clearly (#525).
+  - Not chosen: fixing each layout case by case.
+
 ## Eval results (2026-10-19)
 
 **`bin/ai-eval.php --scans --via=rules`**, Tesseract 5.5.0 (deu+eng) in
-the dev Docker image, GD, the `demo` user (en_GB), after #525. *Fields
-ok* counts every field a model would fill, so the rules' partial reading
-scores low by design.
+the dev Docker image, GD, the `demo` user (en_GB), after #525, #526 and
+the merge-review fixes. *Fields ok* counts every field a model would
+fill, so the rules' partial reading scores low by design. Since #526 no
+fixture fills a station or garage (none is one of the demo's stations),
+which lowered *Fields ok* for receipts (50% → 44%) and invoices (41% →
+31%).
 
 | Kind (files) | Kind ok | Fields ok |
 |---|---|---|
-| service_invoice (8) | 7 | 41% |
-| fuel_receipt (4) | 4 | 50% |
+| service_invoice (8) | 7 | 31% |
+| fuel_receipt (4) | 4 | 44% |
 | inspection (3) | 3 | 17% |
 | insurance (3) | 3 | 11% |
 | registration (2) | 2 | 10% |
 | other (1) | 1 | 20% |
 | claim_letter (2) | 2 | 12% |
-| repair_estimate (1) | 0 | 25% |
+| repair_estimate (1) | 0 | 0% |
 
+- The only wrong values filled are OCR digit misreads on photos: 02's
+  odometer `47,618` (marked *Hard to read*) and 15's registration
+  `AB12 COE`.
 - **No wrong value** in a volume, price or total on any fixture, and no
   wrong agreeing set. The two text-PDF receipts (07, 09) fill volume,
   price, total and date exactly; the text-PDF invoices their date and

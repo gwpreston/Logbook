@@ -32,8 +32,10 @@ final readonly class FuelReceiptRules
      */
     private const int MAX_CANDIDATES = 12;
 
-    public function __construct(private Keywords $keywords)
-    {
+    public function __construct(
+        private Keywords $keywords,
+        private Amounts $amounts,
+    ) {
     }
 
     /**
@@ -83,8 +85,10 @@ final readonly class FuelReceiptRules
             $fields['price_per_unit'] = self::field($set['price']['printed'], $set['price']['row']);
             $total = $set['total'];
         } else {
-            // A total no set agrees with is filled only when read clearly: OCR's 0 read as 6 adds up to nothing.
-            $total = $set['total'] ?? $this->largestTotal($rows, $locale);
+            // A total no set agrees with is filled only strictly (#526), and read clearly (#525):
+            // OCR's 0 read as 6 adds up to nothing.
+            $lone = Amounts::largestExact($this->amounts->of($rows, $locale));
+            $total = $set['total'] ?? ($lone === null ? null : ['printed' => $lone['printed'], 'row' => $lone['row']]);
             if ($set === null && $total !== null && !$clear($total['printed'])) {
                 $total = null;
             }
@@ -105,7 +109,7 @@ final readonly class FuelReceiptRules
             }
         }
 
-        $station = $this->station($rows, $locale, $knownStation);
+        $station = self::station($rows, $knownStation);
         if ($station !== null) {
             $fields['vendor'] = self::field($station[0], $station[1]);
         }
@@ -114,29 +118,24 @@ final readonly class FuelReceiptRules
     }
 
     /**
-     * The station: the first of the top five rows naming one of the
-     * install's stations, else the first row with a name. Never a row
-     * with a date, an amount, a grade, a pump or a volume (merge review).
+     * The station: only one of the install's stations, named on one of
+     * the top five rows; otherwise none, for the owner to pick (#526: a
+     * first row is as often an address or a product as a name).
      *
      * @param list<string> $rows
      * @param \Closure(string): bool $known
      * @return array{string, string}|null the name and its row
      */
-    private function station(array $rows, string $locale, \Closure $known): ?array
+    private static function station(array $rows, \Closure $known): ?array
     {
-        $first = null;
         foreach (array_slice($rows, 0, 5) as $row) {
-            $name = $this->notName($row, $locale) ? null : RuleText::name($row);
-            if ($name === null) {
-                continue;
-            }
-            if ($known($name)) {
+            $name = RuleText::name($row);
+            if ($name !== null && $known($name)) {
                 return [$name, $row];
             }
-            $first ??= [$name, $row];
         }
 
-        return $first;
+        return null;
     }
 
     /**
@@ -281,82 +280,25 @@ final readonly class FuelReceiptRules
     }
 
     /**
-     * Amounts on a line with a total word (never one with a subtotal,
-     * change, discount or points word), and amounts printed with their
-     * currency on any such line.
+     * The total candidates for the set search: labelled amounts, and
+     * amounts printed with a currency while there are at most 12 different
+     * ones (a shop basket's prices would pass the cap, merge review).
      *
      * @param list<string> $rows
-     * @return list<array{printed: string, read: string, row: string, labelled: bool}>
+     * @return list<array{printed: string, read: string, row: string, labelled: bool, exact: bool, currency: bool}>
      */
     private function totals(array $rows, string $locale): array
     {
-        $digits = RuleText::DIGITS;
-        $money = '/[£€$]\s?(' . $digits . ')(?!\d)(?!\s?(?:\/|per\b))'
-            . '|(?<![\p{L}\d.,])(' . $digits . ')\s?(?:[£€$]|(?:' . self::CODES . ')\b)(?!\s?\/)(?!\s*per\b)'
-            . '|\b(?:' . self::CODES . ')\s?(' . $digits . ')(?!\d)(?!\s?(?:\/|per\b))/iu';
-        $found = [];
-        foreach ($rows as $row) {
-            if ($this->keywords->has('not_total', $locale, $row)) {
-                continue;
-            }
-            $text = RuleText::withoutDates($row);
-            $matches = [];
-            if ($this->keywords->has('total', $locale, $row)) {
-                foreach (RuleText::numbers($row) as $number) {
-                    $matches[] = [$number, true];
-                }
-            }
-            if (preg_match_all($money, $text, $m, PREG_SET_ORDER) > 0) {
-                foreach ($m as $match) {
-                    $number = ($match[1] ?? '') !== '' ? $match[1] : (($match[2] ?? '') !== '' ? $match[2] : ($match[3] ?? ''));
-                    $matches[] = [$number, false];
-                }
-            }
-            foreach ($matches as [$printed, $labelled]) {
-                $read = self::positive($printed, $locale);
-                if ($read !== null) {
-                    $found[] = ['printed' => $printed, 'read' => $read, 'row' => $row, 'labelled' => $labelled];
-                }
-            }
-        }
-
-        return $found;
-    }
-
-    /**
-     * The largest amount on a line with a total word.
-     *
-     * @param list<string> $rows
-     * @return array{printed: string, row: string}|null
-     */
-    private function largestTotal(array $rows, string $locale): ?array
-    {
-        // A line labelled as the total itself (TOTAL, AMOUNT DUE) first, then any total word (AMOUNT).
-        $labelled = array_values(array_filter($this->totals($rows, $locale), static fn (array $t): bool => $t['labelled']));
-        $exact = array_values(array_filter(
-            $labelled,
-            fn (array $t): bool => $this->keywords->has('invoice_total', $locale, $t['row']),
+        $all = array_values(array_filter(
+            $this->amounts->of($rows, $locale),
+            static fn (array $a): bool => $a['labelled'] || $a['currency'],
         ));
-        $best = null;
-        foreach ($exact !== [] ? $exact : $labelled as $total) {
-            if ($best === null || Decimal::compare($total['read'], $best['read']) > 0) {
-                $best = $total;
-            }
+        $values = array_unique(array_map(static fn (array $a): string => Decimal::trim($a['read']), $all));
+        if (count($values) <= self::MAX_CANDIDATES) {
+            return $all;
         }
 
-        return $best === null ? null : ['printed' => $best['printed'], 'row' => $best['row']];
-    }
-
-    /**
-     * A row that can't be a station's name: a date, an amount, a volume,
-     * a grade or a pump.
-     */
-    private function notName(string $row, string $locale): bool
-    {
-        return RuleText::date($row, $locale) !== null
-            || $this->keywords->has('not_vendor', $locale, $row)
-            || $this->keywords->has('grade', $locale, $row)
-            || preg_match('/[£€$]\s?\d|\d\s?(?:' . self::UNITS . ')(?![\p{L}])/iu', $row) === 1;
+        return array_values(array_filter($all, static fn (array $a): bool => $a['labelled']));
     }
 
     /**

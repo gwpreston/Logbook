@@ -13,6 +13,7 @@ use Logbook\Service\Ai\Scan\OcrText;
 use Logbook\Service\Ai\Scan\PreparedFile;
 use Logbook\Service\Ai\Scan\ReadBy;
 use Logbook\Service\Ai\Scan\ScanProblem;
+use Logbook\Service\Ai\Scan\Scrubber;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Ocr\OcrReader;
 use Logbook\Service\Station\StationService;
@@ -98,6 +99,7 @@ final readonly class RuleReader
             && $this->stations->existing(StationName::tidy($name)) !== null;
 
         $readings = [];
+        $v5c = $text instanceof OcrText ? $text->looksLikeRegistration() : Scrubber::looksLikeRegistration($text);
         foreach (ScanKind::cases() as $each) {
             $object = match ($each) {
                 ScanKind::FuelReceipt => ['fields' => $this->fuel->read($rows, $locale, $knownStation, $clear)],
@@ -107,6 +109,12 @@ final readonly class RuleReader
                 ScanKind::Insurance => ['fields' => isset($dated['date']) ? ['start' => $dated['date']] : []],
                 default => ['fields' => $dated],
             };
+            if ($v5c) {
+                // A V5C's reference is scrubbed from every kind's reading, not only the registration one
+                // (spec.md §7.27: never shown or stored; merge review of 53.4).
+                /** @var array<string, mixed> $object */
+                $object = Scrubber::value($object);
+            }
             $readings[$each->value] = Extraction::fromObject(['kind' => $each->value] + $object, $text);
         }
 
