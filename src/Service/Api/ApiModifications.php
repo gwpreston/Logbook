@@ -7,6 +7,7 @@ namespace Logbook\Service\Api;
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Domain\Part\Modification;
+use Logbook\Domain\Part\ModificationData;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
@@ -160,6 +161,11 @@ final readonly class ApiModifications
         $body = $this->guardCosts($user, $vehicle, $body);
         $mapped = $this->mapped(JsonInput::modification($body, $user->preferences, $today, true));
         $data = ModificationForm::parse($mapped['input'], $mapped['preferences'], $today);
+        // A retry before the parts lists (K27): the first call already fitted or removed the parts it names.
+        $stored = $data instanceof ValidationErrors ? null : $this->logged($vehicle, $data);
+        if ($stored !== null) {
+            return ['modification' => $stored, 'duplicate' => true, 'warnings' => []];
+        }
         $parts = $this->lists($vehicle, $mapped, $body, $today, null);
         $errors = new ValidationErrors();
         if ($data instanceof ValidationErrors) {
@@ -174,13 +180,6 @@ final readonly class ApiModifications
         if ($data instanceof ValidationErrors || $parts instanceof ValidationErrors) {
             throw new \LogicException('Errors were merged above.');
         }
-        foreach ($this->modifications->list($vehicle) as $stored) {
-            $same = $stored->data->title === $data->title
-                && $stored->data->doneOn->format('Y-m-d') === $data->doneOn->format('Y-m-d');
-            if ($same) {
-                return ['modification' => $stored, 'duplicate' => true, 'warnings' => []];
-            }
-        }
         try {
             $modification = $this->modifications->create($vehicle, $data, $zone, parts: $parts);
         } catch (PartChangeRefused $refused) {
@@ -188,6 +187,23 @@ final readonly class ApiModifications
         }
 
         return ['modification' => $modification, 'duplicate' => false, 'warnings' => $this->warnings($vehicle, $modification)];
+    }
+
+    /**
+     * The modification already logged on the same date with the same title, if any (spec.md §7.20 "Safe to retry").
+     */
+    private function logged(Vehicle $vehicle, ModificationData $data): ?Modification
+    {
+        foreach ($this->modifications->list($vehicle) as $stored) {
+            if (
+                $stored->data->title === $data->title
+                && $stored->data->doneOn->format('Y-m-d') === $data->doneOn->format('Y-m-d')
+            ) {
+                return $stored;
+            }
+        }
+
+        return null;
     }
 
     /**

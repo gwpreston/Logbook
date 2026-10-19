@@ -101,12 +101,12 @@ spec already says.
 
 ### 53.5.1 The REST API (batch 1)
 
-- [ ] `ApiModifications::logModification()` scans for a duplicate
+- [x] `ApiModifications::logModification()` scans for a duplicate
       before `lists()` (K27). `ApiPartsTest`: a retry with
       `{"part": id}` in `parts_fitted`, and one with it in
       `parts_removed`, each answer the stored modification with
       `duplicate: true` and change no part.
-- [ ] `JsonInput::schedule()` refuses a too-large `baseline_odometer` or
+- [x] `JsonInput::schedule()` refuses a too-large `baseline_odometer` or
       `interval_distance` with a field error before `$toKm` (K50). An
       API test: `POST` and `PATCH` with `"99999999999999999999.99"`
       answer 422 naming the field.
