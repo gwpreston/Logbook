@@ -87,7 +87,7 @@ final readonly class FuelReceiptRules
         } else {
             // A total no set agrees with is filled only strictly (#526), and read clearly (#525):
             // OCR's 0 read as 6 adds up to nothing.
-            $lone = Amounts::largestExact($this->amounts->of($rows, $locale));
+            $lone = $this->amounts->grandTotal($rows, $locale);
             $total = $set['total'] ?? ($lone === null ? null : ['printed' => $lone['printed'], 'row' => $lone['row']]);
             if ($set === null && $total !== null && !$clear($total['printed'])) {
                 $total = null;
@@ -285,7 +285,7 @@ final readonly class FuelReceiptRules
      * ones (a shop basket's prices would pass the cap, merge review).
      *
      * @param list<string> $rows
-     * @return list<array{printed: string, read: string, row: string, labelled: bool, exact: bool, currency: bool}>
+     * @return list<array{printed: string, read: string, row: string, labelled: bool, currency: bool}>
      */
     private function totals(array $rows, string $locale): array
     {

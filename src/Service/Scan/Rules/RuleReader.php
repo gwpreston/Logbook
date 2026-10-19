@@ -113,7 +113,7 @@ final readonly class RuleReader
                 // A V5C's reference is scrubbed from every kind's reading, not only the registration one
                 // (spec.md §7.27: never shown or stored; merge review of 53.4).
                 /** @var array<string, mixed> $object */
-                $object = Scrubber::value($object);
+                $object = Scrubber::registrationValue($object);
             }
             $readings[$each->value] = Extraction::fromObject(['kind' => $each->value] + $object, $text);
         }

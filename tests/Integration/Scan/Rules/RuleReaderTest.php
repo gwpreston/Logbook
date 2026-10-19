@@ -136,7 +136,7 @@ final class RuleReaderTest extends ScanTestCase
 
         self::assertNull($read->value('volume'));
         self::assertNull($read->value('price_per_unit'));
-        self::assertSame('32.00', $read->value('total'), 'the largest amount on a total line');
+        self::assertNull($read->value('total'), 'two different totals: none (#526)');
     }
 
     public function testAPriceWithoutAUnitMarkAddsUpInPence(): void
@@ -216,7 +216,7 @@ final class RuleReaderTest extends ScanTestCase
         }
 
         $started = microtime(true);
-        $read = $this->read(implode("\n", $rows));
+        $read = $this->read(implode("\n", array_map(strval(...), $rows)));
 
         self::assertLessThan(1.0, microtime(true) - $started);
         self::assertNull($read->value('volume'), 'too many candidates: no set is searched');
@@ -303,20 +303,81 @@ final class RuleReaderTest extends ScanTestCase
 
     public function testALoneTotalIsStrict(): void
     {
-        // #526: never a number with a unit or a price, never after a saving or tendered word.
+        // #526 (third merge review): the first amount directly after a grand-total label, or nothing.
         $this->scanApp();
-        $read = $this->read(implode("\n", ['BP', '01/03/2025', 'Fuel total 42.18 L 107.2p/L £45.99', 'Pump 4']));
-        self::assertSame('45.99', $read->value('total'));
+        $total = fn (array $rows): ?string => $this->read(self::lines($rows))->value('total');
 
-        $read = $this->read(implode("\n", ['Aral', '01.03.2025', 'Total 42,18 L 1,859 EUR/L 78,51 EUR']));
-        self::assertSame('78,51', $read->value('total'));
+        $unit = ['BP', '01/03/2025', 'Fuel total 42.18 L 107.2p/L £45.99', 'Pump 4'];
+        self::assertNull($total($unit), 'a unit, not money, follows the label');
+        self::assertNull($total(['Aral', '01.03.2025', 'Total 42,18 L 1,859 EUR/L 78,51 EUR']));
+        self::assertSame('45.26', $total(['ESSO', '01/03/2025', 'Unleaded 42.18 L', '107.3 p/L', 'TOTAL £45.26 (saving £2.00)']));
+        self::assertNull($total(['ESSO', '01/03/2025', 'Amount £45.26']), 'not a grand-total label');
+        $card = ['SHELL', '01/03/2025', 'Diesel 30.00 L', 'TOTAL £45.26 VISA ending 4821'];
+        self::assertSame('45.26', $total($card), 'not the card digits');
+        self::assertSame('312.40', $total(['Garage', '01/03/2025', 'Total (inc VAT) £312.40']));
+    }
 
-        $saving = ['ESSO', '01/03/2025', 'Unleaded 42.18 L', '107.3 p/L', 'TOTAL £45.26 (saving £2.00)'];
-        $read = $this->read(implode("\n", $saving));
-        self::assertSame('45.26', $read->value('total'), 'the saving after it is never the total, nor hides it');
+    public function testAnInvoicesTotalIsItsGrandTotalOnly(): void
+    {
+        $this->scanApp();
+        $head = ['Garage Ltd', 'Invoice 7', 'Date 01/10/2026'];
+        $total = fn (array $rows): ?string => $this->read(self::lines([...$head, ...$rows]))->value('total');
 
-        $read = $this->read(implode("\n", ['ESSO', '01/03/2025', 'Amount £45.26']));
-        self::assertNull($read->value('total'), 'a total word that is not the total itself, with no set agreeing');
+        self::assertSame('450.00', $total(['Brakes', 'Total due £450.00   Invoice no 10045']));
+        self::assertSame('200.00', $total(['Brakes', 'Total mileage 48,120', 'Total £200.00']));
+        self::assertSame('600.00', $total(['Total excl. VAT £500.00', 'VAT £100.00', 'Amount payable £600.00']));
+        self::assertNull($total(['Net total £500.00', 'Pay this £600.00']), 'a net total is never the total');
+        self::assertNull($total(['Total labour 240', 'Total parts 360', 'Invoice value 600']), 'partial totals only');
+        self::assertNull($total(['Total £200.00', 'Total £250.00']), 'two different totals: none');
+        self::assertSame('200.00', $total(['Total £200.00', 'Total paid £200.00']), 'the same total twice');
+    }
+
+    public function testATotalVolumeIsNeverTheTotal(): void
+    {
+        $this->scanApp();
+        self::assertNull($this->read(implode("\n", ['ESSO', '01/03/2025', 'Unleaded', 'Total volume 42.18']))->value('total'));
+    }
+
+    public function testALongNumberIsPassedOver(): void
+    {
+        // A card's authorisation code made the whole read fail (merge review of 53.4).
+        $this->scanApp();
+        $read = $this->read(implode("\n", [
+            'SHORELINE FUELS',
+            '14/10/2026',
+            'UNLEADED 42.18 L',
+            '142.9p/L',
+            'TOTAL GBP 60.28',
+            'Auth 1234567890123456789',
+            'Mileage 99999999999999999999',
+        ]));
+
+        self::assertSame('60.28', $read->value('total'));
+        self::assertSame('42.18', $read->value('volume'));
+    }
+
+    public function testALongRowOfAmountsIsReadInLinearTime(): void
+    {
+        $this->scanApp();
+        $started = microtime(true);
+        $this->read(mb_substr(str_repeat('total 1 ', 2500), 0, 20000));
+        $this->read(mb_substr(str_repeat('1€ ', 7000), 0, 20000));
+
+        self::assertLessThan(0.5, microtime(true) - $started);
+    }
+
+    public function testAV5csReferenceWithLookAlikesAcrossAGapIsInNoReading(): void
+    {
+        $this->scanApp();
+        $read = $this->read(implode("\n", [
+            'V5C Registration Certificate',
+            'Registration AB12 CDE',
+            'Issued 01/02/2026 1234          S678 9O1',
+        ]));
+
+        $stored = (string) json_encode($read->toArray());
+        self::assertDoesNotMatchRegularExpression('/1234\W+S678\W+9O1/', $stored);
+        self::assertStringContainsString('AB12 CDE', $stored, 'the registration is kept');
     }
 
     public function testAShopBasketDoesNotHideTheFuelSet(): void
@@ -326,7 +387,7 @@ final class RuleReaderTest extends ScanTestCase
         for ($i = 1; $i <= 13; $i++) {
             $rows[] = sprintf('Item %d £%d.49', $i, $i);
         }
-        $read = $this->read(implode("\n", $rows));
+        $read = $this->read(implode("\n", array_map(strval(...), $rows)));
 
         self::assertSame('42.18', $read->value('volume'));
         self::assertSame('107.2p', $read->value('price_per_unit'));
@@ -363,6 +424,14 @@ final class RuleReaderTest extends ScanTestCase
         self::assertNull($other->value('volume'), 'other kinds: the date only');
         self::assertSame('14/10/2026', $other->value('date'));
         self::assertSame('42.18', $other->as(ScanKind::FuelReceipt)->value('volume'), 'and back again');
+    }
+
+    /**
+     * @param array<mixed> $rows
+     */
+    private static function lines(array $rows): string
+    {
+        return implode("\n", array_filter($rows, is_string(...)));
     }
 
     private function read(string $text): Extraction

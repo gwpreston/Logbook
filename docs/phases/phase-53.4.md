@@ -126,7 +126,12 @@ Added to §7.27 in 53.4.0:
       that); month names built once per locale; an invoice's own date
       beside a *next service* date; strict lone totals and no rules
       vendor except a known station (#526); a V5C's reference scrubbed
-      from every kind's reading. Each with a `RuleReaderTest` case. The
+      from every kind's reading. Third round: the strict total is the
+      first amount directly after a grand-total label, never a qualified
+      one, none when two differ (#526); numbers of more than 12 digits
+      passed over; amounts scanned in linear time; a V5C reference with
+      look-alikes across a wide gap scrubbed too. Each with a
+      `RuleReaderTest` case. The
       `--via=rules` table below was re-run by the merge review's AI
       evaluator after the first round and matched.
 - [x] The fuel fixtures: volume, price, total and date accuracy, and **no
@@ -172,7 +177,10 @@ Added to §7.27 in 53.4.0:
     invoice's garage never.
   - A lone total only after a word labelling the total itself, never a
     number with a unit or a price, never after a not-total word, and
-    read clearly (#525).
+    read clearly (#525). After the third merge review (same day): the
+    first amount *directly* after a grand-total label, never a
+    qualified label (`Net total`, `Total labour`, `Total mileage`), and
+    nothing when two different such totals are printed.
   - Not chosen: fixing each layout case by case.
 
 ## Eval results (2026-10-19)

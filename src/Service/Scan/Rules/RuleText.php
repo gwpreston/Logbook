@@ -18,6 +18,8 @@ final class RuleText
 {
     /** A printed number: grouped (`1.234,56`, `48,120`) or plain (`42.18`). Not part of a word (`AB12`). */
     public const string DIGITS = '(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,3})?|\d+(?:[.,]\d+)?)';
+ /** Past this many digits a number is not an amount, a volume, a price or a reading. */
+    public const int MAX_DIGITS = 12;
     public const string NUMBER = '(?<![\p{L}\d.,])' . self::DIGITS . '(?!\d)';
 
     private const string MONTH = '\p{L}{3,10}\.?';
@@ -114,6 +116,11 @@ final class RuleText
      */
     public static function read(string $printed, string $locale): ?string
     {
+        // A card's authorisation code or a barcode is never an amount, and too long to compare (merge review).
+        if (preg_match_all('/\d/', $printed) > self::MAX_DIGITS) {
+            return null;
+        }
+
         return PrintedNumber::read($printed, $locale);
     }
 

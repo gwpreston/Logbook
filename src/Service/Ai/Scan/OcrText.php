@@ -235,9 +235,6 @@ final readonly class OcrText
     }
 
     /**
-     * Too little to send: a mean confidence under 40, or under 30 words.
-     */
-    /**
      * The text's rows without their numbers, as sent (11-digit runs
      * removed), pages separated by an empty row: what reading without AI
      * reads (Phase 53.4).
@@ -252,6 +249,9 @@ final readonly class OcrText
         );
     }
 
+    /**
+     * Too little to send: a mean confidence under 40, or under 30 words.
+     */
     public function isTooLittle(): bool
     {
         return $this->wordCount < self::MIN_WORDS || $this->meanConfidence < self::MIN_MEAN_CONFIDENCE;

@@ -7858,6 +7858,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     Every kind's reader runs on the text, and the reading keeps each
     kind's values, so *Read it as* maps the right values for the kind
     chosen, still with no second read.
+  - **Numbers** of more than 12 significant digits (a card's
+    authorisation code, a barcode) are never an amount, a volume, a price
+    or a reading: they are passed over, so the rest of the file is still
+    read (merge review of 53.4).
   - **Keywords** live in the locale files (`scan.keywords.*`); the
     user's locale's words and English are both used, so a German
     receipt's `GESAMT` and `Liter` work under `de`, and an English one
@@ -7866,7 +7870,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     own found in the text: *fuel receipt* (litres, kWh, price per litre,
     pump, grade words), *service invoice* (labour, parts, invoice, VAT,
     mileage), *MOT certificate* (MOT, test, expiry, advisory),
-    *insurance* (policy, insurer, cover) and, from #522, *registration
+    *insurance* (policy, insurer, cover), *claim letter* (claim, claim
+    number, settlement, excess), *repair estimate* (estimate) and, from
+    #522, *registration
     document* (`V5C`, `VSC`, `Registration Certificate`, `DVLA`,
     `Document reference`, keeper). A volume printed with its unit adds
     one to *fuel receipt*. The highest score of at least 2 wins, a tie
@@ -7889,14 +7895,18 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       `brick/math`) wins. With two agreeing sets that disagree, only
       their total is filled when they share it. With no agreeing set,
       only the total is filled, and only **strictly** (decided
-      2026-10-19, `docs/phases/open-questions.md` #526): an amount
-      after a word labelling the total itself (`TOTAL`, `AMOUNT DUE`,
-      `BALANCE DUE`, `GESAMTBETRAG`…, `scan.keywords.invoice_total`),
-      never a number printed with a unit or as a price (`42.18 L`,
-      `107.2p/L`), never one after a change, discount, saving, points,
-      subtotal or tendered word between the label and it, the largest
-      such amount, and only when OCR read that amount with a confidence
-      of at least 90 (#525: a faded 0 read as 6 adds up to nothing, and
+      2026-10-19, `docs/phases/open-questions.md` #526): the first
+      amount **directly after** a word labelling the grand total
+      (`TOTAL`, `AMOUNT DUE`, `AMOUNT PAYABLE`, `BALANCE DUE`,
+      `GESAMTBETRAG`…, `scan.keywords.invoice_total`), with at most
+      `:`, a currency or `(inc VAT)` between them, so `Total due £450.00
+      Invoice no 10045` gives 450.00 and `TOTAL £45.26 VISA ending 4821`
+      45.26; never a number printed with a unit or as a price (`42.18 L`,
+      `107.2p/L`); never a label qualified by a word before or after it
+      (`Net total`, `Total excl. VAT`, `Total labour`, `Total mileage`,
+      `Total volume`: `scan.keywords.total_qualifier`); when the document
+      prints two different such totals, none is filled; and only when
+      OCR read that amount with a confidence of at least 90 (#525: a faded 0 read as 6 adds up to nothing, and
       was read less surely); otherwise it too is left. The volume and
       price are then left for the owner. A wrong agreeing set is never
       filled: only labelled numbers are candidates, and each number is

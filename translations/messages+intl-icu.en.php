@@ -5117,7 +5117,9 @@ return [
             'price' => 'price|unit price|price per litre|price/l',
             'total' => 'total|amount|to pay|amount due|balance due|total due|grand total|total paid',
             'not_total' => 'subtotal|sub-total|sub total|change|change due|cashback|discount|saving|savings|points|net|tendered|amount tendered|cash given|given',
-            'invoice_total' => 'total|balance due|amount due|total due|grand total',
+            'invoice_total' => 'total|balance due|amount due|amount payable|total due|total payable|grand total',
+            // A word before a total label that makes it a part, not the grand total (`Net total`, `Labour total`).
+            'total_qualifier' => 'net|sub|labour|labor|parts|part|mileage|miles|volume|litres|liters|items|item|quantity|qty|vat|tax|excl|ex|fuel|shop|discount|saving|savings|points',
             'date' => 'date|dated|invoice date|tax point',
             // A date after one of these on its line is another date (the next service, an expiry), not the document's.
             'not_date' => 'next|due|expiry|expires|valid|renewal|recommended|until',

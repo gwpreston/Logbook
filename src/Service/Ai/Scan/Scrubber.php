@@ -129,6 +129,29 @@ final class Scrubber
         return $value;
     }
 
+    /**
+     * As value(), for strings read from V5C-like OCR text by rules (Phase
+     * 53.4): the words are read as one stretch whatever the gaps between
+     * them, with OCR's look-alikes counted in a word that has a digit, so
+     * `1234      S678 9O1` is removed too (merge review of 53.4).
+     */
+    public static function registrationValue(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            $words = preg_split('/[\s\x{00A0}\x{202F}]+/u', trim($value)) ?: [];
+            $words = array_values(array_filter($words, static fn (string $w): bool => $w !== ''));
+            $drop = array_flip(self::referenceWords($words, true));
+            $kept = array_filter($words, static fn (int $i): bool => !isset($drop[$i]), ARRAY_FILTER_USE_KEY);
+
+            return self::text(implode(' ', $kept), true);
+        }
+        if (is_array($value)) {
+            return array_map(self::registrationValue(...), $value);
+        }
+
+        return $value;
+    }
+
     public static function hasReference(string $text): bool
     {
         return preg_match(self::WIDE, $text) === 1;

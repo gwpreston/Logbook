@@ -5113,6 +5113,7 @@ return [
             'total' => 'gesamt|gesamtbetrag|summe|betrag|zu zahlen|endbetrag|total',
             'not_total' => 'zwischensumme|rückgeld|rabatt|nachlass|netto|punkte|gegeben|bar gegeben',
             'invoice_total' => 'gesamtbetrag|gesamt|endbetrag|rechnungsbetrag|zu zahlen|summe',
+            'total_qualifier' => 'netto|zwischen|arbeit|arbeitslohn|teile|menge|liter|mwst|ust|steuer|ohne|zzgl|kraftstoff|rabatt',
             'date' => 'datum|rechnungsdatum|leistungsdatum',
             'not_date' => 'nächste|nächster|fällig|gültig|bis',
             'odometer' => 'kilometerstand|km-stand|tachostand|laufleistung',

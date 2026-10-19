@@ -118,7 +118,7 @@ final readonly class InvoiceRules
     private function total(array $rows, string $locale): ?array
     {
         // Strictly (#526): an amount after a word labelling the total itself, never a subtotal's.
-        $best = Amounts::largestExact($this->amounts->of($rows, $locale));
+        $best = $this->amounts->grandTotal($rows, $locale);
 
         return $best === null ? null : ['value' => $best['printed'], 'evidence' => RuleText::evidence($best['row'])];
     }
@@ -135,7 +135,7 @@ final readonly class InvoiceRules
         $pattern = '/(?<![\p{L}\p{N}])' . $this->keywords->alternation('odometer', $locale)
             . '\s*[:.#=-]?\s*(' . RuleText::NUMBER . ')(?:\s?(km|kms|mi|miles|mls)(?![\p{L}]))?/iu';
         foreach ($rows as $row) {
-            if (preg_match($pattern, RuleText::withoutDates($row), $m) !== 1) {
+            if (preg_match($pattern, RuleText::withoutDates($row), $m) !== 1 || RuleText::read($m[1], $locale) === null) {
                 continue;
             }
             $evidence = RuleText::evidence($row);
