@@ -12016,7 +12016,7 @@ task breakdowns live in the per-phase files; this is the map.
   K116, K118–K120. Released as v3.18.0 with 53.3. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
-  known-issues log + patch release** (in progress). Retrying `POST
+  known-issues log + patch release** (✅). Retrying `POST
   /modifications` with a stored part in its parts lists answers the
   stored modification with `duplicate: true` (§7.20 "Safe to retry",
   K27); a too-large `baseline_odometer` or `interval_distance` on the
@@ -12024,8 +12024,8 @@ task breakdowns live in the per-phase files; this is the map.
   in `.table-wrap` keep their hidden text inside their scroll box, so
   the station pages don't scroll sideways at 375 px (§7.33, §8, K52);
   the reminders count on the active sidebar link meets 4.5:1 in both
-  themes (§8 *Accessibility*, K53). Released on its own as a patch after
-  53.4's release (#502, decided 2026-10-18). No migration. See
+  themes (§8 *Accessibility*, K53). Releases v3.18.1, a patch on its
+  own after 53.4's release (#502, decided 2026-10-18). No migration. See
   [`phase-53.5.md`](docs/phases/phase-53.5.md).
 - **Phase 53.6 — Import fixes from the known-issues log + patch
   release** (planned). A CSV header's volume unit is chosen on the

@@ -115,7 +115,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.2](docs/phases/phase-53.2.md) | Reading photos with a text model + release | ✅ |
 | [53.3](docs/phases/phase-53.3.md) | OCR as a check on the vision model, and text instead of images | ✅ |
 | [53.4](docs/phases/phase-53.4.md) | Reading without AI + release | ✅ |
-| [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | 🚧 |
+| [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | ✅ |
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 📋 |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | 📋 |
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | 📋 |
@@ -1501,7 +1501,8 @@ low contrast.*
   a 422 (K27); a 20-digit schedule distance is a 422 field error, not a
   500 (K50).
 - The station pages don't scroll sideways at 375 px (K52); the active
-  link's reminders count meets 4.5:1 (K53). No migration. Patch release.
+  link's reminders count meets 4.5:1 (K53). No migration. Releases
+  v3.18.1, a patch (#502).
 
 → [`phase-53.5.md`](docs/phases/phase-53.5.md)
 

@@ -4,8 +4,8 @@
 answer wrongly at their edges, and two pages that break on a phone or at
 low contrast.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.4's release, a patch release
+Status: ✅ complete · releases **v3.18.1**, a patch release after Phase
+53.4's (#502) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md). Like 52.1 and
 52.2, it takes a few small open rows that need no decision. Batch 1 is
@@ -135,14 +135,15 @@ MEDIUM items. No new page or link, so the subpath is unchanged.
 
 ### 53.5.3 Finish
 
-- [ ] Known-issues rows K27, K50, K52 and K53 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K27, K50, K52 and K53 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.4's
-      release (#502).
+- [x] `VERSION` 3.18.1, CHANGELOG 3.18.1, README status: the patch
+      after 53.4's release (#502).
+- [ ] Tag `v3.18.1` once merged.
 
 ## Acceptance criteria
 
