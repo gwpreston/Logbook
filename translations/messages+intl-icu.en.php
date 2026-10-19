@@ -5187,6 +5187,7 @@ return [
         'cannot_manage' => 'You can’t change the details of {vehicle}. The file is kept for 24 hours.',
         'from_rules' => 'Read without AI, check',
         'from_file' => 'From the file, check',
+        'evidence_label_rules' => 'Read without AI from the file:',
         'evidence_label' => 'From the file:',
         'notice' => [
             'read_by_rules_paddleocr' => 'Read without AI, by the text recognition service and rules. Check every field before saving.',

@@ -135,8 +135,11 @@ Added to §7.27 in 53.4.0:
       other routes (below).
 - [x] No request to any connection on this route, asserted
       (`ScanWithoutAiTest`).
-- [ ] Design review (375, 768, 1280 px; light and dark; JS off;
-      German at 375 px).
+- [x] Design review (375, 768, 1280 px; light and dark; JS off;
+      German at 375 px): no high or medium findings; two low fixed (the
+      notice's read-by line's contrast on its tint; the screen-reader
+      prefix of a field read by rules). Not rendered: the `rules_text`
+      and PaddleOCR lines, and the invoice's *Copied* hint (tested).
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` rows ✅ for 53.3
       and 53.4; tag once merged.
 

@@ -93,6 +93,8 @@ final class ScanWithoutAiTest extends ScanTestCase
         self::assertStringContainsString('Read without AI on this server. Check every field before saving.', $text);
         self::assertStringContainsString('Read without AI, check', $text);
         self::assertStringNotContainsString('From the file, check', $text, 'every field carries the rules mark');
+        self::assertStringContainsString('Read without AI from the file:', $text, 'and screen readers hear the same');
+        self::assertStringNotContainsString('From the file:', $text);
         $hard = substr_count($text, 'Hard to read, check this.');
         self::assertSame(2, $hard, 'the volume and price were read with low confidence');
         self::assertStringNotContainsString('but the total reads', $text, 'the figures add up');

@@ -5181,6 +5181,7 @@ return [
         'cannot_manage' => 'Du kannst die Angaben von {vehicle} nicht ändern. Die Datei wird 24 Stunden aufbewahrt.',
         'from_rules' => 'Ohne KI gelesen, bitte prüfen',
         'from_file' => 'Aus der Datei, bitte prüfen',
+        'evidence_label_rules' => 'Ohne KI aus der Datei gelesen:',
         'evidence_label' => 'Aus der Datei:',
         'notice' => [
             'read_by_rules_paddleocr' => 'Ohne KI gelesen, vom Texterkennungsdienst und mit Regeln. Prüfe vor dem Speichern jedes Feld.',

@@ -6803,6 +6803,11 @@ a.list__title:hover {
     background: var(--accent-soft);
 }
 
+/* On the notice's tint --muted falls just under 4.5:1 in the light theme (Phase 53.4 design review). */
+.scan-notice .scan-notice__read-by {
+    color: var(--text);
+}
+
 @media (min-width: 48rem) {
     .scan-notice:has(.scan-notice__thumb) {
         grid-template-columns: 9rem 1fr;
