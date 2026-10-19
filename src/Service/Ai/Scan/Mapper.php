@@ -223,7 +223,7 @@ final readonly class Mapper
         if ($volume === null || $price === null || $total === null) {
             return;
         }
-        $pence = preg_match('/\d\s*(p|c|ct|cent|cents)\b/i', $printed[1]) === 1;
+        $pence = preg_match('/\d\s*(p|c|ct|cent|cents)\b/i', $printed[1], $centsWord) === 1;
         // A figure that reads two ways (#453) is already marked: either reading may add up.
         $readings = static fn (string $read, string $as): array => array_values(array_unique(array_filter(
             [$read, PrintedNumber::alternative($as, $locale)],
@@ -249,20 +249,38 @@ final readonly class Mapper
                 }
             }
         }
-        $shown = trim($printed[0]);
+        // The figures in the user's locale, as the money is (design review of 53.3).
         $unit = trim((string) $reading->value('volume_unit'));
-        if ($unit !== '' && preg_match('/\p{L}/u', $shown) !== 1) {
-            $shown .= ' ' . $unit;
+        if ($unit === '' && preg_match('/\d\s*(\p{L}+)\s*$/u', $printed[0], $m) === 1) {
+            $unit = $m[1];
         }
         $text = $this->translator->trans('scan.check_sum', [
-            'volume' => $shown,
-            'price' => trim($printed[1]),
+            'volume' => trim(self::decimal($volume, $locale) . ' ' . $unit),
+            'price' => $pence
+                ? self::decimal($price, $locale) . (strlen($centsWord[1]) > 1 ? ' ' : '') . $centsWord[1]
+                : self::decimal($price, $locale, $form->currency()),
             'sum' => $form->money((string) $product->toScale(2, RoundingMode::HalfUp)),
             'total' => $form->money((string) BigDecimal::of($total)->toScale(2, RoundingMode::HalfUp)),
         ]);
         foreach (['volume', 'price', 'total'] as $field) {
             $form->flag($field, $text);
         }
+    }
+
+    /**
+     * A read number in the user's locale, with the decimals it was printed
+     * with; as money in $currency when given.
+     */
+    private static function decimal(string $number, string $locale, ?string $currency = null): string
+    {
+        $formatter = new \NumberFormatter($locale, $currency === null ? \NumberFormatter::DECIMAL : \NumberFormatter::CURRENCY);
+        $decimals = strlen(substr(strrchr($number, '.') ?: '.', 1));
+        $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $decimals);
+        $formatter->setAttribute(\NumberFormatter::MAX_FRACTION_DIGITS, $decimals);
+
+        return (string) ($currency === null
+            ? $formatter->format((float) $number)
+            : $formatter->formatCurrency((float) $number, $currency));
     }
 
     private static function halfUnit(BigDecimal $number): BigDecimal

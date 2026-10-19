@@ -205,7 +205,10 @@ the guide to a feature.
   is read into the right form for you to check, with the file attached.
   Photos are always stored without their location data. A text-only
   model can read photos too: OCR on your server reads the text first
-  ([reading-files.md](reading-files.md)).
+  ([reading-files.md](reading-files.md)). With a vision model, OCR checks
+  what it read and marks a value it can't find on the page; a fuel
+  receipt whose figures don't add up says so; and each connection can
+  *send text, not images*, so no photo leaves your server.
 - **A REST API with keys** ([api.md](api.md)) that reads, writes, corrects
   and deletes everything the pages do, files included, so Home Assistant,
   Shortcuts, Grafana and Node-RED can read your garage and log fill-ups and

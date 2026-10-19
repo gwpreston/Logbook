@@ -51,6 +51,9 @@ run) and Phases 53.1 and 53.2 first.
 4. **Registration documents:** on an *Internet* connection, a V5C photo
    is always sent as redacted text when Tesseract is available, never as
    an image (open question C). #85's warning shows only when it isn't.
+   *Superseded (#510): recognised by its markers; a short form of #85's
+   warning stays on *Internet* connections for a V5C OCR doesn't spot
+   (K104).*
 
 ## Not in scope
 
@@ -65,7 +68,10 @@ run) and Phases 53.1 and 53.2 first.
 Added to §7.27 in 53.3.0:
 
 - **Running in parallel:** OCR runs alongside the vision request, never
-  delaying it beyond OCR's own timeout. If OCR fails or times out, the
+  delaying it beyond OCR's own timeout. *Superseded: OCR's preparation
+  runs before the request and only the engine's reading alongside (spec
+  §7.27 *Running alongside*, K105); on an *Internet* connection OCR
+  finishes first (#510).* If OCR fails or times out, the
   cross-check is skipped and the scan carries on as today.
 - **Flags** sit with the existing field hints, and are tied to their
   fields by `aria-describedby`, never shown by colour alone.
@@ -122,16 +128,19 @@ Added to §7.27 in 53.3.0:
 - [x] Fixtures with planted wrong values (a vision answer edited to
       invent a total): flagged. Correct values: not flagged.
 - [x] OCR unsure in an area: no flag. OCR failing: scan unchanged.
-- [ ] Arithmetic within and outside 1p; a receipt printing price to
+- [x] Arithmetic within and outside 1p; a receipt printing price to
       0.1p.
 - [x] No image ever sent on a connection with *Send text, not images*,
       asserted at the adapter.
-- [ ] `bin/ai-eval.php --scans --crosscheck`: flags per kind and false
-      flags, in the eval report.
+- [x] `bin/ai-eval.php --scans --crosscheck`: flags per kind and false
+      flags, in the eval report. Built; the deterministic pass is in
+      *Eval results*. The run with the owner's models is *Scheduled
+      (Phase 53.4)*.
 - [ ] Carried from [53.2](phase-53.2.md): the first `bin/ai-eval.php
       --scans --via=ocr` run with the owner's models, its field accuracy
       per kind for both routes recorded in the eval report (53.2's
-      acceptance criterion 3).
+      acceptance criterion 3). *Scheduled (Phase 53.4)*: it needs the
+      owner's models, and 53.4 is the release phase.
 - [x] Design review (375, 768, 1280 px; light and dark; JS off; screen
       reader).
 
@@ -173,6 +182,27 @@ php bin/ai-eval.php --scans --via=ocr --verbose
 
 and the results (flags and false flags per kind; field accuracy per kind
 for both routes, 53.2's acceptance criterion 3) are recorded here.
+
+---
+
+## Merge review
+
+**Round 1 at `73262d77` (2026-10-19): REJECT.** All gates passed on the
+four engines. Blocking:
+
+1. *HIGH, bug-hunter:* the punctuated 11-digit rule (#500) removed a
+   small fill-up's `9.21 1.459 13.44` and dates with seconds from every
+   document. **Fixed:** the owner narrowed #500 to text with a V5C's
+   markers and a registration document's answer.
+2. *HIGH, security-scanner:* on an *Internet* connection, a V5C whose
+   markers OCR read but too little of it went as a picture. **Fixed:**
+   it isn't sent at all.
+3. *4 × MEDIUM, spec-keeper:* this file's eval tasks, #511, the
+   superseded proposals and this section. **Fixed** here; the real-model
+   evals are scheduled to 53.4.
+
+Follow-ups (not blocking) go to `known-issues.md` through the issue
+sweep after the final review.
 
 ---
 
@@ -224,17 +254,21 @@ recommendation.
   point stores one, so the owner then chose (same day) the markers only,
   `VSC` too, not an 11-digit run (UK receipts print 11-digit phone
   numbers), with a short form of #85's warning kept on *Internet*
-  connections (K104).*
+  connections (K104). After the merge review (2026-10-19): a V5C whose
+  markers OCR reads but too little of it to send is not sent at all.*
+  - (1) Always as text on *Internet* connections when OCR is available.
+  - (2) Follow the connection's option like any file.
 
-Found while building, logged as #511 (K104), not decided:
+  *Recommendation:* (1). Its reference number is the one thing §7.27
+  already goes out of its way never to send.
+
+Found while building, logged as #511 (K104). *Needs a decision.*
 
 - **#511. A *Scan the V5C* entry on the vehicle page?** Its target would
   send an *Internet* V5C photo as text even when OCR doesn't spot its
   markers.
   - (1) Yes, in a later phase; the warning can then go.
   - (2) No: markers only, with the warning, as built.
-  - (1) Always as text on *Internet* connections when OCR is available.
-  - (2) Follow the connection's option like any file.
 
-  *Recommendation:* (1). Its reference number is the one thing §7.27
-  already goes out of its way never to send.
+  *Recommendation:* (1), in a later phase: it closes K104 without
+  guessing from the photo.

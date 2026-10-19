@@ -26,14 +26,14 @@ since older releases send pictures on every connection.
   redacted text is sent. No image is ever sent on such a connection.
 - **V5C photos on internet connections go as text** when OCR works: OCR
   reads first, and a photo with a V5C's markers is sent as its text,
-  without the reference number.
+  without the reference number, or not at all if OCR read too little.
 - `bin/ai-eval.php --scans --crosscheck` (marks per kind and false marks)
   and `--ocr --enlarge=min:target` (compare OCR enlarge rules).
 
 ### Changed
-- The V5C reference is removed with punctuation between its groups
-  (`1234-5678-901`, K93) on every path, and on the OCR route also with
-  OCR's look-alikes (`9O1`) or wrapped over rows (K87). Numbers in another
+- On a V5C (text with its markers) the reference is removed with
+  punctuation between its groups (`1234-5678-901`, K93), and on the OCR
+  route also with OCR's look-alikes (`9O1`) or wrapped over rows (K87). Numbers in another
   column of the same row are no longer removed with it (K88).
 - OCR enlarges only text under 15 px (was 20 px): the eval found the
   wider rule lowered accuracy and read an MOT photo's 0s as 6s (K85).

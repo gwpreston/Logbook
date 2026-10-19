@@ -283,7 +283,17 @@ final class ScanMappingTest extends ScanTestCase
         self::assertArrayNotHasKey('total', $passes->checks);
 
         $fails = $this->map($this->owner, self::fuel('45.20', '£1.429/litre', '£64.95', 'L'));
-        self::assertSame('45.20 L × £1.429/litre = £64.59, but the total reads £64.95.', $fails->checks['total']);
+        self::assertSame('45.20 L × £1.429 = £64.59, but the total reads £64.95.', $fails->checks['total']);
+    }
+
+    public function testTheSumIsWrittenInTheUsersLocale(): void
+    {
+        // Design review of 53.3: the figures as the money, not as printed.
+        $this->scanApp([], self::german());
+        $fails = $this->map($this->owner, self::fuel('42,18', '142,9 ct', '68,28 €', 'L'));
+
+        self::assertStringStartsWith('42,18 L × 142,9 ct = ', $fails->checks['total']);
+        self::assertStringContainsString('60,28', $fails->checks['total']);
     }
 
     public function testAFigureThatReadsTwoWaysWhoseOtherReadingAddsUpIsNotFlaggedAsASum(): void
@@ -381,6 +391,20 @@ final class ScanMappingTest extends ScanTestCase
             $preset->volume(),
             $preset->consumption(),
             'USD',
+        );
+    }
+
+    private static function german(): DisplayPreferences
+    {
+        $preset = UnitPreset::Metric;
+
+        return new DisplayPreferences(
+            'de_DE',
+            'Europe/Berlin',
+            $preset->distance(),
+            $preset->volume(),
+            $preset->consumption(),
+            'EUR',
         );
     }
 

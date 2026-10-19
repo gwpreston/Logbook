@@ -7465,7 +7465,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   and an 11-digit run alone isn't taken as one (most UK receipts print an
   11-digit phone number). On an *Internet* vision connection OCR
   therefore runs first, and the picture is sent only when no marker is
-  found.
+  found. A V5C whose markers OCR reads, but too little of it to send
+  (*Too little text*), is not sent at all: the form opens empty with the
+  file attached and the usual "Couldn't make out the text" line (merge
+  review, 2026-10-19).
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7483,10 +7486,14 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     **text** (the first three pages' text, up to 20,000 characters)
     through `read_text`. Runs of 11 digits are removed from the text
     **before it is sent**, so a V5C's reference never leaves as text. A
-    run's digits may be separated by a space, or by one punctuation mark
-    (`-` `/` `,` `.` `|` `:`) with a space either side or none (decided
-    2026-10-18, `docs/phases/open-questions.md` #500, K93), on every path
-    (text PDF, OCR, returned values). Otherwise its first **three** pages are rendered
+    run's digits may be separated by a space. In text that carries a
+    V5C's markers (*Where it goes*), and in what a registration document
+    returns, they may also be separated by one punctuation mark (`-` `/`
+    `,` `.` `|` `:`) with a space either side or none (decided
+    2026-10-18, `docs/phases/open-questions.md` #500, K93; narrowed to
+    V5C-like text on 2026-10-19 after the merge review: on any document
+    the wider rule took a small fill-up's `9.21 1.459 13.44` and dates
+    with seconds). Otherwise its first **three** pages are rendered
     at 150 dpi to JPEG (Ghostscript, or Imagick; §9 `GHOSTSCRIPT_BINARY`)
     and read through `read_document`. With no renderer, a scanned PDF
     shows "This PDF is a scan. Take a photo instead, or type it in." on
@@ -7535,13 +7542,15 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     - a row's words are joined into one run only across a short gap
       (under three character widths), so a date
       beside an odometer, or a policy number in its own column, is kept;
-    - a run that ends a row joins one that starts the next row in the
-      same column (starting within three character widths of it), so a
-      reference wrapped over two or three rows is still caught;
-    - in a word with at least one digit, OCR's look-alikes count as
-      digits (O→0, l and I→1, S→5, B→8), so `1234 5678 9O1` and
-      `1234 S678 901` are caught; a word of letters only is never read
-      as digits;
+    - in text that carries a V5C's markers only (#500, as narrowed on
+      2026-10-19): punctuation between groups counts, as for text
+      PDFs; a run that ends a row joins one that starts the next row in
+      the same column (starting within three character widths of it),
+      when together they hold 11 digits, so a reference wrapped over two
+      or three rows is still caught; and in a word with at least one
+      digit, OCR's look-alikes count as digits (O→0, l and I→1, S→5,
+      B→8), so `1234 5678 9O1` and `1234 S678 901` are caught; a word of
+      letters only is never read as digits;
     - the words of a run are left out. So a V5C photo's reference never
       leaves the server by this route. Returned strings of a
       registration document have their spaces folded before the
@@ -7893,7 +7902,7 @@ from Phase 53.2 a scan uses it when there is no vision model
   - enlarged when its lines of text are under 15 px high, to about 30
     px, within the 4,000 px edge (Phase 53.3, K85: from 20 px, enlarging
     read an MOT photo's 0s as 6s, and the eval over the fixtures found it
-    lowered accuracy on every kind of photo; `bin/ai-eval.php --ocr
+    lowered accuracy on five of the eight kinds and raised it on none; `bin/ai-eval.php --ocr
     --enlarge=min:target` compares other rules).
 - **The result** (`OcrResult`): words (text, confidence 0–100, box,
   page), lines, blocks, a **layout text**, the mean confidence, the

@@ -83,13 +83,35 @@ final class OcrTextTest extends TestCase
             ['1234-5678-901'],
         ];
         foreach ($references as $words) {
-            $text = OcrText::of(self::ocr([['Ref', ...$words], ['Make', 'FORD']]))->text;
+            $text = OcrText::of(self::ocr([['Ref', ...$words], ['Make', 'FORD'], ['DVLA']]))->text;
 
             self::assertStringNotContainsString('5678', $text, implode(' ', $words));
             self::assertStringContainsString('1| Ref', $text);
         }
         $letters = OcrText::of(self::ocr([['BOSS', 'SOIL', '1234'], ['Make', 'FORD']]))->text;
         self::assertSame("1| BOSS SOIL 1234\n2| Make FORD", $letters, 'words of letters only are never read as digits');
+    }
+
+    public function testOtherDocumentsKeepFiguresThatTheV5cRuleWouldTake(): void
+    {
+        // Merge review of 53.3: a motorbike fill-up (3 + 4 + 4 digits with dots), a date with seconds,
+        // a misread group and a column of amounts are kept when the text isn't V5C-like.
+        $rows = [
+            ['Diesel', '9.21', '1.459', '13.44'],
+            ['Date', '5/3/2024', '14:32:10'],
+            ['Ref', '1234', '5678', '9O1'],
+            ['1234'],
+            ['5678'],
+            ['901'],
+        ];
+        $text = OcrText::of(self::ocr($rows))->text;
+
+        self::assertStringContainsString('Diesel 9.21 1.459 13.44', $text);
+        self::assertStringContainsString('5/3/2024 14:32:10', $text);
+        self::assertStringContainsString('1234 5678 9O1', $text);
+        self::assertFalse(OcrText::of(self::ocr($rows))->looksLikeRegistration());
+        $plain = OcrText::of(self::ocr([['x', '1234', '5678', '901'], ['Ref', '12345678901']]))->text;
+        self::assertSame("1| x\n2| Ref", $plain, 'plain runs always go');
     }
 
     public function testAReferenceWrappedOverThreeRowsIsRemoved(): void

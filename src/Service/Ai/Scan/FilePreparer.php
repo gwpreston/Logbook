@@ -52,7 +52,7 @@ final readonly class FilePreparer
         if (mb_strlen($first) >= self::MIN_TEXT) {
             $text = mb_substr(implode("\n\n", $read['pages']), 0, self::MAX_TEXT);
 
-            return PreparedFile::text(Scrubber::text($text), $read['count']);
+            return PreparedFile::text(Scrubber::text($text, Scrubber::looksLikeRegistration($text)), $read['count']);
         }
 
         return $this->renderer->isAvailable()

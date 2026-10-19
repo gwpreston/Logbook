@@ -5,29 +5,46 @@ declare(strict_types=1);
 namespace Logbook\Service\Ai\Scan;
 
 /**
- * Removes a registration document's reference number (spec.md §7.27):
- * any run of 11 digits, with a space, or one punctuation mark with a space
- * either side or none, between them (decided 2026-10-18, #500, K93).
- * Applied to PDF text before it is sent, to OCR text (with look-alike
- * letters and short gaps, referenceWords()), and to every string read back
- * from a registration document before it is shown or stored.
+ * Removes a registration document's reference number (spec.md §7.27): any
+ * run of 11 digits with a space or none between them. In text that looks
+ * like a V5C (looksLikeRegistration()) and in what a registration document
+ * returns, also with one punctuation mark between them and, on OCR text,
+ * OCR's look-alike letters (#500, K87, K93; narrowed to V5C-like text on
+ * 2026-10-19, so `Diesel 9.21 1.459 13.44` or a date with seconds on any
+ * other document is kept). Applied to PDF text and OCR text before it is
+ * sent, and to every string read back from a registration document.
  */
 final class Scrubber
 {
-    /** Between two digits of a run: a space, or `-` `/` `,` `.` `|` `:` with a space either side or none. */
-    private const string GAP = '(?:[ \x{00A0}]|[ \x{00A0}]?[\-\/,.|:][ \x{00A0}]?)?';
-    private const string ELEVEN_DIGITS = '/(?<![0-9])[0-9](?:' . self::GAP . '[0-9]){10}(?![0-9])/u';
+    private const string ELEVEN_DIGITS = '/(?<![0-9])[0-9](?:[ \x{00A0}]?[0-9]){10}(?![0-9])/u';
     /** OCR's layout text may put a few spaces where the print had one (Phase 53.2). */
+    private const string ELEVEN_DIGITS_OCR = '/(?<![0-9])[0-9](?:[ \x{00A0}]{0,3}[0-9]){10}(?![0-9])/u';
+    /** V5C-like text: also `-` `/` `,` `.` `|` `:` between digits, with a space either side or none. */
+    private const string GAP = '(?:[ \x{00A0}]|[ \x{00A0}]?[\-\/,.|:][ \x{00A0}]?)?';
+    private const string WIDE = '/(?<![0-9])[0-9](?:' . self::GAP . '[0-9]){10}(?![0-9])/u';
     private const string GAP_OCR = '(?:[ \x{00A0}]{1,3}|[ \x{00A0}]{0,3}[\-\/,.|:][ \x{00A0}]{0,3})?';
-    private const string ELEVEN_DIGITS_OCR = '/(?<![0-9])[0-9](?:' . self::GAP_OCR . '[0-9]){10}(?![0-9])/u';
+    private const string WIDE_OCR = '/(?<![0-9])[0-9](?:' . self::GAP_OCR . '[0-9]){10}(?![0-9])/u';
+    /** A V5C's markers, `VSC` too: OCR reads a 5 as an S (#510). */
+    private const string MARKERS = '/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu';
     /** OCR's look-alikes (#498), read as digits in a word that has a digit (#500). */
     private const array LOOK_ALIKES = [
         'O' => '0', 'o' => '0', 'l' => '1', 'I' => '1', 'i' => '1', 'S' => '5', 's' => '5', 'B' => '8', 'b' => '8',
     ];
 
-    public static function text(string $text): string
+    /**
+     * $wide for V5C-like text: punctuation between the digits counts too.
+     */
+    public static function text(string $text, bool $wide = false): string
     {
-        return (string) preg_replace(self::ELEVEN_DIGITS, '', $text);
+        return (string) preg_replace($wide ? self::WIDE : self::ELEVEN_DIGITS, '', $text);
+    }
+
+    /**
+     * Whether text carries a V5C's markers (spec.md §7.27, #510).
+     */
+    public static function looksLikeRegistration(string $text): bool
+    {
+        return preg_match(self::MARKERS, $text) === 1;
     }
 
     /**
@@ -35,30 +52,31 @@ final class Scrubber
      * three spaces (around a punctuation mark or not) between the digits,
      * since OCR's layout keeps gaps it saw.
      */
-    public static function ocrText(string $text): string
+    public static function ocrText(string $text, bool $wide = false): string
     {
-        return (string) preg_replace(self::ELEVEN_DIGITS_OCR, '', $text);
+        return (string) preg_replace($wide ? self::WIDE_OCR : self::ELEVEN_DIGITS_OCR, '', $text);
     }
 
     /**
      * Which of a stretch of OCR words are part of an 11-digit run when the
      * words are read with single spaces between them (OCR's layout may put
-     * any gap there). In a word with at least one digit, OCR's look-alikes
-     * count as digits (`9O1`, `S678`); a word of letters only never does
-     * (#500). Returns their indexes.
+     * any gap there). With $wide (V5C-like text), punctuation between groups
+     * counts and, in a word with at least one digit, OCR's look-alikes count
+     * as digits (`9O1`, `S678`); a word of letters only never does (#500).
+     * Returns their indexes.
      *
      * @param list<string> $words
      * @return list<int>
      */
-    public static function referenceWords(array $words): array
+    public static function referenceWords(array $words, bool $wide = false): array
     {
         $joined = '';
         $starts = [];
         foreach ($words as $i => $word) {
             $starts[$i] = strlen($joined);
-            $joined .= (preg_match('/[0-9]/', $word) === 1 ? strtr($word, self::LOOK_ALIKES) : $word) . ' ';
+            $joined .= ($wide && preg_match('/[0-9]/', $word) === 1 ? strtr($word, self::LOOK_ALIKES) : $word) . ' ';
         }
-        if (preg_match_all(self::ELEVEN_DIGITS, $joined, $matches, PREG_OFFSET_CAPTURE) === 0) {
+        if (preg_match_all($wide ? self::WIDE : self::ELEVEN_DIGITS, $joined, $matches, PREG_OFFSET_CAPTURE) === 0) {
             return [];
         }
         $hit = [];
@@ -101,7 +119,8 @@ final class Scrubber
     public static function value(mixed $value): mixed
     {
         if (is_string($value)) {
-            return self::text((string) preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', $value));
+            // Only a registration document's answer comes here: the V5C rule applies.
+            return self::text((string) preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', $value), true);
         }
         if (is_array($value)) {
             return array_map(self::value(...), $value);
@@ -112,6 +131,6 @@ final class Scrubber
 
     public static function hasReference(string $text): bool
     {
-        return preg_match(self::ELEVEN_DIGITS, $text) === 1;
+        return preg_match(self::WIDE, $text) === 1;
     }
 }
