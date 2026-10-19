@@ -88,7 +88,9 @@ As an admin, open **Settings → AI**:
    photos too: see [reading-files.md](reading-files.md).
 
 Once a task has a model, every user sees *Use AI features* in Settings and
-the AI modules appear on Settings → Modules.
+the AI modules appear on Settings → Modules. Switching *Use AI features* off keeps
+your files from every model; with OCR working, *Scan* still reads them
+without AI, on this server.
 
 ## Connection recipes
 
@@ -540,8 +542,12 @@ an answer that doesn't fit), you get the normal empty form with the file
 attached and one line saying why. Scanning never costs you the photo.
 
 **Who can scan.** The *Read receipts* module must be on (Settings →
-Modules), a model must be set for reading documents or text PDFs, and
-*Use AI features* must be on for you. You need *Log* on the vehicle, as
+Modules), and either a model must be set for reading documents or text
+PDFs with *Use AI features* on for you, or OCR must be working on this
+server. With no model reading for you (none set, AI switched off, or
+your *Use AI features* off), Scan reads the file without AI, by rules
+on this server, and no model ever sees it
+([reading-files.md](reading-files.md#reading-without-ai)). You need *Log* on the vehicle, as
 for the form; the reminders card needs *Manage*, and the V5C page
 *Manage*.
 

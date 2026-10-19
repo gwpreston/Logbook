@@ -25,6 +25,12 @@ final readonly class FuelReceiptRules
     private const string PER_UNIT = 'litres|liters|litre|liter|ltrs|ltr|kwh|gallons|gallon|gal|l|g';
     private const string CODES = 'GBP|EUR|USD|CHF';
     private const string PENCE = 'pence|cents|cent|ct|p|c';
+    /**
+     * A receipt prints a few candidates of each. Past this many different
+     * volumes, prices or totals (a statement, a long list) no set is
+     * searched, so the search stays bounded (merge review of 53.4).
+     */
+    private const int MAX_CANDIDATES = 12;
 
     public function __construct(private Keywords $keywords)
     {
@@ -99,7 +105,7 @@ final readonly class FuelReceiptRules
             }
         }
 
-        $station = self::station($rows, $knownStation);
+        $station = $this->station($rows, $locale, $knownStation);
         if ($station !== null) {
             $fields['vendor'] = self::field($station[0], $station[1]);
         }
@@ -109,17 +115,18 @@ final readonly class FuelReceiptRules
 
     /**
      * The station: the first of the top five rows naming one of the
-     * install's stations, else the first row with a name.
+     * install's stations, else the first row with a name. Never a row
+     * with a date, an amount, a grade, a pump or a volume (merge review).
      *
      * @param list<string> $rows
      * @param \Closure(string): bool $known
      * @return array{string, string}|null the name and its row
      */
-    private static function station(array $rows, \Closure $known): ?array
+    private function station(array $rows, string $locale, \Closure $known): ?array
     {
         $first = null;
         foreach (array_slice($rows, 0, 5) as $row) {
-            $name = RuleText::name($row);
+            $name = $this->notName($row, $locale) ? null : RuleText::name($row);
             if ($name === null) {
                 continue;
             }
@@ -145,10 +152,19 @@ final readonly class FuelReceiptRules
      */
     private function agreeing(array $rows, string $locale): ?array
     {
+        $volumes = self::distinct($this->volumes($rows, $locale), static fn (array $v): string => $v['read']);
+        $prices = self::distinct(
+            $this->prices($rows, $locale),
+            static fn (array $p): string => $p['read'] . '|' . var_export($p['pence'], true),
+        );
+        $totals = self::distinct($this->totals($rows, $locale), static fn (array $t): string => $t['read']);
+        if (max(count($volumes), count($prices), count($totals)) > self::MAX_CANDIDATES) {
+            return null;
+        }
         $sets = [];
-        foreach ($this->volumes($rows, $locale) as $volume) {
-            foreach ($this->prices($rows, $locale) as $price) {
-                foreach ($this->totals($rows, $locale) as $total) {
+        foreach ($volumes as $volume) {
+            foreach ($prices as $price) {
+                foreach ($totals as $total) {
                     foreach ($price['pence'] === null ? [false, true] : [$price['pence']] as $pence) {
                         if (!FuelSum::agrees($volume['read'], $price['read'], $total['read'], $pence)) {
                             continue;
@@ -315,14 +331,50 @@ final readonly class FuelReceiptRules
      */
     private function largestTotal(array $rows, string $locale): ?array
     {
+        // A line labelled as the total itself (TOTAL, AMOUNT DUE) first, then any total word (AMOUNT).
+        $labelled = array_values(array_filter($this->totals($rows, $locale), static fn (array $t): bool => $t['labelled']));
+        $exact = array_values(array_filter(
+            $labelled,
+            fn (array $t): bool => $this->keywords->has('invoice_total', $locale, $t['row']),
+        ));
         $best = null;
-        foreach ($this->totals($rows, $locale) as $total) {
-            if ($total['labelled'] && ($best === null || Decimal::compare($total['read'], $best['read']) > 0)) {
+        foreach ($exact !== [] ? $exact : $labelled as $total) {
+            if ($best === null || Decimal::compare($total['read'], $best['read']) > 0) {
                 $best = $total;
             }
         }
 
         return $best === null ? null : ['printed' => $best['printed'], 'row' => $best['row']];
+    }
+
+    /**
+     * A row that can't be a station's name: a date, an amount, a volume,
+     * a grade or a pump.
+     */
+    private function notName(string $row, string $locale): bool
+    {
+        return RuleText::date($row, $locale) !== null
+            || $this->keywords->has('not_vendor', $locale, $row)
+            || $this->keywords->has('grade', $locale, $row)
+            || preg_match('/[£€$]\s?\d|\d\s?(?:' . self::UNITS . ')(?![\p{L}])/iu', $row) === 1;
+    }
+
+    /**
+     * The first of each value, in order.
+     *
+     * @template T of array<string, mixed>
+     * @param list<T> $candidates
+     * @param \Closure(T): string $key
+     * @return list<T>
+     */
+    private static function distinct(array $candidates, \Closure $key): array
+    {
+        $seen = [];
+        foreach ($candidates as $candidate) {
+            $seen[$key($candidate)] ??= $candidate;
+        }
+
+        return array_values($seen);
     }
 
     private static function pence(string $symbol, string $pence, string $code): ?bool

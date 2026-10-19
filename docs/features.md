@@ -208,7 +208,11 @@ the guide to a feature.
   ([reading-files.md](reading-files.md)). With a vision model, OCR checks
   what it read and marks a value it can't find on the page; a fuel
   receipt whose figures don't add up says so; and each connection can
-  *send text, not images*, so no photo leaves your server.
+  *send text, not images*, so no photo leaves your server. With OCR and
+  no model (or for someone who switched AI off), files are still read,
+  partly, by rules on your server: a fuel receipt's figures when they
+  add up, an invoice's date, total and mileage
+  ([reading-files.md](reading-files.md#reading-without-ai)).
 - **A REST API with keys** ([api.md](api.md)) that reads, writes, corrects
   and deletes everything the pages do, files included, so Home Assistant,
   Shortcuts, Grafana and Node-RED can read your garage and log fill-ups and

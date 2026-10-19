@@ -6998,7 +6998,8 @@ request to any model service.
   features*, a user setting `ai.use`, **on** unless the user switched it
   off. Shown only once AI is set up (at least one task has a working
   assignment). Off hides every AI entry point for that user and sends
-  nothing on their behalf.
+  nothing on their behalf; from Phase 53.4 *Scan* stays for them when
+  OCR works, reading without AI (§7.27, #518).
 - **Admin-only connections** (decided 2026-10-01, #65): members cannot
   add their own connections or keys; every call a member makes uses the
   admins' connections and counts against their caps.
@@ -7880,18 +7881,23 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       per unit (a number with `p/L`, `PPL`, `£/L`, `/kWh`, `per litre`,
       or after a price word) and the total (a number on a line with a
       total word: `TOTAL`, `AMOUNT`, `TO PAY`, `GESAMT`…; never a
-      line with a VAT, change, discount, points or subtotal word);
+      line with a change, discount, points, subtotal or tendered word,
+      such as `Amount tendered`);
     - the set whose volume × price agrees with the total by *The money
       adds up*'s own rule (within 1p plus the printed rounding, in
       `brick/math`) wins. With two agreeing sets that disagree, only
       their total is filled when they share it. With no agreeing set,
-      only the total is filled (the largest amount on a total line), and
+      only the total is filled (the largest amount on a line labelled
+      as the total, `TOTAL` or `AMOUNT DUE`, else on any total line), and
       only when OCR read that amount with a confidence of at least 90
       (#525: a faded 0 read as 6 adds up to nothing, and was read less
       surely); otherwise it too is left. The volume and price are then
       left for the owner. A wrong agreeing set is never filled: only
       labelled numbers are candidates, and each number is read in the
-      user's locale as the Mapper reads it;
+      user's locale as the Mapper reads it. A receipt prints few
+      candidates: with more than 12 different volumes, prices or totals
+      (a statement), no set is searched, so a long document is read in
+      bounded time (merge review of 53.4);
     - the date and time from the first line holding a date (the locale's
       order, with the usual "Check the date" warning);
     - the grade: the first grade word (`scan.keywords.grade`: unleaded,
@@ -7899,11 +7905,14 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       resolver as on every route;
     - the station: the first of the top five lines that names one of
       the install's stations, else the first line with three letters in
-      a row; the Mapper then links it to that station or offers it as a
+      a row (or a short name in capitals, `BP`), never a line with a
+      date, an amount, a volume, a grade or a pump (`not_vendor`); the
+      Mapper then links it to that station or offers it as a
       new one (§7.33);
     - the currency from `£`, `€`, `$` or a code beside the total.
   - **Service invoice** (partial): the date (the first line with a date
-    word, else the first date); the total (the largest amount on a line
+    word, else the first date, never one after a word such as *next*,
+    *due* or *expiry* on its line, `not_date`); the total (the largest amount on a line
     with `TOTAL`, `BALANCE DUE` or `AMOUNT DUE`, never a subtotal or VAT
     line, when OCR read it with a confidence of at least 90, #525); the
     registration (a vehicle the user can log to whose
@@ -7911,7 +7920,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     `AB12 CDE`), matched to a vehicle as today; the odometer (a number
     on a line with `MILEAGE`, `ODO`, `ODOMETER` or `MILES`, the unit
     when printed); the vendor (the first line with three letters in a
-    row). The **work lines** (decided 2026-10-19,
+    row above the first header line, never a header or totals line).
+    The **work lines** (decided 2026-10-19,
     `docs/phases/open-questions.md` #519): the lines after the header's
     last labelled line (date, registration, mileage, invoice number)
     and before the first totals line go into the description, unparsed
@@ -10929,7 +10939,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   unset)
 - AI (§7.25, Phase 26.1): `AI_ENABLED` (default `true`; `false` hides
   Settings → AI, every AI switch and entry point, and sends nothing,
-  whatever is configured), `AI_LOG_CONTENT` (default `false`; `true`
+  whatever is configured; from Phase 53.4 *Scan* stays when OCR works,
+  reading without AI, §7.27, #521), `AI_LOG_CONTENT` (default `false`; `true`
   stores prompts and answers in the usage log, for debugging, with a
   warning on Settings → AI), `AI_ALLOW_INSECURE_TLS` (default `true`:
   allows a connection's *Verify TLS* to be switched off; `false` forbids

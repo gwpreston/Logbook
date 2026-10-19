@@ -202,6 +202,65 @@ final class RuleReaderTest extends ScanTestCase
         self::assertNull($read->value('odometer'), '"5,000 miles" is not after a mileage word');
     }
 
+    public function testALongStatementIsReadInBoundedTime(): void
+    {
+        // Merge review of 53.4: the set search was cubic (50 rows took 5.8 s, 200 would pass the time limit).
+        $this->scanApp();
+        $rows = [];
+        for ($i = 0; $i < 200; $i++) {
+            $volume = 30 + $i % 40 + 0.11;
+            $rows[] = sprintf('%02d/03/2026 Shell Leeds Diesel %.2f L 1.459/L £%.2f', 1 + $i % 28, $volume, $volume * 1.459);
+        }
+
+        $started = microtime(true);
+        $read = $this->read(implode("\n", $rows));
+
+        self::assertLessThan(1.0, microtime(true) - $started);
+        self::assertNull($read->value('volume'), 'too many candidates: no set is searched');
+    }
+
+    public function testATenderedAmountIsNeverTheTotal(): void
+    {
+        $this->scanApp();
+        // 42.18 × 1.429 is 60.28, so no set agrees with 65.00 and the total stands alone.
+        $read = $this->read(implode("\n", [
+            'SHORELINE FUELS',
+            '14/10/2026 08:42',
+            'UNLEADED 42.18 L',
+            '142.9p/L',
+            'TOTAL GBP 65.00',
+            'Amount tendered £100.00',
+        ]));
+
+        self::assertSame('65.00', $read->value('total'));
+    }
+
+    public function testAnInvoicesDateIsNotItsNextServiceDate(): void
+    {
+        $this->scanApp();
+        $read = $this->read(implode("\n", [
+            'Invoice 55',
+            'Next service date 02/04/2027',
+            'Date 02/10/2026',
+            'Mileage 51,200',
+            'Brakes',
+            'Total due £185.04',
+        ]));
+
+        self::assertSame('02/10/2026', $read->value('date'));
+        self::assertNull($read->value('vendor'), 'a header row is never the garage');
+    }
+
+    public function testAShortStationNameIsKeptAndAProductLineIsNeverTheStation(): void
+    {
+        $this->scanApp();
+        $read = $this->read(implode("\n", ['BP', '14/10/2026', 'Diesel 30.00 L', '155.9p/L', 'Total £46.77']));
+        self::assertSame('BP', $read->value('vendor'));
+
+        $read = $this->read(implode("\n", ['14/10/2026', 'Pump 4', 'Diesel 30.00 L', '155.9p/L', 'Total £46.77']));
+        self::assertNull($read->value('vendor'), 'no row names a station');
+    }
+
     public function testReadItAsKeepsEachKindsOwnValues(): void
     {
         $this->scanApp();

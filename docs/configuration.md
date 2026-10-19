@@ -145,7 +145,7 @@ on **Settings → AI**, not here; nothing is sent to any model until then.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `AI_ENABLED` | `true` | `false` removes Settings → AI and every AI switch and feature, and sends nothing, whatever is configured. |
+| `AI_ENABLED` | `true` | `false` removes Settings → AI and every AI switch and feature, and sends nothing, whatever is configured. *Scan* stays when OCR works: it then reads files without AI, on this server ([reading-files.md](reading-files.md#reading-without-ai)); switch the *Read receipts* module off to hide it. |
 | `AI_LOG_CONTENT` | `false` | `true` keeps questions, answers and the data sent with them in the usage log, for debugging your own install; Settings → AI shows a warning while it is on. Off, the log has counts, times and outcomes only. |
 | `AI_ALLOW_INSECURE_TLS` | `true` | Allows a connection's *Verify TLS certificates* to be switched off (a LAN server with a self-signed certificate). `false` verifies every connection. |
 | `GHOSTSCRIPT_BINARY` | `gs` | Ghostscript, for reading scanned PDFs (Phase 26.4, [ai.md](ai.md#reading-receipts-and-documents)): a name looked up on `PATH`, or a full path. `off` turns it off; Imagick is used when loaded. Without either, a scanned PDF asks for a photo instead. The Docker image includes Ghostscript. |

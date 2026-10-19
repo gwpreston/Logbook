@@ -124,13 +124,16 @@ final class RuleText
 
     /**
      * A name at the start of a line (a vendor, a station): the text before
-     * the first comma or wide gap, when it has three letters in a row.
+     * the first comma or wide gap, when it has three letters in a row, or
+     * is a short name in capitals (`BP`).
      */
     public static function name(string $line): ?string
     {
         $parts = preg_split('/,|\s{3,}/u', trim($line));
         $name = trim($parts === false ? $line : $parts[0]);
 
-        return preg_match('/\p{L}{3}/u', $name) === 1 ? mb_substr($name, 0, 150) : null;
+        $named = preg_match('/\p{L}{3}/u', $name) === 1 || preg_match('/^\p{Lu}{2}(?:\s\p{Lu}{2,})*$/u', $name) === 1;
+
+        return $named ? mb_substr($name, 0, 150) : null;
     }
 }

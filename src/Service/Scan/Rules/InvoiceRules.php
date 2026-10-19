@@ -50,6 +50,10 @@ final readonly class InvoiceRules
             $fields[$name] = $field;
         }
         foreach ($rows as $row) {
+            // The letterhead: rows above the first header row (`Invoice 55`, `Date …`), never the work.
+            if ($this->keywords->has('header', $locale, $row) || $this->keywords->has('not_vendor', $locale, $row)) {
+                break;
+            }
             $name = RuleText::name($row);
             if ($name !== null) {
                 $fields['vendor'] = ['value' => $name, 'evidence' => RuleText::evidence($row)];
@@ -99,7 +103,7 @@ final readonly class InvoiceRules
         $first = null;
         foreach ($rows as $row) {
             $date = RuleText::date($row, $locale);
-            if ($date === null) {
+            if ($date === null || $this->isOtherDate($row, $date, $locale)) {
                 continue;
             }
             $field = ['value' => $date, 'evidence' => RuleText::evidence($row)];
@@ -203,6 +207,17 @@ final readonly class InvoiceRules
         }
 
         return array_slice($lines, 0, self::MAX_WORK_LINES);
+    }
+
+    /**
+     * A date after a word such as *next*, *due* or *expiry* on its row is
+     * another date, not the invoice's (merge review of 53.4).
+     */
+    private function isOtherDate(string $row, string $date, string $locale): bool
+    {
+        $before = mb_substr($row, 0, max(0, (int) mb_strpos($row, $date)));
+
+        return $this->keywords->has('not_date', $locale, $before);
     }
 
     private function isTotals(string $row, string $locale): bool

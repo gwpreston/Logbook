@@ -5116,9 +5116,13 @@ return [
             'volume' => 'volume|litres|liters|ltrs|ltr|qty|quantity',
             'price' => 'price|unit price|price per litre|price/l',
             'total' => 'total|amount|to pay|amount due|balance due|total due|grand total|total paid',
-            'not_total' => 'subtotal|sub-total|sub total|change|cashback|discount|saving|savings|points|net',
+            'not_total' => 'subtotal|sub-total|sub total|change|change due|cashback|discount|saving|savings|points|net|tendered|amount tendered|cash given|given',
             'invoice_total' => 'total|balance due|amount due|total due|grand total',
             'date' => 'date|dated|invoice date|tax point',
+            // A date after one of these on its line is another date (the next service, an expiry), not the document's.
+            'not_date' => 'next|due|expiry|expires|valid|renewal|recommended|until',
+            // A row with one of these is never a station's or a garage's name.
+            'not_vendor' => 'pump|total|vat|amount|litres|liters|ltr|kwh',
             'odometer' => 'mileage|odometer|odometer reading|odo|miles',
             'header' => 'invoice|date|reg|registration|vehicle|mileage|odometer|odo|make|model|vin|chassis|customer|account|job|order',
             'totals' => 'labour|labor|parts|vat|subtotal|sub-total|total|amount due|balance due|net',
