@@ -10,6 +10,8 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\User\User;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Service\Ai\AiStatus;
+use Logbook\Service\Demo\DemoMode;
+use Logbook\Service\Demo\DemoRestriction;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Ocr\OcrReader;
 
@@ -18,7 +20,8 @@ use Logbook\Service\Ocr\OcrReader;
  * on, and a file can be read: by a model (`read_document` or `read_text`,
  * with the user's *Use AI features* on), or, from Phase 53.4, without AI
  * by a working OCR engine and rules, whatever AI's settings (#518, #521).
- * Otherwise the Scan pages answer 404 and no entry point shows.
+ * Never in a demo, which takes no file from a visitor (§7.36). Otherwise
+ * the Scan pages answer 404 and no entry point shows.
  */
 final readonly class ScanAvailability
 {
@@ -28,13 +31,14 @@ final readonly class ScanAvailability
         private AiConnectionRepository $connections,
         private Router $router,
         private OcrReader $ocr,
+        private DemoMode $demo,
     ) {
     }
 
     public function isAvailable(?User $user): bool
     {
         return $user !== null
-            && $this->features->isEnabled(Feature::Scan)
+            && $this->isOpen()
             && (($this->status->isOnFor($user) && $this->hasModel()) || $this->ocr->isWorking());
     }
 
@@ -43,7 +47,7 @@ final readonly class ScanAvailability
      */
     public function isSetUp(): bool
     {
-        return $this->features->isEnabled(Feature::Scan)
+        return $this->isOpen()
             && (($this->status->isEnabled() && $this->hasModel()) || $this->ocr->isWorking());
     }
 
@@ -86,6 +90,14 @@ final readonly class ScanAvailability
         $model = $this->status->model(AiTaskName::ReadDocument) ?? $this->status->model(AiTaskName::ReadText);
 
         return $model === null ? null : $this->connections->find($model->connectionId);
+    }
+
+    /**
+     * The module is on, and this isn't a demo (a scan takes a file).
+     */
+    private function isOpen(): bool
+    {
+        return $this->features->isEnabled(Feature::Scan) && !$this->demo->blocks(DemoRestriction::Uploads);
     }
 
     private function hasModel(): bool

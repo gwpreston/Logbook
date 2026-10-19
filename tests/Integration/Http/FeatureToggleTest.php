@@ -30,7 +30,8 @@ final class FeatureToggleTest extends ReminderTestCase
 
     public function testSettingsPageSavesEveryModule(): void
     {
-        $app = $this->createApp();
+        // No OCR (CI has Tesseract): reading files is listed only while something can read (Phase 53.4).
+        $app = $this->createApp(['TESSERACT_BINARY' => 'off']);
         $browser = $this->signedIn($app);
 
         $html = self::body($browser->get('/settings/modules'));
