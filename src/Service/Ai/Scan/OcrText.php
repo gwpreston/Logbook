@@ -192,9 +192,11 @@ final readonly class OcrText
 
             $last = $pieces[count($pieces) - 1];
             [$tail, $tailDigits] = self::digitGroups($last, true);
+            // The run's column is where its first digit group starts, not the piece's first word: a label
+            // beside the groups (`Document reference number 1234 5678`) mustn't hide a wrap below them.
             $open = $carried ?? ($tail === [] || $tailDigits >= 11
                 ? null
-                : ['words' => $tail, 'left' => $last[0]->box->left, 'digits' => $tailDigits]);
+                : ['words' => $tail, 'left' => $tail[0]->box->left, 'digits' => $tailDigits]);
         }
 
         return $stretches;

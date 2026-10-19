@@ -372,6 +372,18 @@ final class RuleReaderTest extends ScanTestCase
         self::assertStringContainsString('AB12 CDE', $stored);
     }
 
+    public function testAQualifiedLabelAfterAccentedTextIsStillQualified(): void
+    {
+        // Merge review of 53.4: a byte cut inside `é` skipped the qualifier check.
+        $this->scanApp();
+        $head = ['Garage Ltd', 'Invoice 7', 'Date 01/10/2026', 'Brakes'];
+        foreach (range(10, 20) as $n) {
+            $row = str_repeat('é', $n) . ' Net Total £100.00';
+            self::assertNull($this->read(self::lines([...$head, $row]))->value('total'), $row);
+        }
+        self::assertSame('100.00', $this->read(self::lines([...$head, 'Réparation Total £100.00']))->value('total'));
+    }
+
     public function testATotalVolumeIsNeverTheTotal(): void
     {
         $this->scanApp();

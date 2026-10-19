@@ -123,7 +123,7 @@ Added to §7.27 in 53.4.0:
 - [x] Translations (every shipped locale).
 
 ### 53.4.3 Tests and release
-- [x] Merge-review fixes (2026-10-19, two rounds): the set search bounded
+- [x] Merge-review fixes (2026-10-19, five rounds): the set search bounded
       (12 candidates of each, shop-basket amounts counted only below
       that); month names built once per locale; an invoice's own date
       beside a *next service* date; strict lone totals and no rules

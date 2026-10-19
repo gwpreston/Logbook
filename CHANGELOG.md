@@ -63,6 +63,9 @@ No migration.
   evidence (K89).
 
 ### Fixed
+- A V5C reference wrapped onto the next row, under its first group and
+  beside a label (`Document reference number 1234 5678` / `901`), is now
+  removed from OCR text too, so it is never sent to a model or kept.
 - An OCR run abandoned when a vision request failed is stopped before its
   temporary directory is removed, so its text is never left behind
   (K116).

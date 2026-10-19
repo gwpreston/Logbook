@@ -126,6 +126,32 @@ final class OcrTextTest extends TestCase
         self::assertStringContainsString('Make FORD', $text);
     }
 
+    public function testAReferenceWrappedUnderItsFirstGroupBesideALabelIsRemoved(): void
+    {
+        // Merge review of 53.4: the column was taken from the label, so `901` under `1234` was kept.
+        $at = static fn (string $t, int $x, int $y): OcrWord
+            => new OcrWord($t, 95.0, new OcrBox($x, $y, 15 * mb_strlen($t), 20));
+        $lines = [
+            new OcrLine([$at('V5C', 10, 10)]),
+            new OcrLine([$at('Registration', 10, 40), $at('Certificate', 205, 40)]),
+            new OcrLine([
+                $at('Document', 10, 70),
+                $at('reference', 145, 70),
+                $at('number', 295, 70),
+                $at('1234', 400, 70),
+                $at('5678', 475, 70),
+            ]),
+            new OcrLine([$at('901', 400, 100)]),
+            new OcrLine([$at('Make', 10, 130), $at('FORD', 85, 130)]),
+        ];
+
+        $text = OcrText::of(OcrResult::read($lines, 'eng', 'tesseract 5.3.0'))->text;
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
+        self::assertStringContainsString('Document reference number', $text);
+        self::assertStringContainsString('Make FORD', $text);
+    }
+
     public function testNumbersInOtherColumnsOfARowAreKept(): void
     {
         // K88, #501: joined only across a short gap.

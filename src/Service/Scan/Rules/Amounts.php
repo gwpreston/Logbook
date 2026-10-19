@@ -67,7 +67,7 @@ final readonly class Amounts
                 if ($read === null) {
                     continue;
                 }
-                $before = substr($text, max(0, $offset - 5), min(5, $offset));
+                $before = self::tail($text, $offset, 5);
                 $found[] = [
                     'printed' => $printed,
                     'read' => $read,
@@ -104,8 +104,11 @@ final readonly class Amounts
                 continue;
             }
             foreach ($m[0] as [$word, $offset]) {
-                $before = substr($text, max(0, $offset - 30), min(30, $offset));
-                if (preg_match('/(\p{L}+)\W*$/u', $before, $w) === 1 && $this->keywords->has('total_qualifier', $locale, $w[1])) {
+                // Cut at a character boundary: a byte cut inside `é` made the match fail and skip the check
+                // (merge review of 53.4). A match that can't run fills nothing.
+                $before = self::tail($text, $offset, 30);
+                $qualified = preg_match('/(\p{L}+)\W*$/u', $before, $w);
+                if ($qualified === false || ($qualified === 1 && $this->keywords->has('total_qualifier', $locale, $w[1]))) {
                     continue;
                 }
                 $end = $offset + strlen($word);
@@ -152,6 +155,17 @@ final readonly class Amounts
         $read = RuleText::read($printed, $locale);
 
         return $read !== null && Decimal::compare($read, '0') > 0 ? $read : null;
+    }
+
+    /**
+     * Up to $bytes bytes of $text before $offset, cut at a character
+     * boundary so the slice is valid UTF-8.
+     */
+    private static function tail(string $text, int $offset, int $bytes): string
+    {
+        $from = max(0, $offset - $bytes);
+
+        return mb_strcut($text, $from, $offset - $from, 'UTF-8');
     }
 
     /**
