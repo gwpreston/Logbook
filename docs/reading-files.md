@@ -164,13 +164,15 @@ What the rules can do:
 - **Fuel receipts:** the volume, price per unit and total, but only when
   volume × price makes the total (within 1p and the printed rounding).
   If no set of figures adds up, or two sets do and disagree, only the
-  total is filled and you type the volume and price. Also the date and
+  total is filled, and only if OCR read it clearly; you type the volume
+  and price. Also the date and
   time, the grade (through the same words as Ask's drafts), the station
   (matched to one of your stations by name when one matches) and the
   currency.
 - **Service invoices:** the date, the total (the largest amount on a
   *Total*, *Balance due* or *Amount due* line, never a subtotal or VAT
-  line), the registration (one of your vehicles', else a UK plate), the
+  line, if OCR read it clearly), the registration (one of your
+  vehicles', else a UK plate), the
   mileage (the number after *Mileage*, *Odometer* or *Miles*) and the
   garage's name. The work lines between the header and the totals are
   copied into the description as they are, marked "Copied from the
@@ -185,8 +187,8 @@ What they can't do:
 - Read labour, parts or VAT totals, recommended work, advisories, expiry
   dates or policy numbers. A model does that.
 - Fix what OCR misread. A faded 0 read as 6 makes a total that doesn't
-  add up, so the volume and price are left empty, and the misread total
-  is still filled for you to check. A flatter, brighter photo helps
+  add up, so the volume and price are left empty, and the total too
+  unless OCR was sure of it. A flatter, brighter photo helps
   ([Getting the best photo](#getting-the-best-photo)).
 - Learn a station's layout from your corrections. That may come later.
 - Read languages other than English and German. The words they look for

@@ -143,6 +143,7 @@ final readonly class ScanAction
             'text_only' => $route->problem === ScanProblem::TextOnly,
             // Phase 53.4: photos (and text PDFs) read without AI on this server.
             'rules' => $route->rules,
+            'rules_engine' => $route->rules ? $this->availability->picturesViaOcr($route) : null,
             'rules_text' => $this->availability->readsTextByRules($user),
             'this_server' => Location::Server,
             'max_upload_mb' => $this->attachments->maxMegabytes(),

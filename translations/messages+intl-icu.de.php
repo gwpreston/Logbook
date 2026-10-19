@@ -5126,6 +5126,7 @@ return [
         'fill_from_file' => 'Aus einer Datei ausfüllen',
         'where' => [
             'rules' => 'Ohne KI auf diesem Server gelesen (Texterkennung und Regeln). Die Datei verlässt ihn nicht. Prüfe vor dem Speichern jedes Feld.',
+            'rules_paddleocr' => 'Ohne KI gelesen: dein Texterkennungsdienst liest Fotos und gescannte PDFs, dann Regeln auf diesem Server. Nichts geht an ein KI-Modell. Prüfe vor dem Speichern jedes Feld.',
             'rules_text' => 'PDFs mit Text werden ohne KI auf diesem Server gelesen. Die Datei verlässt ihn nicht. Prüfe vor dem Speichern jedes Feld.',
             'server' => 'Gelesen von {connection} auf diesem Server. Die Datei verlässt ihn nicht.',
             'network' => 'Gelesen von {connection} in deinem Netzwerk. Die Datei verlässt es nicht.',
@@ -5182,6 +5183,7 @@ return [
         'from_file' => 'Aus der Datei, bitte prüfen',
         'evidence_label' => 'Aus der Datei:',
         'notice' => [
+            'read_by_rules_paddleocr' => 'Ohne KI gelesen, vom Texterkennungsdienst und mit Regeln. Prüfe vor dem Speichern jedes Feld.',
             'read_by_rules' => 'Ohne KI auf diesem Server gelesen. Prüfe vor dem Speichern jedes Feld.',
             'read_by' => 'Gelesen von {model} auf {connection}.',
             'read_by_tesseract' => 'Auf diesem Server gelesen (Texterkennung), dann von {model} auf {connection}.',

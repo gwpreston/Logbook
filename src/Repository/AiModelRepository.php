@@ -6,6 +6,7 @@ namespace Logbook\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Logbook\Support\Cache\RequestReads;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Logbook\Domain\Ai\AiModel;
@@ -22,11 +23,22 @@ final readonly class AiModelRepository
 {
     private const string TABLE = 'ai_models';
 
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private RequestReads $reads,
+    ) {
     }
 
+    /**
+     * During a page request a model is read once, however often the AI
+     * status asks for it (K118).
+     */
     public function find(int $id): ?AiModel
+    {
+        return $this->reads->remember(self::TABLE, $id, fn (): ?AiModel => $this->findOne($id));
+    }
+
+    private function findOne(int $id): ?AiModel
     {
         $row = $this->select()
             ->where('id = :id')

@@ -15,8 +15,9 @@ use Logbook\Support\Number\Decimal;
  * line with a total word, or printed with its currency). The volume, price
  * and total whose sum agrees by *The money adds up*'s own rule (FuelSum)
  * win; with none, or two that disagree, only the total is filled (the
- * largest amount on a total line), and the volume and price are left for
- * the owner. A wrong agreeing set is never filled.
+ * largest amount on a total line, and only when OCR read that amount
+ * clearly, #525), and the volume and price are left for the owner. A
+ * wrong agreeing set is never filled.
  */
 final readonly class FuelReceiptRules
 {
@@ -50,9 +51,10 @@ final readonly class FuelReceiptRules
      *
      * @param list<string> $rows
      * @param \Closure(string): bool $knownStation whether a name is one of the install's stations
+     * @param \Closure(string): bool $clear whether an amount was read clearly (#525)
      * @return array<string, array{value: string, evidence: string}>
      */
-    public function read(array $rows, string $locale, \Closure $knownStation): array
+    public function read(array $rows, string $locale, \Closure $knownStation, \Closure $clear): array
     {
         $fields = [];
         foreach ($rows as $row) {
@@ -75,7 +77,11 @@ final readonly class FuelReceiptRules
             $fields['price_per_unit'] = self::field($set['price']['printed'], $set['price']['row']);
             $total = $set['total'];
         } else {
+            // A total no set agrees with is filled only when read clearly: OCR's 0 read as 6 adds up to nothing.
             $total = $set['total'] ?? $this->largestTotal($rows, $locale);
+            if ($set === null && $total !== null && !$clear($total['printed'])) {
+                $total = null;
+            }
         }
         if ($total !== null) {
             $fields['total'] = self::field($total['printed'], $total['row']);

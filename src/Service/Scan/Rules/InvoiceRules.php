@@ -23,9 +23,10 @@ final readonly class InvoiceRules
     /**
      * @param list<string> $rows
      * @param list<string> $plates the registrations of the vehicles the user can log to
+     * @param \Closure(string): bool $clear whether an amount was read clearly (#525)
      * @return array{fields: array<string, array{value: string, evidence: string}>, lines: array<string, list<string>>}
      */
-    public function read(array $rows, string $locale, array $plates): array
+    public function read(array $rows, string $locale, array $plates, \Closure $clear): array
     {
         $fields = [];
         $date = $this->date($rows, $locale);
@@ -33,7 +34,8 @@ final readonly class InvoiceRules
             $fields['date'] = $date;
         }
         $total = $this->total($rows, $locale);
-        if ($total !== null) {
+        // Nothing checks an invoice's total, so only one read clearly is filled (#525).
+        if ($total !== null && $clear($total['value'])) {
             $fields['total'] = $total;
             $currency = RuleText::currency($total['evidence']);
             if ($currency !== null) {

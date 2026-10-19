@@ -29,7 +29,7 @@
             {# Phase 53.4 (§7.27 *Reading without AI*): nothing leaves the server. #}
             <p class="ask-where" data-scan-rules>
                 {{ ai.location(this_server) }}
-                <span>{{ 'scan.where.rules'|trans }}</span>
+                <span>{{ (rules_engine == 'paddleocr' ? 'scan.where.rules_paddleocr' : 'scan.where.rules')|trans }}</span>
             </p>
         {% elseif connection %}
             <p class="ask-where">

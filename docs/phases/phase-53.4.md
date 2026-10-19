@@ -142,17 +142,28 @@ Added to §7.27 in 53.4.0:
 
 ---
 
+- **I. How short may an OCR'd photo be for rules?** (found while
+  building: 53.2's 30-word minimum left every photo fixture empty, and
+  without it a misread lone total, `66,28` for 60.28, was filled)
+  *Decided 2026-10-19 (#525): (1).*
+  - (1) No 30-word minimum for rules (OCR's confidence floor of 40
+    only), and a total no sum checks (a fuel receipt's with no agreeing
+    set, an invoice's) is filled only when the amount itself reads at a
+    confidence of at least 90.
+  - (2) No minimum, a lone total always filled.
+  - (3) Keep the 30-word minimum.
+
 ## Eval results (2026-10-19)
 
 **`bin/ai-eval.php --scans --via=rules`**, Tesseract 5.5.0 (deu+eng) in
-the dev Docker image, GD, the `demo` user (en_GB). *Fields ok* counts
-every field a model would fill, so the rules' partial reading scores low
-by design.
+the dev Docker image, GD, the `demo` user (en_GB), after #525. *Fields
+ok* counts every field a model would fill, so the rules' partial reading
+scores low by design.
 
 | Kind (files) | Kind ok | Fields ok |
 |---|---|---|
-| service_invoice (8) | 7 | 43% |
-| fuel_receipt (4) | 4 | 53% |
+| service_invoice (8) | 7 | 41% |
+| fuel_receipt (4) | 4 | 50% |
 | inspection (3) | 3 | 17% |
 | insurance (3) | 3 | 11% |
 | registration (2) | 2 | 10% |
@@ -160,13 +171,18 @@ by design.
 | claim_letter (2) | 2 | 12% |
 | repair_estimate (1) | 0 | 25% |
 
-- **No wrong agreeing set** on any fixture. The two text-PDF receipts
-  (07, 09) fill volume, price, total and date exactly. On the two
-  synthetic photos (06, 08) Tesseract reads 0 as 6 or 8 and `.` as `,`
-  (`TOTAL GBP 66,28`, `14/16/2026 68:42`), so no set adds up: volume and
-  price are left for the owner, and the misread total is filled, marked
-  for checking, as the rule says. The owner's real receipts (#496) are
-  the better test.
+- **No wrong value** in a volume, price or total on any fixture, and no
+  wrong agreeing set. The two text-PDF receipts (07, 09) fill volume,
+  price, total and date exactly; the text-PDF invoices their date and
+  total.
+- On the synthetic photos Tesseract reads 0 as 6 or 8 and `.` as `,`
+  (`TOTAL GBP 66,28`, `14/16/2026 68:42`), so no set adds up. Before
+  #525 the misread totals (`66,28`, `129,88`, `245,68`, `25,68`,
+  `32,68`) were filled; now a total no sum checks needs a confidence of
+  at least 90, and all of them are left for the owner, with one right
+  total (08's `57.56`, read at under 90) left too. Before the 30-word
+  minimum was dropped for rules (#525), every photo fixture gave an
+  empty form. The owner's real receipts (#496) are the better test.
 - The German invoice (20) is *other* for an English user: the German
   keywords are read only under `de` (with English always). Under `de` it
   is an invoice (`RuleReaderTest`).
@@ -174,8 +190,6 @@ by design.
   `ESTIHATE` and `Estinate`, so no estimate word is found, and `Reg` and
   `repair` count for an invoice. *Read it as* puts it right.
 - No registration reference in any output.
-- Before the change to *Too little text* for rules (a confidence floor
-  only), every photo fixture failed the 30-word minimum.
 
 ## Acceptance criteria
 
@@ -192,6 +206,8 @@ by design.
 Decided by the owner on 2026-10-19 and logged as #517–#524 in
 `open-questions.md`, before it was built: A–D as the phase file
 recommended, and E–H, found while starting it, also the recommendation.
+I (#525) was found while building it and decided the same day, the
+recommendation.
 
 - **A. Which module switches it?** *Decided 2026-10-19 (#517): (1).
   `ai_scan` becomes `scan` ("Reading files"), listed on Settings →

@@ -66,8 +66,9 @@ No migration.
 - An OCR run abandoned when a vision request failed is stopped before its
   temporary directory is removed, so its text is never left behind
   (K116).
-- The Scan page works out how photos are read once, not four times
-  (K118), and OCR text no longer builds its layout twice (K119).
+- The Scan page works out how photos are read once, and reads each AI
+  model and connection once per page: 11 queries instead of 26 (K118).
+  OCR text no longer builds its layout twice (K119).
 - A fill-up from a scan whose station name was left empty opens *Station
   and notes*, so the reason is visible (K90).
 - The Scan page's text-recognition line wraps beside its icon (K95).

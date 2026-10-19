@@ -29,6 +29,9 @@ use Logbook\Service\Station\StationService;
  */
 final readonly class RuleReader
 {
+    /** The confidence an amount no sum checks needs before it is filled (#525). */
+    private const float CLEAR = 90.0;
+
     public function __construct(
         private OcrReader $ocr,
         private Classifier $classifier,
@@ -49,8 +52,8 @@ final readonly class RuleReader
             return ScanProblem::fromOcr($read->problem);
         }
         $text = OcrText::of($read);
-        // Only OCR's confidence floor: the 30-word minimum keeps short text from a model, and rules
-        // fill only labelled values that agree, so a short receipt is still read.
+        // Only OCR's confidence floor (#525): the 30-word minimum keeps short text from a model, and rules
+        // fill only labelled values, a lone amount only when read clearly, so a short receipt is still read.
         if ($text->wordCount === 0 || $text->meanConfidence < OcrText::MIN_MEAN_CONFIDENCE) {
             return ScanProblem::TooLittleText;
         }
@@ -86,7 +89,10 @@ final readonly class RuleReader
             $this->vehicles->candidates($user),
         )));
         $dated = self::dateOnly($rows, $locale);
-        $invoice = $this->invoice->read($rows, $locale, $plates);
+        // #525: an amount nothing checks is filled only when OCR read it clearly; a PDF's text always is.
+        $clear = static fn (string $amount): bool => !$text instanceof OcrText
+            || ($text->find($amount) ?? 0.0) >= self::CLEAR;
+        $invoice = $this->invoice->read($rows, $locale, $plates, $clear);
         $registration = InvoiceRules::registration($rows, $plates);
         $knownStation = fn (string $name): bool => $this->stations->enabled()
             && $this->stations->existing(StationName::tidy($name)) !== null;
@@ -94,7 +100,7 @@ final readonly class RuleReader
         $readings = [];
         foreach (ScanKind::cases() as $each) {
             $object = match ($each) {
-                ScanKind::FuelReceipt => ['fields' => $this->fuel->read($rows, $locale, $knownStation)],
+                ScanKind::FuelReceipt => ['fields' => $this->fuel->read($rows, $locale, $knownStation, $clear)],
                 ScanKind::ServiceInvoice => $invoice,
                 ScanKind::Registration => ['fields' => $registration === null ? [] : ['registration' => $registration]],
                 // An insurance document's first date is when its cover starts.

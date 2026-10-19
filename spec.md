@@ -7846,7 +7846,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   with the usual message). OCR's failures give the same lines as on the
   OCR route; *Too little text* is only a mean confidence under 40 (or no
   words): the 30-word minimum keeps short text from a model, and rules
-  fill only labelled values, so a short receipt is still read.
+  fill only labelled values, so a short receipt is still read (decided
+  2026-10-19, `docs/phases/open-questions.md` #525).
   - **The same output as a model:** per kind the schema's fields as
     `{value, evidence}`, values as printed, the evidence being the line
     the value came from (after the 11-digit scrub, *Preparing the
@@ -7882,11 +7883,15 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
       line with a VAT, change, discount, points or subtotal word);
     - the set whose volume × price agrees with the total by *The money
       adds up*'s own rule (within 1p plus the printed rounding, in
-      `brick/math`) wins. With no agreeing set, or two that disagree,
+      `brick/math`) wins. With two agreeing sets that disagree, only
+      their total is filled when they share it. With no agreeing set,
       only the total is filled (the largest amount on a total line), and
-      the volume and price are left for the owner. A wrong agreeing set
-      is never filled: only labelled numbers are candidates, and each
-      number is read in the user's locale as the Mapper reads it;
+      only when OCR read that amount with a confidence of at least 90
+      (#525: a faded 0 read as 6 adds up to nothing, and was read less
+      surely); otherwise it too is left. The volume and price are then
+      left for the owner. A wrong agreeing set is never filled: only
+      labelled numbers are candidates, and each number is read in the
+      user's locale as the Mapper reads it;
     - the date and time from the first line holding a date (the locale's
       order, with the usual "Check the date" warning);
     - the grade: the first grade word (`scan.keywords.grade`: unleaded,
@@ -7900,7 +7905,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - **Service invoice** (partial): the date (the first line with a date
     word, else the first date); the total (the largest amount on a line
     with `TOTAL`, `BALANCE DUE` or `AMOUNT DUE`, never a subtotal or VAT
-    line); the registration (a vehicle the user can log to whose
+    line, when OCR read it with a confidence of at least 90, #525); the
+    registration (a vehicle the user can log to whose
     registration appears in the text, else the UK plate pattern
     `AB12 CDE`), matched to a vehicle as today; the odometer (a number
     on a line with `MILEAGE`, `ODO`, `ODOMETER` or `MILES`, the unit
@@ -7922,7 +7928,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     server. Check every field before saving." Each field read is marked
     "Read without AI, check" in place of "From the file, check". The
     Scan page says *This server* for where the file goes, as for a local
-    model.
+    model; with PaddleOCR, that the text recognition service reads
+    photos and rules read its text, and nothing goes to an AI model
+    ("Read without AI, by the text recognition service and rules" on
+    the form).
   - **Not in scope:** learning a station's layout from corrections
     (parked, §12, #520); falling back to rules when a model's read fails
     (parked, §12, #523); rules for languages other than the shipped
@@ -11939,7 +11948,7 @@ task breakdowns live in the per-phase files; this is the map.
   agree, with date, grade and station; service invoices' date, total,
   registration, mileage, vendor and work lines; a V5C's registration;
   other kinds the date only. The `ai_scan` module becomes `scan`
-  (§7.10, §7.27, §12; #517–#524). K116, K118–K120. See
+  (§7.10, §7.27, §12; #517–#525). K116, K118–K120. See
   [`phase-53.4.md`](docs/phases/phase-53.4.md).
 - **Phase 53.5 — API edges and narrow-screen fixes from the
   known-issues log + patch release** (planned). Retrying `POST

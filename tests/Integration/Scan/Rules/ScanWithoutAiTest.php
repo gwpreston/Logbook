@@ -98,6 +98,28 @@ final class ScanWithoutAiTest extends ScanTestCase
         self::assertStringNotContainsString('but the total reads', $text, 'the figures add up');
     }
 
+    public function testALoneTotalIsFilledOnlyWhenReadClearly(): void
+    {
+        // #525: OCR reads 60.28 as 66,28, so nothing adds up; the total itself reads at 74.
+        $receipt = ['SHORELINE FUELS', '14/10/2026 08:42', 'Pump 3 UNLEADED', '42,18 L @ 142.9p/L', 'TOTAL GBP 66,28'];
+        file_put_contents($this->tsv, OcrTsv::lines($receipt, 95.0, ['66,28' => 74.0]));
+        $this->scanApp(['TESSERACT_BINARY' => self::FAKE, 'AI_ENABLED' => 'false']);
+        $golf = ['vehicle_id' => (string) $this->garage['Golf']->id];
+
+        [$form] = $this->land($this->scan(ExifJpeg::make(40, 20), 'receipt.jpg', 'image/jpeg', $golf));
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        self::assertSame('', $values['total'] ?? '', 'left for the owner');
+        self::assertSame('', $values['volume'] ?? '');
+        self::assertSame('2026-10-14T08:42', $values['filled_at'], 'a short receipt is still read');
+
+        // Read clearly, the same lone total is filled.
+        file_put_contents($this->tsv, OcrTsv::lines($receipt, 95.0));
+        [$form] = $this->land($this->scan(ExifJpeg::make(40, 20), 'receipt.jpg', 'image/jpeg', $golf));
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        self::assertSame('66.28', $values['total']);
+        self::assertSame('', $values['volume'] ?? '', 'still no set adds up');
+    }
+
     public function testWithNoAiAtAllScanShowsWhenOcrWorks(): void
     {
         $this->scanApp(['TESSERACT_BINARY' => self::FAKE, 'AI_ENABLED' => 'false']);
@@ -158,6 +180,37 @@ final class ScanWithoutAiTest extends ScanTestCase
         self::assertSame("Full service\nOil and filter change", $values['description']);
         self::assertSame('', $values['title'] ?? '', 'the title is left for the owner');
         self::assertStringContainsString('Copied from the invoice, tidy as needed.', html_entity_decode($html));
+    }
+
+    public function testATextPdfOfAUserWithAiOffNeverReachesAModel(): void
+    {
+        // Models assigned for both tasks, OCR off: only the user's own switch keeps the file here.
+        $this->scanApp();
+        $this->service($this->app, AiPreferences::class)->set($this->owner->id, false);
+
+        $pdf = ScanFiles::textPdf([
+            'Kestrel Autos, Unit 4, Mill Lane, Totnes',
+            'Invoice 88   Date 22/08/2026',
+            'Reg AB12 CDE   Odometer 47,610',
+            'Interim service',
+            'Total GBP 129.00',
+            'Terms: payment is due on collection. Parts carry the manufacturer warranty.',
+            'Labour is warranted for 12 months or 12,000 miles, whichever comes first.',
+        ]);
+        $response = $this->scan($pdf, 'invoice.pdf', 'application/pdf');
+
+        self::assertSame(404, $response->getStatusCode(), 'no model reads for them and OCR is off: Scan is hidden');
+        self::assertSame([], $this->provider->requests);
+
+        // With OCR working, Scan opens to them, and their text PDF is read by rules.
+        $this->scanApp(['TESSERACT_BINARY' => self::FAKE]);
+        $this->service($this->app, AiPreferences::class)->set($this->owner->id, false);
+        [$form] = $this->land($this->scan($pdf, 'invoice.pdf', 'application/pdf'));
+
+        self::assertSame([], $this->provider->requests, 'no request to any connection');
+        $logged = $this->connection($this->app)->fetchAllAssociative('SELECT outcome FROM ai_requests');
+        self::assertSame([], $logged, 'no usage-log row');
+        self::assertStringContainsString('Read without AI on this server.', html_entity_decode(self::body($form)));
     }
 
     public function testReadItAsMapsThatKindsOwnReading(): void

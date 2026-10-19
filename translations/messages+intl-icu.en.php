@@ -5132,6 +5132,7 @@ return [
         'where' => [
             // Phase 53.4 (spec.md §7.27 *Reading without AI*): no model reads for this user.
             'rules' => 'Read without AI on this server (text recognition and rules). The file doesn’t leave it. Check every field before saving.',
+            'rules_paddleocr' => 'Read without AI: your text recognition service reads photos and scanned PDFs, then rules on this server. Nothing goes to an AI model. Check every field before saving.',
             'rules_text' => 'PDFs with text are read without AI on this server. The file doesn’t leave it. Check every field before saving.',
             'server' => 'Read by {connection} on this server. The file doesn’t leave it.',
             'network' => 'Read by {connection} on your network. The file doesn’t leave it.',
@@ -5188,6 +5189,7 @@ return [
         'from_file' => 'From the file, check',
         'evidence_label' => 'From the file:',
         'notice' => [
+            'read_by_rules_paddleocr' => 'Read without AI, by the text recognition service and rules. Check every field before saving.',
             'read_by_rules' => 'Read without AI on this server. Check every field before saving.',
             'read_by' => 'Read by {model} on {connection}.',
             'read_by_tesseract' => 'Read on this server (text recognition), then by {model} on {connection}.',
