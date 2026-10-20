@@ -7643,7 +7643,12 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   A JSON-mode fallback (`json_object`, §7.25) is used for models without
   schema output.
 - **Schemas** (all fields optional; each value is `{value, evidence}`,
-  evidence up to 120 characters; lines are lists of strings):
+  evidence up to 120 characters; lines are lists of strings). A field
+  given is null or carries both keys (either may be null): the JSON
+  schema requires them, so a server that holds the model to the schema
+  (LM Studio, llama.cpp) can't answer `{}` for a field (decided
+  2026-10-20, `docs/phases/open-questions.md` #534, K130). An answer
+  missing one is still read:
   - *Service or repair invoice:* date, registration, make and model,
     odometer and unit, vendor, work performed (lines), parts (lines),
     labour total, parts total, VAT amount and rate, total, currency,

@@ -44,6 +44,10 @@ restart.
   again (#532, K107).
 
 ### Fixed
+- **Scanning with a local model in LM Studio** (or llama.cpp) no longer
+  opens a nearly empty form: the answer's format lets a field be left
+  out but no longer be an empty `{}`, which such servers allowed a model
+  to give for every field (#534, K130).
 - A V5C photo on a connection Settings last saw on your network, whose
   address is on the internet again, is treated as going to the internet:
   OCR first, and text only (#530, K112).

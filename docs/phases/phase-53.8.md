@@ -124,6 +124,10 @@ file*, *Reading through OCR*, *Checking values*), the
       connections.
 - [x] K80: an inherited MediaBox and `/UserUnit` read.
 
+- [x] K130 (#534): each scan field in the JSON schema requires `value`
+      and `evidence`, so LM Studio's constrained output no longer lets a
+      model answer `{}` for every field (`ScanSchemaTest`).
+
 ### 53.8.5 K105, after #515
 - [ ] OCR's preparation runs alongside the vision request (and a scanned
       PDF's later pages before the answer), as far as #515's choice of
@@ -187,6 +191,20 @@ on 2026-10-20 (#529–#532), all the recommendation:
   - (3) Decide after the owner's `--crosscheck` run.
   - (4) Keep #508's rule (29 false flags, 39 of 41 caught).
 
+- **#534. The owner's first eval runs read almost nothing: the scan
+  schema lets a field be `{}`, and LM Studio holds gemma-4-e4b to it.
+  Fix it here?** (found while running the evals) *Decided 2026-10-20:
+  (1).*
+  - (1) Fix in 53.8: each field requires `value` and `evidence`.
+  - (2) Log it and fix it later.
+- **#535. How are usable eval numbers got for #515 (and to confirm
+  #533)?** (found while running the evals) *Decided 2026-10-20: (1). The
+  owner re-runs both evals after #534, with a stronger vision model on
+  `read_document` if one is loaded; the PR waits for them.*
+  - (1) Re-run after the fix, with a bigger model.
+  - (2) Re-run after the fix, with the same gemma.
+  - (3) Carry the evals again; #515 stays (1) and K105 is carried.
+
 ## Eval results (2026-10-20)
 
 **#514 on the fixtures.** Each photo and scanned PDF in
@@ -214,3 +232,12 @@ flags and 26 of 41 caught; 70, 10 and 16; 75, 3 and 7; 80, 2 and 5; 85,
 OCR reads their right and wrong digits alike; a value invented on a row
 OCR read at 90 or more is still flagged (`OcrTextTest`,
 `ScanCrossCheckTest`). Decided as #533.
+
+**The owner's first runs (LM Studio, gemma-4-e4b on `read_document`
+and, through `ask`, on text).** Not usable: fields right 0-20% per kind
+on both routes, text PDFs included (fixture 01: 0 of 12), so the
+cross-check had nothing to mark (0 flags). About 70 tokens came back per
+request: the model answered `"fields": {"date": {}}`, which the schema
+allowed (#534, K130). With `value` and `evidence` required, fixture 01
+sent straight to LM Studio came back with its date and total and their
+evidence. Re-run after the fix (#535).

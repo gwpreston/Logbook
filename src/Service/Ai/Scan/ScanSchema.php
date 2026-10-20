@@ -73,6 +73,9 @@ final class ScanSchema
                 'value' => ['type' => ['string', 'number', 'null'], 'maxLength' => self::MAX_TEXT],
                 'evidence' => ['type' => ['string', 'null'], 'maxLength' => self::MAX_TEXT],
             ],
+            // A field is null or carries both: a server holding the model to the schema (LM Studio,
+            // llama.cpp) otherwise lets it answer `{}` for every field (Phase 53.8, #534).
+            'required' => ['value', 'evidence'],
             'additionalProperties' => false,
         ];
         $fields = [];
