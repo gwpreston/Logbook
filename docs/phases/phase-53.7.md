@@ -5,8 +5,8 @@ title no longer announces its parts as changed, a modification's ETag
 follows what its body shows, an MCP tool call checks only the tool it
 runs, and decimal arithmetic stays exact past a PHP int.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.6's release, a patch release
+Status: ✅ complete · releases **v3.18.3**, a patch release after Phase
+53.6's (#506) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.6](phase-53.6.md). Like 52.1,
 52.2, 53.5 and 53.6, it takes a few small open rows, the four that 53.6
@@ -177,16 +177,19 @@ tagged.
 
 ### 53.7.2 Finish
 
-- [ ] Known-issues rows K24, K25, K62 and K69 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status; `docs/api.md` if it
+- [x] Known-issues rows K24, K25, K62 and K69 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status; `docs/api.md` if it
       describes the modification `ETag` (#507; spec §7.20 already
-      says it).
+      says it). *Done:* `docs/api.md`'s modification read row now
+      names the parts' names and says a part's other fields leave the
+      tag alone.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.6's
-      release (#506).
+- [x] `VERSION` 3.18.3, CHANGELOG 3.18.3, README status: the patch
+      after 53.6's release (#506).
+- [ ] Tag `v3.18.3` once merged.
 
 ## Acceptance criteria
 
