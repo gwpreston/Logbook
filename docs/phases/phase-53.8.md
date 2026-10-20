@@ -101,7 +101,7 @@ file*, *Reading through OCR*, *Checking values*), the
       JS off).
 
 ### 53.8.4 Known issues
-- [ ] K111: a wrapped reference with a label or date in its run, or a
+- [x] K111: a wrapped reference with a label or date in its run, or a
       date after it, removed on V5C-like text.
 - [x] K113: the value's own digits only; letters never folded on the
       value's side.

@@ -152,6 +152,52 @@ final class OcrTextTest extends TestCase
         self::assertStringContainsString('Make FORD', $text);
     }
 
+    /**
+     * @return array<string, array{list<list<array{string, int}>>, string}>
+     */
+    public static function wrappedBesideOtherWords(): array
+    {
+        // K111: a label or a date in the reference's run of words, or a date after its wrapped part.
+        return [
+            'a label before it' => [
+                [[['Document', 10], ['reference', 145], ['1234', 295], ['5678', 370]], [['901', 295]]],
+                'Document reference',
+            ],
+            'a date before it' => [
+                [[['Issued', 10], ['01/03/2018', 115], ['1234', 295], ['5678', 370]], [['901', 295]]],
+                'Issued 01/03/2018',
+            ],
+            'a date after it' => [[[['1234', 10], ['5678', 85]], [['901', 10], ['14/10/2026', 70]]], '14/10/2026'],
+        ];
+    }
+
+    /**
+     * @param list<list<array{string, int}>> $rows
+     */
+    #[DataProvider('wrappedBesideOtherWords')]
+    public function testAReferenceWrappedBesideALabelOrDateIsRemoved(array $rows, string $kept): void
+    {
+        $lines = [new OcrLine([new OcrWord('V5C', 95.0, new OcrBox(10, 10, 45, 20))])];
+        foreach ($rows as $r => $words) {
+            $line = [];
+            foreach ($words as [$t, $x]) {
+                $line[] = new OcrWord($t, 95.0, new OcrBox($x, 40 + 30 * $r, 15 * mb_strlen($t), 20));
+            }
+            assert($line !== []);
+            $lines[] = new OcrLine($line);
+        }
+        $lines[] = new OcrLine([
+            new OcrWord('Make', 95.0, new OcrBox(10, 200, 60, 20)),
+            new OcrWord('FORD', 95.0, new OcrBox(85, 200, 60, 20)),
+        ]);
+
+        $text = OcrText::of(OcrResult::read($lines, 'eng', 'tesseract 5.3.0'))->text;
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
+        self::assertStringContainsString($kept, $text);
+        self::assertStringContainsString('Make FORD', $text);
+    }
+
     public function testNumbersInOtherColumnsOfARowAreKept(): void
     {
         // K88, #501: joined only across a short gap.

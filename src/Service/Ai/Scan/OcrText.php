@@ -212,26 +212,36 @@ final readonly class OcrText
             $pieces[] = $piece;
 
             $first = $pieces[0];
-            [$head, $headDigits] = self::digitGroups($first, false);
             $carried = null;
             $sameColumn = $open !== null && abs($first[0]->box->left - $open['left']) / $charWidth <= self::SHORT_GAP;
-            if ($wide && $open !== null && $head !== [] && $sameColumn) {
-                $digits = $open['digits'] + $headDigits;
+            if ($wide && $open !== null && $sameColumn) {
+                // The groups starting this row that complete the open run's 11 digits, so a date after them
+                // (`901 14/10/2026`) neither hides the wrap nor goes with it (K111).
+                [$head, $headDigits, $whole] = self::digitGroups($first, false, 11 - $open['digits']);
                 $joined = [...$open['words'], ...$head];
-                if ($digits === 11) {
+                if ($head !== [] && $open['digits'] + $headDigits === 11) {
                     $stretches[] = $joined;
-                } elseif ($digits < 11 && count($pieces) === 1 && count($head) === count($first)) {
+                    // The rest of the row is read on its own: `14/10/2026` isn't 11 digits with `901` gone.
+                    $pieces[0] = array_slice($first, count($head));
+                } elseif ($head !== [] && $whole && count($pieces) === 1 && count($head) === count($first)) {
                     // A row of digit groups only: the run may go on below.
-                    $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $digits];
+                    $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $open['digits'] + $headDigits];
                 }
             }
+            $pieces = array_values(array_filter($pieces, static fn (array $p): bool => $p !== []));
             array_push($stretches, ...$pieces);
+            if ($pieces === []) {
+                $open = $carried;
+                continue;
+            }
 
             $last = $pieces[count($pieces) - 1];
-            [$tail, $tailDigits] = self::digitGroups($last, true);
+            // The groups ending this row, up to 10 digits, so a label or date before them (`Issued 01/03/2018
+            // 1234 5678`) doesn't stop a wrap below (K111); none when the row already ends with all 11.
+            [$tail, $tailDigits, $complete] = self::digitGroups($last, true, 10);
             // The run's column is where its first digit group starts, not the piece's first word: a label
             // beside the groups (`Document reference number 1234 5678`) mustn't hide a wrap below them.
-            $open = $carried ?? ($tail === [] || $tailDigits >= 11
+            $open = $carried ?? ($tail === [] || $complete
                 ? null
                 : ['words' => $tail, 'left' => $tail[0]->box->left, 'digits' => $tailDigits]);
         }
@@ -240,27 +250,44 @@ final readonly class OcrText
     }
 
     /**
-     * The words of digit groups at the end (or start) of a piece, and how
-     * many digits they hold.
+     * The words of digit groups at the end (or start) of a piece, as many
+     * as hold at most $limit digits together, and how many digits they
+     * hold. The third value: from the end, whether the groups there make
+     * exactly 11 digits (a whole reference on the row); from the start,
+     * whether the groups taken are all the piece's digit groups.
      *
      * @param non-empty-list<OcrWord> $piece
-     * @return array{list<OcrWord>, int}
+     * @return array{list<OcrWord>, int, bool}
      */
-    private static function digitGroups(array $piece, bool $fromEnd): array
+    private static function digitGroups(array $piece, bool $fromEnd, int $limit): array
     {
         $words = $fromEnd ? array_reverse($piece) : $piece;
         $found = [];
         $digits = 0;
+        $sum = 0;
+        $eleven = false;
+        $whole = true;
         foreach ($words as $word) {
             $count = Scrubber::digitsIn($word->text);
             if ($count === null) {
                 break;
             }
-            $found[] = $word;
-            $digits += $count;
+            $sum += $count;
+            $eleven = $eleven || $sum === 11;
+            if ($digits + $count > $limit) {
+                $whole = false;
+                if (!$fromEnd) {
+                    break;
+                }
+                continue;
+            }
+            if ($whole) {
+                $found[] = $word;
+                $digits += $count;
+            }
         }
 
-        return [$fromEnd ? array_reverse($found) : $found, $digits];
+        return [$fromEnd ? array_reverse($found) : $found, $digits, $fromEnd ? $eleven : $whole];
     }
 
     /**
