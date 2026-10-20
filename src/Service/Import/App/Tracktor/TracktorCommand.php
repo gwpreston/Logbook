@@ -17,6 +17,7 @@ use Logbook\Service\Import\App\AppFiles;
 use Logbook\Service\Import\App\AppRowStatus;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Import\App\ArchiveRefused;
+use Logbook\Service\Import\App\ImportAppCommand;
 use Logbook\Service\Vehicle\VehicleService;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -147,20 +148,19 @@ final readonly class TracktorCommand
 
                 return 0;
             }
-            if ($preview->total(AppRowStatus::Import) === 0) {
+            // Rows with problems stop the run even when nothing else is left
+            // to import (K126).
+            $total = $preview->total(AppRowStatus::Import);
+            $invalid = $preview->total(AppRowStatus::Invalid);
+            if ($invalid > 0 && !$skipInvalid) {
+                fwrite($err, ImportAppCommand::invalidRows($invalid, $total));
+
+                return 1;
+            }
+            if ($total === 0) {
                 fwrite($out, $this->translator->trans('import_app.error.nothing') . "\n");
 
                 return 0;
-            }
-            $invalid = $preview->total(AppRowStatus::Invalid);
-            if ($invalid > 0 && !$skipInvalid) {
-                fwrite($err, sprintf(
-                    "%d row(s) have problems (listed above), so nothing was written: fix them,"
-                    . " or run again with --skip-invalid to import the other rows.\n",
-                    $invalid,
-                ));
-
-                return 1;
             }
 
             $done = $this->importer->import($user, $preview, $files);

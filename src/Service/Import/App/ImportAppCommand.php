@@ -49,6 +49,18 @@ final readonly class ImportAppCommand
     }
 
     /**
+     * Why a run with rows that have problems stopped (K11, K65, K126),
+     * naming --skip-invalid only when it would import something.
+     */
+    public static function invalidRows(int $invalid, int $importable): string
+    {
+        return sprintf("%d row(s) have problems (listed above), so nothing was written: ", $invalid)
+            . ($importable > 0
+                ? "fix them, or run again with --skip-invalid to import the other rows.\n"
+                : "fix them; no other rows are left to import.\n");
+    }
+
+    /**
      * A JSON object, by its first bytes (a byte-order mark and spaces
      * allowed).
      */

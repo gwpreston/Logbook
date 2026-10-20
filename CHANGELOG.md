@@ -26,6 +26,14 @@ pull and restart.
   `--skip-invalid` is given, as the Fuelio command line and the web
   page do. Each problem names the export's field (`date`), not
   Logbook's (`filled_at`) (K65).
+- **A damaged UTF-16 CSV** (cut off, so it ends in half a character) is
+  refused as not a CSV, instead of importing with a stray `?` in its
+  last cell, or failing with an error page on an install without the
+  mbstring extension (K125).
+- **`php bin/import-app.php`** (Fuelio and Tracktor) now exits 1 when
+  rows have problems even if nothing else is left to import, for example
+  when it is run again after `--skip-invalid`. It used to say "Nothing to
+  import" and exit 0 (K126).
 
 ## [3.18.1] — 2026-10-19
 

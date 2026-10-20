@@ -4323,7 +4323,8 @@ vehicles; a disabled module cannot be imported).
   message when a file is larger, and 5,000 rows). A file that is plainly
   not text — a known binary format (ZIP, such as a Fuelio backup or an
   `.xlsx`; old `.xls`; PDF; images; gzip, 7z, RAR; SQLite), or NUL bytes
-  in its first 8 KB without a UTF-16 byte-order mark — is refused with
+  in its first 8 KB without a UTF-16 byte-order mark, or UTF-16 that
+  isn't whole, such as a cut-off file (K125) — is refused with
   "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
   then upload that." (K61). The
   file is staged under `var/cache/staged` with a random name bound to the
@@ -4590,7 +4591,8 @@ a reader). Logbook isn't affiliated with Fuelio.
     detected and default mappings, prints the preview, and writes only
     without `--dry-run`. As on the web page, rows with problems stop the
     import (exit code 1, nothing written) unless `--skip-invalid` says to
-    import the others, and a row's problems name the file's columns
+    import the others, even when no other rows are left to import (K126),
+    and a row's problems name the file's columns
     (`Data`, `Odo`, `CostTitle`), not Logbook's fields (K11). For
     a ZIP with several vehicles, `--vehicle` is refused and each vehicle is
     created or matched as the mapping page would prefill it.

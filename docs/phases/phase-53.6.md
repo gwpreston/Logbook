@@ -116,13 +116,23 @@ release is tagged (the owner, 2026-10-20); 53.6's own release follows
       the problem line names the Tracktor field. The usage lines in
       `ImportAppCommand` and `bin/import-app.php` list the flag.
 
+- [x] From the merge review at `dd83b684` (owner's choice, 2026-10-20):
+      a UTF-16 file that doesn't convert back to the same bytes (cut
+      off, a lone surrogate) is refused as not a CSV, so no stray `?`
+      and no TypeError under the mbstring polyfill (K125); both
+      command-line importers check rows with problems before "nothing to
+      import", so such a run exits 1 (K126). `ImportReadingTest`,
+      `TracktorCommandTest`, `FuelioCommandTest`.
+
 ### 53.6.2 Finish
 
 - [x] Known-issues rows K2, K10 and K65 *Fixed*.
 - [x] CHANGELOG; spec §7.13; ROADMAP status; `docs/import.md` (UTF-16,
       header volume units) and `docs/import-tracktor.md`
       (`--skip-invalid`).
-- [ ] Merge review, then merge.
+- [ ] Merge review, then merge. Review at `dd83b684`: MERGE; its
+      follow-ups recorded as K123–K129 (issue sweep), of which K125 and
+      K126 are fixed above.
 
 ### Release
 

@@ -141,6 +141,14 @@ final class TracktorCommandTest extends AppTestCase
             $vehicles = $this->ownedVehicles($app, $owner->id);
             self::assertCount(1, $vehicles);
             self::assertCount(2, $this->service($app, FuelEntryRepository::class)->listForVehicle($vehicles[0]->id));
+
+            // K126: run again, only the bad row is left: it still stops the run.
+            [$code, $out, $err] = $this->command($app, [$path]);
+            self::assertSame(1, $code, $out . $err);
+            self::assertStringContainsString('no other rows are left to import', $err);
+            [$code, $out] = $this->command($app, [$path, '--skip-invalid']);
+            self::assertSame(0, $code, $out);
+            self::assertStringContainsString('Nothing to import', $out);
         } finally {
             @unlink($path);
         }

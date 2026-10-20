@@ -18,6 +18,7 @@ use Logbook\Service\Import\App\AppRowStatus;
 use Logbook\Service\Import\App\AppVehiclePreview;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Import\App\ArchiveRefused;
+use Logbook\Service\Import\App\ImportAppCommand;
 use Logbook\Service\Import\App\SectionSplitter;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvTooLong;
@@ -163,20 +164,18 @@ final readonly class FuelioCommand
                 return 0;
             }
             $total = array_sum(array_map(static fn (AppVehiclePreview $p): int => $p->total(AppRowStatus::Import), $previews));
+            // Rows with problems stop the run even when nothing else is left
+            // to import (K126).
+            $invalid = array_sum(array_map(static fn (AppVehiclePreview $p): int => $p->total(AppRowStatus::Invalid), $previews));
+            if ($invalid > 0 && !$skipInvalid) {
+                fwrite($err, ImportAppCommand::invalidRows($invalid, $total));
+
+                return 1;
+            }
             if ($total === 0) {
                 fwrite($out, $this->translator->trans('import_app.error.nothing') . "\n");
 
                 return 0;
-            }
-            $invalid = array_sum(array_map(static fn (AppVehiclePreview $p): int => $p->total(AppRowStatus::Invalid), $previews));
-            if ($invalid > 0 && !$skipInvalid) {
-                fwrite($err, sprintf(
-                    "%d row(s) have problems (listed above), so nothing was written: fix them,"
-                    . " or run again with --skip-invalid to import the other rows.\n",
-                    $invalid,
-                ));
-
-                return 1;
             }
 
             $done = $this->importer->import($user, $previews, $archive);

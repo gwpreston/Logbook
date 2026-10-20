@@ -83,6 +83,13 @@ final class ImportReadingTest extends TestCase
         self::assertSame(['Łódź €', 'y'], $csv->rows[0]['cells']);
 
         self::assertFalse(CsvReader::isBinary($le));
+
+        // A cut-off file (an odd byte at the end) or a lone surrogate isn't
+        // read with a stray "?", or a crash without mbstring (K125).
+        foreach ([$le . 'A', $le . "\x00\xD8"] as $damaged) {
+            self::assertTrue(CsvReader::isBinary($damaged));
+            self::assertNull(CsvReader::read($damaged, 10));
+        }
         self::assertTrue(
             CsvReader::isBinary(mb_convert_encoding("Station\nx\n", 'UTF-16LE', 'UTF-8')),
             'UTF-16 without a mark is still not a CSV (K61)',
