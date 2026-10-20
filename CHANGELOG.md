@@ -43,6 +43,11 @@ restart.
   text, not images* on, and warns that pictures go to it once upgraded
   again (#532, K107).
 
+### Documentation
+- *Which model?* in [docs/ai.md](docs/ai.md#which-model) now says what
+  each task needs from a model, what the test documents measured, and
+  how to set up a local model to read photos.
+
 ### Fixed
 - **Scanning with a local model in LM Studio** (or llama.cpp) no longer
   opens a nearly empty form: the answer's format now names every field

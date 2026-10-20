@@ -56,6 +56,8 @@ is nothing to choose:
   connection has *Send text, not images* on, or the picture is a V5C
   going to the internet (below). Then it is given OCR's text instead.
 
+Which model to choose, and how big, is in [ai.md](ai.md#which-model).
+
 ## Scanning with a text model
 
 What happens to a photo when there is no vision model:
