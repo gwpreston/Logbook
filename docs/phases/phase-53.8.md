@@ -54,7 +54,9 @@ file*, *Reading through OCR*, *Checking values*), the
    location resolved when the scan is read (#530); K106, the sum
    sentence shown once (#531); K107, a rollback of 53.3's migration
    warns (#532); K80, an inherited page size and `/UserUnit`; K105,
-   OCR's preparation alongside the vision request, built after #515.
+   OCR's preparation alongside the vision request, after #515 (carried:
+   #515 kept the full-size file). K130, the scan schema (#534), was found
+   while running the evals.
 
 ## Not in scope
 
@@ -93,7 +95,11 @@ file*, *Reading through OCR*, *Checking values*), the
       new bar (K110's 29 of 57 as the baseline). In *Eval results*: 29
       false flags fall to 2, and no planted wrong digit is caught on the
       fixtures; #533 decided by the owner.
-- [ ] #515 revisited with the OCR eval's numbers (the owner decides).
+- [x] #515 revisited with the OCR eval's numbers (the owner decides).
+      *2026-10-20:* the fixtures can't measure it (every photo is under
+      2,000 px, so the copy is the file; only the V5C passes the 30-word
+      gate). The owner kept the full-size file (#515 stays (1)); K114
+      stays open and K105 is carried.
 - [ ] Tests: a *Scan the V5C* photo on an *Internet* connection never
       sends an image, asserted at the adapter; a misread reference
       (`9O1`, `1234-5678-901`, wrapped) removed on that scan without
@@ -134,9 +140,9 @@ file*, *Reading through OCR*, *Checking values*), the
       came back nearly whole.
 
 ### 53.8.5 K105, after #515
-- [ ] OCR's preparation runs alongside the vision request (and a scanned
-      PDF's later pages before the answer), as far as #515's choice of
-      image leaves it worth doing.
+- [ ] ~~OCR's preparation runs alongside the vision request~~ *Carried
+      2026-10-20:* #515 kept the full-size file without numbers to weigh
+      it, so K105 stays open for a later phase (owner's choice).
 
 ### 53.8.6 Release
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
@@ -209,6 +215,10 @@ on 2026-10-20 (#529–#532), all the recommendation:
   - (1) Re-run after the fix, with a bigger model.
   - (2) Re-run after the fix, with the same gemma.
   - (3) Carry the evals again; #515 stays (1) and K105 is carried.
+- **#536. Re-run the two evals after #534's second half, for the record?**
+  (found while running the evals) *Decided 2026-10-20: (1), yes.*
+  - (1) Re-run and record field accuracy per route (53.2's criterion 3).
+  - (2) Record the second run as it is.
 
 ## Eval results (2026-10-20)
 

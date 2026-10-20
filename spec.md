@@ -12100,9 +12100,10 @@ task breakdowns live in the per-phase files; this is the map.
   the cross-check's image (#515, K114) revisited with their results
   (§7.27). With them, known issues K111, K113 and K117 (in the code it
   changes), K112 (the location resolved at the scan, #530), K106 (the
-  sum sentence once, #531), K107 (a rollback warns, #532), K80 (an
-  inherited page size) and K105 (OCR's preparation alongside the
-  request), chosen by the owner on 2026-10-20. Releases v3.19.0. See
+  sum sentence once, #531), K107 (a rollback warns, #532) and K80 (an
+  inherited page size), chosen by the owner on 2026-10-20, and K130 (the
+  scan schema, #534), found while running the evals. #515 keeps the
+  full-size file; K105 is carried. Releases v3.19.0. See
   [`phase-53.8.md`](docs/phases/phase-53.8.md).
 - **Phase 53.9 — Install, dev-stack and test-run edges from the
   known-issues log + patch release** (planned). Composer refuses a
