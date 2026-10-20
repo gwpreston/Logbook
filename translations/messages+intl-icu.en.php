@@ -5242,6 +5242,7 @@ return [
         'check_hard_to_read' => 'Hard to read, check this.',
         'check_not_on_page' => 'Not found on the page, check this carefully.',
         'check_sum' => '{volume} × {price} = {sum}, but the total reads {total}.',
+        'check_sum_other' => 'Doesn’t add up with the total.',
         'description' => [
             'labour' => 'Labour {amount}',
             'parts' => 'Parts {amount}',

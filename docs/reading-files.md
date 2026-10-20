@@ -112,8 +112,9 @@ fails or finds too little text, the scan carries on without the check.
 
 On a fuel receipt Logbook also checks that **the money adds up**: volume
 × price per unit must be the total, within a penny and the printed
-rounding. If it isn't, the three fields say so: "45.20 L × 142.9p =
-£64.59, but the total reads £64.95." The figures are in the receipt's
+rounding. If it isn't, the total says so: "45.20 L × 142.9p = £64.59,
+but the total reads £64.95.", and the volume and the price say "Doesn't
+add up with the total." The figures are in the receipt's
 currency when Logbook read one, and plain numbers otherwise. This check
 runs however the receipt was read.
 

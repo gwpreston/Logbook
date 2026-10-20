@@ -108,7 +108,7 @@ file*, *Reading through OCR*, *Checking values*), the
 - [x] K117: a value whose row lost reference words is unchecked.
 - [x] K112 (#530): the location resolved at the scan; K112's repro
       sends no image.
-- [ ] K106 (#531): the sum sentence under the total only; volume and
+- [x] K106 (#531): the sum sentence under the total only; volume and
       price "Doesn't add up with the total."
 - [ ] K107 (#532): 53.3's migration's `down()` warns, naming the
       connections.

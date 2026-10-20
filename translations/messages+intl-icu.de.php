@@ -5234,6 +5234,7 @@ return [
         'check_hard_to_read' => 'Schwer lesbar, bitte prüfen.',
         'check_not_on_page' => 'Nicht auf der Seite gefunden, bitte genau prüfen.',
         'check_sum' => '{volume} × {price} = {sum}, aber als Summe steht da {total}.',
+        'check_sum_other' => 'Passt nicht zur Summe.',
         'description' => [
             'labour' => 'Arbeitslohn {amount}',
             'parts' => 'Teile {amount}',

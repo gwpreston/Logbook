@@ -89,8 +89,9 @@ final class ScanCrossCheckTest extends ScanTestCase
         preg_match('/id="f-total-scan".*?<\/div>/s', $html, $note);
         self::assertSame(2, substr_count($note[0] ?? '', 'class="field__check"'), 'one reason a line, each marked');
         self::assertMatchesRegularExpression('/name="total"[^>]*aria-describedby="[^"]*f-total-scan/', $html, 'tied to it');
-        // The sum check says so too, on all three fields.
-        self::assertSame(3, substr_count($text, '42.18 L × 142.9p = £60.28, but the total reads £68.28.'));
+        // The sum check says so too: the sentence once, under the total; the others point to it (#531, K106).
+        self::assertSame(1, substr_count($text, '42.18 L × 142.9p = £60.28, but the total reads £68.28.'));
+        self::assertSame(2, substr_count($text, 'Doesn’t add up with the total.'));
 
         self::assertSame(
             ['scan_found' => 8, 'scan_flagged' => 1, 'scan_unchecked' => 0],

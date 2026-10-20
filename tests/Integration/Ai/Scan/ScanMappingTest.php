@@ -247,10 +247,10 @@ final class ScanMappingTest extends ScanTestCase
         $this->scanApp();
         $form = $this->map($this->owner, self::fuel('45.20 L', '142.9p', '£64.95'));
 
-        $message = '45.20 L × 142.9p = £64.59, but the total reads £64.95.';
-        self::assertSame($message, $form->checks['volume']);
-        self::assertSame($message, $form->checks['price']);
-        self::assertSame($message, $form->checks['total']);
+        // The sentence once, under the total; volume and price point to it (#531, K106).
+        self::assertSame('45.20 L × 142.9p = £64.59, but the total reads £64.95.', $form->checks['total']);
+        self::assertSame('Doesn’t add up with the total.', $form->checks['volume']);
+        self::assertSame('Doesn’t add up with the total.', $form->checks['price']);
         self::assertSame('64.95', $form->values['total'], 'the value is kept');
     }
 
