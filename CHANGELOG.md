@@ -31,6 +31,7 @@ migration: pull and restart.
   contrast in the light and dark themes with every accent. It sat on the
   link's accent tint and fell to 3.9:1 (K53).
 
+## [3.18.0] — 2026-10-19
 
 Phases 53.3 and 53.4: **OCR as a check on the vision model, text instead
 of images, and reading without AI** ([docs/phases/phase-53.3.md](docs/phases/phase-53.3.md),
@@ -3659,7 +3660,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.18.0...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.18.1...HEAD
+[3.18.1]: https://github.com/gwpreston16/Logbook/compare/v3.18.0...v3.18.1
 [3.18.0]: https://github.com/gwpreston16/Logbook/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...v3.17.0
 [3.16.4]: https://github.com/gwpreston16/Logbook/compare/v3.16.3...v3.16.4
