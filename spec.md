@@ -7715,7 +7715,10 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     contains; only OCR's text is folded (O→0, l and I→1), so "Petrol" or
     "Unleaded" needs the tolerant match only and "EV70 LTR" needs `70`
     (K113). A value whose row lost words to the reference redaction is
-    unchecked, since what was removed can't be compared (K117).
+    unchecked, since what was removed can't be compared (K117). On the
+    fixture photos the bar takes the false flags from 29 of 57 to 2, and
+    catches a planted wrong digit only where OCR read it at 90 or more
+    (decided 2026-10-20, `docs/phases/open-questions.md` #533).
   - **Not found, OCR unsure:** no mark; absence proves nothing.
   A flag never empties or blocks a field; the owner decides on the form.
   **The money adds up** (Phase 53.3, in the Mapper, so every route uses

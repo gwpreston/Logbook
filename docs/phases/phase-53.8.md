@@ -89,8 +89,10 @@ file*, *Reading through OCR*, *Checking values*), the
 - [ ] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
       owner's `--scans --via=ocr` and `--scans --crosscheck` runs, in
       53.3's *Eval results*.
-- [ ] The fixture eval re-run: flags and false flags per kind with the
-      new bar (K110's 29 of 57 as the baseline).
+- [x] The fixture eval re-run: flags and false flags per kind with the
+      new bar (K110's 29 of 57 as the baseline). In *Eval results*: 29
+      false flags fall to 2, and no planted wrong digit is caught on the
+      fixtures; #533 decided by the owner.
 - [ ] #515 revisited with the OCR eval's numbers (the owner decides).
 - [ ] Tests: a *Scan the V5C* photo on an *Internet* connection never
       sends an image, asserted at the adapter; a misread reference
@@ -131,8 +133,9 @@ file*, *Reading through OCR*, *Checking values*), the
 2. A document that mentions a V5C marker once in passing keeps its
    figures.
 3. The cross-check's false flags on the fixture photos fall well below
-   53.3's, with no invented value left unflagged that was flagged
-   before.
+   53.3's, and an invented value is still flagged where OCR read the
+   row's digits at a confidence of 90 or more (reworded 2026-10-20, #533:
+   on the fixtures no bar keeps both halves of the first wording).
 4. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
@@ -165,3 +168,41 @@ on 2026-10-20 (#529–#532), all the recommendation:
   - (1) Warn, naming the connections, then roll back.
   - (2) Refuse unless forced.
   - (3) Leave it (the CHANGELOG note only).
+- **#533. The fixture eval re-run for #514: no bar keeps acceptance
+  criterion 3's "no invented value left unflagged that was flagged
+  before".** (found while building) *Decided 2026-10-20: (1). The bar
+  stays 90; criterion 3 is reworded to "an invented value is still
+  flagged where OCR read the row's digits at 90 or more". The owner's
+  `--crosscheck` run with real photos confirms it or reopens it.*
+  - (1) Keep 90 and reword the criterion.
+  - (2) A bar of 75 (3 false flags, 7 of 41 caught on the fixtures).
+  - (3) Decide after the owner's `--crosscheck` run.
+  - (4) Keep #508's rule (29 false flags, 39 of 41 caught).
+
+## Eval results (2026-10-20)
+
+**#514 on the fixtures.** Each photo and scanned PDF in
+`tests/Fixtures/scans` (10 files, 57 right values) read by Tesseract
+5.5.0 (eng) in the dev image; each expected value checked against OCR's
+text as the vision route checks it, and again with one digit of each
+value with digits changed (and in its evidence) as a planted wrong
+value. Master (53.3's rule) against this branch (bar 90), without the
+30-word gate, which only the V5C photo passes:
+
+| Kind (files) | Right values | False flags, master | False flags, 53.8 | Planted | Caught, master | Caught, 53.8 |
+|---|---|---|---|---|---|---|
+| fuel_receipt (2) | 17 | 7 | 1 | 11 | 10 | 0 |
+| inspection (1) | 5 | 2 | 0 | 4 | 4 | 0 |
+| insurance (1) | 6 | 5 | 0 | 5 | 5 | 0 |
+| registration (1) | 6 | 4 | 1 | 4 | 4 | 0 |
+| repair_estimate (1) | 4 | 1 | 0 | 3 | 3 | 0 |
+| service_invoice (4) | 19 | 10 | 0 | 14 | 13 | 0 |
+| **All (10)** | 57 | 29 | 2 | 41 | 39 | 0 |
+
+The two left are values without digits (a volume unit `L`, a V5C's
+model), which keep the row-mean rule. Other bars: 60 gives 17 false
+flags and 26 of 41 caught; 70, 10 and 16; 75, 3 and 7; 80, 2 and 5; 85,
+2 and 1. The fixtures are blurred on purpose (mean confidence 74–86), so
+OCR reads their right and wrong digits alike; a value invented on a row
+OCR read at 90 or more is still flagged (`OcrTextTest`,
+`ScanCrossCheckTest`). Decided as #533.
