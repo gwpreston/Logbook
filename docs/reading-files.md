@@ -68,13 +68,16 @@ What happens to a photo when there is no vision model:
 3. Otherwise its text, line by line and numbered, goes to the text model,
    marked as OCR output that may have misread characters. Runs of 11
    digits (a V5C's reference number, and many phone numbers) are removed
-   first. On a V5C (a page with "V5C", "DVLA" or "Registration
-   Certificate" on it) they are also caught with punctuation between the
-   groups (`1234-5678-901`), OCR's look-alikes (`1234 5678 9O1`), or
-   wrapped over two or three lines. On a V5C whose markers OCR misses,
-   only a reference read cleanly as digits is removed: one it misreads or
+   first. On a V5C (a page with "V5C" or "Registration Certificate" on
+   it, or two of "DVLA", "Document reference" and OCR's "VSC") they are
+   also caught with punctuation between the groups (`1234-5678-901`),
+   OCR's look-alikes (`1234 5678 9O1`), or wrapped over two or three
+   lines, even beside a label or a date. A single "DVLA" on an insurance
+   letter, or "VSC warning light" on an invoice, doesn't make a page a
+   V5C, so its figures are kept. On a V5C whose markers OCR misses, only
+   a reference read cleanly as digits is removed: one it misreads or
    splits can still be sent, and on an internet connection the Scan page
-   says so. Numbers in another column of the same
+   says so; use *Scan the V5C* (below) to be sure. Numbers in another column of the same
    line (a date beside a mileage) are kept. The picture itself is never sent.
 4. Every value the model gives back must point to words in that text.
    Logbook allows for OCR's usual slips (0 and O, 1, l and I, 5 and S, 8
@@ -104,6 +107,10 @@ the model is asked; the reading itself runs alongside. Each value is:
   digits are there exactly. Nothing changes.
 - **Not found where OCR read clearly:** the value is kept, and marked
   **"Not found on the page, check this carefully."** under its field.
+  For a value with digits, *clearly* means OCR read every word with a
+  digit on that line at a confidence of 90 or more: a slightly blurred
+  photo reads wrong digits confidently enough to mark right values
+  otherwise. A line that lost the V5C reference is never judged.
 - **Not found where OCR was unsure:** no mark. OCR missing something
   proves nothing.
 
@@ -148,6 +155,20 @@ attached. So on an internet connection a scan waits for OCR before the
 model starts. A V5C photo OCR can't read
 well enough to spot a marker still goes as a picture, with its
 reference number, and the Scan page says so on internet connections.
+The connection counts as on the internet when its address is there at
+the time of the scan, even if Settings last saw it on your network.
+
+**Scan the V5C.** On a vehicle's page (the *Details* card) and its
+*Documents* tab, *Scan the V5C* opens the Scan page for that vehicle's
+registration certificate. Whatever OCR spots, the file is read as a
+V5C: the reference number is removed in every form Logbook knows
+(punctuation, look-alikes, wrapped lines), on every route, and on an
+internet connection only the text is sent, never the picture. If OCR
+isn't working, fails, or reads too little, nothing is sent: the page
+says why, and you can edit the vehicle by hand. What it finds is
+offered as updates to that vehicle (registration, VIN, first
+registration date), whatever plate the document shows. You need to be
+able to edit the vehicle to use it.
 
 ## Reading without AI
 

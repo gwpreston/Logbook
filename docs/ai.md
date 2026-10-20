@@ -534,7 +534,11 @@ issue*, *Watch*, *Add all as issues*; see
   connection with OCR working, a photo OCR recognises as a V5C is sent as
   text, never as a picture. One it doesn't recognise, or any V5C photo
   without OCR, carries the number as pixels to a vision model, and the
-  Scan page says so.
+  Scan page says so. From 3.19, *Scan the V5C* on a vehicle's page
+  closes that gap: its scan is treated as a V5C whatever OCR spots, so
+  the reference is removed in every form, and on an *Internet*
+  connection only text is sent, or nothing when OCR can't read it
+  ([reading-files.md](reading-files.md)).
 - With a model on this server or your network, no file leaves your
   machines.
 - The file waits for its entry for 24 hours (only you can see it); then it
