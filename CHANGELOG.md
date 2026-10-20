@@ -6,6 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.18.2] — 2026-10-20
+
 Phase 53.6: **Import fixes from the known-issues log**
 ([docs/phases/phase-53.6.md](docs/phases/phase-53.6.md)). No migration:
 pull and restart.
@@ -3689,7 +3691,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.18.1...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.18.2...HEAD
+[3.18.2]: https://github.com/gwpreston16/Logbook/compare/v3.18.1...v3.18.2
 [3.18.1]: https://github.com/gwpreston16/Logbook/compare/v3.18.0...v3.18.1
 [3.18.0]: https://github.com/gwpreston16/Logbook/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/gwpreston16/Logbook/compare/v3.16.4...v3.17.0

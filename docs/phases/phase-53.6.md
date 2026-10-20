@@ -4,8 +4,9 @@
 volume unit its header names and reads UTF-16 files, and the Tracktor
 command line stops on rows with problems as the web page does.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.5's release, a patch release
+Status: ✅ complete · released as **v3.18.2**
+([#131](https://github.com/gwpreston16/Logbook/pull/131)), a patch release
+after Phase 53.5's (#503) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.5](phase-53.5.md). Like 52.1,
 52.2 and 53.5, it takes a few small open rows, all in the import code:
@@ -130,14 +131,16 @@ release is tagged (the owner, 2026-10-20); 53.6's own release follows
 - [x] CHANGELOG; spec §7.13; ROADMAP status; `docs/import.md` (UTF-16,
       header volume units) and `docs/import-tracktor.md`
       (`--skip-invalid`).
-- [ ] Merge review, then merge. Review at `dd83b684`: MERGE; its
+- [x] Merge review, then merge. Review at `dd83b684`: MERGE; its
       follow-ups recorded as K123–K129 (issue sweep), of which K125 and
-      K126 are fixed above.
+      K126 are fixed above. Merged in
+      [#131](https://github.com/gwpreston16/Logbook/pull/131) on 2026-10-20.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.5's
-      release (#503).
+- [x] `VERSION` 3.18.2, CHANGELOG 3.18.2, README status: the patch
+      after 53.5's release (#503).
+- [x] Tag `v3.18.2` once merged.
 
 ## Acceptance criteria
 

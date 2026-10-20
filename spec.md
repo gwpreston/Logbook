@@ -12032,13 +12032,13 @@ task breakdowns live in the per-phase files; this is the map.
   own after 53.4's release (#502, decided 2026-10-18). No migration. See
   [`phase-53.5.md`](docs/phases/phase-53.5.md).
 - **Phase 53.6 — Import fixes from the known-issues log + patch
-  release** (planned). A CSV header's volume unit is chosen on the
+  release** (✅). A CSV header's volume unit is chosen on the
   mapping page as its distance unit is, a bare gallon taking the owner's
   (§7.13, K2, #505); a CSV starting with a UTF-16 byte-order mark is
   read as UTF-16 (§7.13, K10, #504); the Tracktor command line stops on
   rows with problems unless `--skip-invalid` and names the export's
-  fields (§7.13, K65). Released on its own as a patch after 53.5's
-  release (#503, decided 2026-10-18). No migration. See
+  fields (§7.13, K65). Releases v3.18.2, a patch on its own after
+  53.5's release (#503, decided 2026-10-18). No migration. See
   [`phase-53.6.md`](docs/phases/phase-53.6.md).
 - **Phase 53.7 — API, webhook and MCP edges from the known-issues log +
   patch release** (planned). A modification edit that leaves its date,
