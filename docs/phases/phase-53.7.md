@@ -148,11 +148,15 @@ tagged.
       call runs within a query budget close to Ask's, and a call to a
       switched-off read tool still throws the JSON-RPC `Unknown tool`
       error.
-- [ ] `Decimal::multiply()` and `Decimal::divide()` compute every
+- [x] `Decimal::multiply()` and `Decimal::divide()` compute every
       overflow fallback with `BigDecimal`, leaving no `fromFloat()` call
       in either (K62). `DecimalTest`: `-27094.791536 ×
       30815.924647` at scale 6 gives the exact `…299549`, and a divide
       whose scaled operand overflows matches `BigDecimal`'s result.
+      *Done:* the tests are in `DecimalArithmeticTest` (beside the other
+      multiply and divide cases), with a tie past an int rounding away
+      from zero; an operand of more than 18 digits is still refused by
+      `toScaledInt()`, as before.
 
 ### 53.7.2 Finish
 

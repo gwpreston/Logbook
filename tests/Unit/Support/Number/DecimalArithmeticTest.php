@@ -75,6 +75,24 @@ final class DecimalArithmeticTest extends TestCase
         self::assertSame('0.500000', Decimal::divide('500000000000.123', '1000000000000', 6));
     }
 
+    public function testProductsPastAnIntAreExact(): void
+    {
+        // K62: floats gave …299550; the exact product is -834951054.299549387792.
+        self::assertSame('-834951054.299549', Decimal::multiply('-27094.791536', '30815.924647', 6));
+        // A tie rounds away from zero, as the integer path does.
+        self::assertSame('-12345678913595678901.3', Decimal::multiply('-123456789012.5', '100000000.1', 1));
+        self::assertSame('12345678913595678901.3', Decimal::multiply('123456789012.5', '100000000.1', 1));
+    }
+
+    public function testQuotientsPastAnIntAreExact(): void
+    {
+        // The numerator × 10^12 overflows; floats gave …620811462402.
+        self::assertSame('17636684144.620811142857', Decimal::divide('123456789012.345678', '7', 12));
+        // Here the denominator × 10^9 overflows instead.
+        self::assertSame('-0.1', Decimal::divide('-98765432.1987654321', '1234567890', 1));
+        self::assertSame('0.1', Decimal::divide('98765432.1987654321', '1234567890', 1));
+    }
+
     public function testLongScalesRoundedToFewPlacesNeverOverflow(): void
     {
         // Scales 9 + 12 rounded to 2: dividing by 10^19 is beyond an int.
