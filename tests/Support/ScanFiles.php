@@ -66,12 +66,16 @@ final class ScanFiles
     /**
      * A blank page of this size in points (72 to the inch): K80's huge page.
      */
-    public static function pagePdf(int $width, int $height): string
+    public static function pagePdf(int $width, int $height, bool $inherited = false, ?float $userUnit = null): string
     {
+        // K80: the MediaBox on the page, or inherited from /Pages; a /UserUnit scales it.
+        $box = sprintf('/MediaBox [0 0 %d %d]', $width, $height);
+        $unit = $userUnit === null ? '' : sprintf(' /UserUnit %s', $userUnit);
+
         return self::pdf([
             '<< /Type /Catalog /Pages 2 0 R >>',
-            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-            sprintf('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Contents 4 0 R >>', $width, $height),
+            sprintf('<< /Type /Pages /Kids [3 0 R] /Count 1%s >>', $inherited ? ' ' . $box : ''),
+            sprintf('<< /Type /Page /Parent 2 0 R%s%s /Contents 4 0 R >>', $inherited ? '' : ' ' . $box, $unit),
             self::stream('', "q Q\n"),
         ]);
     }

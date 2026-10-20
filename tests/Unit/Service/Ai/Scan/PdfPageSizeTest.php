@@ -42,6 +42,26 @@ final class PdfPageSizeTest extends TestCase
         self::assertSame(25, PdfPageSize::dpi($this->path, 3, 150));
     }
 
+    public function testAnInheritedMediaBoxIsRead(): void
+    {
+        // K80: a MediaBox on /Pages, not the page.
+        file_put_contents($this->path, ScanFiles::pagePdf(14400, 14400, true));
+
+        self::assertEqualsWithDelta(200.0, PdfPageSize::largestEdgeInches($this->path, 3), 0.01);
+        self::assertSame(25, PdfPageSize::dpi($this->path, 3, 300));
+    }
+
+    public function testAUserUnitScalesThePage(): void
+    {
+        // K80: a 100-point page with UserUnit 50 is 5,000 points.
+        file_put_contents($this->path, ScanFiles::pagePdf(100, 100, false, 50.0));
+
+        self::assertEqualsWithDelta(69.44, PdfPageSize::largestEdgeInches($this->path, 3), 0.01);
+        self::assertSame(72, PdfPageSize::dpi($this->path, 3, 300));
+        file_put_contents($this->path, ScanFiles::pagePdf(100, 100, true, 50.0));
+        self::assertSame(72, PdfPageSize::dpi($this->path, 3, 300), 'inherited too');
+    }
+
     public function testAFileThatIsNotAPdfIsLeftAlone(): void
     {
         file_put_contents($this->path, 'not a pdf');
