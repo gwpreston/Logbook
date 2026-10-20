@@ -67,11 +67,15 @@ final readonly class ScanAction
         if ($request->getMethod() !== 'POST') {
             $query = $request->getQueryParams();
 
-            return $this->render($request, $response, $user, $vehicles, [
+            $values = [
                 'vehicle_id' => is_string($query['vehicle'] ?? null) ? $query['vehicle'] : '',
                 'for' => is_string($query['for'] ?? null) ? $query['for'] : '',
                 'incident' => is_string($query['incident'] ?? null) ? $query['incident'] : '',
-            ]);
+            ];
+            // *Scan the V5C* for a vehicle the user can't manage is refused here too, not dropped (#511).
+            $refused = $values['for'] === ScanTarget::Vehicle->value && $this->v5cVehicle($user, $vehicles, $values) === null;
+
+            return $this->render($request, $response, $user, $vehicles, $values, $refused ? 'scan.validation.v5c_vehicle' : null);
         }
 
         $form = RequestContext::form($request);
@@ -121,6 +125,23 @@ final readonly class ScanAction
     }
 
     /**
+     * *Scan the V5C* (#511): the vehicle it was started for, when the user may manage it.
+     *
+     * @param list<Vehicle> $vehicles
+     * @param array<string, string> $values
+     */
+    private function v5cVehicle(User $user, array $vehicles, array $values): ?Vehicle
+    {
+        foreach ($values['for'] === ScanTarget::Vehicle->value ? $vehicles : [] as $vehicle) {
+            if ((string) $vehicle->id === $values['vehicle_id'] && $this->access->can($user, VehicleAbility::Manage, $vehicle)) {
+                return $vehicle;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param list<Vehicle> $vehicles
      * @param array<string, string> $values
      */
@@ -140,11 +161,7 @@ final readonly class ScanAction
 
         // Worked out once for the page (K118).
         $route = $this->availability->route($user);
-        // *Scan the V5C* (#511): the vehicle it was started for.
-        $v5c = null;
-        foreach ($values['for'] === ScanTarget::Vehicle->value ? $vehicles : [] as $vehicle) {
-            $v5c = (string) $vehicle->id === $values['vehicle_id'] ? $vehicle : $v5c;
-        }
+        $v5c = $this->v5cVehicle($user, $vehicles, $values);
 
         return $this->view->render($request, $response, 'scan/form.twig', [
             'values' => $values,

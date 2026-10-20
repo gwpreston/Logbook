@@ -99,8 +99,16 @@ file*, *Reading through OCR*, *Checking values*), the
       (`9O1`, `1234-5678-901`, wrapped) removed on that scan without
       markers; an invoice with "VSC warning light" keeps its figures; a
       blurred photo's right values not flagged.
-- [ ] Design review of the new entry (375, 768, 1280 px; light and dark;
-      JS off).
+- [x] Design review of the new entry (375, 768, 1280 px; light and dark;
+      JS off; at `/lb`). *2026-10-20 (design-reviewer at `d6c42f49`):* no
+      HIGH. MEDIUM, fixed: the Details card's link stacked its icon above
+      the text; as a `card__link` it is text only, like its neighbours.
+      LOW, fixed: the Scan page promised text recognition on an *Internet*
+      connection with no OCR (it now says such a scan can't be sent); a
+      GET with `for=vehicle` for a vehicle the user can't manage fell
+      back to the plain Scan page (it now shows the refusal). Not seen
+      rendered: the unreadable-scan warning and the fuel form's sum
+      marks (markup and tests only).
 
 ### 53.8.4 Known issues
 - [x] K111: a wrapped reference with a label or date in its run, or a

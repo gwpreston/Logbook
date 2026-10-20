@@ -39,8 +39,11 @@
             </p>
             {% if v5c_vehicle %}
                 {# #511: such a scan goes to an Internet connection only as text, so the V5C warnings aren't needed. #}
-                {% if connection.location.value == 'internet' %}
+                {% if connection.location.value == 'internet' and (ocr_engine or ocr_checks) %}
                     <p class="ask-where ask-where--note" data-scan-v5c-text>{{ ui.icon('document_scanner') }}<span>{{ 'scan.v5c.internet'|trans({connection: connection.name}) }}</span></p>
+                {% elseif connection.location.value == 'internet' %}
+                    {# No OCR: a V5C photo can't go to the Internet at all (#511). #}
+                    <p class="alert alert--warning" role="note" data-scan-v5c-no-ocr>{{ ui.icon('warning') }}<span>{{ 'scan.problem.registration_text_only'|trans }}</span></p>
                 {% endif %}
             {% elseif ocr_engine %}
                 {# Photos go as text, with a spotted V5C's reference removed (§7.27 *Where it goes*). #}

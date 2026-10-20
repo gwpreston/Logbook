@@ -332,6 +332,19 @@ final class ScanCrossCheckTest extends ScanTestCase
         $text = html_entity_decode(self::body($response));
         self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $text);
         self::assertSame([], $this->provider->requests);
+        $form = html_entity_decode(self::body($this->browser->get('/scan?vehicle=999999&for=vehicle')));
+        self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $form, 'on GET too');
+    }
+
+    public function testTheScanPageForAV5cWithoutOcrSaysItCantBeSent(): void
+    {
+        $this->scanApp(['TESSERACT_BINARY' => 'off']);
+        $this->onTheInternet();
+        $id = $this->garage['Golf']->id;
+        $form = html_entity_decode(self::body($this->browser->get('/scan?vehicle=' . $id . '&for=vehicle')));
+
+        self::assertStringNotContainsString('data-scan-v5c-text', $form);
+        self::assertStringContainsString('data-scan-v5c-no-ocr', $form);
     }
 
     private function scanTheV5c(string $model): \Psr\Http\Message\ResponseInterface

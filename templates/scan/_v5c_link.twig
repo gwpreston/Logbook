@@ -1,5 +1,5 @@
 {% import 'macros/ui.twig' as ui %}
 {# *Scan the V5C* (spec.md §7.27, Phase 53.8, #511): its scan goes to an Internet connection only as text. For those who may manage the vehicle. #}
 {% if scan_available() and can_vehicle(vehicle, 'manage') %}
-    <a class="{{ class ?? 'btn btn--soft' }}" href="{{ url_for('scan', {}, {vehicle: vehicle.id, for: 'vehicle'}) }}" data-scan-v5c>{{ ui.icon('document_scanner') }}{{ 'scan.v5c.link'|trans }}</a>
+    <a class="{{ class ?? 'btn btn--soft' }}" href="{{ url_for('scan', {}, {vehicle: vehicle.id, for: 'vehicle'}) }}" data-scan-v5c>{% if (class ?? '') != 'card__link' %}{{ ui.icon('document_scanner') }}{% endif %}{{ 'scan.v5c.link'|trans }}</a>
 {% endif %}
