@@ -257,12 +257,14 @@ final class PartsToolsTest extends ToolsBTestCase
 
         foreach ([ApiScope::Read, ApiScope::ReadWrite] as $scope) {
             $mcp = new McpClient($app, $this->apiKey($app, $owner, $scope));
-            $request = static fn () => McpClient::structured($mcp->modern('tools/call', ['name' => 'parts', 'arguments' => $arguments]));
+            $call = ['name' => 'parts', 'arguments' => $arguments];
+            $request = static fn () => McpClient::structured($mcp->modern('tools/call', $call));
             $request();
             $counter->count = 0;
             self::assertSame(1, $request()->get('parts'));
             // The key's own checks (the key, its last use, its user) on top of Ask's: 4 now, 49 before K69.
-            self::assertLessThanOrEqual($ask + 6, $counter->count, $scope->value . ': ' . $counter->count . ' against Ask\'s ' . $ask);
+            $sent = $scope->value . ': ' . $counter->count . ' against Ask\'s ' . $ask;
+            self::assertLessThanOrEqual($ask + 6, $counter->count, $sent);
 
             foreach (['fuel_stats', 'log_fill_up', DraftKind::Fuel->toolName(), 'no_such_tool'] as $name) {
                 $refused = McpClient::body($mcp->modern('tools/call', ['name' => $name, 'arguments' => $arguments]));

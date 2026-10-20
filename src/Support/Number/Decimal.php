@@ -153,7 +153,7 @@ final class Decimal
         $denominator = $shift < 0 ? self::timesPowerOfTen($denominator, -$shift) : $denominator;
         if ($numerator === null || $denominator === null) {
             // HalfUp rounds a tie away from zero, as roundedDivision() does.
-            return BigDecimal::of($a)->dividedBy($b, $scale, RoundingMode::HalfUp)->toString();
+            return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
         }
 
         return self::fromScaledInt(self::roundedDivision($numerator, $denominator), $scale);
@@ -179,7 +179,15 @@ final class Decimal
      */
     private static function bigProduct(string $a, string $b, int $scale): string
     {
-        return BigDecimal::of($a)->multipliedBy($b)->toScale($scale, RoundingMode::HalfUp)->toString();
+        return BigDecimal::of($a)->multipliedBy($b)->toScale(self::places($scale), RoundingMode::HalfUp)->toString();
+    }
+
+    /**
+     * @return int<0, max>
+     */
+    private static function places(int $scale): int
+    {
+        return $scale >= 0 ? $scale : throw new InvalidArgumentException('A scale is never negative.');
     }
 
     private static function scaleOf(string $value): int
