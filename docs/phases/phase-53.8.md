@@ -110,9 +110,9 @@ file*, *Reading through OCR*, *Checking values*), the
       sends no image.
 - [x] K106 (#531): the sum sentence under the total only; volume and
       price "Doesn't add up with the total."
-- [ ] K107 (#532): 53.3's migration's `down()` warns, naming the
+- [x] K107 (#532): 53.3's migration's `down()` warns, naming the
       connections.
-- [ ] K80: an inherited MediaBox and `/UserUnit` read.
+- [x] K80: an inherited MediaBox and `/UserUnit` read.
 
 ### 53.8.5 K105, after #515
 - [ ] OCR's preparation runs alongside the vision request (and a scanned
