@@ -31,6 +31,12 @@ pull and restart.
   to floating point and coming out 1–3 off in the last place. No figure
   a real entry has reaches it (K62).
 
+### Upgrade notes
+- Every modification's `ETag` changes once on upgrade, even if nothing
+  about it changed. An API client holding a tag from 3.18.2 gets a 412
+  on its next `If-Match` write to that modification: read it again,
+  then retry. Rolling back to 3.18.2 brings the old tags back.
+
 ## [3.18.2] — 2026-10-20
 
 Phase 53.6: **Import fixes from the known-issues log**
