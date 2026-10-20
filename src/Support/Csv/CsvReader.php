@@ -6,9 +6,10 @@ namespace Logbook\Support\Csv;
 
 /**
  * Reads an uploaded CSV file for import (spec.md §7.13): UTF-8 with or
- * without a byte-order mark (anything that is not valid UTF-8 is taken to be
- * Windows-1252, what older spreadsheets save), RFC 4180 quoting, and the
- * delimiter — comma, semicolon or tab — detected from the header row.
+ * without a byte-order mark, UTF-16 with one (#504; anything else that is
+ * not valid UTF-8 is taken to be Windows-1252, what older spreadsheets
+ * save), RFC 4180 quoting, and the delimiter — comma, semicolon or tab —
+ * detected from the header row.
  */
 final class CsvReader
 {
@@ -36,6 +37,15 @@ final class CsvReader
      */
     public static function read(string $contents, int $maxRows): ?self
     {
+        // UTF-16 with a byte-order mark (Excel's "Unicode text") becomes
+        // UTF-8, the mark dropped (K10, #504); a damaged one is not read.
+        if (self::utf16Encoding($contents) !== null) {
+            $converted = self::fromUtf16($contents);
+            if ($converted === null) {
+                return null;
+            }
+            $contents = $converted;
+        }
         if (str_starts_with($contents, "\xEF\xBB\xBF")) {
             $contents = substr($contents, 3);
         }
@@ -90,8 +100,9 @@ final class CsvReader
 
     /**
      * Whether the upload is plainly not text (K61): a known binary format,
-     * or NUL bytes near the start of a file without a UTF-16 byte-order
-     * mark (UTF-16 text has them, and read() keeps reading it as before).
+     * NUL bytes near the start of a file without a UTF-16 byte-order mark
+     * (UTF-16 text has them, and read() converts it), or UTF-16 that isn't
+     * whole, such as a cut-off file (K125).
      */
     public static function isBinary(string $contents): bool
     {
@@ -100,11 +111,48 @@ final class CsvReader
                 return true;
             }
         }
-        if (str_starts_with($contents, "\xFF\xFE") || str_starts_with($contents, "\xFE\xFF")) {
-            return false;
+        if (self::utf16Encoding($contents) !== null) {
+            return self::fromUtf16($contents) === null;
         }
 
         return str_contains(substr($contents, 0, self::SNIFF_BYTES), "\0");
+    }
+
+    /**
+     * 'UTF-16LE' or 'UTF-16BE' when the file starts with that byte-order
+     * mark, else null.
+     */
+    private static function utf16Encoding(string $contents): ?string
+    {
+        return match (true) {
+            str_starts_with($contents, "\xFF\xFE") => 'UTF-16LE',
+            str_starts_with($contents, "\xFE\xFF") => 'UTF-16BE',
+            default => null,
+        };
+    }
+
+    /**
+     * UTF-16 text after its byte-order mark as UTF-8, or null when it isn't
+     * whole (an odd byte at the end, a lone surrogate): converting back
+     * must give the same bytes, which also covers the mbstring polyfill,
+     * whose conversion fails instead (K125).
+     */
+    private static function fromUtf16(string $contents): ?string
+    {
+        $encoding = self::utf16Encoding($contents);
+        if ($encoding === null) {
+            return null;
+        }
+        $body = substr($contents, 2);
+        if (strlen($body) % 2 !== 0) {
+            return null;
+        }
+        $utf8 = @mb_convert_encoding($body, 'UTF-8', $encoding);
+        if (!is_string($utf8) || @mb_convert_encoding($utf8, $encoding, 'UTF-8') !== $body) {
+            return null;
+        }
+
+        return $utf8;
     }
 
     /**

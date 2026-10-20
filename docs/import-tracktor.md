@@ -79,7 +79,10 @@ php bin/import-app.php tracktor-export.json --files ./uploads
 `--files` takes the folder or a ZIP of it. Add `--as <username>` when the
 install has more than one user, `--create` to make every vehicle new,
 `--vehicle <id>` for an export with one vehicle, and `--schedules` for
-*Make schedules*. With Docker, copy the files into the volume first, then
+*Make schedules*. As on the web page, rows with problems stop the import
+(nothing is written, exit code 1) until you fix them or add
+`--skip-invalid`; each problem names the export's field (`date`,
+`odometer`). With Docker, copy the files into the volume first, then
 `docker compose exec -u www-data app php bin/import-app.php
 /data/tracktor-export.json --files /data/uploads`.
 

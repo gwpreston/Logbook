@@ -135,6 +135,11 @@ final class FuelioCommandTest extends AppTestCase
         self::assertStringContainsString('Imported 2 row(s)', $out);
         $vehicles = $this->ownedVehicles($app, $owner->id);
         self::assertCount(2, $this->service($app, FuelEntryRepository::class)->listForVehicle($vehicles[0]->id));
+
+        // K126: run again, only the bad row is left: it still stops the run.
+        [$code, $out, $err] = $this->command($app, [$path]);
+        self::assertSame(1, $code, $out . $err);
+        self::assertStringContainsString('no other rows are left to import', $err);
     }
 
     /**

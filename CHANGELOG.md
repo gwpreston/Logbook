@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 53.6: **Import fixes from the known-issues log**
+([docs/phases/phase-53.6.md](docs/phases/phase-53.6.md)). No migration:
+pull and restart.
+
+### Fixed
+- **A CSV's volume unit named in its header** (`Volume (UK gallons)`,
+  `Quantity (litres)`, `Volume (US gal)`) is now chosen on the mapping
+  page, as `Odometer (Miles)` already was for distance. A gallon that
+  doesn't say which, `(gal)` or `(gallons)`, is your gallon: your volume
+  unit if you use gallons, else the UK gallon for a UK or Irish locale or
+  pounds, else the US gallon, as for app imports. `(kWh)` and `(kg)`
+  leave your own unit chosen (K2).
+- **A CSV saved as UTF-16** (Excel's *Unicode text*) now imports with
+  its text intact: `Łódź €` used to come in as `Aódz ¬`, and the first
+  header kept the byte-order mark (K10).
+- **`php bin/import-app.php <export.json>`** (Tracktor) with rows that
+  have problems now stops with exit code 1 and writes nothing unless
+  `--skip-invalid` is given, as the Fuelio command line and the web
+  page do. Each problem names the export's field (`date`), not
+  Logbook's (`filled_at`) (K65).
+- **A damaged UTF-16 CSV** (cut off, so it ends in half a character) is
+  refused as not a CSV, instead of importing with a stray `?` in its
+  last cell, or failing with an error page on an install without the
+  mbstring extension (K125).
+- **`php bin/import-app.php`** (Fuelio and Tracktor) now exits 1 when
+  rows have problems even if nothing else is left to import, for example
+  when it is run again after `--skip-invalid`. It used to say "Nothing to
+  import" and exit 0 (K126).
+
 ## [3.18.1] — 2026-10-19
 
 Phase 53.5: **API edges and narrow-screen fixes from the known-issues

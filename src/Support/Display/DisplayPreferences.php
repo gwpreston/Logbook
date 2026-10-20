@@ -6,6 +6,7 @@ namespace Logbook\Support\Display;
 
 use DateTimeZone;
 use Logbook\Domain\Fuel\EnergyKind;
+use Logbook\Support\I18n\Region;
 use Logbook\Support\Units\ConsumptionUnit;
 use Logbook\Support\Units\DepthUnit;
 use Logbook\Support\Units\DistanceUnit;
@@ -78,5 +79,21 @@ final readonly class DisplayPreferences
     public function unitPreset(): ?UnitPreset
     {
         return UnitPreset::matching($this->distanceUnit, $this->volumeUnit, $this->consumptionUnit, $this->depthUnit);
+    }
+
+    /**
+     * The gallon meant by one that doesn't say which (#464, #505): this
+     * person's when they use one, else the UK gallon for a UK or Irish
+     * locale or pounds, else the US gallon.
+     */
+    public function gallon(): VolumeUnit
+    {
+        if ($this->volumeUnit !== VolumeUnit::Litre) {
+            return $this->volumeUnit;
+        }
+
+        return in_array(Region::of($this->locale), ['GB', 'IE'], true) || $this->currency === 'GBP'
+            ? VolumeUnit::UkGallon
+            : VolumeUnit::UsGallon;
     }
 }

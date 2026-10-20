@@ -103,6 +103,57 @@ final class TracktorCommandTest extends AppTestCase
         self::assertStringContainsString("Fuelio's own figures agree", $out);
     }
 
+    /**
+     * K65: rows with problems stop the import unless --skip-invalid says
+     * otherwise, and errors name the export's fields, as for Fuelio (K11).
+     */
+    public function testRowsWithProblemsNeedSkipInvalidAndNameTheExportsFields(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app);
+
+        // The second of its three fill-ups loses its date.
+        $json = preg_replace(
+            '/"date":\s*"2026-02-05T00:00:00.000Z"/',
+            '"date": null',
+            (string) file_get_contents(self::path('export-1.4.1.json')),
+            1,
+            $count,
+        );
+        self::assertSame(1, $count);
+        $path = (string) tempnam(sys_get_temp_dir(), 'tracktor');
+        file_put_contents($path, (string) $json);
+        rename($path, $path . '.json');
+        $path .= '.json';
+
+        try {
+            [$code, $out, $err] = $this->command($app, [$path, '--create']);
+            self::assertSame(1, $code, $out . $err);
+            self::assertStringContainsString('--skip-invalid', $err);
+            self::assertStringContainsString('nothing was written', $err);
+            self::assertSame([], $this->ownedVehicles($app, $owner->id));
+            self::assertMatchesRegularExpression('/row \d+, [^:]+: date: /', $out, 'the export\'s field, not filled_at');
+            self::assertStringNotContainsString('filled_at', $out);
+
+            [$code, $out, $err] = $this->command($app, [$path, '--create', '--skip-invalid']);
+            self::assertSame(0, $code, $out . $err);
+            $vehicles = $this->ownedVehicles($app, $owner->id);
+            self::assertCount(1, $vehicles);
+            self::assertCount(2, $this->service($app, FuelEntryRepository::class)->listForVehicle($vehicles[0]->id));
+
+            // K126: run again, only the bad row is left: it still stops the run.
+            [$code, $out, $err] = $this->command($app, [$path]);
+            self::assertSame(1, $code, $out . $err);
+            self::assertStringContainsString('no other rows are left to import', $err);
+            [$code, $out] = $this->command($app, [$path, '--skip-invalid']);
+            self::assertSame(0, $code, $out);
+            self::assertStringContainsString('Nothing to import', $out);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testRefusalsSayWhyAndWriteNothing(): void
     {
         $app = $this->createApp();

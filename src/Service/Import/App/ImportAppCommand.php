@@ -15,9 +15,9 @@ use Logbook\Service\Import\App\Tracktor\TracktorCommand;
 final readonly class ImportAppCommand
 {
     public const string USAGE = "Usage: php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]"
-        . " [--as <username>] [--schedules] [--dry-run]\n"
+        . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n"
         . "       php bin/import-app.php <export.json> [--files <folder|zip>] [--vehicle <id> | --create]"
-        . " [--as <username>] [--schedules] [--dry-run]\n";
+        . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n";
 
     public function __construct(private FuelioCommand $fuelio, private TracktorCommand $tracktor)
     {
@@ -46,6 +46,18 @@ final readonly class ImportAppCommand
         }
 
         return self::isJson($path) ? $this->tracktor->run($args, $out, $err) : $this->fuelio->run($args, $out, $err);
+    }
+
+    /**
+     * Why a run with rows that have problems stopped (K11, K65, K126),
+     * naming --skip-invalid only when it would import something.
+     */
+    public static function invalidRows(int $invalid, int $importable): string
+    {
+        return sprintf("%d row(s) have problems (listed above), so nothing was written: ", $invalid)
+            . ($importable > 0
+                ? "fix them, or run again with --skip-invalid to import the other rows.\n"
+                : "fix them; no other rows are left to import.\n");
     }
 
     /**

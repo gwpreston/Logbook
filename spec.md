@@ -4323,7 +4323,8 @@ vehicles; a disabled module cannot be imported).
   message when a file is larger, and 5,000 rows). A file that is plainly
   not text — a known binary format (ZIP, such as a Fuelio backup or an
   `.xlsx`; old `.xls`; PDF; images; gzip, 7z, RAR; SQLite), or NUL bytes
-  in its first 8 KB without a UTF-16 byte-order mark — is refused with
+  in its first 8 KB without a UTF-16 byte-order mark, or UTF-16 that
+  isn't whole, such as a cut-off file (K125) — is refused with
   "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
   then upload that." (K61). The
   file is staged under `var/cache/staged` with a random name bound to the
@@ -4336,7 +4337,9 @@ vehicles; a disabled module cannot be imported).
   English) and the field codes; the file's units (distance, volume) default
   to the unit named in the header, else the owner's (a gallon that
   doesn't say which, `(gal)` or `(gallons)`, is the owner's gallon: their
-  volume unit if a gallon, else by region; #505); the date order
+  volume unit if a gallon, else the UK gallon for a UK or Irish locale
+  or pounds, else the US gallon, as for app imports; #464, #505); the
+  date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
   defaults to ISO. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
@@ -4588,7 +4591,8 @@ a reader). Logbook isn't affiliated with Fuelio.
     detected and default mappings, prints the preview, and writes only
     without `--dry-run`. As on the web page, rows with problems stop the
     import (exit code 1, nothing written) unless `--skip-invalid` says to
-    import the others, and a row's problems name the file's columns
+    import the others, even when no other rows are left to import (K126),
+    and a row's problems name the file's columns
     (`Data`, `Odo`, `CostTitle`), not Logbook's fields (K11). For
     a ZIP with several vehicles, `--vehicle` is refused and each vehicle is
     created or matched as the mapping page would prefill it.
