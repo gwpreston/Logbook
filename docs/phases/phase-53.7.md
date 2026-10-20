@@ -5,7 +5,7 @@ title no longer announces its parts as changed, a modification's ETag
 follows what its body shows, an MCP tool call checks only the tool it
 runs, and decimal arithmetic stays exact past a PHP int.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.6's release, a patch release
 
 This is the next batch after [Phase 53.6](phase-53.6.md). Like 52.1,
@@ -122,8 +122,12 @@ tagged.
 
 ### 53.7.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-20:* every question
+      still *Needs a decision* is about a row listed under *Not in
+      scope*; #506 and #507 were decided when the batch was planned, and
+      spec §7.20 already carries #507. No open row besides K24, K25, K62
+      and K69 is in the code this phase changes.
 
 ### 53.7.1 Integration edges
 

@@ -12042,7 +12042,7 @@ task breakdowns live in the per-phase files; this is the map.
   53.5's release (#503, decided 2026-10-18). No migration. See
   [`phase-53.6.md`](docs/phases/phase-53.6.md).
 - **Phase 53.7 — API, webhook and MCP edges from the known-issues log +
-  patch release** (planned). A modification edit that leaves its date,
+  patch release** (🚧). A modification edit that leaves its date,
   odometer and parts as they were sends no `part` update webhook (§7.39,
   #442, K24); a modification's `ETag` covers what its body shows, so a
   part's notes or price don't change it (§7.20, K25, #507); an MCP
