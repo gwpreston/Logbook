@@ -1536,7 +1536,7 @@ runs, and decimal arithmetic stays exact past a PHP int.*
   their names (K25, #507).
 - MCP `tools/call` checks one tool, not all 36 (K69); `Decimal`'s
   overflow path uses `brick/math` instead of float (K62). No migration.
-  Patch release.
+  Releases v3.18.3, a patch (#506).
 
 → [`phase-53.7.md`](docs/phases/phase-53.7.md)
 

@@ -5,8 +5,9 @@ title no longer announces its parts as changed, a modification's ETag
 follows what its body shows, an MCP tool call checks only the tool it
 runs, and decimal arithmetic stays exact past a PHP int.*
 
-Status: ✅ complete · releases **v3.18.3**, a patch release after Phase
-53.6's (#506) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.18.3**
+([#133](https://github.com/gwpreston16/Logbook/pull/133)), a patch release
+after Phase 53.6's (#506) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.6](phase-53.6.md). Like 52.1,
 52.2, 53.5 and 53.6, it takes a few small open rows, the four that 53.6
@@ -183,13 +184,14 @@ tagged.
       says it). *Done:* `docs/api.md`'s modification read row now
       names the parts' names and says a part's other fields leave the
       tag alone.
-- [ ] Merge review, then merge.
+- [x] Merge review, then merge. Merged in
+      [#133](https://github.com/gwpreston16/Logbook/pull/133) on 2026-10-20.
 
 ### Release
 
 - [x] `VERSION` 3.18.3, CHANGELOG 3.18.3, README status: the patch
       after 53.6's release (#506).
-- [ ] Tag `v3.18.3` once merged.
+- [x] Tag `v3.18.3` once merged.
 
 ## Acceptance criteria
 
