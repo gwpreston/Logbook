@@ -9,6 +9,7 @@ use DateTimeZone;
 use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\Capability;
+use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\Part\ModificationData;
 use Logbook\Domain\Part\PartData;
@@ -231,6 +232,46 @@ final class PartsToolsTest extends ToolsBTestCase
             $mcp->modern('tools/call', ['name' => 'parts', 'arguments' => ['vehicles' => [$golf->id]]]),
         ));
         self::assertSame(1, $latest($call), 'MCP: the same');
+    }
+
+    /**
+     * K69: an MCP call checks the tool it runs, not every tool.
+     */
+    public function testAnMcpCallChecksOnlyTheToolItRuns(): void
+    {
+        $app = $this->aiApp(['FEATURES_PARTS' => 'true', 'FEATURES_FUEL' => 'false']);
+        $counter = QueryCounter::install($app);
+        $this->pinClock($app, self::NOW);
+        $this->resetDatabase($app);
+        $owner = $this->createOwner($app, 'owner');
+        $golf = $this->vehicle($app);
+        $on = LocalTime::parseDate('2026-03-05') ?? throw new \LogicException('date');
+        $this->service($app, PartService::class)
+            ->create($golf, new PartData('Clutch kit'), new DateTimeZone('Europe/London'), fitOn: $on, fitKm: '40000.000');
+        $arguments = ['vehicles' => [$golf->id]];
+
+        $this->toolResult($app, $owner, 'parts', $arguments);
+        $counter->count = 0;
+        $this->toolResult($app, $owner, 'parts', $arguments);
+        $ask = $counter->count;
+
+        foreach ([ApiScope::Read, ApiScope::ReadWrite] as $scope) {
+            $mcp = new McpClient($app, $this->apiKey($app, $owner, $scope));
+            $call = ['name' => 'parts', 'arguments' => $arguments];
+            $request = static fn () => McpClient::structured($mcp->modern('tools/call', $call));
+            $request();
+            $counter->count = 0;
+            self::assertSame(1, $request()->get('parts'));
+            // The key's own checks (the key, its last use, its user) on top of Ask's: 4 now, 49 before K69.
+            $sent = $scope->value . ': ' . $counter->count . ' against Ask\'s ' . $ask;
+            self::assertLessThanOrEqual($ask + 6, $counter->count, $sent);
+
+            foreach (['fuel_stats', 'log_fill_up', DraftKind::Fuel->toolName(), 'no_such_tool'] as $name) {
+                $refused = McpClient::body($mcp->modern('tools/call', ['name' => $name, 'arguments' => $arguments]));
+                self::assertSame(-32602, $refused->get('error', 'code'), $name);
+                self::assertSame('Unknown tool: ' . $name, $refused->get('error', 'message'), $name);
+            }
+        }
     }
 
     public function testADraftModificationIsACardUntilAddAndHasNoParts(): void

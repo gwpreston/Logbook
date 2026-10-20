@@ -12042,14 +12042,14 @@ task breakdowns live in the per-phase files; this is the map.
   53.5's release (#503, decided 2026-10-18). No migration. See
   [`phase-53.6.md`](docs/phases/phase-53.6.md).
 - **Phase 53.7 — API, webhook and MCP edges from the known-issues log +
-  patch release** (planned). A modification edit that leaves its date,
+  patch release** (✅). A modification edit that leaves its date,
   odometer and parts as they were sends no `part` update webhook (§7.39,
   #442, K24); a modification's `ETag` covers what its body shows, so a
   part's notes or price don't change it (§7.20, K25, #507); an MCP
   `tools/call` checks only the tool it runs (§7.28, K69); `Decimal`
   multiplies and divides past a PHP int exactly through `brick/math`
-  (CLAUDE.md §2, K62). Released on its own as a patch after 53.6's
-  release (#506, decided 2026-10-18). No migration. See
+  (CLAUDE.md §2, K62). Releases v3.18.3, a patch on its own after
+  53.6's release (#506, decided 2026-10-18). No migration. See
   [`phase-53.7.md`](docs/phases/phase-53.7.md).
 - **Phase 53.8 — V5C privacy and cross-check accuracy from 53.3's
   review + release** (planned). A *Scan the V5C* entry on the vehicle

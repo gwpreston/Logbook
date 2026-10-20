@@ -6,6 +6,37 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.18.3] — 2026-10-20
+
+Phase 53.7: **API, webhook and MCP edges from the known-issues log**
+([docs/phases/phase-53.7.md](docs/phases/phase-53.7.md)). No migration:
+pull and restart.
+
+### Fixed
+- **Editing a modification's title, notes, cost or category** no longer
+  sends an `entry.updated` webhook for each part it fitted or took off.
+  A part is announced only when the edit changes its fitting or removal:
+  a new date or mileage, a different outcome, sale price or replacement,
+  or a part fitted or removed. The same holds for service records (K24).
+- **A modification's `ETag`** (`GET /vehicles/{id}/modifications/{mod}`)
+  now changes only with what its body shows: the modification, its
+  revert, the fittings it made, and the name of each part. Editing a
+  part's notes, price or warranty no longer makes an `If-Match` on the
+  modification fail with 412 (K25, #507).
+- **An MCP `tools/call`** checks only the tool it was asked for, instead
+  of every tool: a `parts` call sends 9 database queries, not 54. A
+  switched-off or unknown tool still answers `Unknown tool` (K69).
+- **Multiplying or dividing very large decimals** (past what a PHP
+  integer holds) is exact, through `brick/math`, instead of falling back
+  to floating point and coming out 1–3 off in the last place. No figure
+  a real entry has reaches it (K62).
+
+### Upgrade notes
+- Every modification's `ETag` changes once on upgrade, even if nothing
+  about it changed. An API client holding a tag from 3.18.2 gets a 412
+  on its next `If-Match` write to that modification: read it again,
+  then retry. Rolling back to 3.18.2 brings the old tags back.
+
 ## [3.18.2] — 2026-10-20
 
 Phase 53.6: **Import fixes from the known-issues log**

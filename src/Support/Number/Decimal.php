@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Number;
 
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use InvalidArgumentException;
 use OverflowException;
 
@@ -111,7 +113,8 @@ final class Decimal
      * $a × $b rounded to $scale places (half away from zero), exactly.
      *
      * Only if the intermediate product would not fit in a PHP int (far beyond
-     * any real fuel quantity or price) does it fall back to float arithmetic.
+     * any real fuel quantity or price) does it fall back to brick/math, which
+     * is slower but just as exact.
      */
     public static function multiply(string $a, string $b, int $scale): string
     {
@@ -121,15 +124,15 @@ final class Decimal
         $intB = self::toScaledInt($b, $scaleB);
 
         if ($intB !== 0 && abs($intA) > intdiv(PHP_INT_MAX, abs($intB))) {
-            return self::fromFloat((float) $a * (float) $b, $scale);
+            return self::bigProduct($a, $b, $scale);
         }
 
-        return self::rescale($intA * $intB, $scaleA + $scaleB, $scale) ?? self::fromFloat((float) $a * (float) $b, $scale);
+        return self::rescale($intA * $intB, $scaleA + $scaleB, $scale) ?? self::bigProduct($a, $b, $scale);
     }
 
     /**
      * $a ÷ $b rounded to $scale places (half away from zero), exactly (with
-     * the same float fallback as multiply()).
+     * the same brick/math fallback as multiply()).
      *
      * @throws InvalidArgumentException when $b is zero
      */
@@ -149,7 +152,8 @@ final class Decimal
         $numerator = $shift >= 0 ? self::timesPowerOfTen($numerator, $shift) : $numerator;
         $denominator = $shift < 0 ? self::timesPowerOfTen($denominator, -$shift) : $denominator;
         if ($numerator === null || $denominator === null) {
-            return self::fromFloat((float) $a / (float) $b, $scale);
+            // HalfUp rounds a tie away from zero, as roundedDivision() does.
+            return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
         }
 
         return self::fromScaledInt(self::roundedDivision($numerator, $denominator), $scale);
@@ -167,6 +171,23 @@ final class Decimal
         $trimmed = rtrim(rtrim($value, '0'), '.');
 
         return $trimmed === '-0' ? '0' : $trimmed;
+    }
+
+    /**
+     * $a × $b at $scale for products whose scaled integers would overflow.
+     * HalfUp rounds a tie away from zero, as roundedDivision() does.
+     */
+    private static function bigProduct(string $a, string $b, int $scale): string
+    {
+        return BigDecimal::of($a)->multipliedBy($b)->toScale(self::places($scale), RoundingMode::HalfUp)->toString();
+    }
+
+    /**
+     * @return int<0, max>
+     */
+    private static function places(int $scale): int
+    {
+        return $scale >= 0 ? $scale : throw new InvalidArgumentException('A scale is never negative.');
     }
 
     private static function scaleOf(string $value): int
@@ -189,7 +210,7 @@ final class Decimal
         }
 
         // 10^19 and up is beyond a PHP int: a zero stays zero, anything else
-        // takes the caller's float fallback (multiply() of two long scales).
+        // takes the caller's brick/math fallback (multiply() of two long scales).
         if ($from - $to > 18) {
             return $value === 0 ? self::fromScaledInt(0, $to) : null;
         }

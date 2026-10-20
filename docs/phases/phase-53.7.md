@@ -5,8 +5,8 @@ title no longer announces its parts as changed, a modification's ETag
 follows what its body shows, an MCP tool call checks only the tool it
 runs, and decimal arithmetic stays exact past a PHP int.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.6's release, a patch release
+Status: ✅ complete · releases **v3.18.3**, a patch release after Phase
+53.6's (#506) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.6](phase-53.6.md). Like 52.1,
 52.2, 53.5 and 53.6, it takes a few small open rows, the four that 53.6
@@ -122,46 +122,74 @@ tagged.
 
 ### 53.7.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-20:* every question
+      still *Needs a decision* is about a row listed under *Not in
+      scope*; #506 and #507 were decided when the batch was planned, and
+      spec §7.20 already carries #507. No open row besides K24, K25, K62
+      and K69 is in the code this phase changes.
 
 ### 53.7.1 Integration edges
 
-- [ ] `PartService::applyRecord()` moves a fitting, or rewrites a
+- [x] `PartService::applyRecord()` moves a fitting, or rewrites a
       removal, and counts its part as touched only when what it stores
       would change (K24). A test (`PartsTest` or `ModificationsTest`):
       a title-only edit of a modification that fitted one part and took
       another off queues one `modification` update and no `part`
       update; changing its date queues both parts; changing the
-      removal's outcome queues that part.
-- [ ] `ApiModifications::tag()` hashes the modification, its fittings,
+      removal's outcome queues that part. *Done:* the test is in
+      `WebhooksTest`, beside #442's; it also checks that the same lists
+      sent again, or the same mileage written as `37000` for
+      `37000.000`, tell nothing, and that clearing a removal tells its
+      part. Mileages and sale prices are compared as decimals.
+      `followRevert()` moves fittings only to undo a revert, so it
+      needed no change.
+- [x] `ApiModifications::tag()` hashes the modification, its fittings,
       and each part's id and label instead of the whole state (K25,
       #507). `ApiPartsTest`: editing a fitted part's notes keeps the
       modification's `ETag` (an `If-Match` with the old one still
-      succeeds); renaming the part changes it.
-- [ ] `McpToolbox::call()` finds the read tool by name and checks
+      succeeds); renaming the part changes it. *Done:* `ApiEditor`'s
+      `If-Match` check, which hashed the stored state itself, now asks
+      `ApiModifications::tag()` for a modification, so the read and the
+      `PATCH` agree. The test also edits the part's price and warranty,
+      and checks that a stale tag after a rename is a 412 and that a
+      new brand (part of the name shown) changes the tag.
+- [x] `McpToolbox::call()` finds the read tool by name and checks
       `isAvailable()` on that one only (K69). A test: an MCP `parts`
       call runs within a query budget close to Ask's, and a call to a
       switched-off read tool still throws the JSON-RPC `Unknown tool`
-      error.
-- [ ] `Decimal::multiply()` and `Decimal::divide()` compute every
+      error. *Done:* `ToolRegistry::find()` gives the tool by name; a
+      write or draft is looked up by name too (`writeTool()`), so only
+      its own `canDraft()` runs. `PartsToolsTest`: an MCP `parts` call
+      sends 9 queries against Ask's 5 (54 before), on a read and a
+      read-and-write key; a switched-off read tool, a write on a read
+      key or with its module off, an Ask draft tool's name and an
+      unknown name are each `Unknown tool: …`.
+- [x] `Decimal::multiply()` and `Decimal::divide()` compute every
       overflow fallback with `BigDecimal`, leaving no `fromFloat()` call
       in either (K62). `DecimalTest`: `-27094.791536 ×
       30815.924647` at scale 6 gives the exact `…299549`, and a divide
       whose scaled operand overflows matches `BigDecimal`'s result.
+      *Done:* the tests are in `DecimalArithmeticTest` (beside the other
+      multiply and divide cases), with a tie past an int rounding away
+      from zero; an operand of more than 18 digits is still refused by
+      `toScaledInt()`, as before.
 
 ### 53.7.2 Finish
 
-- [ ] Known-issues rows K24, K25, K62 and K69 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status; `docs/api.md` if it
+- [x] Known-issues rows K24, K25, K62 and K69 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status; `docs/api.md` if it
       describes the modification `ETag` (#507; spec §7.20 already
-      says it).
+      says it). *Done:* `docs/api.md`'s modification read row now
+      names the parts' names and says a part's other fields leave the
+      tag alone.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.6's
-      release (#506).
+- [x] `VERSION` 3.18.3, CHANGELOG 3.18.3, README status: the patch
+      after 53.6's release (#506).
+- [ ] Tag `v3.18.3` once merged.
 
 ## Acceptance criteria
 

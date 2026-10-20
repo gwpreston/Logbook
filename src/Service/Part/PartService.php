@@ -27,6 +27,7 @@ use Logbook\Service\Webhook\WebhookEvents;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Money;
+use Logbook\Support\Number\Decimal;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -396,21 +397,24 @@ final readonly class PartService
                 continue;
             }
             if (self::fittedBy($fitting, $kind, $recordId) && !$fitting->fittedByRevert) {
+                // A fitting left where it was is no update of its part (K24).
                 if ($parts !== null && !in_array($part->id, $parts->fit, true)) {
                     $this->parts->deleteFitting($fitting->id);
-                } else {
+                    $touched[$part->id] = $part;
+                } elseif (!self::fittedAt($fitting, $on, $km)) {
                     $this->parts->moveFitted($fitting->id, $on, $km, $now);
+                    $touched[$part->id] = $part;
                 }
-                $touched[$part->id] = $part;
             }
             if (self::removedBy($fitting, $kind, $recordId) && !$fitting->removedByRevert) {
                 $removal = $parts === null ? self::removalOf($fitting) : ($parts->remove[$part->id] ?? null);
                 if ($removal === null) {
                     $this->parts->clearRemoved($fitting->id, $now);
-                } else {
+                    $touched[$part->id] = $part;
+                } elseif (!self::removedAs($fitting, $on, $km, $removal)) {
                     $this->setRemoved($fitting, $on, $km, $kind, $recordId, $removal);
+                    $touched[$part->id] = $part;
                 }
-                $touched[$part->id] = $part;
             }
         }
 
@@ -670,6 +674,41 @@ final readonly class PartService
     private static function removedBy(PartFitting $fitting, string $kind, int $recordId): bool
     {
         return ($kind === self::MAINTENANCE ? $fitting->removedMaintenanceId : $fitting->removedModificationId) === $recordId;
+    }
+
+    /**
+     * Whether the fitting already starts on this date and mileage.
+     */
+    private static function fittedAt(PartFitting $fitting, DateTimeImmutable $on, ?string $km): bool
+    {
+        return $fitting->fittedOn->format('Y-m-d') === $on->format('Y-m-d')
+            && self::sameDecimal($fitting->fittedOdometerKm, $km);
+    }
+
+    /**
+     * Whether the fitting already ends as this removal would store it:
+     * the date, mileage, outcome, and the sale price or replacement the
+     * outcome keeps (PartRepository::setRemoved()).
+     */
+    private static function removedAs(PartFitting $fitting, DateTimeImmutable $on, ?string $km, PartRemoval $removal): bool
+    {
+        $sold = $removal->outcome === RemovalOutcome::Sold ? $removal->soldPrice : null;
+        $replacedBy = $removal->outcome === RemovalOutcome::Returned ? $removal->replacedBy : null;
+
+        return $fitting->removedOn?->format('Y-m-d') === $on->format('Y-m-d')
+            && self::sameDecimal($fitting->removedOdometerKm, $km)
+            && $fitting->outcome === $removal->outcome
+            && self::sameDecimal($fitting->soldPrice, $sold)
+            && $fitting->replacedByPartId === $replacedBy;
+    }
+
+    private static function sameDecimal(?string $stored, ?string $given): bool
+    {
+        if ($stored === null || $given === null) {
+            return $stored === $given;
+        }
+
+        return Decimal::compare($stored, $given) === 0;
     }
 
     private static function removalOf(PartFitting $fitting): PartRemoval

@@ -124,18 +124,18 @@ final readonly class McpToolbox
     public function call(KeyHolder $holder, string $name, array $arguments): array
     {
         $user = $holder->user;
-        foreach ($this->readTools($user) as $tool) {
-            if ($tool->name() === $name) {
-                $run = $this->registry->run($user, new ToolCall('mcp', $name, $arguments));
-                if ($run->result === null) {
-                    return self::failure((string) $run->error);
-                }
-
-                return self::success($this->withLink($run->result->data, $run->result->link));
+        // Only the tool asked for is checked, not every tool (K69).
+        $read = $this->registry->find($name);
+        if ($read !== null && !$read instanceof DraftTool && $read->isAvailable($user)) {
+            $run = $this->registry->run($user, new ToolCall('mcp', $name, $arguments));
+            if ($run->result === null) {
+                return self::failure((string) $run->error);
             }
+
+            return self::success($this->withLink($run->result->data, $run->result->link));
         }
 
-        $tool = $this->writeTools($holder)[$name] ?? null;
+        $tool = $this->writeTool($holder, $name);
         if ($tool === null) {
             throw McpError::invalidParams(sprintf('Unknown tool: %s', $name));
         }
@@ -200,18 +200,29 @@ final readonly class McpToolbox
      */
     private function writeTools(KeyHolder $holder): array
     {
-        if (!$holder->key->scope->canWrite()) {
-            return [];
-        }
         $tools = [];
-        foreach ([...self::WRITES, ...self::DRAFTS] as $name => $kind) {
-            $tool = $this->draftTools[$kind->value] ?? null;
-            if ($tool !== null && $tool->canDraft($holder->user)) {
+        foreach (array_keys([...self::WRITES, ...self::DRAFTS]) as $name) {
+            $tool = $this->writeTool($holder, $name);
+            if ($tool !== null) {
                 $tools[$name] = $tool;
             }
         }
 
         return $tools;
+    }
+
+    /**
+     * One write or draft by MCP name, if this key and user can use it.
+     */
+    private function writeTool(KeyHolder $holder, string $name): ?DraftTool
+    {
+        $kind = self::DRAFTS[$name] ?? self::WRITES[$name] ?? null;
+        if ($kind === null || !$holder->key->scope->canWrite()) {
+            return null;
+        }
+        $tool = $this->draftTools[$kind->value] ?? null;
+
+        return $tool !== null && $tool->canDraft($holder->user) ? $tool : null;
     }
 
     /**
