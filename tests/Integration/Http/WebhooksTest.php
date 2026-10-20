@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Http;
 
 use DateTimeImmutable;
 use Logbook\Domain\Access\ShareLevel;
+use Logbook\Domain\Part\RemovalOutcome;
 use Logbook\Domain\Ai\Draft\DraftKind;
 use Logbook\Domain\Job\JobRun;
 use Logbook\Domain\Job\JobTrigger;
@@ -23,6 +24,9 @@ use Logbook\Service\Ai\Draft\DraftWriter;
 use Logbook\Service\Backup\BackupService;
 use Logbook\Service\Jobs\JobRunner;
 use Logbook\Service\Jobs\WebhooksJob;
+use Logbook\Service\Part\PartRemoval;
+use Logbook\Service\Part\PartService;
+use Logbook\Service\Part\RecordParts;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Webhook\WebhookSender;
@@ -277,6 +281,62 @@ final class WebhooksTest extends ReminderTestCase
         self::assertSame(2, count(array_keys($seen, 'entry.updated part ' . $spare, true)), 'a fitting and a removal');
         $touched = count(array_keys($seen, 'entry.updated part ' . $fitted, true));
         self::assertGreaterThanOrEqual(2, $touched, 'revert and undo touch the part it fitted');
+        foreach ($this->queued($webhook) as $delivery) {
+            self::assertMatchesPayloadSchema($delivery->payload);
+        }
+    }
+
+    /**
+     * K24: a part is told of only when a modification's edit moves its fitting or changes its removal.
+     */
+    public function testAModificationEditTellsOfAPartOnlyWhenItsFittingChanges(): void
+    {
+        $webhook = $this->webhook($this->owner);
+        $api = $this->api($this->app, $this->apiKey($this->app, $this->owner));
+        $base = '/vehicles/' . $this->golf->id;
+        $json = static fn (ResponseInterface $response): JsonDoc => \Logbook\Tests\Support\ApiClient::json($response);
+        $spare = $json($api->post($base . '/parts', ['name' => 'Standard shock']))->int('entry', 'id');
+        $api->post($base . '/parts/' . $spare . '/fit', ['fitted_on' => '2026-08-01']);
+        $created = $json($api->post($base . '/modifications', [
+            'title' => 'Coilovers', 'category' => 'suspension', 'done_on' => '2026-09-01', 'odometer' => '37000',
+            'distance_unit' => 'km', 'parts_fitted' => [['name' => 'B14 kit']],
+            'parts_removed' => [['part' => $spare, 'outcome' => 'kept']],
+        ]));
+        $mod = $created->int('entry', 'id');
+        $fitted = $created->int('entry', 'parts_fitted', 0, 'part');
+        $told = function () use ($webhook, $mod, $fitted, $spare): array {
+            $seen = [];
+            foreach ($this->queued($webhook) as $delivery) {
+                if (($delivery->payload['event'] ?? null) === 'entry.updated') {
+                    $id = $delivery->payload['entry_id'] ?? null;
+                    $seen[] = self::text($delivery->payload['kind'] ?? null) . ' ' . (is_int($id) ? $id : '');
+                }
+            }
+            $count = static fn (string $what): int => count(array_keys($seen, $what, true));
+
+            return [$count('modification ' . $mod), $count('part ' . $fitted), $count('part ' . $spare)];
+        };
+        $before = $told();
+
+        $edited = $api->patch($base . '/modifications/' . $mod, ['title' => 'Coilovers (B14)', 'notes' => 'Lowered 30 mm']);
+        self::assertSame(200, $edited->getStatusCode(), (string) $edited->getBody());
+        self::assertSame([$before[0] + 1, $before[1], $before[2]], $told(), 'the title and notes: the modification only');
+
+        $api->patch($base . '/modifications/' . $mod, ['done_on' => '2026-09-02']);
+        self::assertSame([$before[0] + 2, $before[1] + 1, $before[2] + 1], $told(), 'a new date moves both parts');
+
+        $parts = $this->service($this->app, PartService::class);
+        $on = new DateTimeImmutable('2026-09-02');
+        $keep = new RecordParts(fit: [$fitted], remove: [$spare => new PartRemoval(RemovalOutcome::Kept)]);
+        $parts->applyRecord($this->golf, PartService::MODIFICATION, $mod, $on, '37000.000', $keep);
+        self::assertSame([$before[0] + 2, $before[1] + 1, $before[2] + 1], $told(), 'the same lists again: nothing');
+        $sold = new RecordParts(fit: [$fitted], remove: [$spare => new PartRemoval(RemovalOutcome::Sold, '40.00')]);
+        $parts->applyRecord($this->golf, PartService::MODIFICATION, $mod, $on, '37000.000', $sold);
+        self::assertSame([$before[0] + 2, $before[1] + 1, $before[2] + 2], $told(), 'sold, not kept: the removed part');
+        $parts->applyRecord($this->golf, PartService::MODIFICATION, $mod, $on, '37000', $sold);
+        self::assertSame([$before[0] + 2, $before[1] + 1, $before[2] + 2], $told(), 'the same mileage written shorter');
+        $parts->applyRecord($this->golf, PartService::MODIFICATION, $mod, $on, '37000', new RecordParts(fit: [$fitted]));
+        self::assertSame([$before[0] + 2, $before[1] + 1, $before[2] + 3], $told(), 'the removal cleared');
         foreach ($this->queued($webhook) as $delivery) {
             self::assertMatchesPayloadSchema($delivery->payload);
         }

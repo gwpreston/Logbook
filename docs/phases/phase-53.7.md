@@ -131,13 +131,19 @@ tagged.
 
 ### 53.7.1 Integration edges
 
-- [ ] `PartService::applyRecord()` moves a fitting, or rewrites a
+- [x] `PartService::applyRecord()` moves a fitting, or rewrites a
       removal, and counts its part as touched only when what it stores
       would change (K24). A test (`PartsTest` or `ModificationsTest`):
       a title-only edit of a modification that fitted one part and took
       another off queues one `modification` update and no `part`
       update; changing its date queues both parts; changing the
-      removal's outcome queues that part.
+      removal's outcome queues that part. *Done:* the test is in
+      `WebhooksTest`, beside #442's; it also checks that the same lists
+      sent again, or the same mileage written as `37000` for
+      `37000.000`, tell nothing, and that clearing a removal tells its
+      part. Mileages and sale prices are compared as decimals.
+      `followRevert()` moves fittings only to undo a revert, so it
+      needed no change.
 - [x] `ApiModifications::tag()` hashes the modification, its fittings,
       and each part's id and label instead of the whole state (K25,
       #507). `ApiPartsTest`: editing a fitted part's notes keeps the
