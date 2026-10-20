@@ -7477,7 +7477,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   working, photos are not read at all ("This connection sends text
   only, and text recognition isn't working on this server."); the image
   is never sent instead. The gateway refuses any request with an image
-  on such a connection, whatever asked for it.
+  on such a connection, whatever asked for it. Rolling back the
+  migration that adds it (Phase 53.3) names each connection that has it
+  on and warns that pictures go to them once upgraded again, until it is
+  turned back on; the rollback still runs (decided 2026-10-20,
+  `docs/phases/open-questions.md` #532, K107).
   **Registration documents** (Phase 53.3, #510): on an *Internet*
   connection with OCR working, a V5C photo is always sent as redacted
   text, never as an image. It is recognised before anything is sent by
@@ -7498,7 +7502,25 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   the warnings above can go for it. Any one marker still keeps the
   picture from an *Internet* connection, but the wide redaction needs a
   stronger sign: two different markers, or `V5C` or `Registration
-  Certificate` on its own.
+  Certificate` on its own (`V5C` and OCR's `VSC` count as one marker,
+  and `VSC` alone is not a strong sign, so "Diagnostic VSC warning
+  light" keeps an invoice's figures).
+  As built in Phase 53.8: the entry (on the vehicle page and its
+  documents tab) is shown to those who may manage the vehicle, and opens
+  the Scan page for that vehicle with the target kept; a `vehicle`
+  target for a vehicle the user may not manage is refused, not dropped.
+  The wide redaction applies to such a scan on every route (PDF text,
+  OCR text, rules and the model's answer, whatever kind it returns).
+  On an *Internet* connection it is never sent as a picture: with no OCR
+  working, or OCR failing or reading too little, nothing is sent, and
+  the form opens empty with the file attached and the reason ("This scan
+  of a registration document is sent only as text, and text recognition
+  couldn't read it."). The Scan page's V5C warnings are not shown for it.
+  The connection's location is the one resolved when the scan is read,
+  not the one stored: a host stored as *Your network* that resolves
+  public again is treated as *Internet* (OCR first) before anything is
+  sent (decided 2026-10-20, `docs/phases/open-questions.md` #530,
+  K112).
 - **Upload:** one file, with the attachment rules (§7.12: content-checked
   type, `MAX_UPLOAD_MB`). The prepared file is held as a **pending
   upload** (§6 PendingUpload: owner-only, under `UPLOAD_PATH/pending`,
@@ -7533,8 +7555,8 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   - A page is rendered at the asked resolution, or lower so that its
     long edge stays within 5,000 px: a PDF with an oversized page (a
     200-inch page, K80) is rendered small rather than to a huge image.
-    The size is read from the page's own MediaBox; one inherited from
-    `/Pages` is not read yet (K80 stays open for it).
+    The size is read from the page's own MediaBox, or one inherited from
+    `/Pages`, times its `/UserUnit` (Phase 53.8, K80).
 - **Routing** (Phase 53.2, `Service\Ai\Scan\Router`): chosen per file
   from what is set up, with no setting to learn. A vision model stays
   first wherever it is set up.
@@ -7689,6 +7711,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     a digit in that row reads at a confidence of at least 90, since a
     slightly blurred photo reads wrong digits at about 80; documents of
     under 30 words stay unchecked (*Too little text*).
+    As built in Phase 53.8: *the value's digits* are the digits it
+    contains; only OCR's text is folded (O→0, l and I→1), so "Petrol" or
+    "Unleaded" needs the tolerant match only and "EV70 LTR" needs `70`
+    (K113). A value whose row lost words to the reference redaction is
+    unchecked, since what was removed can't be compared (K117).
   - **Not found, OCR unsure:** no mark; absence proves nothing.
   A flag never empties or blocks a field; the owner decides on the form.
   **The money adds up** (Phase 53.3, in the Mapper, so every route uses
@@ -7696,8 +7723,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   read, volume × price must be within 1p of the total, plus what the
   printed rounding of the volume and the price allows (half a unit in
   each one's last printed decimal, times the other). Worked in
-  `brick/math`. Otherwise the three fields are marked with the sum:
-  "45.20 L × 142.9p = £64.59, but the total reads £64.95." A price in
+  `brick/math`. Otherwise the three fields are marked: the total with
+  the sum, "45.20 L × 142.9p = £64.59, but the total reads £64.95.",
+  and the volume and the price with "Doesn't add up with the total.", so
+  the sentence is shown and read once (decided 2026-10-20,
+  `docs/phases/open-questions.md` #531, K106). A price in
   pence is read as such; the check is in the printed units, before any
   conversion to the user's. The figures are in the user's locale and in
   the receipt's currency when one was read, else plain numbers with no
@@ -12052,14 +12082,19 @@ task breakdowns live in the per-phase files; this is the map.
   53.6's release (#506, decided 2026-10-18). No migration. See
   [`phase-53.7.md`](docs/phases/phase-53.7.md).
 - **Phase 53.8 — V5C privacy and cross-check accuracy from 53.3's
-  review + release** (planned). A *Scan the V5C* entry on the vehicle
+  review + release** (in progress). A *Scan the V5C* entry on the vehicle
   page, whose scan always goes as text with the wide redaction (#511,
   #512; K104, K108); one V5C marker keeps the picture back but the wide
   redaction needs a stronger sign (#513, K109); the cross-check flags a
   value only where each digit word in its row reads at 90 or more
   (#514, K110); the owner's eval runs carried from 53.2 and 53.3, and
   the cross-check's image (#515, K114) revisited with their results
-  (§7.27). See [`phase-53.8.md`](docs/phases/phase-53.8.md).
+  (§7.27). With them, known issues K111, K113 and K117 (in the code it
+  changes), K112 (the location resolved at the scan, #530), K106 (the
+  sum sentence once, #531), K107 (a rollback warns, #532), K80 (an
+  inherited page size) and K105 (OCR's preparation alongside the
+  request), chosen by the owner on 2026-10-20. Releases v3.19.0. See
+  [`phase-53.8.md`](docs/phases/phase-53.8.md).
 - **Phase 53.9 — Install, dev-stack and test-run edges from the
   known-issues log + patch release** (planned). Composer refuses a
   bare-PHP install without the mbstring extension, which the bare-PHP

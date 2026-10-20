@@ -4,8 +4,8 @@
 as a picture, a passing "DVLA" no longer empties a receipt's figures, and
 the cross-check stops flagging right values on blurred photos.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases a minor
-version
+Status: 🚧 in progress · file lives in `docs/phases/` · releases
+**v3.19.0**
 
 Phase 53.3's merge review left five open questions about the V5C
 reference and the cross-check (#511–#515). The owner decided them on
@@ -49,6 +49,12 @@ file*, *Reading through OCR*, *Checking values*), the
 6. **#515, K114.** With the OCR eval's numbers, decide whether the
    cross-check reads the 2,000 px copy instead of the full-size file
    (#515's option 2). Not changed without them.
+7. **Known issues** chosen by the owner on 2026-10-20: K111, K113 and
+   K117 (in the code this phase changes); K112, the connection's
+   location resolved when the scan is read (#530); K106, the sum
+   sentence shown once (#531); K107, a rollback of 53.3's migration
+   warns (#532); K80, an inherited page size and `/UserUnit`; K105,
+   OCR's preparation alongside the vision request, built after #515.
 
 ## Not in scope
 
@@ -59,9 +65,14 @@ file*, *Reading through OCR*, *Checking values*), the
 ## Tasks
 
 ### 53.8.0 Spec first
-- [ ] Spec §7.27 already carries the decisions (*From Phase 53.8*);
+- [x] Spec §7.27 already carries the decisions (*From Phase 53.8*);
       re-read every open question and the *Open* rows of the known-issues
-      log touching Scan before starting (CLAUDE.md §12).
+      log touching Scan before starting (CLAUDE.md §12). *2026-10-20:*
+      none of the questions still open bears on Scan; they are carried.
+      The open Scan rows K111, K113 and K117 are in code this phase
+      changes; the owner added K112, K106, K107, K80 and K105 and
+      decided #529–#532 (all the recommendation). Spec §7.27 and §13
+      updated.
 
 ### 53.8.1 Scan the V5C
 - [ ] The entry on the vehicle page (and its documents tab), the
@@ -89,7 +100,26 @@ file*, *Reading through OCR*, *Checking values*), the
 - [ ] Design review of the new entry (375, 768, 1280 px; light and dark;
       JS off).
 
-### 53.8.4 Release
+### 53.8.4 Known issues
+- [ ] K111: a wrapped reference with a label or date in its run, or a
+      date after it, removed on V5C-like text.
+- [ ] K113: the value's own digits only; letters never folded on the
+      value's side.
+- [ ] K117: a value whose row lost reference words is unchecked.
+- [ ] K112 (#530): the location resolved at the scan; K112's repro
+      sends no image.
+- [ ] K106 (#531): the sum sentence under the total only; volume and
+      price "Doesn't add up with the total."
+- [ ] K107 (#532): 53.3's migration's `down()` warns, naming the
+      connections.
+- [ ] K80: an inherited MediaBox and `/UserUnit` read.
+
+### 53.8.5 K105, after #515
+- [ ] OCR's preparation runs alongside the vision request (and a scanned
+      PDF's later pages before the answer), as far as #515's choice of
+      image leaves it worth doing.
+
+### 53.8.6 Release
 - [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
       merged.
 
@@ -108,5 +138,30 @@ file*, *Reading through OCR*, *Checking values*), the
 ## Open questions
 
 Decided before this phase was written (#511–#515, 2026-10-19; see
-[53.3](phase-53.3.md)). None open; anything found while building goes
-here.
+[53.3](phase-53.3.md)). Found while starting it and decided by the owner
+on 2026-10-20 (#529–#532), all the recommendation:
+
+- **#529. Who runs the evals with the owner's models?** *Decided
+  2026-10-20: (1) the owner, before the PR. The agent re-runs the
+  fixture eval for #514 and gives the two commands; #515 is decided on
+  the `--via=ocr` numbers.*
+  - (1) The owner runs them before the PR.
+  - (2) The agent runs them with a local model the owner names.
+  - (3) Carried again; #515 stays (1).
+- **#530. K112: fix it here, and how?** *Decided 2026-10-20: (1).*
+  - (1) Route on the location resolved at the scan, as the gateway does
+    at send.
+  - (2) An acknowledged *Internet* connection always counts as
+    *Internet* for V5C routing.
+  - (3) Leave it open.
+- **#531. K106: with the sum sentence shown once, what do volume and
+  price show?** *Decided 2026-10-20: (1).*
+  - (1) The sentence under the total; "Doesn't add up with the total."
+    under the volume and the price.
+  - (2) One line above the three fields.
+  - (3) The sentence under the total only; the others unmarked.
+- **#532. K107: what does 53.3's migration's `down()` do while a
+  connection has *Send text, not images* on?** *Decided 2026-10-20: (1).*
+  - (1) Warn, naming the connections, then roll back.
+  - (2) Refuse unless forced.
+  - (3) Leave it (the CHANGELOG note only).
