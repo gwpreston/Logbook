@@ -75,9 +75,9 @@ file*, *Reading through OCR*, *Checking values*), the
       updated.
 
 ### 53.8.1 Scan the V5C
-- [ ] The entry on the vehicle page (and its documents tab), the
+- [x] The entry on the vehicle page (and its documents tab), the
       `vehicle` target kept through `ScanAction` and the pending upload.
-- [ ] Such a scan: registration kind, wide redaction, text only on
+- [x] Such a scan: registration kind, wide redaction, text only on
       *Internet* connections; the page's warning not shown for it.
 
 ### 53.8.2 Markers and the cross-check
@@ -106,7 +106,7 @@ file*, *Reading through OCR*, *Checking values*), the
 - [x] K113: the value's own digits only; letters never folded on the
       value's side.
 - [x] K117: a value whose row lost reference words is unchecked.
-- [ ] K112 (#530): the location resolved at the scan; K112's repro
+- [x] K112 (#530): the location resolved at the scan; K112's repro
       sends no image.
 - [ ] K106 (#531): the sum sentence under the total only; volume and
       price "Doesn't add up with the total."

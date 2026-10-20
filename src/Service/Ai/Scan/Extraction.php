@@ -203,17 +203,18 @@ final readonly class Extraction
 
     /**
      * From the model's object (already checked against the schema). Strings
-     * are trimmed and capped; a registration document is scrubbed of
-     * 11-digit runs; with $text (a text PDF's text, or OCR's) a value whose
+     * are trimmed and capped; a registration document, or any answer to a
+     * *Scan the V5C* scan ($registration, #511), is scrubbed of 11-digit
+     * runs; with $text (a text PDF's text, or OCR's) a value whose
      * evidence is not in the text is dropped, and noted. Against OCR text
      * the match is tolerant and a value read with low confidence is marked.
      *
      * @param array<string, mixed> $object
      */
-    public static function fromObject(array $object, string|OcrText|null $text = null): self
+    public static function fromObject(array $object, string|OcrText|null $text = null, bool $registration = false): self
     {
         $kind = ScanKind::tryFrom(is_string($object['kind'] ?? null) ? $object['kind'] : '') ?? ScanKind::Other;
-        if ($kind === ScanKind::Registration) {
+        if ($kind === ScanKind::Registration || $registration) {
             $object = (array) Scrubber::value($object);
         }
         $haystack = is_string($text) ? self::normal($text) : null;

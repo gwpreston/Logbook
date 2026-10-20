@@ -291,7 +291,10 @@
             {% endif %}
 
             <section class="card" aria-labelledby="details-heading">
-                <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>
+                <div class="card__header">
+                    <h2 id="details-heading" class="card__title">{{ 'vehicle.section.details'|trans }}</h2>
+                    {% include 'scan/_v5c_link.twig' with {class: 'card__link'} %}
+                </div>
                 <dl class="details">
                     <div><dt>{{ 'vehicle.field.type'|trans }}</dt><dd>{{ ('vehicle.type.' ~ data.type.value)|trans }}</dd></div>
                     <div><dt>{{ 'vehicle.field.make'|trans }}</dt><dd>{{ data.make }}</dd></div>

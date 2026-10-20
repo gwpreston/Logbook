@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Ai\Scan;
 
+use Logbook\Domain\Ai\AiConnection;
 use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\ErrorCode;
+use Logbook\Domain\Ai\Location;
 use Logbook\Domain\User\User;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiRequestRepository;
@@ -13,6 +15,7 @@ use Logbook\Service\Ai\AiFailure;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\AiSession;
 use Logbook\Service\Ai\AiStatus;
+use Logbook\Service\Ai\ConnectionLocator;
 use Logbook\Service\Ai\Provider\ChatMessage;
 use Logbook\Service\Ai\Provider\ChatRequest;
 use Logbook\Service\Ai\Provider\ResponseFormat;
@@ -27,7 +30,9 @@ use Logbook\Service\Ocr\OcrResult;
  * (Phase 53.2, extractViaOcr()). With OCR working, a vision read is
  * checked against OCR's text of the same file (Phase 53.3,
  * extractChecked()). No tools are offered, so the answer can only ever be
- * a form's values; text in the document is data.
+ * a form's values; text in the document is data. A *Scan the V5C* scan
+ * ($registration, Phase 53.8, #511) gets the wide redaction on every route
+ * and never goes to an *Internet* connection as a picture.
  */
 final readonly class Extractor
 {
@@ -37,6 +42,7 @@ final readonly class Extractor
         private AiConnectionRepository $connections,
         private OcrReader $ocr,
         private AiRequestRepository $requests,
+        private ConnectionLocator $locator,
     ) {
     }
 
@@ -45,7 +51,7 @@ final readonly class Extractor
         return $file->isText() ? AiTaskName::ReadText : AiTaskName::ReadDocument;
     }
 
-    public function extract(User $user, PreparedFile $file): Extraction|ScanProblem
+    public function extract(User $user, PreparedFile $file, bool $registration = false): Extraction|ScanProblem
     {
         if ($file->problem !== null) {
             return $file->problem;
@@ -58,6 +64,11 @@ final readonly class Extractor
         }
         if (!$file->isText() && !$model->images) {
             return ScanProblem::NoVision;
+        }
+        $connection = $this->connections->find($model->connectionId);
+        if (!$file->isText() && $registration && ($connection === null || $this->onInternet($connection))) {
+            // No OCR to read it on this server: a V5C scanned for its vehicle never goes as a picture (#511).
+            return ScanProblem::RegistrationTextOnly;
         }
 
         $message = $file->isText()
@@ -72,9 +83,8 @@ final readonly class Extractor
         if ($result->object === null) {
             return ScanProblem::Failed;
         }
-        $connection = $this->connections->find($model->connectionId);
 
-        return Extraction::fromObject($result->object, $file->text)
+        return Extraction::fromObject($result->object, $file->text, $registration)
             ->withReadBy(new ReadBy($model->name, $connection->name ?? ''));
     }
 
@@ -83,8 +93,13 @@ final readonly class Extractor
      * §7.27 *Reading through OCR*). The user's lock is held once for both,
      * for OCR's longest time plus the model's timeout.
      */
-    public function extractViaOcr(User $user, string $path, string $mime, AiTaskName $task): Extraction|ScanProblem
-    {
+    public function extractViaOcr(
+        User $user,
+        string $path,
+        string $mime,
+        AiTaskName $task,
+        bool $registration = false,
+    ): Extraction|ScanProblem {
         if (!$this->status->isOnFor($user)) {
             return ScanProblem::Unassigned;
         }
@@ -94,18 +109,18 @@ final readonly class Extractor
                 $user,
                 $task,
                 $this->ocr->longestSeconds(),
-                function (AiSession $session) use ($path, $mime, $locale): Extraction|ScanProblem {
+                function (AiSession $session) use ($path, $mime, $locale, $registration): Extraction|ScanProblem {
                     $engine = $this->ocr->engine()?->name();
                     $read = $this->ocr->readHeld($path, $mime, $locale);
                     if (!$read->ok() || $engine === null) {
                         return self::ocrProblem($read);
                     }
-                    $text = OcrText::of($read);
+                    $text = OcrText::of($read, $registration);
                     if ($text->isTooLittle()) {
                         return ScanProblem::TooLittleText;
                     }
 
-                    return $this->fromText($session, $text, $engine);
+                    return $this->fromText($session, $text, $engine, $registration);
                 },
             );
         } catch (AiFailure $failure) {
@@ -120,7 +135,11 @@ final readonly class Extractor
      * connection) OCR finishes before anything is sent, and a registration
      * document goes as its redacted text instead, or, when OCR read too
      * little of it, not at all (#510). OCR failing or
-     * reading too little skips the check; the scan carries on.
+     * reading too little skips the check; the scan carries on. The
+     * connection counts as *Internet* when its host resolves there now,
+     * whatever was stored (#530, K112). A *Scan the V5C* scan
+     * ($registration) on an *Internet* connection always goes as text, or
+     * not at all (#511).
      */
     public function extractChecked(
         User $user,
@@ -128,6 +147,7 @@ final readonly class Extractor
         string $mime,
         PreparedFile $file,
         bool $ocrFirst,
+        bool $registration = false,
     ): Extraction|ScanProblem {
         if ($file->problem !== null) {
             return $file->problem;
@@ -145,26 +165,38 @@ final readonly class Extractor
                 $user,
                 AiTaskName::ReadDocument,
                 $this->ocr->longestSeconds(),
-                function (AiSession $session) use ($path, $mime, $file, $locale, $ocrFirst): Extraction|ScanProblem {
+                function (
+                    AiSession $session,
+                ) use (
+                    $path,
+                    $mime,
+                    $file,
+                    $locale,
+                    $ocrFirst,
+                    $registration,
+                ): Extraction|ScanProblem {
                     $engine = $this->ocr->engine()?->name();
                     $job = $this->ocr->begin($path, $mime, $locale);
-                    if ($ocrFirst) {
+                    if ($ocrFirst || $this->onInternet($session->connection)) {
                         $read = $job->result();
-                        $text = $read->ok() ? OcrText::of($read) : null;
+                        $text = $read->ok() ? OcrText::of($read, $registration) : null;
+                        if ($registration && ($text === null || $text->isTooLittle() || $engine === null)) {
+                            return ScanProblem::RegistrationTextOnly;
+                        }
                         if ($text !== null && $text->mentionsRegistration()) {
                             // A V5C never goes as a picture here, even when OCR read too little (#510).
                             return $text->isTooLittle() || $engine === null
                                 ? ScanProblem::TooLittleText
-                                : $this->fromText($session, $text, $engine);
+                                : $this->fromText($session, $text, $engine, $registration);
                         }
                     }
                     $result = $session->chat(self::request(self::pictures($file)));
                     if ($result->object === null) {
                         return ScanProblem::Failed;
                     }
-                    $read = Extraction::fromObject($result->object)
+                    $read = Extraction::fromObject($result->object, null, $registration)
                         ->withReadBy(new ReadBy($session->model, $session->connection->name));
-                    $text = self::usable($job->result());
+                    $text = self::usable($job->result(), $registration);
                     if ($text === null) {
                         return $read;
                     }
@@ -189,28 +221,39 @@ final readonly class Extractor
     /**
      * OCR's text through the session's model, as the document's text.
      */
-    private function fromText(AiSession $session, OcrText $text, string $engine): Extraction|ScanProblem
+    private function fromText(AiSession $session, OcrText $text, string $engine, bool $registration): Extraction|ScanProblem
     {
         $result = $session->chat(self::request(ChatMessage::user($text->message())));
         if ($result->object === null) {
             return ScanProblem::Failed;
         }
 
-        return Extraction::fromObject($result->object, $text)
+        return Extraction::fromObject($result->object, $text, $registration)
             ->withReadBy(new ReadBy($session->model, $session->connection->name, $engine));
     }
 
     /**
      * OCR's text when it read enough to check against, else null.
      */
-    private static function usable(OcrResult $read): ?OcrText
+    private static function usable(OcrResult $read, bool $registration): ?OcrText
     {
         if (!$read->ok()) {
             return null;
         }
-        $text = OcrText::of($read);
+        $text = OcrText::of($read, $registration);
 
         return $text->isTooLittle() ? null : $text;
+    }
+
+    /**
+     * Whether $connection is on the *Internet*: as stored, or as its host
+     * resolves now (#530, K112), since the gateway corrects a stale
+     * location only when it sends.
+     */
+    private function onInternet(AiConnection $connection): bool
+    {
+        return $connection->location === Location::Internet
+            || $this->locator->locate($connection->baseUrl)->location === Location::Internet;
     }
 
     private static function pictures(PreparedFile $file): ChatMessage

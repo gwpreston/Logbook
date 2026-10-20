@@ -5126,6 +5126,14 @@ return [
         'chooser_hint' => 'Ein Formular aus einem Foto oder PDF ausfüllen',
         'shortcut' => 'Scannen',
         'fill_from_file' => 'Aus einer Datei ausfüllen',
+        // Phase 53.8 (spec.md §7.27, #511): ein V5C, vom Fahrzeug aus gescannt.
+        'v5c' => [
+            'link' => 'V5C scannen',
+            'title' => 'V5C scannen',
+            'lead' => 'Ein Foto oder PDF der Zulassungsbescheinigung (V5C) von {vehicle}. Kennzeichen, FIN und Erstzulassung werden als Änderungen angeboten; nichts ändert sich, bevor du speicherst.',
+            'vehicle' => 'Fahrzeug',
+            'internet' => 'Zuerst auf diesem Server gelesen (Texterkennung). Nur der Text geht an {connection}, ohne die Dokumentnummer; das Bild wird nie gesendet.',
+        ],
         'where' => [
             'rules' => 'Ohne KI auf diesem Server gelesen (Texterkennung und Regeln). Die Datei verlässt ihn nicht. Prüfe vor dem Speichern jedes Feld.',
             'rules_paddleocr' => 'Ohne KI gelesen: dein Texterkennungsdienst liest Fotos und gescannte PDFs, dann Regeln auf diesem Server. Nichts geht an ein KI-Modell. Prüfe vor dem Speichern jedes Feld.',
@@ -5156,6 +5164,7 @@ return [
         ],
         'validation' => [
             'file' => 'Wähle ein Foto oder PDF.',
+            'v5c_vehicle' => 'Scanne den V5C von der Seite eines Fahrzeugs, das du bearbeiten darfst.',
         ],
         'submit' => 'Lesen',
         'reading' => 'Deine Datei wird gelesen …',
@@ -5209,6 +5218,7 @@ return [
             'unassigned' => 'Das Lesen von Dateien ist für diese Art Datei nicht eingerichtet.',
             'no_vision' => 'Fotos und gescannte PDFs zu lesen braucht ein Modell, das Bilder liest, oder Texterkennung auf diesem Server (Einstellungen → KI).',
             'too_little_text' => 'Der Text auf diesem Foto war nicht zu erkennen. Versuche ein flacheres, helleres Foto.',
+            'registration_text_only' => 'Dieser Scan einer Zulassungsbescheinigung wird nur als Text gesendet, und die Texterkennung konnte ihn nicht lesen.',
             'timeout' => 'Das Modell hat zu lange zum Lesen gebraucht.',
             'busy' => 'Deine letzte Anfrage läuft noch.',
             'failed' => 'Diese Datei konnte nicht gelesen werden.',
@@ -5268,6 +5278,7 @@ return [
             'lead' => 'Hake an, was am Fahrzeug geändert werden soll. Sonst ändert sich nichts.',
             'legend' => 'Im Dokument gefunden',
             'nothing' => 'Im Dokument konnte nichts gelesen werden.',
+            'by_hand' => 'Bearbeite das Fahrzeug, um seine Angaben von Hand einzutragen.',
             'field' => [
                 'registration' => 'Kennzeichen',
                 'vin' => 'FIN',

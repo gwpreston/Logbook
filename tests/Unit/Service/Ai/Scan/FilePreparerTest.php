@@ -53,6 +53,18 @@ final class FilePreparerTest extends TestCase
         self::assertSame(0, $this->renderer->calls);
     }
 
+    public function testAScanTheV5cTextPdfGetsTheWideRuleWithoutMarkers(): void
+    {
+        // #511, #512 (4): no marker on the page, yet a punctuated reference goes.
+        file_put_contents($this->path, ScanFiles::textPdf([
+            'Ref 1234-5678-901',
+            str_repeat('Keep this document safe and tell us about any change. ', 5),
+        ]));
+
+        self::assertStringContainsString('1234-5678-901', (string) $this->preparer->look($this->path, 'application/pdf')->text);
+        self::assertStringNotContainsString('5678', (string) $this->preparer->look($this->path, 'application/pdf', true)->text);
+    }
+
     public function testAShortTextLayerIsTreatedAsAScan(): void
     {
         file_put_contents($this->path, ScanFiles::textPdf(['Total 10']));

@@ -46,13 +46,13 @@ final readonly class RuleReader
     /**
      * A photo or scanned PDF: OCR, then rules.
      */
-    public function readPicture(User $user, string $path, string $mime): Extraction|ScanProblem
+    public function readPicture(User $user, string $path, string $mime, bool $registration = false): Extraction|ScanProblem
     {
         $read = $this->ocr->read($user->id, $path, $mime, $user->preferences->locale);
         if (!$read->ok()) {
             return ScanProblem::fromOcr($read->problem);
         }
-        $text = OcrText::of($read);
+        $text = OcrText::of($read, $registration);
         // Only OCR's confidence floor (#525): the 30-word minimum keeps short text from a model, and rules
         // fill only labelled values, a lone amount only when read clearly, so a short receipt is still read.
         if ($text->wordCount === 0 || $text->meanConfidence < OcrText::MIN_MEAN_CONFIDENCE) {
@@ -65,24 +65,26 @@ final readonly class RuleReader
     /**
      * A text PDF: its text (already scrubbed of 11-digit runs), then rules.
      */
-    public function readText(User $user, PreparedFile $file): Extraction|ScanProblem
+    public function readText(User $user, PreparedFile $file, bool $registration = false): Extraction|ScanProblem
     {
         if ($file->problem !== null) {
             return $file->problem;
         }
         $text = (string) $file->text;
 
-        return $this->read($user, explode("\n", $text), $text, null);
+        return $this->read($user, explode("\n", $text), $text, null, $registration);
     }
 
     /**
      * @param list<string> $rows the document's lines, scrubbed
      * @param string|OcrText $text what each value's evidence is checked against
+     * @param bool $registration a *Scan the V5C* scan (#511): the V5C rule whatever the text says
      */
-    public function read(User $user, array $rows, string|OcrText $text, ?string $engine): Extraction
+    public function read(User $user, array $rows, string|OcrText $text, ?string $engine, bool $registration = false): Extraction
     {
         $locale = $user->preferences->locale;
-        $v5c = $text instanceof OcrText ? $text->looksLikeRegistration() : Scrubber::looksLikeRegistration($text);
+        $v5c = $registration
+            || ($text instanceof OcrText ? $text->looksLikeRegistration() : Scrubber::looksLikeRegistration($text));
         if ($v5c) {
             // A V5C's reference never reaches a rule, whatever the gaps between its groups (merge review of 53.4).
             $rows = array_map(Scrubber::withoutReferenceWords(...), $rows);

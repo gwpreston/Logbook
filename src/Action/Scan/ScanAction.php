@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Scan;
 
+use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Location;
 use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
+use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Ai\AiGateway;
 use Logbook\Service\Ai\Scan\IncidentMatcher;
 use Logbook\Service\Ai\Scan\ScanAvailability;
@@ -33,6 +35,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * shows where it got to. `?vehicle=` and `?for=` (a create form's *Fill
  * from a file*) choose the vehicle and the form; `?incident=` with
  * `for=incident` (*Update from a letter*, Phase 27.2) the incident it updates.
+ * `for=vehicle` is *Scan the V5C* (Phase 53.8, #511): kept with its vehicle,
+ * which the user must be able to manage, so the scan goes only as text to an
+ * *Internet* connection; refused rather than dropped otherwise.
  */
 final readonly class ScanAction
 {
@@ -50,6 +55,7 @@ final readonly class ScanAction
         private View $view,
         private TranslatorInterface $translator,
         private OcrReader $ocr,
+        private VehicleAccess $access,
     ) {
     }
 
@@ -95,7 +101,11 @@ final readonly class ScanAction
             }
         }
         $target = ScanTarget::tryFrom($values['for']);
-        $target = $target === ScanTarget::Vehicle ? null : $target;
+        $manages = $chosen !== null && $this->access->can($user, VehicleAbility::Manage, $chosen);
+        if ($target === ScanTarget::Vehicle && !$manages) {
+            // Dropping the target would drop its privacy rule (#511): refuse instead.
+            return $this->render($request, $response, $user, $vehicles, $values, 'scan.validation.v5c_vehicle', 422);
+        }
         // *Update from a letter*: an incident of the chosen vehicle the user may change.
         $incident = $target === ScanTarget::Incident && $chosen !== null
             ? $this->incidents->find($user, $chosen, $values['incident'])
@@ -130,6 +140,11 @@ final readonly class ScanAction
 
         // Worked out once for the page (K118).
         $route = $this->availability->route($user);
+        // *Scan the V5C* (#511): the vehicle it was started for.
+        $v5c = null;
+        foreach ($values['for'] === ScanTarget::Vehicle->value ? $vehicles : [] as $vehicle) {
+            $v5c = (string) $vehicle->id === $values['vehicle_id'] ? $vehicle : $v5c;
+        }
 
         return $this->view->render($request, $response, 'scan/form.twig', [
             'values' => $values,
@@ -147,6 +162,7 @@ final readonly class ScanAction
             'rules_text' => $this->availability->readsTextByRules($user),
             'this_server' => Location::Server,
             'max_upload_mb' => $this->attachments->maxMegabytes(),
+            'v5c_vehicle' => $v5c,
         ], $status);
     }
 }

@@ -40,9 +40,11 @@ final readonly class FilePreparer
     /**
      * A first look, without rendering anything: a text PDF's text; a
      * scanned PDF with no renderer as NoRenderer; otherwise a picture for
-     * the route to read (spec.md §7.27 *Routing*).
+     * the route to read (spec.md §7.27 *Routing*). $registration (a *Scan
+     * the V5C* scan, #511) gives a text PDF the wide redaction whatever its
+     * markers.
      */
-    public function look(string $path, string $mime): PreparedFile
+    public function look(string $path, string $mime, bool $registration = false): PreparedFile
     {
         if ($mime !== 'application/pdf') {
             return PreparedFile::picture();
@@ -52,7 +54,9 @@ final readonly class FilePreparer
         if (mb_strlen($first) >= self::MIN_TEXT) {
             $text = mb_substr(implode("\n\n", $read['pages']), 0, self::MAX_TEXT);
 
-            return PreparedFile::text(Scrubber::text($text, Scrubber::looksLikeRegistration($text)), $read['count']);
+            $wide = $registration || Scrubber::looksLikeRegistration($text);
+
+            return PreparedFile::text(Scrubber::text($text, $wide), $read['count']);
         }
 
         return $this->renderer->isAvailable()

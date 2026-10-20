@@ -288,7 +288,8 @@ final class OcrTextTest extends TestCase
     public function testARowTheRedactionTookWordsFromIsNotJudged(): void
     {
         // K117: the reference is gone from OCR's row, so the value's digits can't be compared.
-        $text = OcrText::of(self::ocr([['V5C', 'Document', 'reference', 'number', '1234', '5678', '901'], ['Make', 'FORD']], 95.0));
+        $rows = [['V5C', 'Document', 'reference', 'number', '1234', '5678', '901'], ['Make', 'FORD']];
+        $text = OcrText::of(self::ocr($rows, 95.0));
 
         self::assertSame(CrossCheck::Unchecked, $text->check('V5C', 'Document reference number'));
         self::assertSame(CrossCheck::Found, $text->check('FORD', 'Make FORD'));
@@ -370,15 +371,22 @@ final class OcrTextTest extends TestCase
     public function testTheWideRuleNeedsAStrongSign(): void
     {
         // #513, K109: two different markers, or V5C or Registration Certificate on its own.
-        $looks = static fn (array $rows): bool => OcrText::of(self::ocr($rows))->looksLikeRegistration();
 
-        self::assertTrue($looks([['V5C']]));
-        self::assertTrue($looks([['Registration', 'Certificate']]));
-        self::assertTrue($looks([['DVLA'], ['Document', 'reference']]));
-        self::assertTrue($looks([['VSC'], ['DVLA']]));
-        self::assertFalse($looks([['DVLA', 'Swansea']]));
-        self::assertFalse($looks([['Diagnostic', 'VSC', 'warning', 'light']]));
-        self::assertFalse($looks([['Document', 'reference', 'ABC']]));
+        self::assertTrue(self::looks([['V5C']]));
+        self::assertTrue(self::looks([['Registration', 'Certificate']]));
+        self::assertTrue(self::looks([['DVLA'], ['Document', 'reference']]));
+        self::assertTrue(self::looks([['VSC'], ['DVLA']]));
+        self::assertFalse(self::looks([['DVLA', 'Swansea']]));
+        self::assertFalse(self::looks([['Diagnostic', 'VSC', 'warning', 'light']]));
+        self::assertFalse(self::looks([['Document', 'reference', 'ABC']]));
+    }
+
+    /**
+     * @param list<list<string>> $rows
+     */
+    private static function looks(array $rows): bool
+    {
+        return OcrText::of(self::ocr($rows))->looksLikeRegistration();
     }
 
     public function testAPassingMarkerKeepsAnInvoicesFigures(): void
@@ -413,7 +421,7 @@ final class OcrTextTest extends TestCase
 
     /**
      * @param list<list<string>> $rows
-     * @param array<string, float> $confidences
+     * @param array<array-key, float> $confidences
      */
     private static function ocr(array $rows, float $confidence = 90.0, array $confidences = []): OcrResult
     {
@@ -427,7 +435,7 @@ final class OcrTextTest extends TestCase
 
     /**
      * @param list<string> $words
-     * @param array<string, float> $confidences
+     * @param array<array-key, float> $confidences
      */
     private static function line(array $words, int $row, int $page, float $confidence = 90.0, array $confidences = []): OcrLine
     {

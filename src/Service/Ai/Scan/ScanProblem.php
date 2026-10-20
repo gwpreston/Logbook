@@ -22,6 +22,11 @@ enum ScanProblem: string
     case NoVision = 'no_vision';
     /** *Send text, not images* is on and OCR isn't working: the image is never sent instead (Phase 53.3). */
     case TextOnly = 'text_only';
+    /**
+     * A *Scan the V5C* scan bound for an *Internet* connection that OCR
+     * couldn't read: it goes only as text, never as a picture (Phase 53.8, #511).
+     */
+    case RegistrationTextOnly = 'registration_text_only';
     /** OCR found too little text to send (Phase 53.2). */
     case TooLittleText = 'too_little_text';
     /** The model did not answer in time. */

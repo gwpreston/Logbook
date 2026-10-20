@@ -64,7 +64,9 @@ final readonly class ScanResultAction
         $query = $request->getQueryParams();
         $reading = ScanReader::extraction($upload);
         $as = ScanKind::tryFrom(is_string($query['as'] ?? null) ? $query['as'] : '');
-        $kind = $as ?? $reading->kind ?? $upload->target?->defaultKind();
+        // *Scan the V5C* (#511) is read as a registration document, whatever the model called it.
+        $v5c = $upload->target === ScanTarget::Vehicle ? ScanKind::Registration : null;
+        $kind = $as ?? $v5c ?? $reading->kind ?? $upload->target?->defaultKind();
         if ($kind === null) {
             // Not read, and not started from a form: which form?
             return $this->view->render($request, $response, 'scan/kind.twig', [
@@ -83,8 +85,8 @@ final readonly class ScanResultAction
                 $vehicle = $candidate;
             }
         }
-        if ($vehicle === null && $upload->incidentId !== null) {
-            // Scanned for an incident: its vehicle, whatever plate the letter shows.
+        if ($vehicle === null && ($upload->incidentId !== null || $v5c !== null)) {
+            // Scanned for an incident, or a vehicle's V5C: its vehicle, whatever plate the letter shows.
             foreach ($vehicles as $candidate) {
                 $vehicle = $candidate->id === $upload->vehicleId ? $candidate : $vehicle;
             }
