@@ -119,6 +119,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | 🚧 |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | 📋 |
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | 📋 |
+| [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1555,6 +1556,25 @@ the cross-check stops flagging right values on blurred photos.*
   `--crosscheck`); #515 (K114) revisited with their results. Release.
 
 → [`phase-53.8.md`](docs/phases/phase-53.8.md)
+
+---
+
+## Phase 53.9 — Install, dev-stack and test-run edges from the known-issues log + patch release
+*Five open rows of the known-issues log closed: a bare-PHP install
+without mbstring is refused by Composer instead of failing later, two
+smoke tests can run at once, the suite passes in the dev container, the
+dev stack picks up a changed `composer.lock`, and the import command
+line says so when there is no user yet.*
+
+- `composer.json` requires `ext-mbstring`, and the bare-PHP docs name it
+  (K123, #528).
+- `bin/smoke-test.sh` honours `COMPOSE_PROJECT_NAME` (K121); tests that
+  expect no session secret clear `SESSION_SECRET_FILE` too (K122); the
+  dev stack reinstalls `vendor/` when the lock changes (K128).
+- `bin/import-app.php` with no users yet says to finish setup (K127).
+  No migration. Patch release.
+
+→ [`phase-53.9.md`](docs/phases/phase-53.9.md)
 
 ---
 
