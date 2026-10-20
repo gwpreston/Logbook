@@ -4,8 +4,8 @@
 as a picture, a passing "DVLA" no longer empties a receipt's figures, and
 the cross-check stops flagging right values on blurred photos.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases
-**v3.19.0**
+Status: ✅ complete · releases **v3.19.0** · file lives in
+`docs/phases/`. K105 carried (#515 kept the full-size file).
 
 Phase 53.3's merge review left five open questions about the V5C
 reference and the cross-check (#511–#515). The owner decided them on
@@ -88,7 +88,7 @@ file*, *Reading through OCR*, *Checking values*), the
 - [x] #514: the per-digit-word confidence bar of 90.
 
 ### 53.8.3 Evals and tests
-- [ ] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
+- [x] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
       owner's `--scans --via=ocr` and `--scans --crosscheck` runs, in
       53.3's *Eval results*.
 - [x] The fixture eval re-run: flags and false flags per kind with the
@@ -100,11 +100,12 @@ file*, *Reading through OCR*, *Checking values*), the
       2,000 px, so the copy is the file; only the V5C passes the 30-word
       gate). The owner kept the full-size file (#515 stays (1)); K114
       stays open and K105 is carried.
-- [ ] Tests: a *Scan the V5C* photo on an *Internet* connection never
+- [x] Tests: a *Scan the V5C* photo on an *Internet* connection never
       sends an image, asserted at the adapter; a misread reference
       (`9O1`, `1234-5678-901`, wrapped) removed on that scan without
       markers; an invoice with "VSC warning light" keeps its figures; a
-      blurred photo's right values not flagged.
+      blurred photo's right values not flagged (`ScanCrossCheckTest`,
+      `OcrTextTest`, `FilePreparerTest`, `RuleReaderTest`).
 - [x] Design review of the new entry (375, 768, 1280 px; light and dark;
       JS off; at `/lb`). *2026-10-20 (design-reviewer at `d6c42f49`):* no
       HIGH. MEDIUM, fixed: the Details card's link stacked its icon above
@@ -145,8 +146,8 @@ file*, *Reading through OCR*, *Checking values*), the
       it, so K105 stays open for a later phase (owner's choice).
 
 ### 53.8.6 Release
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.19.0` once merged.
 
 ## Acceptance criteria
 
@@ -256,3 +257,33 @@ request: the model answered `"fields": {"date": {}}`, which the schema
 allowed (#534, K130). With `value` and `evidence` required, fixture 01
 sent straight to LM Studio came back with its date and total and their
 evidence. Re-run after the fix (#535).
+
+**The owner's third runs (2026-10-20, after #534; LM Studio,
+gemma-3-12b on `read_document` and `read_text`; Tesseract in the dev
+image).** `bin/ai-eval.php --scans --via=ocr` (53.2's acceptance
+criterion 3), fields right per kind:
+
+| Kind (files) | Vision model | Through OCR and the text model | OCR route failed |
+|---|---|---|---|
+| service_invoice (8) | 80% | 73% | 4 (too little text) |
+| fuel_receipt (4) | 71% | 65% | 2 |
+| inspection (3) | 83% | 85% | 1 |
+| insurance (3) | 72% | 58% | 1 |
+| registration (2) | 80% | 60% | 0 |
+| other (1) | 80% | 80% | 0 |
+| claim_letter (2) | 76% | 76% | 0 |
+| repair_estimate (1) | 75% | 0% | 1 |
+
+Text PDFs go to `read_text` on both routes, so the difference is the
+photos and scans: 9 of the 10 are under OCR's 30 words and aren't sent
+on the OCR route (*Too little text*); the V5C photo, the one that is,
+read 2 of 6 through OCR against 4 of 6 by the vision model (OCR's
+`81 63 2616` for 01 03 2018). `--scans --crosscheck` (53.3's
+acceptance criterion 1): no value marked "Not found on the page", none
+of them right, on any kind; the fields read are the vision model's
+(80%, 62%, 83%, 72%, 50%, 80%, 76%, 75%). Only the V5C photo passes the
+30-word gate, so the check judged one file; the fixtures are too short
+to measure it further. The model varies between runs at temperature 0:
+the V5C photo read 4 of 6 and then 1 of 6 on the vision route alone.
+No registration reference in any output. Before #534 the same model
+read 0–59% per kind (text PDFs mostly 0), gemma-4-e4b 0–20%.

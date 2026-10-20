@@ -12091,7 +12091,7 @@ task breakdowns live in the per-phase files; this is the map.
   53.6's release (#506, decided 2026-10-18). No migration. See
   [`phase-53.7.md`](docs/phases/phase-53.7.md).
 - **Phase 53.8 — V5C privacy and cross-check accuracy from 53.3's
-  review + release** (in progress). A *Scan the V5C* entry on the vehicle
+  review + release** (✅). A *Scan the V5C* entry on the vehicle
   page, whose scan always goes as text with the wide redaction (#511,
   #512; K104, K108); one V5C marker keeps the picture back but the wide
   redaction needs a stronger sign (#513, K109); the cross-check flags a
