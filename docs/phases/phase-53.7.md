@@ -138,11 +138,16 @@ tagged.
       another off queues one `modification` update and no `part`
       update; changing its date queues both parts; changing the
       removal's outcome queues that part.
-- [ ] `ApiModifications::tag()` hashes the modification, its fittings,
+- [x] `ApiModifications::tag()` hashes the modification, its fittings,
       and each part's id and label instead of the whole state (K25,
       #507). `ApiPartsTest`: editing a fitted part's notes keeps the
       modification's `ETag` (an `If-Match` with the old one still
-      succeeds); renaming the part changes it.
+      succeeds); renaming the part changes it. *Done:* `ApiEditor`'s
+      `If-Match` check, which hashed the stored state itself, now asks
+      `ApiModifications::tag()` for a modification, so the read and the
+      `PATCH` agree. The test also edits the part's price and warranty,
+      and checks that a stale tag after a rename is a 412 and that a
+      new brand (part of the name shown) changes the tag.
 - [x] `McpToolbox::call()` finds the read tool by name and checks
       `isAvailable()` on that one only (K69). A test: an MCP `parts`
       call runs within a query budget close to Ask's, and a call to a

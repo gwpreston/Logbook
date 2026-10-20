@@ -173,7 +173,9 @@ final readonly class ApiEditor
      */
     public function precondition(?string $ifMatch, object $stored): void
     {
-        if ($ifMatch !== null && !EntityTag::matches($ifMatch, $this->tags->of($stored))) {
+        // A modification's tag covers only what its body shows (#507).
+        $tag = $stored instanceof ModificationState ? $this->modifications->tag($stored) : $this->tags->of($stored);
+        if ($ifMatch !== null && !EntityTag::matches($ifMatch, $tag)) {
             throw new ApiProblem(
                 412,
                 'precondition_failed',

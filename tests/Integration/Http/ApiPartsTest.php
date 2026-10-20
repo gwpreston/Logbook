@@ -309,6 +309,35 @@ final class ApiPartsTest extends AppTestCase
         self::assertContains('declared_on', ApiClient::json($early)->keys('errors'), 'not before it was done');
     }
 
+    /**
+     * K25 (#507): the tag follows what the body shows, a part's name but not its other fields.
+     */
+    public function testAModificationsETagIgnoresWhatItsBodyDoesNotShow(): void
+    {
+        $id = $this->logged();
+        $path = $this->mods . '/' . $id;
+        $read = $this->api->get($path);
+        $tag = $read->getHeaderLine('ETag');
+        $part = $this->parts . '/' . ApiClient::json($read)->int('parts_fitted', 0, 'part');
+
+        $edit = $this->api->patch($part, ['notes' => 'Torqued at 1,000 km', 'price' => '850.00', 'warranty_months' => 36]);
+        self::assertSame(200, $edit->getStatusCode(), self::body($edit));
+        self::assertSame($tag, $this->api->get($path)->getHeaderLine('ETag'), 'the part\'s notes, price and warranty');
+        $kept = $this->api->patch($path, ['notes' => 'Louder'], ['If-Match' => $tag]);
+        self::assertSame(200, $kept->getStatusCode(), self::body($kept));
+
+        $tag = $this->api->get($path)->getHeaderLine('ETag');
+        self::assertSame(200, $this->api->patch($part, ['name' => 'Cat-back exhaust system'])->getStatusCode());
+        $renamed = $this->api->get($path);
+        self::assertSame('Milltek Cat-back exhaust system', ApiClient::json($renamed)->get('parts_fitted', 0, 'name'));
+        self::assertNotSame($tag, $renamed->getHeaderLine('ETag'), 'the body shows the name');
+        self::assertSame(412, $this->api->patch($path, ['notes' => 'Stale'], ['If-Match' => $tag])->getStatusCode());
+
+        $tag = $renamed->getHeaderLine('ETag');
+        self::assertSame(200, $this->api->patch($part, ['brand' => 'Scorpion'])->getStatusCode());
+        self::assertNotSame($tag, $this->api->get($path)->getHeaderLine('ETag'), 'the name shown includes the brand');
+    }
+
     public function testRevertAndUndoMoveThePartsWithIt(): void
     {
         $id = $this->logged();

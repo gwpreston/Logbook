@@ -10,7 +10,8 @@ use Logbook\Domain\Part\PartFitting;
 
 /**
  * A modification with the fittings it made and ended, as the API reads it:
- * what its `ETag` is taken of (spec.md §7.20 *Parts and modifications*).
+ * what its `ETag` is taken of, with only the id and name of each part
+ * (spec.md §7.20 *Parts and modifications*, #507).
  */
 final readonly class ModificationState
 {

@@ -108,9 +108,19 @@ final readonly class ApiModifications
         );
     }
 
+    /**
+     * Taken of what the body shows (#507): the modification, its revert,
+     * the fittings it made and ended, and each of those parts' id and name.
+     * A part's notes, price or warranty leave it alone (K25).
+     */
     public function tag(ModificationState $state): string
     {
-        return $this->tags->of($state);
+        $made = [];
+        foreach ($state->made as ['part' => $part, 'fitting' => $fitting]) {
+            $made[] = [$part->id, $part->label(), $fitting];
+        }
+
+        return $this->tags->of((object) ['modification' => $state->modification, 'made' => $made]);
     }
 
     /**
