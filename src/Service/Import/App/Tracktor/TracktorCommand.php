@@ -26,12 +26,36 @@ use Throwable;
  * `php bin/import-app.php <export.json>` (spec.md §7.13 *The Tracktor
  * reader*): imports a Tracktor export, with its uploads folder or a ZIP of
  * it (`--files`), with the mapping the web page would propose, printing
- * the preview; `--dry-run` writes nothing.
+ * the preview; `--dry-run` writes nothing. As on the web page, rows with
+ * problems stop the import unless `--skip-invalid` says to import the
+ * others (K65).
  */
 final readonly class TracktorCommand
 {
     public const string USAGE = "Usage: php bin/import-app.php <export.json> [--files <folder|zip>]"
-        . " [--vehicle <id> | --create] [--as <username>] [--schedules] [--dry-run]\n";
+        . " [--vehicle <id> | --create] [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n";
+
+    /**
+     * The form fields a row's errors name → the Tracktor export's field
+     * they come from, per section (K65, as K11 for Fuelio): the owner knows
+     * the file, not Logbook's fields.
+     */
+    private const array COLUMNS = [
+        TracktorVehiclePreview::FILLS => [
+            'filled_at' => 'date', 'odometer' => 'odometer', 'volume' => 'fuelAmount', 'price' => 'rate',
+            'total' => 'cost', 'partial' => 'filled', 'missed_previous' => 'missedLast', 'notes' => 'notes',
+        ],
+        TracktorVehiclePreview::SERVICES => [
+            'performed_on' => 'date', 'odometer' => 'odometer', 'title' => 'notes', 'description' => 'notes',
+            'cost' => 'cost', 'vendor' => 'serviceCenter',
+        ],
+        TracktorVehiclePreview::DOCUMENTS => [
+            'title' => 'otherLabel', 'provider' => 'issuer/provider/testingCenter',
+            'reference' => 'documentNumber/policyNumber/certificateNumber', 'start_on' => 'startDate/issueDate',
+            'expiry_on' => 'endDate/expiryDate', 'cost' => 'cost', 'notes' => 'notes',
+        ],
+        TracktorVehiclePreview::REMINDERS => ['title' => 'type', 'due_on' => 'dueDate', 'lead_time_days' => 'remindSchedule'],
+    ];
 
     public function __construct(
         private TracktorImporter $importer,
@@ -58,6 +82,7 @@ final readonly class TracktorCommand
         $create = false;
         $username = null;
         $schedules = false;
+        $skipInvalid = false;
         $dryRun = false;
         for ($i = 0; $i < count($args); $i++) {
             $arg = $args[$i];
@@ -67,6 +92,7 @@ final readonly class TracktorCommand
                 $arg === '--as' && isset($args[$i + 1]) => $username = $args[++$i],
                 $arg === '--create' => $create = true,
                 $arg === '--schedules' => $schedules = true,
+                $arg === '--skip-invalid' => $skipInvalid = true,
                 $arg === '--dry-run' => $dryRun = true,
                 !str_starts_with($arg, '-') && $path === null => $path = $arg,
                 default => $path = '',
@@ -125,6 +151,16 @@ final readonly class TracktorCommand
                 fwrite($out, $this->translator->trans('import_app.error.nothing') . "\n");
 
                 return 0;
+            }
+            $invalid = $preview->total(AppRowStatus::Invalid);
+            if ($invalid > 0 && !$skipInvalid) {
+                fwrite($err, sprintf(
+                    "%d row(s) have problems (listed above), so nothing was written: fix them,"
+                    . " or run again with --skip-invalid to import the other rows.\n",
+                    $invalid,
+                ));
+
+                return 1;
             }
 
             $done = $this->importer->import($user, $preview, $files);
@@ -280,13 +316,15 @@ final readonly class TracktorCommand
                     }
                 }
                 fwrite($out, sprintf("  %s: %s\n", $t('import_app.section.' . $section), implode(', ', $parts)));
+                $columns = self::COLUMNS[$section] ?? [];
                 foreach ($rows as $row) {
                     if ($row->status === AppRowStatus::Import) {
                         continue;
                     }
                     $why = $row->errors !== []
                         ? implode('; ', array_map(
-                            static fn (array $e): string => $e['field'] . ': ' . $t($e['key'], $e['params']),
+                            static fn (array $e): string
+                                => ($columns[$e['field']] ?? $e['field']) . ': ' . $t($e['key'], $e['params']),
                             $row->errors,
                         ))
                         : ($row->note === null

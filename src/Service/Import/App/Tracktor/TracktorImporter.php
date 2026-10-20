@@ -50,7 +50,6 @@ use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Display\DisplayPreferences;
-use Logbook\Support\I18n\Region;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Storage\FileStorage;
 use Logbook\Support\Storage\FileUpload;
@@ -142,7 +141,7 @@ final readonly class TracktorImporter
                 default => $prefs->distanceUnit,
             },
             volumeUnit: match ($export->config->volume) {
-                'gallon' => self::gallonFor($user),
+                'gallon' => $prefs->gallon(),
                 'liter' => VolumeUnit::Litre,
                 default => $prefs->volumeUnit,
             },
@@ -1053,22 +1052,6 @@ final readonly class TracktorImporter
         }
 
         return null;
-    }
-
-    /**
-     * The gallon to propose (#464): the owner's when they use one, else the
-     * UK gallon for an owner in the United Kingdom or Ireland, else US.
-     */
-    private static function gallonFor(User $user): VolumeUnit
-    {
-        $prefs = $user->preferences;
-        if ($prefs->volumeUnit !== VolumeUnit::Litre) {
-            return $prefs->volumeUnit;
-        }
-
-        return in_array(Region::of($prefs->locale), ['GB', 'IE'], true) || $prefs->currency === 'GBP'
-            ? VolumeUnit::UkGallon
-            : VolumeUnit::UsGallon;
     }
 
     private static function fuel(string $fuelType): Fuel

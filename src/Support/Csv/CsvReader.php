@@ -6,9 +6,10 @@ namespace Logbook\Support\Csv;
 
 /**
  * Reads an uploaded CSV file for import (spec.md §7.13): UTF-8 with or
- * without a byte-order mark (anything that is not valid UTF-8 is taken to be
- * Windows-1252, what older spreadsheets save), RFC 4180 quoting, and the
- * delimiter — comma, semicolon or tab — detected from the header row.
+ * without a byte-order mark, UTF-16 with one (#504; anything else that is
+ * not valid UTF-8 is taken to be Windows-1252, what older spreadsheets
+ * save), RFC 4180 quoting, and the delimiter — comma, semicolon or tab —
+ * detected from the header row.
  */
 final class CsvReader
 {
@@ -36,6 +37,13 @@ final class CsvReader
      */
     public static function read(string $contents, int $maxRows): ?self
     {
+        // UTF-16 with a byte-order mark (Excel's "Unicode text") becomes
+        // UTF-8, the mark dropped (K10, #504).
+        if (str_starts_with($contents, "\xFF\xFE")) {
+            $contents = mb_convert_encoding(substr($contents, 2), 'UTF-8', 'UTF-16LE');
+        } elseif (str_starts_with($contents, "\xFE\xFF")) {
+            $contents = mb_convert_encoding(substr($contents, 2), 'UTF-8', 'UTF-16BE');
+        }
         if (str_starts_with($contents, "\xEF\xBB\xBF")) {
             $contents = substr($contents, 3);
         }
@@ -91,7 +99,7 @@ final class CsvReader
     /**
      * Whether the upload is plainly not text (K61): a known binary format,
      * or NUL bytes near the start of a file without a UTF-16 byte-order
-     * mark (UTF-16 text has them, and read() keeps reading it as before).
+     * mark (UTF-16 text has them, and read() converts it).
      */
     public static function isBinary(string $contents): bool
     {

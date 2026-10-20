@@ -67,6 +67,28 @@ final class ImportReadingTest extends TestCase
         self::assertSame('Café € 5', $csv->rows[0]['cells'][0]);
     }
 
+    public function testReadsUtf16WithAByteOrderMark(): void
+    {
+        // Excel's "Unicode text": UTF-16 LE, tab-separated (K10, #504).
+        $le = "\xFF\xFE" . mb_convert_encoding("Station\tNote\r\nŁódź €\tx\r\n", 'UTF-16LE', 'UTF-8');
+        $csv = CsvReader::read($le, 10);
+        self::assertNotNull($csv);
+        self::assertSame(['Station', 'Note'], $csv->header, 'the mark is not part of the first header');
+        self::assertSame(['Łódź €', 'x'], $csv->rows[0]['cells']);
+
+        $be = "\xFE\xFF" . mb_convert_encoding("Station,Note\nŁódź €,y\n", 'UTF-16BE', 'UTF-8');
+        $csv = CsvReader::read($be, 10);
+        self::assertNotNull($csv);
+        self::assertSame(['Station', 'Note'], $csv->header);
+        self::assertSame(['Łódź €', 'y'], $csv->rows[0]['cells']);
+
+        self::assertFalse(CsvReader::isBinary($le));
+        self::assertTrue(
+            CsvReader::isBinary(mb_convert_encoding("Station\nx\n", 'UTF-16LE', 'UTF-8')),
+            'UTF-16 without a mark is still not a CSV (K61)',
+        );
+    }
+
     public function testLimitsAndEmptyFiles(): void
     {
         self::assertNull(CsvReader::read('', 10));

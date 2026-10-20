@@ -20,6 +20,9 @@ final class ImportMapper
     private const string DATE_LIKE = '/^(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4})'
         . '([T ]\d{1,2}:\d{2}(:\d{2})?)?$/';
 
+    /** A header's gallon that doesn't say which (#505), normalised. */
+    private const array BARE_GALLONS = ['gal', 'gallon', 'gallons'];
+
     /**
      * @param list<ImportField> $fields
      */
@@ -62,8 +65,10 @@ final class ImportMapper
         }
 
         // Units and zone as named in the header ("Odometer (Miles)",
-        // "Date and time (Europe/London)"), else the owner's.
+        // "Volume (UK gallons)", "Date and time (Europe/London)"), else
+        // the owner's.
         $distance = $preferences->distanceUnit;
+        $volume = $preferences->volumeUnit;
         $zone = $preferences->timezone;
         $dateSample = null;
         foreach ($fields as $field) {
@@ -74,6 +79,9 @@ final class ImportMapper
             $bracketed = ImportVocabulary::bracketed($csv->header[$column] ?? '');
             if ($field->kind === FieldKind::Distance && $bracketed !== null) {
                 $distance = $vocabulary->distanceUnit($bracketed) ?? $distance;
+            }
+            if ($field->kind === FieldKind::Volume && $bracketed !== null) {
+                $volume = self::volumeUnit($bracketed, $preferences, $vocabulary) ?? $volume;
             }
             if ($field->kind === FieldKind::DateTime && $bracketed !== null && LocalTime::isValidTimezone($bracketed)) {
                 $zone = $bracketed;
@@ -87,9 +95,27 @@ final class ImportMapper
             $mapping,
             self::dateOrder($dateSample, $preferences->locale),
             $distance,
-            $preferences->volumeUnit,
+            $volume,
             $zone,
         );
+    }
+
+    /**
+     * The volume unit a header's brackets name, or null (kWh, kg or
+     * unknown). A gallon that doesn't say which is the owner's (#505),
+     * checked first because "gal" is also the UK gallon's symbol.
+     */
+    private static function volumeUnit(
+        string $bracketed,
+        DisplayPreferences $preferences,
+        ImportVocabulary $vocabulary,
+    ): ?VolumeUnit {
+        if (in_array(ImportVocabulary::normalise($bracketed), self::BARE_GALLONS, true)) {
+            return $preferences->gallon();
+        }
+        $unit = $vocabulary->volumeUnit($bracketed);
+
+        return $unit instanceof VolumeUnit ? $unit : null;
     }
 
     /**

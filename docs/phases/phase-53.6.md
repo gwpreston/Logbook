@@ -4,7 +4,7 @@
 volume unit its header names and reads UTF-16 files, and the Tracktor
 command line stops on rows with problems as the web page does.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.5's release, a patch release
 
 This is the next batch after [Phase 53.5](phase-53.5.md). Like 52.1,
@@ -18,15 +18,16 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 (*Import*: the CSV upload, the mapping step's units, the app import
 command line), and [`open-questions.md`](open-questions.md) first.
 
-**Prerequisites:** [Phase 53.5](phase-53.5.md) merged, and its release
-tagged.
+**Prerequisites:** [Phase 53.5](phase-53.5.md) merged. Built before its
+release is tagged (the owner, 2026-10-20); 53.6's own release follows
+`v3.18.1`.
 
 ---
 
 ## Goals
 
 1. **K2.** A CSV whose volume column is headed `Volume (UK gallons)`,
-   `Fuel (litres)` or `Volume (US gal)` opens the mapping page with that
+   `Quantity (litres)` or `Volume (US gal)` opens the mapping page with that
    unit chosen, as `Odometer (Miles)` already does for distance. A bare
    gallon (`Volume (gal)`, `Volume (gallons)`) chooses the owner's
    gallon (#505), and a unit Logbook doesn't record by volume
@@ -64,8 +65,9 @@ tagged.
   already reads the distance column's.** Spec §7.13 says "the file's
   units (distance, volume) default to the unit named in the header";
   only distance did. A bare gallon chooses the owner's volume unit if it
-  is a gallon, else by region (US → US gallons, else UK), as #464
-  decided for app imports (#505); today `gal` matches the UK gallon's
+  is a gallon, else by region as #464 decided for app imports (UK or
+  Irish locale, or pounds → UK gallon, else US; #505), one helper for
+  both; today `gal` matches the UK gallon's
   English symbol. `kWh` and `kg` aren't volume units, so they leave the
   owner's unit chosen. The mapping page still lets the owner change it.
 - **K10 decodes UTF-16 with a byte-order mark, little- or big-endian,
@@ -86,33 +88,40 @@ tagged.
 
 ### 53.6.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). Nothing new for import since
+      planning; #505's region wording corrected (below).
 
 ### 53.6.1 Import fixes
 
-- [ ] `ImportMapper::guess()` takes the volume unit from the volume
+- [x] `ImportMapper::guess()` takes the volume unit from the volume
       column's header bracket through `ImportVocabulary::volumeUnit()`;
       a bare gallon takes the owner's gallon; `kwh` and `kg` are ignored
-      (K2, #505). A test: `Volume (UK gallons)`, `Fuel (litres)`,
-      `Volume (US gal)`, `Volume (gal)` for a US and a UK owner, and
-      `Energy (kWh)` each preselect the expected unit.
-- [ ] `CsvReader::read()` converts a file starting with a UTF-16 LE or
+      (K2, #505). `ImportMapperTest`: `Volume (UK gallons)`,
+      `Quantity (litres)` (`Fuel (…)` maps to the fuel type column),
+      `Volume (US gal)`, `Volume (gal)` for US, UK, Irish, German and
+      pound-paying owners, `Energy (kWh)` and `(kg)` each preselect the
+      expected unit. #464's rule moved from `TracktorImporter` to
+      `DisplayPreferences::gallon()`, one helper for both.
+- [x] `CsvReader::read()` converts a file starting with a UTF-16 LE or
       BE byte-order mark to UTF-8 and drops the mark, before the
-      Windows-1252 fallback (K10, #504). `CsvTest`: a UTF-16 LE
+      Windows-1252 fallback (K10, #504). `ImportReadingTest`: a UTF-16 LE
       tab-separated file and a UTF-16 BE comma-separated one with
-      `Łódź €` read back intact, the first header without the mark.
-- [ ] `TracktorCommand::run()` refuses rows with problems (exit 1,
+      `Łódź €` read back intact, the first header without the mark; a
+      UTF-16 file without a mark is still refused (K61).
+- [x] `TracktorCommand::run()` refuses rows with problems (exit 1,
       nothing written) unless `--skip-invalid`, and names the export's
       fields in each problem (K65). `TracktorCommandTest`: an export with
       one bad row stops without the flag and imports the others with it;
-      the problem line names the Tracktor field.
+      the problem line names the Tracktor field. The usage lines in
+      `ImportAppCommand` and `bin/import-app.php` list the flag.
 
 ### 53.6.2 Finish
 
-- [ ] Known-issues rows K2, K10 and K65 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status; `docs/import.md` (UTF-16,
-      header volume units, Tracktor `--skip-invalid`).
+- [x] Known-issues rows K2, K10 and K65 *Fixed*.
+- [x] CHANGELOG; spec §7.13; ROADMAP status; `docs/import.md` (UTF-16,
+      header volume units) and `docs/import-tracktor.md`
+      (`--skip-invalid`).
 - [ ] Merge review, then merge.
 
 ### Release
@@ -142,5 +151,7 @@ tagged.
 - **#505. K2: a bare gallon in a header.** *Decided 2026-10-18:*
   `(gal)` or `(gallons)` with no country chooses the owner's gallon (the
   owner's volume unit if a gallon, else by region), as #464 decided for
-  app imports. Not chosen: `gal` as the UK gallon, as its English symbol
+  app imports. *Corrected 2026-10-20:* the Decisions wording first said
+  "US → US gallons, else UK", the reverse of #464; the owner chose
+  #464's rule (UK or Irish locale, or pounds → UK gallon, else US). Not chosen: `gal` as the UK gallon, as its English symbol
   reads.

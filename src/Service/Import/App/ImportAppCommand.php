@@ -15,9 +15,9 @@ use Logbook\Service\Import\App\Tracktor\TracktorCommand;
 final readonly class ImportAppCommand
 {
     public const string USAGE = "Usage: php bin/import-app.php <file.csv|file.zip> [--vehicle <id> | --create]"
-        . " [--as <username>] [--schedules] [--dry-run]\n"
+        . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n"
         . "       php bin/import-app.php <export.json> [--files <folder|zip>] [--vehicle <id> | --create]"
-        . " [--as <username>] [--schedules] [--dry-run]\n";
+        . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n";
 
     public function __construct(private FuelioCommand $fuelio, private TracktorCommand $tracktor)
     {

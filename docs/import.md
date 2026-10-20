@@ -18,7 +18,8 @@ spreadsheet, another app, or another Logbook.
 ## How it works
 
 1. **Choose a file.** A `.csv` with a header row: comma-, semicolon- or
-   tab-separated, UTF-8 (Excel's "CSV UTF-8") or Windows-1252, up to
+   tab-separated, UTF-8 (Excel's "CSV UTF-8"), UTF-16 (Excel's "Unicode
+   text") or Windows-1252, up to
    `MAX_UPLOAD_MB` and 5,000 rows. A spreadsheet's own file (`.xlsx`), a
    Fuelio backup ZIP, a PDF or a photo is refused: save it as CSV first (a
    Fuelio backup goes to the command line, below).
@@ -28,7 +29,11 @@ spreadsheet, another app, or another Logbook.
    unnamed column that holds dates. Then say how the file is written: the date
    order, the odometer unit, the volume unit (fuel) and the time zone (fuel and
    mileage). Units and zone default to what the header says ("Odometer
-   (Miles)", "Date and time (Europe/London)"), else your own settings.
+   (Miles)", "Volume (UK gallons)", "Date and time (Europe/London)"), else
+   your own settings. A gallon that doesn't say which ("Volume (gal)") is
+   your gallon: your volume unit if you use gallons, else UK gallons if
+   your language is set for the UK or Ireland or you pay in pounds, else
+   US gallons.
 3. **Preview.** Every row is listed with what will happen to it — nothing has
    been saved yet. Change the matching and preview again as often as you like.
 4. **Import.** The importable rows are saved together; the result lists each

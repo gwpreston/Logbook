@@ -4336,7 +4336,9 @@ vehicles; a disabled module cannot be imported).
   English) and the field codes; the file's units (distance, volume) default
   to the unit named in the header, else the owner's (a gallon that
   doesn't say which, `(gal)` or `(gallons)`, is the owner's gallon: their
-  volume unit if a gallon, else by region; #505); the date order
+  volume unit if a gallon, else the UK gallon for a UK or Irish locale
+  or pounds, else the US gallon, as for app imports; #464, #505); the
+  date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
   defaults to ISO. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
