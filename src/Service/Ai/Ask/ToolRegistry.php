@@ -78,6 +78,15 @@ final readonly class ToolRegistry
     }
 
     /**
+     * The tool by this name, offered or not: the caller checks
+     * isAvailable() on it alone, not on every tool (K69).
+     */
+    public function find(string $name): ?AskTool
+    {
+        return $this->tools[$name] ?? null;
+    }
+
+    /**
      * @return list<string> every tool's name, offered or not
      */
     public function names(): array

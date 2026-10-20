@@ -143,11 +143,17 @@ tagged.
       #507). `ApiPartsTest`: editing a fitted part's notes keeps the
       modification's `ETag` (an `If-Match` with the old one still
       succeeds); renaming the part changes it.
-- [ ] `McpToolbox::call()` finds the read tool by name and checks
+- [x] `McpToolbox::call()` finds the read tool by name and checks
       `isAvailable()` on that one only (K69). A test: an MCP `parts`
       call runs within a query budget close to Ask's, and a call to a
       switched-off read tool still throws the JSON-RPC `Unknown tool`
-      error.
+      error. *Done:* `ToolRegistry::find()` gives the tool by name; a
+      write or draft is looked up by name too (`writeTool()`), so only
+      its own `canDraft()` runs. `PartsToolsTest`: an MCP `parts` call
+      sends 9 queries against Ask's 5 (54 before), on a read and a
+      read-and-write key; a switched-off read tool, a write on a read
+      key or with its module off, an Ask draft tool's name and an
+      unknown name are each `Unknown tool: …`.
 - [x] `Decimal::multiply()` and `Decimal::divide()` compute every
       overflow fallback with `BigDecimal`, leaving no `fromFloat()` call
       in either (K62). `DecimalTest`: `-27094.791536 ×
