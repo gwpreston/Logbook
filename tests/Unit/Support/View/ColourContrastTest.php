@@ -124,6 +124,29 @@ final class ColourContrastTest extends TestCase
         }
     }
 
+    /**
+     * The reminders count on the active sidebar link (K53): red over the link's
+     * accent tint and the badge's own background layers, read from its rule.
+     */
+    #[DataProvider('accents')]
+    public function testTheActiveLinksBadgeIsReadable(string $accent, string $theme): void
+    {
+        $tokens = self::accentTokens($accent, $theme) + self::tokens($theme);
+        $rule = '/\.nav-link\[aria-current="page"\] \.nav-link__badge \{[^}]*background:\s*([^;]+);/';
+        self::assertSame(1, preg_match($rule, self::css(), $m), 'the active badge has its own background');
+        preg_match_all('/var\(--([a-z0-9-]+)\)/', $m[1] ?? '', $vars);
+        // CSS lists background layers top first; a gradient of one colour repeats it.
+        $badge = array_reverse(array_values(array_unique($vars[1])));
+        $layers = ['surface', 'accent-soft', ...$badge];
+        $background = [1.0, 1.0, 1.0];
+        foreach ($layers as $layer) {
+            $background = self::over(self::colour($tokens[$layer]), $background);
+        }
+        $ratio = self::contrast(self::over(self::colour($tokens['red']), $background), $background);
+
+        self::assertGreaterThanOrEqual(self::AA_TEXT, $ratio, sprintf('red on %s', implode('+', $layers)));
+    }
+
     public function testBothDarkAccentBlocksMatch(): void
     {
         $css = self::css();

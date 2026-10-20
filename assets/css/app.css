@@ -529,6 +529,12 @@ pre {
     font-weight: 800;
 }
 
+/* On the active link the accent tint would sit under the badge and take its red
+   below 4.5:1 (K53): an opaque surface first, so it reads as it does elsewhere. */
+.nav-link[aria-current="page"] .nav-link__badge {
+    background: linear-gradient(var(--red-soft), var(--red-soft)), var(--surface);
+}
+
 /* Top bar (narrow only) */
 .topbar {
     position: sticky;
@@ -4485,8 +4491,10 @@ a.list__title:hover {
     border-top: 1px solid var(--border);
 }
 
-/* Tables (report figures); scroll sideways on narrow screens. */
+/* Tables (report figures); scroll sideways on narrow screens. Positioned so the
+   hidden text in their cells stays inside the scroll box, not the page's (K52). */
 .table-wrap {
+    position: relative;
     overflow-x: auto;
     margin: 0 calc(-1 * var(--space-2));
 }

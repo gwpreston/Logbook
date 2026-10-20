@@ -6,7 +6,31 @@ is called out explicitly.
 
 ## [Unreleased]
 
-## [3.18.0] — 2026-10-19
+## [3.18.1] — 2026-10-19
+
+Phase 53.5: **API edges and narrow-screen fixes from the known-issues
+log** ([docs/phases/phase-53.5.md](docs/phases/phase-53.5.md)). No
+migration: pull and restart.
+
+### Fixed
+- **Retrying `POST /vehicles/{id}/modifications`** that names one of the
+  vehicle's stored parts in `parts_fitted` or `parts_removed` now answers
+  with the modification already logged and `duplicate: true`, as a retry
+  should. It used to answer 422 `part_id`, because the first call had
+  already fitted or removed that part. A body with invalid fields is
+  still a 422 (K27).
+- **`POST` and `PATCH` on `/vehicles/{id}/schedules`** with a
+  `baseline_odometer` or `interval_distance` that is too large now answer
+  422 `validation.too_large` on that field, as `interval_km` does. They
+  used to answer 500 (K50).
+- **Fuel stations on a phone:** at 375 px, *Cheapest near me* and a
+  station's page no longer scroll sideways as a whole page. Only their
+  tables scroll, inside their boxes. This applies to every scrolling
+  table with hidden labels (K52).
+- **The reminders count on the active sidebar link** meets 4.5:1
+  contrast in the light and dark themes with every accent. It sat on the
+  link's accent tint and fell to 3.9:1 (K53).
+
 
 Phases 53.3 and 53.4: **OCR as a check on the vision model, text instead
 of images, and reading without AI** ([docs/phases/phase-53.3.md](docs/phases/phase-53.3.md),

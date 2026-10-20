@@ -255,4 +255,25 @@ final class ApiVehicleFiguresTest extends AppTestCase
         $this->service($this->app, VehicleService::class)->archive($this->owner, $this->golf);
         self::assertSame('vehicle_archived', ApiClient::json($this->api->post($path, $body))->get('code'));
     }
+
+    public function testAScheduleDistanceTooLargeIsAFieldErrorNot500(): void
+    {
+        // K50: sized before it is converted to km, as interval_km already is.
+        $path = '/vehicles/' . $this->golf->id . '/schedules';
+        $huge = '99999999999999999999.99';
+        $body = ['category' => 'oil', 'title' => 'Oil change', 'interval_months' => 12];
+        foreach (['interval_distance', 'baseline_odometer'] as $field) {
+            $created = $this->api->post($path, [$field => $huge] + $body);
+            self::assertSame(422, $created->getStatusCode(), self::body($created));
+            self::assertSame('validation.too_large', ApiClient::json($created)->get('errors', $field, 'key'));
+        }
+        $id = ApiClient::json($this->api->post($path, $body))->int('entry', 'id');
+        foreach (['interval_distance', 'baseline_odometer'] as $field) {
+            $patched = $this->api->patch($path . '/' . $id, [$field => $huge]);
+            self::assertSame(422, $patched->getStatusCode(), self::body($patched));
+            self::assertSame('validation.too_large', ApiClient::json($patched)->get('errors', $field, 'key'));
+        }
+        $fits = $this->api->post($path, ['title' => 'Belt', 'baseline_odometer' => '00012345.5'] + $body);
+        self::assertSame(201, $fits->getStatusCode(), 'leading zeros are not digits: ' . self::body($fits));
+    }
 }

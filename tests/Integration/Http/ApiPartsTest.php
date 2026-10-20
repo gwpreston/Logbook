@@ -129,6 +129,32 @@ final class ApiPartsTest extends AppTestCase
         self::assertCount(2, ApiClient::json($this->api->get($this->parts))->doc('items')->toArray(), 'no parts written twice');
     }
 
+    public function testARetryNamingAStoredPartIsTheDuplicateNotARefusal(): void
+    {
+        // K27: the first call fitted (or removed) the part, so the lists no longer offer it on the retry.
+        $spare = $this->part();
+        $fit = self::mod(['title' => 'Coilovers', 'parts_fitted' => [['part' => $spare]], 'parts_removed' => []]);
+        $first = $this->api->post($this->mods, $fit);
+        self::assertSame(201, $first->getStatusCode(), self::body($first));
+        $retry = $this->api->post($this->mods, $fit);
+        self::assertSame(200, $retry->getStatusCode(), self::body($retry));
+        self::assertTrue(ApiClient::json($retry)->get('duplicate'));
+        self::assertSame(ApiClient::json($first)->int('entry', 'id'), ApiClient::json($retry)->int('entry', 'id'));
+
+        $remove = self::mod([
+            'title' => 'Back to standard', 'done_on' => '2026-06-01', 'odometer' => '38000',
+            'parts_fitted' => [], 'parts_removed' => [['part' => $spare, 'outcome' => 'kept']],
+        ]);
+        $off = $this->api->post($this->mods, $remove);
+        self::assertSame(201, $off->getStatusCode(), self::body($off));
+        $again = $this->api->post($this->mods, $remove);
+        self::assertSame(200, $again->getStatusCode(), self::body($again));
+        self::assertTrue(ApiClient::json($again)->get('duplicate'));
+        $part = ApiClient::json($this->api->get($this->parts . '/' . $spare));
+        self::assertSame('stored', $part->get('status'), 'the retry changed no part');
+        self::assertCount(1, $part->doc('fittings')->toArray(), 'fitted once, removed once');
+    }
+
     public function testInvalidInputIsRefusedWithTheApiFieldNames(): void
     {
         $response = $this->api->post($this->mods, self::mod([

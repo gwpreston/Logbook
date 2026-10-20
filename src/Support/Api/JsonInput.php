@@ -9,6 +9,7 @@ use JsonException;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Trip\SavedJourney;
+use Logbook\Service\Odometer\OdometerReadingForm;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DepthUnit;
@@ -1164,7 +1165,20 @@ final class JsonInput
         $errors = new ValidationErrors();
         self::unknownFields($body, [...array_keys(self::SCHEDULE_FIELDS), 'distance_unit'], $errors);
         $unit = self::distanceUnit($body, $owner, $errors);
-        $toKm = static fn (string $value): string => $value === '' ? '' : Decimal::trim($unit->toKmDecimal($value, 3));
+        // Sized before converting, as the form sizes the km (K50): a 20-digit value would overflow the conversion.
+        $toKm = static function (string $value, string $field) use ($unit, $errors): string {
+            if ($value === '') {
+                return '';
+            }
+            $whole = ltrim(explode('.', ltrim($value, '-'))[0], '0');
+            if (strlen($whole) > OdometerReadingForm::MAX_WHOLE_DIGITS) {
+                $errors->add($field, 'validation.too_large');
+
+                return '';
+            }
+
+            return Decimal::trim($unit->toKmDecimal($value, 3));
+        };
 
         $km = self::decimal($body, 'interval_km', $errors);
         $distance = self::decimal($body, 'interval_distance', $errors);
@@ -1174,10 +1188,10 @@ final class JsonInput
         $input = [
             'category' => self::text($body, 'category', $errors),
             'title' => self::text($body, 'title', $errors),
-            'interval_distance' => $km !== '' ? $km : $toKm($distance),
+            'interval_distance' => $km !== '' ? $km : $toKm($distance, 'interval_distance'),
             'interval_months' => self::decimal($body, 'interval_months', $errors),
             'last_done_on' => self::text($body, 'baseline_done_on', $errors),
-            'last_done_odometer' => $toKm(self::decimal($body, 'baseline_odometer', $errors)),
+            'last_done_odometer' => $toKm(self::decimal($body, 'baseline_odometer', $errors), 'baseline_odometer'),
         ];
 
         return $errors->isEmpty()

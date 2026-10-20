@@ -4,8 +4,8 @@
 answer wrongly at their edges, and two pages that break on a phone or at
 low contrast.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.4's release, a patch release
+Status: ✅ complete · releases **v3.18.1**, a patch release after Phase
+53.4's (#502) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md). Like 52.1 and
 52.2, it takes a few small open rows that need no decision. Batch 1 is
@@ -96,40 +96,54 @@ spec already says.
 
 ### 53.5.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.5.1 The REST API (batch 1)
 
-- [ ] `ApiModifications::logModification()` scans for a duplicate
+- [x] `ApiModifications::logModification()` scans for a duplicate
       before `lists()` (K27). `ApiPartsTest`: a retry with
       `{"part": id}` in `parts_fitted`, and one with it in
       `parts_removed`, each answer the stored modification with
       `duplicate: true` and change no part.
-- [ ] `JsonInput::schedule()` refuses a too-large `baseline_odometer` or
+- [x] `JsonInput::schedule()` refuses a too-large `baseline_odometer` or
       `interval_distance` with a field error before `$toKm` (K50). An
       API test: `POST` and `PATCH` with `"99999999999999999999.99"`
       answer 422 naming the field.
 
 ### 53.5.2 Layout and contrast (batch 2)
 
-- [ ] `.table-wrap` positioned in `assets/css/app.css` (K52). A test
+- [x] `.table-wrap` positioned in `assets/css/app.css` (K52). A test
       checks the rule; `/stations/near` and `/stations/{id}` checked at
       375 px with no sideways page scroll.
-- [ ] The badge on `.nav-link[aria-current="page"]` meets 4.5:1 (K53).
+- [x] The badge on `.nav-link[aria-current="page"]` meets 4.5:1 (K53).
       `ColourContrastTest` covers `red` on `surface` + `accent-soft` +
-      `red-soft` in both themes and every accent.
+      `red-soft` in both themes and every accent. The active badge lays
+      its `red-soft` over an opaque `surface`, so the test reads the
+      badge's own layers from its rule and puts them over the link's
+      tint.
+
+**Design review (2026-10-19, sample data, PostgreSQL dev stack).**
+`/stations/near` and `/stations/3` at 375 px: the page is 375 px wide
+(453 px on `/stations/3` with the new `position` switched off), and the
+tables scroll inside their boxes (965 px and 546 px of content in a
+321 px box). At 768 px neither page scrolls sideways. On `/reminders`
+at 1280 px the active link's badge measures 4.98:1 in the light theme
+and 5.21:1 in the dark theme with every accent (it was 4.35:1, and
+3.93–4.15:1). It looks the same as the badge on other pages. No HIGH or
+MEDIUM items. No new page or link, so the subpath is unchanged.
 
 ### 53.5.3 Finish
 
-- [ ] Known-issues rows K27, K50, K52 and K53 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K27, K50, K52 and K53 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.4's
-      release (#502).
+- [x] `VERSION` 3.18.1, CHANGELOG 3.18.1, README status: the patch
+      after 53.4's release (#502).
+- [ ] Tag `v3.18.1` once merged.
 
 ## Acceptance criteria
 
