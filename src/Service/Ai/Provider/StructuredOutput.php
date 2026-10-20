@@ -40,7 +40,7 @@ final class StructuredOutput
                 mb_substr(trim($result->text), 0, 200),
             ));
         }
-        $errors = SchemaCheck::errors($object, $format->schema);
+        $errors = SchemaCheck::errors($object, $format->check ?? $format->schema);
         if ($errors !== []) {
             throw new ProviderError(ErrorCode::BadResponse, 'The JSON object does not fit the schema: '
                 . implode('; ', array_slice($errors, 0, 5)));

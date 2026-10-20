@@ -124,9 +124,14 @@ file*, *Reading through OCR*, *Checking values*), the
       connections.
 - [x] K80: an inherited MediaBox and `/UserUnit` read.
 
-- [x] K130 (#534): each scan field in the JSON schema requires `value`
-      and `evidence`, so LM Studio's constrained output no longer lets a
-      model answer `{}` for every field (`ScanSchemaTest`).
+- [x] K130 (#534): the scan's JSON schema requires `kind`, `fields` and
+      `lines`, names every field and list (null when absent), and each
+      field's `value` and `evidence`, so LM Studio's constrained output no
+      longer lets a model answer `{}` or leave `fields` out
+      (`ScanSchemaTest`). The second half was found in the owner's second
+      eval run: text PDFs 07, 09, 10, 13, 19, 20 and 24 read 0 fields
+      with gemma-3-12b; with it, 07, 13 and 20 sent straight to LM Studio
+      came back nearly whole.
 
 ### 53.8.5 K105, after #515
 - [ ] OCR's preparation runs alongside the vision request (and a scanned

@@ -100,6 +100,23 @@ final class ScanCrossCheckTest extends ScanTestCase
         );
     }
 
+    public function testTheModelIsHeldToEveryFieldButASparseAnswerIsRead(): void
+    {
+        // #534, K130: the schema sent names every field; the reply here gives only some, and is read.
+        $this->reply($this->fuelReply());
+        $page = $this->scanReceipt();
+
+        $format = $this->request(0)['response_format'] ?? null;
+        self::assertIsArray($format);
+        $jsonSchema = $format['json_schema'] ?? null;
+        self::assertIsArray($jsonSchema);
+        $schema = $jsonSchema['schema'] ?? null;
+        self::assertIsArray($schema);
+        self::assertSame(['kind', 'fields', 'lines'], $schema['required'] ?? null);
+        $values = Html::formValues(Html::element(Html::document(self::body($page)), 'form.form'));
+        self::assertSame('60.28', $values['total']);
+    }
+
     public function testRightValuesAreNotFlagged(): void
     {
         $this->reply($this->fuelReply());
