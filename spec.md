@@ -11059,9 +11059,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   beside it (#495), built from `docker/paddleocr/` on amd64 and arm64.
   The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner
   gives the Docker upgrade line (§7.31).
-- **Bare PHP 8.4:** needs the `intl`, `sodium`, `gd` (JPEG, PNG, WebP)
-  and `exif` extensions (`gd` and `exif` from Phase 26.4; Composer refuses
-  to install without them); Ghostscript or Imagick is optional
+- **Bare PHP 8.4:** needs the `intl`, `mbstring`, `sodium`, `gd` (JPEG,
+  PNG, WebP) and `exif` extensions (`gd` and `exif` from Phase 26.4,
+  `mbstring` from Phase 53.9, #528; Composer refuses to install without
+  them); Ghostscript or Imagick is optional
   (without it a scanned PDF asks for a photo instead), and so is
   Tesseract (`apt install tesseract-ocr tesseract-ocr-deu`, or PaddleOCR
   at `OCR_URL`; `docs/reading-files.md`). Document web root = `public/`, Composer install, Phinx
@@ -12059,6 +12060,17 @@ task breakdowns live in the per-phase files; this is the map.
   (#514, K110); the owner's eval runs carried from 53.2 and 53.3, and
   the cross-check's image (#515, K114) revisited with their results
   (§7.27). See [`phase-53.8.md`](docs/phases/phase-53.8.md).
+- **Phase 53.9 — Install, dev-stack and test-run edges from the
+  known-issues log + patch release** (planned). Composer refuses a
+  bare-PHP install without the mbstring extension, which the bare-PHP
+  list names (§10, K123, #528); `bin/smoke-test.sh` runs under
+  `COMPOSE_PROJECT_NAME` when it is set (§11, K121); the tests that
+  expect no session secret clear `SESSION_SECRET_FILE` as well (§9,
+  K122); the dev stack reinstalls `vendor/` when `composer.lock` has
+  changed (§10, K128); `bin/import-app.php` on an install with no users
+  says to finish first-run setup (§7.13, K127). Released on its own as a
+  patch after 53.8's release (#527, decided 2026-10-20). No migration.
+  See [`phase-53.9.md`](docs/phases/phase-53.9.md).
 
 ---
 
