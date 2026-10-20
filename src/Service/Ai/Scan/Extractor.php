@@ -151,7 +151,7 @@ final readonly class Extractor
                     if ($ocrFirst) {
                         $read = $job->result();
                         $text = $read->ok() ? OcrText::of($read) : null;
-                        if ($text !== null && $text->looksLikeRegistration()) {
+                        if ($text !== null && $text->mentionsRegistration()) {
                             // A V5C never goes as a picture here, even when OCR read too little (#510).
                             return $text->isTooLittle() || $engine === null
                                 ? ScanProblem::TooLittleText

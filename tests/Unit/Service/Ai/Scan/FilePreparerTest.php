@@ -123,9 +123,15 @@ final class FilePreparerTest extends TestCase
             self::assertSame($line, Scrubber::text($line), $line);
             self::assertSame($line, Scrubber::ocrText($line), $line);
         }
-        self::assertTrue(Scrubber::looksLikeRegistration('DVLA Swansea'));
-        self::assertTrue(Scrubber::looksLikeRegistration('VSC Registration'), "OCR's S for 5");
-        self::assertFalse(Scrubber::looksLikeRegistration('SHORELINE FUELS LTD'));
+        self::assertTrue(Scrubber::mentionsRegistration('DVLA Swansea'));
+        self::assertTrue(Scrubber::mentionsRegistration('VSC Registration'), "OCR's S for 5");
+        self::assertFalse(Scrubber::mentionsRegistration('SHORELINE FUELS LTD'));
+        // #513: the wide rule needs two different markers, or V5C or Registration Certificate.
+        self::assertFalse(Scrubber::looksLikeRegistration('DVLA Swansea'));
+        self::assertFalse(Scrubber::looksLikeRegistration('Diagnostic VSC warning light, VSC reset'));
+        self::assertTrue(Scrubber::looksLikeRegistration('VSC DVLA Swansea'));
+        self::assertTrue(Scrubber::looksLikeRegistration('V5C'));
+        self::assertTrue(Scrubber::looksLikeRegistration('registration  certificate'));
     }
 
     public function testATextPdfThatLooksLikeAV5cGetsTheWideRule(): void

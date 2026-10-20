@@ -81,9 +81,9 @@ file*, *Reading through OCR*, *Checking values*), the
       *Internet* connections; the page's warning not shown for it.
 
 ### 53.8.2 Markers and the cross-check
-- [ ] #513: the stronger sign for the wide redaction; one marker still
+- [x] #513: the stronger sign for the wide redaction; one marker still
       blocks the picture.
-- [ ] #514: the per-digit-word confidence bar of 90.
+- [x] #514: the per-digit-word confidence bar of 90.
 
 ### 53.8.3 Evals and tests
 - [ ] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
@@ -103,9 +103,9 @@ file*, *Reading through OCR*, *Checking values*), the
 ### 53.8.4 Known issues
 - [ ] K111: a wrapped reference with a label or date in its run, or a
       date after it, removed on V5C-like text.
-- [ ] K113: the value's own digits only; letters never folded on the
+- [x] K113: the value's own digits only; letters never folded on the
       value's side.
-- [ ] K117: a value whose row lost reference words is unchecked.
+- [x] K117: a value whose row lost reference words is unchecked.
 - [ ] K112 (#530): the location resolved at the scan; K112's repro
       sends no image.
 - [ ] K106 (#531): the sum sentence under the total only; volume and

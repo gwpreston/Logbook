@@ -26,6 +26,8 @@ final class Scrubber
     private const string WIDE_OCR = '/(?<![0-9])[0-9](?:' . self::GAP_OCR . '[0-9]){10}(?![0-9])/u';
     /** A V5C's markers, `VSC` too: OCR reads a 5 as an S (#510). */
     private const string MARKERS = '/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu';
+    /** A strong sign on its own (#513): `V5C` as printed, not OCR's `VSC`, or `Registration Certificate`. */
+    private const string STRONG = '/\bV5C\b|registration\s+certificate/iu';
     /** OCR's look-alikes (#498), read as digits in a word that has a digit (#500). */
     private const array LOOK_ALIKES = [
         'O' => '0', 'o' => '0', 'l' => '1', 'I' => '1', 'i' => '1', 'S' => '5', 's' => '5', 'B' => '8', 'b' => '8',
@@ -40,11 +42,32 @@ final class Scrubber
     }
 
     /**
-     * Whether text carries a V5C's markers (spec.md §7.27, #510).
+     * Whether text mentions any of a V5C's markers (spec.md §7.27, #510):
+     * enough to keep the picture from an *Internet* connection (#513).
+     */
+    public static function mentionsRegistration(string $text): bool
+    {
+        return preg_match(self::MARKERS, $text) === 1;
+    }
+
+    /**
+     * Whether text looks like a V5C, for the wide redaction (spec.md
+     * §7.27, #513): two different markers (`V5C` and `VSC` are one), or
+     * `V5C` or `Registration Certificate` on its own, so "Diagnostic VSC
+     * warning light" or a passing "DVLA" keeps a document's figures.
      */
     public static function looksLikeRegistration(string $text): bool
     {
-        return preg_match(self::MARKERS, $text) === 1;
+        if (preg_match(self::STRONG, $text) === 1) {
+            return true;
+        }
+        preg_match_all(self::MARKERS, $text, $found);
+        $kinds = array_map(
+            static fn (string $m): string => strtolower((string) preg_replace('/\s+/u', ' ', str_replace('5', 's', $m))),
+            $found[0],
+        );
+
+        return count(array_unique($kinds)) >= 2;
     }
 
     /**
