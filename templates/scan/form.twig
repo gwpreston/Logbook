@@ -23,7 +23,9 @@
 
         {% block modal_body %}
         {% if errors is not empty %}
-            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {# With no form to show (no vehicle to log to), the reason itself, not "check the fields" (K137). #}
+            {% set error = has_vehicles ? null : (errors|first) %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error ? trans(error.key, error.params) : 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
         {% if rules %}

@@ -34,8 +34,10 @@ restart.
 - **The cross-check flags far fewer right values.** A value with digits
   is marked "Not found on the page" only where OCR read every word with
   a digit on its line at a confidence of 90 or more. On the fixture
-  photos, right values marked fall from 29 of 57 to 2 (#514, #533,
-  K110).
+  photos, right values marked fall from 29 of 57 to 2; the price is that
+  a wrong digit is now marked only where OCR read its line that clearly
+  too, so on those blurred photos 0 of 41 planted wrong digits were
+  caught, against 39 before (#514, #533, K110, K141).
 - **A fill-up whose figures don't add up** shows the sum once, under the
   total; the volume and the price say "Doesn't add up with the total."
   (#531, K106).
@@ -57,6 +59,14 @@ restart.
 - A V5C photo on a connection Settings last saw on your network, whose
   address is on the internet again, is treated as going to the internet:
   OCR first, and text only (#530, K112).
+- A request to an AI connection goes to the address its location was
+  checked against, so a name that answers one address to the check and
+  another to the request can't skip the internet acknowledgement or the
+  V5C text-only rule (K138).
+- *Scan the V5C* for a vehicle you can't edit says why, also when you
+  have no vehicle to log to (K137).
+- Rolling back 3.18.0's migration no longer stops on a connection whose
+  name contains something like `<options=…>` (K133).
 - A date beside a V5C reference is kept, and the reference removed:
   `Issued 14/10/2026 12345 678901` used to lose the date and keep the
   reference's last six digits (K131).

@@ -324,7 +324,7 @@ final readonly class AiGateway
         }
 
         try {
-            return $this->factory->open($connection);
+            return $this->factory->open($connection, $located);
         } catch (SecretUnreadable $e) {
             throw $refuse(ErrorCode::SecretUnreadable, $e->getMessage(), $e->variable);
         }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 
 /**
  * Phase 53.3 (spec.md §6 AiConnection `send_text`, AiRequest `scan_*`;
@@ -39,7 +40,8 @@ final class AddScanCrossCheck extends AbstractMigration
         foreach ($this->fetchAll('SELECT name, send_text FROM ai_connections') as $row) {
             // Each engine returns a boolean its own way.
             if (is_array($row) && in_array($row['send_text'] ?? null, [true, 1, '1', 't', 'true'], true)) {
-                $names[] = is_string($row['name'] ?? null) ? $row['name'] : '';
+                // Escaped: a name is free text, and `<options=…>` in it would stop the rollback (K133).
+                $names[] = OutputFormatter::escape(is_string($row['name'] ?? null) ? $row['name'] : '');
             }
         }
         if ($names !== []) {

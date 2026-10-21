@@ -44,6 +44,20 @@ final class ScanCrossCheckMigrationTest extends AiTestCase
         self::assertStringContainsString('AddScanCrossCheck: reverted', $output, 'the rollback still ran');
     }
 
+    public function testANameWithConsoleMarkupIsPrintedAsTyped(): void
+    {
+        // K133: `<options=bogus>` stopped the rollback; `<comment>` tags were stripped from the warning.
+        $app = $this->aiApp();
+        $this->resetDatabase($app);
+        $this->network($app, 'Office <options=bogus>LAN</> <comment>x</comment>', 'http://192.168.1.20:11434/v1');
+        $this->connection($app)->executeStatement('UPDATE ai_connections SET send_text = ?', [true], [ParameterType::BOOLEAN]);
+
+        $output = Migrator::run('rollback', ['--target' => self::BEFORE]);
+
+        self::assertStringContainsString('Office <options=bogus>LAN</> <comment>x</comment>.', $output);
+        self::assertStringContainsString('AddScanCrossCheck: reverted', $output);
+    }
+
     public function testRollingBackWithNoneOnSaysNothing(): void
     {
         $app = $this->aiApp();

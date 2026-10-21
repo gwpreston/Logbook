@@ -36,7 +36,7 @@ final readonly class AdapterFactory
     /**
      * @throws SecretUnreadable when a stored secret cannot be used
      */
-    public function open(AiConnection $connection): OpenedConnection
+    public function open(AiConnection $connection, ?Located $located = null): OpenedConnection
     {
         $headers = [];
         $plain = [];
@@ -62,6 +62,7 @@ final readonly class AdapterFactory
             verifyTls: $connection->verifyTls || !$this->settings->ai->allowInsecureTls,
             caBundle: $connection->caBundle,
             maxRequestBytes: $connection->maxRequestBytes(),
+            pin: self::pin($located),
         );
 
         $adapter = match ($connection->adapter) {
@@ -72,6 +73,23 @@ final readonly class AdapterFactory
         };
 
         return new OpenedConnection($adapter, $plain);
+    }
+
+    /**
+     * The request pinned to an address the location was checked against
+     * (spec.md §7.25 *Where it runs*, K138): every address a name resolves
+     * to is in the class it was given or a narrower one, so any of them
+     * keeps the promise. None for an address written as such.
+     *
+     * @return array<string, string>
+     */
+    private static function pin(?Located $located): array
+    {
+        if ($located === null || $located->addresses === [] || filter_var($located->host, FILTER_VALIDATE_IP) !== false) {
+            return [];
+        }
+
+        return [$located->host => $located->addresses[0]];
     }
 
     /**

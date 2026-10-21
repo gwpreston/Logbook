@@ -353,6 +353,18 @@ final class ScanCrossCheckTest extends ScanTestCase
         self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $form, 'on GET too');
     }
 
+    public function testTheV5cRefusalShowsForAUserWithNoVehicleToLogTo(): void
+    {
+        // K137: with no form on the page, the reason was never shown.
+        $this->createMember($this->app, 'stranger');
+        $stranger = $this->browserFor($this->app, 'stranger');
+        $id = $this->garage['Golf']->id;
+        $page = html_entity_decode(self::body($stranger->get('/scan?vehicle=' . $id . '&for=vehicle')));
+
+        self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $page);
+        self::assertStringNotContainsString('Please check the highlighted fields', $page);
+    }
+
     public function testTheScanPageForAV5cWithoutOcrSaysItCantBeSent(): void
     {
         $this->scanApp(['TESSERACT_BINARY' => 'off']);

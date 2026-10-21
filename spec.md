@@ -6877,7 +6877,9 @@ request to any model service.
     restored connection asks for its key again. The restore page says so.
 - **Where it runs.** The base URL's host is resolved when the connection
   is saved, when it is tested, and again on every call, and classed
-  (`Service\Ai\ConnectionLocator`):
+  (`Service\Ai\ConnectionLocator`). The call is pinned to an address
+  that check resolved, so a second lookup can't send it elsewhere
+  (Phase 53.8, K138); an address written as such needs no pin:
   - *This server*: a loopback address, `localhost`,
     `host.docker.internal`, `host-gateway`, or an address the admin lists
     under *This server's addresses* on Settings → AI (for a sibling
