@@ -16,7 +16,8 @@ migration: pull and restart.
 - **A CSV header naming its unit in common English words** sets the
   file's unit on the mapping page, whatever your own units:
   `Volume (litre)`, `(liter)`, `(ltr)`, `(UK gallon)`,
-  `(imperial gallons)`, `(imp gal)`, `(US gallon)`, `Odometer (mile)`,
+  `(imperial gallons)`, `(imp gal)`, `(US gallon)`, `(U.S. gal)`,
+  `Odometer (mile)`,
   `(kilometers)` and the like. Before, only Logbook's own unit names and
   symbols were read, so a US-gallon owner's `Volume (litre)` file
   imported 10 litres as 37.854. A German `Menge (Gallonen)` is read as

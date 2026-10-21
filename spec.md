@@ -4351,7 +4351,8 @@ vehicles; a disabled module cannot be imported).
   unit by Logbook's own name or symbol in any language, or by a common
   English spelling or abbreviation (`litre`/`liter`, `ltr`, `UK gallon`,
   `imperial gallons`, `imp gal`, `US gal`, `mile`, `kilometers`,
-  singular or plural; Phase 53.10, #544). A gallon that doesn't say
+  singular or plural, `UK` and `US` with or without dots; Phase 53.10,
+  #544). A gallon that doesn't say
   which, `(gal)`, `(gallons)` or a language's own bare word (German
   `Gallonen`), is the owner's gallon: their volume unit if a gallon,
   else the UK gallon for a UK or Irish locale or pounds, else the US

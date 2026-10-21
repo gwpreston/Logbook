@@ -32,8 +32,8 @@ spreadsheet, another app, or another Logbook.
    (Miles)", "Volume (UK gallons)", "Date and time (Europe/London)"), else
    your own settings. A unit can be written as Logbook writes it, in any of
    its languages, or in common English words: "litre" or "liter", "ltr",
-   "imperial gallons", "imp gal", "US gal", "mile", "kilometers", one or
-   more. A gallon that doesn't say which ("Volume (gal)", German
+   "imperial gallons", "imp gal", "US gal" or "U.S. gal", "mile",
+   "kilometers", one or more. A gallon that doesn't say which ("Volume (gal)", German
    "Gallonen") is
    your gallon: your volume unit if you use gallons, else UK gallons if
    your language is set for the UK or Ireland or you pay in pounds, else

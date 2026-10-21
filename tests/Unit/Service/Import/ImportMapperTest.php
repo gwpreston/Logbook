@@ -55,6 +55,9 @@ final class ImportMapperTest extends TestCase
                 'imp. gal' => VolumeUnit::UkGallon,
                 'US gallon' => VolumeUnit::UsGallon,
                 'US gallons' => VolumeUnit::UsGallon,
+                'U.S. gallons' => VolumeUnit::UsGallon,
+                'U.S. gal' => VolumeUnit::UsGallon,
+                'U.K. gallon' => VolumeUnit::UkGallon,
             ] as $word => $unit
         ) {
             yield $word . ', US-gallon owner' => ["Volume ({$word})", 'en_US', 'USD', VolumeUnit::UsGallon, $unit];

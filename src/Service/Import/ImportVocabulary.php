@@ -36,6 +36,10 @@ final class ImportVocabulary
         'uk gallon' => 'gal_uk',
         'uk gallons' => 'gal_uk',
         'uk gal' => 'gal_uk',
+        // "U.K." and "U.S." normalise to two letters apart.
+        'u k gallon' => 'gal_uk',
+        'u k gallons' => 'gal_uk',
+        'u k gal' => 'gal_uk',
         'imperial gallon' => 'gal_uk',
         'imperial gallons' => 'gal_uk',
         'imperial gal' => 'gal_uk',
@@ -45,6 +49,9 @@ final class ImportVocabulary
         'us gallon' => 'gal_us',
         'us gallons' => 'gal_us',
         'us gal' => 'gal_us',
+        'u s gallon' => 'gal_us',
+        'u s gallons' => 'gal_us',
+        'u s gal' => 'gal_us',
     ];
 
     /** Common English spellings of the distance units (#544), normalised → code. */

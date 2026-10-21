@@ -146,7 +146,11 @@ tagged.
 - [x] CHANGELOG; spec §13; ROADMAP status. *Done:* spec §7.27 says
       which scans open the update page (K136), and `docs/import.md`
       lists the unit words a header may use (K124).
-- [ ] Merge review, then merge.
+- [ ] Merge review, then merge. *2026-10-21, at `0e436c57`:* MERGE.
+      import-tester found `U.S. gallons` and `U.S. gal` unread (the
+      dots normalise to `u s`); fixed on the branch with `U.K.`, and
+      `ImportMapperTest` covers both. Its LOW (a per-row `unit` cell's
+      bare gallon) and two open questions go to `/issue-sweep`.
 
 ### Release
 
