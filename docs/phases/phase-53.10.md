@@ -5,7 +5,7 @@ opens only for a scan read as a registration document, a CSV header
 naming its unit in common English words sets the file's unit, and the
 3.19.0 notes say what going back to 3.18.x does to an unread V5C scan.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.9's release, a patch release
 
 This is the next batch after [Phase 53.9](phase-53.9.md). Like 52.1,
@@ -109,8 +109,15 @@ tagged.
 
 ### 53.10.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-21:* #543 and #544
+      were decided when the batch was planned, and spec §7.13 already
+      carries #544; spec §7.27 now says which scans open the update page
+      (K136). Every question still *Needs a decision* is about a row
+      listed under *Not in scope* or code this phase doesn't change
+      (#537, #539–#542 are the V5C redaction and the scan request, not
+      the update page). No open row besides K124, K135 and K136 is in
+      the code this phase changes.
 
 ### 53.10.1 Scan and import
 

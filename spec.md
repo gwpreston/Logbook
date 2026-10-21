@@ -7841,6 +7841,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     document reference). Ticked, it is saved on a new `registration`
     document, which the sale pack never offers (§7.19); the tick needs
     the compliance module. Unticked, the pending upload is deleted.
+    The page opens only for a scan the result page sends there: a
+    *Scan the V5C* scan, or one read as a registration document by the
+    model or by the owner's *Read as*. Any other scan, read or not, is
+    not found there, so a crafted URL can't file a receipt as a
+    registration document (Phase 53.10, K136).
   - **Other → `other` document:** title, start = the date, provider,
     expiry.
   - **Claim letter → incident** (Phase 27.2, §7.29): insurer, claim
