@@ -4335,10 +4335,15 @@ vehicles; a disabled module cannot be imported).
   field of the module gets a column picker, pre-selected by matching the
   header against the export's column names (in the owner's language and in
   English) and the field codes; the file's units (distance, volume) default
-  to the unit named in the header, else the owner's (a gallon that
-  doesn't say which, `(gal)` or `(gallons)`, is the owner's gallon: their
-  volume unit if a gallon, else the UK gallon for a UK or Irish locale
-  or pounds, else the US gallon, as for app imports; #464, #505); the
+  to the unit named in the header, else the owner's. A header names a
+  unit by Logbook's own name or symbol in any language, or by a common
+  English spelling or abbreviation (`litre`/`liter`, `ltr`, `UK gallon`,
+  `imperial gallons`, `imp gal`, `US gal`, `mile`, `kilometers`,
+  singular or plural; Phase 53.10, #544). A gallon that doesn't say
+  which, `(gal)`, `(gallons)` or a language's own bare word (German
+  `Gallonen`), is the owner's gallon: their volume unit if a gallon,
+  else the UK gallon for a UK or Irish locale or pounds, else the US
+  gallon, as for app imports (#464, #505); the
   date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
   defaults to ISO. The preview lists every row with what will happen to it.
@@ -12122,6 +12127,15 @@ task breakdowns live in the per-phase files; this is the map.
   says to finish first-run setup (§7.13, K127). Released on its own as a
   patch after 53.8's release (#527, decided 2026-10-20). No migration.
   See [`phase-53.9.md`](docs/phases/phase-53.9.md).
+- **Phase 53.10 — Scan and import edges from the known-issues log +
+  patch release** (planned). The V5C update page opens only for a scan
+  read as a registration document, so a crafted URL can't file a
+  receipt as one (§7.27, K136); a CSV header naming its unit in a common
+  English spelling or abbreviation, or a language's bare gallon word,
+  sets the file's unit (§7.13, K124, #544); the 3.19.0 notes say what
+  going back to 3.18.x does to an unread *Scan the V5C* (K135). Released
+  on its own as a patch after 53.9's release (#543, decided 2026-10-21).
+  No migration. See [`phase-53.10.md`](docs/phases/phase-53.10.md).
 
 ---
 

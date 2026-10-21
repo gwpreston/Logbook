@@ -120,6 +120,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | ✅ |
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | ✅ |
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
+| [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1575,6 +1576,24 @@ line says so when there is no user yet.*
   No migration. Patch release.
 
 → [`phase-53.9.md`](docs/phases/phase-53.9.md)
+
+---
+
+## Phase 53.10 — Scan and import edges from the known-issues log + patch release
+*Three open rows of the known-issues log closed: the V5C update page
+opens only for a scan read as a registration document, a CSV header
+naming its unit in common English words sets the file's unit, and the
+3.19.0 notes say what going back to 3.18.x does to an unread V5C scan.*
+
+- `/scan/{token}/vehicle` refuses a scan that isn't a registration
+  document (K136).
+- CSV headers such as `Volume (litre)`, `(imp gal)` or `Odometer (mile)`
+  preselect their unit, and a German `(Gallonen)` the owner's gallon
+  (K124, #544).
+- The 3.19.0 notes cover going back to 3.18.x (K135). No migration.
+  Patch release.
+
+→ [`phase-53.10.md`](docs/phases/phase-53.10.md)
 
 ---
 
