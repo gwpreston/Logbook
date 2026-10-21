@@ -44,8 +44,8 @@ file*, *Reading through OCR*, *Checking values*), the
    90. Documents under 30 words stay unchecked.
 5. **Evals.** The owner's runs of `bin/ai-eval.php --scans --via=ocr`
    (53.2's acceptance criterion 3) and `--scans --crosscheck` (53.3's
-   acceptance criterion 1), recorded in 53.3's *Eval results*; the
-   fixture eval re-run for #514's new bar.
+   acceptance criterion 1), recorded in this file's *Eval results*,
+   with a pointer in 53.3's; the fixture eval re-run for #514's new bar.
 6. **#515, K114.** With the OCR eval's numbers, decide whether the
    cross-check reads the 2,000 px copy instead of the full-size file
    (#515's option 2). Not changed without them.
@@ -90,7 +90,7 @@ file*, *Reading through OCR*, *Checking values*), the
 ### 53.8.3 Evals and tests
 - [x] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
       owner's `--scans --via=ocr` and `--scans --crosscheck` runs, in
-      53.3's *Eval results*.
+      this file's *Eval results*, with a pointer in 53.3's (K140).
 - [x] The fixture eval re-run: flags and false flags per kind with the
       new bar (K110's 29 of 57 as the baseline). In *Eval results*: 29
       false flags fall to 2, and no planted wrong digit is caught on the
@@ -130,10 +130,6 @@ file*, *Reading through OCR*, *Checking values*), the
 - [x] K107 (#532): 53.3's migration's `down()` warns, naming the
       connections.
 - [x] K80: an inherited MediaBox and `/UserUnit` read.
-- [x] K131 (merge review at `c532f40e`, owner's choice to fix here): a
-      date or time beside a V5C reference no longer joins its groups into
-      11 digits, so the reference goes and the date stays, on PDF text,
-      OCR text and wrapped rows (`OcrTextTest`).
 
 - [x] K130 (#534): the scan's JSON schema requires `kind`, `fields` and
       `lines`, names every field and list (null when absent), and each
@@ -149,7 +145,27 @@ file*, *Reading through OCR*, *Checking values*), the
       2026-10-20:* #515 kept the full-size file without numbers to weigh
       it, so K105 stays open for a later phase (owner's choice).
 
-### 53.8.6 Release
+### 53.8.6 Guides
+- [x] `docs/reading-files.md`: *Scan the V5C*, the marker rule, the 90
+      bar, the sum shown once, the address resolved at the scan, and a
+      link to *Which model?*.
+- [x] `docs/ai.md`: *Which model?* (what each task needs, what the test
+      documents measured, setting a local model up for photos), the
+      *Scan the V5C* note under privacy, and running `bin/ai-eval.php` in
+      the dev stack's app container. `docs/features.md`: *Scan the V5C*.
+      (K134: these were built without a task.)
+
+### 53.8.7 Merge-review follow-ups
+- [x] K131: a date beside a V5C reference is kept and the reference
+      removed.
+- [x] K133: the 53.3 rollback warning escapes connection names.
+- [x] K137: the *Scan the V5C* refusal shows its reason when the page
+      has no form.
+- [x] K138: AI requests are pinned to the address the connection's
+      location was checked against.
+- [x] K134, K139, K140, K141: the phase file, guides and CHANGELOG.
+
+### 53.8.8 Release
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
 - [ ] Tag `v3.19.0` once merged.
 

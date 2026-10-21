@@ -637,8 +637,9 @@ not the best for another. Give each task its own model if that helps.
   model does well, since the text arrives clean.
 
 **What we measured.** On the 24 test documents (`bin/ai-eval.php
---scans`, 2026-10), `gemma3:12b` in LM Studio as the vision model read
-62–83% of fields correctly per kind of document. Answers varied from
+--scans --via=ocr`, 2026-10), `gemma3:12b` in LM Studio as the vision
+model read 71–83% of fields correctly per kind of document (50–83% in
+a second run, `--crosscheck`, the V5C photo reading less). Answers varied from
 one run to the next even at temperature 0. Treat that as a floor to
 beat: a model that reads less than this on your own receipts leaves
 more for you to type. (The test photos are short, so most had too little
