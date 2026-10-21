@@ -4617,7 +4617,10 @@ a reader). Logbook isn't affiliated with Fuelio.
     import (exit code 1, nothing written) unless `--skip-invalid` says to
     import the others, even when no other rows are left to import (K126),
     and a row's problems name the file's columns
-    (`Data`, `Odo`, `CostTitle`), not Logbook's fields (K11). For
+    (`Data`, `Odo`, `CostTitle`), not Logbook's fields (K11). On an
+    install with no users yet it stops before reading the file (exit
+    code 1) and says to finish first-run setup in the browser, rather
+    than asking for `--as` (Phase 53.9, K127). For
     a ZIP with several vehicles, `--vehicle` is refused and each vehicle is
     created or matched as the mapping page would prefill it.
 - **ZIP safety** (the command line): the archive is read through PHP's
@@ -4752,7 +4755,8 @@ Logbook isn't affiliated with Tracktor.
   [--as <username>] [--schedules] [--skip-invalid] [--dry-run]`. As for
   Fuelio, rows with problems stop the import (exit code 1, nothing
   written) unless `--skip-invalid`, and a row's problems name the
-  export's fields (K65). `--vehicle` is refused for
+  export's fields (K65), and an install with no users yet stops before
+  reading the export, as for Fuelio (K127). `--vehicle` is refused for
   an export with more than one vehicle, as for a Fuelio ZIP.
 - **Uploads** (#465): a ZIP is checked under the ZIP rules above, except
   that it holds files rather than CSV: at most 5,000 entries, of which
@@ -11183,7 +11187,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   `partner@example.test`. The passwords are printed in the summary and
   written to `var/dev-credentials` (mode 600, git-ignored), which
   `--status` prints. The seeder refuses to run with `APP_ENV=production`,
-  as today.
+  as today. The dev stack keeps `vendor/` in a volume; from Phase 53.9
+  (K128) its entrypoint also runs `composer install` when
+  `composer.lock`'s `content-hash` differs from the one recorded in
+  `vendor/` at the last install, so a pull that changes the lock reaches
+  `vendor/` on the next start. Development only: the production image
+  never installs at start.
 - **Health check:** `/health` endpoint (app + DB connectivity, the app
   version and, from Phase 28.1, the scheduler's last pass) for monitoring.
 - **Reverse proxies** (Phase 35.2) are documented, with tested examples,
@@ -11271,6 +11280,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   The production image is smoke-tested at the root and at a subpath behind
   nginx, Caddy and Traefik (Phase 35.2): the health check, sign-in, a deep
   link with a hard refresh, and an asset; Caddy and Traefik over HTTPS.
+  `bin/smoke-test.sh` runs its stack as compose project
+  `COMPOSE_PROJECT_NAME` when that is set, `logbook-smoke` otherwise
+  (Phase 53.9, K121), so two runs with different names never remove each
+  other's containers and volumes.
 - **Performance:** responsive on a Raspberry Pi with a few vehicles and years of
   history; paginate long lists; index common queries.
 - **Backups:** user-controllable; document the volume/DB to back up; in-app
@@ -12159,7 +12172,7 @@ task breakdowns live in the per-phase files; this is the map.
   full-size file; K105 is carried. Releases v3.19.0. See
   [`phase-53.8.md`](docs/phases/phase-53.8.md).
 - **Phase 53.9 — Install, dev-stack and test-run edges from the
-  known-issues log + patch release** (planned). Composer refuses a
+  known-issues log + patch release** (🚧). Composer refuses a
   bare-PHP install without the mbstring extension, which the bare-PHP
   list names (§10, K123, #528); `bin/smoke-test.sh` runs under
   `COMPOSE_PROJECT_NAME` when it is set (§11, K121); the tests that

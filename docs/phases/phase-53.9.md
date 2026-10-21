@@ -6,7 +6,7 @@ smoke tests can run at once, the suite passes in the dev container, the
 dev stack picks up a changed `composer.lock`, and the import command
 line says so when there is no user yet.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.8's release, a patch release
 
 This is the next batch after [Phase 53.7](phase-53.7.md). Like 52.1,
@@ -120,8 +120,13 @@ tagged.
 
 ### 53.9.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-21:* every question
+      still *Needs a decision* is about a row listed under *Not in
+      scope*; #527 and #528 were decided when the batch was planned, and
+      spec §10 already carries #528. No open row besides K121, K122,
+      K123, K127 and K128 is in the code this phase changes; K125's
+      bare-PHP error page goes with K123 (its stray byte stays open).
 
 ### 53.9.1 Installing and running the checks
 

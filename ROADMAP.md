@@ -119,7 +119,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | ✅ |
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | ✅ |
-| [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
+| [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 🚧 |
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | 📋 |
 | [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | 📋 |
 | [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | 📋 |
