@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Mail;
 
 use Logbook\Kernel;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Security\SessionSecretFile;
 use Logbook\Tests\Support\AppTestCase;
 
@@ -72,5 +73,28 @@ final class SessionSecretFileTest extends AppTestCase
         self::assertSame(SessionSecretFile::NO_FILE, $this->service($bare, SessionSecretFile::class)->ensure());
         $missing = Kernel::settings(['SESSION_SECRET' => '', 'SESSION_SECRET_FILE' => $this->file . '-missing']);
         self::assertSame('', $missing->sessionSecret);
+    }
+
+    /**
+     * K122: the dev stack's `app` container sets `SESSION_SECRET_FILE`, so a
+     * test that clears only `SESSION_SECRET` still had a secret there.
+     */
+    public function testATestAppHasNoSecretFromAFileInTheProcessEnvironment(): void
+    {
+        file_put_contents($this->file, str_repeat('c', 64));
+        $before = getenv('SESSION_SECRET_FILE');
+        putenv('SESSION_SECRET_FILE=' . $this->file);
+        try {
+            self::assertSame(str_repeat('c', 64), Kernel::settings(['SESSION_SECRET' => ''])->sessionSecret, 'read when nothing clears it');
+
+            $app = $this->createApp(['SESSION_SECRET' => '']);
+            self::assertSame('', $this->service($app, AppSettings::class)->sessionSecret);
+            self::assertSame('', self::commandEnvironment()['SESSION_SECRET_FILE'], 'and for a command run beside it');
+
+            $given = $this->createApp(['SESSION_SECRET' => '', 'SESSION_SECRET_FILE' => $this->file]);
+            self::assertSame(str_repeat('c', 64), $this->service($given, AppSettings::class)->sessionSecret);
+        } finally {
+            putenv($before === false ? 'SESSION_SECRET_FILE' : 'SESSION_SECRET_FILE=' . $before);
+        }
     }
 }

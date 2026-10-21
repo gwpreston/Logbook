@@ -142,7 +142,7 @@ tagged.
       for every `-p` (K121); `CONTRIBUTING.md` says how to give a run
       its own name. A test: the script has no hard-coded `-p
       logbook-smoke` and passes `sh -n`.
-- [ ] `AppTestCase::createApp()` (and `DeliveryPageTest::mailApp()` if
+- [x] `AppTestCase::createApp()` (and `DeliveryPageTest::mailApp()` if
       it bypasses it) sets `SESSION_SECRET_FILE` to empty unless the
       test gives it (K122). A test: with `SESSION_SECRET_FILE` pointing
       at a file in the process environment, `createApp()` without it

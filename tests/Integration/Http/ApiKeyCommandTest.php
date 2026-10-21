@@ -73,6 +73,8 @@ final class ApiKeyCommandTest extends AppTestCase
             [PHP_BINARY, Kernel::rootDir() . '/bin/api-key.php', ...array_values($args)],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
+            null,
+            self::commandEnvironment(),
         );
         self::assertIsResource($process);
         $stdout = (string) stream_get_contents($pipes[1]);
