@@ -121,7 +121,7 @@ tagged.
 
 ### 53.10.1 Scan and import
 
-- [ ] `ScanVehicleAction` opens an upload only when its kind is a
+- [x] `ScanVehicleAction` opens an upload only when its kind is a
       registration document, worked out as `ScanResultAction` does
       (target `vehicle`, the reading's kind, or `?as=registration`);
       `ScanResultAction::formUrl()` passes `as` on the vehicle route
@@ -129,7 +129,10 @@ tagged.
       receipt and a failed receipt scan give 404 on GET and on a POST
       with `scan_keep=1`, and no document is filed; a receipt read
       *as registration document* still opens; a failed *Scan the V5C*
-      still shows its reason (#511).
+      still shows its reason (#511). *Done:* a failed scan opens only
+      when it is a *Scan the V5C* one, even with `?as=registration`,
+      and the update page's form posts `as` back; the failed V5C's
+      reason stays covered by `ScanCrossCheckTest`.
 - [ ] `ImportVocabulary::volumeUnit()` and `distanceUnit()` read the
       English aliases; `ImportMapper` reads each catalogue's bare gallon
       word as the owner's gallon (K124, #544). `ImportMapperTest`: each

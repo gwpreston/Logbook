@@ -506,6 +506,51 @@ final class ScanFlowTest extends ScanTestCase
         self::assertStringNotContainsString('v5c.jpg', $pack, 'the sale pack never offers it');
     }
 
+    /**
+     * K136: the V5C update page opens only for a scan the result page sends
+     * there. A receipt's scan, read or failed, is not found, and a POST
+     * can't file it as a registration document.
+     */
+    public function testAReceiptScanNeverOpensTheV5cUpdatePage(): void
+    {
+        $golf = $this->garage['Golf'];
+        [, $read] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+        $this->provider->queue(new MockResponse('{"error": "boom"}', ['http_code' => 500]));
+        [, $path] = $this->land($this->scan($this->invoicePhoto(), 'receipt.jpg', 'image/jpeg', [
+            'vehicle_id' => (string) $golf->id,
+            'for' => 'maintenance',
+        ]));
+        $failed = (string) preg_replace('#^.*[?&]scan=([a-f0-9]{32}).*$#', '$1', (string) end($path));
+        self::assertSame(ScanStatus::Failed, $this->pending($failed)->status);
+
+        foreach (['read' => $read, 'failed' => $failed] as $which => $token) {
+            $url = '/scan/' . $token . '/vehicle?vehicle=' . $golf->id;
+            self::assertSame(404, $this->browser->get($url)->getStatusCode(), $which . ' receipt, GET');
+            $kept = $this->browser->post($url, ['scan' => $token, 'scan_keep' => '1']);
+            self::assertSame(404, $kept->getStatusCode(), $which . ' receipt, POST');
+            $crafted = $this->browser->get($url . '&as=registration');
+            self::assertSame($which === 'read' ? 200 : 404, $crafted->getStatusCode(), $which . ', as registration');
+        }
+        self::assertSame([], $this->service($this->app, ComplianceDocumentRepository::class)->listForVehicle($golf->id));
+    }
+
+    /**
+     * K136: a receipt the owner reads as a registration document (the
+     * scanned form's *Read as*) still opens the update page, and its form
+     * posts back with that choice.
+     */
+    public function testAScanReadAsARegistrationDocumentStillOpensTheUpdatePage(): void
+    {
+        $golf = $this->garage['Golf'];
+        [, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());
+
+        [$page, $path] = $this->land($this->browser->get('/scan/' . $token . '?as=registration&vehicle=' . $golf->id));
+        self::assertSame(200, $page->getStatusCode());
+        self::assertSame('/scan/' . $token . '/vehicle?vehicle=' . $golf->id . '&as=registration', $path[0] ?? '');
+        $action = (string) Html::element(Html::document(self::body($page)), 'form.form')->getAttribute('action');
+        self::assertStringContainsString('as=registration', $action);
+    }
+
     public function testARestoreClearsScansWaitingForAnEntry(): void
     {
         [, $token] = $this->scanToForm($this->invoicePhoto(), $this->invoiceReply());

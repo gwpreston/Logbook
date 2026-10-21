@@ -146,7 +146,10 @@ final readonly class ScanResultAction
     {
         $query = [ScanPrefill::FIELD => $token] + ($as === null ? [] : [ScanPrefill::AS => $as->value]);
         if ($target === ScanTarget::Vehicle) {
-            return $this->redirect->urlFor('scan.vehicle', ['token' => $token], ['vehicle' => (string) $vehicle->id]);
+            // `as` goes on, so the update page knows the owner chose to read it as a registration document (K136).
+            $query = ['vehicle' => (string) $vehicle->id] + ($as === null ? [] : [ScanPrefill::AS => $as->value]);
+
+            return $this->redirect->urlFor('scan.vehicle', ['token' => $token], $query);
         }
 
         return $this->redirect->urlFor($target->route(), ['id' => (string) $vehicle->id], $query);
