@@ -4,7 +4,8 @@
 as a picture, a passing "DVLA" no longer empties a receipt's figures, and
 the cross-check stops flagging right values on blurred photos.*
 
-Status: ✅ complete · releases **v3.19.0** · file lives in
+Status: ✅ complete · released as **v3.19.0**
+([#134](https://github.com/gwpreston16/Logbook/pull/134)) · file lives in
 `docs/phases/`. K105 carried (#515 kept the full-size file).
 
 Phase 53.3's merge review left five open questions about the V5C
@@ -172,7 +173,7 @@ file*, *Reading through OCR*, *Checking values*), the
 
 ### 53.8.8 Release
 - [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
-- [ ] Tag `v3.19.0` once merged.
+- [x] Tag `v3.19.0` once merged.
 
 ## Acceptance criteria
 

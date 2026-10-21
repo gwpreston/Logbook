@@ -1553,7 +1553,8 @@ the cross-check stops flagging right values on blurred photos.*
   stronger sign (#513, K109). A value is flagged only where each digit
   word in its row reads at 90 or more (#514, K110).
 - The owner's eval runs carried from 53.2 and 53.3 (`--via=ocr`,
-  `--crosscheck`); #515 (K114) revisited with their results. Release.
+  `--crosscheck`); #515 (K114) revisited with their results. Releases
+  v3.19.0.
 
 → [`phase-53.8.md`](docs/phases/phase-53.8.md)
 
