@@ -121,6 +121,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | ✅ |
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | 📋 |
+| [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1595,6 +1596,25 @@ naming its unit in common English words sets the file's unit, and the
   Patch release.
 
 → [`phase-53.10.md`](docs/phases/phase-53.10.md)
+
+---
+
+## Phase 53.11 — Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release
+*Five open rows of the known-issues log closed: a warranty reminder the
+owner checked stays checked when its part is stored or refitted, a
+stored part's page says its distance warranty is paused, a line break
+in a sign-in username can't forge a log line, and Ask's grounding check
+reads an answer's numbers the way the user's language writes them.*
+
+- A part's "Warranty ends" reminder keeps *Checked it* through storing
+  and refitting (K28); a stored part's distance warranty shows as paused
+  (K29, #448).
+- Log lines keep outside text on one line, and `docs/deployment.md`
+  gives a tested fail2ban filter (K45, #461).
+- The grounding check reads `£1,459` as 1459 in English and accepts
+  plain-space grouping (K47, K59, #454). No migration. Patch release.
+
+→ [`phase-53.11.md`](docs/phases/phase-53.11.md)
 
 ---
 

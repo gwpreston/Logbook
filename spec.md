@@ -2330,7 +2330,10 @@ iCal/webcal feed so items appear in the user's calendar.
   (§6 Part `warranty_reminder`), its status is not *Gone* and its warranty
   has a limit that can be measured and has not ended. Its due date is the
   warranty's end date and its due distance the end mileage (§7.39
-  *Warranty*), so it follows a schedule's rules (§7.4): it is *due* from
+  *Warranty*; while the part is stored its distance limit is paused, so
+  it has no due distance and is judged by its date alone, and a stored
+  part with only a distance limit has no reminder: #448, Phase 53.11),
+  so it follows a schedule's rules (§7.4): it is *due* from
   the owner's **document** lead time before the date, or the schedule lead
   distance before the mileage (projected from the vehicle's recent driving,
   as a schedule's is), and *upcoming* before that. It is never *overdue*:
@@ -2339,7 +2342,9 @@ iCal/webcal feed so items appear in the user's calendar.
   (the part's brand and name, cut to the title column).
   - **Occurrence = the end date and end mileage**, so editing the warranty
     or the first fitting's date re-opens it and clears its notification
-    state; the projection moving updates it in place.
+    state; the projection moving updates it in place. The end mileage is
+    the warranty's whether or not the part is fitted, so storing or
+    refitting the part never re-opens it (Phase 53.11, K28).
   - **It goes** (deleted by sync, as an orphan) when the part is deleted or
     *Gone*, the tick is cleared, the warranty is edited away or ends. A
     reminder the owner marked *done* is kept until then.
@@ -3030,6 +3035,13 @@ First-run setup creates the initial account. CSRF on all forms.
   message as a wrong one. The auth guard and the current-user middleware
   treat a disabled user's session as signed out. Last sign-in is shown
   from sessions; nothing else is recorded.
+- **Failed sign-ins** (#461, decided 2026-10-21): there is no in-app
+  sign-in throttle. Each failed sign-in is logged at `notice` with the
+  client address, for an external tool such as fail2ban, and
+  `docs/deployment.md` gives a tested filter. Outside text in any log
+  line (a username, a header, an error message) has its line breaks
+  replaced with spaces, so one request writes one line and can't forge
+  another (Phase 53.11, K45).
 
 **Email addresses** (Phase 33.1, decided 2026-10-05, #157, #162–#165)
 
@@ -7138,7 +7150,13 @@ request to any model service.
   separators, decimals, currency symbols, units) is matched against the
   display strings and raw values the tools returned (and the numbers in the
   context, such as "320d", and in earlier results carried into a follow-up), normalised for
-  separators and rounding to the shown precision. Unmatched numbers, other
+  separators and rounding to the shown precision. An answer's number is
+  read in the user's locale (`1,459` is 1459 in English, 1.459 in
+  German), and the other way only when it is written as a raw value
+  (plain digits, a dot decimal, no grouping), so a 1000× error isn't
+  matched (#454, Phase 53.11). A plain space, a no-break or narrow
+  no-break space and `'` group thousands; a number grouped with plain
+  spaces also matches when each of its parts does. Unmatched numbers, other
   than dates, years and small counts (1–12) the question itself contained,
   are highlighted with "Logbook didn't provide this figure. Check it
   against the sources." The answer is still shown.
@@ -10344,8 +10362,12 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   the first fitting, as now), provider (up to 120) and terms (up to 500). A part
   page shows "In warranty until 3 Mar 2028 or 85,400 mi" while every set
   limit holds, "Warranty ended 3 Mar 2028" after, and nothing without a
-  warranty. Deleting a part deletes its fittings, their readings and its
-  files.
+  warranty. The distance limit counts only while the part is fitted: a
+  stored part's is paused at the mileage it came off, and its page shows
+  "In warranty until 3 Mar 2028, distance paused while off the vehicle"
+  (with only a distance limit, "In warranty, paused while off the
+  vehicle"; #448, Phase 53.11). Deleting a part deletes its fittings,
+  their readings and its files.
 - **Status** (*Fitted*, *Stored*, *Gone*) is replayed from the part's
   fittings and stored, as a tyre's is: no fittings, or the last one
   removed with outcome *Kept*, is *Stored* (a spare bought ahead is a
@@ -10516,7 +10538,9 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   is never refused, so a part whose warranty has since ended stays editable.
   The tick means nothing without a warranty and is not kept. A reminder is raised only while the
   tick is set, the part is not *Gone* and the warranty has not ended; a
-  stored spare's warranty runs on, so it still reminds. The reminder's
+  stored spare's time limit runs on, so it still reminds by date, but
+  its distance limit is paused, so a stored part with only a distance
+  limit doesn't remind (#448, Phase 53.11). The reminder's
   *Done* reads *Checked it*.
 - **For your insurer** (#438, #444, #445): `/vehicles/{id}/parts/insurer`,
   linked from the *Parts* tab's *Modifications* heading and printable as
@@ -10715,6 +10739,12 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   the connection, makes the request forget what came from it. Anything
   else (a POST, a job, a command) reads the database as before.
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
+- **Tap targets** (#457, decided 2026-10-21): at narrow widths every
+  interactive control has a hit area at least 44 × 44 px. Compact
+  controls (soft buttons, segmented tabs, back and card links,
+  `<summary>` rows, breakdown label links) keep how they look: the hit
+  area grows by padding or a pseudo-element, not the drawn control. Not
+  yet built everywhere (K16, K35, K55).
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
   and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
@@ -12136,6 +12166,18 @@ task breakdowns live in the per-phase files; this is the map.
   going back to 3.18.x does to an unread *Scan the V5C* (K135). Released
   on its own as a patch after 53.9's release (#543, decided 2026-10-21).
   No migration. See [`phase-53.10.md`](docs/phases/phase-53.10.md).
+- **Phase 53.11 — Warranty reminders, Ask's figures and the sign-in log
+  from the known-issues log + patch release** (planned). A part's
+  "Warranty ends" reminder keeps *Checked it* when the part is stored or
+  refitted (§7.6, K28); a stored part's distance warranty is paused and
+  its page says so (§7.39, K29, #448); outside text such as a sign-in
+  username is logged on one line, so it can't forge a failed sign-in
+  line, and `docs/deployment.md` gives a tested fail2ban filter (§7.9,
+  K45, #461); the grounding check reads an answer's numbers in the
+  user's locale, the other way only for a raw value (§7.26, K47, #454),
+  and accepts a plain space between thousands (§7.26, K59). Released on
+  its own as a patch after 53.10's release (#545, decided 2026-10-21).
+  No migration. See [`phase-53.11.md`](docs/phases/phase-53.11.md).
 
 ---
 
