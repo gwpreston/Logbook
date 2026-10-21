@@ -197,7 +197,7 @@ final class TracktorCommandTest extends AppTestCase
 
         // Stopped before the export is read: a missing one isn't reported.
         self::assertSame([1, '', ImportAppCommand::NO_USER_YET], $this->command($app, ['/no/such/export.json']));
-        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
+        self::assertEquals(0, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
     }
 
     /**

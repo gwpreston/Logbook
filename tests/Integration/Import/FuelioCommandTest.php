@@ -221,7 +221,7 @@ final class FuelioCommandTest extends AppTestCase
 
         // Stopped before the file is read: a missing one isn't reported.
         self::assertSame([1, '', ImportAppCommand::NO_USER_YET], $this->command($app, ['/no/such/file.zip']));
-        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
+        self::assertEquals(0, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
     }
 
     /**

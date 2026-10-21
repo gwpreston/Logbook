@@ -85,7 +85,8 @@ final class SessionSecretFileTest extends AppTestCase
         $before = getenv('SESSION_SECRET_FILE');
         putenv('SESSION_SECRET_FILE=' . $this->file);
         try {
-            self::assertSame(str_repeat('c', 64), Kernel::settings(['SESSION_SECRET' => ''])->sessionSecret, 'read when nothing clears it');
+            $uncleared = Kernel::settings(['SESSION_SECRET' => '']);
+            self::assertSame(str_repeat('c', 64), $uncleared->sessionSecret, 'read when nothing clears it');
 
             $app = $this->createApp(['SESSION_SECRET' => '']);
             self::assertSame('', $this->service($app, AppSettings::class)->sessionSecret);

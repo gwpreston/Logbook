@@ -80,7 +80,8 @@ final class RequiredExtensionsTest extends TestCase
                 if (!$file instanceof \SplFileInfo || $file->getExtension() !== 'php') {
                     continue;
                 }
-                preg_match_all('/(?<![\w>:$\\\\])\\\\?(mb_[a-z_]+)\s*\(/', (string) file_get_contents($file->getPathname()), $matches);
+                $code = (string) file_get_contents($file->getPathname());
+                preg_match_all('/(?<![\w>:$\\\\])\\\\?(mb_[a-z_]+)\s*\(/', $code, $matches);
                 array_push($calls, ...$matches[1]);
             }
         }
