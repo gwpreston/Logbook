@@ -57,6 +57,9 @@ restart.
 - A V5C photo on a connection Settings last saw on your network, whose
   address is on the internet again, is treated as going to the internet:
   OCR first, and text only (#530, K112).
+- A date beside a V5C reference is kept, and the reference removed:
+  `Issued 14/10/2026 12345 678901` used to lose the date and keep the
+  reference's last six digits (K131).
 - A V5C reference wrapped over lines is removed when a label or date
   shares its line (`Issued 01/03/2018 1234 5678` / `901`), or a date
   follows it (`901 14/10/2026`), keeping the date (K111).

@@ -222,7 +222,10 @@ final readonly class OcrText
                 if ($head !== [] && $open['digits'] + $headDigits === 11) {
                     $stretches[] = $joined;
                     // The rest of the row is read on its own: `14/10/2026` isn't 11 digits with `901` gone.
-                    $pieces[0] = array_slice($first, count($head));
+                    $pieces[0] = array_values(array_filter(
+                        $first,
+                        static fn (OcrWord $w): bool => !in_array($w, $head, true),
+                    ));
                 } elseif ($head !== [] && $whole && count($pieces) === 1 && count($head) === count($first)) {
                     // A row of digit groups only: the run may go on below.
                     $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $open['digits'] + $headDigits];
@@ -268,6 +271,10 @@ final readonly class OcrText
         $eleven = false;
         $whole = true;
         foreach ($words as $word) {
+            if (Scrubber::isDateOrTime($word->text)) {
+                // A date or time beside the groups is passed over, neither joined nor a stop (merge review of 53.8).
+                continue;
+            }
             $count = Scrubber::digitsIn($word->text);
             if ($count === null) {
                 break;

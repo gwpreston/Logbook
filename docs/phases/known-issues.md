@@ -232,3 +232,9 @@ Whole-repository sweep of master before Phase 51 started; performance-auditor wa
 | # | Severity | Area | Issue | Where | Since | Status |
 |---|---|---|---|---|---|---|
 | K130 | MEDIUM | Scan | The scan's JSON schema doesn't require a field's `value` and `evidence`, so a server that holds the model to the schema (LM Studio, llama.cpp, Ollama's structured output) lets it answer `{}` for every field, or leave `fields` out: with gemma-4-e4b in LM Studio a service invoice's text came back as `"fields": {"date": {}}`, and with gemma-3-12b a fuel receipt's as no `fields` at all, so forms opened nearly empty, on every route. | `src/Service/Ai/Scan/ScanSchema.php` (`schema()`) | master | Fixed (Phase 53.8: `kind`, `fields` and `lines` required, every field and list named (null when absent), and each field's `value` and `evidence` (#534); `ScanSchemaTest`) |
+
+## Found in Phase 53.8 (merge review at `c532f40e`, 2026-10-20)
+
+| # | Severity | Area | Issue | Where | Since | Status |
+|---|---|---|---|---|---|---|
+| K131 | MEDIUM | Scan | In V5C-like text, a date's last digits joined a reference group beside it into 11: `Issued 14/10/2026 12345 678901` was sent as `Issued 678901`, the date lost and six reference digits kept; `Issued 15/3/2024 14:32 1234 5678 901` kept `901`. A date ending the row (`Ref 1234 5678 14/10/2026` over `901`) stopped the wrap from being joined, so the whole reference went. | `src/Service/Ai/Scan/Scrubber.php` (`WIDE`, `referenceWords()`), `src/Service/Ai/Scan/OcrText.php` (`digitGroups()`) | master | Fixed (Phase 53.8: dates and times are masked before runs are found, and passed over when a wrap is joined; `OcrTextTest`) |

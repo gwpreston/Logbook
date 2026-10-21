@@ -168,6 +168,12 @@ final class OcrTextTest extends TestCase
                 'Issued 01/03/2018',
             ],
             'a date after it' => [[[['1234', 10], ['5678', 85]], [['901', 10], ['14/10/2026', 70]]], '14/10/2026'],
+            // Merge review of 53.8: a date ending the first row, and one starting the next.
+            'a date ending the row' => [
+                [[['Ref', 10], ['1234', 70], ['5678', 145], ['14/10/2026', 220]], [['901', 70]]],
+                '14/10/2026',
+            ],
+            'a date starting the next row' => [[[['1234', 10], ['5678', 85]], [['901', 10], ['09:42', 70]]], '09:42'],
         ];
     }
 
@@ -196,6 +202,32 @@ final class OcrTextTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
         self::assertStringContainsString($kept, $text);
         self::assertStringContainsString('Make FORD', $text);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function dateBesideReference(): array
+    {
+        // Merge review of 53.8: the date's last digits plus a group made 11, so the date went and the
+        // reference's last 6 digits stayed.
+        return [
+            '5 + 6' => ['Issued 14/10/2026 12345 678901', '14/10/2026', '678901'],
+            'a time' => ['Issued 15/3/2024 14:32 1234 5678 901', '15/3/2024 14:32', '901'],
+            'after it' => ['Ref 12345 678901 14/10/2026', '14/10/2026', '678901'],
+        ];
+    }
+
+    #[DataProvider('dateBesideReference')]
+    public function testADateBesideAReferenceIsKeptAndTheReferenceRemoved(string $row, string $kept, string $gone): void
+    {
+        $text = OcrText::of(self::ocr([['V5C'], explode(' ', $row)]))->text;
+
+        self::assertStringContainsString($kept, $text);
+        self::assertStringNotContainsString($gone, $text);
+        self::assertStringContainsString($kept, Scrubber::text($row . ' V5C', true), 'PDF text too');
+        self::assertStringNotContainsString($gone, Scrubber::text($row, true));
+        self::assertStringNotContainsString($gone, Scrubber::ocrText($row, true));
     }
 
     public function testNumbersInOtherColumnsOfARowAreKept(): void

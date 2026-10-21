@@ -130,6 +130,10 @@ file*, *Reading through OCR*, *Checking values*), the
 - [x] K107 (#532): 53.3's migration's `down()` warns, naming the
       connections.
 - [x] K80: an inherited MediaBox and `/UserUnit` read.
+- [x] K131 (merge review at `c532f40e`, owner's choice to fix here): a
+      date or time beside a V5C reference no longer joins its groups into
+      11 digits, so the reference goes and the date stays, on PDF text,
+      OCR text and wrapped rows (`OcrTextTest`).
 
 - [x] K130 (#534): the scan's JSON schema requires `kind`, `fields` and
       `lines`, names every field and list (null when absent), and each

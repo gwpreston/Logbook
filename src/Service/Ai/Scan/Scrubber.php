@@ -28,6 +28,12 @@ final class Scrubber
     private const string MARKERS = '/\bV[5S]C\b|registration\s+certificate|\bDVLA\b|document\s+reference/iu';
     /** A strong sign on its own (#513): `V5C` as printed, not OCR's `VSC`, or `Registration Certificate`. */
     private const string STRONG = '/\bV5C\b|registration\s+certificate/iu';
+    /**
+     * A date (`14/10/2026`, `5.3.24`) or a time (`14:32`, `09:05:33`): never part of a reference, so
+     * its digits can't join a group beside it into 11 (merge review of 53.8).
+     */
+    private const string DATE_OR_TIME = '/(?<![0-9])(?:[0-9]{1,2}[\/.\-][0-9]{1,2}[\/.\-](?:[0-9]{4}|[0-9]{2})'
+        . '|[0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)(?![0-9])/';
     /** OCR's look-alikes (#498), read as digits in a word that has a digit (#500). */
     private const array LOOK_ALIKES = [
         'O' => '0', 'o' => '0', 'l' => '1', 'I' => '1', 'i' => '1', 'S' => '5', 's' => '5', 'B' => '8', 'b' => '8',
@@ -38,7 +44,7 @@ final class Scrubber
      */
     public static function text(string $text, bool $wide = false): string
     {
-        return (string) preg_replace($wide ? self::WIDE : self::ELEVEN_DIGITS, '', $text);
+        return self::removeRuns($wide ? self::WIDE : self::ELEVEN_DIGITS, $text);
     }
 
     /**
@@ -77,7 +83,48 @@ final class Scrubber
      */
     public static function ocrText(string $text, bool $wide = false): string
     {
-        return (string) preg_replace($wide ? self::WIDE_OCR : self::ELEVEN_DIGITS_OCR, '', $text);
+        return self::removeRuns($wide ? self::WIDE_OCR : self::ELEVEN_DIGITS_OCR, $text);
+    }
+
+    /**
+     * $text without the runs $pattern finds, looked for with dates and
+     * times masked, so `Issued 14/10/2026 12345 678901` loses the
+     * reference, not `10/2026 12345` (merge review of 53.8).
+     */
+    private static function removeRuns(string $pattern, string $text): string
+    {
+        if (preg_match_all($pattern, self::masked($text), $matches, PREG_OFFSET_CAPTURE) === 0) {
+            return $text;
+        }
+        foreach (array_reverse($matches[0]) as [$run, $at]) {
+            $text = substr($text, 0, $at) . substr($text, $at + strlen($run));
+        }
+
+        return $text;
+    }
+
+    /**
+     * Whether a word is a date or a time (`14/10/2026`, `14:32`), which a
+     * reference's digit groups pass over rather than join (merge review of 53.8).
+     */
+    public static function isDateOrTime(string $word): bool
+    {
+        $word = strtr(rtrim($word, ',;'), self::LOOK_ALIKES);
+
+        return preg_match(self::DATE_OR_TIME, $word, $m) === 1 && $m[0] === $word;
+    }
+
+    /**
+     * $text with each date and time's digits replaced by `x`, byte for
+     * byte, so offsets found in it hold in $text.
+     */
+    private static function masked(string $text): string
+    {
+        return (string) preg_replace_callback(
+            self::DATE_OR_TIME,
+            static fn (array $m): string => (string) preg_replace('/[0-9]/', 'x', $m[0]),
+            $text,
+        );
     }
 
     /**
@@ -99,6 +146,8 @@ final class Scrubber
             $starts[$i] = strlen($joined);
             $joined .= ($wide && preg_match('/[0-9]/', $word) === 1 ? strtr($word, self::LOOK_ALIKES) : $word) . ' ';
         }
+        // A date or time beside the groups never joins them into 11 digits (merge review of 53.8).
+        $joined = self::masked($joined);
         if (preg_match_all($wide ? self::WIDE : self::ELEVEN_DIGITS, $joined, $matches, PREG_OFFSET_CAPTURE) === 0) {
             return [];
         }

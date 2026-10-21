@@ -7546,7 +7546,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     2026-10-18, `docs/phases/open-questions.md` #500, K93; narrowed to
     V5C-like text on 2026-10-19 after the merge review: on any document
     the wider rule took a small fill-up's `9.21 1.459 13.44` and dates
-    with seconds). Otherwise its first **three** pages are rendered
+    with seconds). A date or time (`14/10/2026`, `14:32`) is never part
+    of a run, on any route: its digits can't join a group beside it into
+    11, so `Issued 14/10/2026 12345 678901` loses the reference and keeps
+    the date, and a wrap on OCR text passes over a date beside its groups
+    (Phase 53.8 merge review, K131). Otherwise its first **three** pages are rendered
     at 150 dpi to JPEG (Ghostscript, or Imagick; §9 `GHOSTSCRIPT_BINARY`)
     and read through `read_document`. With no renderer, a scanned PDF
     shows "This PDF is a scan. Take a photo instead, or type it in." on
