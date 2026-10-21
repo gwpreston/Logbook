@@ -206,7 +206,12 @@ final class ImportVocabulary
                 }
             }
 
-            return $words + $this->unitWords(VolumeUnit::cases()) + self::ENGLISH_VOLUMES;
+            $words += $this->unitWords(VolumeUnit::cases());
+            foreach (self::ENGLISH_VOLUMES as $word => $code) {
+                $words[$word] ??= $code;
+            }
+
+            return $words;
         });
 
         $word = $lookup[self::normalise($value)] ?? null;
@@ -221,9 +226,12 @@ final class ImportVocabulary
     public function bareGallon(string $value): bool
     {
         $lookup = $this->lookup('bare_gallon', function (): array {
-            $words = array_fill_keys(self::BARE_GALLONS, '1');
+            $words = [];
+            foreach (self::BARE_GALLONS as $word) {
+                $words[$word] = '1';
+            }
             foreach ($this->locales() as $locale) {
-                $words[$this->word('import_app.tracktor.unit.gallon', $locale)] ??= '1';
+                $words[$this->word('import_app.tracktor.unit.gallon', $locale)] = '1';
             }
 
             return $words;

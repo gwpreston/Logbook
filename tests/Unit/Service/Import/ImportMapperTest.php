@@ -60,8 +60,9 @@ final class ImportMapperTest extends TestCase
             yield $word . ', US-gallon owner' => ["Volume ({$word})", 'en_US', 'USD', VolumeUnit::UsGallon, $unit];
             yield $word . ', metric owner' => ["Volume ({$word})", 'en_GB', 'GBP', VolumeUnit::Litre, $unit];
         }
-        yield 'German bare gallon, German owner' => ['Menge (Gallonen)', 'de_DE', 'EUR', VolumeUnit::Litre, VolumeUnit::UsGallon];
-        yield 'German bare gallon, UK-gallon owner' => ['Menge (Gallonen)', 'de_DE', 'EUR', VolumeUnit::UkGallon, VolumeUnit::UkGallon];
+        $german = 'Menge (Gallonen)';
+        yield 'German bare gallon, German owner' => [$german, 'de_DE', 'EUR', VolumeUnit::Litre, VolumeUnit::UsGallon];
+        yield 'German bare gallon, UK-gallon owner' => [$german, 'de_DE', 'EUR', VolumeUnit::UkGallon, VolumeUnit::UkGallon];
         yield 'Tracktor\'s English bare gallon' => ['Volume (gallons)', 'en_GB', 'GBP', VolumeUnit::Litre, VolumeUnit::UkGallon];
     }
 
