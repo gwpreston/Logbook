@@ -6,6 +6,36 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.2] — 2026-10-21
+
+Phase 53.10: **Scan and import edges from the known-issues log**
+([docs/phases/phase-53.10.md](docs/phases/phase-53.10.md)). No
+migration: pull and restart.
+
+### Fixed
+- **A CSV header naming its unit in common English words** sets the
+  file's unit on the mapping page, whatever your own units:
+  `Volume (litre)`, `(liter)`, `(ltr)`, `(UK gallon)`,
+  `(imperial gallons)`, `(imp gal)`, `(US gallon)`, `(U.S. gal)`,
+  `Odometer (mile)`,
+  `(kilometers)` and the like. Before, only Logbook's own unit names and
+  symbols were read, so a US-gallon owner's `Volume (litre)` file
+  imported 10 litres as 37.854. A German `Menge (Gallonen)` is read as
+  your gallon, as `(gal)` is (K124, #544).
+
+### Security
+- **The V5C update page** opens only for a scan read as a registration
+  document: a *Scan the V5C* scan, the model's reading, or one you chose
+  to *Read as* a registration document. A receipt's scan opened there by
+  a crafted address is not found, so it can't be filed as a
+  registration document (K136).
+
+### Documentation
+- **The 3.19.0 notes** say that after going back to 3.18.x, a *Scan the
+  V5C* that couldn't be read in the last 24 hours opens as "not found"
+  (K135).
+- **The import guide** lists the unit words a CSV header may use.
+
 ## [3.19.1] — 2026-10-21
 
 Phase 53.9: **Install, dev-stack and test-run edges from the known-issues
@@ -56,7 +86,9 @@ migration: pull and restart. Bare-PHP installs: see the upgrade note.
 Phase 53.8: **V5C privacy and cross-check accuracy**
 ([docs/phases/phase-53.8.md](docs/phases/phase-53.8.md)). See
 [docs/reading-files.md](docs/reading-files.md). No migration: pull and
-restart.
+restart. Going back to 3.18.x: a *Scan the V5C* that couldn't be read in
+the last 24 hours opens as "not found" instead of its reason; scan the
+file again after upgrading to see it (Phase 53.10, K135).
 
 ### Added
 - **Scan the V5C**, on a vehicle's page (the *Details* card) and its

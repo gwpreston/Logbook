@@ -5,8 +5,8 @@ opens only for a scan read as a registration document, a CSV header
 naming its unit in common English words sets the file's unit, and the
 3.19.0 notes say what going back to 3.18.x does to an unread V5C scan.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.9's release, a patch release
+Status: ✅ complete · releases **v3.19.2**, a patch release after Phase
+53.9's (#543) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.9](phase-53.9.md). Like 52.1,
 52.2 and 53.5–53.9, it takes a few small open rows: K124 (MEDIUM, CSV
@@ -109,12 +109,19 @@ tagged.
 
 ### 53.10.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-21:* #543 and #544
+      were decided when the batch was planned, and spec §7.13 already
+      carries #544; spec §7.27 now says which scans open the update page
+      (K136). Every question still *Needs a decision* is about a row
+      listed under *Not in scope* or code this phase doesn't change
+      (#537, #539–#542 are the V5C redaction and the scan request, not
+      the update page). No open row besides K124, K135 and K136 is in
+      the code this phase changes.
 
 ### 53.10.1 Scan and import
 
-- [ ] `ScanVehicleAction` opens an upload only when its kind is a
+- [x] `ScanVehicleAction` opens an upload only when its kind is a
       registration document, worked out as `ScanResultAction` does
       (target `vehicle`, the reading's kind, or `?as=registration`);
       `ScanResultAction::formUrl()` passes `as` on the vehicle route
@@ -122,24 +129,34 @@ tagged.
       receipt and a failed receipt scan give 404 on GET and on a POST
       with `scan_keep=1`, and no document is filed; a receipt read
       *as registration document* still opens; a failed *Scan the V5C*
-      still shows its reason (#511).
-- [ ] `ImportVocabulary::volumeUnit()` and `distanceUnit()` read the
+      still shows its reason (#511). *Done:* a failed scan opens only
+      when it is a *Scan the V5C* one, even with `?as=registration`,
+      and the update page's form posts `as` back; the failed V5C's
+      reason stays covered by `ScanCrossCheckTest`.
+- [x] `ImportVocabulary::volumeUnit()` and `distanceUnit()` read the
       English aliases; `ImportMapper` reads each catalogue's bare gallon
       word as the owner's gallon (K124, #544). `ImportMapperTest`: each
       of the row's headers preselects its own unit for a US-gallon owner
       and for a metric owner, and `Menge (Gallonen)` the owner's gallon.
-- [ ] `CHANGELOG.md` [3.19.0]: the rollback note (K135).
+- [x] `CHANGELOG.md` [3.19.0]: the rollback note (K135).
 
 ### 53.10.2 Finish
 
-- [ ] Known-issues rows K124, K135 and K136 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review, then merge.
+- [x] Known-issues rows K124, K135 and K136 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status. *Done:* spec §7.27 says
+      which scans open the update page (K136), and `docs/import.md`
+      lists the unit words a header may use (K124).
+- [ ] Merge review, then merge. *2026-10-21, at `0e436c57`:* MERGE.
+      import-tester found `U.S. gallons` and `U.S. gal` unread (the
+      dots normalise to `u s`); fixed on the branch with `U.K.`, and
+      `ImportMapperTest` covers both. Its LOW (a per-row `unit` cell's
+      bare gallon) and two open questions go to `/issue-sweep`.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.9's
-      release (#543).
+- [x] `VERSION` 3.19.2, CHANGELOG 3.19.2, README status: the patch
+      after 53.9's release (#543).
+- [ ] Tag `v3.19.2` once merged.
 
 ## Acceptance criteria
 

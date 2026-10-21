@@ -4351,7 +4351,8 @@ vehicles; a disabled module cannot be imported).
   unit by Logbook's own name or symbol in any language, or by a common
   English spelling or abbreviation (`litre`/`liter`, `ltr`, `UK gallon`,
   `imperial gallons`, `imp gal`, `US gal`, `mile`, `kilometers`,
-  singular or plural; Phase 53.10, #544). A gallon that doesn't say
+  singular or plural, `UK` and `US` with or without dots; Phase 53.10,
+  #544). A gallon that doesn't say
   which, `(gal)`, `(gallons)` or a language's own bare word (German
   `Gallonen`), is the owner's gallon: their volume unit if a gallon,
   else the UK gallon for a UK or Irish locale or pounds, else the US
@@ -7841,6 +7842,11 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
     document reference). Ticked, it is saved on a new `registration`
     document, which the sale pack never offers (§7.19); the tick needs
     the compliance module. Unticked, the pending upload is deleted.
+    The page opens only for a scan the result page sends there: a
+    *Scan the V5C* scan, or one read as a registration document by the
+    model or by the owner's *Read as*. Any other scan, read or not, is
+    not found there, so a crafted URL can't file a receipt as a
+    registration document (Phase 53.10, K136).
   - **Other → `other` document:** title, start = the date, provider,
     expiry.
   - **Claim letter → incident** (Phase 27.2, §7.29): insurer, claim
@@ -12186,14 +12192,15 @@ task breakdowns live in the per-phase files; this is the map.
   migration.
   See [`phase-53.9.md`](docs/phases/phase-53.9.md).
 - **Phase 53.10 — Scan and import edges from the known-issues log +
-  patch release** (planned). The V5C update page opens only for a scan
+  patch release** (✅). The V5C update page opens only for a scan
   read as a registration document, so a crafted URL can't file a
   receipt as one (§7.27, K136); a CSV header naming its unit in a common
   English spelling or abbreviation, or a language's bare gallon word,
   sets the file's unit (§7.13, K124, #544); the 3.19.0 notes say what
-  going back to 3.18.x does to an unread *Scan the V5C* (K135). Released
-  on its own as a patch after 53.9's release (#543, decided 2026-10-21).
-  No migration. See [`phase-53.10.md`](docs/phases/phase-53.10.md).
+  going back to 3.18.x does to an unread *Scan the V5C* (K135). Releases
+  v3.19.2, a patch on its own after 53.9's release (#543, decided
+  2026-10-21). No migration.
+  See [`phase-53.10.md`](docs/phases/phase-53.10.md).
 - **Phase 53.11 — Warranty reminders, Ask's figures and the sign-in log
   from the known-issues log + patch release** (planned). A part's
   "Warranty ends" reminder keeps *Checked it* when the part is stored or

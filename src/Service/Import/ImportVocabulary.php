@@ -22,6 +22,49 @@ final class ImportVocabulary
     private const array YES = ['yes', 'y', 'true', '1', 'x'];
     private const array NO = ['no', 'n', 'false', '0'];
 
+    /** A gallon that doesn't say which (#505), normalised; each catalogue's own bare word joins these. */
+    private const array BARE_GALLONS = ['gal', 'gallon', 'gallons'];
+
+    /** Common English spellings and abbreviations of the volume units (#544), normalised → code. */
+    private const array ENGLISH_VOLUMES = [
+        'litre' => 'l',
+        'litres' => 'l',
+        'liter' => 'l',
+        'liters' => 'l',
+        'ltr' => 'l',
+        'ltrs' => 'l',
+        'uk gallon' => 'gal_uk',
+        'uk gallons' => 'gal_uk',
+        'uk gal' => 'gal_uk',
+        // "U.K." and "U.S." normalise to two letters apart.
+        'u k gallon' => 'gal_uk',
+        'u k gallons' => 'gal_uk',
+        'u k gal' => 'gal_uk',
+        'imperial gallon' => 'gal_uk',
+        'imperial gallons' => 'gal_uk',
+        'imperial gal' => 'gal_uk',
+        'imp gallon' => 'gal_uk',
+        'imp gallons' => 'gal_uk',
+        'imp gal' => 'gal_uk',
+        'us gallon' => 'gal_us',
+        'us gallons' => 'gal_us',
+        'us gal' => 'gal_us',
+        'u s gallon' => 'gal_us',
+        'u s gallons' => 'gal_us',
+        'u s gal' => 'gal_us',
+    ];
+
+    /** Common English spellings of the distance units (#544), normalised → code. */
+    private const array ENGLISH_DISTANCES = [
+        'kilometre' => 'km',
+        'kilometres' => 'km',
+        'kilometer' => 'km',
+        'kilometers' => 'km',
+        'kms' => 'km',
+        'mile' => 'mi',
+        'miles' => 'mi',
+    ];
+
     /** @var array<string, array<array-key, string>> cache: lookup name → normalised word → value */
     private array $lookups = [];
 
@@ -170,7 +213,12 @@ final class ImportVocabulary
                 }
             }
 
-            return $words + $this->unitWords(VolumeUnit::cases());
+            $words += $this->unitWords(VolumeUnit::cases());
+            foreach (self::ENGLISH_VOLUMES as $word => $code) {
+                $words[$word] ??= $code;
+            }
+
+            return $words;
         });
 
         $word = $lookup[self::normalise($value)] ?? null;
@@ -179,11 +227,35 @@ final class ImportVocabulary
     }
 
     /**
+     * Whether a header's brackets name a gallon without saying which
+     * ("gal", "gallons", German "Gallonen"), which is the owner's (#505).
+     */
+    public function bareGallon(string $value): bool
+    {
+        $lookup = $this->lookup('bare_gallon', function (): array {
+            $words = [];
+            foreach (self::BARE_GALLONS as $word) {
+                $words[$word] = '1';
+            }
+            foreach ($this->locales() as $locale) {
+                $words[$this->word('import_app.tracktor.unit.gallon', $locale)] = '1';
+            }
+
+            return $words;
+        });
+
+        return isset($lookup[self::normalise($value)]);
+    }
+
+    /**
      * A distance unit named in a header's brackets ("Odometer (Miles)"), or null.
      */
     public function distanceUnit(string $value): ?DistanceUnit
     {
-        $lookup = $this->lookup('distance', fn (): array => $this->unitWords(DistanceUnit::cases()));
+        $lookup = $this->lookup(
+            'distance',
+            fn (): array => $this->unitWords(DistanceUnit::cases()) + self::ENGLISH_DISTANCES,
+        );
         $word = $lookup[self::normalise($value)] ?? null;
 
         return $word === null ? null : DistanceUnit::from($word);

@@ -41,6 +41,53 @@ final class ImportMapperTest extends TestCase
         yield 'kWh keeps the owner\'s' => ['Energy (kWh)', 'en_GB', 'GBP', VolumeUnit::UkGallon, VolumeUnit::UkGallon];
         yield 'kg keeps the owner\'s' => ['Volume (kg)', 'en_US', 'USD', VolumeUnit::UsGallon, VolumeUnit::UsGallon];
         yield 'unknown keeps the owner\'s' => ['Volume (pints)', 'en_GB', 'GBP', VolumeUnit::Litre, VolumeUnit::Litre];
+        // K124 (#544): common English words, whatever the owner's own units.
+        foreach (
+            [
+                'litre' => VolumeUnit::Litre,
+                'liter' => VolumeUnit::Litre,
+                'Liters' => VolumeUnit::Litre,
+                'ltr' => VolumeUnit::Litre,
+                'UK gallon' => VolumeUnit::UkGallon,
+                'UK gal' => VolumeUnit::UkGallon,
+                'imperial gallons' => VolumeUnit::UkGallon,
+                'imp gal' => VolumeUnit::UkGallon,
+                'imp. gal' => VolumeUnit::UkGallon,
+                'US gallon' => VolumeUnit::UsGallon,
+                'US gallons' => VolumeUnit::UsGallon,
+                'U.S. gallons' => VolumeUnit::UsGallon,
+                'U.S. gal' => VolumeUnit::UsGallon,
+                'U.K. gallon' => VolumeUnit::UkGallon,
+            ] as $word => $unit
+        ) {
+            yield $word . ', US-gallon owner' => ["Volume ({$word})", 'en_US', 'USD', VolumeUnit::UsGallon, $unit];
+            yield $word . ', metric owner' => ["Volume ({$word})", 'en_GB', 'GBP', VolumeUnit::Litre, $unit];
+        }
+        $german = 'Menge (Gallonen)';
+        yield 'German bare gallon, German owner' => [$german, 'de_DE', 'EUR', VolumeUnit::Litre, VolumeUnit::UsGallon];
+        yield 'German bare gallon, UK-gallon owner' => [$german, 'de_DE', 'EUR', VolumeUnit::UkGallon, VolumeUnit::UkGallon];
+        yield 'Tracktor\'s English bare gallon' => ['Volume (gallons)', 'en_GB', 'GBP', VolumeUnit::Litre, VolumeUnit::UkGallon];
+    }
+
+    /**
+     * @return iterable<string, array{string, string, DistanceUnit}>
+     */
+    public static function distanceHeaders(): iterable
+    {
+        // K124 (#544): the singular and the American spelling, against the owner's own unit.
+        yield 'mile, kilometre owner' => ['Odometer (mile)', 'de_DE', DistanceUnit::Mile];
+        yield 'kilometers, mile owner' => ['Odometer (kilometers)', 'en_US', DistanceUnit::Kilometre];
+        yield 'kilometre, mile owner' => ['Odometer (kilometre)', 'en_GB', DistanceUnit::Kilometre];
+        yield 'Miles, kilometre owner' => ['Odometer (Miles)', 'de_DE', DistanceUnit::Mile];
+    }
+
+    #[DataProvider('distanceHeaders')]
+    public function testTheDistanceUnitNamedInTheHeaderIsChosen(string $header, string $locale, DistanceUnit $expected): void
+    {
+        $options = $this->guess("Date,{$header},Volume\n2026-09-01,1000,40\n", $locale, 'EUR', VolumeUnit::Litre);
+
+        self::assertSame(1, $options->column('odometer'), 'the column is mapped to the odometer');
+        self::assertSame($expected, $options->distanceUnit);
     }
 
     #[DataProvider('volumeHeaders')]

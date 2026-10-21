@@ -6,9 +6,11 @@ namespace Logbook\Action\Scan;
 
 use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Scan\ScanKind;
+use Logbook\Domain\Ai\Scan\ScanTarget;
 use Logbook\Domain\Ai\Scan\ScanUpload;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
+use Logbook\Service\Ai\Scan\Extraction;
 use Logbook\Service\Ai\Scan\Mapper;
 use Logbook\Service\Ai\Scan\ScanProblem;
 use Logbook\Service\Ai\Scan\ScanReader;
@@ -39,7 +41,9 @@ use Slim\Exception\HttpNotFoundException;
  * kept only when the user ticks it, since it carries the document
  * reference: on a `registration` document, which the sale pack never
  * offers (PaperworkKind::NEVER_OFFERED). Otherwise it is deleted. Needs
- * `Manage`, and the compliance module for keeping the file.
+ * `Manage`, and the compliance module for keeping the file. Opens only for
+ * a scan whose kind is a registration document, worked out as the result
+ * page does (`?as=` passed on from it); any other scan is not found (K136).
  */
 final readonly class ScanVehicleAction
 {
@@ -70,9 +74,13 @@ final readonly class ScanVehicleAction
         $upload = $this->guard->upload($request, $user, $args);
         $reading = ScanReader::extraction($upload);
         // A *Scan the V5C* scan that couldn't be read (#511) shows why, with nothing to update.
-        $problem = $reading === null ? ScanReader::problem($upload) : null;
+        $problem = $reading === null && $upload->target === ScanTarget::Vehicle ? ScanReader::problem($upload) : null;
         $vehicle = $this->vehicle($request, $upload);
         if (($reading === null && $problem === null) || !$upload->isClaimable($this->clock->now())) {
+            throw new HttpNotFoundException($request);
+        }
+        if ($this->kind($request, $upload, $reading) !== ScanKind::Registration) {
+            // Only where the result page sends a scan (K136): not a receipt by a crafted URL.
             throw new HttpNotFoundException($request);
         }
         $form = $reading === null ? null : $this->mapper->map($user, $vehicle, $reading, ScanKind::Registration);
@@ -145,6 +153,25 @@ final readonly class ScanVehicleAction
         );
     }
 
+    /**
+     * The scan's kind as ScanResultAction works it out: the owner's *Read
+     * as*, *Scan the V5C* (#511), the model's reading, then the form it
+     * was started from.
+     */
+    private function kind(ServerRequestInterface $request, ScanUpload $upload, ?Extraction $reading): ?ScanKind
+    {
+        $v5c = $upload->target === ScanTarget::Vehicle ? ScanKind::Registration : null;
+
+        return ScanKind::tryFrom(self::as($request)) ?? $v5c ?? $reading->kind ?? $upload->target?->defaultKind();
+    }
+
+    private static function as(ServerRequestInterface $request): string
+    {
+        $as = $request->getQueryParams()[ScanPrefill::AS] ?? null;
+
+        return is_string($as) ? $as : '';
+    }
+
     private function canKeep(): bool
     {
         return $this->features->isEnabled(Feature::Compliance);
@@ -200,6 +227,7 @@ final readonly class ScanVehicleAction
             'errors' => $errors?->all() ?? [],
             'can_keep' => $this->canKeep(),
             'problem' => $problem,
+            'as' => ScanKind::tryFrom(self::as($request))?->value,
         ], $status);
     }
 }
