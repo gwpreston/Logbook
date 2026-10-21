@@ -1595,7 +1595,7 @@ naming its unit in common English words sets the file's unit, and the
   preselect their unit, and a German `(Gallonen)` the owner's gallon
   (K124, #544).
 - The 3.19.0 notes cover going back to 3.18.x (K135). No migration.
-  Patch release.
+  Releases v3.19.2.
 
 → [`phase-53.10.md`](docs/phases/phase-53.10.md)
 

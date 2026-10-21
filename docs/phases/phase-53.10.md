@@ -5,8 +5,9 @@ opens only for a scan read as a registration document, a CSV header
 naming its unit in common English words sets the file's unit, and the
 3.19.0 notes say what going back to 3.18.x does to an unread V5C scan.*
 
-Status: ✅ complete · releases **v3.19.2**, a patch release after Phase
-53.9's (#543) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.19.2**
+([#140](https://github.com/gwpreston16/Logbook/pull/140)), a patch
+release after Phase 53.9's (#543) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.9](phase-53.9.md). Like 52.1,
 52.2 and 53.5–53.9, it takes a few small open rows: K124 (MEDIUM, CSV
@@ -146,7 +147,7 @@ tagged.
 - [x] CHANGELOG; spec §13; ROADMAP status. *Done:* spec §7.27 says
       which scans open the update page (K136), and `docs/import.md`
       lists the unit words a header may use (K124).
-- [ ] Merge review, then merge. *2026-10-21, at `0e436c57`:* MERGE.
+- [x] Merge review, then merge. *2026-10-21, at `0e436c57`:* MERGE.
       import-tester found `U.S. gallons` and `U.S. gal` unread (the
       dots normalise to `u s`); fixed on the branch with `U.K.`, and
       `ImportMapperTest` covers both. Its LOW (a per-row `unit` cell's
@@ -156,7 +157,7 @@ tagged.
 
 - [x] `VERSION` 3.19.2, CHANGELOG 3.19.2, README status: the patch
       after 53.9's release (#543).
-- [ ] Tag `v3.19.2` once merged.
+- [x] Tag `v3.19.2` once merged.
 
 ## Acceptance criteria
 
