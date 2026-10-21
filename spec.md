@@ -11158,7 +11158,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 - **Bare PHP 8.4:** needs the `intl`, `mbstring`, `sodium`, `gd` (JPEG,
   PNG, WebP) and `exif` extensions (`gd` and `exif` from Phase 26.4,
   `mbstring` from Phase 53.9, #528; Composer refuses to install without
-  them); Ghostscript or Imagick is optional
+  them. `composer.json` replaces `symfony/polyfill-mbstring`, whose
+  stand-in for `ext-mbstring` would otherwise let an install without the
+  extension through, #550); Ghostscript or Imagick is optional
   (without it a scanned PDF asks for a photo instead), and so is
   Tesseract (`apt install tesseract-ocr tesseract-ocr-deu`, or PaddleOCR
   at `OCR_URL`; `docs/reading-files.md`). Document web root = `public/`, Composer install, Phinx

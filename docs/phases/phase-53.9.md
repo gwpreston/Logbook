@@ -136,7 +136,12 @@ tagged.
       called in `src/` and `bin/` is either one
       `symfony/polyfill-mbstring` defines or `composer.json` requires
       `ext-mbstring`, and `docs/deployment.md` lists every required
-      `ext-*`.
+      `ext-*`. *After the merge review (#550):* `composer.json` replaces
+      `symfony/polyfill-mbstring`, which `provide`s `ext-mbstring` and
+      so let an install without the extension through;
+      `RequiredExtensionsTest` now fails if any locked package provides
+      a required extension. Checked on Debian PHP: without mbstring
+      `composer install` exits 2 naming `ext-mbstring`, with it exits 0.
 - [x] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
       for every `-p` (K121); `CONTRIBUTING.md` says how to give a run
       its own name. A test: the script has no hard-coded `-p
@@ -199,6 +204,14 @@ tagged.
   bare-PHP list and `docs/deployment.md`, so Composer refuses an install
   without it. Not chosen: replacing `mb_strcut()` and `mb_strimwidth()`
   with UTF-8-safe trimming that needs no extension.
+- **#550. How Composer enforces #528** (found in review: the merge
+  review of 2026-10-21 showed `symfony/polyfill-mbstring`, a production
+  dependency, declares `provide: ext-mbstring`, so `composer install`
+  passed on a PHP without the extension). *Decided 2026-10-21:* (1)
+  `composer.json` replaces the polyfill, so Composer checks the real
+  extension and #528 holds as written. Not chosen: (2) a startup or
+  `/health` check; (3) #528's alternative, trimming without the
+  extension.
 - **#549. The dev stack's scheduler loop and the suite** (found while
   building; K143). *Open, waiting for the owner.* In the dev `app`
   container the scheduler loop's pass lock is the one the tests take,

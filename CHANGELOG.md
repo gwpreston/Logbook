@@ -17,7 +17,9 @@ migration: pull and restart. Bare-PHP installs: see the upgrade note.
   by `composer install`, which names `ext-mbstring`, instead of
   installing and then failing with "Call to undefined function
   mb_strcut()" at its first AI request, Ask thread, capped job output or
-  scanned amount. The deployment guide lists it (K123, #528).
+  scanned amount. The deployment guide lists it (K123, #528). Logbook
+  no longer installs `symfony/polyfill-mbstring`, which stood in for the
+  extension and let such an install through (#550).
 - **`php bin/import-app.php`** on an install with no users yet says to
   finish first-run setup in the browser, instead of asking for `--as`
   as though there were more than one user. Tracktor and Fuelio both

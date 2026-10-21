@@ -146,7 +146,9 @@ anywhere. It is never part of `docker-compose.yml` or
   usually built in). `mbstring` is required from 3.19.1: AI requests, Ask
   threads, job output and scans trim text with it (Debian/Ubuntu:
   `apt install php8.4-mbstring`). Composer refuses to install without
-  any of them.
+  `intl`, `mbstring`, `sodium`, `gd`, `exif` or `pdo`, and names the one
+  that is missing; it doesn't check the database driver, so make sure
+  yours is there (`php -m`).
 - Optional: **Ghostscript** (`apt install ghostscript`) or Imagick, to read
   scanned PDFs when [reading receipts](ai.md#reading-receipts-and-documents).
 - Optional: **Tesseract** (`apt install tesseract-ocr tesseract-ocr-deu`), to

@@ -30,6 +30,9 @@
         "symfony/translation": "^8.0",
         "twig/twig": "^3.30"
     },
+    "replace": {
+        "symfony/polyfill-mbstring": "*"
+    },
     "suggest": {
         "ext-pdo_pgsql": "PostgreSQL support",
         "ext-pdo_mysql": "MySQL / MariaDB support",
