@@ -199,3 +199,29 @@ tagged.
   bare-PHP list and `docs/deployment.md`, so Composer refuses an install
   without it. Not chosen: replacing `mb_strcut()` and `mb_strimwidth()`
   with UTF-8-safe trimming that needs no extension.
+- **#549. The dev stack's scheduler loop and the suite** (found while
+  building; K143). *Open, waiting for the owner.* In the dev `app`
+  container the scheduler loop's pass lock is the one the tests take,
+  so a test that runs the scheduler during a pass does nothing; MySQL
+  failed this way in both full runs here (different tests each time),
+  while SQLite, PostgreSQL and MariaDB passed. Options: (1) the dev
+  compose file sets `SCHEDULER_ENABLED=false`; (2) a `CACHE_DIR`
+  setting and the suite's own cache folder; (3) `bin/test-all-dbs.sh`
+  runs the suite in a separate container; (4) document it. CI is
+  unaffected, so it doesn't block 3.19.1.
+
+## Results (2026-10-21)
+
+- `composer lint` and `composer analyse` clean.
+- `bin/test-all-dbs.sh` in the dev container (4,566 tests; migrate,
+  full rollback, migrate first on each): SQLite OK (20 skipped),
+  PostgreSQL OK (10 skipped), MariaDB OK (10 skipped). MySQL failed
+  twice on K143's lock clash (3, then 1 failure, in different
+  scheduler tests); those tests pass on MySQL run on their own.
+- `bin/smoke-test.sh pgsql` with no `COMPOSE_PROJECT_NAME`: on this
+  Windows host it stops at the attachment upload after 49 passing
+  checks, exactly as master's script does (K142); CI runs it on Linux.
+  The production image builds.
+- Coverage isn't measured in the dev image (no pcov or Xdebug); CI's
+  SQLite row checks it. The only `src/` change is K127's two branches,
+  both covered by `TracktorCommandTest` and `FuelioCommandTest`.
