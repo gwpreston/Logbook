@@ -116,6 +116,11 @@ start if something else already holds the app port. On Windows run it from
 | `--port <number>` | Serve the app on this port (default 8090). Also accepted as `--port=<number>` or `APP_PORT=<number>`. 8080 is refused: it belongs to the production stack. |
 | `-y`, `--yes` | Do not prompt before anything destructive. |
 
+The `vendor/` volume follows `composer.lock`: when a pull changes the lock,
+the next start runs `composer install` (`docker/dev/composer-install.sh`),
+so `--stop --reset` isn't needed for that. The check is in the dev image,
+which `bin/dev-setup.sh` rebuilds on each start.
+
 Every email the app sends in development (password resets, invitations,
 reminders, digests) can be caught by **Mailpit**: open `http://localhost:8025`.
 If another project already uses 8025, the script picks the next free port and
@@ -144,6 +149,14 @@ Other tasks run inside the app container:
 docker compose -f docker-compose.dev.yml exec app composer check   # lint + analyse + test
 bin/test-all-dbs.sh                                                 # suite on SQLite, Postgres, MySQL, MariaDB
 bin/smoke-test.sh pgsql                                             # production image end-to-end (after docker build -t logbook:local .)
+```
+
+The smoke test runs its stack as compose project `logbook-smoke`. To run
+two at once, give each its own name and ports, so neither removes the
+other's containers and volumes:
+
+```bash
+COMPOSE_PROJECT_NAME=smoke-two APP_PORT=18180 PROXY_PORT=18181 bin/smoke-test.sh pgsql
 ```
 
 ## Tests and databases

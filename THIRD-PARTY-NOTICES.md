@@ -70,7 +70,6 @@ Production dependencies only; development tools are not shipped.
 | symfony/polyfill-intl-grapheme | v1.41.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-idn | v1.42.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-normalizer | v1.42.0 | MIT | https://symfony.com |
-| symfony/polyfill-mbstring | v1.38.2 | MIT | https://symfony.com |
 | symfony/service-contracts | v3.7.3 | MIT | https://symfony.com |
 | symfony/string | v8.0.15 | MIT | https://symfony.com |
 | symfony/translation | v8.0.14 | MIT | https://symfony.com |

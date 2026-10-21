@@ -362,7 +362,9 @@ final readonly class FuelioCommand
         if (count($all) === 1) {
             return $all[0];
         }
-        fwrite($err, "This install has more than one user: say whose import it is with --as <username>.\n");
+        fwrite($err, $all === []
+            ? ImportAppCommand::NO_USER_YET
+            : "This install has more than one user: say whose import it is with --as <username>.\n");
 
         return null;
     }

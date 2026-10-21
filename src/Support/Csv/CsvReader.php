@@ -134,8 +134,7 @@ final class CsvReader
     /**
      * UTF-16 text after its byte-order mark as UTF-8, or null when it isn't
      * whole (an odd byte at the end, a lone surrogate): converting back
-     * must give the same bytes, which also covers the mbstring polyfill,
-     * whose conversion fails instead (K125).
+     * must give the same bytes (K125).
      */
     private static function fromUtf16(string $contents): ?string
     {

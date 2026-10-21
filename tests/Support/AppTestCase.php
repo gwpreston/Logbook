@@ -54,12 +54,16 @@ abstract class AppTestCase extends TestCase
     }
 
     /**
+     * `SESSION_SECRET_FILE` is cleared unless the test gives it, so an app
+     * without `SESSION_SECRET` has no secret even where the environment sets
+     * the file (the dev stack's `/data/session-secret`, K122).
+     *
      * @param array<string, string> $env environment overrides
      * @return App<ContainerInterface>
      */
     protected function createApp(array $env = []): App
     {
-        $app = Kernel::createApp(Kernel::settings($env + ['UPLOAD_PATH' => $this->uploadDir()]));
+        $app = Kernel::createApp(Kernel::settings($env + ['UPLOAD_PATH' => $this->uploadDir(), 'SESSION_SECRET_FILE' => '']));
 
         $container = $app->getContainer();
         self::assertInstanceOf(Container::class, $container);
@@ -328,6 +332,18 @@ abstract class AppTestCase extends TestCase
     protected static function body(ResponseInterface $response): string
     {
         return (string) $response->getBody();
+    }
+
+    /**
+     * The environment for a command run with `proc_open()` beside an app from
+     * createApp(): this process's, with `SESSION_SECRET_FILE` cleared the same
+     * way, so both hash with the same (empty) secret (K122).
+     *
+     * @return array<string, string>
+     */
+    protected static function commandEnvironment(): array
+    {
+        return ['SESSION_SECRET_FILE' => ''] + getenv();
     }
 
     private static function removeDirectory(string $dir): void

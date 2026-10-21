@@ -172,6 +172,8 @@ final class BreakGlassTest extends AppTestCase
             [PHP_BINARY, Kernel::rootDir() . '/bin/auth.php', ...array_values($args)],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
+            null,
+            self::commandEnvironment(),
         );
         self::assertIsResource($process);
         $stdout = (string) stream_get_contents($pipes[1]);

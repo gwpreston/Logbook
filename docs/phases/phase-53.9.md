@@ -6,8 +6,8 @@ smoke tests can run at once, the suite passes in the dev container, the
 dev stack picks up a changed `composer.lock`, and the import command
 line says so when there is no user yet.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.8's release, a patch release
+Status: ✅ complete · releases **v3.19.1**, a patch release after Phase
+53.8's (#527) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.7](phase-53.7.md). Like 52.1,
 52.2, 53.5, 53.6 and 53.7, it takes a few small open rows: K123 (HIGH),
@@ -120,36 +120,51 @@ tagged.
 
 ### 53.9.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-21:* every question
+      still *Needs a decision* is about a row listed under *Not in
+      scope*; #527 and #528 were decided when the batch was planned, and
+      spec §10 already carries #528. No open row besides K121, K122,
+      K123, K127 and K128 is in the code this phase changes.
 
 ### 53.9.1 Installing and running the checks
 
-- [ ] `composer.json` requires `ext-mbstring` (lock refreshed with
+- [x] `composer.json` requires `ext-mbstring` (lock refreshed with
       `composer update --lock`); `docs/deployment.md`'s bare-PHP
       requirements name it (K123, #528). A test
       (`tests/Unit/Docs/` beside `LicenceTest`): every `mb_*` function
       called in `src/` and `bin/` is either one
       `symfony/polyfill-mbstring` defines or `composer.json` requires
       `ext-mbstring`, and `docs/deployment.md` lists every required
-      `ext-*`.
-- [ ] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
+      `ext-*`. *After the merge review (#550):* `composer.json` replaces
+      `symfony/polyfill-mbstring`, which `provide`s `ext-mbstring` and
+      so let an install without the extension through;
+      `RequiredExtensionsTest` now fails if any locked package provides
+      a required extension. Checked on Debian PHP: without mbstring
+      `composer install` exits 2 naming `ext-mbstring`, with it exits 0.
+- [x] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
       for every `-p` (K121); `CONTRIBUTING.md` says how to give a run
       its own name. A test: the script has no hard-coded `-p
-      logbook-smoke` and passes `sh -n`.
-- [ ] `AppTestCase::createApp()` (and `DeliveryPageTest::mailApp()` if
+      logbook-smoke` and passes `sh -n`. *Done:* the response files
+      (`/tmp/smoke.*`) also moved to a per-run `mktemp -d` folder, so
+      two runs don't overwrite each other's; `ScriptsTest` checks it.
+- [x] `AppTestCase::createApp()` (and `DeliveryPageTest::mailApp()` if
       it bypasses it) sets `SESSION_SECRET_FILE` to empty unless the
       test gives it (K122). A test: with `SESSION_SECRET_FILE` pointing
       at a file in the process environment, `createApp()` without it
       has no session secret; the four named tests pass in the dev `app`
       container.
-- [ ] `docker/entrypoint.sh` runs `composer install` in development when
+- [x] `docker/entrypoint.sh` runs `composer install` in development when
       `composer.lock`'s `content-hash` differs from the one recorded in
       `vendor/` at the last install (K128). A test runs the entrypoint's
       check in a temporary directory: a missing or stale record means
       install, a matching one means none; `APP_ENV=production` never
-      installs.
-- [ ] `TracktorCommand::user()` and `FuelioCommand::user()` print "no
+      installs. *Done:* the check is `docker/dev/composer-install.sh`,
+      which the entrypoint runs in development only and which records
+      the hash in `vendor/.composer-lock-hash`; `ScriptsTest` runs it
+      with a stub `composer`. `CONTRIBUTING.md` says so, and the 3.19.1
+      notes that it needs the dev image rebuilt.
+- [x] `TracktorCommand::user()` and `FuelioCommand::user()` print "no
       user yet, finish first-run setup" when the install has no users
       (K127). `TracktorCommandTest` and `FuelioCommandTest`: with no
       users and no `--as`, exit 1 with that message and nothing read or
@@ -157,15 +172,19 @@ tagged.
 
 ### 53.9.2 Finish
 
-- [ ] Known-issues rows K121, K122, K123, K127 and K128 *Fixed*.
-- [ ] CHANGELOG (an upgrade note for bare-PHP installs: mbstring is now
-      required); spec §13; ROADMAP status.
+- [x] Known-issues rows K121, K122, K123, K127 and K128 *Fixed*.
+- [x] CHANGELOG (an upgrade note for bare-PHP installs: mbstring is now
+      required); spec §13; ROADMAP status. *Done:* the 3.19.1 notes
+      also tell dev-stack users their first start runs one
+      `composer install`; spec §7.13, §10 and §11 carry K127, K128 and
+      K121.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.8's
-      release (#527).
+- [x] `VERSION` 3.19.1, CHANGELOG 3.19.1, README status: the patch
+      after 53.8's release (#527).
+- [ ] Tag `v3.19.1` once merged.
 
 ## Acceptance criteria
 
@@ -191,3 +210,37 @@ tagged.
   bare-PHP list and `docs/deployment.md`, so Composer refuses an install
   without it. Not chosen: replacing `mb_strcut()` and `mb_strimwidth()`
   with UTF-8-safe trimming that needs no extension.
+- **#550. How Composer enforces #528** (found in review: the merge
+  review of 2026-10-21 showed `symfony/polyfill-mbstring`, a production
+  dependency, declares `provide: ext-mbstring`, so `composer install`
+  passed on a PHP without the extension). *Decided 2026-10-21:* (1)
+  `composer.json` replaces the polyfill, so Composer checks the real
+  extension and #528 holds as written. Not chosen: (2) a startup or
+  `/health` check; (3) #528's alternative, trimming without the
+  extension.
+- **#549. The dev stack's scheduler loop and the suite** (found while
+  building; K143). *Open, waiting for the owner.* In the dev `app`
+  container the scheduler loop's pass lock is the one the tests take,
+  so a test that runs the scheduler during a pass does nothing; MySQL
+  failed this way in both full runs here (different tests each time),
+  while SQLite, PostgreSQL and MariaDB passed. Options: (1) the dev
+  compose file sets `SCHEDULER_ENABLED=false`; (2) a `CACHE_DIR`
+  setting and the suite's own cache folder; (3) `bin/test-all-dbs.sh`
+  runs the suite in a separate container; (4) document it. CI is
+  unaffected, so it doesn't block 3.19.1.
+
+## Results (2026-10-21)
+
+- `composer lint` and `composer analyse` clean.
+- `bin/test-all-dbs.sh` in the dev container (4,566 tests; migrate,
+  full rollback, migrate first on each): SQLite OK (20 skipped),
+  PostgreSQL OK (10 skipped), MariaDB OK (10 skipped). MySQL failed
+  twice on K143's lock clash (3, then 1 failure, in different
+  scheduler tests); those tests pass on MySQL run on their own.
+- `bin/smoke-test.sh pgsql` with no `COMPOSE_PROJECT_NAME`: on this
+  Windows host it stops at the attachment upload after 49 passing
+  checks, exactly as master's script does (K142); CI runs it on Linux.
+  The production image builds.
+- Coverage isn't measured in the dev image (no pcov or Xdebug); CI's
+  SQLite row checks it. The only `src/` change is K127's two branches,
+  both covered by `TracktorCommandTest` and `FuelioCommandTest`.

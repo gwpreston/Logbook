@@ -9,6 +9,7 @@
         "ext-gd": "*",
         "ext-intl": "*",
         "ext-json": "*",
+        "ext-mbstring": "*",
         "ext-pdo": "*",
         "ext-sodium": "*",
         "brick/math": "^1.0",
@@ -28,6 +29,9 @@
         "symfony/mailer": "^8.0",
         "symfony/translation": "^8.0",
         "twig/twig": "^3.30"
+    },
+    "replace": {
+        "symfony/polyfill-mbstring": "*"
     },
     "suggest": {
         "ext-pdo_pgsql": "PostgreSQL support",

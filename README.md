@@ -9,7 +9,7 @@ renewals, reminders and what it all costs, on your own server.
 [![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
 [![CI](https://github.com/gwpreston16/Logbook/actions/workflows/ci.yml/badge.svg)](https://github.com/gwpreston16/Logbook/actions/workflows/ci.yml)
 
-**Status: v3.19.0.** What changed in each release is in [`CHANGELOG.md`](CHANGELOG.md).
+**Status: v3.19.1.** What changed in each release is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Who it's for
 
@@ -58,7 +58,7 @@ docker build -t logbook .
 docker run -d --name logbook -p 8080:80 -v logbook_data:/data logbook
 ```
 
-**Plain PHP 8.4** (web root = `public/`, with `intl`, `sodium`, `gd` and `exif`):
+**Plain PHP 8.4** (web root = `public/`, with `intl`, `mbstring`, `sodium`, `gd` and `exif`):
 
 ```bash
 composer install --no-dev -o

@@ -20,9 +20,11 @@ export PHP_OPCACHE_VALIDATE
 DATA_DIR="${DATA_DIR:-/data}"
 mkdir -p "$DATA_DIR" "${UPLOAD_PATH:-$DATA_DIR/uploads}" "${BACKUP_PATH:-$DATA_DIR/backups}" var/cache var/cache/locks var/log
 
-# Dev image with a fresh (empty) vendor volume: install dependencies once.
-if [ ! -f vendor/autoload.php ] && [ "${APP_ENV:-production}" = "development" ] && command -v composer >/dev/null 2>&1; then
-    composer install --no-interaction --no-progress
+# Dev image: install dependencies into the vendor volume when it is empty or
+# composer.lock has changed since (spec.md §10, K128). The script comes from
+# the bind-mounted source; the production image never runs it.
+if [ "${APP_ENV:-production}" = "development" ] && [ -f docker/dev/composer-install.sh ]; then
+    sh docker/dev/composer-install.sh
 fi
 
 if [ "${1:-}" = "apache2-foreground" ]; then
