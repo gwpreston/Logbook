@@ -6,8 +6,8 @@ smoke tests can run at once, the suite passes in the dev container, the
 dev stack picks up a changed `composer.lock`, and the import command
 line says so when there is no user yet.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.8's release, a patch release
+Status: ✅ complete · releases **v3.19.1**, a patch release after Phase
+53.8's (#527) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.7](phase-53.7.md). Like 52.1,
 52.2, 53.5, 53.6 and 53.7, it takes a few small open rows: K123 (HIGH),
@@ -125,8 +125,7 @@ tagged.
       still *Needs a decision* is about a row listed under *Not in
       scope*; #527 and #528 were decided when the batch was planned, and
       spec §10 already carries #528. No open row besides K121, K122,
-      K123, K127 and K128 is in the code this phase changes; K125's
-      bare-PHP error page goes with K123 (its stray byte stays open).
+      K123, K127 and K128 is in the code this phase changes.
 
 ### 53.9.1 Installing and running the checks
 
@@ -162,15 +161,19 @@ tagged.
 
 ### 53.9.2 Finish
 
-- [ ] Known-issues rows K121, K122, K123, K127 and K128 *Fixed*.
-- [ ] CHANGELOG (an upgrade note for bare-PHP installs: mbstring is now
-      required); spec §13; ROADMAP status.
+- [x] Known-issues rows K121, K122, K123, K127 and K128 *Fixed*.
+- [x] CHANGELOG (an upgrade note for bare-PHP installs: mbstring is now
+      required); spec §13; ROADMAP status. *Done:* the 3.19.1 notes
+      also tell dev-stack users their first start runs one
+      `composer install`; spec §7.13, §10 and §11 carry K127, K128 and
+      K121.
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.8's
-      release (#527).
+- [x] `VERSION` 3.19.1, CHANGELOG 3.19.1, README status: the patch
+      after 53.8's release (#527).
+- [ ] Tag `v3.19.1` once merged.
 
 ## Acceptance criteria
 

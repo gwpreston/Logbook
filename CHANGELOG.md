@@ -6,6 +6,46 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.1] — 2026-10-21
+
+Phase 53.9: **Install, dev-stack and test-run edges from the known-issues
+log** ([docs/phases/phase-53.9.md](docs/phases/phase-53.9.md)). No
+migration: pull and restart. Bare-PHP installs: see the upgrade note.
+
+### Fixed
+- **A bare-PHP install without the mbstring extension** is now refused
+  by `composer install`, which names `ext-mbstring`, instead of
+  installing and then failing with "Call to undefined function
+  mb_strcut()" at its first AI request, Ask thread, capped job output or
+  scanned amount. The deployment guide lists it (K123, #528).
+- **`php bin/import-app.php`** on an install with no users yet says to
+  finish first-run setup in the browser, instead of asking for `--as`
+  as though there were more than one user. Tracktor and Fuelio both
+  (K127).
+
+### Development
+- **`bin/smoke-test.sh`** runs its stack under `COMPOSE_PROJECT_NAME`
+  when it is set (`logbook-smoke` otherwise) and keeps its response
+  files in a folder of its own, so two runs with different names and
+  ports no longer remove each other's containers and volumes (K121).
+- **The dev stack** runs `composer install` on start when
+  `composer.lock` has changed since `vendor/` was installed, so a pull
+  that changes the lock reaches the `vendor` volume without a manual
+  install or `bin/dev-setup.sh --reset`. The production image is
+  unchanged (K128).
+- **The tests that expect no session secret** pass in the dev stack's
+  `app` container, which sets `SESSION_SECRET_FILE`, as they do in CI
+  (K122).
+
+### Upgrade notes
+- **Bare PHP:** the `mbstring` extension is now required. Check with
+  `php -m | grep mbstring` before upgrading; if it is missing, install it
+  (Debian/Ubuntu: `apt install php8.4-mbstring`) and restart PHP, or
+  `composer install` will stop. The Docker image already has it.
+- **Dev stack:** the first start after this upgrade runs
+  `composer install` once, since `vendor/` has no record of the lock it
+  was installed from yet.
+
 ## [3.19.0] — 2026-10-20
 
 Phase 53.8: **V5C privacy and cross-check accuracy**

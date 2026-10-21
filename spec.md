@@ -12172,15 +12172,16 @@ task breakdowns live in the per-phase files; this is the map.
   full-size file; K105 is carried. Releases v3.19.0. See
   [`phase-53.8.md`](docs/phases/phase-53.8.md).
 - **Phase 53.9 — Install, dev-stack and test-run edges from the
-  known-issues log + patch release** (🚧). Composer refuses a
+  known-issues log + patch release** (✅). Composer refuses a
   bare-PHP install without the mbstring extension, which the bare-PHP
   list names (§10, K123, #528); `bin/smoke-test.sh` runs under
   `COMPOSE_PROJECT_NAME` when it is set (§11, K121); the tests that
   expect no session secret clear `SESSION_SECRET_FILE` as well (§9,
   K122); the dev stack reinstalls `vendor/` when `composer.lock` has
   changed (§10, K128); `bin/import-app.php` on an install with no users
-  says to finish first-run setup (§7.13, K127). Released on its own as a
-  patch after 53.8's release (#527, decided 2026-10-20). No migration.
+  says to finish first-run setup (§7.13, K127). Releases v3.19.1, a
+  patch on its own after 53.8's release (#527, decided 2026-10-20). No
+  migration.
   See [`phase-53.9.md`](docs/phases/phase-53.9.md).
 - **Phase 53.10 — Scan and import edges from the known-issues log +
   patch release** (planned). The V5C update page opens only for a scan
