@@ -44,7 +44,10 @@ migration: pull and restart. Bare-PHP installs: see the upgrade note.
   `php -m | grep mbstring` before upgrading; if it is missing, install it
   (Debian/Ubuntu: `apt install php8.4-mbstring`) and restart PHP, or
   `composer install` will stop. The Docker image already has it.
-- **Dev stack:** the first start after this upgrade runs
+- **Dev stack:** the new check is part of the dev image, so it takes
+  effect once the image is rebuilt (`bin/dev-setup.sh` does this, or
+  `docker compose -f docker-compose.dev.yml up --build`; a plain `up`
+  keeps the old image). The first start after that runs
   `composer install` once, since `vendor/` has no record of the lock it
   was installed from yet.
 

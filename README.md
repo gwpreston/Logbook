@@ -58,7 +58,7 @@ docker build -t logbook .
 docker run -d --name logbook -p 8080:80 -v logbook_data:/data logbook
 ```
 
-**Plain PHP 8.4** (web root = `public/`, with `intl`, `sodium`, `gd` and `exif`):
+**Plain PHP 8.4** (web root = `public/`, with `intl`, `mbstring`, `sodium`, `gd` and `exif`):
 
 ```bash
 composer install --no-dev -o

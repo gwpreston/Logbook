@@ -145,7 +145,9 @@ tagged.
 - [x] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
       for every `-p` (K121); `CONTRIBUTING.md` says how to give a run
       its own name. A test: the script has no hard-coded `-p
-      logbook-smoke` and passes `sh -n`.
+      logbook-smoke` and passes `sh -n`. *Done:* the response files
+      (`/tmp/smoke.*`) also moved to a per-run `mktemp -d` folder, so
+      two runs don't overwrite each other's; `ScriptsTest` checks it.
 - [x] `AppTestCase::createApp()` (and `DeliveryPageTest::mailApp()` if
       it bypasses it) sets `SESSION_SECRET_FILE` to empty unless the
       test gives it (K122). A test: with `SESSION_SECRET_FILE` pointing
@@ -157,7 +159,11 @@ tagged.
       `vendor/` at the last install (K128). A test runs the entrypoint's
       check in a temporary directory: a missing or stale record means
       install, a matching one means none; `APP_ENV=production` never
-      installs.
+      installs. *Done:* the check is `docker/dev/composer-install.sh`,
+      which the entrypoint runs in development only and which records
+      the hash in `vendor/.composer-lock-hash`; `ScriptsTest` runs it
+      with a stub `composer`. `CONTRIBUTING.md` says so, and the 3.19.1
+      notes that it needs the dev image rebuilt.
 - [x] `TracktorCommand::user()` and `FuelioCommand::user()` print "no
       user yet, finish first-run setup" when the install has no users
       (K127). `TracktorCommandTest` and `FuelioCommandTest`: with no
