@@ -157,7 +157,12 @@ file*, *Reading through OCR*, *Checking values*), the
 
 ### 53.8.7 Merge-review follow-ups
 - [x] K131: a date beside a V5C reference is kept and the reference
-      removed.
+      removed. *2026-10-21, fuzzed:* random 11-digit references
+      split into 2–4 groups, on one row or wrapped over two or three, with
+      or without a label, a date or time before, after or on the next row:
+      25,000 cases on HEAD, no reference digit kept and no date lost;
+      the same 5,000 on `c532f40e` (before the fix) kept reference digits
+      in 1,365 and lost the date in 899.
 - [x] K133: the 53.3 rollback warning escapes connection names.
 - [x] K137: the *Scan the V5C* refusal shows its reason when the page
       has no form.
@@ -240,6 +245,22 @@ on 2026-10-20 (#529–#532), all the recommendation:
   (found while running the evals) *Decided 2026-10-20: (1), yes.*
   - (1) Re-run and record field accuracy per route (53.2's criterion 3).
   - (2) Record the second run as it is.
+
+Raised by the merge review at `c532f40e`, logged on 2026-10-21, waiting for
+the owner (none blocks the release):
+
+- **#537.** A *Scan the V5C* text PDF from a scanner app (a text layer made by OCR) keeps a reference its text wraps over two lines or misreads (`1234 5678` / `901`, `9O1`, `S678`): PDF text gets only spaces and one punctuation mark, not OCR's look-alikes and row joins. Should such a scan get the OCR-grade redaction? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) OCR-grade redaction (look-alikes, row joins) for PDF text of a `vehicle` target (reopens #500 (4) for it); (2) never send a `vehicle`-target text PDF to an *Internet* connection; (3) a warning for text PDFs on the *Scan the V5C* page, and spec §7.27 narrowed to say so.
+- **#538.** When a *Scan the V5C* scan couldn't be read, its update page still offers "Keep the file as a registration document" beside an empty card. Keep it or hide it? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) keep it (the file is still the V5C); (2) hide it when nothing was read, so the scan is simply discarded.
+- **#539.** Should the OpenAI-compatible adapter send `strict: true` with `json_schema` requests, so hosted OpenAI holds the model to the scan schema as LM Studio does? It needs a schema without `maxLength` and with every property required (`recommendations.items` isn't); see K132 for Anthropic. *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) leave it off (answers are still checked against the lenient schema); (2) send it, with a strict-compatible scan schema per provider; (3) decide with K132's fix.
+- **#540.** Should spec §8 set a time budget for reading a scan and its OCR cross-check? Today the cross-check takes about 27 ms for 2,880 words and 71 ms for 9,600 (performance review of 53.8). *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) no budget; (2) the cross-check under about 100 ms for a 3-page scan and 200 ms for 10 pages on a dev machine, enforced by a test; (3) a budget for the whole scan, model time excluded.
+- **#541.** Should the *Scan the V5C* link's availability check count toward the vehicle page and Documents tab query budgets? It adds 2 primary-key reads (41→43, 13→15). *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) leave it (within the 60-query budget); (2) share the AI status the page already reads, so it costs nothing; (3) check `manage` before availability, so members who can't manage skip it.
+- **#542.** A V5C whose OCR shows only one marker (`DVLA` or `Document reference`) gets the narrow redaction (#513 needs two different markers, or `V5C` or `Registration Certificate`). Should one marker plus an 11-digit run on a `Document reference` row turn the wide rule on? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) keep #513 as decided (*Scan the V5C* covers such documents); (2) widen when an 11-digit run sits on a row with `Document reference`; (3) widen for any single marker on the OCR route only.
 
 ## Eval results (2026-10-20)
 
