@@ -133,7 +133,7 @@ tagged.
       when it is a *Scan the V5C* one, even with `?as=registration`,
       and the update page's form posts `as` back; the failed V5C's
       reason stays covered by `ScanCrossCheckTest`.
-- [ ] `ImportVocabulary::volumeUnit()` and `distanceUnit()` read the
+- [x] `ImportVocabulary::volumeUnit()` and `distanceUnit()` read the
       English aliases; `ImportMapper` reads each catalogue's bare gallon
       word as the owner's gallon (K124, #544). `ImportMapperTest`: each
       of the row's headers preselects its own unit for a US-gallon owner
