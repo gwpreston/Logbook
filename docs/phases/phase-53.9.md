@@ -6,8 +6,9 @@ smoke tests can run at once, the suite passes in the dev container, the
 dev stack picks up a changed `composer.lock`, and the import command
 line says so when there is no user yet.*
 
-Status: ✅ complete · releases **v3.19.1**, a patch release after Phase
-53.8's (#527) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.19.1**
+([#139](https://github.com/gwpreston16/Logbook/pull/139)), a patch
+release after Phase 53.8's (#527) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.7](phase-53.7.md). Like 52.1,
 52.2, 53.5, 53.6 and 53.7, it takes a few small open rows: K123 (HIGH),
@@ -178,13 +179,13 @@ tagged.
       also tell dev-stack users their first start runs one
       `composer install`; spec §7.13, §10 and §11 carry K127, K128 and
       K121.
-- [ ] Merge review, then merge.
+- [x] Merge review, then merge.
 
 ### Release
 
 - [x] `VERSION` 3.19.1, CHANGELOG 3.19.1, README status: the patch
       after 53.8's release (#527).
-- [ ] Tag `v3.19.1` once merged.
+- [x] Tag `v3.19.1` once merged.
 
 ## Acceptance criteria
 

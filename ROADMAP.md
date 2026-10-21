@@ -1577,7 +1577,7 @@ line says so when there is no user yet.*
   expect no session secret clear `SESSION_SECRET_FILE` too (K122); the
   dev stack reinstalls `vendor/` when the lock changes (K128).
 - `bin/import-app.php` with no users yet says to finish setup (K127).
-  No migration. Patch release.
+  No migration. Releases v3.19.1.
 
 → [`phase-53.9.md`](docs/phases/phase-53.9.md)
 
