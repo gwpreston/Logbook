@@ -8,6 +8,7 @@ use Logbook\Kernel;
 use Logbook\Repository\AttachmentRepository;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Service\Import\App\Fuelio\FuelioCommand;
+use Logbook\Service\Import\App\ImportAppCommand;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\FuelioCsv;
 use ZipArchive;
@@ -205,6 +206,22 @@ final class FuelioCommandTest extends AppTestCase
         [$code, , $err] = $this->command($app, [self::backup()]);
         self::assertSame(1, $code);
         self::assertStringContainsString('--as <username>', $err);
+    }
+
+    /** K127: before first-run setup, say so rather than asking for --as. */
+    public function testAnInstallWithNoUserYetSaysToFinishSetupFirst(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+
+        [$code, $out, $err] = $this->command($app, [self::backup()]);
+        self::assertSame(1, $code);
+        self::assertSame('', $out);
+        self::assertSame(ImportAppCommand::NO_USER_YET, $err);
+
+        // Stopped before the file is read: a missing one isn't reported.
+        self::assertSame([1, '', ImportAppCommand::NO_USER_YET], $this->command($app, ['/no/such/file.zip']));
+        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
     }
 
     /**

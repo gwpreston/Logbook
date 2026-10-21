@@ -154,7 +154,7 @@ tagged.
       check in a temporary directory: a missing or stale record means
       install, a matching one means none; `APP_ENV=production` never
       installs.
-- [ ] `TracktorCommand::user()` and `FuelioCommand::user()` print "no
+- [x] `TracktorCommand::user()` and `FuelioCommand::user()` print "no
       user yet, finish first-run setup" when the install has no users
       (K127). `TracktorCommandTest` and `FuelioCommandTest`: with no
       users and no `--as`, exit 1 with that message and nothing read or

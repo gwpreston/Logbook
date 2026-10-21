@@ -19,6 +19,10 @@ final readonly class ImportAppCommand
         . "       php bin/import-app.php <export.json> [--files <folder|zip>] [--vehicle <id> | --create]"
         . " [--as <username>] [--schedules] [--skip-invalid] [--dry-run]\n";
 
+    /** Before first-run setup there is no one to import for (K127). */
+    public const string NO_USER_YET = "This install has no user yet: finish first-run setup in the browser,"
+        . " then run the import again.\n";
+
     public function __construct(private FuelioCommand $fuelio, private TracktorCommand $tracktor)
     {
     }

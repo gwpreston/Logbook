@@ -184,6 +184,22 @@ final class TracktorCommandTest extends AppTestCase
         self::assertSame([], $this->ownedVehicles($app, $owner->id));
     }
 
+    /** K127: before first-run setup, say so rather than asking for --as. */
+    public function testAnInstallWithNoUserYetSaysToFinishSetupFirst(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+
+        [$code, $out, $err] = $this->command($app, [self::path('export-metric.json'), '--dry-run']);
+        self::assertSame(1, $code);
+        self::assertSame('', $out);
+        self::assertSame(ImportAppCommand::NO_USER_YET, $err);
+
+        // Stopped before the export is read: a missing one isn't reported.
+        self::assertSame([1, '', ImportAppCommand::NO_USER_YET], $this->command($app, ['/no/such/export.json']));
+        self::assertSame(0, (int) $this->connection($app)->fetchOne('SELECT COUNT(*) FROM vehicles'));
+    }
+
     /**
      * @param App<ContainerInterface> $app
      * @param list<string> $args
