@@ -2424,7 +2424,7 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   table, with its own cost per distance (distance of its vehicles only).
 - **CSV export** (UTF-8 with a byte-order mark so spreadsheets detect it;
   RFC 4180 quoting; text cells starting with `=`, `+`, `-`, `@` are prefixed
-  with `'` against formula injection). Per vehicle and module
+  with `'` against formula injection, removed again on import, #455). Per vehicle and module
   (`/vehicles/{id}/export/{fuel|odometer|maintenance|documents|expenses|tyres|tyre-changes|valuations}.csv`,
   archived vehicles included — it is their data) and for a report
   (`/reports/export.csv` with the report's filters: one row per ledger line)
@@ -4380,6 +4380,13 @@ vehicles; a disabled module cannot be imported).
   grade of another family. The grade is not part of the duplicate key.
   A currency column that differs from the
   vehicle's currency makes the row invalid (amounts are never converted).
+  A date written year first (`2026-04-06`, with or without a time) is read
+  under every date order, a date alone taken as noon as under ISO: a
+  four-digit year first can't be mistaken for day-first or month-first
+  (#459, Phase 53.13). In a text column, one leading `'` before `=`, `+`,
+  `-`, `@`, tab or CR (the export's formula guard) is removed, in every
+  import, so Logbook's own export comes back as it was written (#455,
+  Phase 53.13).
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid
   rows" tick); *duplicate* (skipped: the same entry already exists or appears
@@ -10359,14 +10366,19 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   first fitting; the distance limit always counts from the first
   fitting's mileage; #482: the form for a new part has *Purchase date*
   selected, and a purchase-date start with no bought-on date runs from
-  the first fitting, as now), provider (up to 120) and terms (up to 500). A part
+  the first fitting, as now; #487: so does the edit form of a part with
+  no stored start, so a warranty added on edit is stored as one added
+  new), provider (up to 120) and terms (up to 500). A part
   page shows "In warranty until 3 Mar 2028 or 85,400 mi" while every set
   limit holds, "Warranty ended 3 Mar 2028" after, and nothing without a
   warranty. The distance limit counts only while the part is fitted: a
   stored part's is paused at the mileage it came off, and its page shows
   "In warranty until 3 Mar 2028, distance paused while off the vehicle"
   (with only a distance limit, "In warranty, paused while off the
-  vehicle"; #448, Phase 53.11). Deleting a part deletes its fittings,
+  vehicle"; #448, Phase 53.11). When *Remind me before it ends* is on,
+  the warranty card also says "Reminder before it ends"; when it is off
+  the card says nothing of it, as for any field not set (#547, Phase
+  53.13). Deleting a part deletes its fittings,
   their readings and its files.
 - **Status** (*Fitted*, *Stored*, *Gone*) is replayed from the part's
   fittings and stored, as a tyre's is: no fittings, or the last one
@@ -12192,6 +12204,17 @@ task breakdowns live in the per-phase files; this is the map.
   Released on its own as a patch after 53.11's release (#546, decided
   2026-10-21). No migration. See
   [`phase-53.12.md`](docs/phases/phase-53.12.md).
+- **Phase 53.13 — CSV import round trip and part warranty details from
+  the known-issues log + patch release** (planned). A year-first date is
+  read under every import date order, a date alone at noon (§7.13, K57,
+  #459); an import removes the `'` the export puts before text starting
+  with `=`, `+`, `-`, `@`, tab or CR (§7.13, K48, #455); the edit form of
+  a part with no stored warranty start has *Purchase date* chosen, as a
+  new part's form does (§7.39, K71, #487); the part page's warranty card
+  says when *Remind me before it ends* is on (§7.39, K39, #547).
+  Released on its own as a patch after 53.12's release (#548, decided
+  2026-10-21). No migration. See
+  [`phase-53.13.md`](docs/phases/phase-53.13.md).
 
 ---
 
