@@ -122,6 +122,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | 📋 |
 | [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | 📋 |
+| [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1615,6 +1616,26 @@ reads an answer's numbers the way the user's language writes them.*
   plain-space grouping (K47, K59, #454). No migration. Patch release.
 
 → [`phase-53.11.md`](docs/phases/phase-53.11.md)
+
+---
+
+## Phase 53.12 — Tap targets, narrow screens and SQLite search from the known-issues log + patch release
+*Five open rows of the known-issues log closed: compact controls get a
+44 px hit area on a phone and keep how they look, the Parts and insurer
+pages' small links and buttons with them, a Coming up row with a cost
+keeps its title readable at 375 px, and on SQLite the AI model and
+station searches find names with `_`, `%` and non-ASCII capitals.*
+
+- Soft buttons, segmented tabs, back and card links, `<summary>` rows
+  and breakdown links get a 44 × 44 px hit area at narrow widths (K55,
+  #457), with the Parts and insurer pages' targets (K35) and *Mark
+  all*'s blank-date message beside its field (K16).
+- A *Coming up* row's cost wraps instead of squeezing its title to
+  nothing at 375 px (K41).
+- SQLite search escapes `_` and `%` and lowers non-ASCII capitals, as
+  the other engines do (K51). No migration. Patch release.
+
+→ [`phase-53.12.md`](docs/phases/phase-53.12.md)
 
 ---
 

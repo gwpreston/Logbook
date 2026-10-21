@@ -10744,7 +10744,7 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   controls (soft buttons, segmented tabs, back and card links,
   `<summary>` rows, breakdown label links) keep how they look: the hit
   area grows by padding or a pseudo-element, not the drawn control. Not
-  yet built everywhere (K16, K35, K55).
+  yet built everywhere (K16, K35, K55; Phase 53.12).
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
   and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
@@ -12178,6 +12178,20 @@ task breakdowns live in the per-phase files; this is the map.
   and accepts a plain space between thousands (§7.26, K59). Released on
   its own as a patch after 53.10's release (#545, decided 2026-10-21).
   No migration. See [`phase-53.11.md`](docs/phases/phase-53.11.md).
+- **Phase 53.12 — Tap targets, narrow screens and SQLite search from the
+  known-issues log + patch release** (planned). Compact controls (soft
+  buttons, segmented tabs, back and card links, `<summary>` rows,
+  breakdown label links) get a 44 × 44 px hit area at narrow widths and
+  keep how they look (§8 *Tap targets*, K55, #457); the Parts and
+  insurer pages' small links and buttons reach it too (§7.39, K35), and
+  *Mark all* with a blank date says so beside the date field (§7.39
+  *For your insurer*, K16); a *Coming up* row's cost wraps at 375 px
+  instead of squeezing its title to nothing (§7.18, §8, K41); on SQLite
+  the AI model and station name searches escape `_` and `%` and match
+  non-ASCII capitals, as the other engines do (§7.25, §7.33, K51).
+  Released on its own as a patch after 53.11's release (#546, decided
+  2026-10-21). No migration. See
+  [`phase-53.12.md`](docs/phases/phase-53.12.md).
 
 ---
 
