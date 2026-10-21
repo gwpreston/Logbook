@@ -138,7 +138,7 @@ tagged.
       word as the owner's gallon (K124, #544). `ImportMapperTest`: each
       of the row's headers preselects its own unit for a US-gallon owner
       and for a metric owner, and `Menge (Gallonen)` the owner's gallon.
-- [ ] `CHANGELOG.md` [3.19.0]: the rollback note (K135).
+- [x] `CHANGELOG.md` [3.19.0]: the rollback note (K135).
 
 ### 53.10.2 Finish
 

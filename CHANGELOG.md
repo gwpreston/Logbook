@@ -56,7 +56,9 @@ migration: pull and restart. Bare-PHP installs: see the upgrade note.
 Phase 53.8: **V5C privacy and cross-check accuracy**
 ([docs/phases/phase-53.8.md](docs/phases/phase-53.8.md)). See
 [docs/reading-files.md](docs/reading-files.md). No migration: pull and
-restart.
+restart. Going back to 3.18.x: a *Scan the V5C* that couldn't be read in
+the last 24 hours opens as "not found" instead of its reason; scan the
+file again after upgrading to see it (Phase 53.10, K135).
 
 ### Added
 - **Scan the V5C**, on a vehicle's page (the *Details* card) and its
