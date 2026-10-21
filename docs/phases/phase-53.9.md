@@ -130,7 +130,7 @@ tagged.
 
 ### 53.9.1 Installing and running the checks
 
-- [ ] `composer.json` requires `ext-mbstring` (lock refreshed with
+- [x] `composer.json` requires `ext-mbstring` (lock refreshed with
       `composer update --lock`); `docs/deployment.md`'s bare-PHP
       requirements name it (K123, #528). A test
       (`tests/Unit/Docs/` beside `LicenceTest`): every `mb_*` function
