@@ -15,27 +15,33 @@ cd "$(dirname "$0")/.."
 variant="${1:-pgsql}"
 export APP_PORT="${APP_PORT:-18080}" PROXY_PORT="${PROXY_PORT:-18081}"
 curl_opts="" # -k for the proxy examples' own certificates
+# The compose project: COMPOSE_PROJECT_NAME when set, so two runs with
+# different names (two review agents, or a developer beside one) never
+# remove each other's containers and volumes (spec.md §11, K121). Give each
+# its own APP_PORT and PROXY_PORT too.
+project="${COMPOSE_PROJECT_NAME:-logbook-smoke}"
 jar="$(mktemp)"
-trap 'rm -f "$jar" /tmp/smoke.body /tmp/smoke.head' EXIT
+tmp="$(mktemp -d)"
+trap 'rm -rf "$jar" "$tmp"' EXIT
 
 fail() { echo "SMOKE FAIL: $*" >&2; $compose logs --no-color >&2 || true; $compose down -v >/dev/null 2>&1 || true; exit 1; }
 
 expect() { # expect <url> <status> [body-substring]
-    body="$(curl -s $curl_opts -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' "$1")" || fail "request to $1 failed"
+    body="$(curl -s $curl_opts -b "$jar" -c "$jar" -o $tmp/body -w '%{http_code}' "$1")" || fail "request to $1 failed"
     [ "$body" = "$2" ] || fail "$1 returned $body, expected $2"
-    if [ -n "${3:-}" ]; then grep -q -- "$3" /tmp/smoke.body || fail "$1 body lacks: $3"; fi
+    if [ -n "${3:-}" ]; then grep -q -- "$3" $tmp/body || fail "$1 body lacks: $3"; fi
     echo "ok  $2  $1"
 }
 
 field() { # field <name>: value of a hidden input on the last page
-    sed -n "s/.*name=\"$1\" value=\"\([^\"]*\)\".*/\1/p" /tmp/smoke.body | head -n 1
+    sed -n "s/.*name=\"$1\" value=\"\([^\"]*\)\".*/\1/p" $tmp/body | head -n 1
 }
 
 # First-run setup through the real stack: session cookie, CSRF, Argon2id, DB writes.
 setup_flow() { # setup_flow <base> <expected-redirect>
     expect "$1/" 303
     expect "$1/setup" 200 'Create your account'
-    status="$(curl -s $curl_opts -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
+    status="$(curl -s $curl_opts -b "$jar" -c "$jar" -o $tmp/body -w '%{http_code} %{redirect_url}' \
         --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
         --data-urlencode 'username=smoke' --data-urlencode 'password=smoke test passphrase' \
         --data-urlencode 'password_confirm=smoke test passphrase' --data-urlencode 'units=uk' \
@@ -49,7 +55,7 @@ setup_flow() { # setup_flow <base> <expected-redirect>
 
 case "$variant" in
     pgsql)
-        compose="docker compose -p logbook-smoke -f docker-compose.yml -f docker/smoke/compose.subpath.yml"
+        compose="docker compose -p $project -f docker-compose.yml -f docker/smoke/compose.subpath.yml"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$PROXY_PORT/logbook"
         expect "$base/health" 200 '"database":"ok"'
@@ -84,7 +90,7 @@ case "$variant" in
         echo "ok  bin/backup.php create"
         ;;
     mysql)
-        compose="docker compose -p logbook-smoke -f docker-compose.mysql.yml"
+        compose="docker compose -p $project -f docker-compose.mysql.yml"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$APP_PORT"
         expect "$base/health" 200 '"database":"ok"'
@@ -94,7 +100,7 @@ case "$variant" in
     header)
         # Header sign-in (Phase 23.2) behind docker/nginx/forward-auth-example.conf,
         # with a stub for Authelia: the smoke_user cookie is "signed in at the proxy".
-        compose="docker compose -p logbook-smoke -f docker-compose.yml -f docker/smoke/compose.header.yml"
+        compose="docker compose -p $project -f docker-compose.yml -f docker/smoke/compose.header.yml"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$PROXY_PORT/logbook"
         direct="http://localhost:$APP_PORT/logbook"
@@ -104,16 +110,16 @@ case "$variant" in
         setup_flow "$direct" "/logbook/"
         rm -f "$jar"
         # The header sent straight to the app (not from nginx's address) is ignored.
-        curl -s -o /tmp/smoke.body -D /tmp/smoke.head -H 'Remote-User: smoke' "$direct/" >/dev/null
-        grep -qi '^location: /logbook/login' /tmp/smoke.head || fail "a header from outside the proxy signed someone in"
+        curl -s -o $tmp/body -D $tmp/head -H 'Remote-User: smoke' "$direct/" >/dev/null
+        grep -qi '^location: /logbook/login' $tmp/head || fail "a header from outside the proxy signed someone in"
         echo "ok  header from an untrusted address ignored"
         printf 'localhost\tFALSE\t/\tFALSE\t0\tsmoke_user\tsmoke\n' > "$jar"
         expect "$base/" 303
         expect "$base/" 200 'Hello, smoke'
         # nginx overwrites what a client sends, and drops the underscore spelling.
-        status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code}' \
+        status="$(curl -s -b "$jar" -c "$jar" -o $tmp/body -w '%{http_code}' \
             -H 'Remote-User: someone-else' -H 'Remote_User: someone-else' "$base/profile")"
-        { [ "$status" = 200 ] && grep -q 'value="smoke"' /tmp/smoke.body; } \
+        { [ "$status" = 200 ] && grep -q 'value="smoke"' $tmp/body; } \
             || fail "a client's own Remote-User reached the app ($status)"
         echo "ok  client Remote-User and Remote_User replaced by nginx"
         # Exempt from forward auth, and never signed in by the header.
@@ -142,12 +148,12 @@ case "$variant" in
         # is refused, `bin/demo-reset.php` ends the session, and `demo` signs in
         # again. Its own flow: the shared steps below expect the first-run account.
         export DEMO_MODE=true DEMO_PASSWORD=smoke-demo-password
-        compose="docker compose -p logbook-smoke -f docker-compose.yml"
+        compose="docker compose -p $project -f docker-compose.yml"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
         base="http://localhost:$APP_PORT"
         demo_sign_in() {
             expect "$base/login" 200 'data-demo-try'
-            status="$(curl -s -b "$jar" -c "$jar" -o /tmp/smoke.body -w '%{http_code} %{redirect_url}' \
+            status="$(curl -s -b "$jar" -c "$jar" -o $tmp/body -w '%{http_code} %{redirect_url}' \
                 --data-urlencode "csrf_name=$(field csrf_name)" --data-urlencode "csrf_value=$(field csrf_value)" \
                 --data-urlencode 'username=demo' --data-urlencode "password=$DEMO_PASSWORD" "$base/login")"
             case "$status" in "303 "*) echo "ok  303  POST $base/login (demo)" ;; *) fail "demo sign-in returned: $status" ;; esac
@@ -157,8 +163,8 @@ case "$variant" in
         demo_sign_in
         expect "$base/" 200 'data-demo-banner'
         expect "$base/garage" 200 'Volkswagen'
-        curl -s -D /tmp/smoke.head -o /dev/null "$base/" >/dev/null
-        grep -qi '^x-robots-tag: noindex, nofollow' /tmp/smoke.head || fail "no X-Robots-Tag on the demo"
+        curl -s -D $tmp/head -o /dev/null "$base/" >/dev/null
+        grep -qi '^x-robots-tag: noindex, nofollow' $tmp/head || fail "no X-Robots-Tag on the demo"
         echo "ok  X-Robots-Tag"
         expect "$base/settings/users" 403 'Not available in the demo'
         expect "$base/settings/backup" 403 'Not available in the demo'
@@ -184,7 +190,7 @@ case "$variant" in
         file="compose.yml" prefix=""
         [ "$variant" = "$proxy" ] || { file="compose.subpath.yml" prefix="/logbook"; }
         export LOGBOOK_DOMAIN=localhost HTTP_PORT="${HTTP_PORT:-18082}" HTTPS_PORT="${HTTPS_PORT:-18443}"
-        compose="docker compose -p logbook-smoke -f docker-compose.yml -f docker/examples/$proxy/$file"
+        compose="docker compose -p $project -f docker-compose.yml -f docker/examples/$proxy/$file"
         [ "$proxy" = caddy ] || compose="$compose -f docker/smoke/compose.$variant.yml"
         curl_opts="-k"
         $compose up -d --wait --no-build || fail "stack did not become healthy"
@@ -251,10 +257,10 @@ token="$($compose exec -T -u www-data app php bin/api-key.php create --user smok
     || fail "bin/api-key.php create failed"
 case "$token" in lbk_*) echo "ok  bin/api-key.php create" ;; *) fail "bin/api-key.php printed: $token" ;; esac
 api() { # api <path> <status> [body-substring] [token]
-    status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' ${4:+-H "Authorization: Bearer $4"} "$base/api/v1$1")" \
+    status="$(curl -s -o $tmp/body -w '%{http_code}' ${4:+-H "Authorization: Bearer $4"} "$base/api/v1$1")" \
         || fail "request to $base/api/v1$1 failed"
-    [ "$status" = "$2" ] || fail "$base/api/v1$1 returned $status, expected $2: $(cat /tmp/smoke.body)"
-    if [ -n "${3:-}" ]; then grep -qF -- "$3" /tmp/smoke.body || fail "$base/api/v1$1 body lacks: $3"; fi
+    [ "$status" = "$2" ] || fail "$base/api/v1$1 returned $status, expected $2: $(cat $tmp/body)"
+    if [ -n "${3:-}" ]; then grep -qF -- "$3" $tmp/body || fail "$base/api/v1$1 body lacks: $3"; fi
     echo "ok  $2  API $1"
 }
 api /vehicles 200 '"items":[]' "$token"
@@ -271,18 +277,18 @@ api /openapi.json 200 '"openapi":"3.1.0"'
 rw="$($compose exec -T -u www-data app php bin/api-key.php create --user smoke --name Writes --scope read_write)" \
     || fail "bin/api-key.php create (read_write) failed"
 send() { # send <method> <path> <status> [json] [extra header]
-    status="$(curl -s -o /tmp/smoke.body -D /tmp/smoke.head -w '%{http_code}' -X "$1" -H "Authorization: Bearer $rw" \
+    status="$(curl -s -o $tmp/body -D $tmp/head -w '%{http_code}' -X "$1" -H "Authorization: Bearer $rw" \
         ${4:+-H 'Content-Type: application/json' -d "$4"} ${5:+-H "$5"} "$base/api/v1$2")" || fail "$1 $base/api/v1$2 failed"
-    [ "$status" = "$3" ] || fail "$1 $base/api/v1$2 returned $status, expected $3: $(cat /tmp/smoke.body)"
+    [ "$status" = "$3" ] || fail "$1 $base/api/v1$2 returned $status, expected $3: $(cat $tmp/body)"
     echo "ok  $3  API $1 $2"
 }
 send POST /vehicles 201 '{"type":"car","make":"Smoke","model":"Test","fuel_type":"petrol"}'
-vid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
-[ -n "$vid" ] || fail "no vehicle id in $(cat /tmp/smoke.body)"
+vid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' $tmp/body)"
+[ -n "$vid" ] || fail "no vehicle id in $(cat $tmp/body)"
 send POST "/vehicles/$vid/odometer" 201 '{"odometer":1000,"distance_unit":"km"}'
-rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' $tmp/body)"
 send GET "/vehicles/$vid/odometer/$rid" 200
-etag="$(sed -n 's/^[Ee][Tt][Aa][Gg]: *\(.*\)\r*$/\1/p' /tmp/smoke.head | tr -d '\r')"
+etag="$(sed -n 's/^[Ee][Tt][Aa][Gg]: *\(.*\)\r*$/\1/p' $tmp/head | tr -d '\r')"
 [ -n "$etag" ] || fail "no ETag on the single read"
 send PATCH "/vehicles/$vid/odometer/$rid" 412 '{"note":"stale"}' 'If-Match: "0000"'
 send PATCH "/vehicles/$vid/odometer/$rid" 200 '{"note":"Smoke"}' "If-Match: $etag"
@@ -291,30 +297,30 @@ send DELETE "/vehicles/$vid/odometer/$rid" 204
 # Attachments (Phase 39.3): a real multipart upload through the web server and proxy (PHP's own
 # parsing, the proxy's body limit), then the list, the download and the delete.
 send POST "/vehicles/$vid/odometer" 201 '{"odometer":1100,"distance_unit":"km"}'
-rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
+rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' $tmp/body)"
 printf '%%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%%%EOF\n' \
-    > /tmp/smoke.pdf
-status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' -H "Authorization: Bearer $rw" -F "file=@/tmp/smoke.pdf;type=application/pdf" \
+    > $tmp/smoke.pdf
+status="$(curl -s -o $tmp/body -w '%{http_code}' -H "Authorization: Bearer $rw" -F "file=@$tmp/smoke.pdf;type=application/pdf" \
     "$base/api/v1/vehicles/$vid/odometer/$rid/attachments")" || fail "attachment upload failed"
-[ "$status" = 201 ] || fail "attachment upload returned $status: $(cat /tmp/smoke.body)"
-aid="$(sed -n 's/^{"id":\([0-9]*\).*/\1/p' /tmp/smoke.body)"
-[ -n "$aid" ] || fail "no attachment id in $(cat /tmp/smoke.body)"
+[ "$status" = 201 ] || fail "attachment upload returned $status: $(cat $tmp/body)"
+aid="$(sed -n 's/^{"id":\([0-9]*\).*/\1/p' $tmp/body)"
+[ -n "$aid" ] || fail "no attachment id in $(cat $tmp/body)"
 echo "ok  201  API POST multipart attachment"
 send GET "/vehicles/$vid/odometer/$rid/attachments" 200
-grep -qF '"filename":"smoke.pdf"' /tmp/smoke.body || fail "attachment not listed: $(cat /tmp/smoke.body)"
+grep -qF '"filename":"smoke.pdf"' $tmp/body || fail "attachment not listed: $(cat $tmp/body)"
 send GET "/attachments/$aid" 200
-grep -q '^%PDF' /tmp/smoke.body || fail "the download is not the PDF"
+grep -q '^%PDF' $tmp/body || fail "the download is not the PDF"
 send DELETE "/attachments/$aid" 204
-rm -f /tmp/smoke.pdf
+rm -f $tmp/smoke.pdf
 
 # MCP server (Phase 26.5): the same key at /mcp, through the web server (and,
 # in the header variant, nginx's forward-auth exemption).
 mcp() { # mcp <status> <body-substring> [token]
-    status="$(curl -s -o /tmp/smoke.body -w '%{http_code}' ${3:+-H "Authorization: Bearer $3"} \
+    status="$(curl -s -o $tmp/body -w '%{http_code}' ${3:+-H "Authorization: Bearer $3"} \
         -H 'Content-Type: application/json' -H 'MCP-Protocol-Version: 2025-11-25' \
         -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' "$base/mcp")" || fail "request to $base/mcp failed"
-    [ "$status" = "$1" ] || fail "$base/mcp returned $status, expected $1: $(cat /tmp/smoke.body)"
-    grep -qF -- "$2" /tmp/smoke.body || fail "$base/mcp body lacks: $2"
+    [ "$status" = "$1" ] || fail "$base/mcp returned $status, expected $1: $(cat $tmp/body)"
+    grep -qF -- "$2" $tmp/body || fail "$base/mcp body lacks: $2"
     echo "ok  $1  MCP tools/list"
 }
 mcp 200 '"name":"find_vehicles"' "$token"

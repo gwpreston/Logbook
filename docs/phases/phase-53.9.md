@@ -138,7 +138,7 @@ tagged.
       `symfony/polyfill-mbstring` defines or `composer.json` requires
       `ext-mbstring`, and `docs/deployment.md` lists every required
       `ext-*`.
-- [ ] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
+- [x] `bin/smoke-test.sh` uses `${COMPOSE_PROJECT_NAME:-logbook-smoke}`
       for every `-p` (K121); `CONTRIBUTING.md` says how to give a run
       its own name. A test: the script has no hard-coded `-p
       logbook-smoke` and passes `sh -n`.
@@ -148,7 +148,7 @@ tagged.
       at a file in the process environment, `createApp()` without it
       has no session secret; the four named tests pass in the dev `app`
       container.
-- [ ] `docker/entrypoint.sh` runs `composer install` in development when
+- [x] `docker/entrypoint.sh` runs `composer install` in development when
       `composer.lock`'s `content-hash` differs from the one recorded in
       `vendor/` at the last install (K128). A test runs the entrypoint's
       check in a temporary directory: a missing or stale record means

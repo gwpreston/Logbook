@@ -146,6 +146,14 @@ bin/test-all-dbs.sh                                                 # suite on S
 bin/smoke-test.sh pgsql                                             # production image end-to-end (after docker build -t logbook:local .)
 ```
 
+The smoke test runs its stack as compose project `logbook-smoke`. To run
+two at once, give each its own name and ports, so neither removes the
+other's containers and volumes:
+
+```bash
+COMPOSE_PROJECT_NAME=smoke-two APP_PORT=18180 PROXY_PORT=18181 bin/smoke-test.sh pgsql
+```
+
 ## Tests and databases
 
 The suite never touches `DB_*`. It uses `TEST_DB_*`, which defaults to a
