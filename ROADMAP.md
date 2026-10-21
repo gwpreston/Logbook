@@ -123,6 +123,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | 📋 |
 | [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | 📋 |
 | [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | 📋 |
+| [53.13](docs/phases/phase-53.13.md) | CSV import round trip and part warranty details from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1636,6 +1637,25 @@ station searches find names with `_`, `%` and non-ASCII capitals.*
   the other engines do (K51). No migration. Patch release.
 
 → [`phase-53.12.md`](docs/phases/phase-53.12.md)
+
+---
+
+## Phase 53.13 — CSV import round trip and part warranty details from the known-issues log + patch release
+
+*Four open rows of the known-issues log closed: a year-first date
+imports under every date order, Logbook's own export imports back
+without the apostrophe it adds against formulas, editing a part with no
+warranty start chooses Purchase date as a new part does, and the part
+page says when its warranty reminder is on.*
+
+- A CSV import reads `2026-04-06` under day-first and month-first, at
+  noon (K57, #459), and removes one leading `'` before `=`, `+`, `-`,
+  `@`, tab or CR (K48, #455).
+- A part's edit form chooses *Purchase date* when no warranty start is
+  stored (K71, #487); its page says "Reminder before it ends" when the
+  tick is on (K39, #547). No migration. Patch release.
+
+→ [`phase-53.13.md`](docs/phases/phase-53.13.md)
 
 ---
 
