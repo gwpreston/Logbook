@@ -462,6 +462,20 @@ final class RuleReaderTest extends ScanTestCase
         self::assertNotSame([], $read->alternatives, 'the other kinds are still read');
     }
 
+    public function testAScanTheV5cScanGetsTheV5cRuleWithoutMarkers(): void
+    {
+        // #511: no marker read, yet the reference is in no reading.
+        $this->scanApp();
+        $text = implode("\n", ['Registration AB12 CDE', 'Issued 01/02/2026 1234      S678 9O1']);
+        $read = $this->service($this->app, RuleReader::class)->read($this->owner, explode("\n", $text), $text, null, true);
+
+        $stored = (string) json_encode($read->toArray());
+        self::assertDoesNotMatchRegularExpression('/1234\W+S678\W+9O1/', $stored);
+        self::assertStringContainsString('AB12 CDE', $stored);
+        $plain = $this->read($text);
+        self::assertMatchesRegularExpression('/1234\W+S678\W+9O1/', (string) json_encode($plain->toArray()), 'not without it');
+    }
+
     public function testReadItAsKeepsEachKindsOwnValues(): void
     {
         $this->scanApp();

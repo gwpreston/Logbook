@@ -260,8 +260,10 @@ final readonly class Mapper
             'sum' => self::decimal((string) $product->toScale(2, RoundingMode::HalfUp), $locale, $currency),
             'total' => self::decimal((string) BigDecimal::of($total)->toScale(2, RoundingMode::HalfUp), $locale, $currency),
         ]);
-        foreach (['volume', 'price', 'total'] as $field) {
-            $form->flag($field, $text);
+        // The sum once, under the total; the others say where to look, so it's read once (#531, K106).
+        $form->flag('total', $text);
+        foreach (['volume', 'price'] as $field) {
+            $form->flag($field, $this->translator->trans('scan.check_sum_other'));
         }
     }
 

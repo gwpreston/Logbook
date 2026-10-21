@@ -87,7 +87,7 @@ final class OcrTextTest extends TestCase
             ['1234-5678-901'],
         ];
         foreach ($references as $words) {
-            $text = OcrText::of(self::ocr([['Ref', ...$words], ['Make', 'FORD'], ['DVLA']]))->text;
+            $text = OcrText::of(self::ocr([['Ref', ...$words], ['Make', 'FORD'], ['DVLA', 'V5C']]))->text;
 
             self::assertStringNotContainsString('5678', $text, implode(' ', $words));
             self::assertStringContainsString('1| Ref', $text);
@@ -120,7 +120,7 @@ final class OcrTextTest extends TestCase
 
     public function testAReferenceWrappedOverThreeRowsIsRemoved(): void
     {
-        $text = OcrText::of(self::ocr([['Document', 'reference'], ['1234'], ['5678'], ['901'], ['Make', 'FORD']]))->text;
+        $text = OcrText::of(self::ocr([['Document', 'reference', 'DVLA'], ['1234'], ['5678'], ['901'], ['Make', 'FORD']]))->text;
 
         self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
         self::assertStringContainsString('Make FORD', $text);
@@ -150,6 +150,84 @@ final class OcrTextTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
         self::assertStringContainsString('Document reference number', $text);
         self::assertStringContainsString('Make FORD', $text);
+    }
+
+    /**
+     * @return array<string, array{list<list<array{string, int}>>, string}>
+     */
+    public static function wrappedBesideOtherWords(): array
+    {
+        // K111: a label or a date in the reference's run of words, or a date after its wrapped part.
+        return [
+            'a label before it' => [
+                [[['Document', 10], ['reference', 145], ['1234', 295], ['5678', 370]], [['901', 295]]],
+                'Document reference',
+            ],
+            'a date before it' => [
+                [[['Issued', 10], ['01/03/2018', 115], ['1234', 295], ['5678', 370]], [['901', 295]]],
+                'Issued 01/03/2018',
+            ],
+            'a date after it' => [[[['1234', 10], ['5678', 85]], [['901', 10], ['14/10/2026', 70]]], '14/10/2026'],
+            // Merge review of 53.8: a date ending the first row, and one starting the next.
+            'a date ending the row' => [
+                [[['Ref', 10], ['1234', 70], ['5678', 145], ['14/10/2026', 220]], [['901', 70]]],
+                '14/10/2026',
+            ],
+            'a date starting the next row' => [[[['1234', 10], ['5678', 85]], [['901', 10], ['09:42', 70]]], '09:42'],
+        ];
+    }
+
+    /**
+     * @param list<list<array{string, int}>> $rows
+     */
+    #[DataProvider('wrappedBesideOtherWords')]
+    public function testAReferenceWrappedBesideALabelOrDateIsRemoved(array $rows, string $kept): void
+    {
+        $lines = [new OcrLine([new OcrWord('V5C', 95.0, new OcrBox(10, 10, 45, 20))])];
+        foreach ($rows as $r => $words) {
+            $line = [];
+            foreach ($words as [$t, $x]) {
+                $line[] = new OcrWord($t, 95.0, new OcrBox($x, 40 + 30 * $r, 15 * mb_strlen($t), 20));
+            }
+            assert($line !== []);
+            $lines[] = new OcrLine($line);
+        }
+        $lines[] = new OcrLine([
+            new OcrWord('Make', 95.0, new OcrBox(10, 200, 60, 20)),
+            new OcrWord('FORD', 95.0, new OcrBox(85, 200, 60, 20)),
+        ]);
+
+        $text = OcrText::of(OcrResult::read($lines, 'eng', 'tesseract 5.3.0'))->text;
+
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $text);
+        self::assertStringContainsString($kept, $text);
+        self::assertStringContainsString('Make FORD', $text);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function dateBesideReference(): array
+    {
+        // Merge review of 53.8: the date's last digits plus a group made 11, so the date went and the
+        // reference's last 6 digits stayed.
+        return [
+            '5 + 6' => ['Issued 14/10/2026 12345 678901', '14/10/2026', '678901'],
+            'a time' => ['Issued 15/3/2024 14:32 1234 5678 901', '15/3/2024 14:32', '901'],
+            'after it' => ['Ref 12345 678901 14/10/2026', '14/10/2026', '678901'],
+        ];
+    }
+
+    #[DataProvider('dateBesideReference')]
+    public function testADateBesideAReferenceIsKeptAndTheReferenceRemoved(string $row, string $kept, string $gone): void
+    {
+        $text = OcrText::of(self::ocr([['V5C'], explode(' ', $row)]))->text;
+
+        self::assertStringContainsString($kept, $text);
+        self::assertStringNotContainsString($gone, $text);
+        self::assertStringContainsString($kept, Scrubber::text($row . ' V5C', true), 'PDF text too');
+        self::assertStringNotContainsString($gone, Scrubber::text($row, true));
+        self::assertStringNotContainsString($gone, Scrubber::ocrText($row, true));
     }
 
     public function testNumbersInOtherColumnsOfARowAreKept(): void
@@ -243,11 +321,56 @@ final class OcrTextTest extends TestCase
         $text = OcrText::of(self::ocr([['TOTAL', 'GBP', '60.28']], 59.0));
 
         self::assertSame(CrossCheck::Unchecked, $text->check('GBP 68.28', 'TOTAL GBP 68.28'));
+        $confidences = ['60.28' => 95.0];
         self::assertSame(
             CrossCheck::Flagged,
-            OcrText::of(self::ocr([['TOTAL', 'GBP', '60.28']], 60.0))->check('GBP 68.28', 'TOTAL GBP 68.28'),
-            '60 is confident enough',
+            OcrText::of(self::ocr([['TOTAL', 'GBP', '60.28']], 60.0, $confidences))->check('GBP 68.28', 'TOTAL GBP 68.28'),
+            '60 is confident enough for the row, with its digits read surely',
         );
+    }
+
+    public function testAValueWithDigitsIsFlaggedOnlyWhereEachDigitWordReadsAtNinety(): void
+    {
+        // #514, K110: a slightly blurred photo reads wrong digits at about 80.
+        $blurred = OcrText::of(self::ocr([['Date', 'of', 'first', 'registration', '81', '63', '2616']], 95.0, ['63' => 81.0]));
+        $sharp = OcrText::of(self::ocr([['Date', 'of', 'first', 'registration', '81', '63', '2616']], 95.0, ['63' => 90.0]));
+
+        self::assertSame(CrossCheck::Unchecked, $blurred->check('01/03/2018', 'Date of first registration 01 03 2018'));
+        self::assertSame(CrossCheck::Flagged, $sharp->check('01/03/2018', 'Date of first registration 01 03 2018'));
+        self::assertSame(
+            CrossCheck::Flagged,
+            $blurred->check('Zebra', 'Zebra Quartz registration'),
+            'a value without digits keeps the row-mean rule',
+        );
+    }
+
+    public function testAValueWithDigitsOffThePageNeedsEveryDigitWordOnThePageSure(): void
+    {
+        $text = OcrText::of(self::ocr([['TOTAL', '60.28'], ['PUMP', '3']], 95.0, ['3' => 70.0]));
+
+        self::assertSame(CrossCheck::Unchecked, $text->check('Zebra 12', 'ZEBRA 12'));
+    }
+
+    public function testTheValueIsNeverFoldedIntoDigits(): void
+    {
+        // K113: letters of the value aren't read as digits; only OCR's text is folded.
+        $receipt = OcrText::of(self::ocr([['Pump', '3', 'UNLEADED'], ['SHORELNE', 'FUELS', 'LTD']], 95.0));
+        self::assertSame(CrossCheck::Found, $receipt->check('Petrol', 'Pump 3 UNLEADED'));
+        self::assertSame(CrossCheck::Found, $receipt->check('Shoreline Fuels Ltd', 'Shoreline Fuels Ltd'));
+        self::assertSame(
+            CrossCheck::Found,
+            OcrText::of(self::ocr([['Registration', 'EV70', '|TR']], 95.0))->check('EV70 LTR', 'Registration EV70 LTR'),
+        );
+    }
+
+    public function testARowTheRedactionTookWordsFromIsNotJudged(): void
+    {
+        // K117: the reference is gone from OCR's row, so the value's digits can't be compared.
+        $rows = [['V5C', 'Document', 'reference', 'number', '1234', '5678', '901'], ['Make', 'FORD']];
+        $text = OcrText::of(self::ocr($rows, 95.0));
+
+        self::assertSame(CrossCheck::Unchecked, $text->check('V5C', 'Document reference number'));
+        self::assertSame(CrossCheck::Found, $text->check('FORD', 'Make FORD'));
     }
 
     public function testAValueWithoutDigitsNeedsOnlyTheTolerantMatch(): void
@@ -318,9 +441,55 @@ final class OcrTextTest extends TestCase
     }
 
     #[DataProvider('registrationMarkers')]
-    public function testARegistrationDocumentIsRecognisedByEachMarker(string $marker): void
+    public function testEachMarkerKeepsThePictureBack(string $marker): void
     {
-        self::assertTrue(OcrText::of(self::ocr([['Vehicle', $marker, 'Swansea']]))->looksLikeRegistration());
+        self::assertTrue(OcrText::of(self::ocr([['Vehicle', $marker, 'Swansea']]))->mentionsRegistration());
+    }
+
+    public function testTheWideRuleNeedsAStrongSign(): void
+    {
+        // #513, K109: two different markers, or V5C or Registration Certificate on its own.
+
+        self::assertTrue(self::looks([['V5C']]));
+        self::assertTrue(self::looks([['Registration', 'Certificate']]));
+        self::assertTrue(self::looks([['DVLA'], ['Document', 'reference']]));
+        self::assertTrue(self::looks([['VSC'], ['DVLA']]));
+        self::assertFalse(self::looks([['DVLA', 'Swansea']]));
+        self::assertFalse(self::looks([['Diagnostic', 'VSC', 'warning', 'light']]));
+        self::assertFalse(self::looks([['Document', 'reference', 'ABC']]));
+    }
+
+    /**
+     * @param list<list<string>> $rows
+     */
+    private static function looks(array $rows): bool
+    {
+        return OcrText::of(self::ocr($rows))->looksLikeRegistration();
+    }
+
+    public function testAPassingMarkerKeepsAnInvoicesFigures(): void
+    {
+        // K109: "Diagnostic VSC warning light" on a Toyota invoice.
+        $text = OcrText::of(self::ocr([['Diagnostic', 'VSC', 'warning', 'light'], ['Diesel', '9.21', '1.459', '13.44']]));
+
+        self::assertTrue($text->mentionsRegistration());
+        self::assertFalse($text->looksLikeRegistration());
+        self::assertStringContainsString('9.21 1.459 13.44', $text->text);
+    }
+
+    public function testAScanTheV5cScanGetsTheWideRuleWithoutMarkers(): void
+    {
+        // #511, #512 (4), K108: markers OCR didn't read.
+        $references = [['1234', 'S678', '901'], ['1234', '5678', '9O1'], ['1234-5678-901']];
+        foreach ($references as $words) {
+            $text = OcrText::of(self::ocr([['Docurnent', 'refererce', ...$words], ['Make', 'FORD']]), true);
+
+            self::assertStringNotContainsString('678', $text->text, implode(' ', $words));
+            self::assertTrue($text->looksLikeRegistration());
+            self::assertTrue($text->mentionsRegistration());
+        }
+        $wrapped = OcrText::of(self::ocr([['Ref'], ['1234'], ['5678'], ['901'], ['Make', 'FORD']]), true);
+        self::assertDoesNotMatchRegularExpression('/1234|5678|901/', $wrapped->text);
     }
 
     public function testAReceiptIsNotTakenForARegistrationDocument(): void
@@ -330,7 +499,7 @@ final class OcrTextTest extends TestCase
 
     /**
      * @param list<list<string>> $rows
-     * @param array<string, float> $confidences
+     * @param array<array-key, float> $confidences
      */
     private static function ocr(array $rows, float $confidence = 90.0, array $confidences = []): OcrResult
     {
@@ -344,7 +513,7 @@ final class OcrTextTest extends TestCase
 
     /**
      * @param list<string> $words
-     * @param array<string, float> $confidences
+     * @param array<array-key, float> $confidences
      */
     private static function line(array $words, int $row, int $page, float $confidence = 90.0, array $confidences = []): OcrLine
     {

@@ -23,17 +23,21 @@ final readonly class OcrText
     public const int MIN_WORDS = 30;
     /** A value whose evidence words average under this is "Hard to read". */
     public const float HARD_TO_READ = 60.0;
+    /** A value with digits is flagged only when each word with a digit in its row reads at least this (#514). */
+    public const float SURE_DIGITS = 90.0;
     /** A gap wider than this many characters ends a run of a reference's digit groups (#501). */
     private const float SHORT_GAP = 3.0;
 
-    /** Folded for a value's digits (#508): only O→0 and l, I→1, not S/5 or B/8. */
+    /** OCR's text folded for digits (#508): only O→0 and l, I→1, not S/5 or B/8. The value is never folded (K113). */
     private const array DIGIT_SWAPS = ['o' => '0', 'l' => '1', 'i' => '1'];
 
     /**
      * @param list<string> $folded the words' text folded (EvidenceMatch::fold), one character per entry
      * @param list<array{int, int, float}> $spans each word's [start, end) in $folded, and its confidence
      * @param list<string> $digits the same characters folded for digits only (DIGIT_SWAPS)
-     * @param list<array{list<string>, float}> $rows each row's words (lower case, look-alikes folded) and mean confidence
+     * @param list<array{words: list<string>, mean: float, digits: list<float>, lost: bool}> $rows each row's
+     *        words (lower case, look-alikes folded), mean confidence, the confidence of each word with a digit,
+     *        and whether the reference redaction took words from it
      */
     private function __construct(
         public string $text,
@@ -45,10 +49,16 @@ final readonly class OcrText
         private array $rows = [],
         /** OCR's text carries a V5C's markers (before redaction), #510. */
         private bool $registration = false,
+        /** OCR's text looks like a V5C, so the wide redaction applied (#513), or the scan said so (#511). */
+        private bool $wide = false,
     ) {
     }
 
-    public static function of(OcrResult $result): self
+    /**
+     * $registration: the scan is of a registration document whatever its
+     * text says (*Scan the V5C*, #511), so the wide redaction applies.
+     */
+    public static function of(OcrResult $result, bool $registration = false): self
     {
         $lines = [];
         $length = 0;
@@ -57,9 +67,10 @@ final readonly class OcrText
         $spans = [];
         $digits = [];
         $tokens = [];
-        // The V5C rule (punctuation, look-alikes, wrapped rows) only for V5C-like text (#500).
-        $wide = Scrubber::looksLikeRegistration($result->layoutText);
-        foreach (LayoutText::pages(self::withoutReferences($result->lines, $wide)) as $p => $rows) {
+        // The V5C rule (punctuation, look-alikes, wrapped rows) only for V5C-like text (#500, #513).
+        $wide = $registration || Scrubber::looksLikeRegistration($result->layoutText);
+        $lost = [];
+        foreach (LayoutText::pages(self::withoutReferences($result->lines, $wide, $lost)) as $p => $rows) {
             if ($p > 0) {
                 $lines[] = '';
             }
@@ -72,6 +83,8 @@ final readonly class OcrText
                 $length += mb_strlen($line) + 1;
                 $words = [];
                 $confidence = 0.0;
+                $sure = [];
+                $rowLost = false;
                 foreach ($row['words'] as $word) {
                     $chars = EvidenceMatch::fold($word->text);
                     $spans[] = [count($folded), count($folded) + count($chars), $word->confidence];
@@ -79,9 +92,18 @@ final readonly class OcrText
                     array_push($digits, ...self::digitFold($word->text));
                     array_push($words, ...self::words($word->text));
                     $confidence += $word->confidence;
+                    if (preg_match('/[0-9]/', $word->text) === 1) {
+                        $sure[] = $word->confidence;
+                    }
+                    $rowLost = $rowLost || isset($lost[spl_object_id($word)]);
                 }
                 if ($row['words'] !== []) {
-                    $tokens[] = [$words, $confidence / count($row['words'])];
+                    $tokens[] = [
+                        'words' => $words,
+                        'mean' => $confidence / count($row['words']),
+                        'digits' => $sure,
+                        'lost' => $rowLost,
+                    ];
                 }
             }
         }
@@ -94,6 +116,7 @@ final readonly class OcrText
             $spans,
             $digits,
             $tokens,
+            $registration || Scrubber::mentionsRegistration($result->layoutText),
             $wide,
         );
     }
@@ -106,15 +129,19 @@ final readonly class OcrText
      * (V5C-like text) punctuation and look-alikes count, and a run that
      * ends a row joins one starting the next row in the same column, so a
      * reference wrapped over rows is still caught. Scrubber::ocrText still
-     * runs on each row's text as well.
+     * runs on each row's text as well. $lost gets the words kept in a row
+     * that lost some (K117).
      *
      * @param list<OcrLine> $lines
+     * @param array<int, true> $lost
+     * @param-out array<int, true> $lost
      * @return list<OcrLine>
      */
-    private static function withoutReferences(array $lines, bool $wide): array
+    private static function withoutReferences(array $lines, bool $wide, array &$lost = []): array
     {
         $drop = [];
-        foreach (LayoutText::pages($lines) as $rows) {
+        $pages = LayoutText::pages($lines);
+        foreach ($pages as $rows) {
             $words = [];
             foreach ($rows as $row) {
                 array_push($words, ...$row['words']);
@@ -129,6 +156,16 @@ final readonly class OcrText
         }
         if ($drop === []) {
             return $lines;
+        }
+        foreach ($pages as $rows) {
+            foreach ($rows as $row) {
+                $ids = array_map(spl_object_id(...), $row['words']);
+                if (array_intersect_key(array_flip($ids), $drop) !== []) {
+                    foreach ($ids as $id) {
+                        $lost[$id] = true;
+                    }
+                }
+            }
         }
         $kept = [];
         foreach ($lines as $line) {
@@ -175,26 +212,39 @@ final readonly class OcrText
             $pieces[] = $piece;
 
             $first = $pieces[0];
-            [$head, $headDigits] = self::digitGroups($first, false);
             $carried = null;
             $sameColumn = $open !== null && abs($first[0]->box->left - $open['left']) / $charWidth <= self::SHORT_GAP;
-            if ($wide && $open !== null && $head !== [] && $sameColumn) {
-                $digits = $open['digits'] + $headDigits;
+            if ($wide && $open !== null && $sameColumn) {
+                // The groups starting this row that complete the open run's 11 digits, so a date after them
+                // (`901 14/10/2026`) neither hides the wrap nor goes with it (K111).
+                [$head, $headDigits, $whole] = self::digitGroups($first, false, 11 - $open['digits']);
                 $joined = [...$open['words'], ...$head];
-                if ($digits === 11) {
+                if ($head !== [] && $open['digits'] + $headDigits === 11) {
                     $stretches[] = $joined;
-                } elseif ($digits < 11 && count($pieces) === 1 && count($head) === count($first)) {
+                    // The rest of the row is read on its own: `14/10/2026` isn't 11 digits with `901` gone.
+                    $pieces[0] = array_values(array_filter(
+                        $first,
+                        static fn (OcrWord $w): bool => !in_array($w, $head, true),
+                    ));
+                } elseif ($head !== [] && $whole && count($pieces) === 1 && count($head) === count($first)) {
                     // A row of digit groups only: the run may go on below.
-                    $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $digits];
+                    $carried = ['words' => $joined, 'left' => $open['left'], 'digits' => $open['digits'] + $headDigits];
                 }
             }
+            $pieces = array_values(array_filter($pieces, static fn (array $p): bool => $p !== []));
             array_push($stretches, ...$pieces);
+            if ($pieces === []) {
+                $open = $carried;
+                continue;
+            }
 
             $last = $pieces[count($pieces) - 1];
-            [$tail, $tailDigits] = self::digitGroups($last, true);
+            // The groups ending this row, up to 10 digits, so a label or date before them (`Issued 01/03/2018
+            // 1234 5678`) doesn't stop a wrap below (K111); none when the row already ends with all 11.
+            [$tail, $tailDigits, $complete] = self::digitGroups($last, true, 10);
             // The run's column is where its first digit group starts, not the piece's first word: a label
             // beside the groups (`Document reference number 1234 5678`) mustn't hide a wrap below them.
-            $open = $carried ?? ($tail === [] || $tailDigits >= 11
+            $open = $carried ?? ($tail === [] || $complete
                 ? null
                 : ['words' => $tail, 'left' => $tail[0]->box->left, 'digits' => $tailDigits]);
         }
@@ -203,37 +253,69 @@ final readonly class OcrText
     }
 
     /**
-     * The words of digit groups at the end (or start) of a piece, and how
-     * many digits they hold.
+     * The words of digit groups at the end (or start) of a piece, as many
+     * as hold at most $limit digits together, and how many digits they
+     * hold. The third value: from the end, whether the groups there make
+     * exactly 11 digits (a whole reference on the row); from the start,
+     * whether the groups taken are all the piece's digit groups.
      *
      * @param non-empty-list<OcrWord> $piece
-     * @return array{list<OcrWord>, int}
+     * @return array{list<OcrWord>, int, bool}
      */
-    private static function digitGroups(array $piece, bool $fromEnd): array
+    private static function digitGroups(array $piece, bool $fromEnd, int $limit): array
     {
         $words = $fromEnd ? array_reverse($piece) : $piece;
         $found = [];
         $digits = 0;
+        $sum = 0;
+        $eleven = false;
+        $whole = true;
         foreach ($words as $word) {
+            if (Scrubber::isDateOrTime($word->text)) {
+                // A date or time beside the groups is passed over, neither joined nor a stop (merge review of 53.8).
+                continue;
+            }
             $count = Scrubber::digitsIn($word->text);
             if ($count === null) {
                 break;
             }
-            $found[] = $word;
-            $digits += $count;
+            $sum += $count;
+            $eleven = $eleven || $sum === 11;
+            if ($digits + $count > $limit) {
+                $whole = false;
+                if (!$fromEnd) {
+                    break;
+                }
+                continue;
+            }
+            if ($whole) {
+                $found[] = $word;
+                $digits += $count;
+            }
         }
 
-        return [$fromEnd ? array_reverse($found) : $found, $digits];
+        return [$fromEnd ? array_reverse($found) : $found, $digits, $fromEnd ? $eleven : $whole];
     }
 
     /**
-     * Whether the text carries a V5C's markers (spec.md §7.27 *Where it
-     * goes*, #510), so a photo bound for an *Internet* connection goes as
-     * this text instead. `VSC` too: OCR reads a 5 as an S.
+     * Whether the text mentions any of a V5C's markers (spec.md §7.27
+     * *Where it goes*, #510, #513), so a photo bound for an *Internet*
+     * connection goes as this text instead. `VSC` too: OCR reads a 5 as an
+     * S. True for a *Scan the V5C* scan whatever the text (#511).
+     */
+    public function mentionsRegistration(): bool
+    {
+        return $this->registration;
+    }
+
+    /**
+     * Whether the wide redaction applied: the text looks like a V5C (two
+     * different markers, or `V5C` or `Registration Certificate`, #513), or
+     * the scan is a *Scan the V5C* one (#511).
      */
     public function looksLikeRegistration(): bool
     {
-        return $this->registration;
+        return $this->wide;
     }
 
     /**
@@ -273,44 +355,61 @@ final readonly class OcrText
     /**
      * Whether a value a vision model read is on the page (spec.md §7.27
      * *The cross-check*, #508): its evidence (or the value) matches within
-     * EvidenceMatch's tolerance and the value's digits appear, in order and
-     * unbroken, in that stretch. Otherwise it is Flagged when OCR read
-     * confidently there (the row sharing most of the evidence's words, or
-     * the page when none does), else Unchecked.
+     * EvidenceMatch's tolerance and the value's own digits appear, in order
+     * and unbroken, in that stretch (only OCR's side folded, K113).
+     * Otherwise it is Flagged when OCR read confidently there (the row
+     * sharing most of the evidence's words, or the page when none does)
+     * and, for a value with digits, read each word with a digit there at
+     * SURE_DIGITS or more (#514); else Unchecked. A row the reference
+     * redaction took words from is never judged (K117).
      */
     public function check(string $value, string $evidence): CrossCheck
     {
         $needle = $evidence !== '' ? $evidence : $value;
+        $want = (string) preg_replace('/[^0-9]/', '', $value);
         $at = EvidenceMatch::find(EvidenceMatch::fold($needle), $this->folded);
         if ($at !== null) {
-            $want = self::digitsOf(self::digitFold($value));
             $span = self::digitsOf(array_slice($this->digits, $at[0], $at[1] - $at[0]));
             if ($want === '' || str_contains($span, $want)) {
                 return CrossCheck::Found;
             }
         }
-
-        return $this->confidenceNear($needle) >= self::HARD_TO_READ ? CrossCheck::Flagged : CrossCheck::Unchecked;
-    }
-
-    /**
-     * The mean confidence of the row sharing most of $words's words, or of
-     * the page when no row shares one.
-     */
-    private function confidenceNear(string $words): float
-    {
-        $wanted = array_flip(self::words($words));
-        $best = 0;
-        $confidence = $this->meanConfidence;
-        foreach ($this->rows as [$row, $mean]) {
-            $shared = count(array_intersect_key(array_flip($row), $wanted));
-            if ($shared > $best) {
-                $best = $shared;
-                $confidence = $mean;
+        $row = $this->rowNear($needle);
+        if ($row !== null && $row['lost']) {
+            return CrossCheck::Unchecked;
+        }
+        if (($row['mean'] ?? $this->meanConfidence) < self::HARD_TO_READ) {
+            return CrossCheck::Unchecked;
+        }
+        if ($want !== '') {
+            $digits = $row !== null ? $row['digits'] : array_merge([], ...array_column($this->rows, 'digits'));
+            if ($digits !== [] && min($digits) < self::SURE_DIGITS) {
+                return CrossCheck::Unchecked;
             }
         }
 
-        return $confidence;
+        return CrossCheck::Flagged;
+    }
+
+    /**
+     * The row sharing most of $words's words, or null when no row shares one.
+     *
+     * @return array{words: list<string>, mean: float, digits: list<float>, lost: bool}|null
+     */
+    private function rowNear(string $words): ?array
+    {
+        $wanted = array_flip(self::words($words));
+        $best = 0;
+        $near = null;
+        foreach ($this->rows as $row) {
+            $shared = count(array_intersect_key(array_flip($row['words']), $wanted));
+            if ($shared > $best) {
+                $best = $shared;
+                $near = $row;
+            }
+        }
+
+        return $near;
     }
 
     /**

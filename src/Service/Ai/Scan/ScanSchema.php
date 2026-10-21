@@ -63,9 +63,14 @@ final class ScanSchema
     public const int MAX_TEXT = 300;
 
     /**
+     * What the model is held to: every field and list named, null when
+     * absent, and a field's value and evidence both given (#534, K130).
+     * $strict false is what an answer is checked against: anything may be
+     * left out, so a provider that doesn't enforce the schema isn't refused.
+     *
      * @return array<string, mixed>
      */
-    public static function schema(): array
+    public static function schema(bool $strict = true): array
     {
         $field = [
             'type' => ['object', 'null'],
@@ -75,6 +80,11 @@ final class ScanSchema
             ],
             'additionalProperties' => false,
         ];
+        if ($strict) {
+            // A field is null or carries both: a server holding the model to the schema (LM Studio,
+            // llama.cpp) otherwise lets it answer `{}` for every field (Phase 53.8, #534).
+            $field['required'] = ['value', 'evidence'];
+        }
         $fields = [];
         foreach (self::FIELDS as $name => $description) {
             $fields[$name] = $field + ['description' => $description];
@@ -104,6 +114,15 @@ final class ScanSchema
             ],
         ];
 
+        $object = static fn (array $properties): array => [
+            'type' => 'object',
+            'properties' => $properties,
+            // Every field and list named, null when absent: a server that holds the model to the schema
+            // otherwise lets it leave `fields` out altogether (#534, K130).
+            ...($strict ? ['required' => array_keys($properties)] : []),
+            'additionalProperties' => false,
+        ];
+
         return [
             'type' => 'object',
             'properties' => [
@@ -111,10 +130,10 @@ final class ScanSchema
                     'type' => 'string',
                     'enum' => array_map(static fn (ScanKind $k): string => $k->value, ScanKind::cases()),
                 ],
-                'fields' => ['type' => 'object', 'properties' => $fields, 'additionalProperties' => false],
-                'lines' => ['type' => 'object', 'properties' => $lines, 'additionalProperties' => false],
+                'fields' => $object($fields),
+                'lines' => $object($lines),
             ],
-            'required' => ['kind'],
+            'required' => $strict ? ['kind', 'fields', 'lines'] : ['kind'],
             'additionalProperties' => false,
         ];
     }

@@ -5133,6 +5133,14 @@ return [
         'chooser_hint' => 'Fill in a form from a photo or PDF',
         'shortcut' => 'Scan',
         'fill_from_file' => 'Fill from a file',
+        // Phase 53.8 (spec.md §7.27, #511): a V5C scanned from its vehicle.
+        'v5c' => [
+            'link' => 'Scan the V5C',
+            'title' => 'Scan the V5C',
+            'lead' => 'A photo or PDF of {vehicle}’s registration certificate (V5C). Its registration, VIN and first registration date are offered as updates; nothing changes until you save.',
+            'vehicle' => 'Vehicle',
+            'internet' => 'Read on this server first (text recognition). Only its text goes to {connection}, without its document reference number; the picture is never sent.',
+        ],
         'where' => [
             // Phase 53.4 (spec.md §7.27 *Reading without AI*): no model reads for this user.
             'rules' => 'Read without AI on this server (text recognition and rules). The file doesn’t leave it. Check every field before saving.',
@@ -5164,6 +5172,7 @@ return [
         ],
         'validation' => [
             'file' => 'Choose a photo or PDF.',
+            'v5c_vehicle' => 'Scan the V5C from the page of a vehicle you can edit.',
         ],
         'submit' => 'Read it',
         'reading' => 'Reading your file…',
@@ -5217,6 +5226,7 @@ return [
             'unassigned' => 'Reading files isn’t set up for this kind of file.',
             'no_vision' => 'Reading photos and scanned PDFs needs a model that reads images, or text recognition on this server (Settings → AI).',
             'too_little_text' => 'Couldn’t make out the text in this photo. Try a flatter, brighter photo.',
+            'registration_text_only' => 'This scan of a registration document is sent only as text, and text recognition couldn’t read it.',
             'timeout' => 'The model took too long to read the file.',
             'busy' => 'Still working on your last request.',
             'failed' => 'Couldn’t read this file.',
@@ -5232,6 +5242,7 @@ return [
         'check_hard_to_read' => 'Hard to read, check this.',
         'check_not_on_page' => 'Not found on the page, check this carefully.',
         'check_sum' => '{volume} × {price} = {sum}, but the total reads {total}.',
+        'check_sum_other' => 'Doesn’t add up with the total.',
         'description' => [
             'labour' => 'Labour {amount}',
             'parts' => 'Parts {amount}',
@@ -5276,6 +5287,7 @@ return [
             'lead' => 'Tick what to change on the vehicle. Nothing else changes.',
             'legend' => 'Found on the document',
             'nothing' => 'Nothing on the document could be read.',
+            'by_hand' => 'Edit the vehicle to enter its details by hand.',
             'field' => [
                 'registration' => 'Registration',
                 'vin' => 'VIN',

@@ -18,6 +18,11 @@ final readonly class Target
         public bool $verifyTls = true,
         public ?string $caBundle = null,
         public int $maxRequestBytes = 8 * 1024 * 1024,
+        /**
+         * @var array<string, string> host => the address the connection's location was checked against, so
+         *      the request goes there and not wherever a second lookup points (Phase 53.8, K138)
+         */
+        public array $pin = [],
     ) {
     }
 
@@ -38,6 +43,7 @@ final readonly class Target
             $this->verifyTls,
             $this->caBundle,
             $this->maxRequestBytes,
+            $this->pin,
         );
     }
 
@@ -50,6 +56,7 @@ final readonly class Target
             $this->verifyTls,
             $this->caBundle,
             $this->maxRequestBytes,
+            $this->pin,
         );
     }
 }

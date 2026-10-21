@@ -26,6 +26,10 @@
                 <ul>{% for field, error in errors %}<li>{{ trans(error.key, error.params) }}</li>{% endfor %}</ul>
             </div>
         {% endif %}
+        {% if problem %}
+            {# A *Scan the V5C* scan that couldn't be read (spec.md §7.27, #511): why, and the file kept. #}
+            <p class="alert alert--warning" role="status" data-scan-problem>{{ ui.icon('warning') }}<span>{{ problem.messageKey()|trans }} <a href="{{ url_for('vehicles.edit', {id: vehicle.id}) }}">{{ 'scan.vehicle.by_hand'|trans }}</a></span></p>
+        {% endif %}
         <form class="form" method="post" action="{{ url_for('scan.vehicle', {token: upload.token}, {vehicle: vehicle.id}) }}">
             {{ ui.csrf(csrf) }}
             <input type="hidden" name="scan" value="{{ upload.token }}">

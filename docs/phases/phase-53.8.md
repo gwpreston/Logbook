@@ -4,8 +4,8 @@
 as a picture, a passing "DVLA" no longer empties a receipt's figures, and
 the cross-check stops flagging right values on blurred photos.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases a minor
-version
+Status: ✅ complete · releases **v3.19.0** · file lives in
+`docs/phases/`. K105 carried (#515 kept the full-size file).
 
 Phase 53.3's merge review left five open questions about the V5C
 reference and the cross-check (#511–#515). The owner decided them on
@@ -44,11 +44,19 @@ file*, *Reading through OCR*, *Checking values*), the
    90. Documents under 30 words stay unchecked.
 5. **Evals.** The owner's runs of `bin/ai-eval.php --scans --via=ocr`
    (53.2's acceptance criterion 3) and `--scans --crosscheck` (53.3's
-   acceptance criterion 1), recorded in 53.3's *Eval results*; the
-   fixture eval re-run for #514's new bar.
+   acceptance criterion 1), recorded in this file's *Eval results*,
+   with a pointer in 53.3's; the fixture eval re-run for #514's new bar.
 6. **#515, K114.** With the OCR eval's numbers, decide whether the
    cross-check reads the 2,000 px copy instead of the full-size file
    (#515's option 2). Not changed without them.
+7. **Known issues** chosen by the owner on 2026-10-20: K111, K113 and
+   K117 (in the code this phase changes); K112, the connection's
+   location resolved when the scan is read (#530); K106, the sum
+   sentence shown once (#531); K107, a rollback of 53.3's migration
+   warns (#532); K80, an inherited page size and `/UserUnit`; K105,
+   OCR's preparation alongside the vision request, after #515 (carried:
+   #515 kept the full-size file). K130, the scan schema (#534), was found
+   while running the evals.
 
 ## Not in scope
 
@@ -59,39 +67,112 @@ file*, *Reading through OCR*, *Checking values*), the
 ## Tasks
 
 ### 53.8.0 Spec first
-- [ ] Spec §7.27 already carries the decisions (*From Phase 53.8*);
+- [x] Spec §7.27 already carries the decisions (*From Phase 53.8*);
       re-read every open question and the *Open* rows of the known-issues
-      log touching Scan before starting (CLAUDE.md §12).
+      log touching Scan before starting (CLAUDE.md §12). *2026-10-20:*
+      none of the questions still open bears on Scan; they are carried.
+      The open Scan rows K111, K113 and K117 are in code this phase
+      changes; the owner added K112, K106, K107, K80 and K105 and
+      decided #529–#532 (all the recommendation). Spec §7.27 and §13
+      updated.
 
 ### 53.8.1 Scan the V5C
-- [ ] The entry on the vehicle page (and its documents tab), the
+- [x] The entry on the vehicle page (and its documents tab), the
       `vehicle` target kept through `ScanAction` and the pending upload.
-- [ ] Such a scan: registration kind, wide redaction, text only on
+- [x] Such a scan: registration kind, wide redaction, text only on
       *Internet* connections; the page's warning not shown for it.
 
 ### 53.8.2 Markers and the cross-check
-- [ ] #513: the stronger sign for the wide redaction; one marker still
+- [x] #513: the stronger sign for the wide redaction; one marker still
       blocks the picture.
-- [ ] #514: the per-digit-word confidence bar of 90.
+- [x] #514: the per-digit-word confidence bar of 90.
 
 ### 53.8.3 Evals and tests
-- [ ] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
+- [x] Carried from [53.2](phase-53.2.md) and [53.3](phase-53.3.md): the
       owner's `--scans --via=ocr` and `--scans --crosscheck` runs, in
-      53.3's *Eval results*.
-- [ ] The fixture eval re-run: flags and false flags per kind with the
-      new bar (K110's 29 of 57 as the baseline).
-- [ ] #515 revisited with the OCR eval's numbers (the owner decides).
-- [ ] Tests: a *Scan the V5C* photo on an *Internet* connection never
+      this file's *Eval results*, with a pointer in 53.3's (K140).
+- [x] The fixture eval re-run: flags and false flags per kind with the
+      new bar (K110's 29 of 57 as the baseline). In *Eval results*: 29
+      false flags fall to 2, and no planted wrong digit is caught on the
+      fixtures; #533 decided by the owner.
+- [x] #515 revisited with the OCR eval's numbers (the owner decides).
+      *2026-10-20:* the fixtures can't measure it (every photo is under
+      2,000 px, so the copy is the file; only the V5C passes the 30-word
+      gate). The owner kept the full-size file (#515 stays (1)); K114
+      stays open and K105 is carried.
+- [x] Tests: a *Scan the V5C* photo on an *Internet* connection never
       sends an image, asserted at the adapter; a misread reference
       (`9O1`, `1234-5678-901`, wrapped) removed on that scan without
       markers; an invoice with "VSC warning light" keeps its figures; a
-      blurred photo's right values not flagged.
-- [ ] Design review of the new entry (375, 768, 1280 px; light and dark;
-      JS off).
+      blurred photo's right values not flagged (`ScanCrossCheckTest`,
+      `OcrTextTest`, `FilePreparerTest`, `RuleReaderTest`).
+- [x] Design review of the new entry (375, 768, 1280 px; light and dark;
+      JS off; at `/lb`). *2026-10-20 (design-reviewer at `d6c42f49`):* no
+      HIGH. MEDIUM, fixed: the Details card's link stacked its icon above
+      the text; as a `card__link` it is text only, like its neighbours.
+      LOW, fixed: the Scan page promised text recognition on an *Internet*
+      connection with no OCR (it now says such a scan can't be sent); a
+      GET with `for=vehicle` for a vehicle the user can't manage fell
+      back to the plain Scan page (it now shows the refusal). Not seen
+      rendered: the unreadable-scan warning and the fuel form's sum
+      marks (markup and tests only).
 
-### 53.8.4 Release
-- [ ] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅; tag once
-      merged.
+### 53.8.4 Known issues
+- [x] K111: a wrapped reference with a label or date in its run, or a
+      date after it, removed on V5C-like text.
+- [x] K113: the value's own digits only; letters never folded on the
+      value's side.
+- [x] K117: a value whose row lost reference words is unchecked.
+- [x] K112 (#530): the location resolved at the scan; K112's repro
+      sends no image.
+- [x] K106 (#531): the sum sentence under the total only; volume and
+      price "Doesn't add up with the total."
+- [x] K107 (#532): 53.3's migration's `down()` warns, naming the
+      connections.
+- [x] K80: an inherited MediaBox and `/UserUnit` read.
+
+- [x] K130 (#534): the scan's JSON schema requires `kind`, `fields` and
+      `lines`, names every field and list (null when absent), and each
+      field's `value` and `evidence`, so LM Studio's constrained output no
+      longer lets a model answer `{}` or leave `fields` out
+      (`ScanSchemaTest`). The second half was found in the owner's second
+      eval run: text PDFs 07, 09, 10, 13, 19, 20 and 24 read 0 fields
+      with gemma-3-12b; with it, 07, 13 and 20 sent straight to LM Studio
+      came back nearly whole.
+
+### 53.8.5 K105, after #515
+- [ ] ~~OCR's preparation runs alongside the vision request~~ *Carried
+      2026-10-20:* #515 kept the full-size file without numbers to weigh
+      it, so K105 stays open for a later phase (owner's choice).
+
+### 53.8.6 Guides
+- [x] `docs/reading-files.md`: *Scan the V5C*, the marker rule, the 90
+      bar, the sum shown once, the address resolved at the scan, and a
+      link to *Which model?*.
+- [x] `docs/ai.md`: *Which model?* (what each task needs, what the test
+      documents measured, setting a local model up for photos), the
+      *Scan the V5C* note under privacy, and running `bin/ai-eval.php` in
+      the dev stack's app container. `docs/features.md`: *Scan the V5C*.
+      (K134: these were built without a task.)
+
+### 53.8.7 Merge-review follow-ups
+- [x] K131: a date beside a V5C reference is kept and the reference
+      removed. *2026-10-21, fuzzed:* random 11-digit references
+      split into 2–4 groups, on one row or wrapped over two or three, with
+      or without a label, a date or time before, after or on the next row:
+      25,000 cases on HEAD, no reference digit kept and no date lost;
+      the same 5,000 on `c532f40e` (before the fix) kept reference digits
+      in 1,365 and lost the date in 899.
+- [x] K133: the 53.3 rollback warning escapes connection names.
+- [x] K137: the *Scan the V5C* refusal shows its reason when the page
+      has no form.
+- [x] K138: AI requests are pinned to the address the connection's
+      location was checked against.
+- [x] K134, K139, K140, K141: the phase file, guides and CHANGELOG.
+
+### 53.8.8 Release
+- [x] `VERSION`, `CHANGELOG.md`, README; `ROADMAP.md` row ✅.
+- [ ] Tag `v3.19.0` once merged.
 
 ## Acceptance criteria
 
@@ -101,12 +182,149 @@ file*, *Reading through OCR*, *Checking values*), the
 2. A document that mentions a V5C marker once in passing keeps its
    figures.
 3. The cross-check's false flags on the fixture photos fall well below
-   53.3's, with no invented value left unflagged that was flagged
-   before.
+   53.3's, and an invented value is still flagged where OCR read the
+   row's digits at a confidence of 90 or more (reworded 2026-10-20, #533:
+   on the fixtures no bar keeps both halves of the first wording).
 4. Definition of done (CLAUDE.md §11) holds.
 
 ## Open questions
 
 Decided before this phase was written (#511–#515, 2026-10-19; see
-[53.3](phase-53.3.md)). None open; anything found while building goes
-here.
+[53.3](phase-53.3.md)). Found while starting it and decided by the owner
+on 2026-10-20 (#529–#532), all the recommendation:
+
+- **#529. Who runs the evals with the owner's models?** *Decided
+  2026-10-20: (1) the owner, before the PR. The agent re-runs the
+  fixture eval for #514 and gives the two commands; #515 is decided on
+  the `--via=ocr` numbers.*
+  - (1) The owner runs them before the PR.
+  - (2) The agent runs them with a local model the owner names.
+  - (3) Carried again; #515 stays (1).
+- **#530. K112: fix it here, and how?** *Decided 2026-10-20: (1).*
+  - (1) Route on the location resolved at the scan, as the gateway does
+    at send.
+  - (2) An acknowledged *Internet* connection always counts as
+    *Internet* for V5C routing.
+  - (3) Leave it open.
+- **#531. K106: with the sum sentence shown once, what do volume and
+  price show?** *Decided 2026-10-20: (1).*
+  - (1) The sentence under the total; "Doesn't add up with the total."
+    under the volume and the price.
+  - (2) One line above the three fields.
+  - (3) The sentence under the total only; the others unmarked.
+- **#532. K107: what does 53.3's migration's `down()` do while a
+  connection has *Send text, not images* on?** *Decided 2026-10-20: (1).*
+  - (1) Warn, naming the connections, then roll back.
+  - (2) Refuse unless forced.
+  - (3) Leave it (the CHANGELOG note only).
+- **#533. The fixture eval re-run for #514: no bar keeps acceptance
+  criterion 3's "no invented value left unflagged that was flagged
+  before".** (found while building) *Decided 2026-10-20: (1). The bar
+  stays 90; criterion 3 is reworded to "an invented value is still
+  flagged where OCR read the row's digits at 90 or more". The owner's
+  `--crosscheck` run with real photos confirms it or reopens it.*
+  - (1) Keep 90 and reword the criterion.
+  - (2) A bar of 75 (3 false flags, 7 of 41 caught on the fixtures).
+  - (3) Decide after the owner's `--crosscheck` run.
+  - (4) Keep #508's rule (29 false flags, 39 of 41 caught).
+
+- **#534. The owner's first eval runs read almost nothing: the scan
+  schema lets a field be `{}`, and LM Studio holds gemma-4-e4b to it.
+  Fix it here?** (found while running the evals) *Decided 2026-10-20:
+  (1).*
+  - (1) Fix in 53.8: each field requires `value` and `evidence`.
+  - (2) Log it and fix it later.
+- **#535. How are usable eval numbers got for #515 (and to confirm
+  #533)?** (found while running the evals) *Decided 2026-10-20: (1). The
+  owner re-runs both evals after #534, with a stronger vision model on
+  `read_document` if one is loaded; the PR waits for them.*
+  - (1) Re-run after the fix, with a bigger model.
+  - (2) Re-run after the fix, with the same gemma.
+  - (3) Carry the evals again; #515 stays (1) and K105 is carried.
+- **#536. Re-run the two evals after #534's second half, for the record?**
+  (found while running the evals) *Decided 2026-10-20: (1), yes.*
+  - (1) Re-run and record field accuracy per route (53.2's criterion 3).
+  - (2) Record the second run as it is.
+
+Raised by the merge review at `c532f40e`, logged on 2026-10-21, waiting for
+the owner (none blocks the release):
+
+- **#537.** A *Scan the V5C* text PDF from a scanner app (a text layer made by OCR) keeps a reference its text wraps over two lines or misreads (`1234 5678` / `901`, `9O1`, `S678`): PDF text gets only spaces and one punctuation mark, not OCR's look-alikes and row joins. Should such a scan get the OCR-grade redaction? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) OCR-grade redaction (look-alikes, row joins) for PDF text of a `vehicle` target (reopens #500 (4) for it); (2) never send a `vehicle`-target text PDF to an *Internet* connection; (3) a warning for text PDFs on the *Scan the V5C* page, and spec §7.27 narrowed to say so.
+- **#538.** When a *Scan the V5C* scan couldn't be read, its update page still offers "Keep the file as a registration document" beside an empty card. Keep it or hide it? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) keep it (the file is still the V5C); (2) hide it when nothing was read, so the scan is simply discarded.
+- **#539.** Should the OpenAI-compatible adapter send `strict: true` with `json_schema` requests, so hosted OpenAI holds the model to the scan schema as LM Studio does? It needs a schema without `maxLength` and with every property required (`recommendations.items` isn't); see K132 for Anthropic. *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) leave it off (answers are still checked against the lenient schema); (2) send it, with a strict-compatible scan schema per provider; (3) decide with K132's fix.
+- **#540.** Should spec §8 set a time budget for reading a scan and its OCR cross-check? Today the cross-check takes about 27 ms for 2,880 words and 71 ms for 9,600 (performance review of 53.8). *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) no budget; (2) the cross-check under about 100 ms for a 3-page scan and 200 ms for 10 pages on a dev machine, enforced by a test; (3) a budget for the whole scan, model time excluded.
+- **#541.** Should the *Scan the V5C* link's availability check count toward the vehicle page and Documents tab query budgets? It adds 2 primary-key reads (41→43, 13→15). *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) leave it (within the 60-query budget); (2) share the AI status the page already reads, so it costs nothing; (3) check `manage` before availability, so members who can't manage skip it.
+- **#542.** A V5C whose OCR shows only one marker (`DVLA` or `Document reference`) gets the narrow redaction (#513 needs two different markers, or `V5C` or `Registration Certificate`). Should one marker plus an 11-digit run on a `Document reference` row turn the wide rule on? *Needs a decision* (found in the merge review, 2026-10-21).
+  Options: (1) keep #513 as decided (*Scan the V5C* covers such documents); (2) widen when an 11-digit run sits on a row with `Document reference`; (3) widen for any single marker on the OCR route only.
+
+## Eval results (2026-10-20)
+
+**#514 on the fixtures.** Each photo and scanned PDF in
+`tests/Fixtures/scans` (10 files, 57 right values) read by Tesseract
+5.5.0 (eng) in the dev image; each expected value checked against OCR's
+text as the vision route checks it, and again with one digit of each
+value with digits changed (and in its evidence) as a planted wrong
+value. Master (53.3's rule) against this branch (bar 90), without the
+30-word gate, which only the V5C photo passes:
+
+| Kind (files) | Right values | False flags, master | False flags, 53.8 | Planted | Caught, master | Caught, 53.8 |
+|---|---|---|---|---|---|---|
+| fuel_receipt (2) | 17 | 7 | 1 | 11 | 10 | 0 |
+| inspection (1) | 5 | 2 | 0 | 4 | 4 | 0 |
+| insurance (1) | 6 | 5 | 0 | 5 | 5 | 0 |
+| registration (1) | 6 | 4 | 1 | 4 | 4 | 0 |
+| repair_estimate (1) | 4 | 1 | 0 | 3 | 3 | 0 |
+| service_invoice (4) | 19 | 10 | 0 | 14 | 13 | 0 |
+| **All (10)** | 57 | 29 | 2 | 41 | 39 | 0 |
+
+The two left are values without digits (a volume unit `L`, a V5C's
+model), which keep the row-mean rule. Other bars: 60 gives 17 false
+flags and 26 of 41 caught; 70, 10 and 16; 75, 3 and 7; 80, 2 and 5; 85,
+2 and 1. The fixtures are blurred on purpose (mean confidence 74–86), so
+OCR reads their right and wrong digits alike; a value invented on a row
+OCR read at 90 or more is still flagged (`OcrTextTest`,
+`ScanCrossCheckTest`). Decided as #533.
+
+**The owner's first runs (LM Studio, gemma-4-e4b on `read_document`
+and, through `ask`, on text).** Not usable: fields right 0-20% per kind
+on both routes, text PDFs included (fixture 01: 0 of 12), so the
+cross-check had nothing to mark (0 flags). About 70 tokens came back per
+request: the model answered `"fields": {"date": {}}`, which the schema
+allowed (#534, K130). With `value` and `evidence` required, fixture 01
+sent straight to LM Studio came back with its date and total and their
+evidence. Re-run after the fix (#535).
+
+**The owner's third runs (2026-10-20, after #534; LM Studio,
+gemma-3-12b on `read_document` and `read_text`; Tesseract in the dev
+image).** `bin/ai-eval.php --scans --via=ocr` (53.2's acceptance
+criterion 3), fields right per kind:
+
+| Kind (files) | Vision model | Through OCR and the text model | OCR route failed |
+|---|---|---|---|
+| service_invoice (8) | 80% | 73% | 4 (too little text) |
+| fuel_receipt (4) | 71% | 65% | 2 |
+| inspection (3) | 83% | 85% | 1 |
+| insurance (3) | 72% | 58% | 1 |
+| registration (2) | 80% | 60% | 0 |
+| other (1) | 80% | 80% | 0 |
+| claim_letter (2) | 76% | 76% | 0 |
+| repair_estimate (1) | 75% | 0% | 1 |
+
+Text PDFs go to `read_text` on both routes, so the difference is the
+photos and scans: 9 of the 10 are under OCR's 30 words and aren't sent
+on the OCR route (*Too little text*); the V5C photo, the one that is,
+read 2 of 6 through OCR against 4 of 6 by the vision model (OCR's
+`81 63 2616` for 01 03 2018). `--scans --crosscheck` (53.3's
+acceptance criterion 1): no value marked "Not found on the page", none
+of them right, on any kind; the fields read are the vision model's
+(80%, 62%, 83%, 72%, 50%, 80%, 76%, 75%). Only the V5C photo passes the
+30-word gate, so the check judged one file; the fixtures are too short
+to measure it further. The model varies between runs at temperature 0:
+the V5C photo read 4 of 6 and then 1 of 6 on the vision route alone.
+No registration reference in any output. Before #534 the same model
+read 0–59% per kind (text PDFs mostly 0), gemma-4-e4b 0–20%.

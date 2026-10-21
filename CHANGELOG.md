@@ -6,6 +6,82 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.0] — 2026-10-20
+
+Phase 53.8: **V5C privacy and cross-check accuracy**
+([docs/phases/phase-53.8.md](docs/phases/phase-53.8.md)). See
+[docs/reading-files.md](docs/reading-files.md). No migration: pull and
+restart.
+
+### Added
+- **Scan the V5C**, on a vehicle's page (the *Details* card) and its
+  *Documents* tab, for those who can edit the vehicle. The file is read
+  as that vehicle's registration certificate whatever OCR spots: its
+  reference number is removed in every form (punctuation, OCR's
+  look-alikes, wrapped lines) on every route, and on an internet
+  connection only its text is sent, never the picture. With OCR off,
+  failing or reading too little, nothing is sent, and the page says why
+  (#511, K104, K108).
+
+### Changed
+- **A passing V5C marker no longer empties a document's figures.** One
+  marker ("DVLA", "Document reference", OCR's "VSC") still keeps a photo
+  from going to an internet connection as a picture, but the wider
+  reference rule now needs "V5C" or "Registration Certificate", or two
+  different markers. "Diagnostic VSC warning light" on an invoice, or
+  "DVLA" on an insurance letter, keeps its amounts and dates (#513,
+  K109).
+- **The cross-check flags far fewer right values.** A value with digits
+  is marked "Not found on the page" only where OCR read every word with
+  a digit on its line at a confidence of 90 or more. On the fixture
+  photos, right values marked fall from 29 of 57 to 2; the price is that
+  a wrong digit is now marked only where OCR read its line that clearly
+  too, so on those blurred photos 0 of 41 planted wrong digits were
+  caught, against 39 before (#514, #533, K110, K141).
+- **A fill-up whose figures don't add up** shows the sum once, under the
+  total; the volume and the price say "Doesn't add up with the total."
+  (#531, K106).
+- Rolling back 3.18.0's migration now names each connection with *Send
+  text, not images* on, and warns that pictures go to it once upgraded
+  again (#532, K107).
+
+### Documentation
+- *Which model?* in [docs/ai.md](docs/ai.md#which-model) now says what
+  each task needs from a model, what the test documents measured, and
+  how to set up a local model to read photos.
+
+### Fixed
+- **Scanning with a local model in LM Studio** (or llama.cpp) no longer
+  opens a nearly empty form: the answer's format now names every field
+  (empty when not on the document), so such servers no longer let a model
+  answer an empty `{}` for each field or leave the fields out (#534,
+  K130).
+- A V5C photo on a connection Settings last saw on your network, whose
+  address is on the internet again, is treated as going to the internet:
+  OCR first, and text only (#530, K112).
+- A request to an AI connection goes to the address its location was
+  checked against, so a name that answers one address to the check and
+  another to the request can't skip the internet acknowledgement or the
+  V5C text-only rule (K138).
+- *Scan the V5C* for a vehicle you can't edit says why, also when you
+  have no vehicle to log to (K137).
+- Rolling back 3.18.0's migration no longer stops on a connection whose
+  name contains something like `<options=…>` (K133).
+- A date beside a V5C reference is kept, and the reference removed:
+  `Issued 14/10/2026 12345 678901` used to lose the date and keep the
+  reference's last six digits (K131).
+- A V5C reference wrapped over lines is removed when a label or date
+  shares its line (`Issued 01/03/2018 1234 5678` / `901`), or a date
+  follows it (`901 14/10/2026`), keeping the date (K111).
+- The cross-check no longer marks a value with no digits ("Petrol",
+  "Shoreline Fuels Ltd") because letters in it looked like digits, and
+  compares only a value's own digits (`EV70 LTR` needs `70`) (K113).
+- A V5C's title is no longer counted as "not on the page" because its
+  reference was removed from OCR's line (K117).
+- A scanned PDF whose page size is inherited from its page tree, or
+  scaled by `/UserUnit`, is rendered small, like one whose own page is
+  oversized (K80).
+
 ## [3.18.3] — 2026-10-20
 
 Phase 53.7: **API, webhook and MCP edges from the known-issues log**

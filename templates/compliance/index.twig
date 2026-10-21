@@ -13,9 +13,13 @@
 
         {% include 'vehicles/_list_toolbar.twig' with {title: 'compliance.title'|trans, module: 'documents', add: {route: 'compliance.create', label: 'compliance.add'|trans}} %}
 
-        {# MOT history (spec.md §7.38), while a provider is on. #}
-        {% if mot_history_enabled() %}
-            <p><a class="btn btn--soft" href="{{ url_for('mot_history.show', {id: vehicle.id}) }}" data-mot-history-link>{{ ui.icon('fact_check') }}{{ 'mot_history.page.link'|trans }}</a></p>
+        {# MOT history (spec.md §7.38), while a provider is on; *Scan the V5C* (§7.27, #511). #}
+        {% set v5c_link %}{% include 'scan/_v5c_link.twig' %}{% endset %}
+        {% if mot_history_enabled() or v5c_link|trim %}
+            <p class="btn-row">
+                {% if mot_history_enabled() %}<a class="btn btn--soft" href="{{ url_for('mot_history.show', {id: vehicle.id}) }}" data-mot-history-link>{{ ui.icon('fact_check') }}{{ 'mot_history.page.link'|trans }}</a>{% endif %}
+                {{ v5c_link }}
+            </p>
         {% endif %}
 
         <section class="card" aria-labelledby="current-heading">

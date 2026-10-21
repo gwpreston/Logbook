@@ -18,12 +18,18 @@ final readonly class ResponseFormat
         /** @var array<string, mixed> a JSON Schema object */
         public array $schema,
         public JsonMode $mode = JsonMode::JsonSchema,
+        /**
+         * @var array<string, mixed>|null what the answer is checked against, when looser than what the
+         *      model is held to (Phase 53.8, #534): a provider that doesn't enforce the schema may leave
+         *      a key out without the answer being refused
+         */
+        public ?array $check = null,
     ) {
     }
 
     public function withMode(JsonMode $mode): self
     {
-        return new self($this->name, $this->schema, $mode);
+        return new self($this->name, $this->schema, $mode, $this->check);
     }
 
     /**

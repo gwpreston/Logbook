@@ -208,7 +208,10 @@ the guide to a feature.
   ([reading-files.md](reading-files.md)). With a vision model, OCR checks
   what it read and marks a value it can't find on the page; a fuel
   receipt whose figures don't add up says so; and each connection can
-  *send text, not images*, so no photo leaves your server. With OCR and
+  *send text, not images*, so no photo leaves your server. *Scan the V5C*
+  on a vehicle's page offers a registration certificate's details as
+  updates to that vehicle, and never sends its picture to the internet.
+  With OCR and
   no model (or for someone who switched AI off), files are still read,
   partly, by rules on your server: a fuel receipt's figures when they
   add up, an invoice's date, total and mileage

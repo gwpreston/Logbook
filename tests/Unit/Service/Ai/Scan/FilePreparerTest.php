@@ -53,6 +53,18 @@ final class FilePreparerTest extends TestCase
         self::assertSame(0, $this->renderer->calls);
     }
 
+    public function testAScanTheV5cTextPdfGetsTheWideRuleWithoutMarkers(): void
+    {
+        // #511, #512 (4): no marker on the page, yet a punctuated reference goes.
+        file_put_contents($this->path, ScanFiles::textPdf([
+            'Ref 1234-5678-901',
+            str_repeat('Keep this document safe and tell us about any change. ', 5),
+        ]));
+
+        self::assertStringContainsString('1234-5678-901', (string) $this->preparer->look($this->path, 'application/pdf')->text);
+        self::assertStringNotContainsString('5678', (string) $this->preparer->look($this->path, 'application/pdf', true)->text);
+    }
+
     public function testAShortTextLayerIsTreatedAsAScan(): void
     {
         file_put_contents($this->path, ScanFiles::textPdf(['Total 10']));
@@ -123,9 +135,15 @@ final class FilePreparerTest extends TestCase
             self::assertSame($line, Scrubber::text($line), $line);
             self::assertSame($line, Scrubber::ocrText($line), $line);
         }
-        self::assertTrue(Scrubber::looksLikeRegistration('DVLA Swansea'));
-        self::assertTrue(Scrubber::looksLikeRegistration('VSC Registration'), "OCR's S for 5");
-        self::assertFalse(Scrubber::looksLikeRegistration('SHORELINE FUELS LTD'));
+        self::assertTrue(Scrubber::mentionsRegistration('DVLA Swansea'));
+        self::assertTrue(Scrubber::mentionsRegistration('VSC Registration'), "OCR's S for 5");
+        self::assertFalse(Scrubber::mentionsRegistration('SHORELINE FUELS LTD'));
+        // #513: the wide rule needs two different markers, or V5C or Registration Certificate.
+        self::assertFalse(Scrubber::looksLikeRegistration('DVLA Swansea'));
+        self::assertFalse(Scrubber::looksLikeRegistration('Diagnostic VSC warning light, VSC reset'));
+        self::assertTrue(Scrubber::looksLikeRegistration('VSC DVLA Swansea'));
+        self::assertTrue(Scrubber::looksLikeRegistration('V5C'));
+        self::assertTrue(Scrubber::looksLikeRegistration('registration  certificate'));
     }
 
     public function testATextPdfThatLooksLikeAV5cGetsTheWideRule(): void

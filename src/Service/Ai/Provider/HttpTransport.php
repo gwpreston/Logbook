@@ -79,6 +79,10 @@ final readonly class HttpTransport
         if ($target->caBundle !== null) {
             $options['cafile'] = $target->caBundle;
         }
+        if ($target->pin !== []) {
+            // The address the connection was classed by, not a fresh lookup (K138).
+            $options['resolve'] = $target->pin;
+        }
 
         $url = $target->url($path);
         for ($attempt = 1;; $attempt++) {

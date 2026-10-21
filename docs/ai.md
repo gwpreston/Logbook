@@ -534,7 +534,11 @@ issue*, *Watch*, *Add all as issues*; see
   connection with OCR working, a photo OCR recognises as a V5C is sent as
   text, never as a picture. One it doesn't recognise, or any V5C photo
   without OCR, carries the number as pixels to a vision model, and the
-  Scan page says so.
+  Scan page says so. From 3.19, *Scan the V5C* on a vehicle's page
+  closes that gap: its scan is treated as a V5C whatever OCR spots, so
+  the reference is removed in every form, and on an *Internet*
+  connection only text is sent, or nothing when OCR can't read it
+  ([reading-files.md](reading-files.md)).
 - With a model on this server or your network, no file leaves your
   machines.
 - The file waits for its entry for 24 hours (only you can see it); then it
@@ -568,7 +572,10 @@ them with the vision model checked by OCR and count the values marked
 `--via=rules` it reads them **without AI** instead, as Scan does when no
 model reads for you ([reading-files.md](reading-files.md#reading-without-ai)):
 no model is needed and nothing is sent, but OCR must be working
-(without it the command says so and exits 1).
+(without it the command says so and exits 1). In the Docker dev stack,
+run it inside the app container, where your models and OCR are:
+`docker compose -f docker-compose.dev.yml exec app php bin/ai-eval.php
+--scans`.
 
 **Trying OCR.** `php bin/ai-eval.php --ocr` reads the same documents with
 the OCR engine (no model needed; see [reading-files.md](reading-files.md))
@@ -608,6 +615,55 @@ task. Rows are deleted after 90 days by the scheduled task.
   key again.
 
 ## Which model?
+
+Each task needs something different, so the best model for one is often
+not the best for another. Give each task its own model if that helps.
+
+**What makes a good model for each task:**
+
+- **Answering questions** (also used for adding entries by message)
+  needs reliable **tool calls**: the model must ask Logbook for the
+  figures rather than guess them. As a rule of thumb, instruction-tuned
+  models of 7–8B parameters and up handle this; smaller ones answer, but
+  pick the wrong tool more often. A reasoning model works but is slower.
+- **Reading receipts and documents** needs **JSON output** that follows a
+  schema, and **images** for photos and scans. This is the most
+  demanding job. Size matters more here than anywhere else: a vision
+  model has to read small print and copy figures exactly, with the line
+  they came from. Without a vision model, a text model can read photos
+  through OCR on your server ([reading-files.md](reading-files.md)), but
+  only clear ones with enough text on them.
+- **Reading text PDFs** needs JSON output only. A small or mid-size text
+  model does well, since the text arrives clean.
+
+**What we measured.** On the 24 test documents (`bin/ai-eval.php
+--scans --via=ocr`, 2026-10), `gemma3:12b` in LM Studio as the vision
+model read 71–83% of fields correctly per kind of document (50–83% in
+a second run, `--crosscheck`, the V5C photo reading less). Answers varied from
+one run to the next even at temperature 0. Treat that as a floor to
+beat: a model that reads less than this on your own receipts leaves
+more for you to type. (The test photos are short, so most had too little
+text for the OCR route; that run says little about a text model reading
+longer receipts through OCR.)
+
+**Tips:**
+
+- On a local server (Ollama, llama.cpp, LM Studio), a model needs its
+  **image support loaded** to read photos: a vision model's projector in
+  llama.cpp (`--mmproj`), or a model LM Studio marks as *Vision*. Then
+  tick **Images** and run **Test**.
+- Give the model room. A document's text can be up to 20,000 characters
+  (about 5,000 tokens), plus the instructions, so set a context of at
+  least 8,000 tokens on a local server. Leave *Longest answer* empty, or
+  at least 2,000 tokens: the answer names every field.
+- Prefer instruction-tuned ("instruct", "it") models to base models, and
+  quantisations of 4 bits or more (`Q4_K_M` or better).
+- For hard-to-read receipts, a larger vision model helps more than
+  anything else. With OCR working, Logbook also checks a vision model's
+  figures against the page
+  ([reading-files.md](reading-files.md#checking-a-vision-model)).
+- Try a model on your own kind of documents before relying on it:
+  [Trying models](#reading-receipts-and-documents) below.
 
 These are **examples only**. Models change every few months; check what
 is current, and try a model with **Test** before relying on it.

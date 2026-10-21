@@ -10,6 +10,7 @@ use Logbook\Domain\Ai\Scan\ScanUpload;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Ai\Scan\Mapper;
+use Logbook\Service\Ai\Scan\ScanProblem;
 use Logbook\Service\Ai\Scan\ScanReader;
 use Logbook\Service\Ai\Scan\VehicleMatcher;
 use Logbook\Service\Attachment\PendingUploads;
@@ -68,15 +69,17 @@ final readonly class ScanVehicleAction
         $user = $this->guard->user($request);
         $upload = $this->guard->upload($request, $user, $args);
         $reading = ScanReader::extraction($upload);
+        // A *Scan the V5C* scan that couldn't be read (#511) shows why, with nothing to update.
+        $problem = $reading === null ? ScanReader::problem($upload) : null;
         $vehicle = $this->vehicle($request, $upload);
-        if ($reading === null || !$upload->isClaimable($this->clock->now())) {
+        if (($reading === null && $problem === null) || !$upload->isClaimable($this->clock->now())) {
             throw new HttpNotFoundException($request);
         }
-        $form = $this->mapper->map($user, $vehicle, $reading, ScanKind::Registration);
+        $form = $reading === null ? null : $this->mapper->map($user, $vehicle, $reading, ScanKind::Registration);
         $current = VehicleForm::values($vehicle, $user->preferences);
 
         $rows = [];
-        foreach (self::FIELDS as $field) {
+        foreach ($form === null ? [] : self::FIELDS as $field) {
             $found = $form->values[$field] ?? '';
             if ($found === '' && !isset($form->problems[$field])) {
                 continue;
@@ -95,7 +98,7 @@ final readonly class ScanVehicleAction
         }
 
         if ($request->getMethod() !== 'POST') {
-            return $this->render($request, $response, $upload, $vehicle, $rows);
+            return $this->render($request, $response, $upload, $vehicle, $rows, problem: $problem);
         }
 
         $input = RequestContext::form($request);
@@ -109,7 +112,7 @@ final readonly class ScanVehicleAction
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());
         $data = VehicleForm::parse($values, $user->preferences, $today, false, $vehicle->data->firstInspectionDueOn);
         if ($data instanceof ValidationErrors) {
-            return $this->render($request, $response, $upload, $vehicle, $rows, $data, 422);
+            return $this->render($request, $response, $upload, $vehicle, $rows, $data, 422, $problem);
         }
         $keep = ($input[self::KEEP] ?? '') === '1' && $this->canKeep();
         $files = $keep ? $this->prefill->files($request, new PendingUploads()) : new PendingUploads();
@@ -188,6 +191,7 @@ final readonly class ScanVehicleAction
         array $rows,
         ?ValidationErrors $errors = null,
         int $status = 200,
+        ?ScanProblem $problem = null,
     ): ResponseInterface {
         return $this->view->render($request, $response, 'scan/vehicle.twig', [
             'upload' => $upload,
@@ -195,6 +199,7 @@ final readonly class ScanVehicleAction
             'rows' => $rows,
             'errors' => $errors?->all() ?? [],
             'can_keep' => $this->canKeep(),
+            'problem' => $problem,
         ], $status);
     }
 }

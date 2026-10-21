@@ -89,14 +89,32 @@ final class ScanCrossCheckTest extends ScanTestCase
         preg_match('/id="f-total-scan".*?<\/div>/s', $html, $note);
         self::assertSame(2, substr_count($note[0] ?? '', 'class="field__check"'), 'one reason a line, each marked');
         self::assertMatchesRegularExpression('/name="total"[^>]*aria-describedby="[^"]*f-total-scan/', $html, 'tied to it');
-        // The sum check says so too, on all three fields.
-        self::assertSame(3, substr_count($text, '42.18 L × 142.9p = £60.28, but the total reads £68.28.'));
+        // The sum check says so too: the sentence once, under the total; the others point to it (#531, K106).
+        self::assertSame(1, substr_count($text, '42.18 L × 142.9p = £60.28, but the total reads £68.28.'));
+        self::assertSame(2, substr_count($text, 'Doesn’t add up with the total.'));
 
         self::assertSame(
             ['scan_found' => 8, 'scan_flagged' => 1, 'scan_unchecked' => 0],
             $this->counts(),
             'counted on its usage-log row',
         );
+    }
+
+    public function testTheModelIsHeldToEveryFieldButASparseAnswerIsRead(): void
+    {
+        // #534, K130: the schema sent names every field; the reply here gives only some, and is read.
+        $this->reply($this->fuelReply());
+        $page = $this->scanReceipt();
+
+        $format = $this->request(0)['response_format'] ?? null;
+        self::assertIsArray($format);
+        $jsonSchema = $format['json_schema'] ?? null;
+        self::assertIsArray($jsonSchema);
+        $schema = $jsonSchema['schema'] ?? null;
+        self::assertIsArray($schema);
+        self::assertSame(['kind', 'fields', 'lines'], $schema['required'] ?? null);
+        $values = Html::formValues(Html::element(Html::document(self::body($page)), 'form.form'));
+        self::assertSame('60.28', $values['total']);
     }
 
     public function testRightValuesAreNotFlagged(): void
@@ -225,6 +243,144 @@ final class ScanCrossCheckTest extends ScanTestCase
         $form = html_entity_decode(self::body($this->browser->get('/scan')));
         self::assertStringContainsString('data-scan-ocr-registration', $form);
         self::assertStringContainsString('a number it misreads or splits can still reach OpenAI', $form);
+    }
+
+    public function testAStaleNetworkLocationStillKeepsAV5cPictureBack(): void
+    {
+        // #530, K112: an acknowledged Internet connection once stored as Network, its host public again.
+        $this->onTheInternet();
+        $this->connection($this->app)->executeStatement(
+            "UPDATE ai_connections SET location = 'network' WHERE base_url = 'https://api.openai.com/v1'",
+        );
+        $this->ocrReads(self::V5C);
+        $this->reply($this->registrationReply());
+        $this->land($this->scan(ExifJpeg::make(40, 20), 'v5c.jpg', 'image/jpeg'));
+
+        self::assertCount(1, $this->provider->requests);
+        self::assertSame([], $this->sentImages(0), 'asserted at the adapter: located as Internet before sending');
+        self::assertStringNotContainsString('5678', $this->sentText(0));
+    }
+
+    public function testScanTheV5cOnTheInternetNeverSendsAPicture(): void
+    {
+        // #511, #512 (4), K104, K108: OCR misses every marker and misreads the reference.
+        $this->onTheInternet();
+        $unmarked = static fn (string $l): bool => preg_match('/V5C|DVLA|Document reference|Certificate/', $l) !== 1;
+        $lines = array_values(array_filter(self::V5C, $unmarked));
+        $misread = 'Docurnent refererce 1234-S678-9O1';
+        $lines = array_map(static fn (string $l): string => $l === '1234 5678 901' ? $misread : $l, $lines);
+        $this->ocrReads([...$lines, '1234 5678 9O1', 'Further notes on keeping your details up to date']);
+        $this->reply($this->registrationReply());
+        [$page, $path] = $this->land($this->scanTheV5c('Golf'));
+
+        self::assertCount(1, $this->provider->requests);
+        self::assertSame([], $this->sentImages(0), 'asserted at the adapter: no image in the request body');
+        $sent = $this->sentText(0);
+        self::assertStringNotContainsString('678', $sent, 'the wide rule, without markers');
+        self::assertStringContainsString('VOLKSWAGEN', $sent);
+        self::assertStringContainsString('/scan/', $path[0] ?? '');
+        self::assertStringContainsString('vehicle=' . $this->garage['Golf']->id, implode(' ', $path), 'its own vehicle');
+        self::assertSame(200, $page->getStatusCode());
+    }
+
+    public function testScanTheV5cOnTheInternetWithoutOcrIsNotSent(): void
+    {
+        $this->scanApp(['TESSERACT_BINARY' => 'off']);
+        $this->onTheInternet();
+        $this->reply($this->registrationReply());
+        [$page] = $this->land($this->scanTheV5c('Golf'));
+
+        self::assertSame([], $this->provider->requests, 'neither the picture nor any text');
+        $text = html_entity_decode(self::body($page));
+        self::assertStringContainsString('This scan of a registration document is sent only as text', $text);
+        self::assertStringContainsString('Edit the vehicle to enter its details by hand.', $text);
+    }
+
+    public function testTheVehiclePageAndItsDocumentsOfferScanTheV5c(): void
+    {
+        $id = $this->garage['Golf']->id;
+        $link = '/scan?vehicle=' . $id . '&amp;for=vehicle';
+
+        self::assertStringContainsString($link, self::body($this->browser->get('/vehicles/' . $id)));
+        self::assertStringContainsString($link, self::body($this->browser->get('/vehicles/' . $id . '/documents')));
+    }
+
+    public function testScanTheV5cWhenOcrFailsIsNotSent(): void
+    {
+        $this->onTheInternet();
+        putenv('FAKE_TESSERACT_MODE=fail');
+        $this->reply($this->registrationReply());
+        [$page] = $this->land($this->scanTheV5c('Golf'));
+
+        self::assertSame([], $this->provider->requests);
+        self::assertStringContainsString('sent only as text', html_entity_decode(self::body($page)));
+    }
+
+    public function testScanTheV5cOnTheNetworkGoesAsAPictureAndIsScrubbed(): void
+    {
+        // Not the Internet: the picture goes as before, and any answer is scrubbed whatever its kind.
+        $this->ocrReads(self::V5C);
+        $this->reply(['kind' => 'other', 'fields' => ['title' => ['value' => 'Ref 1234-5678-901', 'evidence' => 'V5C']]]);
+        $this->land($this->scanTheV5c('Golf'));
+
+        self::assertCount(1, $this->sentImages(0));
+        $stored = $this->connection($this->app)->fetchOne('SELECT result FROM pending_uploads');
+        self::assertIsString($stored);
+        self::assertStringNotContainsString('5678', $stored);
+    }
+
+    public function testTheScanPageForAV5cSaysItGoesAsText(): void
+    {
+        $this->onTheInternet();
+        $id = $this->garage['Golf']->id;
+        $form = html_entity_decode(self::body($this->browser->get('/scan?vehicle=' . $id . '&for=vehicle')));
+
+        self::assertStringContainsString('Scan the V5C', $form);
+        self::assertStringContainsString('data-scan-v5c-text', $form);
+        self::assertStringNotContainsString('still goes to OpenAI as a picture', $form, 'no V5C warning for it');
+        self::assertStringContainsString('name="vehicle_id" value="' . $id . '"', $form);
+    }
+
+    public function testScanTheV5cNeedsAVehicleTheUserCanManage(): void
+    {
+        $response = $this->scan(ExifJpeg::make(40, 20), 'v5c.jpg', 'image/jpeg', ['for' => 'vehicle', 'vehicle_id' => '999999']);
+
+        self::assertSame(422, $response->getStatusCode(), 'refused, not read without its target');
+        $text = html_entity_decode(self::body($response));
+        self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $text);
+        self::assertSame([], $this->provider->requests);
+        $form = html_entity_decode(self::body($this->browser->get('/scan?vehicle=999999&for=vehicle')));
+        self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $form, 'on GET too');
+    }
+
+    public function testTheV5cRefusalShowsForAUserWithNoVehicleToLogTo(): void
+    {
+        // K137: with no form on the page, the reason was never shown.
+        $this->createMember($this->app, 'stranger');
+        $stranger = $this->browserFor($this->app, 'stranger');
+        $id = $this->garage['Golf']->id;
+        $page = html_entity_decode(self::body($stranger->get('/scan?vehicle=' . $id . '&for=vehicle')));
+
+        self::assertStringContainsString('Scan the V5C from the page of a vehicle you can edit', $page);
+        self::assertStringNotContainsString('Please check the highlighted fields', $page);
+    }
+
+    public function testTheScanPageForAV5cWithoutOcrSaysItCantBeSent(): void
+    {
+        $this->scanApp(['TESSERACT_BINARY' => 'off']);
+        $this->onTheInternet();
+        $id = $this->garage['Golf']->id;
+        $form = html_entity_decode(self::body($this->browser->get('/scan?vehicle=' . $id . '&for=vehicle')));
+
+        self::assertStringNotContainsString('data-scan-v5c-text', $form);
+        self::assertStringContainsString('data-scan-v5c-no-ocr', $form);
+    }
+
+    private function scanTheV5c(string $model): \Psr\Http\Message\ResponseInterface
+    {
+        $fields = ['vehicle_id' => (string) $this->garage[$model]->id, 'for' => 'vehicle'];
+
+        return $this->scan(ExifJpeg::make(40, 20), 'v5c.jpg', 'image/jpeg', $fields);
     }
 
     private function scanReceipt(): \Psr\Http\Message\ResponseInterface

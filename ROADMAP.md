@@ -118,7 +118,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.5](docs/phases/phase-53.5.md) | API edges and narrow-screen fixes from the known-issues log + patch release | ✅ |
 | [53.6](docs/phases/phase-53.6.md) | Import fixes from the known-issues log + patch release | ✅ |
 | [53.7](docs/phases/phase-53.7.md) | API, webhook and MCP edges from the known-issues log + patch release | ✅ |
-| [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | 📋 |
+| [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | ✅ |
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*

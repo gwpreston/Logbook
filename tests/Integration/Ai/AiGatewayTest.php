@@ -123,6 +123,33 @@ final class AiGatewayTest extends AiTestCase
         self::assertSame(Location::Internet, $connection?->location, 'the new class is recorded');
     }
 
+    public function testTheRequestGoesToTheAddressTheLocationWasCheckedAgainst(): void
+    {
+        // K138: curl isn't left to look the name up again, so DNS can't answer one way to the check
+        // and another to the request.
+        [$app, $owner] = $this->setUpApp();
+        $this->dns->hosts['gpu.example.com'] = ['192.168.1.20'];
+        $id = $this->network($app, 'GPU box', 'http://gpu.example.com:8080/v1');
+        $this->assign($app, $id, 'qwen', AiTaskName::Ask, [Capability::Tools]);
+        $this->provider->queue('openai/text');
+
+        $this->service($app, AiGateway::class)->run($owner, AiTaskName::Ask, self::hello());
+
+        self::assertSame(['gpu.example.com' => '192.168.1.20'], $this->provider->last()['options']['resolve'] ?? null);
+    }
+
+    public function testAnAddressWrittenAsSuchIsNotPinned(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $id = $this->network($app, 'Desktop', 'http://10.0.0.5/v1');
+        $this->assign($app, $id, 'qwen', AiTaskName::Ask, [Capability::Tools]);
+        $this->provider->queue('openai/text');
+
+        $this->service($app, AiGateway::class)->run($owner, AiTaskName::Ask, self::hello());
+
+        self::assertArrayNotHasKey('resolve', $this->provider->last()['options']);
+    }
+
     public function testAKeyIsReadFromTheEnvironmentAtCallTime(): void
     {
         [$app, $owner] = $this->setUpApp(['OPENAI_KEY' => 'sk-from-env']);

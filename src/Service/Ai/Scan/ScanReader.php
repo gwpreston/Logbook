@@ -83,20 +83,23 @@ final readonly class ScanReader
         if ($upload->status !== ScanStatus::Reading || $upload->storedPath === null) {
             return $upload;
         }
+        // *Scan the V5C* (Phase 53.8, #511): the wide redaction on every route, and never a picture to the Internet.
+        $registration = $upload->target === ScanTarget::Vehicle;
         try {
             $path = $this->files->absolutePath($upload->storedPath);
-            $prepared = $this->preparer->look($path, $upload->mime);
+            $prepared = $this->preparer->look($path, $upload->mime, $registration);
             if ($prepared->isPicture()) {
                 // How a photo or scan is read follows what is set up (§7.27 *Routing*).
                 $route = $this->router->picture($user);
                 $read = match (true) {
                     $route->problem !== null => $route->problem,
-                    $route->rules => $this->rules->readPicture($user, $path, $upload->mime),
+                    $route->rules => $this->rules->readPicture($user, $path, $upload->mime, $registration),
                     $route->ocr && $route->task !== null => $this->extractor->extractViaOcr(
                         $user,
                         $path,
                         $upload->mime,
                         $route->task,
+                        $registration,
                     ),
                     $route->crossCheck => $this->extractor->extractChecked(
                         $user,
@@ -104,17 +107,19 @@ final readonly class ScanReader
                         $upload->mime,
                         $prepared = $this->preparer->pictures($path, $upload->mime, $prepared->pageCount),
                         $route->ocrFirst,
+                        $registration,
                     ),
                     default => $this->extractor->extract(
                         $user,
                         $prepared = $this->preparer->pictures($path, $upload->mime, $prepared->pageCount),
+                        $registration,
                     ),
                 };
             } else {
                 // A text PDF: by `read_text`'s model, or without AI when none reads for the user.
                 $read = $this->router->modelReadsText($user)
-                    ? $this->extractor->extract($user, $prepared)
-                    : $this->rules->readText($user, $prepared);
+                    ? $this->extractor->extract($user, $prepared, $registration)
+                    : $this->rules->readText($user, $prepared, $registration);
             }
         } catch (Throwable) {
             $prepared = null;

@@ -195,6 +195,11 @@ php bin/ai-eval.php --scans --via=ocr --verbose
 
 and the results (flags and false flags per kind; field accuracy per kind
 for both routes, 53.2's acceptance criterion 3) are recorded here.
+*Run on 2026-10-20 in Phase 53.8* (LM Studio, gemma-3-12b): vision
+model 71–83% of fields per kind (50–83% in the `--crosscheck` run),
+through OCR 0–85% (9 of 10 photos and
+scans under OCR's 30 words); no value marked by the cross-check, none
+falsely. The tables are in [53.8](phase-53.8.md)'s *Eval results*.
 
 ---
 

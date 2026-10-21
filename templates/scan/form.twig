@@ -7,7 +7,8 @@
  # A plain multipart form; with JS it says it is reading while it posts.
  #}
 {% set active_nav = 'log' %}
-{% set heading = 'scan.title'|trans %}
+{# *Scan the V5C* (Phase 53.8, #511): started from a vehicle's page. #}
+{% set heading = (v5c_vehicle ? 'scan.v5c.title' : 'scan.title')|trans %}
 
 {% block title %}{{ heading }} · {{ parent() }}{% endblock %}
 
@@ -16,13 +17,15 @@
         <header class="page-header">
             <div>
                 <h1 class="page-header__title">{{ heading }}</h1>
-                <p class="page-header__lead">{{ 'scan.lead'|trans }}</p>
+                <p class="page-header__lead">{{ v5c_vehicle ? 'scan.v5c.lead'|trans({vehicle: v5c_vehicle.name()}) : 'scan.lead'|trans }}</p>
             </div>
         </header>
 
         {% block modal_body %}
         {% if errors is not empty %}
-            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ 'form.has_errors'|trans }}</span></div>
+            {# With no form to show (no vehicle to log to), the reason itself, not "check the fields" (K137). #}
+            {% set error = has_vehicles ? null : (errors|first) %}
+            <div class="alert alert--error" role="alert">{{ ui.icon('error') }}<span>{{ error ? trans(error.key, error.params) : 'form.has_errors'|trans }}</span></div>
         {% endif %}
 
         {% if rules %}
@@ -36,7 +39,15 @@
                 {{ ai.location(connection.location) }}
                 <span>{{ ('scan.where.' ~ connection.location.value)|trans({connection: connection.name}) }}</span>
             </p>
-            {% if ocr_engine %}
+            {% if v5c_vehicle %}
+                {# #511: such a scan goes to an Internet connection only as text, so the V5C warnings aren't needed. #}
+                {% if connection.location.value == 'internet' and (ocr_engine or ocr_checks) %}
+                    <p class="ask-where ask-where--note" data-scan-v5c-text>{{ ui.icon('document_scanner') }}<span>{{ 'scan.v5c.internet'|trans({connection: connection.name}) }}</span></p>
+                {% elseif connection.location.value == 'internet' %}
+                    {# No OCR: a V5C photo can't go to the Internet at all (#511). #}
+                    <p class="alert alert--warning" role="note" data-scan-v5c-no-ocr>{{ ui.icon('warning') }}<span>{{ 'scan.problem.registration_text_only'|trans }}</span></p>
+                {% endif %}
+            {% elseif ocr_engine %}
                 {# Photos go as text, with a spotted V5C's reference removed (§7.27 *Where it goes*). #}
                 <p class="ask-where ask-where--note" data-scan-ocr>{{ ui.icon('document_scanner') }}<span>{{ ('scan.where.ocr_' ~ ocr_engine)|trans({connection: connection.name}) }}</span></p>
                 {% if connection.location.value == 'internet' %}
@@ -73,7 +84,12 @@
                     <p class="field__hint" id="f-file-hint">{{ (reads_pictures ? 'scan.hint.file' : (text_only ? 'scan.hint.file_send_text' : 'scan.hint.file_text_only'))|trans({max: max_upload_mb}) }}</p>
                     {{ ui.field_error(errors, 'file') }}
                 </div>
-                {{ ui.select('vehicle_id', 'scan.field.vehicle'|trans, values, errors, vehicle_options, {hint: 'scan.hint.vehicle'|trans}) }}
+                {% if v5c_vehicle %}
+                    <input type="hidden" name="vehicle_id" value="{{ v5c_vehicle.id }}">
+                    <p class="field"><span class="field__label">{{ 'scan.v5c.vehicle'|trans }}</span> <span>{{ v5c_vehicle.name() }}</span></p>
+                {% else %}
+                    {{ ui.select('vehicle_id', 'scan.field.vehicle'|trans, values, errors, vehicle_options, {hint: 'scan.hint.vehicle'|trans}) }}
+                {% endif %}
             </section>
             <p class="field__hint">{{ 'scan.hint.check'|trans }}</p>
             <div class="btn-row">
