@@ -47,6 +47,7 @@ final class OneLineProcessorTest extends TestCase
 
     public function testTextWithoutLineBreaksIsUnchanged(): void
     {
-        self::assertSame('Failed sign-in for "admin" from 203.0.113.9', OneLineProcessor::line('Failed sign-in for "admin" from 203.0.113.9'));
+        $line = 'Failed sign-in for "admin" from 203.0.113.9';
+        self::assertSame($line, OneLineProcessor::line($line));
     }
 }

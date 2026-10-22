@@ -96,25 +96,24 @@ final class GroundingCheck
     }
 
     /**
-     * A token's readings (#454, K47): in the user's locale, and as a raw
-     * value (a dot decimal) when it is written as one. A source's number the
-     * locale can't read is read the other way round, so a German display
-     * string still supplies its value; an answer's number never is, and a
-     * source's number the locale can read never is either, or a raw `1.459`
-     * would supply 1459 in English.
+     * A token's readings (#454, K47). A number written as a raw value (plain
+     * digits, at most one dot) is read in the user's locale and as a dot
+     * decimal, never with a comma decimal: a raw `1.459` is never 1459 in
+     * English. Any other number in a source is read both ways, so a display
+     * string in another format still supplies its value; in an answer, only
+     * in the user's locale.
      *
      * @return list<string>
      */
     private function readings(string $token, string $locale, bool $answer): array
     {
         $decimal = self::decimalSeparator($locale);
-        $local = $this->read($token, $decimal);
         $raw = preg_match('/^[-−]?\d+(?:\.\d+)?$/u', trim($token)) === 1;
 
         return array_values(array_unique(array_filter([
-            $local,
+            $this->read($token, $decimal),
             $raw ? $this->read($token, '.') : null,
-            !$answer && $local === null ? $this->read($token, $decimal === '.' ? ',' : '.') : null,
+            !$raw && !$answer ? $this->read($token, $decimal === '.' ? ',' : '.') : null,
         ], static fn (?string $r): bool => $r !== null)));
     }
 

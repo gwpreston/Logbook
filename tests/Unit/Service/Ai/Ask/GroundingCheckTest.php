@@ -81,13 +81,21 @@ final class GroundingCheckTest extends TestCase
     public function testAnEnglishGroupedNumberIsNeverReadAsADecimal(): void
     {
         $result = ['{"price":{"per_litre":"1.459","display":"£1.459/l"},"volume":{"litres":"45.123","display":"45.12 l"}}'];
-        $check = static fn (string $answer, string $locale): array => (new GroundingCheck())->ungrounded($answer, $result, $locale);
+        $check = static fn (string $answer, string $locale): array
+            => (new GroundingCheck())->ungrounded($answer, $result, $locale);
 
         self::assertSame(['1,459', '45,123'], $check('It cost £1,459 per litre for 45,123 litres.', 'en_GB'));
         self::assertSame([], $check('It cost £1.459 per litre for 45.123 litres.', 'en_GB'));
         self::assertSame([], $check('Es kostete 1,459 € pro Liter für 45,123 Liter.', 'de_DE'), 'the German reading');
         self::assertSame([], $check('Der Rohwert ist 1.459.', 'de_DE'), 'a raw value the model copied as it was');
         self::assertSame(['1,5'], $check('About 1,5 litres.', 'en_GB'), 'not a number in English, so not grounded');
+
+        $question = ['Over 5,000 km with a budget of 1,250?'];
+        self::assertSame(
+            [],
+            (new GroundingCheck())->ungrounded('Sur 5 000 km, budget 1 250 €', $question, 'fr_FR'),
+            'a grouped number in the question is still read both ways',
+        );
     }
 
     /**
@@ -97,7 +105,8 @@ final class GroundingCheckTest extends TestCase
     public function testAPlainSpaceGroupsThousands(): void
     {
         $result = ['{"total":{"amount":"1234.56","currency":"EUR"}}'];
-        $check = static fn (string $answer, string $locale): array => (new GroundingCheck())->ungrounded($answer, $result, $locale);
+        $check = static fn (string $answer, string $locale): array
+            => (new GroundingCheck())->ungrounded($answer, $result, $locale);
 
         self::assertSame([], $check('Insgesamt 1 234,56 €.', 'de_DE'));
         self::assertSame([], $check('Total : 1 234,56 €.', 'fr_FR'));
@@ -107,7 +116,8 @@ final class GroundingCheckTest extends TestCase
         $counts = ['{"fill_ups":3,"distance":{"km":"400"}}'];
         self::assertSame([], (new GroundingCheck())->ungrounded('3 400 km', $counts, 'en_GB'), 'two figures side by side');
         self::assertSame(['13 400'], (new GroundingCheck())->ungrounded('13 400 km', $counts, 'en_GB'), '13 is in neither');
-        self::assertSame([], (new GroundingCheck())->ungrounded('3 and 400', ['Fill-ups 3 400 km'], 'en_GB'), 'a source’s parts count too');
+        $grouped = ['Fill-ups 3 400 km'];
+        self::assertSame([], (new GroundingCheck())->ungrounded('3 and 400', $grouped, 'en_GB'), 'a source’s parts count too');
     }
 
     public function testRoundFiguresAreCheckedWhateverAnotherReadingWouldBe(): void

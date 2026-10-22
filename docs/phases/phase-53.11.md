@@ -195,16 +195,25 @@ tagged.
       in German still matches; `1 234,56 €` and `Cost 1 234.56` match
       1234.56; "3 400" with 3 and 400 in the results isn't flagged.
       *Built:* "both readings" for the tool results and the context
-      couldn't stay as it was: a raw `1.459` read the other way is 1459,
-      so `£1,459` in English still matched it. They are read like an
-      answer (the locale, plus the dot decimal for a raw value), and the
-      other way only when the locale can't read them, so a display
-      string in another format still supplies its value. An answer's
+      couldn't stay quite as it was: a raw `1.459` read the other way is
+      1459, so `£1,459` in English still matched it. A number written as
+      a raw value is read in the locale and as a dot decimal only; any
+      other number there is still read both ways, so a display string in
+      another format, or an English-grouped number in a French question,
+      still supplies its value. An answer's
       number the locale can't read (`1,5` in English) is flagged rather
       than skipped, as spec §7.26 checks every figure. Spec §7.26 and
       `docs/ai.md` say so.
-- [ ] The Ask evals (`bin/ai-eval.php`, the ai-evaluator agent): no
-      answer that was grounded on master is flagged now.
+- [x] The Ask evals (`bin/ai-eval.php`, the ai-evaluator agent): no
+      answer that was grounded on master is flagged now. *2026-10-22:*
+      the ai-evaluator's deterministic pass (1,672 generated answers in
+      en_GB, en_US, de_DE and fr_FR, plus 35 probes, on this branch and
+      on master; no model) found no correct answer in the user's locale
+      newly flagged. It found one regression, which is now fixed: an
+      English-grouped number in a French question no longer supplied its
+      value. Answers in another locale's format are flagged, as #454
+      decided (#551). `bin/ai-eval.php` needs a live model; none was
+      set up, so it wasn't run.
 
 ### 53.11.3 Finish
 
@@ -227,6 +236,14 @@ tagged.
   `translations/`.
 
 ## Open questions
+
+- **#551. An answer's figure in another locale's format** (found while
+  building, by the ai-evaluator). Since #454 an answer's number is read
+  in the user's locale only, so a correct `1.284,50` in an English answer
+  is flagged. Read a number the locale can't read at all, with both a
+  group and a decimal separator, the other way? *Needs a decision;*
+  carried in [`open-questions.md`](open-questions.md). Built as #454
+  says until then.
 
 - **#448. K29: a part's distance warranty while it is stored.**
   *Decided 2026-10-21:* (3) only distance while fitted counts; a stored

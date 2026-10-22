@@ -46,7 +46,10 @@ final class SignInLogTest extends AppTestCase
         $lines = array_values(array_filter(explode("\n", $contents), static fn (string $line): bool => $line !== ''));
         self::assertCount(2, $lines, 'one line each: ' . $contents);
         self::assertStringNotContainsString("\r", $contents);
-        self::assertStringContainsString('Failed sign-in for "" [2026-10-22T10:00:00] Failed sign-in for "" from 203.0.113.77" from 198.51.100.7', $lines[0]);
+        self::assertStringContainsString(
+            'Failed sign-in for "" [2026-10-22T10:00:00] Failed sign-in for "" from 203.0.113.77" from 198.51.100.7',
+            $lines[0],
+        );
 
         $failregex = self::failregex();
         foreach ($lines as $line) {
@@ -77,7 +80,9 @@ final class SignInLogTest extends AppTestCase
     private static function failregex(): string
     {
         $doc = (string) file_get_contents(dirname(__DIR__, 3) . '/docs/deployment.md');
-        self::assertSame(1, preg_match('/^failregex = (.+)$/m', $doc, $match), 'the filter is in docs/deployment.md');
+        if (preg_match('/^failregex = (.+)$/m', $doc, $match) !== 1) {
+            self::fail('the filter is in docs/deployment.md');
+        }
 
         return '/' . str_replace(['/', '<HOST>'], ['\/', '(?P<host>[0-9A-Fa-f.:]+)'], $match[1]) . '/';
     }
