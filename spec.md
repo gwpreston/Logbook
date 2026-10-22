@@ -12234,7 +12234,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.11.md`](docs/phases/phase-53.11.md).
 - **Phase 53.12 — Tap targets, narrow screens and SQLite search from the
-  known-issues log + patch release** (in progress). Compact controls (soft
+  known-issues log + patch release** (✅). Compact controls (soft
   buttons, segmented tabs, back and card links, `<summary>` rows,
   breakdown label links) get a 44 × 44 px hit area at narrow widths and
   keep how they look (§8 *Tap targets*, K55, #457); the Parts and
@@ -12243,10 +12243,11 @@ task breakdowns live in the per-phase files; this is the map.
   *For your insurer*, K16); a *Coming up* row's cost wraps at 375 px
   instead of squeezing its title to nothing (§7.18, §8, K41); on SQLite
   the AI model and station name searches escape `_` and `%` and match
-  non-ASCII capitals, as the other engines do (§7.25, §7.33, K51).
-  Released on its own as a patch after 53.11's release (#546, decided
-  2026-10-21). No migration. See
-  [`phase-53.12.md`](docs/phases/phase-53.12.md).
+  non-ASCII capitals, as the other engines do (§7.25, §7.34, K51; on
+  MySQL and MariaDB they also ignore accents, K144, #552). Releases
+  v3.19.4, a patch on its own after 53.11's release (#546, decided
+  2026-10-21). No migration.
+  See [`phase-53.12.md`](docs/phases/phase-53.12.md).
 - **Phase 53.13 — CSV import round trip and part warranty details from
   the known-issues log + patch release** (planned). A year-first date is
   read under every import date order, a date alone at noon (§7.13, K57,

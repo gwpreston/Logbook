@@ -6,8 +6,8 @@ pages' small links and buttons with them, a *Coming up* row with a cost
 keeps its title readable at 375 px, and on SQLite the AI model and
 station searches find names with `_`, `%` and non-ASCII capitals.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.11's release, a patch release
+Status: ✅ complete · releases **v3.19.4**, a patch release after Phase
+53.11's (#546) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.11](phase-53.11.md). Like 52.1,
 52.2 and 53.5–53.11, it takes a few small open rows: K16 (LOW), K35
@@ -209,16 +209,19 @@ tagged.
 
 ### 53.12.3 Finish
 
-- [ ] Known-issues rows K16, K35, K41, K51 and K55 *Fixed*; spec §8
-      *Tap targets* no longer says "not yet built everywhere".
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K16, K35, K41, K51 and K55 *Fixed*; spec §8
+      *Tap targets* no longer says "not yet built everywhere". *Done:*
+      K144 (MySQL and MariaDB searches ignore accents) recorded, with
+      #552.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (the design-reviewer at 375 px among the agents),
       then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.11's
-      release (#546).
+- [x] `VERSION` 3.19.4, CHANGELOG 3.19.4, README status: the patch
+      after 53.11's release (#546).
+- [ ] Tag `v3.19.4` once merged.
 
 ## Acceptance criteria
 
@@ -232,6 +235,14 @@ tagged.
   `translations/`.
 
 ## Open questions
+
+- **#552. Accents in the AI model and station searches** (found while
+  building, K144). MySQL and MariaDB's collation ignores accents, so
+  `öl` also finds "Olhandel" there; PostgreSQL and SQLite match accents
+  exactly. Accent-sensitive everywhere, accent-insensitive everywhere,
+  or left as it is? *Needs a decision;* carried in
+  [`open-questions.md`](open-questions.md), best decided with #452.
+  Nothing in this phase changes it.
 
 - **#457. Tap targets at narrow widths** (K16, K35, K55). *Decided
   2026-10-21* (when Phase 53.11 was planned): (3) compact controls keep

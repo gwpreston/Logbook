@@ -122,7 +122,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | ✅ |
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | ✅ |
 | [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | ✅ |
-| [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | 🚧 |
+| [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | ✅ |
 | [53.13](docs/phases/phase-53.13.md) | CSV import round trip and part warranty details from the known-issues log + patch release | 📋 |
 | [53.14](docs/phases/phase-53.14.md) | Claude scans and large imports from the known-issues log + patch release | 📋 |
 | [53.15](docs/phases/phase-53.15.md) | OCR speed and the PaddleOCR image from the known-issues log + patch release | 📋 |
