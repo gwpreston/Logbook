@@ -1617,7 +1617,7 @@ reads an answer's numbers the way the user's language writes them.*
 - Log lines keep outside text on one line, and `docs/deployment.md`
   gives a tested fail2ban filter (K45, #461).
 - The grounding check reads `£1,459` as 1459 in English and accepts
-  plain-space grouping (K47, K59, #454). No migration. Patch release.
+  plain-space grouping (K47, K59, #454). No migration. Releases v3.19.3.
 
 → [`phase-53.11.md`](docs/phases/phase-53.11.md)
 
