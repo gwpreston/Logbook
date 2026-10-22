@@ -6,7 +6,7 @@ pages' small links and buttons with them, a *Coming up* row with a cost
 keeps its title readable at 375 px, and on SQLite the AI model and
 station searches find names with `_`, `%` and non-ASCII capitals.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.11's release, a patch release
 
 This is the next batch after [Phase 53.11](phase-53.11.md). Like 52.1,
@@ -133,8 +133,16 @@ tagged.
 
 ### 53.12.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-22:* #457 and #546
+      were decided when the batch was planned, and spec §8 *Tap targets*
+      already carries #457. Every question still *Needs a decision* is
+      about a row listed under *Not in scope* or code this phase doesn't
+      change; #452 (accents in usernames, K44) is untouched by K51, as
+      no username lookup or index uses SQL `LOWER()`. No open row
+      besides K16, K35, K41, K51 and K55 is in the code this phase
+      changes. Spec first: §7.18 *Narrow rows*, §7.25 and §7.34 the
+      searches, §7.39 the blank date, §8 *Tap targets*.
 
 ### 53.12.1 Tap targets and narrow screens
 

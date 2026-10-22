@@ -5412,6 +5412,12 @@ nothing about reminders (§7.6). Derived on every read
   dashboard's vehicle filter, ordered as the card, and the *Next 3 months*
   and 12-month totals as the card shows them; *View all* links to
   `/upcoming` keeping `?vehicle=`.
+- **Narrow rows** (Phase 53.12, K41): on the page, the card and the
+  widget, an item's expected cost and its "as of" date may shrink and
+  wrap under the cost, so at 375 px, or in a narrow dashboard column,
+  the title and its line underneath keep their width and the title link
+  stays a visible target (§8, WCAG 1.4.10). Log rows elsewhere keep their
+  amount on one line.
 - **CSV** `/upcoming.csv` with the page's filter (§7.7 *CSV export*).
 - **Finance** (Phase 29.2, §7.32): each active agreement's payments in
   the horizon as one line per vehicle ("Finance payments, 12 × £312.40"),
@@ -6960,7 +6966,9 @@ request to any model service.
   are kept for the picker; a model can also be typed by name, for servers
   that don't list. Only models the admin **adds** to the connection
   appear in task pickers. The list has a search box (a plain GET filter;
-  OpenRouter lists hundreds).
+  OpenRouter lists hundreds). It matches a model's name or label
+  containing the text, ignoring case (non-ASCII letters too), with `_`
+  and `%` taken literally, the same on every engine (Phase 53.12, K51).
   - **Capabilities** (`tools`, `images`, `json`): the provider's report
     where it gives one (OpenRouter's `supported_parameters` and
     `architecture.input_modalities`; Anthropic's `capabilities.image_input`
@@ -9409,7 +9417,9 @@ third party.
     station's position, best name match first (similarity of normalised
     names, the brand counted as part of the name), each with name, brand,
     address and distance. Without a position, matches by postcode, then by
-    name. *Link* saves it; *Unlink* removes it.
+    name (the name or brand containing the station's words, ignoring case,
+    non-ASCII letters too, with `_` and `%` taken literally, the same on
+    every engine; Phase 53.12, K51). *Link* saves it; *Unlink* removes it.
   - Once linked, its address, postcode, position, opening hours and
     grades sold are kept up to date from the feed (on linking and after
     each sync), unless *Keep my details* is ticked. Its name and brand are
@@ -10587,8 +10597,9 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   "Reverted: {n}" only when there are some.
   - ***Mark declared*** (`Manage`) is a small form on the page: a date,
     today by default (not in the future, not before the modification's
-    date), and a button for **all** the undeclared listed modifications, or
-    one on each row. Rows already declared are never changed by the bulk
+    date; a blank date says "Enter the date you told your insurer" beside
+    the field and marks nothing, Phase 53.12, K16), and a button for
+    **all** the undeclared listed modifications, or one on each row. Rows already declared are never changed by the bulk
     button. A row's *Clear* (`Manage`) puts it back to *Not declared yet*.
     Each is a POST (CSRF, no JS needed), writes `declared_on` and sends
     the modification's `entry.updated` webhook.
@@ -10771,8 +10782,10 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   interactive control has a hit area at least 44 × 44 px. Compact
   controls (soft buttons, segmented tabs, back and card links,
   `<summary>` rows, breakdown label links) keep how they look: the hit
-  area grows by padding or a pseudo-element, not the drawn control. Not
-  yet built everywhere (K16, K35, K55; Phase 53.12).
+  area grows by padding or a pseudo-element, not the drawn control. One
+  narrow-width block in `assets/css/app.css` does it, with the Parts and
+  insurer pages' inline row links and row buttons (Phase 53.12, K16,
+  K35, K55).
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
   and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
@@ -12221,7 +12234,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.11.md`](docs/phases/phase-53.11.md).
 - **Phase 53.12 — Tap targets, narrow screens and SQLite search from the
-  known-issues log + patch release** (planned). Compact controls (soft
+  known-issues log + patch release** (in progress). Compact controls (soft
   buttons, segmented tabs, back and card links, `<summary>` rows,
   breakdown label links) get a 44 × 44 px hit area at narrow widths and
   keep how they look (§8 *Tap targets*, K55, #457); the Parts and
