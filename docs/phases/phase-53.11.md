@@ -6,8 +6,8 @@ stored part's page says its distance warranty is paused, a line break
 in a sign-in username can't forge a log line, and Ask's grounding check
 reads an answer's numbers the way the user's language writes them.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.10's release, a patch release
+Status: ✅ complete · releases **v3.19.3**, a patch release after Phase
+53.10's (#545) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.10](phase-53.10.md). Like 52.1,
 52.2 and 53.5–53.10, it takes a few small open rows: K28 and K29
@@ -145,18 +145,23 @@ tagged.
 
 ### 53.11.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-22:* #448, #454, #461
+      and #545 were decided when the batch was planned, and spec §7.6,
+      §7.9, §7.26 and §7.39 already carry them. Every question still
+      *Needs a decision* is about a row listed under *Not in scope* or
+      code this phase doesn't change. No open row besides K28, K29,
+      K45, K47 and K59 is in the code this phase changes.
 
 ### 53.11.1 Part warranties
 
-- [ ] `ReminderGenerator::fromPart()`: the occurrence uses the
+- [x] `ReminderGenerator::fromPart()`: the occurrence uses the
       warranty's end mileage whatever the part's status (K28).
       `PartWarrantyReminderTest`: a time-and-distance warranty's
       reminder marked done stays done, with its notification state,
       after the part is stored and again after it is refitted; editing
       the warranty still re-opens it.
-- [ ] `PartWarranty::distancePaused`; the `parts.warranty` macro shows
+- [x] `PartWarranty::distancePaused`; the `parts.warranty` macro shows
       `part.warranty.paused_both` and `part.warranty.paused` in every
       catalogue in `translations/` (K29, #448). `PartsTest`: a stored
       part's page shows the paused wording for a time-and-distance and
@@ -166,36 +171,63 @@ tagged.
 
 ### 53.11.2 Sign-in log and Ask
 
-- [ ] A processor in `src/Support/` that puts CR and LF in the message
+- [x] A processor in `src/Support/` that puts CR and LF in the message
       and string context values on one line, added to the logger in
       `config/dependencies.php` (K45, #461). A test: a sign-in with a
       username holding `\n` and a forged
       `Failed sign-in for "x" from 203.0.113.77` line writes one log
       line, with debug on and off, and the fail2ban filter in
       `docs/deployment.md` matches the real client address only; a
-      debug stack trace is still logged.
-- [ ] `docs/deployment.md`: the fail2ban filter and jail, beside the
-      failed sign-in paragraph (#461).
-- [ ] `GroundingCheck::numbers()`: the other reading only for a raw
+      debug stack trace is still logged. *Built:*
+      `Support\Log\OneLineProcessor`, `SignInLogTest`,
+      `OneLineProcessorTest`.
+- [x] `docs/deployment.md`: the fail2ban filter and jail, beside the
+      failed sign-in paragraph (#461). The filter reads the address
+      from the log line's context at its end, never from the username.
+      Checked with `fail2ban-regex` 1.1.0 (Alpine 3.20) against real
+      log lines, a forged username among them: it found only the real
+      client addresses, IPv4 and IPv6.
+- [x] `GroundingCheck::numbers()`: the other reading only for a raw
       value (K47, #454); the plain space as a group separator, with a
       space-grouped number grounded by its whole value or each part
       (K59). `GroundingCheckTest`: `£1,459 per litre` and `45,123
       litres` in English are flagged against 1.459 and 45.123; `1.459`
       in German still matches; `1 234,56 €` and `Cost 1 234.56` match
       1234.56; "3 400" with 3 and 400 in the results isn't flagged.
-- [ ] The Ask evals (`bin/ai-eval.php`, the ai-evaluator agent): no
-      answer that was grounded on master is flagged now.
+      *Built:* "both readings" for the tool results and the context
+      couldn't stay quite as it was: a raw `1.459` read the other way is
+      1459, so `£1,459` in English still matched it. A number written as
+      a raw value is read in the locale and as a dot decimal only; any
+      other number there is still read both ways, so a display string in
+      another format, or an English-grouped number in a French question,
+      still supplies its value. An answer's
+      number the locale can't read (`1,5` in English) is flagged rather
+      than skipped, as spec §7.26 checks every figure. Spec §7.26 and
+      `docs/ai.md` say so.
+- [x] The Ask evals (`bin/ai-eval.php`, the ai-evaluator agent): no
+      answer that was grounded on master is flagged now. *2026-10-22:*
+      the ai-evaluator's deterministic pass (1,672 generated answers in
+      en_GB, en_US, de_DE and fr_FR, plus 35 probes, on this branch and
+      on master; no model) found no correct answer in the user's locale
+      newly flagged. It found one regression, which is now fixed: an
+      English-grouped number in a French question no longer supplied its
+      value. Answers in another locale's format are flagged, as #454
+      decided (#551). `bin/ai-eval.php` needs a live model; none was
+      set up, so it wasn't run.
 
 ### 53.11.3 Finish
 
-- [ ] Known-issues rows K28, K29, K45, K47 and K59 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K28, K29, K45, K47 and K59 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status. *Done:* spec §7.26 and
+      `docs/ai.md` say how the tool results are read (K47) and that an
+      answer's figure in another locale's format is flagged (#551).
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.10's
-      release (#545).
+- [x] `VERSION` 3.19.3, CHANGELOG 3.19.3, README status: the patch
+      after 53.10's release (#545).
+- [ ] Tag `v3.19.3` once merged.
 
 ## Acceptance criteria
 
@@ -207,6 +239,14 @@ tagged.
   `translations/`.
 
 ## Open questions
+
+- **#551. An answer's figure in another locale's format** (found while
+  building, by the ai-evaluator). Since #454 an answer's number is read
+  in the user's locale only, so a correct `1.284,50` in an English answer
+  is flagged. Read a number the locale can't read at all, with both a
+  group and a decimal separator, the other way? *Needs a decision;*
+  carried in [`open-questions.md`](open-questions.md). Built as #454
+  says until then.
 
 - **#448. K29: a part's distance warranty while it is stored.**
   *Decided 2026-10-21:* (3) only distance while fitted counts; a stored

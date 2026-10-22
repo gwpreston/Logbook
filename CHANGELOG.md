@@ -6,6 +6,47 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.3] — 2026-10-22
+
+Phase 53.11: **Warranty reminders, Ask's figures and the sign-in log
+from the known-issues log**
+([docs/phases/phase-53.11.md](docs/phases/phase-53.11.md)). No
+migration: pull and restart.
+
+### Fixed
+- **A "Warranty ends" reminder you marked *Checked it*** stays checked
+  when its part is taken off and kept as a spare, and again when it is
+  refitted. Before, a warranty with a distance limit opened again, and
+  you could be notified again. Editing the warranty still opens it
+  (K28).
+- **A stored part's distance warranty** is paused while the part is off
+  the vehicle, and its page says so: "In warranty until 3 Mar 2029,
+  distance paused while off the vehicle", or "In warranty, paused while
+  off the vehicle" when there is only a distance limit. A stored part
+  with only a distance limit has no reminder; one with a time limit
+  reminds by its date (K29, #448).
+- **Ask Logbook's figure check** reads an answer's numbers the way your
+  language writes them: `£1,459 per litre` in English is now marked
+  "Logbook didn't provide this figure" when the price was 1.459, instead
+  of passing. A value copied as the tool gave it (`1.459`) still
+  matches. A figure written in another language's format is marked too
+  (K47, #454).
+- **Thousands grouped with a plain space** (`1 234,56 €`,
+  `Cost 1 234.56`) are read as one figure by the check, as no-break
+  spaces already were (K59).
+
+### Security
+- **A line break in a sign-in username** can't write a log line of its
+  own: everything Logbook logs from outside is written on one line. Before,
+  a crafted username could write a "failed sign-in" line with someone
+  else's address, so fail2ban banned them instead of the sender (K45,
+  #461).
+
+### Documentation
+- **The deployment guide** gives a fail2ban filter and jail for failed
+  sign-ins, checked with `fail2ban-regex`, and says how to log to a file
+  in Docker.
+
 ## [3.19.2] — 2026-10-21
 
 Phase 53.10: **Scan and import edges from the known-issues log**

@@ -301,7 +301,10 @@ maintenance, compliance or other).
 **The grounding check.** Every number in an answer is compared with what
 the tools returned, the context and your question, allowing for the
 rounding the answer shows and for local formats (`1,284.50` and
-`1.284,50`). A figure that matches nothing is highlighted, with "Logbook
+`1.284,50`, thousands grouped with a comma, a dot, a space or `'`). The
+answer's figures are read in your language's format, so `£1,459` in
+English is 1,459 pounds and never matches a price of 1.459; a raw value
+copied as the tool gave it (`1.459`) still matches. A figure that matches nothing is highlighted, with "Logbook
 didn't provide this figure. Check it against the sources." Dates, years
 and small counts are not checked. The answer is still shown.
 

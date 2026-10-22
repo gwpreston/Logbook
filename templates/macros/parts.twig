@@ -17,9 +17,16 @@
     {% if not modification.isReverted() and modification.data.declaredOn is null %}<span class="pill pill--soon">{{ 'insurer.not_declared'|trans }}</span>{% endif %}
 {%- endmacro %}
 
-{# "In warranty until 3 Mar 2028 or 85,400 mi" / "Warranty ended 3 Mar 2028". #}
+{# "In warranty until 3 Mar 2028 or 85,400 mi" / "Warranty ended 3 Mar 2028";
+ # a stored part's distance is paused while it is off the vehicle (#448). #}
 {% macro warranty(warranty) -%}
     {%- if warranty is null -%}
+    {%- elseif warranty.active and warranty.distancePaused -%}
+        {%- if warranty.until -%}
+            {{ 'part.warranty.paused_both'|trans({date: warranty.until|local_date}) }}
+        {%- else -%}
+            {{ 'part.warranty.paused'|trans }}
+        {%- endif -%}
     {%- elseif warranty.active -%}
         {%- if warranty.until and warranty.untilKm is not null -%}
             {{ 'part.warranty.until_both'|trans({date: warranty.until|local_date, distance: warranty.untilKm|distance(0)}) }}

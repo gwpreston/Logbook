@@ -7271,6 +7271,8 @@ return [
             'until_date' => 'Garantie bis {date}',
             'until_distance' => 'Garantie bis {distance}',
             'active' => 'Mit Garantie',
+            'paused_both' => 'Garantie bis {date}, Strecke pausiert, solange das Teil nicht verbaut ist',
+            'paused' => 'Mit Garantie, pausiert, solange das Teil nicht verbaut ist',
             'ended_on' => 'Garantie endete am {date}',
             'ended' => 'Garantie abgelaufen',
         ],

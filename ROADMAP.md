@@ -121,9 +121,12 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.8](docs/phases/phase-53.8.md) | V5C privacy and cross-check accuracy from 53.3's review + release | ✅ |
 | [53.9](docs/phases/phase-53.9.md) | Install, dev-stack and test-run edges from the known-issues log + patch release | ✅ |
 | [53.10](docs/phases/phase-53.10.md) | Scan and import edges from the known-issues log + patch release | ✅ |
-| [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | 📋 |
+| [53.11](docs/phases/phase-53.11.md) | Warranty reminders, Ask's figures and the sign-in log from the known-issues log + patch release | ✅ |
 | [53.12](docs/phases/phase-53.12.md) | Tap targets, narrow screens and SQLite search from the known-issues log + patch release | 📋 |
 | [53.13](docs/phases/phase-53.13.md) | CSV import round trip and part warranty details from the known-issues log + patch release | 📋 |
+| [53.14](docs/phases/phase-53.14.md) | Claude scans and large imports from the known-issues log + patch release | 📋 |
+| [53.15](docs/phases/phase-53.15.md) | OCR speed and the PaddleOCR image from the known-issues log + patch release | 📋 |
+| [53.16](docs/phases/phase-53.16.md) | SQLite upgrade ids and the Windows smoke test from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1656,6 +1659,37 @@ page says when its warranty reminder is on.*
   tick is on (K39, #547). No migration. Patch release.
 
 → [`phase-53.13.md`](docs/phases/phase-53.13.md)
+
+---
+
+## Phase 53.14 — Claude scans and large imports from the known-issues log + patch release
+
+*Four open rows with no open question: Claude scans send a schema
+Anthropic accepts (K132), a 5,000-row CSV commits inside the time limit
+(K49), a large CSV is read without three copies in memory (K129), and
+warranty reminders cost fewer queries (K19).*
+
+→ [`phase-53.14.md`](docs/phases/phase-53.14.md)
+
+---
+
+## Phase 53.15 — OCR speed and the PaddleOCR image from the known-issues log + patch release
+
+*Three open rows with no open question: Imagick prepares photos as fast
+as GD (K74), OCR preparation overlaps the vision request (K105), and the
+PaddleOCR image is pinned and non-root (K79).*
+
+→ [`phase-53.15.md`](docs/phases/phase-53.15.md)
+
+---
+
+## Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the known-issues log + patch release
+
+*Two open rows with no open question: a SQLite table rebuild keeps its
+id counter (K63), and the smoke test runs from Git Bash on Windows
+(K142).*
+
+→ [`phase-53.16.md`](docs/phases/phase-53.16.md)
 
 ---
 

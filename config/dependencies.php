@@ -66,6 +66,7 @@ use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\OidcConfig;
 use Logbook\Support\Config\ProxyAuthConfig;
 use Logbook\Support\Log\LogThrottle;
+use Logbook\Support\Log\OneLineProcessor;
 use Logbook\Support\Net\HostResolver;
 use Logbook\Support\Net\CachingHostResolver;
 use Logbook\Support\Net\SystemHostResolver;
@@ -185,7 +186,14 @@ return [
         $capture = $c->get(RunCapture::class);
         assert($capture instanceof RunCapture);
 
-        return new Logger('logbook', [$handler, $capture], [new PsrLogMessageProcessor()], new DateTimeZone('UTC'));
+        // Outside text on one line before it goes into the message (K45, #461): a stack trace
+        // still needs the formatter's line breaks, so they stay on.
+        return new Logger(
+            'logbook',
+            [$handler, $capture],
+            [new OneLineProcessor(), new PsrLogMessageProcessor()],
+            new DateTimeZone('UTC'),
+        );
     },
 
     // Background jobs, in the order a scheduler pass runs them (spec.md §5 *Jobs*).

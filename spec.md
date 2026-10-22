@@ -7166,9 +7166,15 @@ request to any model service.
   read in the user's locale (`1,459` is 1459 in English, 1.459 in
   German), and the other way only when it is written as a raw value
   (plain digits, a dot decimal, no grouping), so a 1000× error isn't
-  matched (#454, Phase 53.11). A plain space, a no-break or narrow
-  no-break space and `'` group thousands; a number grouped with plain
-  spaces also matches when each of its parts does. Unmatched numbers, other
+  matched (#454, Phase 53.11). An answer's number the user's locale can't
+  read (`1,5` in English) matches nothing. The numbers it is matched
+  against are read both ways, so a display string in another format
+  still supplies its value, except that one written as a raw value is
+  never read with a comma decimal: a raw `1.459` is never 1459 in
+  English. A plain space, a
+  no-break or narrow no-break space and `'` group thousands; a number
+  grouped with plain spaces also matches when each of its parts does, and
+  supplies its parts as well as its whole value. Unmatched numbers, other
   than dates, years and small counts (1–12) the question itself contained,
   are highlighted with "Logbook didn't provide this figure. Check it
   against the sources." The answer is still shown.
@@ -12202,7 +12208,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.10.md`](docs/phases/phase-53.10.md).
 - **Phase 53.11 — Warranty reminders, Ask's figures and the sign-in log
-  from the known-issues log + patch release** (planned). A part's
+  from the known-issues log + patch release** (✅). A part's
   "Warranty ends" reminder keeps *Checked it* when the part is stored or
   refitted (§7.6, K28); a stored part's distance warranty is paused and
   its page says so (§7.39, K29, #448); outside text such as a sign-in
@@ -12210,9 +12216,10 @@ task breakdowns live in the per-phase files; this is the map.
   line, and `docs/deployment.md` gives a tested fail2ban filter (§7.9,
   K45, #461); the grounding check reads an answer's numbers in the
   user's locale, the other way only for a raw value (§7.26, K47, #454),
-  and accepts a plain space between thousands (§7.26, K59). Released on
-  its own as a patch after 53.10's release (#545, decided 2026-10-21).
-  No migration. See [`phase-53.11.md`](docs/phases/phase-53.11.md).
+  and accepts a plain space between thousands (§7.26, K59). Releases
+  v3.19.3, a patch on its own after 53.10's release (#545, decided
+  2026-10-21). No migration.
+  See [`phase-53.11.md`](docs/phases/phase-53.11.md).
 - **Phase 53.12 — Tap targets, narrow screens and SQLite search from the
   known-issues log + patch release** (planned). Compact controls (soft
   buttons, segmented tabs, back and card links, `<summary>` rows,
@@ -12238,6 +12245,24 @@ task breakdowns live in the per-phase files; this is the map.
   Released on its own as a patch after 53.12's release (#548, decided
   2026-10-21). No migration. See
   [`phase-53.13.md`](docs/phases/phase-53.13.md).
+- **Phase 53.14 — Claude scans and large imports from the known-issues
+  log + patch release** (planned). A scan on a Claude model sends a
+  schema Anthropic accepts and falls back to `tool` mode on a refusal
+  (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
+  large CSV is read without three copies in memory (K129); warranty
+  reminders are paged and batched (K19). Behaviour-preserving, no
+  migration. See [`phase-53.14.md`](docs/phases/phase-53.14.md).
+- **Phase 53.15 — OCR speed and the PaddleOCR image from the
+  known-issues log + patch release** (planned). Imagick prepares a photo
+  for OCR as fast as GD (K74); OCR preparation overlaps the vision
+  request (K105); the optional PaddleOCR image installs pinned packages
+  and runs as non-root (K79). No migration. See
+  [`phase-53.15.md`](docs/phases/phase-53.15.md).
+- **Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the
+  known-issues log + patch release** (planned). A SQLite table rebuild
+  keeps its id counter (K63); `bin/smoke-test.sh` runs from Git Bash on
+  Windows (K142). No migration. See
+  [`phase-53.16.md`](docs/phases/phase-53.16.md).
 
 ---
 

@@ -7,6 +7,7 @@ namespace Logbook\Service\Part;
 use DateTimeImmutable;
 use Logbook\Domain\Part\Part;
 use Logbook\Domain\Part\PartFitting;
+use Logbook\Domain\Part\PartStatus;
 use Logbook\Domain\Part\WarrantyStart;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
@@ -14,7 +15,8 @@ use Logbook\Support\Number\Decimal;
 /**
  * Where a part's warranty stands (spec.md §7.39, #427): its end date (months
  * from the purchase date or the first fitting) and end mileage (a distance
- * from the first fitting's mileage), and whether every set limit still holds.
+ * from the first fitting's mileage), whether every set limit still holds, and
+ * whether its distance is paused while the part is off the vehicle.
  */
 final readonly class PartWarranty
 {
@@ -26,6 +28,8 @@ final readonly class PartWarranty
         public bool $active,
         /** The day it ended, when it ended by date. */
         public ?DateTimeImmutable $endedOn = null,
+        /** A distance limit that isn't counting: the part is stored and the warranty still holds (#448). */
+        public bool $distancePaused = false,
     ) {
     }
 
@@ -59,6 +63,9 @@ final readonly class PartWarranty
         $measuredAt = PartTimeline::open($fittings) !== null ? $currentKm : PartTimeline::last($fittings)?->removedOdometerKm;
         $byKm = $untilKm === null || $measuredAt === null || Decimal::compare($measuredAt, $untilKm) <= 0;
         // A limit that can't be measured yet (no start, no fitted mileage) never ends it.
-        return new self($until, $untilKm, $byDate && $byKm, !$byDate ? $until : null);
+        $active = $byDate && $byKm;
+        $paused = $active && $data->warrantyKm !== null && $part->status === PartStatus::Stored;
+
+        return new self($until, $untilKm, $active, !$byDate ? $until : null, $paused);
     }
 }

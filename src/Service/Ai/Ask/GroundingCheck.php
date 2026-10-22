@@ -14,9 +14,14 @@ use IntlDateFormatter;
  * it once rounded to the decimals the answer shows. Dates, times, years and
  * small counts (1–12) are never flagged.
  *
- * Numbers are read in the user's locale ("1,284.50" in English,
- * "1.284,50" in German) and, failing that, the other way round, so a raw
- * value copied from a tool result ("1284.50") still matches.
+ * An answer's numbers are read in the user's locale ("1,284.50" in
+ * English, "1.284,50" in German), and the other way round only when written
+ * as a raw value ("1284.50", "1.459"), so a raw value copied from a tool
+ * result still matches but `1,459` in English is never 1.459 (#454, K47).
+ * Tool results, the context and the question are read both ways. A plain
+ * space groups thousands too; a number grouped with plain spaces also
+ * matches when each of its parts does, since "3 400" may be two figures
+ * (K59).
  */
 final class GroundingCheck
 {
@@ -25,9 +30,9 @@ final class GroundingCheck
      * with an optional fraction. Not part of a longer word or number.
      */
     private const string NUMBER = '/(?<![\p{L}\d])[-−]?'
-        . '(?:\d{1,3}(?:[,.\x{00A0}\x{202F}\']\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)(?![\d])/u';
+        . '(?:\d{1,3}(?:[,. \x{00A0}\x{202F}\']\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)(?![\d])/u';
 
-    private const array GROUP_SEPARATORS = ["\u{00A0}", "\u{202F}", "'"];
+    private const array GROUP_SEPARATORS = [' ', "\u{00A0}", "\u{202F}", "'"];
 
     /** @var array<string, list<string>> month names per locale */
     private array $months = [];
@@ -43,7 +48,11 @@ final class GroundingCheck
     {
         $allowed = [];
         foreach ($sources as $source) {
-            foreach ($this->numbers($source, $locale, false) as [, $readings]) {
+            foreach ($this->numbers($source, $locale, false) as [$text, $readings]) {
+                // "3 400" in a source is 3400, and 3 and 400 as well.
+                foreach (self::parts($text) as $part) {
+                    $readings = [...$readings, ...$this->readings($part, $locale, false)];
+                }
                 foreach ($readings as $reading) {
                     $allowed[$reading] = true;
                 }
@@ -52,7 +61,7 @@ final class GroundingCheck
 
         $flagged = [];
         foreach ($this->numbers($answer, $locale, true) as [$text, $readings]) {
-            if (self::isTrivial($text) || $this->matches($readings, $allowed)) {
+            if (self::isTrivial($text) || $this->matches($readings, $allowed) || $this->partsMatch($text, $locale, $allowed)) {
                 continue;
             }
             $flagged[$text] = true;
@@ -63,28 +72,81 @@ final class GroundingCheck
 
     /**
      * Each number in $text, as written and as canonical decimals ("1284.5")
-     * in every reading that makes sense. Dates and times are left out.
+     * in every reading that makes sense: none when an answer's number can't
+     * be read in the user's locale. In an answer, dates and times are left
+     * out.
      *
      * @return list<array{string, list<string>}>
      */
-    public function numbers(string $text, string $locale, bool $skipDates): array
+    public function numbers(string $text, string $locale, bool $answer): array
     {
-        if ($skipDates) {
+        if ($answer) {
             $text = $this->withoutDates($text, $locale);
         }
         preg_match_all(self::NUMBER, $text, $matches);
         $found = [];
         foreach ($matches[0] as $token) {
-            $readings = array_values(array_unique(array_filter([
-                $this->read($token, self::decimalSeparator($locale)),
-                $this->read($token, self::decimalSeparator($locale) === '.' ? ',' : '.'),
-            ], static fn (?string $r): bool => $r !== null)));
-            if ($readings !== []) {
+            $readings = $this->readings($token, $locale, $answer);
+            if ($readings !== [] || $answer) {
                 $found[] = [trim($token), $readings];
             }
         }
 
         return $found;
+    }
+
+    /**
+     * A token's readings (#454, K47). A number written as a raw value (plain
+     * digits, at most one dot) is read in the user's locale and as a dot
+     * decimal, never with a comma decimal: a raw `1.459` is never 1459 in
+     * English. Any other number in a source is read both ways, so a display
+     * string in another format still supplies its value; in an answer, only
+     * in the user's locale.
+     *
+     * @return list<string>
+     */
+    private function readings(string $token, string $locale, bool $answer): array
+    {
+        $decimal = self::decimalSeparator($locale);
+        $raw = preg_match('/^[-−]?\d+(?:\.\d+)?$/u', trim($token)) === 1;
+
+        return array_values(array_unique(array_filter([
+            $this->read($token, $decimal),
+            $raw ? $this->read($token, '.') : null,
+            !$raw && !$answer ? $this->read($token, $decimal === '.' ? ',' : '.') : null,
+        ], static fn (?string $r): bool => $r !== null)));
+    }
+
+    /**
+     * A number grouped with plain spaces is grounded when each of its parts
+     * is (K59): "3 400" may be 3 and 400 side by side.
+     *
+     * @param array<string, true> $allowed
+     */
+    private function partsMatch(string $text, string $locale, array $allowed): bool
+    {
+        $parts = self::parts($text);
+        if ($parts === []) {
+            return false;
+        }
+        foreach ($parts as $part) {
+            if (!self::isTrivial($part) && !$this->matches($this->readings($part, $locale, true), $allowed)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The parts of a number grouped with plain spaces ("1 234,56" → "1",
+     * "234,56"); none for any other number.
+     *
+     * @return list<string>
+     */
+    private static function parts(string $text): array
+    {
+        return str_contains($text, ' ') ? explode(' ', $text) : [];
     }
 
     /**
@@ -140,7 +202,7 @@ final class GroundingCheck
             return null;
         }
         $whole = str_replace([$group, ...self::GROUP_SEPARATORS], '', $parts[0], $groups);
-        $grouped = '/^\d{1,3}(?:[' . preg_quote($group, '/') . "\u{00A0}\u{202F}']\\d{3})+$/u";
+        $grouped = '/^\d{1,3}(?:[' . preg_quote($group, '/') . " \u{00A0}\u{202F}']\\d{3})+$/u";
         if ($groups > 0 && preg_match($grouped, $parts[0]) !== 1) {
             return null;
         }

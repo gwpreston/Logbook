@@ -300,7 +300,9 @@ final class ReminderGenerator
             vehicleId: $vehicleId,
             source: ReminderSource::Part,
             sourceId: $part->id,
-            occurrence: ($warranty->until?->format('Y-m-d') ?? '') . '|' . ($untilKm ?? ''),
+            // The warranty's own end, whatever the part's status: storing or refitting it is the
+            // same occurrence, so a *Checked it* stays checked (K28).
+            occurrence: ($warranty->until?->format('Y-m-d') ?? '') . '|' . ($warranty->untilKm ?? ''),
             category: null,
             title: $title,
             dueOn: $warranty->until,

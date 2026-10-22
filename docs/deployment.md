@@ -78,7 +78,40 @@ Failed sign-ins are logged at `notice` level, e.g.
 `Failed sign-in for "admin" from 203.0.113.9`, so a tool such as fail2ban
 can watch the log (`LOG_PATH`) and ban repeat offenders. Behind a reverse
 proxy, make sure the web server logs/sees the real client address (Apache
-`mod_remoteip`, nginx `real_ip`).
+`mod_remoteip`, nginx `real_ip`). Outside text, such as a username, is
+always written on one line, so a username with a line break in it can't
+write a line that looks like a failed sign-in from someone else's address.
+
+fail2ban needs a file to read: set `LOG_PATH` to one (in Docker, a path in
+the data volume such as `/data/logbook.log`, read on the host through the
+volume's directory). This filter reads the address from the end of the
+line, where Logbook writes it, never from the username:
+
+```ini
+# /etc/fail2ban/filter.d/logbook.conf
+[Definition]
+failregex = ^\[\]\s*logbook\.NOTICE: Failed sign-in for .* \{.*"ip":"<HOST>"\}\s*$
+```
+
+fail2ban finds the timestamp itself and takes it out of the line before it
+applies the filter, which is why the filter starts with the empty `[]`.
+
+```ini
+# /etc/fail2ban/jail.d/logbook.conf
+[logbook]
+enabled  = true
+filter   = logbook
+logpath  = /srv/logbook/var/log/app.log
+port     = http,https
+maxretry = 5
+findtime = 10m
+bantime  = 1h
+```
+
+Check it against your log with
+`fail2ban-regex /srv/logbook/var/log/app.log /etc/fail2ban/filter.d/logbook.conf`.
+Behind a reverse proxy the ban has to happen where the client connects:
+fail2ban on the proxy's host, banning on its ports.
 
 | Container variable | Default | Purpose |
 |---|---|---|
