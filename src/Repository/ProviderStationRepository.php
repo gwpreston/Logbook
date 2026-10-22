@@ -421,7 +421,9 @@ final readonly class ProviderStationRepository
         }
         $rows = $this->select()
             ->where('provider = :provider', 'removed_at IS NULL')
-            ->andWhere('(LOWER(name) LIKE :text' . LikePattern::ESCAPE . ' OR LOWER(brand) LIKE :text' . LikePattern::ESCAPE . ')')
+            ->andWhere(
+                '(LOWER(name) LIKE :text' . LikePattern::ESCAPE . ' OR LOWER(brand) LIKE :text' . LikePattern::ESCAPE . ')',
+            )
             ->setParameter('provider', $provider)
             ->setParameter('text', LikePattern::containsLowered($text))
             ->orderBy('name')

@@ -166,7 +166,8 @@ final class InsurerListTest extends AppTestCase
         $blank = $browser->post($this->base, ['declared_on' => '', 'only' => 'all']);
         self::assertSame(422, $blank->getStatusCode());
         $page = self::body($blank);
-        self::assertStringContainsString('<p class="field__error" id="f-declared_on-error">Enter the date you told your insurer.</p>', $page);
+        $error = '<p class="field__error" id="f-declared_on-error">';
+        self::assertStringContainsString($error . 'Enter the date you told your insurer.</p>', $page);
         self::assertStringContainsString('aria-invalid="true"', $page);
         self::assertStringNotContainsString('not in the future', $page);
         self::assertStringContainsString('Cat-back exhaust', $page, 'the page is drawn again with its rows');
@@ -178,7 +179,7 @@ final class InsurerListTest extends AppTestCase
         self::assertNull($this->declared($a));
 
         $future = self::body($browser->post($this->base, ['declared_on' => '2026-11-01', 'only' => 'all']));
-        self::assertStringContainsString('<p class="field__error" id="f-declared_on-error">The date can&#039;t be after today.</p>', $future);
+        self::assertStringContainsString($error . 'The date can&#039;t be after today.</p>', $future);
         self::assertStringContainsString('value="2026-11-01"', $future, 'what was typed is kept');
         self::assertNull($this->declared($a));
     }

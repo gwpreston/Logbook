@@ -88,7 +88,7 @@ final class LikeSearchTest extends AiTestCase
         $row = $connection->fetchNumeric("SELECT LOWER('ÖLHANDEL Müller'), LOWER(NULL)");
 
         self::assertSame(['ölhandel müller', null], $row === false ? null : array_map(
-            static fn (mixed $value): ?string => $value === null ? null : (string) $value,
+            static fn (mixed $value): ?string => is_scalar($value) ? (string) $value : null,
             $row,
         ));
     }

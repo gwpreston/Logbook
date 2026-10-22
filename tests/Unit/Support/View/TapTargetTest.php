@@ -38,8 +38,9 @@ final class TapTargetTest extends TestCase
         $block = self::phoneBlock();
         $quoted = preg_quote($selector, '/');
         self::assertMatchesRegularExpression('/(^|,)\s*' . $quoted . '\s*(,[^{]*)?\{\s*position:\s*relative;\s*\}/m', $block);
-        self::assertSame(1, preg_match('/(^|,)\s*' . $quoted . '::after\s*(,[^{]*)?\{([^}]*)\}/m', $block, $m), $selector . '::after');
-        $rule = $m[3];
+        $after = '/(^|,)\s*' . $quoted . '::after\s*(,[^{]*)?\{([^}]*)\}/m';
+        self::assertSame(1, preg_match($after, $block, $m), $selector . '::after');
+        $rule = $m[3] ?? '';
         self::assertMatchesRegularExpression('/content:\s*"";/', $rule);
         self::assertMatchesRegularExpression('/position:\s*absolute;/', $rule);
         self::assertMatchesRegularExpression('/width:\s*max\(100%,\s*2\.75rem\);/', $rule);
@@ -69,13 +70,13 @@ final class TapTargetTest extends TestCase
     {
         $css = self::css();
         self::assertSame(1, preg_match('/\n\.list__end\.forecast-item__end \{([^}]*)\}/', $css, $m), 'the cost column rule');
-        self::assertMatchesRegularExpression('/flex:\s*0 1 auto;/', $m[1]);
-        self::assertMatchesRegularExpression('/max-width:\s*40%;/', $m[1]);
+        self::assertMatchesRegularExpression('/flex:\s*0 1 auto;/', $m[1] ?? '');
+        self::assertMatchesRegularExpression('/max-width:\s*40%;/', $m[1] ?? '');
         self::assertSame(1, preg_match('/\n\.forecast-item__end \.as-of \{([^}]*)\}/', $css, $m), 'the as-of rule');
-        self::assertMatchesRegularExpression('/white-space:\s*normal;/', $m[1]);
+        self::assertMatchesRegularExpression('/white-space:\s*normal;/', $m[1] ?? '');
         // Log rows keep their amount on one line.
         self::assertSame(1, preg_match('/\n\.list__end \{([^}]*)\}/', $css, $m));
-        self::assertMatchesRegularExpression('/flex:\s*none;/', $m[1]);
+        self::assertMatchesRegularExpression('/flex:\s*none;/', $m[1] ?? '');
 
         $forecast = (string) file_get_contents(Kernel::rootDir() . '/templates/macros/forecast.twig');
         self::assertStringContainsString('<span class="list__end forecast-item__end">', $forecast);
