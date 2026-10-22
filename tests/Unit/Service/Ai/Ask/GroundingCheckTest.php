@@ -74,6 +74,42 @@ final class GroundingCheckTest extends TestCase
         return (new GroundingCheck())->ungrounded($answer, [self::RESULT], $locale);
     }
 
+    /**
+     * K47, #454: an answer's number is read in the user's locale, and the other way only when
+     * written as a raw value, so a 1000× error is flagged.
+     */
+    public function testAnEnglishGroupedNumberIsNeverReadAsADecimal(): void
+    {
+        $result = ['{"price":{"per_litre":"1.459","display":"£1.459/l"},"volume":{"litres":"45.123","display":"45.12 l"}}'];
+        $check = static fn (string $answer, string $locale): array => (new GroundingCheck())->ungrounded($answer, $result, $locale);
+
+        self::assertSame(['1,459', '45,123'], $check('It cost £1,459 per litre for 45,123 litres.', 'en_GB'));
+        self::assertSame([], $check('It cost £1.459 per litre for 45.123 litres.', 'en_GB'));
+        self::assertSame([], $check('Es kostete 1,459 € pro Liter für 45,123 Liter.', 'de_DE'), 'the German reading');
+        self::assertSame([], $check('Der Rohwert ist 1.459.', 'de_DE'), 'a raw value the model copied as it was');
+        self::assertSame(['1,5'], $check('About 1,5 litres.', 'en_GB'), 'not a number in English, so not grounded');
+    }
+
+    /**
+     * K59: a plain space groups thousands, and a space-grouped number is grounded by its whole
+     * value or by each of its parts.
+     */
+    public function testAPlainSpaceGroupsThousands(): void
+    {
+        $result = ['{"total":{"amount":"1234.56","currency":"EUR"}}'];
+        $check = static fn (string $answer, string $locale): array => (new GroundingCheck())->ungrounded($answer, $result, $locale);
+
+        self::assertSame([], $check('Insgesamt 1 234,56 €.', 'de_DE'));
+        self::assertSame([], $check('Total : 1 234,56 €.', 'fr_FR'));
+        self::assertSame([], $check('Cost 1 234.56', 'en_GB'));
+        self::assertSame(['1 299,00'], $check('Insgesamt 1 299,00 €.', 'de_DE'));
+
+        $counts = ['{"fill_ups":3,"distance":{"km":"400"}}'];
+        self::assertSame([], (new GroundingCheck())->ungrounded('3 400 km', $counts, 'en_GB'), 'two figures side by side');
+        self::assertSame(['13 400'], (new GroundingCheck())->ungrounded('13 400 km', $counts, 'en_GB'), '13 is in neither');
+        self::assertSame([], (new GroundingCheck())->ungrounded('3 and 400', ['Fill-ups 3 400 km'], 'en_GB'), 'a source’s parts count too');
+    }
+
     public function testRoundFiguresAreCheckedWhateverAnotherReadingWouldBe(): void
     {
         self::assertSame(['3,000'], $this->check('About £3,000 a year.'));

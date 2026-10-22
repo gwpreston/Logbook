@@ -7166,9 +7166,14 @@ request to any model service.
   read in the user's locale (`1,459` is 1459 in English, 1.459 in
   German), and the other way only when it is written as a raw value
   (plain digits, a dot decimal, no grouping), so a 1000× error isn't
-  matched (#454, Phase 53.11). A plain space, a no-break or narrow
-  no-break space and `'` group thousands; a number grouped with plain
-  spaces also matches when each of its parts does. Unmatched numbers, other
+  matched (#454, Phase 53.11). An answer's number the user's locale can't
+  read (`1,5` in English) matches nothing. The numbers it is matched
+  against are read the same way, and also the other way when the locale
+  can't read them, so a display string in another format still supplies
+  its value but a raw `1.459` is never 1459 in English. A plain space, a
+  no-break or narrow no-break space and `'` group thousands; a number
+  grouped with plain spaces also matches when each of its parts does, and
+  supplies its parts as well as its whole value. Unmatched numbers, other
   than dates, years and small counts (1–12) the question itself contained,
   are highlighted with "Logbook didn't provide this figure. Check it
   against the sources." The answer is still shown.

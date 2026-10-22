@@ -187,13 +187,22 @@ tagged.
       Checked with `fail2ban-regex` 1.1.0 (Alpine 3.20) against real
       log lines, a forged username among them: it found only the real
       client addresses, IPv4 and IPv6.
-- [ ] `GroundingCheck::numbers()`: the other reading only for a raw
+- [x] `GroundingCheck::numbers()`: the other reading only for a raw
       value (K47, #454); the plain space as a group separator, with a
       space-grouped number grounded by its whole value or each part
       (K59). `GroundingCheckTest`: `£1,459 per litre` and `45,123
       litres` in English are flagged against 1.459 and 45.123; `1.459`
       in German still matches; `1 234,56 €` and `Cost 1 234.56` match
       1234.56; "3 400" with 3 and 400 in the results isn't flagged.
+      *Built:* "both readings" for the tool results and the context
+      couldn't stay as it was: a raw `1.459` read the other way is 1459,
+      so `£1,459` in English still matched it. They are read like an
+      answer (the locale, plus the dot decimal for a raw value), and the
+      other way only when the locale can't read them, so a display
+      string in another format still supplies its value. An answer's
+      number the locale can't read (`1,5` in English) is flagged rather
+      than skipped, as spec §7.26 checks every figure. Spec §7.26 and
+      `docs/ai.md` say so.
 - [ ] The Ask evals (`bin/ai-eval.php`, the ai-evaluator agent): no
       answer that was grounded on master is flagged now.
 
