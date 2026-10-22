@@ -15,6 +15,7 @@ use Logbook\Domain\FuelPrices\FeedStation;
 use Logbook\Domain\FuelPrices\ListedPrice;
 use Logbook\Domain\FuelPrices\ProviderStation;
 use Logbook\Support\Cache\RequestReads;
+use Logbook\Support\Database\LikePattern;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 use Logbook\Support\Geo\Haversine;
@@ -418,13 +419,11 @@ final readonly class ProviderStationRepository
         if ($text === '') {
             return [];
         }
-        $like = '%' . addcslashes(mb_strtolower($text), '%_\\') . '%';
-
         $rows = $this->select()
             ->where('provider = :provider', 'removed_at IS NULL')
-            ->andWhere('(LOWER(name) LIKE :text OR LOWER(brand) LIKE :text)')
+            ->andWhere('(LOWER(name) LIKE :text' . LikePattern::ESCAPE . ' OR LOWER(brand) LIKE :text' . LikePattern::ESCAPE . ')')
             ->setParameter('provider', $provider)
-            ->setParameter('text', $like)
+            ->setParameter('text', LikePattern::containsLowered($text))
             ->orderBy('name')
             ->setMaxResults($limit)
             ->fetchAllAssociative();

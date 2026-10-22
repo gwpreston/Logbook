@@ -191,12 +191,21 @@ tagged.
 
 ### 53.12.2 SQLite search
 
-- [ ] `AiModelRepository::listForConnection()` and
+- [x] `AiModelRepository::listForConnection()` and
       `ProviderStationRepository::searchByName()`: `ESCAPE '!'`;
       `SessionInitMiddleware` registers `LOWER` as `mb_strtolower()` on
       SQLite (K51). A test on every engine: `gpt_4` finds `gpt_4o` and
       not `gpt-4o`, `50%` finds "Sale 50% off", `öl` finds "Ölhandel
-      Müller", `a!b` finds `a!b`.
+      Müller", `a!b` finds `a!b`. *Done:* `SupportDatabaseLikePattern`
+      builds the pattern and the `ESCAPE '!'` clause for both;
+      `SessionInitMiddleware` registers `LOWER` on the `PdoSqlite`
+      connection DBAL opens (deterministic, `NULL` stays `NULL`). No
+      index or username lookup uses SQL `LOWER()`. `LikeSearchTest`
+      passes on SQLite, PostgreSQL, MySQL and MariaDB and fails on SQLite
+      without the fix. On MySQL and MariaDB `öl` also finds "Olhandel":
+      their collation ignores accents, as K44 found for usernames. That
+      was so before this phase; it is open question #552 (found while
+      building), and the test pins each engine's result.
 
 ### 53.12.3 Finish
 
