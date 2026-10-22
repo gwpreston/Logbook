@@ -437,6 +437,50 @@ final class PartsTest extends AppTestCase
         self::assertDoesNotMatchRegularExpression('/name="warranty_from" value="purchase"[^>]* checked/', $edit);
     }
 
+    /**
+     * K29, #448: a stored part's distance warranty is paused while it is off the vehicle, and its
+     * page says so; a fitted part's page gives the end mileage.
+     */
+    public function testAStoredPartsPageSaysItsDistanceWarrantyIsPaused(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $v = '/vehicles/' . $golf->id;
+
+        foreach (
+            [
+                'Turbo' => ['warranty_months' => '36', 'warranty_distance' => '60000'],
+                'Clutch' => ['warranty_distance' => '30000'],
+            ] as $name => $warranty
+        ) {
+            $added = $browser->post($v . '/parts/new', [
+                'name' => $name, 'condition' => 'new', 'warranty_from' => 'fitting',
+                'on_car' => '1', 'fit_on' => '2026-03-03', 'fit_odometer' => '10000',
+            ] + $warranty);
+            self::assertSame(303, $added->getStatusCode());
+        }
+        $parts = $this->parts($app, $golf);
+        $turbo = $v . '/parts/' . $parts['Turbo']->id;
+        $clutch = $v . '/parts/' . $parts['Clutch']->id;
+
+        $fitted = self::body($browser->get($turbo));
+        self::assertStringContainsString('In warranty until 3 Mar 2029 or', $fitted, 'fitted: the end mileage');
+        self::assertStringNotContainsString('paused', $fitted);
+        self::assertStringNotContainsString('paused', self::body($browser->get($clutch)));
+
+        foreach ([$turbo, $clutch] as $page) {
+            $removed = $browser->post($page . '/remove', ['removed_on' => '2026-06-01', 'outcome' => 'kept']);
+            self::assertSame(303, $removed->getStatusCode());
+        }
+        self::assertStringContainsString(
+            'In warranty until 3 Mar 2029, distance paused while off the vehicle',
+            self::body($browser->get($turbo)),
+        );
+        self::assertStringContainsString('In warranty, paused while off the vehicle', self::body($browser->get($clutch)));
+    }
+
     public function testFitRemoveAndRevert(): void
     {
         $app = $this->createApp();

@@ -7282,6 +7282,8 @@ return [
             'until_date' => 'In warranty until {date}',
             'until_distance' => 'In warranty until {distance}',
             'active' => 'In warranty',
+            'paused_both' => 'In warranty until {date}, distance paused while off the vehicle',
+            'paused' => 'In warranty, paused while off the vehicle',
             'ended_on' => 'Warranty ended {date}',
             'ended' => 'Warranty ended',
         ],

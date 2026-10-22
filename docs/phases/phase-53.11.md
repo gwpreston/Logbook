@@ -155,13 +155,13 @@ tagged.
 
 ### 53.11.1 Part warranties
 
-- [ ] `ReminderGenerator::fromPart()`: the occurrence uses the
+- [x] `ReminderGenerator::fromPart()`: the occurrence uses the
       warranty's end mileage whatever the part's status (K28).
       `PartWarrantyReminderTest`: a time-and-distance warranty's
       reminder marked done stays done, with its notification state,
       after the part is stored and again after it is refitted; editing
       the warranty still re-opens it.
-- [ ] `PartWarranty::distancePaused`; the `parts.warranty` macro shows
+- [x] `PartWarranty::distancePaused`; the `parts.warranty` macro shows
       `part.warranty.paused_both` and `part.warranty.paused` in every
       catalogue in `translations/` (K29, #448). `PartsTest`: a stored
       part's page shows the paused wording for a time-and-distance and

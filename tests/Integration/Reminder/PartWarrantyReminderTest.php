@@ -109,6 +109,48 @@ final class PartWarrantyReminderTest extends ReminderTestCase
         self::assertNull($this->reminderFor($part), 'a spare never reaches a distance limit, whatever the car does');
     }
 
+    public function testCheckedItStaysCheckedWhenThePartIsStoredAndRefitted(): void
+    {
+        // K28: storing or refitting the part is the same occurrence; only editing the warranty re-opens it.
+        $part = $this->part('Turbo', months: 36, km: '20000', fitOn: '2026-01-10', fitKm: '10000');
+        $this->reading('29500', '2026-09-29T09:00:00Z');
+        self::assertSame(1, $this->service($this->app, ScheduledTasks::class)->run()->remindersSent);
+        $reminder = $this->reminderFor($part);
+        self::assertNotNull($reminder);
+        self::assertSame(ReminderStatus::Due, $reminder->notifiedStatus);
+        $this->service($this->app, ReminderService::class)->markDone($reminder);
+
+        $this->parts()->remove(
+            $this->golf,
+            $part,
+            new DateTimeImmutable('2026-09-30'),
+            '29500.000',
+            new PartRemoval(RemovalOutcome::Kept),
+            new DateTimeZone('UTC'),
+        );
+        $this->sync();
+        $stored = $this->reminderFor($part);
+        self::assertSame(ReminderStatus::Done, $stored?->status, 'stored: still checked');
+        self::assertSame(ReminderStatus::Due, $stored->notifiedStatus, 'its notification state kept');
+        self::assertSame('2029-01-10|30000.000', $stored->occurrence);
+        self::assertNull($stored->dueKm, 'judged by its date alone while stored');
+
+        $this->clock->set(new DateTimeImmutable('2026-10-15T10:00:00Z'));
+        $part = $this->parts()->get($this->golf, $part->id);
+        $this->parts()->fit($this->golf, $part, new DateTimeImmutable('2026-10-15'), '29600.000', new DateTimeZone('UTC'));
+        $this->sync();
+        $refitted = $this->reminderFor($part);
+        self::assertSame(ReminderStatus::Done, $refitted?->status, 'refitted: still checked');
+        self::assertSame(ReminderStatus::Due, $refitted->notifiedStatus);
+        self::assertSame('30000.000', $refitted->dueKm, 'the end mileage back once it is on the car');
+
+        $this->parts()->update($this->golf, $part, $this->data($part, months: 48));
+        $this->sync();
+        $edited = $this->reminderFor($part);
+        self::assertSame(ReminderStatus::Due, $edited?->status, 'editing the warranty re-opens it');
+        self::assertNull($edited->notifiedStatus, 'and forgets what was sent');
+    }
+
     public function testTheDateAndTheMileageBothSet(): void
     {
         $part = $this->part('Gearbox', months: 36, km: '60000', bought: '2026-08-01', fitOn: '2026-08-05', fitKm: '40000');
