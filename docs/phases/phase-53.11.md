@@ -171,16 +171,22 @@ tagged.
 
 ### 53.11.2 Sign-in log and Ask
 
-- [ ] A processor in `src/Support/` that puts CR and LF in the message
+- [x] A processor in `src/Support/` that puts CR and LF in the message
       and string context values on one line, added to the logger in
       `config/dependencies.php` (K45, #461). A test: a sign-in with a
       username holding `\n` and a forged
       `Failed sign-in for "x" from 203.0.113.77` line writes one log
       line, with debug on and off, and the fail2ban filter in
       `docs/deployment.md` matches the real client address only; a
-      debug stack trace is still logged.
-- [ ] `docs/deployment.md`: the fail2ban filter and jail, beside the
-      failed sign-in paragraph (#461).
+      debug stack trace is still logged. *Built:*
+      `Support\Log\OneLineProcessor`, `SignInLogTest`,
+      `OneLineProcessorTest`.
+- [x] `docs/deployment.md`: the fail2ban filter and jail, beside the
+      failed sign-in paragraph (#461). The filter reads the address
+      from the log line's context at its end, never from the username.
+      Checked with `fail2ban-regex` 1.1.0 (Alpine 3.20) against real
+      log lines, a forged username among them: it found only the real
+      client addresses, IPv4 and IPv6.
 - [ ] `GroundingCheck::numbers()`: the other reading only for a raw
       value (K47, #454); the plain space as a group separator, with a
       space-grouped number grounded by its whole value or each part
