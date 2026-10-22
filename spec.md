@@ -12245,6 +12245,24 @@ task breakdowns live in the per-phase files; this is the map.
   Released on its own as a patch after 53.12's release (#548, decided
   2026-10-21). No migration. See
   [`phase-53.13.md`](docs/phases/phase-53.13.md).
+- **Phase 53.14 — Claude scans and large imports from the known-issues
+  log + patch release** (planned). A scan on a Claude model sends a
+  schema Anthropic accepts and falls back to `tool` mode on a refusal
+  (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
+  large CSV is read without three copies in memory (K129); warranty
+  reminders are paged and batched (K19). Behaviour-preserving, no
+  migration. See [`phase-53.14.md`](docs/phases/phase-53.14.md).
+- **Phase 53.15 — OCR speed and the PaddleOCR image from the
+  known-issues log + patch release** (planned). Imagick prepares a photo
+  for OCR as fast as GD (K74); OCR preparation overlaps the vision
+  request (K105); the optional PaddleOCR image installs pinned packages
+  and runs as non-root (K79). No migration. See
+  [`phase-53.15.md`](docs/phases/phase-53.15.md).
+- **Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the
+  known-issues log + patch release** (planned). A SQLite table rebuild
+  keeps its id counter (K63); `bin/smoke-test.sh` runs from Git Bash on
+  Windows (K142). No migration. See
+  [`phase-53.16.md`](docs/phases/phase-53.16.md).
 
 ---
 
