@@ -6,7 +6,7 @@ stored part's page says its distance warranty is paused, a line break
 in a sign-in username can't forge a log line, and Ask's grounding check
 reads an answer's numbers the way the user's language writes them.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.10's release, a patch release
 
 This is the next batch after [Phase 53.10](phase-53.10.md). Like 52.1,
@@ -145,8 +145,13 @@ tagged.
 
 ### 53.11.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-22:* #448, #454, #461
+      and #545 were decided when the batch was planned, and spec §7.6,
+      §7.9, §7.26 and §7.39 already carry them. Every question still
+      *Needs a decision* is about a row listed under *Not in scope* or
+      code this phase doesn't change. No open row besides K28, K29,
+      K45, K47 and K59 is in the code this phase changes.
 
 ### 53.11.1 Part warranties
 
