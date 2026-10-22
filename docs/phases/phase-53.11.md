@@ -6,8 +6,8 @@ stored part's page says its distance warranty is paused, a line break
 in a sign-in username can't forge a log line, and Ask's grounding check
 reads an answer's numbers the way the user's language writes them.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.10's release, a patch release
+Status: ✅ complete · releases **v3.19.3**, a patch release after Phase
+53.10's (#545) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.10](phase-53.10.md). Like 52.1,
 52.2 and 53.5–53.10, it takes a few small open rows: K28 and K29
@@ -217,14 +217,17 @@ tagged.
 
 ### 53.11.3 Finish
 
-- [ ] Known-issues rows K28, K29, K45, K47 and K59 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K28, K29, K45, K47 and K59 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status. *Done:* spec §7.26 and
+      `docs/ai.md` say how the tool results are read (K47) and that an
+      answer's figure in another locale's format is flagged (#551).
 - [ ] Merge review, then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.10's
-      release (#545).
+- [x] `VERSION` 3.19.3, CHANGELOG 3.19.3, README status: the patch
+      after 53.10's release (#545).
+- [ ] Tag `v3.19.3` once merged.
 
 ## Acceptance criteria
 

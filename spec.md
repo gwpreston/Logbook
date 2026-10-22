@@ -12208,7 +12208,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.10.md`](docs/phases/phase-53.10.md).
 - **Phase 53.11 — Warranty reminders, Ask's figures and the sign-in log
-  from the known-issues log + patch release** (planned). A part's
+  from the known-issues log + patch release** (✅). A part's
   "Warranty ends" reminder keeps *Checked it* when the part is stored or
   refitted (§7.6, K28); a stored part's distance warranty is paused and
   its page says so (§7.39, K29, #448); outside text such as a sign-in
@@ -12216,9 +12216,10 @@ task breakdowns live in the per-phase files; this is the map.
   line, and `docs/deployment.md` gives a tested fail2ban filter (§7.9,
   K45, #461); the grounding check reads an answer's numbers in the
   user's locale, the other way only for a raw value (§7.26, K47, #454),
-  and accepts a plain space between thousands (§7.26, K59). Released on
-  its own as a patch after 53.10's release (#545, decided 2026-10-21).
-  No migration. See [`phase-53.11.md`](docs/phases/phase-53.11.md).
+  and accepts a plain space between thousands (§7.26, K59). Releases
+  v3.19.3, a patch on its own after 53.10's release (#545, decided
+  2026-10-21). No migration.
+  See [`phase-53.11.md`](docs/phases/phase-53.11.md).
 - **Phase 53.12 — Tap targets, narrow screens and SQLite search from the
   known-issues log + patch release** (planned). Compact controls (soft
   buttons, segmented tabs, back and card links, `<summary>` rows,
