@@ -7549,3 +7549,54 @@ p.stat__label {
     height: auto;
     padding-block: var(--space-2);
 }
+
+/*
+ * Tap targets on a phone (spec.md §8, #457; K16, K35, K55): compact controls
+ * keep how they look, and a centred ::after grows what a tap hits to at least
+ * 44 × 44 px. A tap on the pseudo-element is a tap on the control.
+ */
+@media (max-width: 47.99rem) {
+    .btn--soft,
+    .segmented__option,
+    .back-link,
+    .card__link,
+    a.breakdown__label,
+    summary,
+    .part-timeline__record,
+    .insurer-row__title a,
+    .insurer-row .btn--ghost {
+        position: relative;
+    }
+
+    .btn--soft::after,
+    .segmented__option::after,
+    .back-link::after,
+    .card__link::after,
+    a.breakdown__label::after,
+    summary::after,
+    .part-timeline__record::after,
+    .insurer-row__title a::after,
+    .insurer-row .btn--ghost::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100%, 2.75rem);
+        height: max(100%, 2.75rem);
+        transform: translate(-50%, -50%);
+    }
+}
+
+/*
+ * A *Coming up* row (spec.md §7.18 *Narrow rows*, K41): the cost may shrink and
+ * wrap under its pill, so the title keeps its room at 375 px and in a narrow
+ * dashboard column. Log rows keep `.list__end { flex: none }`.
+ */
+.list__end.forecast-item__end {
+    flex: 0 1 auto;
+    max-width: 40%;
+}
+
+.forecast-item__end .as-of {
+    white-space: normal;
+}

@@ -146,26 +146,48 @@ tagged.
 
 ### 53.12.1 Tap targets and narrow screens
 
-- [ ] The narrow-width hit-area block in `assets/css/app.css` for
+- [x] The narrow-width hit-area block in `assets/css/app.css` for
       `.btn--soft`, `.segmented__option`, `.back-link`, `.card__link`,
       `.breakdown__label` and `<summary>` rows (K55, #457). A
       `TapTargetTest` beside `TableWrapTest` checks the rule for each
       class; the pages K55 names checked at 375 px: every target at
       least 44 × 44 px, nothing drawn differently, no sideways scroll.
-- [ ] The Parts pages: the fitting-row link in `part_show.twig`, the
+      *Done:* the block is `@media (max-width: 47.99rem)` (below the
+      tablet width) and links only, `a.breakdown__label` (the report
+      rows' plain labels aren't controls).
+- [x] The Parts pages: the fitting-row link in `part_show.twig`, the
       title link and *Clear* in `insurer.twig` get the hit area (K35).
       `TapTargetTest` covers their classes; `part_show`,
       `modification_show`, `insurer` and `index` checked at 375 px.
-- [ ] `DeclareModificationsAction`: a blank date is a field error,
+      *Done:* the fitting row's record links carry
+      `.part-timeline__record`.
+- [x] `DeclareModificationsAction`: a blank date is a field error,
       `insurer.error.required` in every catalogue in `translations/`;
       the Parts toolbar wraps at narrow widths (K16). `InsurerListTest`:
       *Mark all* with a blank date shows the message beside the field
-      and marks nothing.
-- [ ] A `.forecast-item__end` rule and `.as-of` wrapping inside it
+      and marks nothing. *Done:* a blank or future date draws the page
+      again (422) with the error under the field and what was typed
+      kept; `InsurerPage` renders it for both actions, and the
+      `insurer.error.date` banner key is gone. The Parts toolbar already
+      wraps (`.toolbar` and `.btn-row` both `flex-wrap`): at 375 px its
+      export links take two lines and *Add part* and *Add modification*
+      a third, nothing crowded, so no change.
+- [x] A `.forecast-item__end` rule and `.as-of` wrapping inside it
       (K41). `TapTargetTest` (or a `ForecastRowTest`) checks the rule;
       the dashboard widget, a vehicle's overview and `/upcoming`
       checked at 375 px and in a narrow dashboard column at 1440 px:
-      the title link wider than 0 px and no text over text.
+      the title link wider than 0 px and no text over text. *Done:*
+      `max-width: 40%` (50% left a 91 px title at 375 px; 40% leaves
+      121 px). Without the rule two of the dashboard's five rows had a
+      0 px title at 375 px.
+- [x] Checked in the browser on the sample data (2026-10-22): at 375 px
+      the dashboard, `/upcoming`, the Golf's overview, Fuel,
+      Maintenance, History, Parts, a part, a modification, the insurer
+      page, Reports and Settings have every listed control's hit area at
+      least 44 × 44 px and no sideways scroll; the *Coming up* titles are
+      at least 121 px wide at 375 px and in the 1440 px dashboard column
+      (321 px rows). At 768, 1280 and 1440 px the hit-area block is off.
+      The block changes no colour, so dark mode draws as before.
 
 ### 53.12.2 SQLite search
 

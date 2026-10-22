@@ -156,6 +156,33 @@ final class InsurerListTest extends AppTestCase
         self::assertSame('2026-03-01', $this->declared($a), 'the day it was done is fine');
     }
 
+    public function testABlankOrFutureDateIsAnErrorBesideTheFieldAndMarksNothing(): void
+    {
+        // K16: the no-JS and crafted-request path; `required` stops a blank date in a browser.
+        $browser = $this->me;
+        $a = $this->modify('Cat-back exhaust', ModificationCategory::Exhaust, '2026-03-01', '0');
+        $b = $this->modify('Coilovers', ModificationCategory::Suspension, '2026-02-01', '0');
+
+        $blank = $browser->post($this->base, ['declared_on' => '', 'only' => 'all']);
+        self::assertSame(422, $blank->getStatusCode());
+        $page = self::body($blank);
+        self::assertStringContainsString('<p class="field__error" id="f-declared_on-error">Enter the date you told your insurer.</p>', $page);
+        self::assertStringContainsString('aria-invalid="true"', $page);
+        self::assertStringNotContainsString('not in the future', $page);
+        self::assertStringContainsString('Cat-back exhaust', $page, 'the page is drawn again with its rows');
+        self::assertNull($this->declared($a));
+        self::assertNull($this->declared($b));
+
+        $row = $browser->post($this->base, ['declared_on' => '', 'only' => (string) $a->id]);
+        self::assertSame(422, $row->getStatusCode());
+        self::assertNull($this->declared($a));
+
+        $future = self::body($browser->post($this->base, ['declared_on' => '2026-11-01', 'only' => 'all']));
+        self::assertStringContainsString('<p class="field__error" id="f-declared_on-error">The date can&#039;t be after today.</p>', $future);
+        self::assertStringContainsString('value="2026-11-01"', $future, 'what was typed is kept');
+        self::assertNull($this->declared($a));
+    }
+
     public function testAnyoneWhoCanViewReadsItAndOnlyManageDeclares(): void
     {
         $a = $this->modify('Stage 1 remap', ModificationCategory::Tune, '2026-05-10', '450.000');

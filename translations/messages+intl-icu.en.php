@@ -7110,7 +7110,7 @@ return [
         'declared_flash' => '{count, plural, one {# modification marked declared on {date}.} other {# modifications marked declared on {date}.}}',
         'cleared' => '{title} is back to not declared yet.',
         'error' => [
-            'date' => 'Choose a date that is not in the future.',
+            'required' => 'Enter the date you told your insurer.',
             'future' => 'The date can\'t be after today.',
         ],
     ],
