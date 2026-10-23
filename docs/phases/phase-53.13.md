@@ -6,8 +6,9 @@ without the apostrophe it adds against formulas, editing a part with no
 warranty start chooses *Purchase date* as a new part does, and the part
 page says when its warranty reminder is on.*
 
-Status: ✅ complete · releases **v3.19.5**, a patch release after Phase
-53.12's (#548) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.19.5**
+([#143](https://github.com/gwpreston16/Logbook/pull/143)), a patch
+release after Phase 53.12's (#548) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.12](phase-53.12.md). Like 52.1,
 52.2 and 53.5–53.12, it takes a few small open rows: K48 (MEDIUM, the
@@ -169,13 +170,13 @@ tagged.
       section); spec §13; ROADMAP status. *Done:* the import guide
       (`docs/import.md`) and the parts guide (`docs/parts.md`) say so
       too.
-- [ ] Merge review (the import-tester among the agents), then merge.
+- [x] Merge review (the import-tester among the agents), then merge.
 
 ### Release
 
 - [x] `VERSION` 3.19.5, CHANGELOG 3.19.5, README status: the patch
       after 53.12's release (#548).
-- [ ] Tag `v3.19.5` once merged.
+- [x] Tag `v3.19.5` once merged.
 
 ## Design review (2026-10-23)
 

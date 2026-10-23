@@ -1656,7 +1656,7 @@ page says when its warranty reminder is on.*
   `@`, tab or CR (K48, #455).
 - A part's edit form chooses *Purchase date* when no warranty start is
   stored (K71, #487); its page says "Reminder before it ends" when the
-  tick is on (K39, #547). No migration. Patch release.
+  tick is on (K39, #547). No migration. Releases v3.19.5.
 
 → [`phase-53.13.md`](docs/phases/phase-53.13.md)
 
