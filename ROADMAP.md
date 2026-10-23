@@ -1637,7 +1637,7 @@ station searches find names with `_`, `%` and non-ASCII capitals.*
 - A *Coming up* row's cost wraps instead of squeezing its title to
   nothing at 375 px (K41).
 - SQLite search escapes `_` and `%` and lowers non-ASCII capitals, as
-  the other engines do (K51). No migration. Patch release.
+  the other engines do (K51). No migration. Releases v3.19.4.
 
 → [`phase-53.12.md`](docs/phases/phase-53.12.md)
 

@@ -6,8 +6,9 @@ pages' small links and buttons with them, a *Coming up* row with a cost
 keeps its title readable at 375 px, and on SQLite the AI model and
 station searches find names with `_`, `%` and non-ASCII capitals.*
 
-Status: ✅ complete · releases **v3.19.4**, a patch release after Phase
-53.11's (#546) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.19.4**
+([#142](https://github.com/gwpreston16/Logbook/pull/142)), a patch
+release after Phase 53.11's (#546) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.11](phase-53.11.md). Like 52.1,
 52.2 and 53.5–53.11, it takes a few small open rows: K16 (LOW), K35
@@ -214,14 +215,14 @@ tagged.
       K144 (MySQL and MariaDB searches ignore accents) recorded, with
       #552.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (the design-reviewer at 375 px among the agents),
+- [x] Merge review (the design-reviewer at 375 px among the agents),
       then merge.
 
 ### Release
 
 - [x] `VERSION` 3.19.4, CHANGELOG 3.19.4, README status: the patch
       after 53.11's release (#546).
-- [ ] Tag `v3.19.4` once merged.
+- [x] Tag `v3.19.4` once merged.
 
 ## Acceptance criteria
 
