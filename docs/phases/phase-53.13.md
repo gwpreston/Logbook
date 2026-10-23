@@ -6,7 +6,7 @@ without the apostrophe it adds against formulas, editing a part with no
 warranty start chooses *Purchase date* as a new part does, and the part
 page says when its warranty reminder is on.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.12's release, a patch release
 
 This is the next batch after [Phase 53.12](phase-53.12.md). Like 52.1,
@@ -119,8 +119,16 @@ tagged.
 
 ### 53.13.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-23:* #455, #459, #487,
+      #547 and #548 were decided when the batch was planned, and spec
+      §7.13 and §7.39 already carry them. Every question still *Needs a
+      decision* is about a row listed under *Not in scope* or code this
+      phase doesn't change; #484 (how a CSV number's separators are
+      read, K1) is untouched, as K57 changes only dates and K48 only a
+      cell's leading `'`. No open row besides K39, K48, K57 and K71 is in
+      the code this phase changes (K19, K49 and K129 are performance
+      rows, out of scope). Spec first: §13 *in progress*.
 
 ### 53.13.1 CSV import
 

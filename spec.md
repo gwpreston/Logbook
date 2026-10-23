@@ -12249,7 +12249,7 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.12.md`](docs/phases/phase-53.12.md).
 - **Phase 53.13 — CSV import round trip and part warranty details from
-  the known-issues log + patch release** (planned). A year-first date is
+  the known-issues log + patch release** (in progress). A year-first date is
   read under every import date order, a date alone at noon (§7.13, K57,
   #459); an import removes the `'` the export puts before text starting
   with `=`, `+`, `-`, `@`, tab or CR (§7.13, K48, #455); the edit form of
