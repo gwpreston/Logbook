@@ -132,14 +132,14 @@ tagged.
 
 ### 53.13.1 CSV import
 
-- [ ] `DateOrder::normalise()` reads a year-first date under every
+- [x] `DateOrder::normalise()` reads a year-first date under every
       order (K57, #459). A `DateOrderTest`: `2026-04-06` under
       day-first and month-first gives `2026-04-06`; `06/04/2026` under
       day-first still gives 6 April and under month-first 4 June.
       `ImportTest`: a day-first fuel file with `2026-04-05T09:15:00`,
       `2026-04-06` and `2026-04-07 09:15` imports all three, the second
       at noon.
-- [ ] `CsvImporter` removes one leading `'` before a guarded character
+- [x] `CsvImporter` removes one leading `'` before a guarded character
       in every cell (K48, #455). `ImportTest`: export a fill-up with
       station `@x` and notes `-5 off`, import the file into another
       vehicle: station `@x`, notes `-5 off`, no station `'@x` in the

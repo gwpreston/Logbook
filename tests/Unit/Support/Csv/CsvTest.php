@@ -45,6 +45,23 @@ final class CsvTest extends TestCase
     }
 
     /**
+     * #455 (K48): an import takes off the apostrophe cell() added, and only
+     * that one, as a spreadsheet does.
+     */
+    public function testUnguardTakesOffTheFormulaGuardOnly(): void
+    {
+        foreach (['=HYPERLINK("x")', '+44 20 7946 0000', '@SUM(A1)', '-rf', "\tindented", "\rx"] as $text) {
+            self::assertSame($text, CsvWriter::unguard("'" . $text), $text);
+        }
+        self::assertSame('@x', CsvWriter::unguard("'@x"));
+        self::assertSame("'abc", CsvWriter::unguard("'abc"), 'guards nothing: the text\'s own');
+        self::assertSame("''@x", CsvWriter::unguard("''@x"), 'the first guards an apostrophe, not a formula');
+        self::assertSame("'", CsvWriter::unguard("'"));
+        self::assertSame('', CsvWriter::unguard(''));
+        self::assertSame('-12.5', CsvWriter::unguard('-12.5'));
+    }
+
+    /**
      * @return iterable<string, array{0: string, 1: string, 2: string}>
      */
     public static function amounts(): iterable

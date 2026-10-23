@@ -4384,9 +4384,10 @@ vehicles; a disabled module cannot be imported).
   A date written year first (`2026-04-06`, with or without a time) is read
   under every date order, a date alone taken as noon as under ISO: a
   four-digit year first can't be mistaken for day-first or month-first
-  (#459, Phase 53.13). In a text column, one leading `'` before `=`, `+`,
+  (#459, Phase 53.13). In any column, one leading `'` before `=`, `+`,
   `-`, `@`, tab or CR (the export's formula guard) is removed, in every
-  import, so Logbook's own export comes back as it was written (#455,
+  module's import, so Logbook's own export comes back as it was written;
+  a `'` before anything else (`'abc`) is the text's own and stays (#455,
   Phase 53.13).
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid

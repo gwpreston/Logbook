@@ -39,6 +39,7 @@ use Logbook\Service\Trip\TripForm;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvReader;
+use Logbook\Support\Csv\CsvWriter;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
@@ -112,7 +113,8 @@ final readonly class CsvImporter
             foreach ($fields as $field) {
                 $column = $options->column($field->key);
                 if ($column !== null) {
-                    $values[$field->key] = trim($row['cells'][$column] ?? '');
+                    // Logbook's own export guards formulas with a `'` (#455).
+                    $values[$field->key] = trim(CsvWriter::unguard(trim($row['cells'][$column] ?? '')));
                 }
             }
             if (implode('', $values) === '') {
