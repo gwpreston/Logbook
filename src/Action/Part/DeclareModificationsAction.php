@@ -26,6 +26,7 @@ final readonly class DeclareModificationsAction
 {
     public function __construct(
         private InsurerList $list,
+        private InsurerPage $page,
         private ModificationService $modifications,
         private Redirector $redirect,
         private DisplayFormatter $formatter,
@@ -68,14 +69,25 @@ final readonly class DeclareModificationsAction
             return $back();
         }
 
-        $on = $validator->date('declared_on', true);
-        if ($on !== null && $on > $today) {
+        // A blank or future date is an error beside the field (K16); `required` stops it in a browser.
+        $on = $validator->date('declared_on');
+        if ($on === null && $validator->errors()->isEmpty()) {
+            $validator->addError('declared_on', 'insurer.error.required');
+        } elseif ($on !== null && $on > $today) {
             $validator->addError('declared_on', 'insurer.error.future');
         }
         if ($on === null || !$validator->errors()->isEmpty()) {
-            $session->flash('error', 'insurer.error.date');
+            $declaredOn = $input['declared_on'] ?? '';
 
-            return $back();
+            return $this->page->render(
+                $request,
+                $response,
+                $vehicle,
+                $today,
+                ['declared_on' => is_string($declaredOn) ? $declaredOn : ''],
+                $validator->errors(),
+                422,
+            );
         }
         $targets = array_values(array_filter(
             $rows,

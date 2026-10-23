@@ -9,6 +9,7 @@ use Doctrine\DBAL\Driver\Connection as DriverConnection;
 use Doctrine\DBAL\Driver\Middleware;
 use Doctrine\DBAL\Driver\Middleware\AbstractDriverMiddleware;
 use Logbook\Support\Config\DatabaseDriver;
+use Pdo\Sqlite;
 use SensitiveParameter;
 
 /**
@@ -21,7 +22,8 @@ use SensitiveParameter;
  *   itself computes (NOW(), CURRENT_TIMESTAMP, TIMESTAMP conversion) is UTC,
  *   matching the UTC values the application writes.
  * - SQLite: has no session time zone (it is always UTC); enable foreign-key
- *   enforcement, which is off by default, to match the server engines.
+ *   enforcement, which is off by default, to match the server engines, and
+ *   make LOWER() lower non-ASCII letters as they do (K51).
  */
 final readonly class SessionInitMiddleware implements Middleware
 {
@@ -48,8 +50,21 @@ final readonly class SessionInitMiddleware implements Middleware
                     DatabaseDriver::Mysql => "SET time_zone = '+00:00'",
                     DatabaseDriver::Sqlite => 'PRAGMA foreign_keys = ON',
                 });
+                $native = $connection->getNativeConnection();
+                if ($this->engine === DatabaseDriver::Sqlite && $native instanceof Sqlite) {
+                    $native->createFunction('LOWER', self::lower(...), 1, Sqlite::DETERMINISTIC);
+                }
 
                 return $connection;
+            }
+
+            /**
+             * SQLite's own LOWER() lowers ASCII only; the server engines lower
+             * every letter (K51).
+             */
+            private static function lower(mixed $value): ?string
+            {
+                return $value === null ? null : mb_strtolower(is_scalar($value) ? (string) $value : '', 'UTF-8');
             }
         };
     }

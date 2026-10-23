@@ -6,8 +6,8 @@ pages' small links and buttons with them, a *Coming up* row with a cost
 keeps its title readable at 375 px, and on SQLite the AI model and
 station searches find names with `_`, `%` and non-ASCII capitals.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.11's release, a patch release
+Status: ✅ complete · releases **v3.19.4**, a patch release after Phase
+53.11's (#546) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.11](phase-53.11.md). Like 52.1,
 52.2 and 53.5–53.11, it takes a few small open rows: K16 (LOW), K35
@@ -133,53 +133,95 @@ tagged.
 
 ### 53.12.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-22:* #457 and #546
+      were decided when the batch was planned, and spec §8 *Tap targets*
+      already carries #457. Every question still *Needs a decision* is
+      about a row listed under *Not in scope* or code this phase doesn't
+      change; #452 (accents in usernames, K44) is untouched by K51, as
+      no username lookup or index uses SQL `LOWER()`. No open row
+      besides K16, K35, K41, K51 and K55 is in the code this phase
+      changes. Spec first: §7.18 *Narrow rows*, §7.25 and §7.34 the
+      searches, §7.39 the blank date, §8 *Tap targets*.
 
 ### 53.12.1 Tap targets and narrow screens
 
-- [ ] The narrow-width hit-area block in `assets/css/app.css` for
+- [x] The narrow-width hit-area block in `assets/css/app.css` for
       `.btn--soft`, `.segmented__option`, `.back-link`, `.card__link`,
       `.breakdown__label` and `<summary>` rows (K55, #457). A
       `TapTargetTest` beside `TableWrapTest` checks the rule for each
       class; the pages K55 names checked at 375 px: every target at
       least 44 × 44 px, nothing drawn differently, no sideways scroll.
-- [ ] The Parts pages: the fitting-row link in `part_show.twig`, the
+      *Done:* the block is `@media (max-width: 47.99rem)` (below the
+      tablet width) and links only, `a.breakdown__label` (the report
+      rows' plain labels aren't controls).
+- [x] The Parts pages: the fitting-row link in `part_show.twig`, the
       title link and *Clear* in `insurer.twig` get the hit area (K35).
       `TapTargetTest` covers their classes; `part_show`,
       `modification_show`, `insurer` and `index` checked at 375 px.
-- [ ] `DeclareModificationsAction`: a blank date is a field error,
+      *Done:* the fitting row's record links carry
+      `.part-timeline__record`.
+- [x] `DeclareModificationsAction`: a blank date is a field error,
       `insurer.error.required` in every catalogue in `translations/`;
       the Parts toolbar wraps at narrow widths (K16). `InsurerListTest`:
       *Mark all* with a blank date shows the message beside the field
-      and marks nothing.
-- [ ] A `.forecast-item__end` rule and `.as-of` wrapping inside it
+      and marks nothing. *Done:* a blank or future date draws the page
+      again (422) with the error under the field and what was typed
+      kept; `InsurerPage` renders it for both actions, and the
+      `insurer.error.date` banner key is gone. The Parts toolbar already
+      wraps (`.toolbar` and `.btn-row` both `flex-wrap`): at 375 px its
+      export links take two lines and *Add part* and *Add modification*
+      a third, nothing crowded, so no change.
+- [x] A `.forecast-item__end` rule and `.as-of` wrapping inside it
       (K41). `TapTargetTest` (or a `ForecastRowTest`) checks the rule;
       the dashboard widget, a vehicle's overview and `/upcoming`
       checked at 375 px and in a narrow dashboard column at 1440 px:
-      the title link wider than 0 px and no text over text.
+      the title link wider than 0 px and no text over text. *Done:*
+      `max-width: 40%` (50% left a 91 px title at 375 px; 40% leaves
+      121 px). Without the rule two of the dashboard's five rows had a
+      0 px title at 375 px.
+- [x] Checked in the browser on the sample data (2026-10-22): at 375 px
+      the dashboard, `/upcoming`, the Golf's overview, Fuel,
+      Maintenance, History, Parts, a part, a modification, the insurer
+      page, Reports and Settings have every listed control's hit area at
+      least 44 × 44 px and no sideways scroll; the *Coming up* titles are
+      at least 121 px wide at 375 px and in the 1440 px dashboard column
+      (321 px rows). At 768, 1280 and 1440 px the hit-area block is off.
+      The block changes no colour, so dark mode draws as before.
 
 ### 53.12.2 SQLite search
 
-- [ ] `AiModelRepository::listForConnection()` and
+- [x] `AiModelRepository::listForConnection()` and
       `ProviderStationRepository::searchByName()`: `ESCAPE '!'`;
       `SessionInitMiddleware` registers `LOWER` as `mb_strtolower()` on
       SQLite (K51). A test on every engine: `gpt_4` finds `gpt_4o` and
       not `gpt-4o`, `50%` finds "Sale 50% off", `öl` finds "Ölhandel
-      Müller", `a!b` finds `a!b`.
+      Müller", `a!b` finds `a!b`. *Done:* `SupportDatabaseLikePattern`
+      builds the pattern and the `ESCAPE '!'` clause for both;
+      `SessionInitMiddleware` registers `LOWER` on the `PdoSqlite`
+      connection DBAL opens (deterministic, `NULL` stays `NULL`). No
+      index or username lookup uses SQL `LOWER()`. `LikeSearchTest`
+      passes on SQLite, PostgreSQL, MySQL and MariaDB and fails on SQLite
+      without the fix. On MySQL and MariaDB `öl` also finds "Olhandel":
+      their collation ignores accents, as K44 found for usernames. That
+      was so before this phase; it is open question #552 (found while
+      building), and the test pins each engine's result.
 
 ### 53.12.3 Finish
 
-- [ ] Known-issues rows K16, K35, K41, K51 and K55 *Fixed*; spec §8
-      *Tap targets* no longer says "not yet built everywhere".
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K16, K35, K41, K51 and K55 *Fixed*; spec §8
+      *Tap targets* no longer says "not yet built everywhere". *Done:*
+      K144 (MySQL and MariaDB searches ignore accents) recorded, with
+      #552.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (the design-reviewer at 375 px among the agents),
       then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.11's
-      release (#546).
+- [x] `VERSION` 3.19.4, CHANGELOG 3.19.4, README status: the patch
+      after 53.11's release (#546).
+- [ ] Tag `v3.19.4` once merged.
 
 ## Acceptance criteria
 
@@ -193,6 +235,14 @@ tagged.
   `translations/`.
 
 ## Open questions
+
+- **#552. Accents in the AI model and station searches** (found while
+  building, K144). MySQL and MariaDB's collation ignores accents, so
+  `öl` also finds "Olhandel" there; PostgreSQL and SQLite match accents
+  exactly. Accent-sensitive everywhere, accent-insensitive everywhere,
+  or left as it is? *Needs a decision;* carried in
+  [`open-questions.md`](open-questions.md), best decided with #452.
+  Nothing in this phase changes it.
 
 - **#457. Tap targets at narrow widths** (K16, K35, K55). *Decided
   2026-10-21* (when Phase 53.11 was planned): (3) compact controls keep

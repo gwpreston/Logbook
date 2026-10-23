@@ -21,9 +21,9 @@
     {%- set maintenance_id = end == 'fitted' ? fitting.fittedMaintenanceId : fitting.removedMaintenanceId -%}
     {%- set modification_id = end == 'fitted' ? fitting.fittedModificationId : fitting.removedModificationId -%}
     {%- if maintenance_id and services[maintenance_id] is defined -%}
-        <a href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: maintenance_id}) }}" data-modal>{{ services[maintenance_id].data.title }}</a>
+        <a class="part-timeline__record" href="{{ url_for('maintenance.edit', {id: vehicle.id, entry: maintenance_id}) }}" data-modal>{{ services[maintenance_id].data.title }}</a>
     {%- elseif modification_id and modifications[modification_id] is defined -%}
-        <a href="{{ url_for('modifications.show', {id: vehicle.id, modification: modification_id}) }}">{{ modifications[modification_id].data.title }}</a>
+        <a class="part-timeline__record" href="{{ url_for('modifications.show', {id: vehicle.id, modification: modification_id}) }}">{{ modifications[modification_id].data.title }}</a>
     {%- else -%}
         {{ 'part.timeline.no_record'|trans }}
     {%- endif -%}

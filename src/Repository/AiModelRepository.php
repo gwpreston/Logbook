@@ -13,6 +13,7 @@ use Logbook\Domain\Ai\AiModel;
 use Logbook\Domain\Ai\Capability;
 use Logbook\Domain\Ai\JsonMode;
 use Logbook\Domain\Ai\ModelInfo;
+use Logbook\Support\Database\LikePattern;
 use Logbook\Support\Database\Row;
 use Logbook\Support\Database\UtcDateTime;
 
@@ -74,9 +75,9 @@ final readonly class AiModelRepository
             ->addOrderBy('name');
         if ($search !== '') {
             $query->andWhere($query->expr()->or(
-                'LOWER(name) LIKE :search',
-                'LOWER(label) LIKE :search',
-            ))->setParameter('search', '%' . addcslashes(mb_strtolower($search), '%_\\') . '%');
+                'LOWER(name) LIKE :search' . LikePattern::ESCAPE,
+                'LOWER(label) LIKE :search' . LikePattern::ESCAPE,
+            ))->setParameter('search', LikePattern::containsLowered($search));
         }
         if ($limit !== null) {
             $query->setMaxResults($limit);

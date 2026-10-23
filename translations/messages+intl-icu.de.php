@@ -7099,7 +7099,7 @@ return [
         'declared_flash' => '{count, plural, one {# Umbau am {date} als gemeldet markiert.} other {# Umbauten am {date} als gemeldet markiert.}}',
         'cleared' => '{title} gilt wieder als noch nicht gemeldet.',
         'error' => [
-            'date' => 'Wähle ein Datum, das nicht in der Zukunft liegt.',
+            'required' => 'Gib das Datum ein, an dem du es deiner Versicherung gemeldet hast.',
             'future' => 'Das Datum darf nicht nach heute liegen.',
         ],
     ],

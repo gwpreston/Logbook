@@ -6,6 +6,33 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.4] — 2026-10-22
+
+Phase 53.12: **Tap targets, narrow screens and SQLite search from the
+known-issues log**
+([docs/phases/phase-53.12.md](docs/phases/phase-53.12.md)). No
+migration: pull and restart.
+
+### Fixed
+- **Small controls are easier to tap on a phone.** Soft buttons such as
+  *Review…* and *Mark declared*, the Economy tabs, back links, card
+  links such as *All reminders*, the rows that open a section and the expense
+  breakdown's links each take a tap at least 44 × 44 px wide, and look
+  as they did. The Parts pages' fitting-row links and the insurer
+  page's titles too (K16, K35, K55, #457).
+- **A *Coming up* row with a cost** keeps its title readable at phone
+  width and in a narrow dashboard column: "about £189.00 (last time) as
+  of Oct 2025" wraps under its pill instead of squeezing the title to
+  nothing, on the dashboard, a vehicle's overview and *Coming up* (K41).
+- ***Mark all declared* with no date** on *For your insurer* says "Enter
+  the date you told your insurer" under the date field and marks
+  nothing. Before, a banner said the date mustn't be in the future
+  (K16).
+- **On SQLite, searching AI models and linking a fuel station by name**
+  finds names with `_`, `%` or capitals such as `Ö`: `gpt_4` finds
+  `gpt_4o` (and not `gpt-4o`), `50%` finds "Sale 50% off", `öl` finds
+  "Ölhandel Müller", as on the other databases (K51).
+
 ## [3.19.3] — 2026-10-22
 
 Phase 53.11: **Warranty reminders, Ask's figures and the sign-in log
