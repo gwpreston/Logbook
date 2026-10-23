@@ -177,6 +177,15 @@ tagged.
       after 53.12's release (#548).
 - [ ] Tag `v3.19.5` once merged.
 
+## Design review (2026-10-23)
+
+The part page of the sample data's clutch kit (tick on) at 375 px light
+and 1280 px dark: "Reminder before it ends" sits under the warranty's
+fields and above its terms, in the card's body text, with nothing about
+it on a part whose tick is off. Server-rendered, so it shows without JS;
+no new links, so nothing changes at a subpath. The edit form's chip is
+the form's own (#482), checked by `PartsTest`. No HIGH or MEDIUM items.
+
 ## Acceptance criteria
 
 - K39, K48, K57 and K71 each have a regression test that fails without
