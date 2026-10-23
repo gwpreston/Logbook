@@ -12250,16 +12250,16 @@ task breakdowns live in the per-phase files; this is the map.
   2026-10-21). No migration.
   See [`phase-53.12.md`](docs/phases/phase-53.12.md).
 - **Phase 53.13 — CSV import round trip and part warranty details from
-  the known-issues log + patch release** (in progress). A year-first date is
+  the known-issues log + patch release** (✅). A year-first date is
   read under every import date order, a date alone at noon (§7.13, K57,
   #459); an import removes the `'` the export puts before text starting
   with `=`, `+`, `-`, `@`, tab or CR (§7.13, K48, #455); the edit form of
   a part with no stored warranty start has *Purchase date* chosen, as a
   new part's form does (§7.39, K71, #487); the part page's warranty card
   says when *Remind me before it ends* is on (§7.39, K39, #547).
-  Released on its own as a patch after 53.12's release (#548, decided
-  2026-10-21). No migration. See
-  [`phase-53.13.md`](docs/phases/phase-53.13.md).
+  Releases v3.19.5, a patch on its own after 53.12's release (#548,
+  decided 2026-10-21). No migration.
+  See [`phase-53.13.md`](docs/phases/phase-53.13.md).
 - **Phase 53.14 — Claude scans and large imports from the known-issues
   log + patch release** (planned). A scan on a Claude model sends a
   schema Anthropic accepts and falls back to `tool` mode on a refusal

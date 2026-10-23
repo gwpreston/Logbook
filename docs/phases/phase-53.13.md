@@ -6,8 +6,8 @@ without the apostrophe it adds against formulas, editing a part with no
 warranty start chooses *Purchase date* as a new part does, and the part
 page says when its warranty reminder is on.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.12's release, a patch release
+Status: ✅ complete · releases **v3.19.5**, a patch release after Phase
+53.12's (#548) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.12](phase-53.12.md). Like 52.1,
 52.2 and 53.5–53.12, it takes a few small open rows: K48 (MEDIUM, the
@@ -163,16 +163,19 @@ tagged.
 
 ### 53.13.3 Finish
 
-- [ ] Known-issues rows K39, K48, K57 and K71 *Fixed*; #455, #459, #487
+- [x] Known-issues rows K39, K48, K57 and K71 *Fixed*; #455, #459, #487
       and #547 marked built in `open-questions.md`.
-- [ ] CHANGELOG (K48's change to what an import stores in its *Fixed*
-      section); spec §13; ROADMAP status.
+- [x] CHANGELOG (K48's change to what an import stores in its *Fixed*
+      section); spec §13; ROADMAP status. *Done:* the import guide
+      (`docs/import.md`) and the parts guide (`docs/parts.md`) say so
+      too.
 - [ ] Merge review (the import-tester among the agents), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.12's
-      release (#548).
+- [x] `VERSION` 3.19.5, CHANGELOG 3.19.5, README status: the patch
+      after 53.12's release (#548).
+- [ ] Tag `v3.19.5` once merged.
 
 ## Acceptance criteria
 

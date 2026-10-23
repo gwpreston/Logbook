@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.5] — 2026-10-23
+
+Phase 53.13: **CSV import round trip and part warranty details from the
+known-issues log**
+([docs/phases/phase-53.13.md](docs/phases/phase-53.13.md)). No
+migration: pull and restart.
+
+### Fixed
+- **Importing Logbook's own CSV export gives back what was written.**
+  The export puts an apostrophe before text a spreadsheet would run as a
+  formula (starting with `=`, `+`, `-`, `@`, a tab or a line break), and
+  the import used to keep it: a station `@x` came back as `'@x`, and a
+  new station `'@x` was added to the station list. Every module's import
+  now takes that one apostrophe off, as a spreadsheet does, so a file
+  saved again from a spreadsheet reads the same. This changes what an
+  import stores: a cell such as `'=x` is imported as `=x`. An apostrophe
+  before anything else (`'abc`) is kept (K48, #455).
+- **A date written year first imports under every date order.** With
+  the file's dates set to day-first or month-first, `2026-04-06` was
+  refused with "Enter a valid date and time", though `2026-04-06 09:15`
+  imported. It now imports at noon, as under ISO; a four-digit year
+  first can't be mistaken for a day or a month (K57, #459).
+- **Editing a part with no warranty has *Purchase date* chosen** under
+  *Warranty starts from*, as a new part's form does, so a warranty added
+  on edit is stored the same way as one added new (K71, #487).
+- **The part page says when the warranty reminder is on:** "Reminder
+  before it ends" in the warranty card when *Remind me before it ends*
+  is ticked, and nothing about it when it isn't (K39, #547).
+
 ## [3.19.4] — 2026-10-22
 
 Phase 53.12: **Tap targets, narrow screens and SQLite search from the
