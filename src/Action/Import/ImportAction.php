@@ -17,6 +17,7 @@ use Logbook\Service\Import\ImportRowStatus;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvReader;
 use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Csv\CsvTooLarge;
 use Logbook\Support\Csv\CsvTooLong;
 use Logbook\Support\Http\LongRequest;
 use Logbook\Support\Http\Redirector;
@@ -68,14 +69,17 @@ final readonly class ImportAction
             && ($import['module'] ?? null) === $module->value
             ? $this->staged->path('import', $token)
             : null;
-        $contents = $path === null ? false : file_get_contents($path);
+        $expired = 'import.expired';
         try {
-            $csv = $contents === false ? null : CsvReader::read($contents, CsvImporter::MAX_ROWS);
+            $csv = $path === null ? null : CsvReader::fromFile($path, CsvImporter::MAX_ROWS);
         } catch (CsvTooLong) {
             $csv = null;
+        } catch (CsvTooLarge) {
+            $csv = null;
+            $expired = 'import.error.too_large';
         }
         if ($csv === null || !is_array($import)) {
-            $session->flash('warning', 'import.expired');
+            $session->flash('warning', $expired);
 
             return $this->redirect->toRoute('import.upload', ['id' => (string) $vehicle->id, 'module' => $module->value]);
         }

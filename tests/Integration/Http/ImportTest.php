@@ -36,6 +36,7 @@ use Logbook\Service\Part\PartRemoval;
 use Logbook\Service\Part\PartService;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\Html;
@@ -199,6 +200,38 @@ final class ImportTest extends AppTestCase
         $preview = $this->preview($browser, $again);
         self::assertStringContainsString('Nothing to import', $preview);
         self::assertSame(1, substr_count($preview, 'Already there'));
+    }
+
+    /**
+     * K129: with MAX_UPLOAD_MB raised past what `memory_limit` can read, a
+     * CSV within the upload limit is refused with a message, not a 500, and
+     * its staged copy is removed.
+     */
+    public function testACsvTooLargeForTheMemoryLimitIsRefusedWithAMessage(): void
+    {
+        $app = $this->createApp(['MAX_UPLOAD_MB' => '100']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = "Date,Litres,Price,Notes\n" . str_repeat('2026-06-01 09:00,40,1.60,' . str_repeat('x', 1000) . "\n", 12_000);
+        $staged = $this->service($app, AppSettings::class)->cacheDir . '/staged/import-*';
+        $before = glob($staged) ?: [];
+        $limit = (string) ini_get('memory_limit');
+        // Half of the limit (what reading may use) is below what the suite already holds.
+        ini_set('memory_limit', (string) (memory_get_usage(true) + 64 * 1024 * 1024));
+        try {
+            $response = $browser->post('/vehicles/' . $golf->id . '/import/fuel', [], ['file' => $this->file($csv, 'big.csv')]);
+        } finally {
+            ini_set('memory_limit', $limit);
+        }
+
+        self::assertGreaterThan(10 * 1024 * 1024, strlen($csv), 'over the default MAX_UPLOAD_MB');
+        self::assertSame(422, $response->getStatusCode());
+        self::assertStringContainsString(
+            'The file is too large to read with the memory this server gives PHP.',
+            self::body($response),
+        );
+        self::assertSame($before, glob($staged) ?: [], 'nothing is left staged');
     }
 
     /**

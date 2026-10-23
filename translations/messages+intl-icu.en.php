@@ -3299,6 +3299,7 @@ return [
             'empty' => 'The file has no rows to import (it needs a header row and at least one row below it).',
             'not_csv' => 'This isn’t a CSV file. Save it from your spreadsheet or app as CSV, then upload that.',
             'too_many_rows' => 'The file has more than {max, number} rows. Split it into smaller files.',
+            'too_large' => 'The file is too large to read with the memory this server gives PHP. Split it into smaller files, or raise PHP’s memory_limit.',
             'nothing' => 'None of the rows can be imported.',
             'skip_required' => '{count, plural, one {One row has a problem.} other {# rows have problems.}} Tick “Skip” to import the others, or fix the file first.',
             'yes_no' => 'Expected yes or no.',

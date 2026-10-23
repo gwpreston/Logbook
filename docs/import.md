@@ -22,7 +22,10 @@ spreadsheet, another app, or another Logbook.
    text") or Windows-1252, up to
    `MAX_UPLOAD_MB` and 5,000 rows. A spreadsheet's own file (`.xlsx`), a
    Fuelio backup ZIP, a PDF or a photo is refused: save it as CSV first (a
-   Fuelio backup goes to the command line, below).
+   Fuelio backup goes to the command line, below). If you raise
+   `MAX_UPLOAD_MB` a long way, a file whose rows need more than half of
+   PHP's `memory_limit` is refused with a message: split it, or raise
+   `memory_limit`.
 2. **Match the columns.** Each field gets a drop-down of the file's columns.
    Columns named like Logbook's export (in your language or English) or with a
    common name ("Mileage", "Cost", "Notes") are matched already, and so is an

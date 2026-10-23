@@ -127,9 +127,15 @@ tagged.
       | SQLite (bind mount) | 10.5 s, 34.3 s (5.8 s) | 0.5 s, 6.5 s (1.6 s) |
 
       `ImportTest::testAStationNamedOnManyRowsIsCreatedOnceAndEveryFillUpWritesItsReading`.
-- [ ] `CsvReader::read()` streams; a too-large file gets a message
+- [x] `CsvReader::read()` streams; a too-large file gets a message
       (K129). Test with a raised `MAX_UPLOAD_MB` and a low
-      `memory_limit`.
+      `memory_limit`. Both import steps read the staged file with
+      `CsvReader::fromFile()`: UTF-16, Windows-1252 and NULs are converted
+      a chunk at a time into a temporary file; past half of
+      `memory_limit` the reading stops with `CsvTooLarge` ("The file is
+      too large to read…", 422, the staged copy removed). A 20 MB file
+      now peaks under 1.5 times its size. `CsvReaderStreamTest`,
+      `ImportTest::testACsvTooLargeForTheMemoryLimitIsRefusedWithAMessage`.
 
 ### 53.14.3 Warranty reminders
 

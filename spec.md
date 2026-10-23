@@ -4338,7 +4338,11 @@ vehicles; a disabled module cannot be imported).
   in its first 8 KB without a UTF-16 byte-order mark, or UTF-16 that
   isn't whole, such as a cut-off file (K125) — is refused with
   "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
-  then upload that." (K61). The
+  then upload that." (K61). The file is read from disk a row at a time,
+  re-encoded a chunk at a time, so the text is never held whole beside its
+  rows; a file whose rows would take more than half of PHP's
+  `memory_limit` is refused with "The file is too large to read with the
+  memory this server gives PHP." (Phase 53.14, K129). The
   file is staged under `var/cache/staged` with a random name bound to the
   session and deleted after the import or within a day; an import step
   that is refused (rows to skip, nothing importable) keeps it, so the
