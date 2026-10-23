@@ -12280,7 +12280,7 @@ task breakdowns live in the per-phase files; this is the map.
   decided 2026-10-21). No migration.
   See [`phase-53.13.md`](docs/phases/phase-53.13.md).
 - **Phase 53.14 — Claude scans and large imports from the known-issues
-  log + patch release** (in progress). A scan on a Claude model sends a
+  log + patch release** (complete). A scan on a Claude model sends a
   flat schema Anthropic accepts, every field required and `""` for not
   shown (§7.27 *Schemas*, #553), and falls back to `tool` mode on a
   refusal (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
@@ -12288,8 +12288,8 @@ task breakdowns live in the per-phase files; this is the map.
   page's *Upcoming* is paged 25 at a time (§7.6, #555), and new warranty
   reminders are added in batches with the reminder job's reads shared
   across vehicles (K19). Behaviour-preserving, no
-  migration. Releases a patch on its own after 53.13's release (#554,
-  decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
+  migration. Releases v3.19.6, a patch on its own after 53.13's release
+  (#554, decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
   known-issues log + patch release** (planned). Imagick prepares a photo
   for OCR as fast as GD (K74); OCR preparation overlaps the vision

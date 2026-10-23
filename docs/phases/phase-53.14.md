@@ -6,8 +6,8 @@ refuses, a 5,000-row CSV commits inside the time limit, a large CSV is
 read without three copies in memory, and warranty reminders stop costing
 a query each.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.13's release, a patch release
+Status: ✅ complete · releases **v3.19.6**, a patch release after Phase
+53.13's (#554) · file lives in `docs/phases/`
 
 This is a batch of open rows that wait on no open question. Rows that do
 (K1, K3, K13, K40, K42, K43, K44, K54, K56, K67, K72, K114, K143) are
@@ -97,7 +97,12 @@ tagged.
 ### 53.14.1 Scan schema
 
 - [ ] Record one request to a Claude model with the current scan schema
-      and keep it as a fixture (K132).
+      and keep it as a fixture (K132). *Carried over:* no Anthropic key
+      was available when the phase was built, so the fix rests on
+      Anthropic's published limits (read 2026-10-23); the owner opened the
+      PR without the recording. `var/record-k132.php` (not committed)
+      sends today's schema, the flat one and `tool` mode through the
+      adapter and saves each answer as a fixture. Recorded as K145.
 - [x] `ScanSchema::schema()` sends no `maxLength` and at most the allowed
       union types to Anthropic; the limits are enforced on the result.
       Built as `ScanSchema::flat()` (#553), sent by `AnthropicAdapter`
@@ -153,15 +158,18 @@ tagged.
 
 ### 53.14.4 Finish
 
-- [ ] Known-issues rows K19, K49, K129 and K132 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K19, K49, K129 and K132 *Fixed*; K145 (the
+      recording) added.
+- [x] CHANGELOG; spec §13; ROADMAP status. *Done:* the AI guide
+      (`docs/ai.md`) and the import guide (`docs/import.md`) say so too.
 - [ ] Merge review (import-tester, performance-auditor, ai-evaluator),
       then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.13's
-      release.
+- [x] `VERSION` 3.19.6, CHANGELOG 3.19.6, README status: the patch
+      after 53.13's release (#554).
+- [ ] Tag `v3.19.6` once merged.
 
 ## Design review (2026-10-23)
 
