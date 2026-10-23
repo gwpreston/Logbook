@@ -148,12 +148,15 @@ tagged.
 
 ### 53.13.2 Part warranty
 
-- [ ] `PartForm::values()` gives `warranty_from` `purchase` when none is
+- [x] `PartForm::values()` gives `warranty_from` `purchase` when none is
       stored (K71, #487). `PartsTest`: the edit form of a part with no
       warranty has *Purchase date* checked; adding 24 months there to a
       part fitted 2026-02-10 with no bought-on date stores *Purchase
-      date*, as the same part added new does.
-- [ ] `part_show.twig`: a "Reminder before it ends" line in the warranty
+      date*, as the same part added new does. *Built in
+      `EditPartAction`, beside where #482 sets the new-part form's
+      default in `CreatePartAction`: `values()` also fills the API's
+      `PATCH`, which keeps storing what `POST` stores.*
+- [x] `part_show.twig`: a "Reminder before it ends" line in the warranty
       card when `warrantyReminder` is on; the new string in every
       catalogue in `translations/` (K39, #547). `PartsTest`: the page
       shows it with the tick on and not with it off.

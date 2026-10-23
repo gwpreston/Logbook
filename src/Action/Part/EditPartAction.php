@@ -7,6 +7,7 @@ namespace Logbook\Action\Part;
 use Logbook\Action\Attachment\AttachmentUpload;
 use Logbook\Action\EntryGuard;
 use Logbook\Domain\Attachment\AttachmentOwner;
+use Logbook\Domain\Part\WarrantyStart;
 use Logbook\Service\Part\PartForm;
 use Logbook\Service\Part\PartService;
 use Logbook\Support\Date\LocalTime;
@@ -49,7 +50,12 @@ final readonly class EditPartAction
             return $refused;
         }
         if ($request->getMethod() !== 'POST') {
-            return $this->page->render($request, $response, $vehicle, PartForm::values($part, $user->preferences), $part);
+            // #487: with no start stored, *Purchase date* chosen as on a new part's form (#482), so a
+            // warranty added here is stored as one added new. The API's PATCH keeps what POST stores.
+            $values = PartForm::values($part, $user->preferences);
+            $values['warranty_from'] = $values['warranty_from'] !== '' ? $values['warranty_from'] : WarrantyStart::Purchase->value;
+
+            return $this->page->render($request, $response, $vehicle, $values, $part);
         }
 
         $today = LocalTime::today($this->clock, $user->preferences->timeZone());

@@ -7286,6 +7286,7 @@ return [
             'paused' => 'In warranty, paused while off the vehicle',
             'ended_on' => 'Warranty ended {date}',
             'ended' => 'Warranty ended',
+            'reminder' => 'Reminder before it ends',
         ],
         'ledger' => [
             'sold' => 'Part sold',
