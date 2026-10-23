@@ -9,7 +9,13 @@ use DateTimeZone;
 use Logbook\Domain\Fuel\Fuel;
 use Logbook\Domain\Fuel\FuelEntryData;
 use Logbook\Domain\Fuel\FuelGrade;
+use Logbook\Domain\Compliance\ComplianceDocumentData;
+use Logbook\Domain\Compliance\ComplianceType;
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceEntryData;
+use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Trip\TripData;
 use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\Part\ModificationData;
 use Logbook\Domain\Part\PartData;
@@ -18,12 +24,17 @@ use Logbook\Repository\ExpenseEntryRepository;
 use Logbook\Domain\Station\StationData;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Repository\StationRepository;
+use Logbook\Repository\TripRepository;
 use Logbook\Repository\MaintenanceEntryRepository;
 use Logbook\Repository\OdometerReadingRepository;
+use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Fuel\FuelService;
+use Logbook\Service\Maintenance\MaintenanceService;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Part\ModificationService;
 use Logbook\Service\Part\PartRemoval;
 use Logbook\Service\Part\PartService;
+use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
@@ -532,6 +543,137 @@ final class ImportTest extends AppTestCase
 
         $map = $this->upload($browser, $polo->id, 'documents', "Type,Reference,Odometer (Miles)\ninspection,MOT-2,31000\n");
         self::assertStringContainsString('Add the date it was issued to record the odometer.', $this->preview($browser, $map));
+    }
+
+    /**
+     * K48 (#455): the export puts a `'` before text a spreadsheet would run
+     * as a formula; importing the file takes it off again, in every module's
+     * text columns, so the entries come back as they were written. A `'`
+     * that guards nothing (`'abc`) is the text's own and stays.
+     */
+    public function testEveryModulesExportImportsBackWithItsTextAsWritten(): void
+    {
+        $app = $this->createApp(['FEATURES_TRIPS' => 'true']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $this->service($app, FuelService::class)->create($golf, new FuelEntryData(
+            new DateTimeImmutable('2026-05-02T08:15:00Z', new DateTimeZone('UTC')),
+            '49400.000',
+            Fuel::Petrol,
+            '38.250',
+            '1.529000',
+            '58.48',
+            false,
+            false,
+            '@x',
+            '-5 off',
+        ));
+        $this->service($app, OdometerService::class)->create(
+            $golf,
+            new OdometerReadingData('49500.000', new DateTimeImmutable('2026-05-10T08:00:00Z'), '=SUM(A1)'),
+        );
+        $this->service($app, MaintenanceService::class)->create(
+            $golf,
+            new MaintenanceEntryData(
+                self::day('2026-05-12'),
+                MaintenanceCategory::Service,
+                '+ oil',
+                '45.000',
+                vendor: '@Garage',
+                description: "'abc",
+            ),
+            new DateTimeZone('Europe/London'),
+        );
+        $this->service($app, ComplianceService::class)->create(
+            $golf,
+            new ComplianceDocumentData(
+                ComplianceType::Insurance,
+                '-',
+                '@Admiral',
+                '=POL-1',
+                self::day('2026-05-01'),
+                self::day('2027-04-30'),
+                '420.000',
+                '+44 20 7946 0000',
+            ),
+            new DateTimeZone('Europe/London'),
+        );
+        $this->expense($app, $golf, '2026-05-14', '4.000', note: '-5 off');
+        $this->service($app, TripService::class)->create($golf, new TripData(
+            self::day('2026-05-15'),
+            '@home',
+            '=Depot',
+            distanceKm: '10.000',
+            purpose: '+client',
+            notes: "'abc",
+        ));
+
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        foreach (['fuel', 'odometer', 'maintenance', 'documents', 'expenses', 'trips'] as $module) {
+            $csv = self::body($browser->get('/vehicles/' . $golf->id . '/export/' . $module . '.csv'));
+            self::assertStringContainsString(",'", $csv, $module . ': the export still guards its text');
+            $map = $this->upload($browser, $polo->id, $module, $csv);
+            $preview = $this->preview($browser, $map);
+            self::assertStringContainsString('Import 1 row', $preview, $module);
+            self::assertSame(200, $this->commit($browser, $map, $preview)->getStatusCode(), $module);
+        }
+
+        $fill = $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id)[0];
+        self::assertSame(['@x', '-5 off'], [$fill->data->station, $fill->data->notes]);
+        $stations = $this->service($app, StationRepository::class);
+        self::assertNotNull($stations->findByName('@x'));
+        self::assertNull($stations->findByName("'@x"), 'no guarded name in the station list');
+        $manual = array_values(array_filter(
+            $this->service($app, OdometerReadingRepository::class)->listForVehicle($polo->id),
+            static fn ($r): bool => $r->source === OdometerSource::Manual,
+        ));
+        self::assertSame('=SUM(A1)', $manual[0]->note);
+        $work = $this->service($app, MaintenanceEntryRepository::class)->listForVehicle($polo->id)[0];
+        self::assertSame(['+ oil', '@Garage', "'abc"], [$work->data->title, $work->data->vendor, $work->data->description]);
+        $document = $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($polo->id)[0];
+        self::assertSame(
+            ['-', '@Admiral', '=POL-1', '+44 20 7946 0000'],
+            [$document->data->title, $document->data->provider, $document->data->reference, $document->data->notes],
+        );
+        self::assertSame('-5 off', $this->service($app, ExpenseEntryRepository::class)->listForVehicle($polo->id)[0]->data->note);
+        $trip = $this->service($app, TripRepository::class)->listForVehicle($polo->id)[0];
+        self::assertSame(
+            ['@home', '=Depot', '+client', "'abc"],
+            [$trip->data->fromPlace, $trip->data->toPlace, $trip->data->purpose, $trip->data->notes],
+        );
+    }
+
+    /**
+     * K57 (#459): a date written year first is read under every date order,
+     * a date alone at noon, while the order still reads its own dates.
+     */
+    public function testAYearFirstDateImportsUnderADayFirstOrder(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = implode("\n", [
+            'Date,Odometer,Litres,Price',
+            '2026-04-05T09:15:00,1000,40,1.60',
+            '2026-04-06,1300,30,1.45',
+            '2026-04-07 09:15,1600,30,1.45',
+            '08/04/2026 09:15,1900,30,1.45',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map, ['date_order' => 'dmy']);
+        self::assertStringContainsString('Import 4 rows', $preview);
+        self::assertStringNotContainsString('Enter a valid date and time', $preview);
+        $this->commit($browser, $map, $preview);
+
+        $times = array_map(
+            static fn ($e): string => $e->data->filledAt->setTimezone(new DateTimeZone('Europe/London'))->format('Y-m-d H:i'),
+            $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id),
+        );
+        sort($times);
+        self::assertSame(['2026-04-05 09:15', '2026-04-06 12:00', '2026-04-07 09:15', '2026-04-08 09:15'], $times);
     }
 
     public function testGuards(): void

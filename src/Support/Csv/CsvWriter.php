@@ -14,6 +14,7 @@ use Logbook\Support\Number\Decimal;
  * Text that a spreadsheet would run as a formula (starting with =, +, -, @,
  * a tab or a carriage return) is prefixed with an apostrophe. Numbers are
  * written as canonical decimals and left alone, so "-1.5" stays a number.
+ * unguard() takes the apostrophe off again when a file is imported (#455).
  */
 final class CsvWriter
 {
@@ -41,10 +42,13 @@ final class CsvWriter
         return implode(',', array_map(self::cell(...), $cells));
     }
 
+    /** The first characters a spreadsheet would read as a formula. */
+    private const string FORMULA_START = "=+-@\t\r";
+
     public static function cell(?string $value): string
     {
         $value ??= '';
-        if ($value !== '' && strpbrk($value[0], "=+-@\t\r") !== false && !Decimal::isCanonical($value)) {
+        if ($value !== '' && strpbrk($value[0], self::FORMULA_START) !== false && !Decimal::isCanonical($value)) {
             $value = "'" . $value;
         }
 
@@ -53,5 +57,17 @@ final class CsvWriter
         }
 
         return '"' . str_replace('"', '""', $value) . '"';
+    }
+
+    /**
+     * A read cell without the apostrophe cell() puts before a formula's first
+     * character, as a spreadsheet reads it: `'@x` is `@x`, while `'abc` and
+     * `''@x` keep theirs.
+     */
+    public static function unguard(string $value): string
+    {
+        return strlen($value) > 1 && $value[0] === "'" && strpbrk($value[1], self::FORMULA_START) !== false
+            ? substr($value, 1)
+            : $value;
     }
 }

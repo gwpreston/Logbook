@@ -6,8 +6,8 @@ without the apostrophe it adds against formulas, editing a part with no
 warranty start chooses *Purchase date* as a new part does, and the part
 page says when its warranty reminder is on.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.12's release, a patch release
+Status: ✅ complete · releases **v3.19.5**, a patch release after Phase
+53.12's (#548) · file lives in `docs/phases/`
 
 This is the next batch after [Phase 53.12](phase-53.12.md). Like 52.1,
 52.2 and 53.5–53.12, it takes a few small open rows: K48 (MEDIUM, the
@@ -119,19 +119,27 @@ tagged.
 
 ### 53.13.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). *2026-10-23:* #455, #459, #487,
+      #547 and #548 were decided when the batch was planned, and spec
+      §7.13 and §7.39 already carry them. Every question still *Needs a
+      decision* is about a row listed under *Not in scope* or code this
+      phase doesn't change; #484 (how a CSV number's separators are
+      read, K1) is untouched, as K57 changes only dates and K48 only a
+      cell's leading `'`. No open row besides K39, K48, K57 and K71 is in
+      the code this phase changes (K19, K49 and K129 are performance
+      rows, out of scope). Spec first: §13 *in progress*.
 
 ### 53.13.1 CSV import
 
-- [ ] `DateOrder::normalise()` reads a year-first date under every
+- [x] `DateOrder::normalise()` reads a year-first date under every
       order (K57, #459). A `DateOrderTest`: `2026-04-06` under
       day-first and month-first gives `2026-04-06`; `06/04/2026` under
       day-first still gives 6 April and under month-first 4 June.
       `ImportTest`: a day-first fuel file with `2026-04-05T09:15:00`,
       `2026-04-06` and `2026-04-07 09:15` imports all three, the second
       at noon.
-- [ ] `CsvImporter` removes one leading `'` before a guarded character
+- [x] `CsvImporter` removes one leading `'` before a guarded character
       in every cell (K48, #455). `ImportTest`: export a fill-up with
       station `@x` and notes `-5 off`, import the file into another
       vehicle: station `@x`, notes `-5 off`, no station `'@x` in the
@@ -140,28 +148,43 @@ tagged.
 
 ### 53.13.2 Part warranty
 
-- [ ] `PartForm::values()` gives `warranty_from` `purchase` when none is
+- [x] `PartForm::values()` gives `warranty_from` `purchase` when none is
       stored (K71, #487). `PartsTest`: the edit form of a part with no
       warranty has *Purchase date* checked; adding 24 months there to a
       part fitted 2026-02-10 with no bought-on date stores *Purchase
-      date*, as the same part added new does.
-- [ ] `part_show.twig`: a "Reminder before it ends" line in the warranty
+      date*, as the same part added new does. *Built in
+      `EditPartAction`, beside where #482 sets the new-part form's
+      default in `CreatePartAction`: `values()` also fills the API's
+      `PATCH`, which keeps storing what `POST` stores.*
+- [x] `part_show.twig`: a "Reminder before it ends" line in the warranty
       card when `warrantyReminder` is on; the new string in every
       catalogue in `translations/` (K39, #547). `PartsTest`: the page
       shows it with the tick on and not with it off.
 
 ### 53.13.3 Finish
 
-- [ ] Known-issues rows K39, K48, K57 and K71 *Fixed*; #455, #459, #487
+- [x] Known-issues rows K39, K48, K57 and K71 *Fixed*; #455, #459, #487
       and #547 marked built in `open-questions.md`.
-- [ ] CHANGELOG (K48's change to what an import stores in its *Fixed*
-      section); spec §13; ROADMAP status.
+- [x] CHANGELOG (K48's change to what an import stores in its *Fixed*
+      section); spec §13; ROADMAP status. *Done:* the import guide
+      (`docs/import.md`) and the parts guide (`docs/parts.md`) say so
+      too.
 - [ ] Merge review (the import-tester among the agents), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.12's
-      release (#548).
+- [x] `VERSION` 3.19.5, CHANGELOG 3.19.5, README status: the patch
+      after 53.12's release (#548).
+- [ ] Tag `v3.19.5` once merged.
+
+## Design review (2026-10-23)
+
+The part page of the sample data's clutch kit (tick on) at 375 px light
+and 1280 px dark: "Reminder before it ends" sits under the warranty's
+fields and above its terms, in the card's body text, with nothing about
+it on a part whose tick is off. Server-rendered, so it shows without JS;
+no new links, so nothing changes at a subpath. The edit form's chip is
+the form's own (#482), checked by `PartsTest`. No HIGH or MEDIUM items.
 
 ## Acceptance criteria
 

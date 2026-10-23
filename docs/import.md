@@ -66,9 +66,15 @@ same category, amount and note.
   exactly, so an exported file imports back to the very same values.
 - **Money** is in the vehicle's currency and never converted. A *Currency*
   column is optional; a row in another currency is refused. `0` is a valid cost.
-- **Dates:** `2026-09-27`, or day-first / month-first as chosen. **Times** are
-  local to the chosen time zone; a fill-up or reading with only a date is
-  taken as noon.
+- **Dates:** `2026-09-27`, or day-first / month-first as chosen. A date
+  written year first (`2026-09-27`) is read whichever order is chosen.
+  **Times** are local to the chosen time zone; a fill-up or reading with
+  only a date is taken as noon.
+- **Text** is kept as written, except that one apostrophe before `=`, `+`,
+  `-`, `@`, a tab or a line break is taken off, as a spreadsheet does: the
+  export adds it so a spreadsheet doesn't run the text as a formula, so a
+  station `@x` exports as `'@x` and imports back as `@x`. An apostrophe
+  before anything else (`'abc`) is kept.
 - **Choices** (fuel, category, document type, reading source) accept
   Logbook's code (`petrol`), or the label in your language or English
   (`Petrol`, `Benzin`). A missing category means *Other*; a missing fuel means

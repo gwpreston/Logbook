@@ -99,6 +99,8 @@
                     {% if data.warrantyFrom %}<div><dt>{{ 'part.field.warranty_from'|trans }}</dt><dd>{{ data.warrantyFrom.labelKey()|trans }}</dd></div>{% endif %}
                     {% if data.warrantyProvider %}<div><dt>{{ 'part.field.warranty_provider'|trans }}</dt><dd>{{ data.warrantyProvider }}</dd></div>{% endif %}
                 </dl>
+                {# #547: said only when on, as the card lists only the fields that are set. #}
+                {% if data.warrantyReminder %}<p>{{ 'part.warranty.reminder'|trans }}</p>{% endif %}
                 {% if data.warrantyTerms %}<p class="part-notes">{{ data.warrantyTerms|nl2br }}</p>{% endif %}
             </section>
         {% endif %}

@@ -55,16 +55,17 @@ part you fitted yourself, log the job as a service record or a modification
 with that cost.
 
 **Warranty:** months and/or a distance, the provider and the terms. The months
-run from the purchase date or from the fitting (you choose; a new part
-starts with *Purchase date* chosen, and with no purchase date it runs from
-the fitting; a supplier's warranty usually runs from the sale, a garage's
+run from the purchase date or from the fitting (you choose; a new part,
+or one you edit that has no warranty yet, starts with *Purchase date*
+chosen, and with no purchase date it runs from the fitting; a supplier's warranty usually runs from the sale, a garage's
 from the fitting). A distance always counts from the mileage when the part
 was first fitted. The part page says "In warranty until 3 Mar 2028 or
 85,400 mi" while every limit holds, "Warranty ended 3 Mar 2028" once the
 date has passed, and "Warranty ended" when the distance ran out first.
 
 Tick ***Remind me before it ends*** to be reminded before the warranty runs
-out (see [Warranty reminders](#warranty-reminders)).
+out (see [Warranty reminders](#warranty-reminders)); the part page's
+warranty card then says "Reminder before it ends".
 
 A part is ***Fitted***, ***Stored*** (a spare bought ahead, or one you kept
 when it came off) or ***Gone*** (sold, returned under warranty, scrapped).

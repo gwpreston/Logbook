@@ -43,6 +43,7 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\CostFixtures;
+use Logbook\Tests\Support\Html;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 use Slim\Psr7\UploadedFile;
@@ -435,6 +436,66 @@ final class PartsTest extends AppTestCase
         $edit = self::body($browser->get($v . '/parts/' . $wipers->id . '/edit'));
         self::assertMatchesRegularExpression('/name="warranty_from" value="fitting"[^>]* checked/', $edit, 'what is stored');
         self::assertDoesNotMatchRegularExpression('/name="warranty_from" value="purchase"[^>]* checked/', $edit);
+    }
+
+    /**
+     * K71, #487: editing a part saved without a warranty has *Purchase date* chosen, as a new
+     * part's form does, so a warranty added there is stored as the same part added new would be.
+     */
+    public function testEditingAPartWithNoWarrantyChoosesThePurchaseDate(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $v = '/vehicles/' . $golf->id;
+        $fitted = ['condition' => 'new', 'on_car' => '1', 'fit_on' => '2026-02-10', 'fit_odometer' => '30000'];
+
+        $browser->post($v . '/parts/new', ['name' => 'Battery'] + $fitted);
+        $battery = $this->parts($app, $golf)['Battery'];
+        self::assertNull($battery->data->warrantyFrom, 'no warranty, no start stored');
+        $edit = self::body($browser->get($v . '/parts/' . $battery->id . '/edit'));
+        self::assertMatchesRegularExpression('/name="warranty_from" value="purchase"[^>]* checked/', $edit);
+        self::assertDoesNotMatchRegularExpression('/name="warranty_from" value="fitting"[^>]* checked/', $edit);
+
+        // The form as shown, with 24 months added and nothing else changed.
+        $form = Html::formValues(Html::element(Html::document($edit), 'form.form[method="post"]'));
+        $saved = $browser->post($v . '/parts/' . $battery->id . '/edit', ['warranty_months' => '24'] + $form);
+        self::assertSame(303, $saved->getStatusCode(), self::body($saved));
+        $new = ['name' => 'Wipers', 'warranty_months' => '24', 'warranty_from' => 'purchase'];
+        $browser->post($v . '/parts/new', $new + $fitted);
+        $parts = $this->parts($app, $golf);
+        self::assertSame(WarrantyStart::Purchase, $parts['Battery']->data->warrantyFrom);
+        self::assertSame($parts['Wipers']->data->warrantyFrom, $parts['Battery']->data->warrantyFrom, 'as one added new');
+    }
+
+    /**
+     * K39, #547: the warranty card says "Reminder before it ends" when the tick is on, and nothing
+     * of it when it is off.
+     */
+    public function testThePartPageSaysWhenTheWarrantyReminderIsOn(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $v = '/vehicles/' . $golf->id;
+
+        foreach (['Turbo' => ['warranty_reminder' => '1'], 'Clutch' => []] as $name => $tick) {
+            $added = $browser->post($v . '/parts/new', [
+                'name' => $name, 'condition' => 'new', 'warranty_months' => '36', 'warranty_from' => 'fitting',
+                'on_car' => '1', 'fit_on' => '2026-03-03', 'fit_odometer' => '10000',
+            ] + $tick);
+            self::assertSame(303, $added->getStatusCode(), self::body($added));
+        }
+        $parts = $this->parts($app, $golf);
+        self::assertTrue($parts['Turbo']->data->warrantyReminder);
+
+        $page = Html::document(self::body($browser->get($v . '/parts/' . $parts['Turbo']->id)));
+        $card = (string) Html::element($page, '[aria-labelledby="part-warranty"]')->textContent;
+        self::assertStringContainsString('Reminder before it ends', $card);
+        $off = self::body($browser->get($v . '/parts/' . $parts['Clutch']->id));
+        self::assertStringNotContainsString('Reminder before it ends', $off);
     }
 
     /**

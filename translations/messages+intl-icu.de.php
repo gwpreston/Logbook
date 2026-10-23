@@ -7275,6 +7275,7 @@ return [
             'paused' => 'Mit Garantie, pausiert, solange das Teil nicht verbaut ist',
             'ended_on' => 'Garantie endete am {date}',
             'ended' => 'Garantie abgelaufen',
+            'reminder' => 'Erinnerung vor dem Ablauf',
         ],
         'ledger' => [
             'sold' => 'Teil verkauft',
