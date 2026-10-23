@@ -163,6 +163,20 @@ tagged.
 - [ ] `VERSION`, CHANGELOG, README status, tag: the patch after 53.13's
       release.
 
+## Design review (2026-10-23)
+
+The Reminders page with 42 open reminders (the sample data and 30 ticked
+part warranties) at 1280 px light, 768 px light and 375 px dark. Page 1
+ends *Upcoming* with "1–25 of 42" and *Later*; page 2 starts with
+*Sooner* and ends at "26–42 of 42". The pager sits inside the group's
+card, under its last row, as on the Parts and Fuel tabs; at 375 px the
+button and count share one line. Overdue and due show whole on both
+pages, and the heading keeps the whole count. The links are plain
+`?page=` anchors, so paging works without JS; under `APP_BASE_PATH`
+they carry the subpath
+(`PartWarrantyReminderTest::testThePagesLinkUnderASubpath`). No HIGH or
+MEDIUM items.
+
 ## Acceptance criteria
 
 - Each row has a test or a recorded measurement that fails without the

@@ -80,6 +80,25 @@ final class PartWarrantyReminderTest extends ReminderTestCase
         self::assertStringContainsString('href="/reminders"', $second, 'Sooner goes back to the first page');
     }
 
+    public function testThePagesLinkUnderASubpath(): void
+    {
+        $this->app = $this->createApp(['FEATURES_PARTS' => 'true', 'APP_BASE_PATH' => '/logbook']);
+        $this->pinClock($this->app, self::NOW);
+        $this->resetDatabase($this->app);
+        $this->createOwner($this->app);
+        $this->golf = $this->vehicle($this->app);
+        for ($i = 1; $i <= 26; $i++) {
+            $this->part(sprintf('Part %02d', $i), months: 12 + $i, bought: '2026-03-01');
+        }
+        $browser = new TestBrowser($this->app);
+        $browser->get('/logbook/login');
+        $browser->post('/logbook/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+
+        $first = self::body($browser->get('/logbook/reminders'));
+        self::assertStringContainsString('href="/logbook/reminders?page=2"', $first);
+        self::assertStringContainsString('href="/logbook/reminders"', self::body($browser->get('/logbook/reminders?page=2')));
+    }
+
     public function testRaisedFromTheWarrantysEndOnTheDocumentLeadTime(): void
     {
         $part = $this->part('Clutch kit', brand: 'Sachs', months: 24, bought: '2026-03-01');
