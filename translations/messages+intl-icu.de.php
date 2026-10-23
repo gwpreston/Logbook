@@ -110,6 +110,8 @@ return [
         'label' => 'Seiten',
         'newer' => 'Neuer',
         'older' => 'Älter',
+        'sooner' => 'Früher',
+        'later' => 'Später',
         'status' => '{first}–{last} von {total}',
     ],
     'validation' => [

@@ -139,8 +139,17 @@ tagged.
 
 ### 53.14.3 Warranty reminders
 
-- [ ] `ReminderSync::warranties()` pages; batch inserts; fewer queries in
+- [x] `ReminderSync::warranties()` pages; batch inserts; fewer queries in
       the reminder job (K19). A test counts queries for 200 ticked parts.
+      The Reminders page pages *Upcoming* 25 at a time (#555). New
+      reminders that tell no webhook go in one statement a hundred
+      (`ReminderRepository::insertGeneratedMany()`). The sync reads once
+      per request for its own run when nothing else does, so the job primes
+      every vehicle's parts, fittings and readings as a page does: 10
+      vehicles with ticked parts cost the sync 166 queries before, 21
+      after, and 200 ticked parts still 21 (23 on the sync that adds 190).
+      `WarrantyReminderQueryCountTest`,
+      `PartWarrantyReminderTest::testTheRemindersPagePagesUpcomingTwentyFiveAtATime`.
 
 ### 53.14.4 Finish
 
@@ -172,6 +181,12 @@ tagged.
   (2) always `tool` mode for scans on Claude (no enforcement, and a
   forced tool can't be used with extended thinking); (3) decide after
   the recording. spec §7.27 *Schemas*.
+- **#555. Paging warranty reminders** (K19, found while building it).
+  *Decided 2026-10-23:* (1) the Reminders page's *Upcoming* is paged 25 at
+  a time with the app's usual `?page=` links (*Sooner* / *Later*), the
+  heading still giving the whole count; overdue and due stay whole. Not
+  chosen: (2) the first 25 and a *Show all* link; (3) unpaged, the listing
+  part of K19 *Won't fix*. spec §7.6.
 - **#554. Release.** *Decided 2026-10-23:* released on its own as a
   patch, after Phase 53.13's release, like 53.12 (#546) and 53.13
   (#548). Not chosen: with the next phase that releases.

@@ -213,6 +213,47 @@ final readonly class ReminderRepository
     }
 
     /**
+     * Several generated reminders in one statement (K19): a multi-row
+     * `VALUES` list, which every engine takes. Ids aren't returned.
+     *
+     * @param list<GeneratedReminder> $reminders
+     */
+    public function insertGeneratedMany(array $reminders, DateTimeImmutable $now): void
+    {
+        if ($reminders === []) {
+            return;
+        }
+        $timestamp = $this->timestamp($now);
+        $rows = array_map(static fn (GeneratedReminder $reminder): array => [
+            'vehicle_id' => $reminder->vehicleId,
+            'source' => $reminder->source->value,
+            'source_id' => $reminder->sourceId,
+            'status' => $reminder->status->value,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
+        ] + self::generatedColumns($reminder), $reminders);
+        $columns = array_keys($rows[0]);
+        $integers = ['vehicle_id', 'source_id', 'lead_time_days'];
+
+        $values = [];
+        $params = [];
+        $types = [];
+        foreach ($rows as $row) {
+            $values[] = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
+            foreach ($columns as $column) {
+                $params[] = $row[$column];
+                $types[] = in_array($column, $integers, true) ? ParameterType::INTEGER : ParameterType::STRING;
+            }
+        }
+        $this->connection->executeStatement(sprintf(
+            'INSERT INTO %s (%s) VALUES %s',
+            $this->connection->quoteSingleIdentifier(self::TABLE),
+            implode(', ', array_map($this->connection->quoteSingleIdentifier(...), $columns)),
+            implode(', ', $values),
+        ), $params, $types);
+    }
+
+    /**
      * Bring a generated reminder in line with its source.
      *
      * @param bool $newOccurrence the source moved to a new due point: the

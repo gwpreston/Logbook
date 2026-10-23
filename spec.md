@@ -2193,6 +2193,10 @@ iCal/webcal feed so items appear in the user's calendar.
   vehicle, when it is due and a link to its source; dismissed and done are
   folded away. Mark done, dismiss and reopen are one-click forms (work
   without JS). Manual reminders are added, edited and deleted there.
+  *Upcoming* is paged 25 at a time (`?page=`, *Sooner* / *Later* links that
+  work without JS), its heading still giving the whole count; overdue and
+  due are shown whole on every page (decided 2026-10-23, #555, K19: every
+  ticked part warranty is upcoming from the day it is ticked).
 - **Calendar feed** (optional): Settings → Reminders creates a secret feed
   URL (`/calendar/{token}.ics`), shown once together with its `webcal://`
   form; resetting it invalidates the old URL, and it can be turned off. Only
@@ -12280,8 +12284,10 @@ task breakdowns live in the per-phase files; this is the map.
   flat schema Anthropic accepts, every field required and `""` for not
   shown (§7.27 *Schemas*, #553), and falls back to `tool` mode on a
   refusal (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
-  large CSV is read without three copies in memory (K129); warranty
-  reminders are paged and batched (K19). Behaviour-preserving, no
+  large CSV is read without three copies in memory (K129); the Reminders
+  page's *Upcoming* is paged 25 at a time (§7.6, #555), and new warranty
+  reminders are added in batches with the reminder job's reads shared
+  across vehicles (K19). Behaviour-preserving, no
   migration. Releases a patch on its own after 53.13's release (#554,
   decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
