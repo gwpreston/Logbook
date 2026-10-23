@@ -108,6 +108,7 @@ final readonly class CsvImporter
         $defaults = $module === ExportModule::Fuel ? ['fuel' => Fuel::defaultFor($vehicle->data->fuelType)->value] : [];
 
         $rows = [];
+        $notes = [];
         foreach ($csv->rows as $row) {
             $values = [];
             foreach ($fields as $field) {
@@ -137,7 +138,8 @@ final readonly class CsvImporter
                 continue;
             }
             $seen[$key] = true;
-            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result, $this->stationNote($result));
+            $note = $this->stationNote($result, $notes);
+            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result, $note);
         }
 
         return new ImportPreview($rows);
@@ -146,11 +148,13 @@ final readonly class CsvImporter
     /**
      * Which station an importable fill-up will be linked to (spec.md §7.33
      * *CSV import*): an existing one by name, or a new one. None for home
-     * charging, a row without a station, or with the module off.
+     * charging, a row without a station, or with the module off. Each name
+     * is looked up once per file (K49).
      *
+     * @param array<string, array{key: string, params: array<string, string>}> $notes by tidied name
      * @return array{key: string, params: array<string, string>}|null
      */
-    private function stationNote(object $data): ?array
+    private function stationNote(object $data, array &$notes): ?array
     {
         if (!$data instanceof FuelEntryData || $data->station === null || !$this->stations->enabled()) {
             return null;
@@ -159,15 +163,20 @@ final readonly class CsvImporter
         if ($name === '' || $data->grade === FuelGrade::Home) {
             return null;
         }
+        if (isset($notes[$name])) {
+            return $notes[$name];
+        }
         $existing = $this->stations->existing($name);
 
-        return $existing === null
+        return $notes[$name] = $existing === null
             ? ['key' => 'stations.import.new', 'params' => ['name' => $name]]
             : ['key' => 'stations.import.links', 'params' => ['name' => $existing->data->name]];
     }
 
     /**
-     * Save every importable row, in one transaction.
+     * Save every importable row, in one transaction. $preview is the
+     * analysis of this same file and options when the caller has just run
+     * it, so a 5,000-row file isn't read twice (K49).
      */
     public function import(
         User $user,
@@ -175,16 +184,24 @@ final readonly class CsvImporter
         ExportModule $module,
         CsvReader $csv,
         ImportOptions $options,
+        ?ImportPreview $preview = null,
     ): ImportPreview {
-        $preview = $this->analyse($user, $vehicle, $module, $csv, $options);
+        $preview ??= $this->analyse($user, $vehicle, $module, $csv, $options);
         $zone = $user->preferences->timeZone();
 
         $fills = [];
         $this->transaction->run(function () use ($preview, $vehicle, $zone, &$fills): void {
-            foreach ($preview->withStatus(ImportRowStatus::Import) as $row) {
+            $rows = $preview->withStatus(ImportRowStatus::Import);
+            // Fill-ups in one pass, the slowest module at 5,000 rows (K49).
+            $fuel = array_values(array_filter(
+                array_map(static fn (ImportRow $row): ?object => $row->data, $rows),
+                static fn (?object $data): bool => $data instanceof FuelEntryData,
+            ));
+            $fills = $this->fuel->import($vehicle, $fuel);
+            foreach ($rows as $row) {
                 $data = $row->data;
                 match (true) {
-                    $data instanceof FuelEntryData => $fills[] = $this->fuel->create($vehicle, $data)->id,
+                    $data instanceof FuelEntryData => null,
                     $data instanceof OdometerReadingData => $this->odometer->create($vehicle, $data),
                     $data instanceof MaintenanceEntryData => $this->maintenance->create($vehicle, $data, $zone),
                     $data instanceof ComplianceDocumentData => $this->compliance->create($vehicle, $data, $zone),

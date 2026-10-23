@@ -306,6 +306,43 @@ final class ImportTest extends AppTestCase
         self::assertSame([$tesco, $maxol->id, null], $links);
     }
 
+    public function testAStationNamedOnManyRowsIsCreatedOnceAndEveryFillUpWritesItsReading(): void
+    {
+        // The commit links each name once and inserts readings straight away (K49): the same result as row by row.
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $csv = implode("\n", [
+            'Date,Odometer,Litres,Price,Station',
+            '2026-06-01 09:00,1000,40,1.60,Maxol Ballymena',
+            '2026-06-08 09:00,1300,30,1.45,maxol  BALLYMENA',
+            '2026-06-15 09:00,1600,30,1.45,Maxol Ballymena',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        self::assertSame(200, $this->commit($browser, $map, $this->preview($browser, $map))->getStatusCode());
+
+        $maxol = $this->service($app, StationRepository::class)->findByName('maxol ballymena');
+        self::assertNotNull($maxol);
+        $fills = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id);
+        self::assertCount(3, $fills);
+        foreach ($fills as $fill) {
+            self::assertSame($maxol->id, $fill->data->stationId);
+            self::assertSame('Maxol Ballymena', $fill->data->station);
+        }
+        $readings = array_map(
+            static fn ($r): array => [$r->source, $r->readingKm],
+            $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id),
+        );
+        // The owner reads miles; the readings are stored in km.
+        self::assertEqualsCanonicalizing([
+            [OdometerSource::Fuel, '1609.344'],
+            [OdometerSource::Fuel, '2092.147'],
+            [OdometerSource::Fuel, '2574.950'],
+        ], $readings);
+    }
+
     public function testImportedFillUpsThatLookUnusualAreCounted(): void
     {
         $app = $this->createApp();

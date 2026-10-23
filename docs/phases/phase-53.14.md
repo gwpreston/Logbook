@@ -111,9 +111,22 @@ tagged.
 
 ### 53.14.2 Import speed and memory
 
-- [ ] `ImportAction` + `CsvImporter::import()` reuse one analysis;
+- [x] `ImportAction` + `CsvImporter::import()` reuse one analysis;
       stations resolved once per name; `LongRequest` applied (K49).
-      Measure 5,000 rows on PostgreSQL before and after.
+      Measure 5,000 rows on PostgreSQL before and after. The commit's
+      fill-ups go through `FuelService::import()`: inside the import's
+      transaction, no savepoint, read-back or reading lookup per row, and
+      each station name linked once. Measured 2026-10-23 in the dev stack
+      (Docker Desktop on Windows; 5,000 fill-ups, 25 stations), preview
+      then commit wall time (user CPU):
+
+      | Engine | Before | After |
+      |---|---|---|
+      | PostgreSQL 17 | 2.9 s, 20.5 s (4.2 s) | 0.4 s, 6.9 s (1.5 s) |
+      | MySQL | 2.3 s, 15.6 s (4.4 s) | 0.5 s, 4.4 s (1.5 s) |
+      | SQLite (bind mount) | 10.5 s, 34.3 s (5.8 s) | 0.5 s, 6.5 s (1.6 s) |
+
+      `ImportTest::testAStationNamedOnManyRowsIsCreatedOnceAndEveryFillUpWritesItsReading`.
 - [ ] `CsvReader::read()` streams; a too-large file gets a message
       (K129). Test with a raised `MAX_UPLOAD_MB` and a low
       `memory_limit`.
