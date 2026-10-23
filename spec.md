@@ -7704,8 +7704,17 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   given carries both keys (either may be null), so a server that holds
   the model to the schema (LM Studio, llama.cpp) can't answer `{}` for a
   field or leave `fields` out (decided 2026-10-20,
-  `docs/phases/open-questions.md` #534, K130). An answer missing any of
-  them is still read:
+  `docs/phases/open-questions.md` #534, K130). A Claude model in
+  `json_schema` mode gets a flat form of it instead, since Anthropic's
+  `output_config.format` refuses `maxLength` and allows 16 union-type
+  and 24 optional parameters: every field required as `{value, evidence}`
+  plain strings, `""` for not shown, and every list a required array,
+  empty for none; `""` is turned back into null before the answer is
+  checked, and the limits it can't send (`maxLength`) are checked on the
+  answer, so what is stored is the same (decided 2026-10-23, #553,
+  K132). A scan whose `json_schema` request is refused with a 400 is
+  retried once in `tool` mode. An answer missing any of them is still
+  read:
   - *Service or repair invoice:* date, registration, make and model,
     odometer and unit, vendor, work performed (lines), parts (lines),
     labour total, parts total, VAT amount and rate, total, currency,
@@ -12261,12 +12270,14 @@ task breakdowns live in the per-phase files; this is the map.
   decided 2026-10-21). No migration.
   See [`phase-53.13.md`](docs/phases/phase-53.13.md).
 - **Phase 53.14 — Claude scans and large imports from the known-issues
-  log + patch release** (planned). A scan on a Claude model sends a
-  schema Anthropic accepts and falls back to `tool` mode on a refusal
-  (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
+  log + patch release** (in progress). A scan on a Claude model sends a
+  flat schema Anthropic accepts, every field required and `""` for not
+  shown (§7.27 *Schemas*, #553), and falls back to `tool` mode on a
+  refusal (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
   large CSV is read without three copies in memory (K129); warranty
   reminders are paged and batched (K19). Behaviour-preserving, no
-  migration. See [`phase-53.14.md`](docs/phases/phase-53.14.md).
+  migration. Releases a patch on its own after 53.13's release (#554,
+  decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
   known-issues log + patch release** (planned). Imagick prepares a photo
   for OCR as fast as GD (K74); OCR preparation overlaps the vision

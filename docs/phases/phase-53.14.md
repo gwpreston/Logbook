@@ -6,7 +6,7 @@ refuses, a 5,000-row CSV commits inside the time limit, a large CSV is
 read without three copies in memory, and warranty reminders stop costing
 a query each.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.13's release, a patch release
 
 This is a batch of open rows that wait on no open question. Rows that do
@@ -70,7 +70,16 @@ tagged.
   owner must make (for example dropping a limit from the stored result),
   it goes under *Open questions* and the task waits.
 - **Release:** a patch on its own after 53.13's release, like 53.12 and
-  53.13.
+  53.13 (#554).
+- **Claude's scan schema (#553):** Anthropic's structured-outputs page
+  (read 2026-10-23) refuses `maxLength` with a 400 and allows 16
+  union-type and 24 optional parameters across the request; the scan
+  schema has about 100 unions. A Claude model in `json_schema` mode gets
+  a flat form: every field required as `{value, evidence}` strings,
+  `""` for not shown, every list a required array, empty for none. `""`
+  is turned back into null before the answer is checked against today's
+  schema (with its `maxLength`), so what is stored is unchanged. The
+  request is recorded with the owner's key.
 
 ---
 
@@ -78,8 +87,12 @@ tagged.
 
 ### 53.14.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). None of the questions still open
+      bears on these rows; #539 (`strict: true` on the OpenAI-compatible
+      adapter) is a different adapter. #553 (the schema a Claude model
+      gets) was found while starting it and answered the same day, and
+      #554 (release) records the decision below.
 
 ### 53.14.1 Scan schema
 
@@ -128,5 +141,14 @@ tagged.
 
 ## Open questions
 
-- None yet. Anything K132's recorded request turns up is added here
-  before the task that needs it.
+- **#553. The scan schema a Claude model gets** (K132, found while
+  starting it). *Decided 2026-10-23:* (1) a flat form for Anthropic's
+  `json_schema`: every field required as `{value, evidence}` plain
+  strings with `""` for not shown, every list a required array (empty
+  for none), `""` turned back into null before the check. Not chosen:
+  (2) always `tool` mode for scans on Claude (no enforcement, and a
+  forced tool can't be used with extended thinking); (3) decide after
+  the recording. spec §7.27 *Schemas*.
+- **#554. Release.** *Decided 2026-10-23:* released on its own as a
+  patch, after Phase 53.13's release, like 53.12 (#546) and 53.13
+  (#548). Not chosen: with the next phase that releases.
