@@ -53,7 +53,9 @@ final readonly class EditPartAction
             // #487: with no start stored, *Purchase date* chosen as on a new part's form (#482), so a
             // warranty added here is stored as one added new. The API's PATCH keeps what POST stores.
             $values = PartForm::values($part, $user->preferences);
-            $values['warranty_from'] = $values['warranty_from'] !== '' ? $values['warranty_from'] : WarrantyStart::Purchase->value;
+            if ($values['warranty_from'] === '') {
+                $values['warranty_from'] = WarrantyStart::Purchase->value;
+            }
 
             return $this->page->render($request, $response, $vehicle, $values, $part);
         }

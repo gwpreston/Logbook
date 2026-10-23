@@ -462,7 +462,8 @@ final class PartsTest extends AppTestCase
         $form = Html::formValues(Html::element(Html::document($edit), 'form.form[method="post"]'));
         $saved = $browser->post($v . '/parts/' . $battery->id . '/edit', ['warranty_months' => '24'] + $form);
         self::assertSame(303, $saved->getStatusCode(), self::body($saved));
-        $browser->post($v . '/parts/new', ['name' => 'Wipers', 'warranty_months' => '24', 'warranty_from' => 'purchase'] + $fitted);
+        $new = ['name' => 'Wipers', 'warranty_months' => '24', 'warranty_from' => 'purchase'];
+        $browser->post($v . '/parts/new', $new + $fitted);
         $parts = $this->parts($app, $golf);
         self::assertSame(WarrantyStart::Purchase, $parts['Battery']->data->warrantyFrom);
         self::assertSame($parts['Wipers']->data->warrantyFrom, $parts['Battery']->data->warrantyFrom, 'as one added new');
@@ -493,7 +494,8 @@ final class PartsTest extends AppTestCase
         $page = Html::document(self::body($browser->get($v . '/parts/' . $parts['Turbo']->id)));
         $card = (string) Html::element($page, '[aria-labelledby="part-warranty"]')->textContent;
         self::assertStringContainsString('Reminder before it ends', $card);
-        self::assertStringNotContainsString('Reminder before it ends', self::body($browser->get($v . '/parts/' . $parts['Clutch']->id)));
+        $off = self::body($browser->get($v . '/parts/' . $parts['Clutch']->id));
+        self::assertStringNotContainsString('Reminder before it ends', $off);
     }
 
     /**

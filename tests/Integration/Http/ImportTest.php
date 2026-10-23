@@ -571,11 +571,18 @@ final class ImportTest extends AppTestCase
         ));
         $this->service($app, OdometerService::class)->create(
             $golf,
-            new OdometerReadingData('49500.000', new DateTimeImmutable('2026-05-10T08:00:00Z', new DateTimeZone('UTC')), '=SUM(A1)'),
+            new OdometerReadingData('49500.000', new DateTimeImmutable('2026-05-10T08:00:00Z'), '=SUM(A1)'),
         );
         $this->service($app, MaintenanceService::class)->create(
             $golf,
-            new MaintenanceEntryData(self::day('2026-05-12'), MaintenanceCategory::Service, '+ oil', '45.000', null, '@Garage', "'abc"),
+            new MaintenanceEntryData(
+                self::day('2026-05-12'),
+                MaintenanceCategory::Service,
+                '+ oil',
+                '45.000',
+                vendor: '@Garage',
+                description: "'abc",
+            ),
             new DateTimeZone('Europe/London'),
         );
         $this->service($app, ComplianceService::class)->create(
