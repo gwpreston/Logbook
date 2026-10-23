@@ -24,7 +24,7 @@ spreadsheet, another app, or another Logbook.
    Fuelio backup ZIP, a PDF or a photo is refused: save it as CSV first (a
    Fuelio backup goes to the command line, below). If you raise
    `MAX_UPLOAD_MB` a long way, a file whose rows need more than half of
-   PHP's `memory_limit` is refused with a message: split it, or raise
+   the memory PHP's `memory_limit` leaves is refused with a message: split it, or raise
    `memory_limit`.
 2. **Match the columns.** Each field gets a drop-down of the file's columns.
    Columns named like Logbook's export (in your language or English) or with a

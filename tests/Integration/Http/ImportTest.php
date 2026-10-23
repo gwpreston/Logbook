@@ -213,12 +213,12 @@ final class ImportTest extends AppTestCase
         $this->pinClock($app, self::NOW);
         $browser = $this->signedIn($app);
         $golf = $this->vehicle($app);
-        $csv = "Date,Litres,Price,Notes\n" . str_repeat('2026-06-01 09:00,40,1.60,' . str_repeat('x', 1000) . "\n", 12_000);
+        $csv = "Date,Litres,Price,Notes\n" . str_repeat('2026-06-01 09:00,40,1.60,' . str_repeat('x', 3000) . "\n", 4000);
         $staged = $this->service($app, AppSettings::class)->cacheDir . '/staged/import-*';
         $before = glob($staged) ?: [];
         $limit = (string) ini_get('memory_limit');
-        // Half of the limit (what reading may use) is below what the suite already holds.
-        ini_set('memory_limit', (string) (memory_get_usage(true) + 64 * 1024 * 1024));
+        // 24 MB left, so reading may add 12 MB: less than these 4,000 rows take.
+        ini_set('memory_limit', (string) (memory_get_usage(true) + 24 * 1024 * 1024));
         try {
             $response = $browser->post('/vehicles/' . $golf->id . '/import/fuel', [], ['file' => $this->file($csv, 'big.csv')]);
         } finally {

@@ -4344,8 +4344,8 @@ vehicles; a disabled module cannot be imported).
   "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
   then upload that." (K61). The file is read from disk a row at a time,
   re-encoded a chunk at a time, so the text is never held whole beside its
-  rows; a file whose rows would take more than half of PHP's
-  `memory_limit` is refused with "The file is too large to read with the
+  rows; a file whose rows would take more than half of the memory PHP's
+  `memory_limit` leaves is refused with "The file is too large to read with the
   memory this server gives PHP." (Phase 53.14, K129). The
   file is staged under `var/cache/staged` with a random name bound to the
   session and deleted after the import or within a day; an import step

@@ -43,7 +43,7 @@ final class CsvReader
     /**
      * @return self|null null when the file has no header row
      * @throws CsvTooLong when it has more than $maxRows data rows
-     * @throws CsvTooLarge when its rows would take more than $budget bytes of memory
+     * @throws CsvTooLarge when reading its rows would add more than $budget bytes of memory
      */
     public static function read(string $contents, int $maxRows, ?int $budget = null): ?self
     {
@@ -59,7 +59,7 @@ final class CsvReader
      *
      * @return self|null null when the file has no header row or can't be opened
      * @throws CsvTooLong when it has more than $maxRows data rows
-     * @throws CsvTooLarge when its rows would take more than $budget bytes of memory
+     * @throws CsvTooLarge when reading its rows would add more than $budget bytes of memory
      */
     public static function fromFile(string $path, int $maxRows, ?int $budget = null): ?self
     {
@@ -71,17 +71,18 @@ final class CsvReader
     /**
      * The rows of a stream, which is closed. Re-encoding and NUL removal
      * go a chunk at a time into a temporary file, so the text is never in
-     * memory whole. $budget defaults to half of `memory_limit`, leaving the
-     * rest for the steps after reading.
+     * memory whole. $budget defaults to half of what `memory_limit` leaves
+     * when reading starts, keeping the rest for the steps after reading.
      *
      * @param resource $stream
      * @return self|null null when the file has no header row
      * @throws CsvTooLong when it has more than $maxRows data rows
-     * @throws CsvTooLarge when its rows would take more than $budget bytes of memory
+     * @throws CsvTooLarge when reading its rows would add more than $budget bytes of memory
      */
     private static function fromStream($stream, int $maxRows, ?int $budget): ?self
     {
         $budget ??= self::budget();
+        $before = memory_get_usage();
         $text = self::text($stream);
         if ($text === null) {
             return null;
@@ -119,7 +120,7 @@ final class CsvReader
                 if (count($rows) >= $maxRows) {
                     throw new CsvTooLong($maxRows);
                 }
-                if ($budget !== null && $line % self::BUDGET_EVERY === 0 && memory_get_usage(true) > $budget) {
+                if ($budget !== null && $line % self::BUDGET_EVERY === 0 && memory_get_usage() - $before > $budget) {
                     throw new CsvTooLarge();
                 }
                 $rows[] = ['line' => $line, 'cells' => $values];
@@ -276,7 +277,8 @@ final class CsvReader
     }
 
     /**
-     * Half of `memory_limit` in bytes, or null when there is no limit.
+     * Half of what `memory_limit` leaves now, in bytes: what reading may
+     * add, the rest kept for the steps after it. Null when there is no limit.
      */
     private static function budget(): ?int
     {
@@ -291,7 +293,7 @@ final class CsvReader
             default => 1,
         };
 
-        return $bytes > 0 ? intdiv($bytes, 2) : null;
+        return $bytes > 0 ? intdiv(max(0, $bytes - memory_get_usage(true)), 2) : null;
     }
 
     /**

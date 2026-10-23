@@ -110,7 +110,7 @@ final class CsvReaderStreamTest extends TestCase
         $path = $this->file("Notes\n" . str_repeat(str_repeat('x', 1000) . "\n", 500));
 
         $this->expectException(CsvTooLarge::class);
-        CsvReader::fromFile($path, 5000, memory_get_usage(true) - 1);
+        CsvReader::fromFile($path, 5000, 100_000);
     }
 
     private function file(string $contents): string
