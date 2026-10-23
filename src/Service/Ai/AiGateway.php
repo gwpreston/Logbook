@@ -67,7 +67,36 @@ final readonly class AiGateway
     {
         [$connection, $model, $request] = $this->route($user, $task, $request);
 
-        return $this->call($user, $task->value, $connection, $model->name, $request);
+        try {
+            return $this->call($user, $task->value, $connection, $model->name, $request);
+        } catch (AiFailure $e) {
+            $retry = self::fallback($connection, $request, $e);
+            if ($retry === null) {
+                throw $e;
+            }
+
+            return $this->call($user, $task->value, $connection, $model->name, $retry);
+        }
+    }
+
+    /**
+     * A `json_schema` request the provider refused with a 400 (a schema
+     * it can't compile, K132) is tried once more as a forced tool call,
+     * where the adapter has that mode (spec.md §7.27 *Schemas*).
+     */
+    private static function fallback(AiConnection $connection, ChatRequest $request, AiFailure $failure): ?ChatRequest
+    {
+        $response = $request->response;
+        if (
+            $failure->status !== 400
+            || $response === null
+            || $response->mode !== JsonMode::JsonSchema
+            || !in_array(JsonMode::Tool, JsonMode::candidates($connection->adapter), true)
+        ) {
+            return null;
+        }
+
+        return $request->withResponse($response->withMode(JsonMode::Tool));
     }
 
     /**
@@ -268,7 +297,7 @@ final readonly class AiGateway
                 'code' => $e->error->value,
                 'detail' => $detail,
             ]);
-            throw $this->failure($e->error, $detail, $connection, $model);
+            throw $this->failure($e->error, $detail, $connection, $model, status: $e->status);
         } finally {
             if ($locking !== null) {
                 $this->busy->release($locking->id, $expires);
@@ -336,6 +365,7 @@ final readonly class AiGateway
         AiConnection $connection,
         string $model,
         ?string $variable = null,
+        ?int $status = null,
     ): AiFailure {
         return new AiFailure(
             error: $code,
@@ -345,6 +375,7 @@ final readonly class AiGateway
             adapter: $connection->adapter,
             timeoutSeconds: $connection->timeoutSeconds,
             variable: $variable,
+            status: $status,
         );
     }
 

@@ -6951,7 +6951,9 @@ request to any model service.
 - **Test** (per connection, on its page) runs, in order: a model list;
   then for a chosen model a short completion, a tool call, a tiny image
   (only when the model is marked for images) and JSON output (only when
-  marked for it). Each step shows ok or failed, its time, and on failure
+  marked for it), which reads a short fuel receipt with the scan's own
+  schema (§7.27 *Schemas*), so a mode is recorded only if a scan works in
+  it (Phase 53.14, K132). Each step shows ok or failed, its time, and on failure
   the error text with any secret redacted. Steps after a failed list
   still run when a model is chosen. The tool call always runs and sets
   *Tools*; the image and JSON steps set *Images* and *JSON output*. A

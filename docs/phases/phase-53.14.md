@@ -98,12 +98,16 @@ tagged.
 
 - [ ] Record one request to a Claude model with the current scan schema
       and keep it as a fixture (K132).
-- [ ] `ScanSchema::schema()` sends no `maxLength` and at most the allowed
+- [x] `ScanSchema::schema()` sends no `maxLength` and at most the allowed
       union types to Anthropic; the limits are enforced on the result.
-- [ ] `ConnectionTester` tests with the real scan schema; `AiGateway`
+      Built as `ScanSchema::flat()` (#553), sent by `AnthropicAdapter`
+      through `ResponseFormat::$flat`; `StructuredOutput::unflatten()`
+      turns its blanks back into nulls before the check.
+- [x] `ConnectionTester` tests with the real scan schema; `AiGateway`
       falls back to `tool` mode on a 400 from `json_schema`.
-- [ ] Tests: schema contains no `maxLength` for Anthropic; a result over
+- [x] Tests: schema contains no `maxLength` for Anthropic; a result over
       a dropped limit is trimmed or refused as before; fallback on 400.
+      `ScanSchemaTest`, `AiGatewayTest`, `ConnectionTesterTest`.
 
 ### 53.14.2 Import speed and memory
 

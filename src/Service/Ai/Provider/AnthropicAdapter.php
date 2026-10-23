@@ -47,9 +47,12 @@ final readonly class AnthropicAdapter implements ProviderAdapter
             $body['system'] = $request->system;
         }
         $tools = $request->tools;
+        $flat = false;
         if ($format !== null && $format->mode === JsonMode::JsonSchema) {
-            // Native structured output: the object comes back as text.
-            $body['output_config'] = ['format' => ['type' => 'json_schema', 'schema' => $format->schema]];
+            // Native structured output: the object comes back as text. It refuses `maxLength` and allows
+            // 16 unions and 24 optional keys, so a schema with a flat form sends that (#553, K132).
+            $flat = $format->flat !== null;
+            $body['output_config'] = ['format' => ['type' => 'json_schema', 'schema' => $format->flat ?? $format->schema]];
         } elseif ($format !== null) {
             // For models before structured output; the newest refuse a forced tool.
             $tools[] = new ToolDefinition($format->name, 'Return the answer as this object.', $format->schema);
@@ -68,7 +71,7 @@ final readonly class AnthropicAdapter implements ProviderAdapter
 
         $result = $this->parse($this->transport->post($this->target, 'v1/messages', $body));
 
-        return $format === null ? $result : StructuredOutput::extract($result, $format);
+        return $format === null ? $result : StructuredOutput::extract($result, $format, $flat);
     }
 
     public function listModels(): array
