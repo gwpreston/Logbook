@@ -13,10 +13,12 @@ use Logbook\Domain\Attachment\AttachmentOwner;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Domain\Fuel\FuelEntryData;
+use Logbook\Domain\Fuel\FuelGrade;
 use Logbook\Domain\Fuel\GradeVerdict;
 use Logbook\Domain\Fuel\MonthlyEconomy;
 use Logbook\Domain\Fuel\SegmentCost;
 use Logbook\Domain\Odometer\OdometerSource;
+use Logbook\Domain\Station\StationName;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\FuelEntryRepository;
 use Logbook\Service\Attachment\AttachmentService;
@@ -172,6 +174,39 @@ final readonly class FuelService
         });
 
         return $this->get($vehicle, $id);
+    }
+
+    /**
+     * A CSV import's fill-ups (spec.md §7.13), saved as create() saves each
+     * one, inside the caller's transaction and without what 5,000 rows
+     * can't afford one by one (K49): a savepoint, a look for a reading a
+     * new entry can't have, reading the entry back, and a station lookup
+     * for a name this file has already linked.
+     *
+     * @param list<FuelEntryData> $rows
+     * @return list<int> the new entries' ids, in order
+     */
+    public function import(Vehicle $vehicle, array $rows): array
+    {
+        $by = $this->author->authorId() ?? $vehicle->userId;
+        $linked = [];
+        $ids = [];
+        foreach ($rows as $data) {
+            $name = $data->station === null ? '' : StationName::tidy($data->station);
+            $known = $data->stationId === null && $data->grade !== FuelGrade::Home ? $linked[$name] ?? null : null;
+            $data = $known === null
+                ? $this->stations->link($data, null, $vehicle->userId)
+                : $data->withStation($known[0], $known[1]);
+            if ($name !== '' && $data->stationId !== null) {
+                $linked[$name] = [$data->stationId, $data->station];
+            }
+            $id = $this->entries->insert($vehicle->id, $data, $this->clock->now(), $by);
+            $this->odometer->recordForNewEntry($vehicle, OdometerSource::Fuel, $id, $data->odometerKm, $data->filledAt);
+            $this->webhooks->entry($vehicle, WebhookEvent::EntryCreated, WebhookKind::Fuel, $id);
+            $ids[] = $id;
+        }
+
+        return $ids;
     }
 
     public function update(

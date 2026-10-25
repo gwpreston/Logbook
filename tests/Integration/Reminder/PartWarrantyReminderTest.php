@@ -58,6 +58,47 @@ final class PartWarrantyReminderTest extends ReminderTestCase
         $this->golf = $this->vehicle($this->app);
     }
 
+    public function testTheRemindersPagePagesUpcomingTwentyFiveAtATime(): void
+    {
+        // K19, #555: every ticked warranty is upcoming from the day it's ticked; the heading keeps the whole count.
+        for ($i = 1; $i <= 30; $i++) {
+            $this->part(sprintf('Part %02d', $i), months: 12 + $i, bought: '2026-03-01');
+        }
+
+        $first = self::body($this->browser->get('/reminders'));
+        self::assertStringContainsString('Upcoming (30)', $first);
+        self::assertStringContainsString('Warranty ends: Part 25', $first);
+        self::assertStringNotContainsString('Warranty ends: Part 26', $first, 'soonest first, 25 a page');
+        self::assertStringContainsString('1–25 of 30', $first);
+        self::assertStringContainsString('href="/reminders?page=2"', $first);
+        self::assertStringContainsString('Later', $first);
+
+        $second = self::body($this->browser->get('/reminders?page=2'));
+        self::assertStringContainsString('Upcoming (30)', $second);
+        self::assertStringContainsString('Warranty ends: Part 30', $second);
+        self::assertStringNotContainsString('Warranty ends: Part 25', $second);
+        self::assertStringContainsString('href="/reminders"', $second, 'Sooner goes back to the first page');
+    }
+
+    public function testThePagesLinkUnderASubpath(): void
+    {
+        $this->app = $this->createApp(['FEATURES_PARTS' => 'true', 'APP_BASE_PATH' => '/logbook']);
+        $this->pinClock($this->app, self::NOW);
+        $this->resetDatabase($this->app);
+        $this->createOwner($this->app);
+        $this->golf = $this->vehicle($this->app);
+        for ($i = 1; $i <= 26; $i++) {
+            $this->part(sprintf('Part %02d', $i), months: 12 + $i, bought: '2026-03-01');
+        }
+        $browser = new TestBrowser($this->app);
+        $browser->get('/logbook/login');
+        $browser->post('/logbook/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+
+        $first = self::body($browser->get('/logbook/reminders'));
+        self::assertStringContainsString('href="/logbook/reminders?page=2"', $first);
+        self::assertStringContainsString('href="/logbook/reminders"', self::body($browser->get('/logbook/reminders?page=2')));
+    }
+
     public function testRaisedFromTheWarrantysEndOnTheDocumentLeadTime(): void
     {
         $part = $this->part('Clutch kit', brand: 'Sachs', months: 24, bought: '2026-03-01');

@@ -138,6 +138,66 @@ final class ScanSchema
         ];
     }
 
+    /**
+     * The same object for a provider whose `json_schema` refuses unions,
+     * optional keys and length limits (Anthropic's `output_config.format`,
+     * #553, K132): every field required as `{value, evidence}` strings,
+     * `""` for not shown, and every list required, empty for none.
+     * StructuredOutput turns the blanks back into nulls before the answer
+     * is checked against schema(false), so the limits still hold.
+     *
+     * @return array<string, mixed>
+     */
+    public static function flat(): array
+    {
+        $string = ['type' => 'string'];
+        $object = self::closed(...);
+
+        $fields = [];
+        foreach (self::FIELDS as $name => $description) {
+            $fields[$name] = $object(['value' => $string, 'evidence' => $string], ['description' => $description]);
+        }
+        $lines = [];
+        foreach (self::LINES as $name => $description) {
+            $lines[$name] = ['type' => 'array', 'items' => $string, 'description' => $description];
+        }
+        $lines['recommendations'] = [
+            'type' => 'array',
+            'description' => 'Service invoices: work the garage recommends for later, '
+                . 'each with a distance (in about 5,000 miles) or a date when given.',
+            'items' => $object(['text' => $string, 'distance' => $string, 'distance_unit' => $string, 'date' => $string]),
+        ];
+
+        return $object([
+            'kind' => [
+                'type' => 'string',
+                'enum' => array_map(static fn (ScanKind $k): string => $k->value, ScanKind::cases()),
+            ],
+            'fields' => $object($fields, [
+                'description' => 'Every field is required: give "" for its value and evidence when the document '
+                    . 'does not show it.',
+            ]),
+            'lines' => $object($lines, ['description' => 'Every list is required: [] when the document has none.']),
+        ]);
+    }
+
+    /**
+     * An object with every key required and no others.
+     *
+     * @param array<string, mixed> $properties
+     * @param array<string, mixed> $extra
+     * @return array<string, mixed>
+     */
+    private static function closed(array $properties, array $extra = []): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => $properties,
+            'required' => array_keys($properties),
+            'additionalProperties' => false,
+        ] + $extra;
+    }
+
     public static function system(): string
     {
         return <<<'TEXT'

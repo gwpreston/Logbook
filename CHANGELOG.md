@@ -6,6 +6,45 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.6] — 2026-10-23
+
+Phase 53.14: **Claude scans and large imports from the known-issues log**
+([docs/phases/phase-53.14.md](docs/phases/phase-53.14.md)). No
+migration: pull and restart.
+
+### Fixed
+- **Reading a document with a Claude model works.** A Claude model whose
+  *Test* had recorded JSON Schema output failed every scan ("The scan
+  failed"): Anthropic refuses the length limits in the scan's schema and
+  allows only 16 fields that may be null. A Claude model is now sent a
+  simpler form of the same schema, every field present and `""` for
+  "not shown", which Logbook reads back as before and checks with the
+  same limits, so what a scan stores doesn't change. A scan whose JSON
+  Schema request a provider refuses is tried once more as a tool call,
+  and *Test* checks JSON output with the scan's own schema, so the way it
+  records is one a scan works in (K132, #553).
+- **A large fuel CSV imports in about a third of the time.** Committing
+  5,000 fill-ups took 20 seconds on PostgreSQL in our test setup (41 on
+  slower hardware), close to PHP's 30-second limit, where the page went
+  blank and nothing was imported. The import no longer reads the file
+  twice, looks each station up once, saves the fill-ups in one pass, and
+  the request may run as long as a job's (`JOB_TIME_LIMIT`). The same
+  file now takes about 7 seconds, and its preview under a second (K49).
+- **A CSV import holds the file in memory once, not three times.** The
+  file is read from disk a row at a time. With `MAX_UPLOAD_MB` raised a
+  long way, a file too large for PHP's `memory_limit` is refused with a
+  message instead of an error page (K129).
+
+### Changed
+- **The Reminders page shows *Upcoming* 25 at a time**, with *Sooner*
+  and *Later* links (they work without JavaScript); the heading still
+  gives the whole count, and overdue and due are always shown in full.
+  Each part ticked to remind of its warranty is upcoming from the day
+  it's ticked, so the list could run to hundreds (K19, #555).
+- **The reminder job costs the same for every vehicle.** It reads each
+  table once for all vehicles, as a page does, and adds new warranty
+  reminders a hundred at a time (K19).
+
 ## [3.19.5] — 2026-10-23
 
 Phase 53.13: **CSV import round trip and part warranty details from the

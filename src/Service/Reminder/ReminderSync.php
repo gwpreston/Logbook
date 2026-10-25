@@ -38,6 +38,7 @@ use Logbook\Service\Tyre\TyreService;
 use Logbook\Service\User\UserDirectory;
 use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Display\DisplayFormatter;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\UserDisplayScope;
@@ -54,6 +55,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class ReminderSync
 {
+    /** New reminders added in one statement. */
+    private const int INSERT_BATCH = 100;
+
     public function __construct(
         private VehicleRepository $vehicles,
         private ScheduleService $schedules,
@@ -76,10 +80,28 @@ final readonly class ReminderSync
         private IssueRepository $issues,
         private VehicleDataPrimer $primer,
         private PartRepository $parts,
+        private RequestReads $reads,
     ) {
     }
 
     public function sync(User $user): void
+    {
+        // Outside a page (the reminder job) nothing is read once per request, so priming would do
+        // nothing and each vehicle would cost its own queries (K19): read that way for the sync.
+        $started = !$this->reads->isActive();
+        if ($started) {
+            $this->reads->begin();
+        }
+        try {
+            $this->reconcile($user);
+        } finally {
+            if ($started) {
+                $this->reads->end();
+            }
+        }
+    }
+
+    private function reconcile(User $user): void
     {
         $all = $this->access->visibleVehicleIds($user, VehicleScope::All);
         $active = $this->access->visibleVehicleIds($user, VehicleScope::Active);
@@ -112,6 +134,7 @@ final readonly class ReminderSync
         }
 
         // Archived vehicles raise nothing, so their reminders fall out below.
+        $added = [];
         $owners = [];
         $vehicles = [];
         $activeVehicles = $this->vehicles->listByIds($active);
@@ -210,9 +233,17 @@ final readonly class ReminderSync
             foreach ($wanted as $generated) {
                 $stored = $existing[$generated->key()] ?? null;
                 unset($existing[$generated->key()]);
-                $stored === null ? $this->insert($generated) : $this->update($stored, $generated);
+                if ($stored !== null) {
+                    $this->update($stored, $generated);
+                } elseif (self::tells($generated->status)) {
+                    $this->insert($generated);
+                } else {
+                    // Nothing to tell, so no id is needed: added together below (K19).
+                    $added[] = $generated;
+                }
             }
         }
+        $this->insertAll($added);
 
         foreach ($existing as $orphan) {
             $this->reminders->delete($orphan->id);
@@ -430,6 +461,24 @@ final readonly class ReminderSync
         }
     }
 
+    /**
+     * New reminders that tell no webhook, in one statement a batch (the
+     * first sync after many parts are ticked, K19); one at a time if a
+     * concurrent sync added any of them first.
+     *
+     * @param list<GeneratedReminder> $generated
+     */
+    private function insertAll(array $generated): void
+    {
+        foreach (array_chunk($generated, self::INSERT_BATCH) as $batch) {
+            try {
+                $this->reminders->insertGeneratedMany($batch, $this->clock->now());
+            } catch (UniqueConstraintViolationException) {
+                array_map($this->insert(...), $batch);
+            }
+        }
+    }
+
     private function update(Reminder $stored, GeneratedReminder $generated): void
     {
         $newOccurrence = $stored->occurrence !== $generated->occurrence;
@@ -458,8 +507,13 @@ final readonly class ReminderSync
      */
     private function told(int $vehicleId, int $reminderId, ReminderStatus $status): void
     {
-        if (in_array($status, [ReminderStatus::Due, ReminderStatus::Overdue, ReminderStatus::Done], true)) {
+        if (self::tells($status)) {
             $this->webhooks->reminder($vehicleId, $reminderId, $status->value);
         }
+    }
+
+    private static function tells(ReminderStatus $status): bool
+    {
+        return in_array($status, [ReminderStatus::Due, ReminderStatus::Overdue, ReminderStatus::Done], true);
     }
 }

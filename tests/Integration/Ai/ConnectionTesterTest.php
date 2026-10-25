@@ -15,6 +15,7 @@ use Logbook\Repository\AiBusyRepository;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Repository\AiModelRepository;
 use Logbook\Service\Ai\ConnectionTester;
+use Logbook\Service\Ai\Scan\ScanSchema;
 use Logbook\Tests\Support\AiTestCase;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -39,7 +40,14 @@ final class ConnectionTesterTest extends AiTestCase
             'openai/text',
             'openai/tool_call',
             'openai/error_json_schema_unsupported',
-            'groq/json_object',
+            new MockResponse((string) json_encode(['choices' => [[
+                'index' => 0,
+                'message' => [
+                    'role' => 'assistant',
+                    'content' => '{"kind":"fuel_receipt","fields":{"total":{"value":"58.53","evidence":"TOTAL 58.53"}}}',
+                ],
+                'finish_reason' => 'stop',
+            ]]]), ['http_code' => 200]),
         );
 
         $models = $this->service($app, AiModelRepository::class);
@@ -58,6 +66,12 @@ final class ConnectionTesterTest extends AiTestCase
         self::assertTrue($tested->json);
         self::assertNotNull($tested->testedAt);
         self::assertSame(['type' => 'json_object'], $this->provider->last()['json']['response_format'] ?? null);
+        $format = $this->provider->requests[3]['json']['response_format'] ?? null;
+        self::assertIsArray($format);
+        $schema = $format['json_schema'] ?? null;
+        self::assertIsArray($schema);
+        self::assertSame('document', $schema['name'] ?? null, 'JSON is tested with the scan\'s own schema (K132)');
+        self::assertSame(ScanSchema::schema(), $schema['schema'] ?? null);
     }
 
     public function testAnAnswerCutOffByThinkingSaysSo(): void

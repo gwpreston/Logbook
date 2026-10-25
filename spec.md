@@ -2193,6 +2193,10 @@ iCal/webcal feed so items appear in the user's calendar.
   vehicle, when it is due and a link to its source; dismissed and done are
   folded away. Mark done, dismiss and reopen are one-click forms (work
   without JS). Manual reminders are added, edited and deleted there.
+  *Upcoming* is paged 25 at a time (`?page=`, *Sooner* / *Later* links that
+  work without JS), its heading still giving the whole count; overdue and
+  due are shown whole on every page (decided 2026-10-23, #555, K19: every
+  ticked part warranty is upcoming from the day it is ticked).
 - **Calendar feed** (optional): Settings → Reminders creates a secret feed
   URL (`/calendar/{token}.ics`), shown once together with its `webcal://`
   form; resetting it invalidates the old URL, and it can be turned off. Only
@@ -4338,7 +4342,11 @@ vehicles; a disabled module cannot be imported).
   in its first 8 KB without a UTF-16 byte-order mark, or UTF-16 that
   isn't whole, such as a cut-off file (K125) — is refused with
   "This isn't a CSV file. Save it from your spreadsheet or app as CSV,
-  then upload that." (K61). The
+  then upload that." (K61). The file is read from disk a row at a time,
+  re-encoded a chunk at a time, so the text is never held whole beside its
+  rows; a file whose rows would take more than half of the memory PHP's
+  `memory_limit` leaves is refused with "The file is too large to read with the
+  memory this server gives PHP." (Phase 53.14, K129). The
   file is staged under `var/cache/staged` with a random name bound to the
   session and deleted after the import or within a day; an import step
   that is refused (rows to skip, nothing importable) keeps it, so the
@@ -6951,7 +6959,9 @@ request to any model service.
 - **Test** (per connection, on its page) runs, in order: a model list;
   then for a chosen model a short completion, a tool call, a tiny image
   (only when the model is marked for images) and JSON output (only when
-  marked for it). Each step shows ok or failed, its time, and on failure
+  marked for it), which reads a short fuel receipt with the scan's own
+  schema (§7.27 *Schemas*), so a mode is recorded only if a scan works in
+  it (Phase 53.14, K132). Each step shows ok or failed, its time, and on failure
   the error text with any secret redacted. Steps after a failed list
   still run when a model is chosen. The tool call always runs and sets
   *Tools*; the image and JSON steps set *Images* and *JSON output*. A
@@ -7704,8 +7714,17 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   given carries both keys (either may be null), so a server that holds
   the model to the schema (LM Studio, llama.cpp) can't answer `{}` for a
   field or leave `fields` out (decided 2026-10-20,
-  `docs/phases/open-questions.md` #534, K130). An answer missing any of
-  them is still read:
+  `docs/phases/open-questions.md` #534, K130). A Claude model in
+  `json_schema` mode gets a flat form of it instead, since Anthropic's
+  `output_config.format` refuses `maxLength` and allows 16 union-type
+  and 24 optional parameters: every field required as `{value, evidence}`
+  plain strings, `""` for not shown, and every list a required array,
+  empty for none; `""` is turned back into null before the answer is
+  checked, and the limits it can't send (`maxLength`) are checked on the
+  answer, so what is stored is the same (decided 2026-10-23, #553,
+  K132). A scan whose `json_schema` request is refused with a 400 is
+  retried once in `tool` mode. An answer missing any of them is still
+  read:
   - *Service or repair invoice:* date, registration, make and model,
     odometer and unit, vendor, work performed (lines), parts (lines),
     labour total, parts total, VAT amount and rate, total, currency,
@@ -12261,12 +12280,16 @@ task breakdowns live in the per-phase files; this is the map.
   decided 2026-10-21). No migration.
   See [`phase-53.13.md`](docs/phases/phase-53.13.md).
 - **Phase 53.14 — Claude scans and large imports from the known-issues
-  log + patch release** (planned). A scan on a Claude model sends a
-  schema Anthropic accepts and falls back to `tool` mode on a refusal
-  (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
-  large CSV is read without three copies in memory (K129); warranty
-  reminders are paged and batched (K19). Behaviour-preserving, no
-  migration. See [`phase-53.14.md`](docs/phases/phase-53.14.md).
+  log + patch release** (complete). A scan on a Claude model sends a
+  flat schema Anthropic accepts, every field required and `""` for not
+  shown (§7.27 *Schemas*, #553), and falls back to `tool` mode on a
+  refusal (K132); a 5,000-row CSV commit stays inside the time limit (K49) and a
+  large CSV is read without three copies in memory (K129); the Reminders
+  page's *Upcoming* is paged 25 at a time (§7.6, #555), and new warranty
+  reminders are added in batches with the reminder job's reads shared
+  across vehicles (K19). Behaviour-preserving, no
+  migration. Releases v3.19.6, a patch on its own after 53.13's release
+  (#554, decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
   known-issues log + patch release** (planned). Imagick prepares a photo
   for OCR as fast as GD (K74); OCR preparation overlaps the vision
