@@ -241,9 +241,8 @@ tagged.
   building, K144). MySQL and MariaDB's collation ignores accents, so
   `öl` also finds "Olhandel" there; PostgreSQL and SQLite match accents
   exactly. Accent-sensitive everywhere, accent-insensitive everywhere,
-  or left as it is? *Needs a decision;* carried in
-  [`open-questions.md`](open-questions.md), best decided with #452.
-  Nothing in this phase changes it.
+  or left as it is? *Decided 2026-10-25:* accent-sensitive everywhere, built in
+  [Phase 53.17](phase-53.17.md) (K144). Nothing in this phase changes it.
 
 - **#457. Tap targets at narrow widths** (K16, K35, K55). *Decided
   2026-10-21* (when Phase 53.11 was planned): (3) compact controls keep

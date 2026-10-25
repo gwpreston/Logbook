@@ -197,5 +197,6 @@ owner. Each makes the code or docs say what the spec already says.
   chip the edit form shows for a part with no stored warranty start.
   *Needs a decision*; not decided in this phase.
 - **#488** (K72, found in the merge review): whether the `note` strings
-  in Ask and MCP tool results follow the user's language. *Needs a
-  decision*; not decided in this phase.
+  in Ask and MCP tool results follow the user's language. *Decided
+  2026-10-25:* (1) they stay English, built in
+  [Phase 53.17](phase-53.17.md) (K72).

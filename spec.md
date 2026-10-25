@@ -6978,8 +6978,10 @@ request to any model service.
   that don't list. Only models the admin **adds** to the connection
   appear in task pickers. The list has a search box (a plain GET filter;
   OpenRouter lists hundreds). It matches a model's name or label
-  containing the text, ignoring case (non-ASCII letters too), with `_`
-  and `%` taken literally, the same on every engine (Phase 53.12, K51).
+  containing the text, ignoring case (non-ASCII letters too) but **not
+  accents** (`öl` doesn't find "Olhandel"), with `_` and `%` taken
+  literally, the same on every engine (Phase 53.12, K51; accents,
+  #552, decided 2026-10-25).
   - **Capabilities** (`tools`, `images`, `json`): the provider's report
     where it gives one (OpenRouter's `supported_parameters` and
     `architecture.input_modalities`; Anthropic's `capabilities.image_input`
@@ -7153,7 +7155,11 @@ request to any model service.
   page showing the same figure with the same filters. Lists are capped
   (50 rows) with a total count. Module-off tools are not offered. A
   vehicle the user can't see is "not found", and amounts without
-  `ViewCosts` are omitted, exactly as the API does. Each call runs in a
+  `ViewCosts` are omitted, exactly as the API does. A tool result's
+  `note` strings (a hint such as "The total is running costs only") are
+  **always English**: only the model reads them, as it reads the tool
+  names and keys, so they aren't translated (#488, decided 2026-10-25).
+  Each call runs in a
   database transaction that is always rolled back, so not even a write
   hidden in a service a tool uses can land. "All vehicles" includes
   archived ones.
@@ -8314,6 +8320,8 @@ with its own model. No connection in Settings → AI is needed or used.
     AiDraft `source = mcp`) for **7 days**. Their result says "Draft
     saved. Open {link} to add it.", the link going to the card on the
     Insights page (`/insights#draft-{id}`, Phase 38).
+  - A tool result's `note` strings are English whatever the key user's
+    language (#488, §7.26).
   - Tool descriptions are written for an MCP client's model, translated
     to the key user's language (`mcp.tool.*`). Unknown tools, and tools
     the key can't use, are a JSON-RPC -32602. A tool's own refusal (a
@@ -9438,8 +9446,8 @@ third party.
     names, the brand counted as part of the name), each with name, brand,
     address and distance. Without a position, matches by postcode, then by
     name (the name or brand containing the station's words, ignoring case,
-    non-ASCII letters too, with `_` and `%` taken literally, the same on
-    every engine; Phase 53.12, K51). *Link* saves it; *Unlink* removes it.
+    non-ASCII letters too but not accents, with `_` and `%` taken
+    literally, the same on every engine; Phase 53.12, K51, #552). *Link* saves it; *Unlink* removes it.
   - Once linked, its address, postcode, position, opening hours and
     grades sold are kept up to date from the feed (on linking and after
     each sync), unless *Keep my details* is ticked. Its name and brand are
@@ -10485,7 +10493,14 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   came off* row; *Add another* re-renders the form with one more. A
   fitting or removal made by a record has the record's date and mileage
   and moves with it when the record is edited; unticking a part on the
-  record removes that fitting (or reopens that removal). The lists are
+  record removes that fitting (or reopens that removal). A removal made
+  without a record (the part page's *Remove*) can't be edited or undone
+  in the app or the API, so its date, mileage, outcome and sale price
+  stay as entered (#483, decided 2026-10-25); the way to correct one is
+  to delete the part and add it again, and a sale price of £0.00 stored
+  before 3.16.3 (when a blank price was stored as 0.000) stays too. Route
+  a correction through a record when there is one: deleting that record
+  reopens the removal. The lists are
   shown only with the `parts` module on, and the checklists only when
   there is a part to list.
 - **Deleting a record** (a service record or a modification): the
@@ -11239,7 +11254,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `composer.lock`'s `content-hash` differs from the one recorded in
   `vendor/` at the last install, so a pull that changes the lock reaches
   `vendor/` on the next start. Development only: the production image
-  never installs at start.
+  never installs at start. From Phase 53.17 (#549, decided 2026-10-25,
+  K143) the dev stack sets `SCHEDULER_ENABLED=false`, so the container's
+  own scheduler loop never holds the pass lock a test running the
+  scheduler takes; a developer sets it `true` to watch reminders.
 - **Health check:** `/health` endpoint (app + DB connectivity, the app
   version and, from Phase 28.1, the scheduler's last pass) for monitoring.
 - **Reverse proxies** (Phase 35.2) are documented, with tested examples,
@@ -12301,6 +12319,16 @@ task breakdowns live in the per-phase files; this is the map.
   keeps its id counter (K63); `bin/smoke-test.sh` runs from Git Bash on
   Windows (K142). No migration. See
   [`phase-53.16.md`](docs/phases/phase-53.16.md).
+- **Phase 53.17 — Dev suite, search accents and decided notes from the
+  known-issues log + patch release** (planned). The dev stack's scheduler
+  loop is off by default so a suite run in it isn't refused the pass lock
+  (§10, K143, #549); the AI model and station name searches ignore case
+  but not accents on every engine, MySQL and MariaDB in a documented
+  platform branch (§7.25, §7.34, K144, #552); a tool result's `note`
+  strings stay English (§7.26, §7.28, K72, #488); and a part removal made
+  without a record stays as entered, said in §7.39 and the 3.16.3
+  upgrade note (K67, #483). No migration. See
+  [`phase-53.17.md`](docs/phases/phase-53.17.md).
 
 ---
 

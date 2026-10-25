@@ -127,6 +127,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.14](docs/phases/phase-53.14.md) | Claude scans and large imports from the known-issues log + patch release | ✅ |
 | [53.15](docs/phases/phase-53.15.md) | OCR speed and the PaddleOCR image from the known-issues log + patch release | 📋 |
 | [53.16](docs/phases/phase-53.16.md) | SQLite upgrade ids and the Windows smoke test from the known-issues log + patch release | 📋 |
+| [53.17](docs/phases/phase-53.17.md) | Dev suite, search accents and decided notes from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1690,6 +1691,18 @@ id counter (K63), and the smoke test runs from Git Bash on Windows
 (K142).*
 
 → [`phase-53.16.md`](docs/phases/phase-53.16.md)
+
+---
+
+## Phase 53.17 — Dev suite, search accents and decided notes from the known-issues log + patch release
+
+*Four open rows closed after the owner answered their questions (#549,
+#552, #488, #483): the dev stack's scheduler loop is off by default
+(K143), the model and station searches ignore case but not accents on
+every engine (K144), tool-result notes stay English (K72), and a part
+removal made without a record stays as entered (K67).*
+
+→ [`phase-53.17.md`](docs/phases/phase-53.17.md)
 
 ---
 

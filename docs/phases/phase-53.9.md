@@ -220,7 +220,7 @@ tagged.
   `/health` check; (3) #528's alternative, trimming without the
   extension.
 - **#549. The dev stack's scheduler loop and the suite** (found while
-  building; K143). *Open, waiting for the owner.* In the dev `app`
+  building; K143). *Decided 2026-10-25:* (1) the dev compose file sets `SCHEDULER_ENABLED=false`, built in [Phase 53.17](phase-53.17.md) (K143). In the dev `app`
   container the scheduler loop's pass lock is the one the tests take,
   so a test that runs the scheduler during a pass does nothing; MySQL
   failed this way in both full runs here (different tests each time),
