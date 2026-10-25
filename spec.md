@@ -919,7 +919,8 @@ MySQL only.
 
 **User**
 - id, username (stored lower-case, so sign-in is case-insensitive on every
-  engine), password_hash (Argon2id; nullable from Phase 23.1: a user
+  engine; accents count, so `josé` and `jose` are different usernames on every
+  engine, MySQL and MariaDB comparing exactly, decided 2026-10-25, #452), password_hash (Argon2id; nullable from Phase 23.1: a user
   created through single sign-on has none until they set one, and cannot
   sign in with a password until then), display name, locale, timezone, and the
   unit preferences: distance unit (`km`|`mi`), volume unit
@@ -2097,7 +2098,9 @@ reminders. Attach invoices/receipts. Cost of 0 is valid.
   point. Both are stored on the schedule so they can be queried.
 - **Whichever comes first:** the distance limit is placed on the calendar by
   projecting the average daily distance (from the mileage log; needs a week
-  of history); the sooner of the two dates applies. Status: *overdue* once
+  of history), shown only when it falls within 100 years of today (beyond
+  that only the distance shows and no date is stored, decided 2026-10-25,
+  #451); the sooner of the two dates applies. Status: *overdue* once
   either limit is passed; *due soon* within the owner's schedule lead time
   (default 30 days) or lead distance (default 1,000 km; see §7.6); otherwise *on track*; *not known yet* when
   there is nothing to measure against.
@@ -2189,6 +2192,10 @@ iCal/webcal feed so items appear in the user's calendar.
   a document's expiry is edited) the occurrence changes: the reminder opens
   again for the new point and its notification state is cleared. Rows are
   written only when something differs.
+- **An interrupted send** (decided 2026-10-25, #458). A delivery claim
+  whose run was killed before sending keeps an empty `sent_at` and is
+  never retried: at most one notification per recipient and status, so a
+  missed one is still visible in the app rather than risking a duplicate.
 - **In-app list** (`/reminders`): overdue, due, then upcoming, each with the
   vehicle, when it is due and a link to its source; dismissed and done are
   folded away. Mark done, dismiss and reopen are one-click forms (work
@@ -10717,6 +10724,9 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   storage; zero is valid.
 - **Dates/timezone:** locale + timezone aware display, UTC storage,
   `DateTimeImmutable`, explicit tests. (Primary defence against wrong totals.)
+  An entered, API or URL date must fall in 1900-01-01 to 2100-12-31 and is
+  refused outside it (decided 2026-10-25, #450); a stored date outside it
+  is not repaired (#558).
 - **Decimal precision:** ≥3 decimals for fuel price/volume.
 - **Validation:** clear errors; never reject legitimate edge values.
   Text keeps its line breaks as `\n`: a browser posts a textarea's as
@@ -12329,6 +12339,13 @@ task breakdowns live in the per-phase files; this is the map.
   without a record stays as entered, said in §7.39 and the 3.16.3
   upgrade note (K67, #483). No migration. See
   [`phase-53.17.md`](docs/phases/phase-53.17.md).
+- **Phase 53.18 — Date range, far-out due dates, usernames and unsent
+  claims from the known-issues log** (planned). An entered, API or URL
+  date must be in 1900–2100 (§8, K42, #450); a due date projected beyond
+  100 years isn't shown or stored (§7.4, K43, #451); `josé` and `jose`
+  are different usernames on every engine (§6, K44, #452); and an
+  interrupted reminder claim is not retried (§7.6, K56, #458). One
+  migration (K44). See [`phase-53.18.md`](docs/phases/phase-53.18.md).
 
 ---
 
