@@ -170,7 +170,7 @@ the environment and type `env:OPENAI_API_KEY` (any variable name) instead.
 | Provider | Address | Notes |
 |---|---|---|
 | OpenAI | `https://api.openai.com/v1` | |
-| Anthropic | `https://api.anthropic.com` | JSON output uses structured outputs; older models a tool call |
+| Anthropic | `https://api.anthropic.com` | JSON output uses structured outputs, with a simpler form of the scan schema that Anthropic accepts (from 3.19.6); older models a tool call |
 | Google Gemini | `https://generativelanguage.googleapis.com` | The key is sent in a header, never in the address |
 
 ### OpenRouter, Groq, Mistral and other hosted providers
@@ -195,7 +195,10 @@ they are filled in; otherwise tick them. **Test** lists the models, then
 for the chosen model asks a short question, a tool call, an image (when
 ticked) and JSON output (when ticked), with the time and any error for
 each. A tool call or image that fails clears its tick; for JSON it records
-which of three ways works (a JSON Schema, plain JSON mode, or a tool call).
+which of three ways works (a JSON Schema, plain JSON mode, or a tool call),
+reading a short sample receipt with the same schema a scan uses, so the way
+it records is one a scan works in (from 3.19.6). If a provider refuses a
+JSON Schema request later, the scan is tried once more as a tool call.
 Tests count in the usage log like any other request.
 
 ## Tasks

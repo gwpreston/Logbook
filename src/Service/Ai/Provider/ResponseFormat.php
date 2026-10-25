@@ -24,12 +24,17 @@ final readonly class ResponseFormat
          *      a key out without the answer being refused
          */
         public ?array $check = null,
+        /**
+         * @var array<string, mixed>|null the object with no unions, optional keys or length limits, `""` for
+         *      null and `[]` for no list, for a provider whose `json_schema` refuses them (Anthropic, #553)
+         */
+        public ?array $flat = null,
     ) {
     }
 
     public function withMode(JsonMode $mode): self
     {
-        return new self($this->name, $this->schema, $mode, $this->check);
+        return new self($this->name, $this->schema, $mode, $this->check, $this->flat);
     }
 
     /**

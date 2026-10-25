@@ -36,6 +36,7 @@ use Logbook\Service\Part\PartRemoval;
 use Logbook\Service\Part\PartService;
 use Logbook\Service\Trip\TripService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Config\AppSettings;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
 use Logbook\Tests\Support\Html;
@@ -202,6 +203,38 @@ final class ImportTest extends AppTestCase
     }
 
     /**
+     * K129: with MAX_UPLOAD_MB raised past what `memory_limit` can read, a
+     * CSV within the upload limit is refused with a message, not a 500, and
+     * its staged copy is removed.
+     */
+    public function testACsvTooLargeForTheMemoryLimitIsRefusedWithAMessage(): void
+    {
+        $app = $this->createApp(['MAX_UPLOAD_MB' => '100']);
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = "Date,Litres,Price,Notes\n" . str_repeat('2026-06-01 09:00,40,1.60,' . str_repeat('x', 10_000) . "\n", 4000);
+        $staged = $this->service($app, AppSettings::class)->cacheDir . '/staged/import-*';
+        $before = glob($staged) ?: [];
+        $limit = (string) ini_get('memory_limit');
+        // 24 MB left, so reading may add 12 MB: well under the 40 MB these 4,000 rows take.
+        ini_set('memory_limit', (string) (memory_get_usage(true) + 24 * 1024 * 1024));
+        try {
+            $response = $browser->post('/vehicles/' . $golf->id . '/import/fuel', [], ['file' => $this->file($csv, 'big.csv')]);
+        } finally {
+            ini_set('memory_limit', $limit);
+        }
+
+        self::assertGreaterThan(10 * 1024 * 1024, strlen($csv), 'over the default MAX_UPLOAD_MB');
+        self::assertSame(422, $response->getStatusCode());
+        self::assertStringContainsString(
+            'The file is too large to read with the memory this server gives PHP.',
+            self::body($response),
+        );
+        self::assertSame($before, glob($staged) ?: [], 'nothing is left staged');
+    }
+
+    /**
      * K61 and K21: a binary file is refused as not a CSV (its bytes were
      * listed as columns), and the size message names the limit.
      */
@@ -304,6 +337,43 @@ final class ImportTest extends AppTestCase
         $maxol = $stations->findByName('maxol ballymena');
         self::assertNotNull($maxol);
         self::assertSame([$tesco, $maxol->id, null], $links);
+    }
+
+    public function testAStationNamedOnManyRowsIsCreatedOnceAndEveryFillUpWritesItsReading(): void
+    {
+        // The commit links each name once and inserts readings straight away (K49): the same result as row by row.
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $csv = implode("\n", [
+            'Date,Odometer,Litres,Price,Station',
+            '2026-06-01 09:00,1000,40,1.60,Maxol Ballymena',
+            '2026-06-08 09:00,1300,30,1.45,maxol  BALLYMENA',
+            '2026-06-15 09:00,1600,30,1.45,Maxol Ballymena',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        self::assertSame(200, $this->commit($browser, $map, $this->preview($browser, $map))->getStatusCode());
+
+        $maxol = $this->service($app, StationRepository::class)->findByName('maxol ballymena');
+        self::assertNotNull($maxol);
+        $fills = $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id);
+        self::assertCount(3, $fills);
+        foreach ($fills as $fill) {
+            self::assertSame($maxol->id, $fill->data->stationId);
+            self::assertSame('Maxol Ballymena', $fill->data->station);
+        }
+        $readings = array_map(
+            static fn ($r): array => [$r->source, $r->readingKm],
+            $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id),
+        );
+        // The owner reads miles; the readings are stored in km.
+        self::assertEqualsCanonicalizing([
+            [OdometerSource::Fuel, '1609.344'],
+            [OdometerSource::Fuel, '2092.147'],
+            [OdometerSource::Fuel, '2574.950'],
+        ], $readings);
     }
 
     public function testImportedFillUpsThatLookUnusualAreCounted(): void

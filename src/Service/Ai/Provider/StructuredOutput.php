@@ -19,7 +19,7 @@ final class StructuredOutput
     /**
      * @throws ProviderError when there is no object or it does not fit the schema
      */
-    public static function extract(ChatResult $result, ResponseFormat $format): ChatResult
+    public static function extract(ChatResult $result, ResponseFormat $format, bool $flat = false): ChatResult
     {
         $object = null;
         if ($format->mode === JsonMode::Tool) {
@@ -40,6 +40,9 @@ final class StructuredOutput
                 mb_substr(trim($result->text), 0, 200),
             ));
         }
+        if ($flat) {
+            $object = self::unflatten($object);
+        }
         $errors = SchemaCheck::errors($object, $format->check ?? $format->schema);
         if ($errors !== []) {
             throw new ProviderError(ErrorCode::BadResponse, 'The JSON object does not fit the schema: '
@@ -47,6 +50,43 @@ final class StructuredOutput
         }
 
         return $result->withObject($object);
+    }
+
+    /**
+     * An answer to ResponseFormat::$flat as the schema has it: `""` is
+     * null, a list loses its null items and is null when empty, and an
+     * object below the top two levels (a field, a recommendation) whose
+     * every value is null is null.
+     *
+     * @param array<string, mixed> $object
+     * @return array<string, mixed>
+     */
+    public static function unflatten(array $object): array
+    {
+        $out = [];
+        foreach ($object as $key => $value) {
+            $out[$key] = self::blankToNull($value, 1);
+        }
+
+        return $out;
+    }
+
+    private static function blankToNull(mixed $value, int $depth): mixed
+    {
+        if ($value === '') {
+            return null;
+        }
+        if (!is_array($value)) {
+            return $value;
+        }
+        $out = array_map(static fn (mixed $item): mixed => self::blankToNull($item, $depth + 1), $value);
+        if (array_is_list($value)) {
+            $out = array_values(array_filter($out, static fn (mixed $item): bool => $item !== null));
+
+            return $out === [] ? null : $out;
+        }
+
+        return $depth >= 2 && array_filter($out, static fn (mixed $item): bool => $item !== null) === [] ? null : $out;
     }
 
     /**

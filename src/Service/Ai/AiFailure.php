@@ -25,6 +25,8 @@ final class AiFailure extends RuntimeException
         public readonly ?int $timeoutSeconds = null,
         /** For an unset `env:` secret: the variable to set. */
         public readonly ?string $variable = null,
+        /** The provider's HTTP status, when it answered with an error. */
+        public readonly ?int $status = null,
     ) {
         parent::__construct($detail === '' ? $error->value : $error->value . ': ' . $detail);
     }

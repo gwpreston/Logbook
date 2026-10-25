@@ -110,6 +110,8 @@ return [
         'label' => 'Seiten',
         'newer' => 'Neuer',
         'older' => 'Älter',
+        'sooner' => 'Früher',
+        'later' => 'Später',
         'status' => '{first}–{last} von {total}',
     ],
     'validation' => [
@@ -3296,6 +3298,7 @@ return [
             'empty' => 'Die Datei enthält keine Zeilen zum Importieren (sie braucht eine Kopfzeile und mindestens eine Zeile darunter).',
             'not_csv' => 'Das ist keine CSV-Datei. Speichere sie in deiner Tabellenkalkulation oder App als CSV und lade diese hoch.',
             'too_many_rows' => 'Die Datei hat mehr als {max, number} Zeilen. Teile sie in kleinere Dateien auf.',
+            'too_large' => 'Die Datei ist zu groß für den Speicher, den dieser Server PHP gibt. Teile sie in kleinere Dateien auf oder erhöhe PHPs memory_limit.',
             'nothing' => 'Keine der Zeilen kann importiert werden.',
             'skip_required' => '{count, plural, one {Eine Zeile hat ein Problem.} other {# Zeilen haben Probleme.}} Setze den Haken bei „Überspringen“, um die übrigen zu importieren, oder korrigiere zuerst die Datei.',
             'yes_no' => 'Erwartet: ja oder nein.',

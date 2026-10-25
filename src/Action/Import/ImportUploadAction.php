@@ -11,6 +11,7 @@ use Logbook\Service\Import\ImportField;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Csv\CsvReader;
+use Logbook\Support\Csv\CsvTooLarge;
 use Logbook\Support\Csv\CsvTooLong;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
@@ -66,21 +67,13 @@ final readonly class ImportUploadAction
             return $this->render($request, $response, $vehicle, $module, ['key' => 'upload.failed', 'params' => []]);
         }
 
-        $contents = (string) $file->getStream();
-        // A ZIP (a Fuelio backup, an .xlsx), a PDF or an image isn't a CSV (K61).
-        if (CsvReader::isBinary($contents)) {
-            return $this->render($request, $response, $vehicle, $module, ['key' => 'import.error.not_csv', 'params' => []]);
-        }
-        try {
-            $csv = CsvReader::read($contents, CsvImporter::MAX_ROWS);
-        } catch (CsvTooLong $e) {
-            return $this->render($request, $response, $vehicle, $module, [
-                'key' => 'import.error.too_many_rows',
-                'params' => ['max' => $e->maxRows],
-            ]);
-        }
-        if ($csv === null || $csv->rows === []) {
-            return $this->render($request, $response, $vehicle, $module, ['key' => 'import.error.empty', 'params' => []]);
+        // Staged first and read from disk, so the file is never in memory whole (K129).
+        $token = $this->staged->stage($file, 'import');
+        $error = $this->check((string) $this->staged->path('import', $token));
+        if ($error !== null) {
+            $this->staged->discard('import', $token);
+
+            return $this->render($request, $response, $vehicle, $module, $error);
         }
 
         $session = RequestContext::session($request);
@@ -88,7 +81,6 @@ final readonly class ImportUploadAction
         if (is_array($previous) && is_string($previous['token'] ?? null)) {
             $this->staged->discard('import', $previous['token']);
         }
-        $token = $this->staged->stage($file, 'import');
         $session->set(ImportRoute::SESSION, [
             'token' => $token,
             'vehicle' => $vehicle->id,
@@ -101,6 +93,28 @@ final readonly class ImportUploadAction
             'module' => $module->value,
             'token' => $token,
         ]);
+    }
+
+    /**
+     * Why the staged file can't be imported, or null when it can.
+     *
+     * @return array{key: string, params: array<string, int|string>}|null
+     */
+    private function check(string $path): ?array
+    {
+        // A ZIP (a Fuelio backup, an .xlsx), a PDF or an image isn't a CSV (K61).
+        if (CsvReader::isBinaryFile($path)) {
+            return ['key' => 'import.error.not_csv', 'params' => []];
+        }
+        try {
+            $csv = CsvReader::fromFile($path, CsvImporter::MAX_ROWS);
+        } catch (CsvTooLong $e) {
+            return ['key' => 'import.error.too_many_rows', 'params' => ['max' => $e->maxRows]];
+        } catch (CsvTooLarge) {
+            return ['key' => 'import.error.too_large', 'params' => []];
+        }
+
+        return $csv === null || $csv->rows === [] ? ['key' => 'import.error.empty', 'params' => []] : null;
     }
 
     /**

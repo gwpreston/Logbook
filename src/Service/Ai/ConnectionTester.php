@@ -19,6 +19,8 @@ use Logbook\Service\Ai\Provider\FinishReason;
 use Logbook\Service\Ai\Provider\ImageInput;
 use Logbook\Service\Ai\Provider\ResponseFormat;
 use Logbook\Service\Ai\Provider\ToolDefinition;
+use Logbook\Service\Ai\Scan\Extractor;
+use Logbook\Service\Ai\Scan\ScanSchema;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -26,7 +28,7 @@ use Psr\Clock\ClockInterface;
  * model a short completion, a tool call, a tiny image (when it is marked
  * for images) and JSON output (when marked for it, trying each mode best
  * first). Each step reports its time and its redacted error. Tool calls,
- * images and JSON are confirmed or cleared by what was tried (what a test
+ * images and JSON (with the scan's own schema) are confirmed or cleared by what was tried (what a test
  * stopped before keeps its tick), and stored on the model with the results. Every call goes through AiGateway (task
  * `test`), so the acknowledgement, limits and usage log apply.
  */
@@ -36,15 +38,8 @@ final readonly class ConnectionTester
     private const string IMAGE = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mO4oKBAEmIY1TCqYfhqAABLfxAQ'
         . 'egypMgAAAABJRU5ErkJggg==';
 
-    private const array JSON_SCHEMA = [
-        'type' => 'object',
-        'properties' => [
-            'colour' => ['type' => 'string'],
-            'count' => ['type' => 'integer'],
-        ],
-        'required' => ['colour', 'count'],
-        'additionalProperties' => false,
-    ];
+    /** What the JSON step reads: a short fuel receipt, with the real scan schema (K132). */
+    private const string RECEIPT = "SHELL ANYTOWN\n04/05/2026 14:32\nUnleaded 40.12 L @ 145.9p/L\nTOTAL £58.53";
 
     /**
      * The longest answer a step allows: room for a reasoning model's
@@ -167,9 +162,17 @@ final readonly class ConnectionTester
         $started = hrtime(true);
         foreach (JsonMode::candidates($connection->adapter) as $mode) {
             try {
+                // The scan's own schema, so a mode is recorded only if a scan would work in it (K132).
                 $call(new ChatRequest(
-                    [ChatMessage::user('Give the colour "red" and the count 3.')],
-                    response: new ResponseFormat('test_object', self::JSON_SCHEMA, $mode),
+                    [ChatMessage::user(Extractor::between('The document\'s text:', self::RECEIPT))],
+                    ScanSchema::system(),
+                    response: new ResponseFormat(
+                        'document',
+                        ScanSchema::schema(),
+                        $mode,
+                        ScanSchema::schema(false),
+                        ScanSchema::flat(),
+                    ),
                     maxOutputTokens: self::MAX_TOKENS,
                 ));
                 $results[] = ['step' => TestStep::Json->value, 'ok' => true, 'ms' => self::since($started), 'error' => null];

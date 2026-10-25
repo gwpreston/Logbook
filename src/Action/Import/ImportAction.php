@@ -16,7 +16,10 @@ use Logbook\Service\Import\ImportPreview;
 use Logbook\Service\Import\ImportRowStatus;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Csv\CsvReader;
+use Logbook\Support\Config\AppSettings;
+use Logbook\Support\Csv\CsvTooLarge;
 use Logbook\Support\Csv\CsvTooLong;
+use Logbook\Support\Http\LongRequest;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Storage\StagedFiles;
@@ -45,6 +48,7 @@ final readonly class ImportAction
         private StagedFiles $staged,
         private View $view,
         private Redirector $redirect,
+        private AppSettings $settings,
     ) {
     }
 
@@ -65,14 +69,17 @@ final readonly class ImportAction
             && ($import['module'] ?? null) === $module->value
             ? $this->staged->path('import', $token)
             : null;
-        $contents = $path === null ? false : file_get_contents($path);
+        $expired = 'import.expired';
         try {
-            $csv = $contents === false ? null : CsvReader::read($contents, CsvImporter::MAX_ROWS);
+            $csv = $path === null ? null : CsvReader::fromFile($path, CsvImporter::MAX_ROWS);
         } catch (CsvTooLong) {
             $csv = null;
+        } catch (CsvTooLarge) {
+            $csv = null;
+            $expired = 'import.error.too_large';
         }
         if ($csv === null || !is_array($import)) {
-            $session->flash('warning', 'import.expired');
+            $session->flash('warning', $expired);
 
             return $this->redirect->toRoute('import.upload', ['id' => (string) $vehicle->id, 'module' => $module->value]);
         }
@@ -92,6 +99,8 @@ final readonly class ImportAction
             return $this->render($request, $response, $vehicle, $module, $csv, $options, $filename, $token, $preview);
         }
 
+        // A 5,000-row commit can outlast PHP's 30 s (K49): give it a job's time, and finish if the browser goes.
+        LongRequest::allow($this->settings->jobTimeLimit);
         $preview = $this->importer->analyse($user, $vehicle, $module, $csv, $options);
         $error = match (true) {
             $preview->count(ImportRowStatus::Import) === 0 => 'import.error.nothing',
@@ -115,7 +124,7 @@ final readonly class ImportAction
             );
         }
 
-        $result = $this->importer->import($user, $vehicle, $module, $csv, $options);
+        $result = $this->importer->import($user, $vehicle, $module, $csv, $options, $preview);
         $this->staged->discard('import', $token);
         $session->remove(ImportRoute::SESSION);
 

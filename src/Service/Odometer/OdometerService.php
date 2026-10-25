@@ -133,6 +133,24 @@ final readonly class OdometerService
     }
 
     /**
+     * The reading of an entry saved just now, which can't have one yet:
+     * inserted without looking for it first (a CSV import's fill-ups,
+     * K49). Call inside the entry's transaction.
+     */
+    public function recordForNewEntry(
+        Vehicle $vehicle,
+        OdometerSource $source,
+        int $entryId,
+        ?string $km,
+        DateTimeImmutable $at,
+    ): void {
+        self::assertOwned($source);
+        if ($km !== null) {
+            $this->readings->insert($vehicle->id, new OdometerReadingData($km, $at), $source, $entryId, $this->clock->now());
+        }
+    }
+
+    /**
      * Whether the vehicle has a reading in [from, until) at this odometer
      * other than the one this entry owns (spec.md §7.37, #319).
      */

@@ -28,6 +28,7 @@ use Logbook\Service\Ai\Provider\ChatMessage;
 use Logbook\Service\Ai\Provider\ChatRequest;
 use Logbook\Service\Ai\Provider\ImageInput;
 use Logbook\Service\Ai\Provider\ResponseFormat;
+use Logbook\Service\Ai\Scan\ScanSchema;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Tests\Support\AiTestCase;
@@ -433,6 +434,69 @@ final class AiGatewayTest extends AiTestCase
 
         self::assertSame(1, $summary->aiRowsDeleted);
         self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM ai_requests'));
+    }
+
+    public function testAClaudeScanSendsTheFlatSchemaAndARefusedOneIsTriedOnceAsATool(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $claude = $this->addConnection($app, 'Claude', AdapterType::Anthropic, 'http://10.0.0.6', Location::Network);
+        $this->assign($app, $claude, 'claude-sonnet-5-5', AiTaskName::ReadDocument, [Capability::Json]);
+        $answer = ['kind' => 'fuel_receipt', 'fields' => ['total' => ['value' => '58.53', 'evidence' => 'TOTAL 58.53']]];
+        $this->provider->queue(
+            new MockResponse(
+                '{"type":"error","error":{"type":"invalid_request_error","message":"Schema is too complex for compilation."}}',
+                ['http_code' => 400],
+            ),
+            new MockResponse((string) json_encode([
+                'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'document', 'input' => $answer]],
+                'stop_reason' => 'tool_use',
+                'usage' => ['input_tokens' => 900, 'output_tokens' => 40],
+            ]), ['http_code' => 200]),
+        );
+
+        $result = $this->service($app, AiGateway::class)->run($owner, AiTaskName::ReadDocument, new ChatRequest(
+            [ChatMessage::user('TOTAL 58.53')],
+            response: new ResponseFormat(
+                'document',
+                ScanSchema::schema(),
+                check: ScanSchema::schema(false),
+                flat: ScanSchema::flat(),
+            ),
+        ));
+
+        self::assertSame($answer, $result->object);
+        self::assertCount(2, $this->provider->requests);
+        $sent = $this->provider->requests[0]['json']['output_config'] ?? null;
+        self::assertIsArray($sent);
+        self::assertSame(['type' => 'json_schema', 'schema' => ScanSchema::flat()], $sent['format'] ?? null);
+        self::assertSame(['type' => 'tool', 'name' => 'document'], $this->provider->requests[1]['json']['tool_choice'] ?? null);
+        self::assertArrayNotHasKey('output_config', $this->provider->requests[1]['json']);
+    }
+
+    public function testA400IsNotRetriedWithoutAToolModeOrAJsonSchemaRequest(): void
+    {
+        [$app, $owner] = $this->setUpApp();
+        $local = $this->addConnection($app, 'Desktop', AdapterType::Ollama, 'http://192.168.1.20:11434', Location::Network);
+        $this->assign($app, $local, 'llama3.2:3b', AiTaskName::ReadText, [Capability::Json]);
+        $this->assign($app, $local, 'llama3.2:1b', AiTaskName::Ask, [Capability::Tools]);
+        $refused = static fn (): MockResponse => new MockResponse('{"error":"bad schema"}', ['http_code' => 400]);
+        $this->provider->queue($refused(), $refused());
+
+        $failure = null;
+        try {
+            $this->service($app, AiGateway::class)->run($owner, AiTaskName::ReadText, new ChatRequest(
+                [ChatMessage::user('Give the colour "red" and the count 3.')],
+                response: new ResponseFormat('test_object', self::SCHEMA),
+            ));
+        } catch (AiFailure $e) {
+            $failure = $e;
+        }
+        self::assertNotNull($failure);
+        self::assertSame(400, $failure->status);
+        self::assertCount(1, $this->provider->requests, 'Ollama cannot force a tool, so nothing is retried');
+
+        self::assertSame(ErrorCode::Provider, $this->failure($app, $owner)->error);
+        self::assertCount(2, $this->provider->requests, 'a request without a schema is not retried');
     }
 
     private const array SCHEMA = [

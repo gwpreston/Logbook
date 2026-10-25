@@ -40,12 +40,15 @@
         {% for status, entries in groups %}
             {% if entries is not empty %}
                 <section class="card" aria-labelledby="reminders-{{ status }}">
-                    <h2 id="reminders-{{ status }}" class="card__title">{{ ('reminders.group.' ~ status)|trans({count: entries|length}) }}</h2>
+                    <h2 id="reminders-{{ status }}" class="card__title">{{ ('reminders.group.' ~ status)|trans({count: status == 'upcoming' ? pagination.total : entries|length}) }}</h2>
                     <ul class="list reminder-list">
                         {% for entry in entries %}
                             {{ rem.row(entry, wording, overview.today, csrf) }}
                         {% endfor %}
                     </ul>
+                    {% if status == 'upcoming' %}
+                        {{ ui.pagination(pagination, 'reminders.index', {}, {}, 'pagination.sooner', 'pagination.later') }}
+                    {% endif %}
                 </section>
             {% endif %}
         {% endfor %}

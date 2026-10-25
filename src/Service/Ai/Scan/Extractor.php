@@ -287,7 +287,7 @@ final readonly class Extractor
             [$message],
             ScanSchema::system(),
             [],
-            new ResponseFormat('document', ScanSchema::schema(), check: ScanSchema::schema(false)),
+            new ResponseFormat('document', ScanSchema::schema(), check: ScanSchema::schema(false), flat: ScanSchema::flat()),
         );
     }
 
