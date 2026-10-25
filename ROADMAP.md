@@ -128,6 +128,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.15](docs/phases/phase-53.15.md) | OCR speed and the PaddleOCR image from the known-issues log + patch release | 📋 |
 | [53.16](docs/phases/phase-53.16.md) | SQLite upgrade ids and the Windows smoke test from the known-issues log + patch release | 📋 |
 | [53.17](docs/phases/phase-53.17.md) | Dev suite, search accents and decided notes from the known-issues log + patch release | 📋 |
+| [53.18](docs/phases/phase-53.18.md) | Date range, far-out due dates, usernames and unsent claims from the known-issues log | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1703,6 +1704,18 @@ every engine (K144), tool-result notes stay English (K72), and a part
 removal made without a record stays as entered (K67).*
 
 → [`phase-53.17.md`](docs/phases/phase-53.17.md)
+
+---
+
+## Phase 53.18 — Date range, far-out due dates, usernames and unsent claims from the known-issues log
+
+*Four open rows closed after the owner answered their questions (#450,
+#451, #452, #458): dates are limited to 1900–2100 (K42), a due date past
+100 years isn't shown (K43), usernames differing by an accent are
+different on every engine, with one migration (K44), and an interrupted
+reminder claim is said to stay unsent (K56).*
+
+→ [`phase-53.18.md`](docs/phases/phase-53.18.md)
 
 ---
 
