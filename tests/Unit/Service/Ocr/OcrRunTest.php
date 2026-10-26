@@ -73,6 +73,31 @@ final class OcrRunTest extends TestCase
         self::assertSame($result, $job->result(), 'collected once');
     }
 
+    public function testPagesStartedWithTheJobAreCollectedNotReadAgain(): void
+    {
+        $read = [];
+        $started = [
+            1 => new OcrRun(static fn (): OcrResult => self::page('started1', 2)),
+            2 => OcrRun::done(self::page('started2', 3)),
+        ];
+        $job = new OcrJob(OcrRun::done(self::page('one', 1)), 3, static function (int $i) use (&$read): OcrResult {
+            $read[] = $i;
+
+            return self::page("late$i", $i + 1);
+        }, $started);
+
+        $texts = array_map(static fn (OcrLine $l): string => $l->words[0]->text, $job->result()->lines);
+
+        self::assertSame(['one', 'started1', 'started2'], $texts);
+        self::assertSame([], $read);
+    }
+
+    public function testARunIsSettledOnlyWhenItsResultIsKnownWithoutWaiting(): void
+    {
+        self::assertTrue(OcrRun::done(OcrResult::failed(OcrProblem::Unavailable))->settled());
+        self::assertFalse((new OcrRun(static fn (): OcrResult => self::page('one', 1)))->settled());
+    }
+
     public function testAFailedLaterPageKeepsThePagesAlreadyRead(): void
     {
         $read = [];

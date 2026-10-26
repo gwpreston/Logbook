@@ -310,6 +310,14 @@ many proxies give up after 60: behind nginx raise `proxy_read_timeout`
 [Ask Logbook](deployment.md#ask-logbook-behind-a-proxy). The first start downloads its models (a few hundred MB), so
 the first scan can take a minute.
 
+The image installs PaddlePaddle and PaddleX from PyPI at pinned versions
+with hashes (`docker/paddleocr/requirements.txt`) and runs as an
+unprivileged user, keeping its models in the `paddleocr_cache` volume. If
+you ran this profile before Logbook 3.19.7, its models are in the old
+`paddleocr_models` volume (root-owned, unused now): remove it with
+`docker volume rm logbook_paddleocr_models`, and the models download again
+on the first start.
+
 To run it elsewhere, start PaddleX's basic serving for the general OCR
 pipeline (`paddlex --serve --pipeline OCR --port 8080`) and point
 `OCR_URL` at it. Logbook calls `POST {OCR_URL}/ocr`. PaddleX's

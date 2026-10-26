@@ -56,6 +56,11 @@ final class PaddleOcrEngine implements OcrEngine
         return new OcrRun(fn (): OcrResult => $this->read($png, $languages, $layout, $page));
     }
 
+    public function runsInBackground(): bool
+    {
+        return false;
+    }
+
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult
     {
         if (!$this->isAvailable()) {

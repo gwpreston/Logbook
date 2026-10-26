@@ -22,6 +22,12 @@ interface OcrEngine
     public function status(): OcrEngineStatus;
 
     /**
+     * Whether start() reads in the background, so the pages of a scan can
+     * all be prepared and started before a model's request (Phase 53.15).
+     */
+    public function runsInBackground(): bool;
+
+    /**
      * Reads one page: $png is the prepared (greyscale, upright) image.
      *
      * @param list<string> $languages Tesseract codes wanted, most wanted first (`deu`, `eng`)

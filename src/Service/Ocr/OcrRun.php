@@ -41,6 +41,15 @@ final class OcrRun
         return $run;
     }
 
+    /**
+     * Whether the read is over already (a failure before it could start),
+     * not still running.
+     */
+    public function settled(): bool
+    {
+        return $this->result !== null;
+    }
+
     public function result(): OcrResult
     {
         return $this->result ??= ($this->collect)();

@@ -8,8 +8,9 @@ use Closure;
 
 /**
  * A file's OCR in progress (OcrReader::begin()): the first page started,
- * the others read when the result is collected. A later page that fails
- * leaves the pages already read.
+ * the others started with it where the engine runs in the background, or
+ * read when the result is collected. A later page that fails leaves the
+ * pages already read.
  */
 final class OcrJob
 {
@@ -17,11 +18,13 @@ final class OcrJob
 
     /**
      * @param Closure(int): OcrResult $page reads page $i (0-based) now
+     * @param array<int, OcrRun> $started later pages already under way, by 0-based index
      */
     public function __construct(
         private readonly OcrRun $first,
         private readonly int $pages,
         private readonly Closure $page,
+        private readonly array $started = [],
     ) {
     }
 
@@ -41,7 +44,7 @@ final class OcrJob
         }
         $lines = $read->lines;
         for ($i = 1; $i < $this->pages; $i++) {
-            $next = ($this->page)($i);
+            $next = isset($this->started[$i]) ? $this->started[$i]->result() : ($this->page)($i);
             if (!$next->ok()) {
                 break;
             }

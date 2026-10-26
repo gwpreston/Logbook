@@ -145,10 +145,12 @@ final class OcrReader
     }
 
     /**
-     * Prepares the first page and starts the engine on it, returning at
-     * once, so a model's request can run while it reads (spec.md §7.27
-     * *The cross-check*, Phase 53.3). The job's result() collects it and
-     * reads any further pages. The caller holds the lock.
+     * Prepares every page and starts the engine on each, returning at once,
+     * so a model's request can run while they read (spec.md §7.27 *The
+     * cross-check*, Phase 53.3; the later pages too, Phase 53.15, K105). An
+     * engine that can't run in the background (PaddleOCR) is started on the
+     * first page only: the job's result() reads the others when asked, so
+     * preparing them never delays the request. The caller holds the lock.
      */
     public function begin(string $path, string $mime, string $locale, bool $prepare = true): OcrJob
     {
@@ -178,7 +180,13 @@ final class OcrReader
                 : OcrRun::done($engine->read($image->png, $languages, $layout, $i + 1));
         };
 
-        return new OcrJob($read(0, true), count($pages), static fn (int $i): OcrResult => $read($i, false)->result());
+        $first = $read(0, true);
+        $started = [];
+        for ($i = 1; $i < count($pages) && $engine->runsInBackground() && !$first->settled(); $i++) {
+            $started[$i] = $read($i, true);
+        }
+
+        return new OcrJob($first, count($pages), static fn (int $i): OcrResult => $read($i, false)->result(), $started);
     }
 
     private static function tooLarge(string $bytes): bool
