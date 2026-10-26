@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Support\Database;
 
 use Phinx\Db\Adapter\AdapterInterface;
+use Phinx\Db\Adapter\ProxyAdapter;
 use Phinx\Migration\AbstractMigration;
 use Phinx\Migration\MigrationInterface;
 
@@ -16,6 +17,19 @@ abstract class Migration extends AbstractMigration
 {
     public function setAdapter(AdapterInterface $adapter): MigrationInterface
     {
-        return parent::setAdapter($adapter instanceof SequenceKeepingAdapter ? $adapter : new SequenceKeepingAdapter($adapter));
+        // Rolling back a change() migration records its commands on a proxy, then runs the
+        // reversed ones on the proxy's inner adapter: that one is wrapped too.
+        if ($adapter instanceof ProxyAdapter) {
+            $adapter->setAdapter(self::wrap($adapter->getAdapter()));
+
+            return parent::setAdapter($adapter);
+        }
+
+        return parent::setAdapter(self::wrap($adapter));
+    }
+
+    private static function wrap(AdapterInterface $adapter): AdapterInterface
+    {
+        return $adapter instanceof SequenceKeepingAdapter ? $adapter : new SequenceKeepingAdapter($adapter);
     }
 }

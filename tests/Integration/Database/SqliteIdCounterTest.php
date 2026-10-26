@@ -90,6 +90,25 @@ final class SqliteIdCounterTest extends AppTestCase
         return (int) $value;
     }
 
+    /** The migration before the channel categories (a change() migration: Phinx reverses it on a proxy). */
+    private const string BEFORE_CATEGORIES = '20261103100000';
+
+    public function testADeletedIdIsNotReusedWhenARollbackReversesAChangeMigration(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+        $db = $this->connection($app);
+        $this->onlyOnSqlite($db);
+        // Channels 1 to 5 were added and 4 and 5 deleted: the table is empty but its counter says 5.
+        $db->executeStatement('DELETE FROM sqlite_sequence WHERE name = ?', ['notification_channels']);
+        $db->executeStatement('INSERT INTO sqlite_sequence (name, seq) VALUES (?, ?)', ['notification_channels', 5]);
+
+        Migrator::run('rollback', ['--target' => self::BEFORE_CATEGORIES]);
+
+        self::assertSame(5, $this->counter($db, 'notification_channels'));
+    }
+
     private function onlyOnSqlite(Connection $db): void
     {
         if (!$db->getDatabasePlatform() instanceof SQLitePlatform) {

@@ -21,7 +21,8 @@ No migration: pull and restart.
   `entry.created` for the same id. The counter is now kept across every
   rebuild, up and down. Installs that upgraded on an earlier version
   keep the ids they already reused; nothing is repaired. MySQL and
-  PostgreSQL were never affected (K63).
+  PostgreSQL were never affected (K63). Restoring a backup still resets
+  every id counter to the highest id present, on every engine (K146).
 - **`bin/smoke-test.sh` runs from Git Bash on Windows.** It hands
   Windows `curl` the uploaded file as a Windows path, so the attachment
   step no longer stops the run (K142). Linux and CI are unchanged.

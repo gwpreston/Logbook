@@ -73,7 +73,11 @@ tagged.
 - [x] Upgrade test (`SqliteIdCounterTest`): delete the highest reading,
       roll back and migrate, the next id is greater than the deleted one.
       Repeat for `parts`. SQLite only; the other engines never rebuild.
-- [ ] Run with the upgrade-tester on all four engines.
+- [x] Run with the upgrade-tester on all four engines. It found the counter
+      still reset when a rollback reverses a `change()` migration (Phinx
+      reverses it on a proxy adapter the wrapper didn't reach): fixed, the
+      base class wraps the proxy's inner adapter, with a test. It also found
+      that a backup restore resets counters (K146, open question #559).
 
 ### 53.16.2 Windows smoke test (K142)
 
@@ -103,4 +107,5 @@ tagged.
 
 ## Open questions
 
-- None. Found while starting it: none.
+- **#559** (found by the upgrade-tester, K146): should a backup carry each
+  table's id counter? **Open.**
