@@ -22,7 +22,8 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif
+          # Imagick on the coverage row only: the other rows keep GD alone, as the Docker image does (Phase 53.15).
+          extensions: intl, pdo_pgsql, pdo_mysql, pdo_sqlite, gd, exif${{ matrix.coverage && ', imagick' || '' }}
           coverage: none
           tools: composer:v2
       - uses: actions/cache@v4

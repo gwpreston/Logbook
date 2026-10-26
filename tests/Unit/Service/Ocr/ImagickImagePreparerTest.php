@@ -66,6 +66,53 @@ final class ImagickImagePreparerTest extends TestCase
         self::assertGreaterThan(2.0, $prepared->scale);
     }
 
+    public function testATiltedPageComesOutLevel(): void
+    {
+        $level = (new ImagickImagePreparer())->prepare(self::page(30));
+        $tilted = (new ImagickImagePreparer())->prepare(self::page(30, 4.0));
+
+        self::assertNotNull($level);
+        self::assertNotNull($tilted);
+        // Straight rows of bars make uneven dark-pixel counts per row; a page left tilted blurs them.
+        self::assertGreaterThan(0.8 * self::rowVariance($level->png), self::rowVariance($tilted->png));
+        self::assertGreaterThan(3 * self::rowVariance(self::page(30, 4.0)), self::rowVariance($tilted->png));
+    }
+
+    public function testAPhotoOverTheLongEdgeIsScaledToFitAndKeepsItsShape(): void
+    {
+        $photo = imagecreatetruecolor(4032, 3024);
+        self::assertInstanceOf(GdImage::class, $photo);
+        imagefill($photo, 0, 0, (int) imagecolorallocate($photo, 210, 205, 195));
+        $ink = (int) imagecolorallocate($photo, 50, 50, 50);
+        for ($y = 100; $y < 2900; $y += 120) {
+            imagefilledrectangle($photo, 200, $y, 3800, $y + 40, $ink);
+        }
+        ob_start();
+        imagejpeg($photo, null, 85);
+        $prepared = (new ImagickImagePreparer())->prepare((string) ob_get_clean());
+
+        self::assertNotNull($prepared);
+        self::assertSame([4000, 3000], [$prepared->width, $prepared->height]);
+        self::assertEqualsWithDelta(4000 / 4032, $prepared->scale, 0.001);
+    }
+
+    private static function rowVariance(string $image): float
+    {
+        $gd = imagecreatefromstring($image);
+        self::assertInstanceOf(GdImage::class, $gd);
+        $counts = [];
+        for ($y = 0; $y < imagesy($gd); $y += 2) {
+            $dark = 0;
+            for ($x = 0; $x < imagesx($gd); $x += 2) {
+                $dark += (imagecolorat($gd, $x, $y) & 0xFF) < 140 ? 1 : 0;
+            }
+            $counts[] = $dark;
+        }
+        $mean = array_sum($counts) / count($counts);
+
+        return array_sum(array_map(static fn (int $c): float => ($c - $mean) ** 2, $counts)) / count($counts);
+    }
+
     public function testALevelPageIsNotResampled(): void
     {
         $prepared = (new ImagickImagePreparer())->prepare(self::page(30));

@@ -1,0 +1,3 @@
+# The two pins requirements.txt is resolved from (see the Dockerfile).
+paddlepaddle==3.2.2
+paddlex[ocr,serving]==3.7.2

@@ -14,6 +14,8 @@ final class FakeRenderer implements PdfRenderer
 {
     public bool $available = true;
     public int $calls = 0;
+    /** How many pages it renders, up to the count asked for. */
+    public int $pages = 1;
 
     public function isAvailable(): bool
     {
@@ -24,6 +26,8 @@ final class FakeRenderer implements PdfRenderer
     {
         $this->calls++;
 
-        return $this->available ? [ScanFiles::render(['A scanned page'], 600, 850)] : [];
+        return $this->available
+            ? array_fill(0, min($pages, $this->pages), ScanFiles::render(['A scanned page'], 600, 850))
+            : [];
     }
 }

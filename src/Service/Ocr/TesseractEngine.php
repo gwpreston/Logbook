@@ -62,6 +62,11 @@ final class TesseractEngine implements OcrEngine
         );
     }
 
+    public function runsInBackground(): bool
+    {
+        return true;
+    }
+
     public function read(string $png, array $languages, PageLayout $layout, int $page = 1): OcrResult
     {
         return $this->start($png, $languages, $layout, $page)->result();

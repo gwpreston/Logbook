@@ -7,6 +7,7 @@ namespace Logbook\Tests\Integration\Ocr;
 use DateTimeImmutable;
 use Logbook\Repository\AiBusyRepository;
 use Logbook\Service\Ocr\GdImagePreparer;
+use Logbook\Service\Ocr\OcrLine;
 use Logbook\Service\Ocr\OcrProblem;
 use Logbook\Service\Ocr\OcrReader;
 use Logbook\Service\Ocr\PaddleOcrEngine;
@@ -15,6 +16,7 @@ use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\Env;
 use Logbook\Support\Process\ProcessRunner;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\CountingPreparer;
 use Logbook\Tests\Support\FakeRenderer;
 use Logbook\Tests\Support\ScanFiles;
 use Psr\Clock\ClockInterface;
@@ -122,6 +124,47 @@ final class OcrReaderTest extends AppTestCase
         self::assertTrue($result->ok());
         self::assertSame(1, $this->renderer->calls);
         self::assertSame(1, $result->lines[0]->page);
+    }
+
+    public function testTesseractStartsEveryPageBeforeTheResultIsAskedFor(): void
+    {
+        $preparer = new CountingPreparer();
+        $reader = $this->reader([])->withPreparer($preparer);
+        $this->renderer->pages = 3;
+
+        $job = $reader->begin($this->photo, 'application/pdf', 'en');
+
+        self::assertSame(3, $preparer->calls, 'all three pages prepared and started with the first');
+        $result = $job->result();
+        self::assertTrue($result->ok());
+        self::assertSame(3, $preparer->calls);
+        $pages = array_map(static fn (OcrLine $l): int => $l->page, $result->lines);
+        self::assertSame([1, 2, 3], array_values(array_unique($pages)));
+    }
+
+    public function testPaddleOcrPreparesOnlyTheFirstPageBeforeTheRequest(): void
+    {
+        $preparer = new CountingPreparer();
+        $reader = $this->reader(['OCR_URL' => 'http://paddleocr:8080'])->withPreparer($preparer);
+        $this->renderer->pages = 3;
+
+        $job = $reader->begin($this->photo, 'application/pdf', 'en');
+
+        self::assertSame('paddleocr', $reader->engine()?->name());
+        self::assertSame(1, $preparer->calls, 'the others wait: preparing them would only delay the request');
+        unset($job);
+    }
+
+    public function testAFirstPageThatCannotBePreparedStopsTheOthersStarting(): void
+    {
+        $preparer = new CountingPreparer(false);
+        $reader = $this->reader([])->withPreparer($preparer);
+        $this->renderer->pages = 3;
+
+        $job = $reader->begin($this->photo, 'application/pdf', 'en');
+
+        self::assertSame(1, $preparer->calls);
+        self::assertSame(OcrProblem::Unreadable, $job->result()->problem);
     }
 
     public function testAPdfWithNoRendererCannotBeRead(): void

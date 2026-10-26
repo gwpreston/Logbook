@@ -111,10 +111,10 @@ services:
     profiles: ["ocr"]
     restart: unless-stopped
     volumes:
-      - paddleocr_models:/root/.paddlex
+      - paddleocr_cache:/home/paddle/.paddlex
 
 volumes:
   logbook_data:
   postgres_data:
   ollama_data:
-  paddleocr_models:
+  paddleocr_cache:

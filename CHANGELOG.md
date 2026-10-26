@@ -6,6 +6,39 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.7] — 2026-10-26
+
+Phase 53.15: **OCR speed and the PaddleOCR image from the known-issues
+log** ([docs/phases/phase-53.15.md](docs/phases/phase-53.15.md)). No
+migration: pull and restart. If you run the optional PaddleOCR profile,
+read the note under *Changed*.
+
+### Fixed
+- **Reading a photo with Imagick takes about as long as with GD.** Where
+  the PHP Imagick extension is loaded (bare-PHP installs; the Docker
+  image has none), preparing a phone photo for OCR took four times GD's
+  time. A resize no longer pages to disk, the skew is measured on a small
+  copy, and the picture is encoded at a faster setting: a 4032×3024 photo
+  takes 2.2 s instead of 8.2 s (GD: 2.5 s), an 8000×6000 photo 2.1 s
+  instead of 8.6 s, and an A4 scan 1.6 s instead of 3.1 s (K74).
+- **A scanned PDF's later pages are read while the model answers.** With
+  Tesseract, every page (up to three) is prepared and started before the
+  model's request, so nothing is left to read after its answer: a
+  3-page scan with a 3-second model takes 5.5 s instead of 6.7 s. The
+  request itself starts about a second later. PaddleOCR is unchanged
+  (K105).
+
+### Changed
+- **The optional PaddleOCR image installs pinned, hash-checked packages
+  and runs as an unprivileged user.** Every Python package comes from
+  PyPI at a fixed version with hashes (`docker/paddleocr/requirements.txt`),
+  not from an unpinned index, and the service no longer runs as root
+  (K79). Its models now live in the `paddleocr_cache` volume. After
+  upgrading, rebuild (`docker compose --profile ocr up -d --build`); the
+  models download again on the first start, and the old
+  `paddleocr_models` volume can be removed
+  (`docker volume rm logbook_paddleocr_models`).
+
 ## [3.19.6] — 2026-10-23
 
 Phase 53.14: **Claude scans and large imports from the known-issues log**

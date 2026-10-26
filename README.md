@@ -9,7 +9,7 @@ renewals, reminders and what it all costs, on your own server.
 [![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue)](LICENSE)
 [![CI](https://github.com/gwpreston16/Logbook/actions/workflows/ci.yml/badge.svg)](https://github.com/gwpreston16/Logbook/actions/workflows/ci.yml)
 
-**Status: v3.19.6.** What changed in each release is in [`CHANGELOG.md`](CHANGELOG.md).
+**Status: v3.19.7.** What changed in each release is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Who it's for
 
