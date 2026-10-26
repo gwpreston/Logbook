@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Accounts (spec.md §6 User). One owner per instance today, but nothing here
  * assumes a single row. Usernames are stored lower-case.
  */
-final class CreateUsersTable extends AbstractMigration
+final class CreateUsersTable extends Migration
 {
     public function change(): void
     {

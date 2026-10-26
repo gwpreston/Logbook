@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Accounts (spec.md §6 User, Invitation; §7.9, Phase 33.1): one confirmed
@@ -17,7 +17,7 @@ use Phinx\Migration\AbstractMigration;
  *
  * Explicit up/down rather than change(): rows move both ways.
  */
-final class AddAccountEmailAndAvatar extends AbstractMigration
+final class AddAccountEmailAndAvatar extends Migration
 {
     private const string NOTIFICATIONS = 'notifications';
 

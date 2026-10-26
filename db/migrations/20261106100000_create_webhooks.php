@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Entry webhooks (spec.md §6 Webhook and WebhookDelivery, §7.20
@@ -19,7 +19,7 @@ use Phinx\Migration\AbstractMigration;
  * Both go with their user (and a delivery with its webhook). Rolling back
  * drops both tables.
  */
-final class CreateWebhooks extends AbstractMigration
+final class CreateWebhooks extends Migration
 {
     public function up(): void
     {

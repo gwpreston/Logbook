@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * The mileage series (spec.md §6 OdometerReading): manual readings plus one
  * reading per fill-up (fuel_entry_id, removed with its fill-up). Maintenance
  * entries add their own reference in Phase 3.
  */
-final class CreateOdometerReadingsTable extends AbstractMigration
+final class CreateOdometerReadingsTable extends Migration
 {
     public function change(): void
     {

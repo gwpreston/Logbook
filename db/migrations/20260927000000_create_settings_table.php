@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Baseline migration: key/value settings (feature toggles, defaults, and
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  *  - money / quantities: `decimal` (never float)
  *  - booleans: `boolean`
  */
-final class CreateSettingsTable extends AbstractMigration
+final class CreateSettingsTable extends Migration
 {
     public function change(): void
     {

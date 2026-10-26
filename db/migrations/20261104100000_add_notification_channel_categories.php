@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Phase 36.4 (spec.md §6 NotificationChannel, §7.11 *What each channel
@@ -14,7 +14,7 @@ use Phinx\Migration\AbstractMigration;
  * setting (JSON), so they need no column. Rolling back drops the column:
  * every channel receives everything again.
  */
-final class AddNotificationChannelCategories extends AbstractMigration
+final class AddNotificationChannelCategories extends Migration
 {
     public function change(): void
     {

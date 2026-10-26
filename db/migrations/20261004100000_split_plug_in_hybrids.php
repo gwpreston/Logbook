@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Plug-in hybrids (spec.md §6 Vehicle): the one `hybrid` fuel type is split
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  * The ids are selected first and updated one by one, so no engine has to
  * update a table its own subquery reads.
  */
-final class SplitPlugInHybrids extends AbstractMigration
+final class SplitPlugInHybrids extends Migration
 {
     public function up(): void
     {

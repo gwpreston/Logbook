@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * A maintenance entry's odometer joins the mileage series the same way a
@@ -12,7 +12,7 @@ use Phinx\Migration\AbstractMigration;
  * so the automatic reversal (drop by constraint name) cannot run there;
  * dropping by column works on every engine.
  */
-final class AddMaintenanceEntryToOdometerReadings extends AbstractMigration
+final class AddMaintenanceEntryToOdometerReadings extends Migration
 {
     public function up(): void
     {

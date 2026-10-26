@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * The garage (spec.md §6 Vehicle). Capacity is litres (kWh for electric
  * vehicles); money is decimal(14,3); purchase/sale dates are calendar dates.
  */
-final class CreateVehiclesTable extends AbstractMigration
+final class CreateVehiclesTable extends Migration
 {
     public function change(): void
     {

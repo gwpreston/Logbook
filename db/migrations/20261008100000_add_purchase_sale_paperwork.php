@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Purchase and sale paperwork (spec.md §6 Attachment, §7.12): attachments
@@ -20,7 +20,7 @@ use Phinx\Migration\AbstractMigration;
  * older version cannot read (the files themselves stay under UPLOAD_PATH),
  * as 20261005100000 did for its owner types.
  */
-final class AddPurchaseSalePaperwork extends AbstractMigration
+final class AddPurchaseSalePaperwork extends Migration
 {
     public function up(): void
     {

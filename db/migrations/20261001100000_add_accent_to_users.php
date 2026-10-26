@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * The accent colour preference (spec.md §6 User, §8): a short code, `blue`
  * unless the owner picks another. Existing accounts get the default.
  */
-final class AddAccentToUsers extends AbstractMigration
+final class AddAccentToUsers extends Migration
 {
     public function change(): void
     {

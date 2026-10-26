@@ -65,11 +65,15 @@ tagged.
 
 ### 53.16.1 SQLite id counters (K63)
 
-- [ ] List every migration that rebuilds a table on SQLite; add a helper
-      that reads `sqlite_sequence` before and writes it back after.
-- [ ] Upgrade test: delete the highest reading, run the rebuild up and
-      down, the next id is greater than the deleted one. Repeat for
-      `parts`. Run with the upgrade-tester on all four engines.
+- [x] Every migration rebuilds on SQLite when it changes or drops a
+      column, foreign key or index, so all 56 extend one base class
+      (`Support\Database\Migration`) whose adapter wrapper
+      (`SequenceKeepingAdapter`) reads `sqlite_sequence` before and writes
+      it back after each table change.
+- [x] Upgrade test (`SqliteIdCounterTest`): delete the highest reading,
+      roll back and migrate, the next id is greater than the deleted one.
+      Repeat for `parts`. SQLite only; the other engines never rebuild.
+- [ ] Run with the upgrade-tester on all four engines.
 
 ### 53.16.2 Windows smoke test (K142)
 

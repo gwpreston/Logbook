@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Recurring maintenance (spec.md §6 MaintenanceSchedule): "every 10,000 km or
@@ -11,7 +11,7 @@ use Phinx\Migration\AbstractMigration;
  * that completes the schedule, else the baseline) and stored so reminders can
  * query them. Distances in km; days are calendar dates.
  */
-final class CreateMaintenanceSchedulesTable extends AbstractMigration
+final class CreateMaintenanceSchedulesTable extends Migration
 {
     public function change(): void
     {

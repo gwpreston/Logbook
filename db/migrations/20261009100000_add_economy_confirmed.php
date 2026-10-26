@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Economy checks (spec.md §6 FuelEntry, §7.3): `economy_confirmed` holds the
@@ -11,7 +11,7 @@ use Phinx\Migration\AbstractMigration;
  * existing fill-up, so every figure is unchanged by the upgrade. Rolling
  * back drops it (the confirmations are lost; nothing else is).
  */
-final class AddEconomyConfirmed extends AbstractMigration
+final class AddEconomyConfirmed extends Migration
 {
     public function up(): void
     {

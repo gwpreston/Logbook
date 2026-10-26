@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Live fuel prices (spec.md §6 ProviderStation, ProviderPrice,
@@ -23,7 +23,7 @@ use Phinx\Migration\AbstractMigration;
  * Explicit up/down rather than change(): SQLite has no named foreign keys,
  * so dropping by column is the portable reversal.
  */
-final class CreateFuelPrices extends AbstractMigration
+final class CreateFuelPrices extends Migration
 {
     public function up(): void
     {

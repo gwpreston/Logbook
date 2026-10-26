@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Total loss and reading claim letters (spec.md §6 Vehicle, Incident,
@@ -23,7 +23,7 @@ use Phinx\Migration\AbstractMigration;
  * Explicit up/down rather than change(): SQLite has no named foreign keys,
  * so dropping by column is the portable reversal.
  */
-final class AddTotalLossAndClaimScans extends AbstractMigration
+final class AddTotalLossAndClaimScans extends Migration
 {
     public function up(): void
     {

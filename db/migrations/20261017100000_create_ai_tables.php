@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * AI foundation (spec.md §6 AiConnection … AiBusy, §7.25; Phase 26.1).
@@ -20,7 +20,7 @@ use Phinx\Migration\AbstractMigration;
  * Rolling back drops the tables and the `ai.use` and `ai.this_host`
  * settings, which the version before does not read.
  */
-final class CreateAiTables extends AbstractMigration
+final class CreateAiTables extends Migration
 {
     public function up(): void
     {

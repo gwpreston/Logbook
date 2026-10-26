@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Phinx\Db\Adapter\MysqlAdapter;
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Each run of a background job (spec.md §6 JobRun, §7.30; Phase 28.1):
@@ -14,7 +14,7 @@ use Phinx\Migration\AbstractMigration;
  * Not backed up. The scheduler's settings (`jobs.*`) are ordinary rows in
  * `settings`, so nothing else changes. Rolling back drops the table.
  */
-final class CreateJobRuns extends AbstractMigration
+final class CreateJobRuns extends Migration
 {
     public function up(): void
     {

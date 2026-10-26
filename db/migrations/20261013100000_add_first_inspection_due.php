@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * First MOT due (spec.md §6 Vehicle, §7.1, §7.6; Phase 21.2): an optional
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  * settings, then drops the column, so 2.0 never sees a source it does not
  * know.
  */
-final class AddFirstInspectionDue extends AbstractMigration
+final class AddFirstInspectionDue extends Migration
 {
     private const string SOURCE = 'first_inspection';
     private const string PROMPTED = 'vehicles.first_inspection_prompted';

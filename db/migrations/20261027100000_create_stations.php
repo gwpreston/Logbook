@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Fuel stations (spec.md §6 Station, StationFavourite, Place; §7.33,
@@ -21,7 +21,7 @@ use Phinx\Migration\AbstractMigration;
  * rather than change(): SQLite has no named foreign keys, so dropping by
  * column is the portable reversal.
  */
-final class CreateStations extends AbstractMigration
+final class CreateStations extends Migration
 {
     public function up(): void
     {

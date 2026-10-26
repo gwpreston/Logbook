@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Fuel grades (spec.md §6 FuelEntry and Vehicle, §7.3): an optional grade
  * code on each fill-up and an optional default grade per vehicle. Existing
  * rows get null ("not recorded"); nothing is guessed.
  */
-final class AddFuelGrades extends AbstractMigration
+final class AddFuelGrades extends Migration
 {
     public function change(): void
     {

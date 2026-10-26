@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Ask Logbook (spec.md §6 AiThread … AiFeedback, §7.26; Phase 26.2).
@@ -19,7 +19,7 @@ use Phinx\Migration\AbstractMigration;
  * None of them is backed up. Rolling back drops them and the
  * `ai.ask_retention_days` setting, which the version before does not read.
  */
-final class CreateAskTables extends AbstractMigration
+final class CreateAskTables extends Migration
 {
     public function up(): void
     {

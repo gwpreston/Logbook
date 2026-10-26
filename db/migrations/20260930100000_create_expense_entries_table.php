@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Ad-hoc expenses (spec.md §6 ExpenseEntry): parking, tolls, road tax and the
@@ -10,7 +10,7 @@ use Phinx\Migration\AbstractMigration;
  * maintenance and document costs are not copied here; they roll up from their
  * own tables in the service layer, so nothing can be counted twice.
  */
-final class CreateExpenseEntriesTable extends AbstractMigration
+final class CreateExpenseEntriesTable extends Migration
 {
     public function change(): void
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Where imported rows came from (spec.md §6 ImportSource, §7.13 *Importing
@@ -17,7 +17,7 @@ use Phinx\Migration\AbstractMigration;
  * Explicit up/down rather than change(): SQLite has no named foreign keys,
  * so dropping the table is the portable reversal.
  */
-final class CreateImportSources extends AbstractMigration
+final class CreateImportSources extends Migration
 {
     public function up(): void
     {

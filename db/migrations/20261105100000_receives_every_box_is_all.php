@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Phase 37 (spec.md §7.11 *What each channel receives*; #268, #271): a
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  * Data only. Rolling back leaves the converted ones as all, which is what
  * every box ticked meant, so there is nothing to undo.
  */
-final class ReceivesEveryBoxIsAll extends AbstractMigration
+final class ReceivesEveryBoxIsAll extends Migration
 {
     private const array MEMBER = ['due', 'overdue', 'digest', 'price_alerts'];
     private const array ADMIN = ['due', 'overdue', 'digest', 'price_alerts', 'job_failures'];
