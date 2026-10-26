@@ -4,7 +4,7 @@
 keeps its id counter so a deleted record's id isn't reused, and
 `bin/smoke-test.sh` runs from Git Bash on Windows.*
 
-Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.8**, the
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.19.8**, the
 patch after Phase 53.15's release
 
 This is a batch of open rows that wait on no open question. K143 is left
@@ -97,7 +97,7 @@ tagged.
 ### Release
 
 - [x] `VERSION`, CHANGELOG, README status.
-- [ ] Tag v3.19.8 once merged.
+- [x] Tag `v3.19.8` once merged.
 
 ## Acceptance criteria
 
