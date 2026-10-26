@@ -77,9 +77,12 @@ tagged.
 
 ### 53.16.2 Windows smoke test (K142)
 
-- [ ] Use `cygpath -w` (or a relative path) for `-F "file=@…"` and a
-      writable temp dir for `-o`. Run `pgsql` on Windows to the end; the
-      Linux run is unchanged. Update `CONTRIBUTING.md`.
+- [x] Use `cygpath -m` for `-F "file=@…"` when `cygpath` exists; `-o`
+      keeps working under Git Bash's own path conversion (K142 shows it
+      only fails with `MSYS_NO_PATHCONV=1`). Linux is unchanged (no
+      `cygpath`). `CONTRIBUTING.md` updated.
+- [ ] Run `pgsql` on Windows to the end (needs a Windows host; not run
+      here, see the PR).
 
 ### 53.16.3 Finish
 

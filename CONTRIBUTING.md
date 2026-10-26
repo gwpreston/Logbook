@@ -151,6 +151,11 @@ bin/test-all-dbs.sh                                                 # suite on S
 bin/smoke-test.sh pgsql                                             # production image end-to-end (after docker build -t logbook:local .)
 ```
 
+The smoke test also runs from Git Bash on Windows with Windows `curl`: it
+passes `curl` the uploaded file as a Windows path (`cygpath -m`), and leaves
+every other path to Git Bash's own conversion. Keep it that way: don't set
+`MSYS_NO_PATHCONV=1`, since `curl -o` then can't write to `/tmp`.
+
 The smoke test runs its stack as compose project `logbook-smoke`. To run
 two at once, give each its own name and ports, so neither removes the
 other's containers and volumes:
