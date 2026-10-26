@@ -4,8 +4,8 @@
 keeps its id counter so a deleted record's id isn't reused, and
 `bin/smoke-test.sh` runs from Git Bash on Windows.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.15's release, a patch release
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.8**, the
+patch after Phase 53.15's release
 
 This is a batch of open rows that wait on no open question. K143 is left
 out: it waits on #549.
@@ -86,13 +86,14 @@ tagged.
 
 ### 53.16.3 Finish
 
-- [ ] Known-issues rows K63 and K142 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K63 and K142 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (upgrade-tester, deploy-checker), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag.
+- [x] `VERSION`, CHANGELOG, README status.
+- [ ] Tag v3.19.8 once merged.
 
 ## Acceptance criteria
 

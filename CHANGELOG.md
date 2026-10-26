@@ -6,6 +6,26 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.8] — 2026-10-26
+
+Phase 53.16: **SQLite upgrade ids and the Windows smoke test from the
+known-issues log** ([docs/phases/phase-53.16.md](docs/phases/phase-53.16.md)).
+No migration: pull and restart.
+
+### Fixed
+- **On SQLite, an upgrade or rollback no longer hands out a deleted id
+  again.** A migration that rebuilt a table (as Phinx does to change or
+  drop a column, a foreign key or an index) reset its id counter to the
+  highest id still present, so a record deleted just before gave its id
+  to the next new one, and webhooks sent `entry.deleted` and then
+  `entry.created` for the same id. The counter is now kept across every
+  rebuild, up and down. Installs that upgraded on an earlier version
+  keep the ids they already reused; nothing is repaired. MySQL and
+  PostgreSQL were never affected (K63).
+- **`bin/smoke-test.sh` runs from Git Bash on Windows.** It hands
+  Windows `curl` the uploaded file as a Windows path, so the attachment
+  step no longer stops the run (K142). Linux and CI are unchanged.
+
 ## [3.19.7] — 2026-10-26
 
 Phase 53.15: **OCR speed and the PaddleOCR image from the known-issues

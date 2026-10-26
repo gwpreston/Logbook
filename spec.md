@@ -12355,9 +12355,9 @@ task breakdowns live in the per-phase files; this is the map.
   v3.19.7. See
   [`phase-53.15.md`](docs/phases/phase-53.15.md).
 - **Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the
-  known-issues log + patch release** (in progress). A SQLite table rebuild
+  known-issues log + patch release** (complete). A SQLite table rebuild
   keeps its id counter (K63); `bin/smoke-test.sh` runs from Git Bash on
-  Windows (K142). No migration. See
+  Windows (K142). No migration. Releases v3.19.8. See
   [`phase-53.16.md`](docs/phases/phase-53.16.md).
 - **Phase 53.17 — Dev suite, search accents and decided notes from the
   known-issues log + patch release** (planned). The dev stack's scheduler
