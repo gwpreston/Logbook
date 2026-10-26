@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Support\Database;
 
 use Phinx\Db\Adapter\AdapterWrapper;
+use Phinx\Db\Action\Action;
 use Phinx\Db\Table\Table;
 
 /**
@@ -24,7 +25,7 @@ final class SequenceKeepingAdapter extends AdapterWrapper
     }
 
     /**
-     * @param list<object> $actions
+     * @param array<Action> $actions
      */
     public function executeActions(Table $table, array $actions): void
     {
@@ -51,7 +52,8 @@ final class SequenceKeepingAdapter extends AdapterWrapper
 
         $row = $this->fetchRow('SELECT seq FROM sqlite_sequence WHERE name = ' . $this->getConnection()->quote($table));
 
-        return $row === false ? null : (int) $row['seq'];
+        /** @var array<string, mixed>|false $row */
+        return $row === false ? null : Row::int($row, 'seq');
     }
 
     private function restore(string $table, int $before): void

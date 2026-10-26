@@ -41,7 +41,7 @@ final class SqliteIdCounterTest extends AppTestCase
         $vehicle = $this->vehicle($app);
         $this->reading($app, $vehicle, '1000', '2026-01-01 10:00:00');
         $this->reading($app, $vehicle, '2000', '2026-02-01 10:00:00');
-        $deleted = (int) $db->fetchOne('SELECT MAX(id) FROM odometer_readings');
+        $deleted = self::int($db->fetchOne('SELECT MAX(id) FROM odometer_readings'));
         $db->executeStatement('DELETE FROM odometer_readings WHERE id = ?', [$deleted]);
 
         Migrator::run('rollback', ['--target' => self::BEFORE_PARTS]);
@@ -51,7 +51,7 @@ final class SqliteIdCounterTest extends AppTestCase
         self::assertSame($deleted, $this->counter($db, 'odometer_readings'), 'the upgrade kept it');
 
         $this->reading($app, $vehicle, '3000', '2026-03-01 10:00:00');
-        self::assertGreaterThan($deleted, (int) $db->fetchOne('SELECT MAX(id) FROM odometer_readings'));
+        self::assertGreaterThan($deleted, self::int($db->fetchOne('SELECT MAX(id) FROM odometer_readings')));
     }
 
     public function testADeletedPartsIdIsNotReusedWhenARollbackRebuildsTheTable(): void
@@ -69,7 +69,7 @@ final class SqliteIdCounterTest extends AppTestCase
                 [$vehicle->id, $name, $now, $now],
             );
         }
-        $deleted = (int) $db->fetchOne('SELECT MAX(id) FROM parts');
+        $deleted = self::int($db->fetchOne('SELECT MAX(id) FROM parts'));
         $db->executeStatement('DELETE FROM parts WHERE id = ?', [$deleted]);
 
         Migrator::run('rollback', ['--target' => self::PARTS]);
@@ -80,7 +80,14 @@ final class SqliteIdCounterTest extends AppTestCase
             'INSERT INTO parts (vehicle_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)',
             [$vehicle->id, 'Wipers', $now, $now],
         );
-        self::assertGreaterThan($deleted, (int) $db->fetchOne('SELECT MAX(id) FROM parts'));
+        self::assertGreaterThan($deleted, self::int($db->fetchOne('SELECT MAX(id) FROM parts')));
+    }
+
+    private static function int(mixed $value): int
+    {
+        self::assertIsNumeric($value);
+
+        return (int) $value;
     }
 
     private function onlyOnSqlite(Connection $db): void
@@ -92,6 +99,6 @@ final class SqliteIdCounterTest extends AppTestCase
 
     private function counter(Connection $db, string $table): int
     {
-        return (int) $db->fetchOne('SELECT seq FROM sqlite_sequence WHERE name = ?', [$table]);
+        return self::int($db->fetchOne('SELECT seq FROM sqlite_sequence WHERE name = ?', [$table]));
     }
 }
