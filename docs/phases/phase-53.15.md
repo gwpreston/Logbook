@@ -63,9 +63,9 @@ tagged.
 
 ### 53.15.1 Imagick preparation (K74)
 
-- [ ] Replace the Lanczos resize in `ImagickImagePreparer::resize()`;
+- [x] Replace the Lanczos resize in `ImagickImagePreparer::resize()`;
       re-measure 4032×3024, 8000×6000 and an A4 scan against GD.
-- [ ] Update the docblock to the measured result. Test: output size and
+- [x] Update the docblock to the measured result. Test: output size and
       orientation unchanged.
 
 ### 53.15.2 Overlap preparation with the request (K105)

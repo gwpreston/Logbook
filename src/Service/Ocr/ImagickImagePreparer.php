@@ -9,10 +9,16 @@ use Throwable;
 /**
  * OCR preparation with Imagick, when the extension is loaded (decided
  * 2026-10-17, #492): the same steps as GdImagePreparer with ImageMagick's
- * own orient, greyscale, contrast stretch and deskew, which are faster and
- * finer. The contrast stretch and text height are measured as GD does
- * them, on a small copy. Any
- * failure gives null, and the caller falls back to GD.
+ * own orient, greyscale, contrast stretch and deskew, which are finer.
+ * The contrast stretch, skew angle and text height are measured as GD does
+ * them, on a small copy. Any failure gives null, and the caller falls back
+ * to GD.
+ *
+ * Speed (Phase 53.15, K74; a 4,000 px edge, one thread, an arm64 container,
+ * best of 3): a 4032×3024 photo 2.2 s, 8000×6000 2.1 s, an A4 scan at
+ * 2480×3508 1.6 s, against GD's 2.5, 1.8 and 1.6 s. It was 8.2, 8.6 and 3.1 s
+ * with a Lanczos-class resize paging to disk under the pixel-cache cap, a
+ * deskew of a full-size copy (1.7 s) and zlib's default PNG level (1.5 s).
  */
 final class ImagickImagePreparer implements ImagePreparer
 {
@@ -20,6 +26,8 @@ final class ImagickImagePreparer implements ImagePreparer
     private const float DESKEW_THRESHOLD = 0.4;
     /** Degrees below which a page is left as it is, as GD's half-step. */
     private const float MIN_ANGLE = 0.25;
+    /** Long edge of the copy the skew is measured on. */
+    private const int MEASURE_EDGE = 1000;
     /** Bytes of ImageMagick pixel cache kept in memory. */
     private const int MEMORY_LIMIT = 128 * 1024 * 1024;
 
@@ -58,18 +66,14 @@ final class ImagickImagePreparer implements ImagePreparer
             $image->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
             $flat = $this->stretch($image);
 
-            // Measured on a copy, and kept only when worth a resample. A flat
-            // (blank) page has no lines to level: ImageMagick would still turn it.
-            $deskewed = $flat ? null : clone $image;
-            $deskewed?->deskewImage(\Imagick::getQuantum() * self::DESKEW_THRESHOLD);
-            $artifact = $deskewed?->getImageArtifact('deskew:angle');
-            $angle = is_numeric($artifact) ? round(-(float) $artifact, 1) : 0.0;
-            if ($deskewed !== null && abs($angle) >= self::MIN_ANGLE) {
-                $image->clear();
-                $image = $deskewed;
+            // The angle is measured on the small copy and the page turned only when
+            // it is worth a resample (K74: deskewing a full-size copy took 1.7 s of a
+            // phone photo's 4 s). A flat (blank) page has no lines to level.
+            $angle = $flat ? 0.0 : $this->skew($image);
+            if (abs($angle) >= self::MIN_ANGLE) {
+                $image->rotateImage('white', -$angle);
                 $image->setImagePage(0, 0, 0, 0);
             } else {
-                $deskewed?->clear();
                 $angle = 0.0;
             }
             // Deskewing widens the page: keep it within MAX_EDGE (K75).
@@ -94,6 +98,9 @@ final class ImagickImagePreparer implements ImagePreparer
             $image->setImageFormat('png');
             $image->setOption('png:color-type', '0');
             $image->setOption('png:bit-depth', '8');
+            // zlib level 1, no row filter: half the encoding time for a PNG a fifth larger, which is only read once (K74).
+            $image->setOption('png:compression-level', '1');
+            $image->setOption('png:compression-filter', '0');
             $image->stripImage();
             $png = $image->getImageBlob();
             $width = $image->getImageWidth();
@@ -157,6 +164,21 @@ final class ImagickImagePreparer implements ImagePreparer
         return false;
     }
 
+    /**
+     * The degrees ImageMagick's deskew turns a small copy of the page by,
+     * negated as GD reports its angle; 0.0 when it can't tell.
+     */
+    private function skew(\Imagick $image): float
+    {
+        $copy = clone $image;
+        $copy->thumbnailImage(self::MEASURE_EDGE, self::MEASURE_EDGE, true);
+        $copy->deskewImage(\Imagick::getQuantum() * self::DESKEW_THRESHOLD);
+        $artifact = $copy->getImageArtifact('deskew:angle');
+        $copy->clear();
+
+        return is_numeric($artifact) ? round(-(float) $artifact, 1) : 0.0;
+    }
+
     private function textHeight(\Imagick $image): float
     {
         $small = self::small($image);
@@ -192,6 +214,6 @@ final class ImagickImagePreparer implements ImagePreparer
     {
         $width = (int) round($image->getImageWidth() * $factor);
         $height = (int) round($image->getImageHeight() * $factor);
-        $image->resizeImage($width, $height, \Imagick::FILTER_CATROM, 1);
+        $image->scaleImage($width, $height);
     }
 }
