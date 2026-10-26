@@ -4,7 +4,7 @@
 keeps its id counter so a deleted record's id isn't reused, and
 `bin/smoke-test.sh` runs from Git Bash on Windows.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.15's release, a patch release
 
 This is a batch of open rows that wait on no open question. K143 is left
@@ -44,6 +44,11 @@ tagged.
 - **No new migration for K63.** The helper changes how rebuilding
   migrations run; installs already upgraded keep what they have, which is
   noted in the CHANGELOG.
+- **How (2026-10-26):** every migration extends one base class,
+  `Logbook\Support\Database\Migration`, whose adapter wrapper restores
+  the counter after each table change on SQLite. This covers every rebuild
+  (column changes, dropped foreign keys and indexes), up and down, with no
+  call in each migration.
 - **Release:** a patch on its own after 53.15's release.
 
 ---
@@ -52,8 +57,11 @@ tagged.
 
 ### 53.16.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). No open question touches SQLite
+      migrations or the smoke test, so none needed an answer.
+- [x] Spec first: §6.1 (the SQLite id counter), §11 (the smoke test on
+      Windows), §13, ROADMAP 🚧.
 
 ### 53.16.1 SQLite id counters (K63)
 
@@ -87,4 +95,4 @@ tagged.
 
 ## Open questions
 
-- None yet.
+- None. Found while starting it: none.
