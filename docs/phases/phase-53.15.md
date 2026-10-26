@@ -5,8 +5,8 @@ photo for OCR as fast as GD does, a scan's OCR preparation overlaps the
 model request, and the optional PaddleOCR image installs from pinned
 sources and runs as a non-root user.*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
-after Phase 53.14's release, a patch release
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.7**, the
+patch after Phase 53.14's release
 
 This is a batch of open rows that wait on no open question. K114 is
 left out: it waits on #515.
@@ -70,7 +70,7 @@ tagged.
 
 ### 53.15.2 Overlap preparation with the request (K105)
 
-- [ ] Measure the current order; start the request before preparation
+- [x] Measure the current order; start the request before preparation
       where the HTTP client allows, and prepare pages 2–3 while the
       model answers (`Extractor::extractChecked()`, `OcrReader::begin()`,
       `OcrJob::result()`). Keep the "OCR finishes first on an Internet
@@ -78,21 +78,22 @@ tagged.
 
 ### 53.15.3 PaddleOCR image (K79)
 
-- [ ] Pin and de-risk the install; add `USER`; move the volume; update
+- [x] Pin and de-risk the install; add `USER`; move the volume; update
       `docker-compose.yml` and `docs/` for the optional profile.
-- [ ] Build the image and run the OCR smoke path.
+- [x] Build the image and run the OCR smoke path.
 
 ### 53.15.4 Finish
 
-- [ ] Known-issues rows K74, K79 and K105 *Fixed* (or updated if a
+- [x] Known-issues rows K74, K79 and K105 *Fixed* (or updated if a
       measurement shows no gain).
-- [ ] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (performance-auditor, deploy-checker, ai-evaluator),
+- [x] CHANGELOG; spec §13; ROADMAP status.
+- [x] Merge review (performance-auditor, deploy-checker, ai-evaluator),
       then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag.
+- [x] `VERSION`, CHANGELOG, README status.
+- [ ] Tag v3.19.7 once merged.
 
 ## Acceptance criteria
 
@@ -101,7 +102,43 @@ tagged.
 - `composer lint`, `composer analyse` and `bin/test-all-dbs.sh` pass.
   No migration.
 
+## Results
+
+Timings are best of three on an arm64 Docker container (PHP 8.4, one
+ImageMagick thread, Tesseract 5), on synthetic 4,000 px-class pages made
+for the purpose (the fixtures in `tests/Fixtures` are all under 2,000 px).
+
+| K74: prepare a photo | Imagick before | Imagick after | GD |
+|---|---|---|---|
+| 4032×3024 photo | 8.2 s | 2.2 s | 2.5 s |
+| 8000×6000 photo | 8.6 s | 2.1 s | 1.8 s |
+| A4 scan, 2480×3508 | 3.1 s | 1.6 s | 1.6 s |
+
+Where the 8.2 s went: the resize 0.3 s once `scaleImage` replaced the
+Lanczos-class filter (4.4–5.8 s paging under the pixel cache), deskew of a
+full-size copy 1.7 s (now measured on a 1,000 px copy, the page turned
+only when its angle is 0.25° or more; straightness of tilted pages is
+unchanged, tested), PNG encoding 1.5 s (zlib level 1: 0.7 s, the file a
+fifth larger). The pixel-cache cap stays, so #492 is not reopened.
+
+| K105: 3-page scanned PDF, Tesseract | Total | After the answer |
+|---|---|---|
+| 3 s model, before | 6.7 s | 2.6 s |
+| 3 s model, after | 5.5 s | 0 s |
+| 0.5 s model, before | 4.1 s | 2.5 s |
+| 0.5 s model, after | 3.2 s | 0.3 s |
+
+`begin()` takes 2.4 s instead of 1.0 s (it prepares and starts all three
+pages), so the request starts about 1.4 s later; the model's time more than
+repays it. PaddleOCR (HTTP, read after the request) keeps preparing only the
+first page before it. Not done: overlapping the *first* page's preparation
+with the request, which needs the adapters' synchronous `chat()` to answer
+while PHP works (logged in K105's row).
+
+K79: both architectures built from `requirements.txt` (3,171 lines, 2,864
+hashes, wheels only); the arm64 image ran as uid 10001, downloaded its
+models into the volume and read the sample receipt through `POST /ocr`.
+
 ## Open questions
 
-- None yet. A raised pixel-cache cap for the A4 case (K74, #492) is
-  added here if the resize change leaves a gap.
+- None. The pixel-cache cap needed no change, so #492 was not reopened.

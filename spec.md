@@ -7781,11 +7781,18 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
   scanned PDF and OCR is working, OCR reads the same file, and each
   value is looked for in OCR's text:
   - **Running alongside:** OCR's preparation (a scanned PDF's render
-    and the first page's clean-up, about a second or two for a phone
-    photo with GD) runs before the vision request; the engine then reads
-    in the background while the request runs, and is collected after it
-    (on an *Internet* connection it finishes first, *Where it goes*).
-    PaddleOCR, over HTTP, reads after the request. The user's lock is held once for both, as on the OCR route.
+    and each page's clean-up, about a second or two a page for a phone
+    photo with GD) runs before the vision request, and with Tesseract
+    every page (up to three) is started on it then, so the engine reads
+    them in the background while the request runs and they are collected
+    after it (Phase 53.15, K105: a 3-page scan with a 3-second model took
+    6.7 s, 2.6 s of it after the answer; it takes 5.5 s, none after, and
+    4.1 s becomes 3.2 s with a 0.5-second model). The request starts
+    about 1.4 s later for it, which a model's own time more than repays.
+    On an *Internet* connection it finishes first (*Where it goes*).
+    PaddleOCR, over HTTP, reads after the request, and only its first
+    page is prepared before it, so preparing the others never delays the
+    request. The user's lock is held once for both, as on the OCR route.
     If OCR fails, times out or reads too little, the cross-check is
     skipped and the scan carries on as before.
   - **Found:** the value's evidence (or the value, without evidence)
@@ -8164,7 +8171,13 @@ from Phase 53.2 a scan uses it when there is no vision model
     line. No redirect is followed; its languages are set where it runs.
     The admin page shows its address without any user name or password.
     The compose profile pins PaddlePaddle 3.2.2: 3.3's CPU path fails
-    every request on x86 (Paddle #77340).
+    every request on x86 (Paddle #77340). Its image installs every Python
+    package from PyPI at a pinned version with hashes
+    (`docker/paddleocr/requirements.txt`, resolved from `requirements.in`
+    with `pip-compile`; wheels only, with PaddleX's `ocr` and `serving`
+    extras), and runs as the unprivileged user `paddle` with its models in
+    the `paddleocr_cache` volume at `/home/paddle/.paddlex` (Phase 53.15,
+    K79).
   - **Which one** (#494): `OCR_ENGINE` = `auto` (default: PaddleOCR when
     `OCR_URL` is set, else Tesseract) | `tesseract` | `paddleocr` |
     `off`. The chosen engine missing means no OCR; Logbook never falls
@@ -8186,7 +8199,11 @@ from Phase 53.2 a scan uses it when there is no vision model
     outside PHP's limit, is capped at 128 MB in memory, 128 MB mapped and
     1 GB on disk (for the PHP worker's life), and a file with more than
     one frame goes to GD. No `jpeg:size` hint: ImageMagick 7 enlarged
-    smaller JPEGs to it;
+    smaller JPEGs to it. A resize is `scaleImage` (a Lanczos-class
+    resize paged to disk under that cap), the skew is measured on the
+    1,000 px copy and the page turned only when it is worth it, and the
+    PNG is written at zlib level 1, so a phone photo takes about what GD
+    takes (2.2 s against 2.5 s; was 8.2 s, Phase 53.15, K74);
   - **one run per user at a time**, sharing the AI lock (`ai_busy`,
     §7.25 *Limits*), held for `OCR_TIMEOUT` × 3 plus a PDF render's 60
     seconds plus 30 at most, so it can't run out while a slow scanned
@@ -12319,10 +12336,11 @@ task breakdowns live in the per-phase files; this is the map.
   migration. Releases v3.19.6, a patch on its own after 53.13's release
   (#554, decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
-  known-issues log + patch release** (in progress). Imagick prepares a photo
-  for OCR as fast as GD (K74); OCR preparation overlaps the vision
-  request (K105); the optional PaddleOCR image installs pinned packages
-  and runs as non-root (K79). No migration. See
+  known-issues log + patch release** (complete). Imagick prepares a photo
+  for OCR as fast as GD (K74); Tesseract reads every page of a scan while
+  the vision request runs (K105); the optional PaddleOCR image installs
+  pinned packages and runs as non-root (K79). No migration. Releases
+  v3.19.7. See
   [`phase-53.15.md`](docs/phases/phase-53.15.md).
 - **Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the
   known-issues log + patch release** (planned). A SQLite table rebuild
