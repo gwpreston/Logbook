@@ -5,7 +5,7 @@ photo for OCR as fast as GD does, a scan's OCR preparation overlaps the
 model request, and the optional PaddleOCR image installs from pinned
 sources and runs as a non-root user.*
 
-Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.7**, the
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.19.7**, the
 patch after Phase 53.14's release
 
 This is a batch of open rows that wait on no open question. K114 is
@@ -93,7 +93,7 @@ tagged.
 ### Release
 
 - [x] `VERSION`, CHANGELOG, README status.
-- [ ] Tag v3.19.7 once merged.
+- [x] Tag `v3.19.7` once merged.
 
 ## Acceptance criteria
 
