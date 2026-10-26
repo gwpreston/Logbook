@@ -5,7 +5,7 @@ photo for OCR as fast as GD does, a scan's OCR preparation overlaps the
 model request, and the optional PaddleOCR image installs from pinned
 sources and runs as a non-root user.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.14's release, a patch release
 
 This is a batch of open rows that wait on no open question. K114 is
@@ -58,7 +58,7 @@ tagged.
 
 ### 53.15.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.15.1 Imagick preparation (K74)

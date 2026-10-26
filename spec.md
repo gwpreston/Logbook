@@ -12319,7 +12319,7 @@ task breakdowns live in the per-phase files; this is the map.
   migration. Releases v3.19.6, a patch on its own after 53.13's release
   (#554, decided 2026-10-23). See [`phase-53.14.md`](docs/phases/phase-53.14.md).
 - **Phase 53.15 — OCR speed and the PaddleOCR image from the
-  known-issues log + patch release** (planned). Imagick prepares a photo
+  known-issues log + patch release** (in progress). Imagick prepares a photo
   for OCR as fast as GD (K74); OCR preparation overlaps the vision
   request (K105); the optional PaddleOCR image installs pinned packages
   and runs as non-root (K79). No migration. See
