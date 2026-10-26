@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Needs attention (spec.md §6 AttentionHidden, §7.24; Phase 24).
@@ -16,7 +16,7 @@ use Phinx\Migration\AbstractMigration;
  * drops the table and the `attention.thresholds` user settings, which the
  * version before does not read.
  */
-final class CreateAttentionHidden extends AbstractMigration
+final class CreateAttentionHidden extends Migration
 {
     public function up(): void
     {

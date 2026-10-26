@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * A compliance document's odometer (spec.md §6 ComplianceDocument, §7.5): the
@@ -21,7 +21,7 @@ use Phinx\Migration\AbstractMigration;
  * has no named foreign keys, so the foreign key is dropped by column (as in
  * 20260928100200).
  */
-final class AddDocumentOdometer extends AbstractMigration
+final class AddDocumentOdometer extends Migration
 {
     public function up(): void
     {

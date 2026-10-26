@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Multiple users and vehicle sharing (spec.md §6 User, VehicleShare,
@@ -21,7 +21,7 @@ use Phinx\Migration\AbstractMigration;
  * exists, because 1.x would put several people's data in front of each of
  * them. Export the others first with bin/export-user.php.
  */
-final class AddUsersAndSharing extends AbstractMigration
+final class AddUsersAndSharing extends Migration
 {
     /** Tables whose rows record who added them, and the column that does. */
     private const array AUTHORED = [

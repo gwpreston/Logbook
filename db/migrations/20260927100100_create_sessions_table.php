@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Server-side sessions (spec.md §6 Session). The id is an HMAC of the cookie
  * token, never the token itself. Rows of a deleted user go with it.
  */
-final class CreateSessionsTable extends AbstractMigration
+final class CreateSessionsTable extends Migration
 {
     public function change(): void
     {

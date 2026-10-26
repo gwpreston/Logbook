@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * The issues log (spec.md §6 Issue, IssueFix and IssueUpdate; §7.37,
@@ -27,7 +27,7 @@ use Phinx\Migration\AbstractMigration;
  * attachment rows (the files stay under UPLOAD_PATH) and `issue`
  * reminders, then drops the columns and the tables.
  */
-final class CreateIssues extends AbstractMigration
+final class CreateIssues extends Migration
 {
     public function up(): void
     {

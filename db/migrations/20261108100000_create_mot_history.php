@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * MOT history from DVSA (spec.md §6 MotTest, MotDefect, MotHistorySecret;
@@ -25,7 +25,7 @@ use Phinx\Migration\AbstractMigration;
  * provider off (#348). Issues and documents
  * made from tests stay, as the owner's own entries.
  */
-final class CreateMotHistory extends AbstractMigration
+final class CreateMotHistory extends Migration
 {
     public function up(): void
     {

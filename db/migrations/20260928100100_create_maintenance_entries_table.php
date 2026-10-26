@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Service history (spec.md §6 MaintenanceEntry). performed_on is a calendar
@@ -10,7 +10,7 @@ use Phinx\Migration\AbstractMigration;
  * is also written to odometer_readings. A cost of 0 is valid. schedule_id
  * marks the entry as completing a recurring schedule.
  */
-final class CreateMaintenanceEntriesTable extends AbstractMigration
+final class CreateMaintenanceEntriesTable extends Migration
 {
     public function change(): void
     {

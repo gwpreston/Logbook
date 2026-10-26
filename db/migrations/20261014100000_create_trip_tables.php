@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Trips and mileage claims (spec.md §6 Trip, SavedJourney, MileageRateSet;
@@ -22,7 +22,7 @@ use Phinx\Migration\AbstractMigration;
  * those rows (the files stay under UPLOAD_PATH, as 20261010100000 did) and
  * the `trips` user settings, then drops the tables.
  */
-final class CreateTripTables extends AbstractMigration
+final class CreateTripTables extends Migration
 {
     private const string SETTING = 'trips';
 

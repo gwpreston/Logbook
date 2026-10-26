@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 
 /**
@@ -20,7 +20,7 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
  * before it goes on (Phase 53.8, #532, K107), and the release notes say
  * to roll back only with it off.
  */
-final class AddScanCrossCheck extends AbstractMigration
+final class AddScanCrossCheck extends Migration
 {
     public function up(): void
     {

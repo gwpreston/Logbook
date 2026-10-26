@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Notification secrets (spec.md §6 NotificationSecret; Phase 36.1): the
@@ -18,7 +18,7 @@ use Phinx\Migration\AbstractMigration;
  * transaction instead. Never backed up. Rolling back drops it (the SMTP
  * password is lost; the `email.smtp` setting is kept).
  */
-final class CreateNotificationSecrets extends AbstractMigration
+final class CreateNotificationSecrets extends Migration
 {
     public function up(): void
     {

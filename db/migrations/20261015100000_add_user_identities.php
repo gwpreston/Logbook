@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Single sign-on (spec.md §6 UserIdentity, User; §7.9; Phase 23.1).
@@ -18,7 +18,7 @@ use Phinx\Migration\AbstractMigration;
  * break-glass sign-in links (`invitations.kind = 'login'`), which the
  * version before cannot read.
  */
-final class AddUserIdentities extends AbstractMigration
+final class AddUserIdentities extends Migration
 {
     public function up(): void
     {

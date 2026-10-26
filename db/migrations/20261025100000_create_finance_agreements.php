@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Finance and lease agreements (spec.md §6 FinanceAgreement,
@@ -21,7 +21,7 @@ use Phinx\Migration\AbstractMigration;
  *
  * All three go with their vehicle (CASCADE). Rolling back drops them.
  */
-final class CreateFinanceAgreements extends AbstractMigration
+final class CreateFinanceAgreements extends Migration
 {
     public function up(): void
     {

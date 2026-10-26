@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * AI insights (spec.md §6 AiInsightSet, §7.26 *AI insights*; Phase 33.4):
@@ -16,7 +16,7 @@ use Phinx\Migration\AbstractMigration;
  *
  * Never backed up: it is made again the next day. Rolling back drops it.
  */
-final class CreateAiInsights extends AbstractMigration
+final class CreateAiInsights extends Migration
 {
     public function up(): void
     {

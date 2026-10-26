@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Scanned files waiting for the entry they will belong to (spec.md §6
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  * UPLOAD_PATH/pending are left for the owner to remove (nothing reads
  * them any more).
  */
-final class CreatePendingUploads extends AbstractMigration
+final class CreatePendingUploads extends Migration
 {
     public function up(): void
     {

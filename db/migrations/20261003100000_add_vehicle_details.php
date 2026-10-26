@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Vehicle details (spec.md §6 Vehicle, §7.1): an optional variant / trim and
  * an optional first registration date (a calendar date, never converted
  * through a time zone). Existing vehicles get null; nothing is guessed.
  */
-final class AddVehicleDetails extends AbstractMigration
+final class AddVehicleDetails extends Migration
 {
     public function change(): void
     {

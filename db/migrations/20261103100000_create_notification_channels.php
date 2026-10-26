@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Personal notification channels (spec.md §6 NotificationChannel, §7.11
@@ -34,7 +34,7 @@ use Phinx\Migration\AbstractMigration;
  * tokens where it can), drops channels made from the variables and every
  * user's notification secret, and drops the table.
  */
-final class CreateNotificationChannels extends AbstractMigration
+final class CreateNotificationChannels extends Migration
 {
     private const string NOTIFICATIONS = 'notifications';
     private const string INFO = 'logbook-notify';

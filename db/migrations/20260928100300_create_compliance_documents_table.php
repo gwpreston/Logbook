@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Insurance, pollution certificates, registration, inspections (spec.md §6
  * ComplianceDocument). Start and expiry are calendar dates; the cost is
  * decimal(14,3) and may be 0.
  */
-final class CreateComplianceDocumentsTable extends AbstractMigration
+final class CreateComplianceDocumentsTable extends Migration
 {
     public function change(): void
     {

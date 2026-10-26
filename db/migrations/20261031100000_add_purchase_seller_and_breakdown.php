@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Phase 33.3 (spec.md §6 Vehicle, OdometerReading, Incident; #182, #185):
@@ -19,7 +19,7 @@ use Phinx\Migration\AbstractMigration;
  *
  * Explicit up/down rather than change(): rows change on the way back.
  */
-final class AddPurchaseSellerAndBreakdown extends AbstractMigration
+final class AddPurchaseSellerAndBreakdown extends Migration
 {
     public function up(): void
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Tread depth (spec.md §6 User, TyreChangeLine; §7.17): a depth unit
@@ -19,7 +19,7 @@ use Phinx\Migration\AbstractMigration;
  * deletes those changes (their `measure` lines go with them), tyre
  * reminders and the tyre thresholds setting.
  */
-final class AddTreadDepth extends AbstractMigration
+final class AddTreadDepth extends Migration
 {
     public function up(): void
     {

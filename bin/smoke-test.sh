@@ -300,7 +300,11 @@ send POST "/vehicles/$vid/odometer" 201 '{"odometer":1100,"distance_unit":"km"}'
 rid="$(sed -n 's/^{"entry":{"id":\([0-9]*\).*/\1/p' $tmp/body)"
 printf '%%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%%%EOF\n' \
     > $tmp/smoke.pdf
-status="$(curl -s -o $tmp/body -w '%{http_code}' -H "Authorization: Bearer $rw" -F "file=@$tmp/smoke.pdf;type=application/pdf" \
+# Git Bash on Windows (K142): Windows curl can't read /tmp/... inside -F, which Git Bash leaves alone, so
+# give it the same file as a Windows path with forward slashes. Elsewhere there is no cygpath.
+pdf="$tmp/smoke.pdf"
+if command -v cygpath >/dev/null 2>&1; then pdf="$(cygpath -m "$pdf")"; fi
+status="$(curl -s -o $tmp/body -w '%{http_code}' -H "Authorization: Bearer $rw" -F "file=@$pdf;type=application/pdf" \
     "$base/api/v1/vehicles/$vid/odometer/$rid/attachments")" || fail "attachment upload failed"
 [ "$status" = 201 ] || fail "attachment upload returned $status: $(cat $tmp/body)"
 aid="$(sed -n 's/^{"id":\([0-9]*\).*/\1/p' $tmp/body)"

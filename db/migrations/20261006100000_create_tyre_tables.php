@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Tyres (spec.md §6 Tyre, TyreSet, TyreChange, TyreChangeLine; §7.17). Each
@@ -24,7 +24,7 @@ use Phinx\Migration\AbstractMigration;
  * named foreign keys, so the reading's foreign key is dropped by column (as
  * in 20261005100000).
  */
-final class CreateTyreTables extends AbstractMigration
+final class CreateTyreTables extends Migration
 {
     public function up(): void
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Valuations (spec.md §6 VehicleValuation, Phase 14.1): what a vehicle was
@@ -13,7 +13,7 @@ use Phinx\Migration\AbstractMigration;
  * removes those rows (the files stay under UPLOAD_PATH) with the table, as
  * 20261008100000 did for its owner types.
  */
-final class CreateVehicleValuationsTable extends AbstractMigration
+final class CreateVehicleValuationsTable extends Migration
 {
     public function up(): void
     {

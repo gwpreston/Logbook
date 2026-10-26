@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Parts and modifications (spec.md §6 Modification, Part and PartFitting;
@@ -27,7 +27,7 @@ use Phinx\Migration\AbstractMigration;
  * removes those attachment rows (the files stay under UPLOAD_PATH), then
  * drops the columns and the tables; the `build` lines go with them.
  */
-final class CreateParts extends AbstractMigration
+final class CreateParts extends Migration
 {
     /** expense_entries.note */
     private const int EXPENSE_NOTE_MAX = 500;

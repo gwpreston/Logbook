@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Fill-ups and charges (spec.md §6 FuelEntry). Volume is litres, or kWh for
  * electricity; the price per unit keeps 6 places so a price typed per gallon
  * converts back exactly; money is decimal(14,3). filled_at is a UTC instant.
  */
-final class CreateFuelEntriesTable extends AbstractMigration
+final class CreateFuelEntriesTable extends Migration
 {
     public function change(): void
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Incidents, damage and insurance claims (spec.md §6 Incident; §7.29,
@@ -28,7 +28,7 @@ use Phinx\Migration\AbstractMigration;
  * Explicit up/down rather than change(): SQLite has no named foreign keys,
  * so dropping by column is the portable reversal.
  */
-final class CreateIncidents extends AbstractMigration
+final class CreateIncidents extends Migration
 {
     /** The tables whose records an incident links, and their index names. */
     private const array LINKED = [

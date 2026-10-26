@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Reminders (spec.md §6 Reminder, §7.6): generated from maintenance
@@ -11,7 +11,7 @@ use Phinx\Migration\AbstractMigration;
  * no source_id), carrying the occurrence it was raised for and what has been
  * notified about it, so re-runs of the scheduled task never send twice.
  */
-final class CreateRemindersTable extends AbstractMigration
+final class CreateRemindersTable extends Migration
 {
     public function change(): void
     {

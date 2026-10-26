@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Drafted entries from Ask Logbook (spec.md §6 AiDraft, §7.26 *Drafting
@@ -13,7 +13,7 @@ use Phinx\Migration\AbstractMigration;
  * Not backed up. The scheduled task deletes expired drafts. Rolling back
  * drops the table; the entries drafts wrote are ordinary entries and stay.
  */
-final class CreateAiDrafts extends AbstractMigration
+final class CreateAiDrafts extends Migration
 {
     public function up(): void
     {

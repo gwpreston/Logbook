@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * API keys (spec.md §6 ApiKey, §7.20, Phase 18.2). Like sessions, only an
  * HMAC of the token is stored. A user's keys go with the user.
  */
-final class CreateApiKeysTable extends AbstractMigration
+final class CreateApiKeysTable extends Migration
 {
     public function change(): void
     {

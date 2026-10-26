@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Files attached to fill-ups, maintenance entries and compliance documents
@@ -10,7 +10,7 @@ use Phinx\Migration\AbstractMigration;
  * scopes every lookup to one vehicle and lets its files be found when the
  * vehicle is deleted. The file itself lives under UPLOAD_PATH.
  */
-final class CreateAttachmentsTable extends AbstractMigration
+final class CreateAttachmentsTable extends Migration
 {
     public function change(): void
     {

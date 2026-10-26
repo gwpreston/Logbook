@@ -393,6 +393,16 @@ from `pdo_mysql`, so repositories read rows through `Support\Database\Row`.
 SQLite is supported for the zero-config quick start, but its Phinx column types
 cannot be introspected by DBAL, so schema-shape tests run on PostgreSQL and
 MySQL only.
+On SQLite, Phinx changes a table (a column changed or dropped, a foreign key
+or index dropped) by copying it to a new table, dropping the old one and
+renaming the copy, which loses the table's `sqlite_sequence` counter. Every
+migration therefore extends `Logbook\Support\Database\Migration`, whose
+adapter wrapper saves the counter before such a change and writes it back
+after (never lower than the highest id still present), so an id deleted
+before an upgrade or a rollback is never given to a later record, and
+webhooks never send `entry.created` for an id they sent `entry.deleted` for
+(Phase 53.16, K63). MySQL and PostgreSQL are unchanged; installs that
+upgraded before 3.19.8 keep the ids they already reused.
 
 **Vehicle**
 - id, user_id (owner), name/nickname (optional), type (`car` | `bike`), make,
@@ -11375,7 +11385,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   `bin/smoke-test.sh` runs its stack as compose project
   `COMPOSE_PROJECT_NAME` when that is set, `logbook-smoke` otherwise
   (Phase 53.9, K121), so two runs with different names never remove each
-  other's containers and volumes.
+  other's containers and volumes. It also runs from Git Bash on Windows with
+  Windows `curl` (Phase 53.16, K142): it hands `curl` a Windows path for the
+  uploaded file and keeps its own files in a directory `curl` can write to.
 - **Performance:** responsive on a Raspberry Pi with a few vehicles and years of
   history; paginate long lists; index common queries.
 - **Backups:** user-controllable; document the volume/DB to back up; in-app
@@ -12343,9 +12355,9 @@ task breakdowns live in the per-phase files; this is the map.
   v3.19.7. See
   [`phase-53.15.md`](docs/phases/phase-53.15.md).
 - **Phase 53.16 — SQLite upgrade ids and the Windows smoke test from the
-  known-issues log + patch release** (planned). A SQLite table rebuild
+  known-issues log + patch release** (complete). A SQLite table rebuild
   keeps its id counter (K63); `bin/smoke-test.sh` runs from Git Bash on
-  Windows (K142). No migration. See
+  Windows (K142). No migration. Releases v3.19.8. See
   [`phase-53.16.md`](docs/phases/phase-53.16.md).
 - **Phase 53.17 — Dev suite, search accents and decided notes from the
   known-issues log + patch release** (planned). The dev stack's scheduler

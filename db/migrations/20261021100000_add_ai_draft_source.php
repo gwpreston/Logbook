@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Where a draft came from (spec.md §6 AiDraft; §7.28, Phase 26.5): `ask`
@@ -13,7 +13,7 @@ use Phinx\Migration\AbstractMigration;
  * Rolling back drops the column; MCP drafts left then are ordinary
  * drafts until they expire.
  */
-final class AddAiDraftSource extends AbstractMigration
+final class AddAiDraftSource extends Migration
 {
     public function up(): void
     {

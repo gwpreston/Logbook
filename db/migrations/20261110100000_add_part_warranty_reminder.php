@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Phase 50.2 (spec.md §6 Part `warranty_reminder`, §7.6 *Part warranty
@@ -15,7 +15,7 @@ use Phinx\Migration\AbstractMigration;
  * `modification` (new in 50.2): older code can't read that kind, and one
  * pending draft would break its owner's dashboard until it expired.
  */
-final class AddPartWarrantyReminder extends AbstractMigration
+final class AddPartWarrantyReminder extends Migration
 {
     public function up(): void
     {

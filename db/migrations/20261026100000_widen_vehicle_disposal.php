@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Handing back a financed car (spec.md §6 Vehicle disposal, §7.32
@@ -18,7 +18,7 @@ use Phinx\Migration\AbstractMigration;
  * finance reminders with their deliveries, which that version can't
  * show; the next sync raises nothing in their place.
  */
-final class WidenVehicleDisposal extends AbstractMigration
+final class WidenVehicleDisposal extends Migration
 {
     private const array SOURCES = ['finance', 'finance_end'];
 

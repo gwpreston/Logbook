@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Phinx\Migration\AbstractMigration;
+use Logbook\Support\Database\Migration;
 
 /**
  * Existing station texts become stations (spec.md §7.33 *Upgrading*,
@@ -26,7 +26,7 @@ use Phinx\Migration\AbstractMigration;
  * Rolling back unlinks every fill-up and deletes the stations, favourites
  * and places; the text column was never changed.
  */
-final class LinkFuelStations extends AbstractMigration
+final class LinkFuelStations extends Migration
 {
     private const int BATCH = 500;
 
