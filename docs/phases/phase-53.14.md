@@ -6,8 +6,9 @@ refuses, a 5,000-row CSV commits inside the time limit, a large CSV is
 read without three copies in memory, and warranty reminders stop costing
 a query each.*
 
-Status: ✅ complete · releases **v3.19.6**, a patch release after Phase
-53.13's (#554) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.19.6**
+([#144](https://github.com/gwpreston16/Logbook/pull/144)), a patch
+release after Phase 53.13's (#554) · file lives in `docs/phases/`
 
 This is a batch of open rows that wait on no open question. Rows that do
 (K1, K3, K13, K40, K42, K43, K44, K54, K56, K67, K72, K114, K143) are
@@ -96,7 +97,7 @@ tagged.
 
 ### 53.14.1 Scan schema
 
-- [ ] Record one request to a Claude model with the current scan schema
+- [x] Record one request to a Claude model with the current scan schema
       and keep it as a fixture (K132). *Carried over:* no Anthropic key
       was available when the phase was built, so the fix rests on
       Anthropic's published limits (read 2026-10-23); the owner opened the
@@ -162,14 +163,14 @@ tagged.
       recording) added.
 - [x] CHANGELOG; spec §13; ROADMAP status. *Done:* the AI guide
       (`docs/ai.md`) and the import guide (`docs/import.md`) say so too.
-- [ ] Merge review (import-tester, performance-auditor, ai-evaluator),
+- [x] Merge review (import-tester, performance-auditor, ai-evaluator),
       then merge.
 
 ### Release
 
 - [x] `VERSION` 3.19.6, CHANGELOG 3.19.6, README status: the patch
       after 53.13's release (#554).
-- [ ] Tag `v3.19.6` once merged.
+- [x] Tag `v3.19.6` once merged.
 
 ## Design review (2026-10-23)
 
