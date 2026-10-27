@@ -5,7 +5,7 @@ answered its question: only `Manage` can set or clear a modification's
 *Declared on* on any path, and the backup guide says a restore may reuse
 an id that was deleted before the backup.*
 
-Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.11**, a
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.19.11**, a
 patch release
 
 This is the next batch after [Phase 53.18](phase-53.18.md). It takes K3
@@ -98,7 +98,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.39
 ### Release
 
 - [x] `VERSION`, CHANGELOG, README status.
-- [ ] Tag `v3.19.11` once merged.
+- [x] Tag `v3.19.11` once merged.
 
 ## Acceptance criteria
 
