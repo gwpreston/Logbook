@@ -48,6 +48,7 @@ final readonly class ConvertToModificationAction
         private Redirector $redirect,
         private EntryGuard $guard,
         private CostInput $costs,
+        private DeclaredInput $declared,
         private ClockInterface $clock,
         private DisplayFormatter $formatter,
         private TranslatorInterface $translator,
@@ -90,7 +91,16 @@ final readonly class ConvertToModificationAction
         }
 
         $data = ModificationForm::parse(
-            $this->costs->guard($request, $vehicle, RequestContext::form($request), $this->prefill($entry, $user->preferences)),
+            $this->declared->guard(
+                $request,
+                $vehicle,
+                $this->costs->guard(
+                    $request,
+                    $vehicle,
+                    RequestContext::form($request),
+                    $this->prefill($entry, $user->preferences),
+                ),
+            ),
             $user->preferences,
             $today,
         );

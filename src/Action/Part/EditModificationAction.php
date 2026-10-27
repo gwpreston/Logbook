@@ -32,6 +32,7 @@ final readonly class EditModificationAction
 {
     public function __construct(
         private ModificationService $modifications,
+        private DeclaredInput $declared,
         private ModificationFormPage $page,
         private RecordPartsPicker $parts,
         private CostInput $costs,
@@ -67,13 +68,13 @@ final readonly class EditModificationAction
 
         $zone = $user->preferences->timeZone();
         $today = LocalTime::today($this->clock, $zone);
-        $input = $this->costs->guard(
+        $input = $this->declared->guard($request, $vehicle, $this->costs->guard(
             $request,
             $vehicle,
             RequestContext::form($request),
             ModificationForm::values($modification, $user->preferences)
                 + $this->parts->values($vehicle, PartService::MODIFICATION, $modification->id),
-        );
+        ));
         $values = RequestContext::formValues($request);
         if (RecordPartsForm::more($input) !== null) {
             return $this->page->render($request, $response, $vehicle, $values, $modification);

@@ -21802,7 +21802,7 @@
         "required": [
           "title"
         ],
-        "description": "Validated as the modification form validates, with its parts lists in the same transaction. done_on is today when left out; odometer is in distance_unit (the key user's unit when left out). cost needs ViewCosts and is ignored without it. declared_on is when the insurer was told.",
+        "description": "Validated as the modification form validates, with its parts lists in the same transaction. done_on is today when left out; odometer is in distance_unit (the key user's unit when left out). cost needs ViewCosts and is ignored without it. declared_on is when the insurer was told; it needs Manage, and a Log member who sends it is refused with a 403.",
         "properties": {
           "title": {
             "type": "string",

@@ -168,6 +168,7 @@ final readonly class ApiModifications
         ApiWriter::assertActive($vehicle);
         $zone = $user->preferences->timeZone();
         $today = LocalTime::today($this->clock, $zone);
+        $this->guardDeclared($user, $vehicle, $body);
         $body = $this->guardCosts($user, $vehicle, $body);
         $mapped = $this->mapped(JsonInput::modification($body, $user->preferences, $today, true));
         $data = ModificationForm::parse($mapped['input'], $mapped['preferences'], $today);
@@ -229,6 +230,7 @@ final readonly class ApiModifications
         $modification = $state->modification;
         $zone = $user->preferences->timeZone();
         $today = LocalTime::today($this->clock, $zone);
+        $this->guardDeclared($user, $vehicle, $body);
         $body = $this->guardCosts($user, $vehicle, $body);
         $mapped = $this->mapped(JsonInput::modification($body, self::units($user->preferences, $body), $today, false));
         $stored = ModificationForm::values($modification, $mapped['preferences']);
@@ -469,6 +471,24 @@ final readonly class ApiModifications
         }
 
         return $body;
+    }
+
+    /**
+     * *Declared on* is `Manage`-only on every path (spec.md §7.39, K3, #485): a `declared_on` from
+     * a `Log` member is refused, not ignored, so the client learns it did not take.
+     *
+     * @param array<string, mixed> $body
+     * @throws ApiProblem 403
+     */
+    private function guardDeclared(User $user, Vehicle $vehicle, array $body): void
+    {
+        if (array_key_exists('declared_on', $body) && !$this->access->can($user, VehicleAbility::Manage, $vehicle)) {
+            throw new ApiProblem(
+                403,
+                'forbidden',
+                'The key\'s user may not set or clear a modification\'s declared date: that needs Manage.',
+            );
+        }
     }
 
     private function costs(User $user, Vehicle $vehicle): bool

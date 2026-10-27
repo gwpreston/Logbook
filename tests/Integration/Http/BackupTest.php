@@ -24,6 +24,7 @@ use Logbook\Domain\Incident\WriteOffCategory;
 use Logbook\Domain\Odometer\OdometerReadingData;
 use Logbook\Domain\Reminder\ManualReminderData;
 use Logbook\Domain\Trip\TripData;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Logbook\Domain\Tyre\TyreChangeData;
 use Logbook\Domain\Tyre\TyreData;
 use Logbook\Domain\Tyre\TyrePosition;
@@ -336,6 +337,36 @@ final class BackupTest extends AppTestCase
 
         $backups->restore($file);
         self::assertEquals($before, $this->snapshot($app));
+    }
+
+    /**
+     * A backup doesn't carry id counters (K146, #559, docs/deployment.md#backups): a restore into a
+     * fresh database, the usual recovery, gives the next record the highest restored id plus one, so an
+     * id deleted before the backup comes round again. PostgreSQL does the same on a database in use
+     * (asserted here); SQLite and MySQL keep a counter that is already higher, so the next id is at
+     * least that (a truly fresh file or schema is not reproducible in this suite).
+     */
+    public function testAfterARestoreTheNextIdIsTheHighestRestoredIdPlusOne(): void
+    {
+        $app = $this->createApp(['BACKUP_PATH' => $this->backupDir]);
+        $this->pinClock($app, self::NOW);
+        $this->signedIn($app);
+        $kept = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $deleted = $this->vehicle($app, 'Skoda', 'Fabia');
+        $this->connection($app)->delete('vehicles', ['id' => $deleted->id]);
+
+        $backups = $this->service($app, BackupService::class);
+        $file = $this->backupDir . '/counters.zip';
+        mkdir($this->backupDir);
+        $backups->create($file);
+
+        $backups->restore($file);
+        $again = $this->vehicle($app, 'Seat', 'Ibiza');
+        if ($this->connection($app)->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            self::assertSame($kept->id + 1, $again->id);
+        } else {
+            self::assertGreaterThan($kept->id, $again->id);
+        }
     }
 
     public function testABadArchiveChangesNothing(): void

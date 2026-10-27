@@ -511,6 +511,41 @@ final class ApiPartsTest extends AppTestCase
         self::assertSame(403, $theirs->get($this->mods . '/' . $id . '/attachments')->getStatusCode(), 'files are cost files');
     }
 
+    /**
+     * *Declared on* is `Manage`-only on every path (spec.md §7.39, K3, #485): a `Log` member's
+     * `declared_on` is refused with a 403 on POST and PATCH and changes nothing; `Manage` sets and clears it.
+     */
+    public function testDeclaredOnNeedsManageAndIsRefusedFromALogMember(): void
+    {
+        $id = $this->logged(['declared_on' => '2026-06-01']);
+        $now = new DateTimeImmutable(self::NOW);
+        $shares = $this->service($this->app, VehicleShareRepository::class);
+        $logger = $this->createMember($this->app, 'logger');
+        $shares->insert($this->golf->id, $logger->id, ShareLevel::Log, true, false, $now);
+        $theirs = $this->api($this->app, $this->apiKey($this->app, $logger));
+
+        $post = $theirs->post($this->mods, self::mod(['title' => 'Their remap', 'declared_on' => '2026-06-02']));
+        self::assertSame(403, $post->getStatusCode(), self::body($post));
+        self::assertCount(1, ApiClient::json($this->api->get($this->mods))->column('id', 'items'), 'nothing was logged');
+
+        $own = ApiClient::json($theirs->post($this->mods, self::mod(['title' => 'Their remap'])))->int('entry', 'id');
+        self::assertNull(ApiClient::json($this->api->get($this->mods . '/' . $own))->get('declared_on'));
+        foreach (['2026-06-02', null] as $value) {
+            $patch = $theirs->patch($this->mods . '/' . $own, ['declared_on' => $value, 'title' => 'Their remap 2']);
+            self::assertSame(403, $patch->getStatusCode(), self::body($patch));
+        }
+        self::assertSame('Their remap', ApiClient::json($this->api->get($this->mods . '/' . $own))->get('title'));
+        $quiet = $theirs->patch($this->mods . '/' . $own, ['title' => 'Their remap 2']);
+        self::assertSame(200, $quiet->getStatusCode(), 'a patch that leaves it out still works');
+
+        $mine = $this->mods . '/' . $id;
+        self::assertSame('2026-06-01', ApiClient::json($this->api->get($mine))->get('declared_on'));
+        $moved = $this->api->patch($mine, ['declared_on' => '2026-06-05']);
+        self::assertSame('2026-06-05', ApiClient::json($moved)->get('entry', 'declared_on'), 'Manage sets it');
+        $cleared = $this->api->patch($mine, ['declared_on' => null]);
+        self::assertNull(ApiClient::json($cleared)->get('entry', 'declared_on'), 'and clears it');
+    }
+
     public function testAccessFollowsEntryAccessAndViewIsReadOnly(): void
     {
         $id = $this->logged();
