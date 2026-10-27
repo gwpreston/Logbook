@@ -304,11 +304,12 @@ final class NotificationDeliveryTest extends ReminderTestCase
         $unsent = $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminder_deliveries WHERE sent_at IS NULL');
         self::assertEquals(1, $unsent);
 
-        self::assertSame(0, $this->runTasks($app)->remindersSent);
-        self::assertSame(0, $this->runTasks($app)->remindersSent);
+        $sent = [$this->runTasks($app)->remindersSent, $this->runTasks($app)->remindersSent];
+        self::assertSame([0, 0], $sent);
         self::assertSame([], $this->mail->sent);
         self::assertSame([], $this->http->requests);
-        self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminder_deliveries WHERE sent_at IS NULL'), 'still unsent');
+        $stillUnsent = $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminder_deliveries WHERE sent_at IS NULL');
+        self::assertEquals(1, $stillUnsent, 'still unsent');
     }
 
     public function testMonthlyDigestOncePerMonth(): void

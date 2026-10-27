@@ -85,8 +85,8 @@ final class MakeUsernamesAccentSensitive extends Migration
                 $table,
             ));
             foreach ($rows as $row) {
-                if (is_array($row)) {
-                    $pairs[] = sprintf('%s / %s', (string) ($row['first_name'] ?? ''), (string) ($row['second_name'] ?? ''));
+                if (is_array($row) && is_string($row['first_name'] ?? null) && is_string($row['second_name'] ?? null)) {
+                    $pairs[] = $row['first_name'] . ' / ' . $row['second_name'];
                 }
             }
         }
