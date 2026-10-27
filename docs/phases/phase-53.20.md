@@ -6,7 +6,7 @@ from the app (K54), and a CSV export carries the time with its UTC offset
 so two fill-ups in the clock-change hour stay distinct on re-import
 (K13).*
 
-Status: 🚧 in progress · file lives in `docs/phases/` · releases **v3.19.12**, a
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.12**, a
 patch release
 
 This is the next batch after [Phase 53.19](phase-53.19.md). It takes K54
@@ -107,16 +107,16 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 
 ### 53.20.3 Finish
 
-- [ ] Known-issues rows K54 and K13 *Fixed*; open questions #456, #561 and
+- [x] Known-issues rows K54 and K13 *Fixed*; open questions #456, #561 and
       #562 marked built.
-- [ ] CHANGELOG (with an upgrade note on the export's new time format);
+- [x] CHANGELOG (with an upgrade note on the export's new time format);
       spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, security-scanner, bug-hunter,
       import-tester, deploy-checker), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status.
+- [x] `VERSION`, CHANGELOG, README status.
 - [ ] Tag `v3.19.12` once merged.
 
 ## Acceptance criteria
