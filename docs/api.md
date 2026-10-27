@@ -100,6 +100,9 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
 | instants | ISO 8601, UTC | `"filled_at": "2026-09-29T07:42:00Z"` |
 | calendar dates | `YYYY-MM-DD`, no zone | `"expiry_on": "2027-03-14"` |
 
+A date or instant you send, and a `year`, must fall in 1900–2100 (a
+value outside answers `422`, or `400` for a query parameter).
+
 - Numbers are **decimal strings** at their stored precision, never floats,
   so nothing is lost on the way. Most tools read `"61.370"` as a number
   (Home Assistant's `| float`, Grafana's *Number* column).

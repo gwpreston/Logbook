@@ -63,8 +63,8 @@ final readonly class TripClaimAction
 
         $year = $query['year'] ?? null;
         if ($year !== null) {
-            if (!is_string($year) || preg_match('/^[12][0-9]{3}$/', $year) !== 1) {
-                throw ApiProblem::invalidParameter('year', 'the year a tax year starts in (2026).');
+            if (!is_string($year) || preg_match('/^[0-9]{4}$/', $year) !== 1 || !LocalTime::yearInRange((int) $year)) {
+                throw ApiProblem::invalidParameter('year', 'the year a tax year starts in (2026, from 1900 to 2100).');
             }
             $checked['year'] = $year;
         }

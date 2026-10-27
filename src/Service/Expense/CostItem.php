@@ -275,7 +275,7 @@ final readonly class CostItem
 
     private static function localDate(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
     {
-        $date = LocalTime::parseDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
+        $date = LocalTime::parseCalendarDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
         assert($date instanceof DateTimeImmutable);
 
         return $date;

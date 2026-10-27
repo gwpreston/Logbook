@@ -337,8 +337,8 @@ final class VehicleDetailsTest extends AppTestCase
         self::assertStringContainsString('The odometer reading cannot be dated in the future.', self::body($future));
         self::assertStringContainsString('value="2026-09-28"', self::body($future), 'kept');
 
-        $early = $browser->post('/vehicles/new', self::dated('1884-12-31'));
-        self::assertStringContainsString('The odometer reading cannot be dated before 1885.', self::body($early));
+        $early = $browser->post('/vehicles/new', self::dated('1899-12-31'));
+        self::assertStringContainsString('Enter a date between 1900 and 2100.', self::body($early));
 
         $other = $browser->post('/vehicles/new', ['make' => '', 'current_odometer_on' => '2026-01-05'] + self::FOCUS);
         self::assertSame(422, $other->getStatusCode());

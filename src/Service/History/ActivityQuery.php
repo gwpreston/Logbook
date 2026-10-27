@@ -43,7 +43,7 @@ final readonly class ActivityQuery
 
     public static function newYear(int $year): DateTimeImmutable
     {
-        $day = LocalTime::parseDate(sprintf('%04d-01-01', $year));
+        $day = LocalTime::parseCalendarDate(sprintf('%04d-01-01', $year));
         assert($day !== null);
 
         return $day;

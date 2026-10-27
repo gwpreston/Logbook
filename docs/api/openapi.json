@@ -4,7 +4,7 @@
     "title": "Logbook API",
     "version": "1.26.1",
     "summary": "Read a Logbook garage and log fill-ups, odometer readings, trips, service records, documents, expenses, tread checks and manual reminders.",
-    "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. Any enum may gain values in a later release without a new API version; a client should accept values it does not know. See docs/api.md for keys, paging, errors and worked examples.",
+    "description": "Quantities are canonical (km, litres or kWh, L/100 km or kWh/100 km) decimal strings; money is in the vehicle's currency; instants are UTC; a date or year you send must be in 1900-2100. Amount fields are left out, not zeroed, for vehicles whose costs the key's user may not see. Any enum may gain values in a later release without a new API version; a client should accept values it does not know. See docs/api.md for keys, paging, errors and worked examples.",
     "license": {
       "name": "GNU Affero General Public License v3.0 or later",
       "identifier": "AGPL-3.0-or-later"

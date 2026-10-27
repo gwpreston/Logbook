@@ -100,13 +100,13 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.1 Date range (K42)
 
-- [ ] `LocalTime::parseDate()` returns null outside 1900–2100, so
+- [x] `LocalTime::parseDate()` returns null outside 1900–2100, so
       `Validator::date()` (message `validation.date`, or a new
       `validation.date_range` key in every catalogue), the API's date
       fields and URL dates refuse it. `ActivityQuery::newYear()`,
       `ReportPeriod`, `TaxYear` and `ClaimFilter` clamp or refuse a URL
       year the same way.
-- [ ] Tests: a fill-up, expense and document dated 9999-12-31 or
+- [x] Tests: a fill-up, expense and document dated 9999-12-31 or
       0001-01-01 are refused on the form and the API (422); `?year=0000`
       and a custom report range in 9999 answer 4xx or the default, never
       500 or a loop. `docs/api.md` and `openapi.json` give the range.

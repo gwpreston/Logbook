@@ -107,7 +107,7 @@ final readonly class TaxYear
             throw new InvalidArgumentException(sprintf('"%s" is not a tax year start (MM-DD).', $startMonthDay));
         }
 
-        return LocalTime::parseDate(sprintf('%04d-%s', $year, $startMonthDay))
+        return LocalTime::parseCalendarDate(sprintf('%04d-%s', $year, $startMonthDay))
             ?? throw new InvalidArgumentException('Invalid tax year start.');
     }
 }

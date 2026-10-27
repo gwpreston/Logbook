@@ -56,7 +56,7 @@ final readonly class ClaimFilter
         }
 
         $year = $query['year'] ?? null;
-        $taxYear = is_string($year) && preg_match('/^\d{4}$/', $year) === 1
+        $taxYear = is_string($year) && preg_match('/^\d{4}$/', $year) === 1 && LocalTime::yearInRange((int) $year)
             ? TaxYear::startingIn((int) $year, $taxYearStart)
             : TaxYear::containing($today, $taxYearStart);
 

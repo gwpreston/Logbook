@@ -123,7 +123,7 @@ final class Row
             return null;
         }
 
-        $date = is_string($value) ? LocalTime::parseDate(substr($value, 0, 10)) : null;
+        $date = is_string($value) ? LocalTime::parseCalendarDate(substr($value, 0, 10)) : null;
         if ($date === null) {
             throw new UnexpectedValueException(sprintf('Column "%s" is not a date.', $column));
         }

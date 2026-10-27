@@ -38,7 +38,7 @@ use Logbook\Support\Validation\Validator;
 final class VehicleForm
 {
     public const int FIRST_YEAR = 1885;
-    public const string FIRST_REGISTRATION = '1885-01-01';
+    public const string FIRST_REGISTRATION = '1900-01-01';
     private const int QUANTITY_SCALE = 3;
     private const int MONEY_SCALE = 3;
     /** Posted by js/first-inspection.js: a blank *First MOT due* was the owner's choice. */
@@ -317,29 +317,17 @@ final class VehicleForm
 
             return null;
         }
-        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
-            $validator->addError('first_registered_on', 'vehicle.registered_too_early');
-
-            return null;
-        }
-
         return $date;
     }
 
     /**
      * *First MOT due*: a calendar date, not before first registration when
-     * both are set, and not before the first registered cars. Any later
-     * date is fine: it is a date the owner expects, not a record.
+     * both are set. Any later date is fine: it is a date the owner expects, not a record.
      */
     private static function firstInspection(Validator $validator, ?DateTimeImmutable $firstRegistered): ?DateTimeImmutable
     {
         $date = $validator->date('first_inspection_due_on');
         if ($date === null) {
-            return null;
-        }
-        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
-            $validator->addError('first_inspection_due_on', 'vehicle.first_inspection_too_early');
-
             return null;
         }
         if ($firstRegistered !== null && $date < $firstRegistered) {
@@ -353,7 +341,8 @@ final class VehicleForm
 
     /**
      * The current odometer's *As of*: a calendar date, not after today
-     * (owner's time zone) and not before 1885. Blank is today.
+     * (owner's time zone) and not before 1900 (the
+     * validator's range). Blank is today.
      */
     private static function readOn(Validator $validator, DateTimeImmutable $today): ?DateTimeImmutable
     {
@@ -366,12 +355,6 @@ final class VehicleForm
 
             return null;
         }
-        if ($date < LocalTime::parseDate(self::FIRST_REGISTRATION)) {
-            $validator->addError('current_odometer_on', 'vehicle.reading_too_early');
-
-            return null;
-        }
-
         return $date;
     }
 
