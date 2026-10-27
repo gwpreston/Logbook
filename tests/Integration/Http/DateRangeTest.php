@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Logbook\Tests\Integration\Http;
 
+use Logbook\Domain\Maintenance\MaintenanceCategory;
+use Logbook\Domain\Maintenance\MaintenanceScheduleData;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\VehicleData;
 use Logbook\Domain\Vehicle\VehicleType;
 use Logbook\Repository\UserRepository;
+use Logbook\Service\Maintenance\ScheduleService;
+use Logbook\Service\Reminder\ReminderSync;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Date\LocalTime;
 use Logbook\Tests\Support\ApiFixtures;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
@@ -93,5 +98,41 @@ final class DateRangeTest extends AppTestCase
             self::assertContains($status, [400, 422], $query);
         }
         self::assertSame(200, $api->get('/trips/claim?year=2026')->getStatusCode());
+    }
+
+    /**
+     * K43: a vehicle driven almost nothing projects a distance due date past
+     * year 9999; the pages stay up and show the distance, not a date.
+     */
+    public function testADriverOfAlmostNothingStillGetsPages(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, '2026-09-29T10:00:00Z');
+        $browser = $this->signedIn($app);
+        $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
+        self::assertNotNull($owner);
+        $golf = $this->costVehicle($app);
+        $this->reading($app, $golf, '100000', '2025-09-01T08:00:00Z');
+        $this->reading($app, $golf, '100001', '2026-09-01T08:00:00Z');
+        $baseline = LocalTime::parseDate('2020-01-01');
+        self::assertNotNull($baseline);
+        $this->service($app, ScheduleService::class)->create($golf, new MaintenanceScheduleData(
+            MaintenanceCategory::Service,
+            'Service',
+            intervalKm: '20000.000',
+            baselineDoneOn: $baseline,
+            baselineDoneKm: '90000.000',
+        ));
+
+        $this->service($app, ReminderSync::class)->sync($owner);
+
+        foreach (['/', '/reminders', '/vehicles/' . $golf->id, '/vehicles/' . $golf->id . '/maintenance'] as $page) {
+            self::assertSame(200, $browser->get($page)->getStatusCode(), $page);
+        }
+        $rows = $this->service($app, \Doctrine\DBAL\Connection::class)
+            ->fetchAllAssociative('SELECT due_on, due_km FROM reminders');
+        self::assertCount(1, $rows, 'the service is a reminder');
+        self::assertNull($rows[0]['due_on'], 'no date a century out is stored');
+        self::assertEquals(110000, $rows[0]['due_km']);
     }
 }

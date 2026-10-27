@@ -115,7 +115,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.2 Far-out due dates (K43)
 
-- [ ] `DueState` and `TyreWear`: no projected date when the days would
+- [x] `DueState` and `TyreWear`: no projected date when the days would
       end beyond 100 years from today (or overflow `+N days`); the
       distance left still shows. Tests: the 100,000 / 100,001 km case
       from K43 stores no `due_on` and `/`, `/reminders` and the vehicle

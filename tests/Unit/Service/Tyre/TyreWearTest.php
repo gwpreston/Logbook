@@ -265,4 +265,16 @@ final class TyreWearTest extends TestCase
 
         self::assertNull(self::estimate([], '0')->barPercent());
     }
+
+    public function testNoWearOutDateBeyondOneHundredYears(): void
+    {
+        $wear = self::estimate(
+            [self::point(1, '0.000', '8.000'), self::point(2, '15000.000', '5.000')],
+            '15000.000',
+            perDay: 0.0001,
+        );
+
+        self::assertNull($wear->wearOutOn);
+        self::assertSame('10000.000', $wear->kmLeft, 'the distance left still shows');
+    }
 }

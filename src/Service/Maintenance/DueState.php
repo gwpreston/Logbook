@@ -22,6 +22,9 @@ use Logbook\Support\Number\Decimal;
 final readonly class DueState
 {
     /** Default lead time: due within this many days counts as "soon" (see ReminderPreferences). */
+    /** A projected date further out than this (100 years) isn't shown or stored. */
+    public const int HORIZON_DAYS = 36525;
+
     public const int SOON_DAYS = 30;
     /** Default lead distance: due within this many kilometres counts as "soon". */
     public const string SOON_KM = '1000';
@@ -63,8 +66,7 @@ final readonly class DueState
         $kmLeft = $next->km !== null && $currentKm !== null ? Decimal::subtract($next->km, $currentKm) : null;
         $projectedOn = null;
         if ($kmLeft !== null && $kmPerDay !== null && $kmPerDay > 0) {
-            $days = Decimal::compare($kmLeft, '0') <= 0 ? 0 : (int) ceil((float) $kmLeft / $kmPerDay);
-            $projectedOn = $today->modify(sprintf('+%d days', $days));
+            $projectedOn = self::projectedOn($today, $kmLeft, $kmPerDay);
         }
 
         $dateOverdue = $next->on !== null && $next->on < $today;
@@ -91,5 +93,22 @@ final readonly class DueState
         $projected = $trigger === DueTrigger::Distance && $dueOn !== null;
 
         return new self($status, $trigger, $dueOn, $projected, $daysLeft, $kmLeft);
+    }
+
+    /**
+     * The day $kmLeft is reached at $kmPerDay, or null when that is more than
+     * 100 years away (or too far to compute): never a wrong date (K43, spec §7.4).
+     */
+    public static function projectedOn(DateTimeImmutable $today, string $kmLeft, float $kmPerDay): ?DateTimeImmutable
+    {
+        if (Decimal::compare($kmLeft, '0') <= 0) {
+            return $today;
+        }
+        $days = ceil((float) $kmLeft / $kmPerDay);
+        if (!is_finite($days) || $days > self::HORIZON_DAYS) {
+            return null;
+        }
+
+        return $today->modify(sprintf('+%d days', (int) $days));
     }
 }
