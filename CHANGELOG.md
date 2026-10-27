@@ -6,6 +6,31 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.9] — 2026-10-27
+
+Phase 53.17: **dev suite, search accents and decided notes from the
+known-issues log** ([docs/phases/phase-53.17.md](docs/phases/phase-53.17.md)).
+No migration: pull and restart.
+
+### Fixed
+- **On MySQL and MariaDB the AI model search and the fuel-station name
+  search count accents**, as they already did on PostgreSQL and SQLite:
+  `öl` finds "Ölhandel Müller" but not "Olhandel". Case is still
+  ignored (K144).
+- **The dev stack's test runs aren't refused the scheduler's lock.**
+  `docker-compose.dev.yml` turns the container's own scheduler loop off
+  (`SCHEDULER_ENABLED: "false"`), so a suite run in it no longer fails
+  now and then on `var/cache/scheduled-tasks.lock`. Set it to `"true"`
+  to watch reminders go out (K143). The production images are unchanged.
+
+### Documented
+- **Ask's and MCP's tool-result `note` hints stay in English**, whatever
+  the user's language; the answer and tool descriptions follow the
+  language (K72).
+- **A part removal made without a record can't be edited or undone**,
+  and a £0.00 sale stored before 3.16.3 stays until the part is deleted
+  and added again (K67). The 3.16.3 upgrade note says so too.
+
 ## [3.19.8] — 2026-10-26
 
 Phase 53.16: **SQLite upgrade ids and the Windows smoke test from the

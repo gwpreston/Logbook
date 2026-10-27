@@ -15,6 +15,7 @@ final class ToolNotesStayEnglishTest extends TestCase
     public function testNoToolNoteIsTranslated(): void
     {
         $files = glob(__DIR__ . '/../../../../src/Service/Ai/Ask/Tool/*.php');
+        self::assertIsArray($files);
         self::assertNotEmpty($files);
 
         $translated = [];

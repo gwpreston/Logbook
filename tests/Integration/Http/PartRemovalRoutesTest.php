@@ -48,6 +48,10 @@ final class PartRemovalRoutesTest extends AppTestCase
         $known = self::KNOWN;
         sort($known);
 
-        self::assertSame($known, $found, 'a new part route: does it edit or undo a removal? Then change #483, spec §7.39 and the docs first.');
+        self::assertSame(
+            $known,
+            $found,
+            'a new part route: does it edit or undo a removal? Then change #483, spec §7.39 and the docs first.',
+        );
     }
 }
