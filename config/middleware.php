@@ -10,6 +10,7 @@ use Logbook\Middleware\DemoMiddleware;
 use Logbook\Middleware\LocaleMiddleware;
 use Logbook\Middleware\ModalMiddleware;
 use Logbook\Middleware\RequestReadsMiddleware;
+use Logbook\Middleware\SecurityHeadersMiddleware;
 use Logbook\Middleware\SessionMiddleware;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Http\ErrorHandler;
@@ -23,9 +24,9 @@ use Slim\Middleware\ErrorMiddleware;
  * Global middleware. Slim runs the LAST added FIRST, so this list is written
  * inner → outer. Resulting order (outer → inner), per spec.md §5:
  *
- *   demo start path and robots header (DEMO_MODE only) → API CORS (API
- *   paths only) → error handling → base path → page-request reads
- *   (GET and HEAD) → session
+ *   page security headers → demo start path and robots header (DEMO_MODE
+ *   only) → API CORS (API paths only) → error handling → base path
+ *   → page-request reads (GET and HEAD) → session
  *   → current user → locale + display preferences → modal redirects
  *   → routing → body parsing
  *   → [route groups, config/routes.php: header sign-in → auth guard → CSRF
@@ -70,4 +71,6 @@ return static function (App $app): void {
     $app->add(ApiCorsMiddleware::class);
     // Outermost: the web start path of a demo, and the robots header on every response.
     $app->add(DemoMiddleware::class);
+    // Outermost of all: the page security headers on every response, even the demo's 503 (K54).
+    $app->add(SecurityHeadersMiddleware::class);
 };

@@ -82,12 +82,12 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 
 ### 53.20.1 Page security headers (K54)
 
-- [ ] A middleware in `src/Middleware/` (registered in
+- [x] A middleware in `src/Middleware/` (registered in
       `config/middleware.php`) adds the three headers to every response
       that doesn't set them. Remove the duplicates the Docker vhost
       (`docker/apache/logbook.conf`) adds, and update
       `docs/deployment.md` and spec §10 to say the app sends them.
-- [ ] Tests: a page, a redirect, an error page and the API each carry the
+- [x] Tests: a page, a redirect, an error page and the API each carry the
       three headers once; a download keeps its own `nosniff`, and a
       sign-in link keeps `Referrer-Policy: no-referrer`.
 
