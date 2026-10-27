@@ -6,7 +6,6 @@ namespace Logbook\Tests\Integration\Database;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Logbook\Domain\FuelPrices\FeedStation;
 use Logbook\Domain\FuelPrices\ProviderStation;
 use Logbook\Repository\AiModelRepository;
@@ -17,7 +16,7 @@ use Slim\App;
 
 /**
  * The AI model search and the station name search match text literally and
- * ignore case, non-ASCII letters too, the same on every engine (K51,
+ * ignore case, non-ASCII letters too, but not accents, the same on every engine (K51, K144,
  * spec.md §7.25, §7.34): `_` and `%` are plain characters, `!` is the escape,
  * and SQLite's LOWER() lowers `Ö` as the server engines do.
  */
@@ -51,6 +50,8 @@ final class LikeSearchTest extends AiTestCase
         self::assertSame(['a!b'], $search('a!b'));
         self::assertSame(['Ölmodell'], $search('öl'));
         self::assertSame(['Ölmodell'], $search('ÖL'));
+        $models->add($connection, 'Olmodell', $now);
+        self::assertSame(['Ölmodell'], $search('öl'), 'accents count on every engine (K144, #552)');
         self::assertSame(['gpt-4o', 'gpt4o', 'gpt_4o'], $search('gpt'));
     }
 
@@ -73,9 +74,8 @@ final class LikeSearchTest extends AiTestCase
         ));
 
         self::assertSame(['Sale 50% off'], $search('50%'));
-        // MySQL and MariaDB's collation ignores accents as well, so `öl` also finds "Olhandel" there (#552, as #452).
-        $accents = $this->service($this->app, Connection::class)->getDatabasePlatform() instanceof AbstractMySQLPlatform;
-        self::assertSame($accents ? ['Olhandel', 'Ölhandel Müller'] : ['Ölhandel Müller'], $search('öl'));
+        self::assertSame(['Ölhandel Müller'], $search('öl'), 'accents count on every engine (K144, #552)');
+        self::assertSame(['Olhandel'], $search('olh'));
         self::assertSame(['Ölhandel Müller'], $search('MÜLLER'));
         self::assertSame(['Ölhandel Müller'], $search('ölmax'), 'the brand too');
         self::assertSame(['Pump_1'], $search('p_1'));

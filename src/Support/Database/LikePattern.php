@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Logbook\Support\Database;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
+
 /**
  * A `LIKE` pattern that matches text literally on every engine (K51).
  *
@@ -24,5 +27,19 @@ final class LikePattern
     public static function containsLowered(string $text): string
     {
         return '%' . strtr(mb_strtolower($text, 'UTF-8'), ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
+    }
+
+    /**
+     * `LOWER(column)`, comparing accents as PostgreSQL and SQLite do (K144,
+     * #552). The one platform branch: MySQL and MariaDB columns use
+     * `utf8mb4_unicode_ci`, which treats `o` and `ö` as equal, so there the
+     * lowered text is compared under `utf8mb4_bin`, which doesn't. The text
+     * is already lowered, so case is still ignored.
+     */
+    public static function lowered(AbstractPlatform $platform, string $column): string
+    {
+        $lowered = 'LOWER(' . $column . ')';
+
+        return $platform instanceof AbstractMySQLPlatform ? $lowered . ' COLLATE utf8mb4_bin' : $lowered;
     }
 }

@@ -710,7 +710,7 @@ write that sends one ignores it.
 | `GET /vehicles/{id}/parts/{part}` | View | one, with an `ETag` over the part and its fittings |
 | `POST /vehicles/{id}/parts` | Log | `name` (required), `brand`, `part_number`, `serial_number`, `supplier`, `bought_on`, `price`, `condition`, `warranty_months`, `warranty_distance`, `warranty_from` (`purchase` or `fitting`), `warranty_provider`, `warranty_terms`, `warranty_reminder`, `notes`. A retry with the same name, part number and purchase date answers `duplicate: true` |
 | `PATCH`, `DELETE …/parts/{part}` | Log (own) or Manage | as [Editing and deleting](#editing-and-deleting) |
-| `POST …/parts/{part}/fit`, `…/remove` | Log | `fitted_on` and `odometer`; or `removed_on`, `odometer`, `outcome` (`kept`, `sold`, `returned`, `scrapped`, `other`) and `sold_price`. Without a record, so with no cost. A sale recorded without a price reads back as `sold_price: null` (one recorded before 3.16.3 as `"0.000"`) |
+| `POST …/parts/{part}/fit`, `…/remove` | Log | `fitted_on` and `odometer`; or `removed_on`, `odometer`, `outcome` (`kept`, `sold`, `returned`, `scrapped`, `other`) and `sold_price`. Without a record, so with no cost, and a removal can't be edited or undone afterwards (delete the part and add it again). A sale recorded without a price reads back as `sold_price: null` (one recorded before 3.16.3 as `"0.000"`, and it stays so) |
 
 A modification's `parts_fitted` takes new parts (the part's fields above)
 or `{"part": 12}` for a stored one fitted again; its `parts_removed` takes

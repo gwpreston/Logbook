@@ -7,8 +7,8 @@ the same on every engine, Ask's and MCP's `note` hints are said to stay
 English, and a part removal made without a record is said to stay as
 entered.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
-after Phase 53.16's release, a patch release
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.9**, the
+patch after Phase 53.16's release
 
 This is the next batch after [Phase 53.16](phase-53.16.md). It takes K143,
 K144, K72 and K67, which waited on #549, #552, #488 and #483; the owner
@@ -79,12 +79,12 @@ tagged.
 
 ### 53.17.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.17.1 Dev scheduler loop (K143)
 
-- [ ] `docker-compose.dev.yml`: `SCHEDULER_ENABLED=false` on `app`;
+- [x] `docker-compose.dev.yml`: `SCHEDULER_ENABLED=false` on `app`;
       `CONTRIBUTING.md` and `docs/deployment.md`'s dev section say how to
       turn it on. A test (or `bin/` check) reads the compose file and
       fails if the value is missing, since the failure itself is
@@ -92,39 +92,40 @@ tagged.
 
 ### 53.17.2 Accent-sensitive search (K144)
 
-- [ ] `AiModelRepository::listForConnection()` and
+- [x] `AiModelRepository::listForConnection()` and
       `ProviderStationRepository::searchByName()`: on MySQL and MariaDB
       compare with an accent-sensitive collation (`utf8mb4_0900_as_ci` or
       `utf8mb4_bin` on lowered text, whichever both engines accept),
       behind one documented platform branch.
-- [ ] `LikeSearchTest`: `öl` doesn't find "Olhandel" on any engine, finds
+- [x] `LikeSearchTest`: `öl` doesn't find "Olhandel" on any engine, finds
       "Ölhandel"; MySQL and MariaDB expectations change. Spec §7.25 and
       §7.34 are already updated.
 
 ### 53.17.3 Notes stay English (K72)
 
-- [ ] `docs/ai.md` and `docs/mcp.md`: one sentence each under tool
+- [x] `docs/ai.md` and `docs/mcp.md`: one sentence each under tool
       results. A test fails if a tool-result `note` is read from a
       translation catalogue (guards the decision).
 
 ### 53.17.4 Removal without a record (K67)
 
-- [ ] `CHANGELOG.md` [3.16.3] *Upgrade notes*, `docs/parts.md` and
+- [x] `CHANGELOG.md` [3.16.3] *Upgrade notes*, `docs/parts.md` and
       `docs/api.md`: say what spec §7.39 now says.
-- [ ] A test that `POST` on a removal made without a record's edit
+- [x] A test that `POST` on a removal made without a record's edit
       routes returns 404 or 405 (nothing to edit or undo), so the claim
       stays true.
 
 ### 53.17.5 Finish
 
-- [ ] Known-issues rows K143, K144, K72 and K67 *Fixed*; open questions
+- [x] Known-issues rows K143, K144, K72 and K67 *Fixed*; open questions
       #488, #549, #552 and #483 marked built.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, deploy-checker, bug-hunter), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status, tag.
+- [x] `VERSION`, CHANGELOG, README status.
+- [ ] Tag v3.19.9 once merged.
 
 ## Acceptance criteria
 

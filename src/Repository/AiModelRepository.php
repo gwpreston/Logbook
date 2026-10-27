@@ -74,9 +74,10 @@ final readonly class AiModelRepository
             ->orderBy('added', 'DESC')
             ->addOrderBy('name');
         if ($search !== '') {
+            $platform = $this->connection->getDatabasePlatform();
             $query->andWhere($query->expr()->or(
-                'LOWER(name) LIKE :search' . LikePattern::ESCAPE,
-                'LOWER(label) LIKE :search' . LikePattern::ESCAPE,
+                LikePattern::lowered($platform, 'name') . ' LIKE :search' . LikePattern::ESCAPE,
+                LikePattern::lowered($platform, 'label') . ' LIKE :search' . LikePattern::ESCAPE,
             ))->setParameter('search', LikePattern::containsLowered($search));
         }
         if ($limit !== null) {
