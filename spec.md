@@ -4468,7 +4468,7 @@ vehicles; a disabled module cannot be imported).
   that are safe relative paths; anything wrong changes nothing), then an
   automatic backup of the current data is written to `BACKUP_PATH`
   (`pre-restore-<timestamp>.zip`), then every table is emptied and refilled
-  in one transaction (every table's id counter is set to the highest restored id plus one, the one documented platform branch; a backup doesn't carry the counters, so an id deleted before the backup can be given to the next new record, and a webhook may send `entry.deleted` then `entry.created` for it: K146, #559), then the uploads directory is
+  in one transaction (PostgreSQL's id sequences are set to the highest restored id plus one, the one documented platform branch; SQLite and MySQL move their counters past the restored ids by themselves and never lower one. A backup doesn't carry the counters, so an id deleted before the backup can be given to the next new record, on a fresh install on every engine and on a database in use on PostgreSQL, and a webhook may send `entry.deleted` then `entry.created` for it: K146, #559), then the uploads directory is
   swapped for the archive's files. Every session ends (sign in again with
   the restored account's password).
 - A backup from another app version with a different schema is refused with
@@ -12377,7 +12377,7 @@ task breakdowns live in the per-phase files; this is the map.
   interrupted reminder claim is not retried (§7.6, K56, #458). One
   migration (K44); no release of its own. See [`phase-53.18.md`](docs/phases/phase-53.18.md).
 - **Phase 53.19 — Declared on and backup id counters from the known-issues
-  log + patch release** (planned). A modification's *Declared on* can be set
+  log + patch release** (complete). A modification's *Declared on* can be set
   or cleared only by `Manage` on every path: the forms ignore it and the API
   refuses it from a `Log` member (§7.39, K3, #485), and the backup guide and
   §7 *Backup and restore* say a restore may reuse an id deleted before the

@@ -129,7 +129,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.16](docs/phases/phase-53.16.md) | SQLite upgrade ids and the Windows smoke test from the known-issues log + patch release | ✅ |
 | [53.17](docs/phases/phase-53.17.md) | Dev suite, search accents and decided notes from the known-issues log + patch release | ✅ |
 | [53.18](docs/phases/phase-53.18.md) | Date range, far-out due dates, usernames and unsent claims from the known-issues log | ✅ |
-| [53.19](docs/phases/phase-53.19.md) | Declared on and backup id counters from the known-issues log + patch release | 📋 |
+| [53.19](docs/phases/phase-53.19.md) | Declared on and backup id counters from the known-issues log + patch release | ✅ |
 | [53.20](docs/phases/phase-53.20.md) | Page security headers and export times from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*

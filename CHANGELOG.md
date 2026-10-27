@@ -6,6 +6,27 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.11] — 2026-10-27
+
+Phase 53.19: **declared on and backup id counters from the known-issues
+log** ([docs/phases/phase-53.19.md](docs/phases/phase-53.19.md)). No
+migration: pull and restart.
+
+### Fixed
+- **Only a user with `Manage` can set or clear a modification's *Declared
+  on*, on every path.** The create, edit and convert forms ignore a
+  `declared_on` field from anyone else (an edit keeps the stored date),
+  and the REST API answers `403` when a `Log` member sends it. Before, a
+  crafted form field or API body let a `Log` member change what the owner
+  told the insurer, though *Mark declared* is `Manage` (K3).
+
+### Documented
+- **A restore can give out an id deleted before the backup.** A backup
+  doesn't carry id counters, so after a restore into a new install (and,
+  on PostgreSQL, into any database) the next record gets the highest id
+  plus one, and a webhook may send `entry.deleted` and `entry.created` for
+  the same id. The backup guide says so (K146).
+
 ## [3.19.10] — 2026-10-27
 
 Phase 53.18: **date range, far-out due dates, usernames and unsent claims

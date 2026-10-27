@@ -5,7 +5,7 @@ answered its question: only `Manage` can set or clear a modification's
 *Declared on* on any path, and the backup guide says a restore may reuse
 an id that was deleted before the backup.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases **v3.19.11**, a
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.11**, a
 patch release
 
 This is the next batch after [Phase 53.18](phase-53.18.md). It takes K3
@@ -65,24 +65,24 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.39
 
 ### 53.19.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.19.1 *Declared on* is Manage-only (K3)
 
-- [ ] `ModificationForm` and the create, edit and convert actions: a
+- [x] `ModificationForm` and the create, edit and convert actions: a
       `declared_on` field from a viewer without `Manage` is ignored, and
       an edit keeps the stored date. `ApiModifications` (`log`, `patch`):
       the same field from a `Log` member is refused (403 with the usual
       error body). A `Manage` user still sets and clears it.
-- [ ] Spec §7.39 states the rule once for every path. Tests: a `Log`
+- [x] Spec §7.39 states the rule once for every path. Tests: a `Log`
       member's crafted `declared_on` on the web create, edit and convert
       forms changes nothing; the API refuses it; `Manage` can set and
       clear it on both.
 
 ### 53.19.2 Backup id counters (K146)
 
-- [ ] The backup guide (`docs/deployment.md#backups`) and the *Backup and
+- [x] The backup guide (`docs/deployment.md#backups`) and the *Backup and
       restore* section of spec §7 say what a restore does to id counters
       and what it can cause. A test (or the existing backup test)
       keeps the documented behaviour true: after a restore the next new
@@ -90,14 +90,14 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.39
 
 ### 53.19.3 Finish
 
-- [ ] Known-issues rows K3 and K146 *Fixed*; open questions #485 and #559
+- [x] Known-issues rows K3 and K146 *Fixed*; open questions #485 and #559
       marked built.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, security-scanner, bug-hunter), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status.
+- [x] `VERSION`, CHANGELOG, README status.
 - [ ] Tag `v3.19.11` once merged.
 
 ## Acceptance criteria
