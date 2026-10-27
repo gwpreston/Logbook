@@ -173,10 +173,15 @@ final class Validator
 
         $date = LocalTime::parseDate($value);
         if ($date === null) {
-            $this->errors->add($field, 'validation.date');
+            $this->errors->add($field, $this->outOfRange(trim($value)) ? 'validation.date_range' : 'validation.date');
         }
 
         return $date;
+    }
+
+    private function outOfRange(string $day): bool
+    {
+        return LocalTime::parseCalendarDate($day) !== null && LocalTime::parseDate($day) === null;
     }
 
     /**
@@ -192,7 +197,10 @@ final class Validator
 
         $instant = LocalTime::toUtc($value, $zone);
         if ($instant === null) {
-            $this->errors->add($field, 'validation.datetime');
+            $this->errors->add(
+                $field,
+                $this->outOfRange(substr(trim($value), 0, 10)) ? 'validation.date_range' : 'validation.datetime',
+            );
         }
 
         return $instant;

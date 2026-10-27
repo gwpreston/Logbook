@@ -60,7 +60,7 @@ final readonly class RateProvider
     public static function hmrc(): array
     {
         $set = static fn (string $from, string $car): MileageRateSetData => new MileageRateSetData(
-            effectiveFrom: LocalTime::parseDate($from) ?? throw new LogicException($from),
+            effectiveFrom: LocalTime::parseCalendarDate($from) ?? throw new LogicException($from),
             distanceUnit: DistanceUnit::Mile,
             currency: 'GBP',
             carRate: $car,

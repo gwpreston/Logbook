@@ -162,4 +162,19 @@ final class LocalTimeTest extends TestCase
         self::assertFalse(LocalTime::isValidTimezone('Europe/Atlantis'));
         self::assertFalse(LocalTime::isValidTimezone('+01:00'));
     }
+
+    public function testEnteredDatesAreLimitedTo1900To2100(): void
+    {
+        self::assertNotNull(LocalTime::parseDate('1900-01-01'));
+        self::assertNotNull(LocalTime::parseDate('2100-12-31'));
+        foreach (['1899-12-31', '2101-01-01', '0001-01-01', '9999-12-31', '0000-01-01'] as $outside) {
+            self::assertNull(LocalTime::parseDate($outside), $outside);
+            self::assertNull(LocalTime::toUtc($outside . 'T10:00', new DateTimeZone('UTC')), $outside);
+        }
+        // Computed and stored dates are not limited (#558): they still read.
+        self::assertSame('9999-12-31', LocalTime::parseCalendarDate('9999-12-31')?->format('Y-m-d'));
+        self::assertNull(LocalTime::parseCalendarDate('2026-02-30'));
+        self::assertTrue(LocalTime::yearInRange(2026));
+        self::assertFalse(LocalTime::yearInRange(1899));
+    }
 }

@@ -25,6 +25,10 @@ use Psr\Clock\ClockInterface;
  */
 final class LocalTime
 {
+    /** The first and last year an entered, API or URL date may have (spec §8, K42). */
+    public const int MIN_YEAR = 1900;
+    public const int MAX_YEAR = 2100;
+
     private const array LOCAL_FORMATS = ['!Y-m-d\TH:i', '!Y-m-d\TH:i:s', '!Y-m-d H:i', '!Y-m-d H:i:s'];
 
     public static function utc(): DateTimeZone
@@ -73,11 +77,28 @@ final class LocalTime
         return DateTimeImmutable::createFromInterface($instant)->setTimezone($zone);
     }
 
+    public static function yearInRange(int $year): bool
+    {
+        return $year >= self::MIN_YEAR && $year <= self::MAX_YEAR;
+    }
+
     /**
-     * Parse a calendar date ("2026-09-27", as submitted by `<input type="date">`).
-     * Rejects impossible dates such as 2026-02-30.
+     * Parse a date that was entered, sent to the API or put in a URL
+     * ("2026-09-27", as submitted by `<input type="date">`). Rejects impossible
+     * dates such as 2026-02-30 and years outside 1900-2100.
      */
     public static function parseDate(string $value): ?DateTimeImmutable
+    {
+        $date = self::parseCalendarDate($value);
+
+        return $date !== null && self::yearInRange((int) $date->format('Y')) ? $date : null;
+    }
+
+    /**
+     * As parseDate() without the year range: for dates the app computes or
+     * reads back (a stored date outside the range still reads, #558).
+     */
+    public static function parseCalendarDate(string $value): ?DateTimeImmutable
     {
         $value = trim($value);
         if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1) {
@@ -99,7 +120,7 @@ final class LocalTime
      */
     public static function dateOf(DateTimeInterface $instant, DateTimeZone $zone): DateTimeImmutable
     {
-        $date = self::parseDate(self::fromUtc($instant, $zone)->format('Y-m-d'));
+        $date = self::parseCalendarDate(self::fromUtc($instant, $zone)->format('Y-m-d'));
         assert($date instanceof DateTimeImmutable);
 
         return $date;

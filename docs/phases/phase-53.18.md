@@ -6,7 +6,7 @@ due date projected past the horizon isn't shown, usernames that differ
 by an accent are different users on every engine, and an interrupted
 reminder claim is said to stay unsent.*
 
-Status: 📋 planned · file lives in `docs/phases/` · no release of its
+Status: ✅ complete · file lives in `docs/phases/` · no release of its
 own: it ships with the next releasing phase
 
 This is the next batch after [Phase 53.17](phase-53.17.md). It takes K42,
@@ -82,6 +82,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
   duplicate notification costs more than a missed one a user can still
   see in the app. Not chosen: expiring unsent claims after an hour;
   retrying only claims whose run `job_runs` records as failed.
+- **Vehicle date floor (found while building):** the vehicle forms'
+  own floor of 1 January 1885 for *First registered*, *First MOT due* and
+  a starting reading's *As of* is now 1900, the range every date field
+  shares (#450), so the three `…_too_early` messages and their checks are
+  gone: an earlier date gets the range message. The *Year* (model year)
+  field keeps its own 1885 floor, being a year and not a date.
 - **Release (#557, decided 2026-10-25):** with the next releasing
   phase, so this file has no *Release* section. Not chosen: a patch on
   its own.
@@ -92,27 +98,30 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). The still-open #374–#377 and
+      #559 don't touch dates, due dates, usernames or claims; nothing to
+      ask. The spec already carries all four decisions (§6 *User*, §7.4,
+      §7.6, §8).
 
 ### 53.18.1 Date range (K42)
 
-- [ ] `LocalTime::parseDate()` returns null outside 1900–2100, so
+- [x] `LocalTime::parseDate()` returns null outside 1900–2100, so
       `Validator::date()` (message `validation.date`, or a new
       `validation.date_range` key in every catalogue), the API's date
       fields and URL dates refuse it. `ActivityQuery::newYear()`,
       `ReportPeriod`, `TaxYear` and `ClaimFilter` clamp or refuse a URL
       year the same way.
-- [ ] Tests: a fill-up, expense and document dated 9999-12-31 or
+- [x] Tests: a fill-up, expense and document dated 9999-12-31 or
       0001-01-01 are refused on the form and the API (422); `?year=0000`
       and a custom report range in 9999 answer 4xx or the default, never
       500 or a loop. `docs/api.md` and `openapi.json` give the range.
-- [ ] Upgrade note: a stored date outside the range stays and should be
+- [x] Upgrade note: a stored date outside the range stays and should be
       corrected.
 
 ### 53.18.2 Far-out due dates (K43)
 
-- [ ] `DueState` and `TyreWear`: no projected date when the days would
+- [x] `DueState` and `TyreWear`: no projected date when the days would
       end beyond 100 years from today (or overflow `+N days`); the
       distance left still shows. Tests: the 100,000 / 100,001 km case
       from K43 stores no `due_on` and `/`, `/reminders` and the vehicle
@@ -120,29 +129,29 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.3 Usernames by accent (K44)
 
-- [ ] `UserRepository::findByUsername()` and the unique check compare
+- [x] `UserRepository::findByUsername()` and the unique check compare
       exactly on MySQL and MariaDB (binary collation on
       `users.username` and the invitation username), behind one
       documented platform branch.
-- [ ] A Phinx migration that applies and rolls back on all four engines.
+- [x] A Phinx migration that applies and rolls back on all four engines.
       It first reports, and stops on, any pair of usernames differing
       only by an accent (none can exist on PostgreSQL or SQLite).
-- [ ] Tests on every engine: `jose` can be added beside `josé`; signing
+- [x] Tests on every engine: `jose` can be added beside `josé`; signing
       in as `jose` with `josé`'s password fails; `AUTH_PROXY_LINK=username`
       with `Remote-User: jose` doesn't sign in as `josé`. Spec §6 *User*
       and §7.9 already say so. `upgrade-tester` runs the migration.
 
 ### 53.18.4 Unsent claims (K56)
 
-- [ ] Spec §7.6 and `docs/notification-channels.md`: say an interrupted run's claim
+- [x] Spec §7.6 and `docs/notification-channels.md`: say an interrupted run's claim
       (empty `sent_at`) is never retried. A test pins it: a claim row
       with empty `sent_at` isn't sent by the next pass.
 
 ### 53.18.5 Finish
 
-- [ ] Known-issues rows K42, K43, K44 and K56 *Fixed*; open questions
+- [x] Known-issues rows K42, K43, K44 and K56 *Fixed*; open questions
       #450, #451, #452, #458 and #558 marked built.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, bug-hunter, upgrade-tester), then merge.
 
 ## Acceptance criteria

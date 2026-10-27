@@ -1478,7 +1478,7 @@ from fleet totals unless "include archived" is toggled.
   cannot precede the purchase date. Variant is at most 100 characters.
   *First registered* (a native date input; hint "As on the registration
   document (V5C / logbook)") cannot be after today in the owner's time zone
-  or before 1 January 1885. A model year more than one year *after* the
+  or outside 1900–2100 (§8). A model year more than one year *after* the
   registration year is saved with a warning notice ("check both"); an older
   model year is normal (imports, late registration) and is not flagged.
 - **First MOT due** (Phase 21.2; add and edit forms, under *First
@@ -1520,7 +1520,7 @@ from fleet totals unless "include archived" is toggled.
     the MOT certificate now sets the next one") and is not submitted.
   - Validation: not before *First registered* when both are set ("The
     first MOT can't be due before the vehicle was first registered"), and
-    not before 1 January 1885.
+    inside 1900–2100 (§8).
 - **First MOT prompt** (Phase 21.2, for vehicles already in the garage
   before 2.1.0): the overview shows a dismissible card, "Set a reminder for
   the first MOT? Suggested: 14 Jun 2027", with *Set it* and *Not needed*
@@ -1551,7 +1551,7 @@ from fleet totals unless "include archived" is toggled.
   was read, for example on the MOT certificate or at the sale." Today (or
   blank) writes the reading at the moment of saving; an earlier date at
   local noon on that date, like service records, documents and tyre
-  changes (§7.2). A date after today or before 1 January 1885 is refused;
+  changes (§7.2). A date after today or outside 1900–2100 (§8) is refused;
   one before *First registered* is saved with a warning notice (delivery
   mileage before registration exists). Ignored when *Current odometer* is
   blank; kept on a validation error. The edit form has no such field: it shows the current reading
@@ -12370,12 +12370,12 @@ task breakdowns live in the per-phase files; this is the map.
   upgrade note (K67, #483). No migration. Releases v3.19.9. See
   [`phase-53.17.md`](docs/phases/phase-53.17.md).
 - **Phase 53.18 — Date range, far-out due dates, usernames and unsent
-  claims from the known-issues log** (planned). An entered, API or URL
+  claims from the known-issues log** (complete). An entered, API or URL
   date must be in 1900–2100 (§8, K42, #450); a due date projected beyond
   100 years isn't shown or stored (§7.4, K43, #451); `josé` and `jose`
   are different usernames on every engine (§6, K44, #452); and an
   interrupted reminder claim is not retried (§7.6, K56, #458). One
-  migration (K44). See [`phase-53.18.md`](docs/phases/phase-53.18.md).
+  migration (K44); no release of its own. See [`phase-53.18.md`](docs/phases/phase-53.18.md).
 
 ---
 

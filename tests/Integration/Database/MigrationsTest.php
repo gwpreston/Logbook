@@ -143,6 +143,11 @@ final class MigrationsTest extends AppTestCase
         // columns, the Phase 7 accent column, the Phase 5, 4 and 3 tables,
         // then the column Phase 3 added to odometer_readings, then Phase 2
         // and Phase 1 tables.
+        // Phase 53.18: usernames compared by accent (a collation change on MySQL and MariaDB only).
+        self::assertTrue($this->hasColumn('users', 'username'));
+        Migrator::run('rollback');
+        self::assertTrue($this->hasColumn('users', 'username'), 'rollback keeps users.username');
+
         // Phase 53.3: Send text, not images, and the cross-check's counts.
         self::assertTrue($this->hasColumn('ai_connections', 'send_text'));
         self::assertTrue($this->hasColumn('ai_requests', 'scan_flagged'));

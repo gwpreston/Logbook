@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Tyre;
 
 use DateTimeImmutable;
+use Logbook\Service\Maintenance\DueState;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Units\DepthUnit;
 
@@ -80,8 +81,7 @@ final class TyreWear
             : Decimal::divide($margin, $rate, self::KM_SCALE);
         $wearOutOn = null;
         if ($kmPerDay !== null && $kmPerDay > 0) {
-            $days = Decimal::compare($kmLeft, '0') <= 0 ? 0 : (int) ceil((float) $kmLeft / $kmPerDay);
-            $wearOutOn = $today->modify(sprintf('+%d days', $days));
+            $wearOutOn = DueState::projectedOn($today, $kmLeft, $kmPerDay);
         }
 
         return new TyreWearEstimate(

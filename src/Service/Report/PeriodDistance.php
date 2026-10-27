@@ -125,7 +125,7 @@ final class PeriodDistance
 
     private static function day(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
     {
-        $day = LocalTime::parseDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
+        $day = LocalTime::parseCalendarDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
         assert($day instanceof DateTimeImmutable);
 
         return $day;

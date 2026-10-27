@@ -136,4 +136,29 @@ final class DueStateTest extends TestCase
 
         return $date;
     }
+
+    public function testADateBeyondOneHundredYearsIsNotProjected(): void
+    {
+        $today = self::date(self::TODAY);
+
+        // 10,000 km left at 1 km a day is 27 years: shown.
+        $near = DueState::evaluate(new NextDue(null, '110000'), $today, '100000', 1.0);
+        self::assertTrue($near->projected);
+        self::assertSame(10000, $near->daysLeft);
+
+        // 100,000 km left at 1 km a day is 273 years, and 1e-9 km a day would wrap: no date, the distance stays.
+        foreach ([1.0, 0.000000001, 1.0E-300] as $perDay) {
+            $far = DueState::evaluate(new NextDue(null, '200000'), $today, '100000', $perDay);
+            self::assertNull($far->dueOn, (string) $perDay);
+            self::assertFalse($far->projected);
+            self::assertNull($far->daysLeft);
+            self::assertSame('100000', $far->kmLeft);
+            self::assertSame(DueTrigger::Distance, $far->trigger);
+            self::assertSame(DueStatus::Ok, $far->status);
+        }
+
+        // The edge: exactly the horizon is shown, a day more is not.
+        self::assertNotNull(DueState::projectedOn($today, (string) DueState::HORIZON_DAYS, 1.0));
+        self::assertNull(DueState::projectedOn($today, (string) (DueState::HORIZON_DAYS + 1), 1.0));
+    }
 }

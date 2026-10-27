@@ -190,14 +190,14 @@ final class VehicleFormTest extends TestCase
         );
     }
 
-    public function testFirstRegistrationBefore1885IsRejected(): void
+    public function testFirstRegistrationBefore1900IsRejected(): void
     {
-        $errors = VehicleForm::parse(self::MINIMAL + ['first_registered_on' => '1884-12-31'], self::prefs(), self::today());
+        $errors = VehicleForm::parse(self::MINIMAL + ['first_registered_on' => '1899-12-31'], self::prefs(), self::today());
         self::assertInstanceOf(ValidationErrors::class, $errors);
-        self::assertSame('vehicle.registered_too_early', $errors->all()['first_registered_on']['key']);
+        self::assertSame('validation.date_range', $errors->all()['first_registered_on']['key']);
 
-        $first = $this->parse(self::MINIMAL + ['first_registered_on' => '1885-01-01']);
-        self::assertSame('1885-01-01', $first->firstRegisteredOn?->format('Y-m-d'));
+        $first = $this->parse(self::MINIMAL + ['first_registered_on' => '1900-01-01']);
+        self::assertSame('1900-01-01', $first->firstRegisteredOn?->format('Y-m-d'));
 
         $errors = VehicleForm::parse(self::MINIMAL + ['first_registered_on' => '2021-02-30'], self::prefs(), self::today());
         self::assertInstanceOf(ValidationErrors::class, $errors);
@@ -253,14 +253,14 @@ final class VehicleFormTest extends TestCase
         self::assertNull($blank->startingReading->on, 'blank means today');
     }
 
-    public function testAsOfIsNeitherInTheFutureNorBefore1885(): void
+    public function testAsOfIsNeitherInTheFutureNorBefore1900(): void
     {
         $future = self::newErrors(['current_odometer' => '1', 'current_odometer_on' => '2026-09-28']);
         self::assertSame('vehicle.reading_in_future', $future['current_odometer_on']['key'] ?? null);
-        $early = self::newErrors(['current_odometer' => '1', 'current_odometer_on' => '1884-12-31']);
-        self::assertSame('vehicle.reading_too_early', $early['current_odometer_on']['key'] ?? null);
-        $first = $this->parseNew(self::MINIMAL + ['current_odometer' => '1', 'current_odometer_on' => '1885-01-01']);
-        self::assertSame('1885-01-01', $first->startingReading?->on?->format('Y-m-d'));
+        $early = self::newErrors(['current_odometer' => '1', 'current_odometer_on' => '1899-12-31']);
+        self::assertSame('validation.date_range', $early['current_odometer_on']['key'] ?? null);
+        $first = $this->parseNew(self::MINIMAL + ['current_odometer' => '1', 'current_odometer_on' => '1900-01-01']);
+        self::assertSame('1900-01-01', $first->startingReading?->on?->format('Y-m-d'));
     }
 
     public function testAsOfIsIgnoredWithoutAnOdometer(): void
