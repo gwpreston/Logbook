@@ -165,6 +165,11 @@ at it, so every email lands at `http://localhost:8025` instead of going
 anywhere. It is never part of `docker-compose.yml` or
 `docker-compose.mysql.yml`.
 
+The development stack also sets `SCHEDULER_ENABLED` to `false`, so the
+container's scheduler loop doesn't hold the pass lock while the test suite
+runs. Set it to `true` in `docker-compose.dev.yml` to see reminders sent.
+The production stacks are unchanged: `true` by default.
+
 ---
 
 ## Bare PHP 8.4

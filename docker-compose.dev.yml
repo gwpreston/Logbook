@@ -35,6 +35,9 @@ services:
       DB_PASSWORD: logbook
       # Per engine under bin/dev-setup.sh, so each database keeps its own photos.
       UPLOAD_PATH: ${DEV_UPLOAD_PATH:-/data/uploads}
+      # Off so the container's scheduler loop never holds var/cache/scheduled-tasks.lock while a
+      # test runs the scheduler (K143). Set to "true" to watch reminders go out (CONTRIBUTING.md).
+      SCHEDULER_ENABLED: "false"
       # Mailpit catches every email (spec.md §10 *Development stack*): bin/dev-setup.sh points
       # Settings → Delivery at it (server mailpit, port 1025, encryption None) if none is saved.
     volumes:

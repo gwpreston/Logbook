@@ -675,7 +675,9 @@ pull and restart.
   were stored with and still show "Sold · £0": they can't be told apart
   from a sale really made for £0. Only sales recorded from now on are
   stored without a price. To clear an old one, clear *Sold for* on the
-  record that took the part off.
+  record that took the part off. A removal made without a record (the
+  part page's *Remove*) can't be edited or undone, so its £0 stays unless
+  you delete the part and add it again.
 - **API:** a part sold without a price reads back as `sold_price: null`,
   and the *part fittings* CSV leaves that cell empty. Older sales still
   read `"0.000"`, so accept both. Modification `POST` and `PATCH` may now

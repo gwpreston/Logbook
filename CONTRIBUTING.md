@@ -130,6 +130,11 @@ encryption *None*, From `logbook@localhost`) whenever no email server is
 saved yet; one you saved yourself is left alone.
 Try *Forgotten your password?* as `demo` and the email appears there.
 
+The dev stack's own scheduler loop is off (`SCHEDULER_ENABLED: "false"` in
+`docker-compose.dev.yml`), so it never holds `var/cache/scheduled-tasks.lock`
+while a test runs the scheduler. To watch reminders go out, set it to
+`"true"` and restart the stack, or run `php bin/run-scheduled-tasks.php -v` in the container.
+
 Migrations are applied automatically whenever the app starts. The dev stack
 runs on port 8090 so it never collides with the production stack on 8080 (the
 script refuses 8080). If 8090 is taken, pick another for the run:

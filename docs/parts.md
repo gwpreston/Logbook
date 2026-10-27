@@ -112,6 +112,13 @@ date and mileage join the mileage log. *Add part* can also record a part as
 *already on the car*. Two spells of one part may not overlap; a save that
 would is refused, naming the part and the dates.
 
+A removal made this way can't be edited or undone, in the app or the API:
+its date, mileage, outcome and sale price stay as entered. To correct one,
+delete the part and add it again. A sale of £0.00 stored before 3.16.3 (when
+a blank price was stored as 0.000) stays the same way. When a removal came
+from a record, correct it there: editing the record moves the removal, and
+unticking the part reopens it.
+
 ## Reverting a modification
 
 **Revert** (a remap taken off, a car put back to standard) asks for the date,

@@ -238,6 +238,10 @@ Fill-ups and readings are written at once instead, because they are the
 same writes an automation can already make with the API, and MCP clients
 ask before calling a tool.
 
+A tool result's `note` strings (hints such as "The total is running costs
+only") are always in English, whatever the key user's language; tool
+descriptions and prompts follow it.
+
 ## Privacy
 
 The assistant's model sees what Logbook's tools return to it: your

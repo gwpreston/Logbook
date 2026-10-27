@@ -324,6 +324,11 @@ go when the conversation goes; a count per month is kept for your own
 review of how well a model does. Nothing else is stored, whatever
 `AI_LOG_CONTENT` says.
 
+**Notes in tool results.** The short `note` a tool returns with its figures
+(for example that a total is running costs only) is a hint for the model, so
+it is always in English, whatever language you use. The answer itself follows
+your language.
+
 **Privacy.** With a model on this server or your network, nothing leaves
 it. With an internet connection, your question and the tool results needed
 to answer it are sent to that provider, as the acknowledgement says.

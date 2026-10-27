@@ -32,6 +32,19 @@ final class ScriptsTest extends TestCase
         }
     }
 
+    /**
+     * The dev container's own scheduler loop holds var/cache/scheduled-tasks.lock for its pass, so a
+     * test that runs the scheduler is now and then refused it (K143, #549). The failure is
+     * intermittent, so the compose file is read instead.
+     */
+    public function testTheDevStackSwitchesTheContainersSchedulerLoopOff(): void
+    {
+        $compose = (string) file_get_contents(self::ROOT . '/docker-compose.dev.yml');
+
+        self::assertMatchesRegularExpression('/^\s+SCHEDULER_ENABLED: "?false"?\s*$/m', $compose);
+        self::assertStringContainsString('SCHEDULER_ENABLED', (string) file_get_contents(self::ROOT . '/CONTRIBUTING.md'));
+    }
+
     public function testTheSmokeTestRunsUnderTheProjectItIsGiven(): void
     {
         $script = (string) file_get_contents(self::ROOT . '/bin/smoke-test.sh');
