@@ -1260,7 +1260,7 @@ final readonly class CsvExporter
     private function localDateTime(DateTimeInterface $instant, User $user): string
     {
         return LocalTime::fromUtc(DateTimeImmutable::createFromInterface($instant), $user->preferences->timeZone())
-            ->format('Y-m-d H:i');
+            ->format('Y-m-d\TH:i:sP');
     }
 
     private function yesNo(bool $value): string

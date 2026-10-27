@@ -42,12 +42,14 @@ use Logbook\Support\Csv\CsvReader;
 use Logbook\Support\Csv\CsvWriter;
 use Logbook\Support\Database\Transaction;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Date\WallClock;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
+use DateTimeZone;
 use LogicException;
 use Psr\Clock\ClockInterface;
 use Symfony\Contracts\Translation\TranslatableInterface;
@@ -122,7 +124,18 @@ final readonly class CsvImporter
                 continue;
             }
 
-            $result = $this->readRow($module, $fields, $values, $defaults, $options, $vocabulary, $user->preferences, $currency);
+            $warning = null;
+            $result = $this->readRow(
+                $module,
+                $fields,
+                $values,
+                $defaults,
+                $options,
+                $vocabulary,
+                $user->preferences,
+                $currency,
+                $warning,
+            );
             if ($result instanceof ImportRowStatus) {
                 $rows[] = new ImportRow($row['line'], $result, $values);
                 continue;
@@ -139,7 +152,7 @@ final readonly class CsvImporter
             }
             $seen[$key] = true;
             $note = $this->stationNote($result, $notes);
-            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result, $note);
+            $rows[] = new ImportRow($row['line'], ImportRowStatus::Import, $values, [], $result, $note, $warning);
         }
 
         return new ImportPreview($rows);
@@ -236,6 +249,7 @@ final readonly class CsvImporter
      * @param list<ImportField> $fields
      * @param array<string, string> $values
      * @param array<string, string> $defaults form values for fields the file leaves blank
+     * @param array{key: string, params: array<string, string>}|null $warning set when a time is taken as the first of two
      * @return object|ImportRowStatus|list<array{
      *     field: string, key: string, params: array<string, int|string|TranslatableInterface>
      * }>
@@ -249,6 +263,7 @@ final readonly class CsvImporter
         ImportVocabulary $vocabulary,
         DisplayPreferences $owner,
         string $currency,
+        ?array &$warning = null,
     ): object|array {
         $input = $defaults;
         $errors = [];
@@ -285,6 +300,28 @@ final readonly class CsvImporter
                     break;
                 case FieldKind::DateTime:
                     $input[$field->key] = $this->dateTime($value, $options->dateOrder);
+                    // A time with no offset is read in the file's zone: say when that zone
+                    // has no such time, or has it twice (K13, #561).
+                    $zone = new DateTimeZone($options->timezone);
+                    switch (LocalTime::wallClock($input[$field->key], $zone)) {
+                        case WallClock::Skipped:
+                            $errors[] = [
+                                'field' => $field->key,
+                                'key' => 'import.error.time_skipped',
+                                'params' => ['time' => $value],
+                            ];
+                            break;
+                        case WallClock::Repeated:
+                            $warning = ['key' => 'import.warning.time_repeated', 'params' => ['time' => $value]];
+                            // The first of the two, with its offset, so the form reads it exactly.
+                            $first = LocalTime::firstOfRepeated($input[$field->key], $zone);
+                            if ($first !== null) {
+                                $input[$field->key] = $first->setTimezone($zone)->format('Y-m-d\TH:i:sP');
+                            }
+                            break;
+                        case WallClock::Exists:
+                            break;
+                    }
                     break;
                 case FieldKind::Choice:
                     assert($field->enum !== null && $field->labelPrefix !== null);
@@ -417,7 +454,7 @@ final readonly class CsvImporter
      */
     private function dateTime(string $value, DateOrder $order): string
     {
-        if (preg_match('/^(\S+?)(?:[T ]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/', trim($value), $m) !== 1) {
+        if (preg_match('/^(\S+?)(?:[T ]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2})?)?$/i', trim($value), $m) !== 1) {
             return $value;
         }
         $date = $order->normalise($m[1]);
@@ -428,7 +465,8 @@ final readonly class CsvImporter
             return $date . 'T12:00';
         }
 
-        return sprintf('%sT%02d:%s', $date, (int) $m[2], $m[3] ?? '00');
+        // An offset (`+01:00`, `Z`) is kept for the form to read: the time is then exact (K13).
+        return sprintf('%sT%02d:%s%s', $date, (int) $m[2], $m[3] ?? '00', $m[5] ?? '');
     }
 
     /**

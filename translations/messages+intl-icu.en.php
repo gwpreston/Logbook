@@ -3306,6 +3306,10 @@ return [
             'currency' => 'In {currency}, but the vehicle uses {vehicle}: amounts are never converted.',
             'unit' => '“{unit}” is not a unit Logbook knows.',
             'grade' => '“{grade}” is not a fuel grade Logbook knows (use a code such as e10_95, b7 or dc_rapid, or leave it empty).',
+            'time_skipped' => '{time} doesn’t exist in your time zone: the clocks skip that time. Give it with its UTC offset or move it.',
+        ],
+        'warning' => [
+            'time_repeated' => '{time} happens twice that night in your time zone; the first is taken. Give it with its UTC offset to choose.',
         ],
     ],
     // Importing from another app (spec.md §7.13, Phase 31).

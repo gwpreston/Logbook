@@ -31,6 +31,14 @@ final readonly class ImportRow
          * @var array{key: string, params: array<string, string>}|null
          */
         public ?array $note = null,
+        /**
+         * A reading the owner should check, for the preview (K13: "01:30
+         * happens twice that night; taken as the first"): a translation key
+         * and its parameters. The row still imports.
+         *
+         * @var array{key: string, params: array<string, string>}|null
+         */
+        public ?array $warning = null,
     ) {
     }
 

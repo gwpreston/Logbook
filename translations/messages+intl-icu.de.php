@@ -3303,6 +3303,10 @@ return [
             'currency' => 'In {currency}, aber das Fahrzeug nutzt {vehicle}: Beträge werden nie umgerechnet.',
             'unit' => '„{unit}“ ist keine Einheit, die Logbook kennt.',
             'grade' => '„{grade}“ ist keine Kraftstoffsorte, die Logbook kennt (nutze einen Code wie e10_95, b7 oder dc_rapid, oder lass das Feld leer).',
+            'time_skipped' => '{time} gibt es in Ihrer Zeitzone nicht: Die Uhr überspringt diese Zeit. Geben Sie sie mit UTC-Versatz an oder verschieben Sie sie.',
+        ],
+        'warning' => [
+            'time_repeated' => '{time} kommt in dieser Nacht in Ihrer Zeitzone zweimal vor; die erste wird verwendet. Mit UTC-Versatz angegeben, lässt sich die Zeit wählen.',
         ],
     ],
     // Import aus einer anderen App (spec.md §7.13, Phase 31).

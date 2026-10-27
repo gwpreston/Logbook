@@ -93,12 +93,12 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 
 ### 53.20.2 Export times with an offset (K13)
 
-- [ ] `CsvExporter::localDateTime()` writes ISO 8601 with the owner's
+- [x] `CsvExporter::localDateTime()` writes ISO 8601 with the owner's
       offset. The CSV importer reads an offset when present and otherwise
       the owner's time zone; a nonexistent local time is refused with a
       row message and a repeated one is taken as the first with a preview
       warning. Spec §7 (*CSV export* and *Import*) and `docs/` say so.
-- [ ] Tests: two fill-ups in the clock-change hour export with different
+- [x] Tests: two fill-ups in the clock-change hour export with different
       offsets and import as two rows; a file without offsets still
       imports; the nonexistent and repeated local times behave as
       described, on all four engines.
