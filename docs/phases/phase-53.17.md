@@ -7,7 +7,7 @@ the same on every engine, Ask's and MCP's `note` hints are said to stay
 English, and a part removal made without a record is said to stay as
 entered.*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases the patch
+Status: 🚧 in progress · file lives in `docs/phases/` · releases the patch
 after Phase 53.16's release, a patch release
 
 This is the next batch after [Phase 53.16](phase-53.16.md). It takes K143,
@@ -79,7 +79,7 @@ tagged.
 
 ### 53.17.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 53.17.1 Dev scheduler loop (K143)

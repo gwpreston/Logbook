@@ -12360,7 +12360,7 @@ task breakdowns live in the per-phase files; this is the map.
   Windows (K142). No migration. Releases v3.19.8. See
   [`phase-53.16.md`](docs/phases/phase-53.16.md).
 - **Phase 53.17 — Dev suite, search accents and decided notes from the
-  known-issues log + patch release** (planned). The dev stack's scheduler
+  known-issues log + patch release** (in progress). The dev stack's scheduler
   loop is off by default so a suite run in it isn't refused the pass lock
   (§10, K143, #549); the AI model and station name searches ignore case
   but not accents on every engine, MySQL and MariaDB in a documented
