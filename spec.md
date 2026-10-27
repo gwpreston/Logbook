@@ -2460,7 +2460,10 @@ browser (§8 *Printing reports*; server-side PDF is future work, §12).
   carry 6 places so they convert back to the stored value exactly; amounts
   keep the currency's minor unit (more places only when stored with them)
   next to an ISO 4217 currency column. Dates are ISO (`2026-09-27`); instants
-  are local `2026-09-27 14:30` with the time zone in the header.
+  are local with their UTC offset, `2026-09-27T14:30:00+01:00`, and the
+  time zone in the header (from Phase 53.20, K13, #561: an offset tells the
+  two 01:30s of the night the clocks go back apart; until 3.19.11 an
+  instant was `2026-09-27 14:30`, which the import still reads).
   The fuel export carries the grade twice: *Grade* (the translated label,
   empty when not recorded) and *Grade code* (the stored code), so a file
   re-imports exactly and stays readable. The documents export carries
@@ -4414,6 +4417,16 @@ vehicles; a disabled module cannot be imported).
   module's import, so Logbook's own export comes back as it was written;
   a `'` before anything else (`'abc`) is the text's own and stays (#455,
   Phase 53.13).
+  **A time with a UTC offset** (`2026-10-25T01:30:00+01:00`, or `Z`) is
+  exact: the importer uses the offset and not the owner's time zone, so
+  Logbook's own export comes back as it was (K13, #561, Phase 53.20). A
+  time with no offset (an older export, a file from another app) is read in
+  the owner's time zone as before, except that a time that doesn't exist
+  there (02:30 on the night the clocks go forward) makes the row invalid
+  ("that time doesn't exist in your time zone"), and one that happens twice
+  (01:30 on the night they go back) is taken as the first and carries a
+  warning on the preview. Fuelio's own `Data` column stays local
+  wall-clock, as another app's format.
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid
   rows" tick); *duplicate* (skipped: the same entry already exists or appears
@@ -11252,6 +11265,15 @@ Real environment variables override `.env`; an empty value counts as unset.
   beside it (#495), built from `docker/paddleocr/` on amd64 and arm64.
   The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner
   gives the Docker upgrade line (§7.31).
+- **Page security headers** (Phase 53.20, K54, #456): the app sends
+  `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: same-origin` on every response from a middleware, so
+  every install (Docker, bare PHP, `php -S`) sends the same, and another
+  site can't frame a signed-in page. A response that already sets one (a
+  download's `nosniff`, a sign-in link's `Referrer-Policy: no-referrer`)
+  keeps its own value. The Docker vhost and the documented web-server
+  configs don't add them, so none is sent twice. No page
+  Content-Security-Policy.
 - **Bare PHP 8.4:** needs the `intl`, `mbstring`, `sodium`, `gd` (JPEG,
   PNG, WebP) and `exif` extensions (`gd` and `exif` from Phase 26.4,
   `mbstring` from Phase 53.9, #528; Composer refuses to install without
@@ -12384,7 +12406,7 @@ task breakdowns live in the per-phase files; this is the map.
   backup (K146, #559). No migration. Releases v3.19.11. See
   [`phase-53.19.md`](docs/phases/phase-53.19.md).
 - **Phase 53.20 — Page security headers and export times from the
-  known-issues log + patch release** (planned). The app sends
+  known-issues log + patch release** (in progress). The app sends
   `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and
   `Referrer-Policy: same-origin` on every page on every install, without a
   page CSP (§10, K54, #456), and a CSV export writes each date and time

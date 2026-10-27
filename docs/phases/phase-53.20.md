@@ -6,7 +6,7 @@ from the app (K54), and a CSV export carries the time with its UTC offset
 so two fill-ups in the clock-change hour stay distinct on re-import
 (K13).*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases **v3.19.12**, a
+Status: 🚧 in progress · file lives in `docs/phases/` · releases **v3.19.12**, a
 patch release
 
 This is the next batch after [Phase 53.19](phase-53.19.md). It takes K54
@@ -76,8 +76,9 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 
 ### 53.20.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). #456, #561 and #562 are decided;
+      the other open rows (#374–#377, #537, #539 …) are not touched here.
 
 ### 53.20.1 Page security headers (K54)
 
