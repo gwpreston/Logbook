@@ -130,6 +130,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.17](docs/phases/phase-53.17.md) | Dev suite, search accents and decided notes from the known-issues log + patch release | ✅ |
 | [53.18](docs/phases/phase-53.18.md) | Date range, far-out due dates, usernames and unsent claims from the known-issues log | ✅ |
 | [53.19](docs/phases/phase-53.19.md) | Declared on and backup id counters from the known-issues log + patch release | 📋 |
+| [53.20](docs/phases/phase-53.20.md) | Page security headers and export times from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1728,6 +1729,17 @@ any path (K3), and the backup guide says a restore may reuse an id
 deleted before the backup (K146). Releases v3.19.11.*
 
 → [`phase-53.19.md`](docs/phases/phase-53.19.md)
+
+---
+
+## Phase 53.20 — Page security headers and export times from the known-issues log + patch release
+
+*Two open rows closed after the owner answered their questions (#456,
+#561): every install sends the same page security headers from the app
+(K54), and a CSV export carries its times with a UTC offset so the
+clock-change hour stays distinct on re-import (K13). Releases v3.19.12.*
+
+→ [`phase-53.20.md`](docs/phases/phase-53.20.md)
 
 ---
 
