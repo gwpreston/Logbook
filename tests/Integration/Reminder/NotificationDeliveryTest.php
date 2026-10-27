@@ -283,6 +283,34 @@ final class NotificationDeliveryTest extends ReminderTestCase
         self::assertSame([], $repository->listAwaitingNotification([$reminder->vehicleId], $owner));
     }
 
+    /**
+     * K56, spec.md §7.6 *An interrupted send* (#458): a run killed after
+     * claiming a reminder leaves a claim with no `sent_at`; no later run
+     * retries it (at most one notification per recipient and status).
+     */
+    public function testAClaimLeftByAKilledRunIsNeverRetried(): void
+    {
+        $app = $this->createRecordingApp();
+        $this->pinClock($app, self::NOW);
+        $this->signedIn($app);
+        $this->ownerFromBefore21($app);
+        $this->document($app, $this->vehicle($app), '2026-10-09');
+        $this->service($app, ReminderSync::class)->sync($this->owner($app));
+        $reminder = $this->onlyReminder($app);
+
+        // The run that claimed it died before sending: the row is there, sent_at is empty.
+        self::assertTrue($this->service($app, ReminderRepository::class)
+            ->claim($reminder, $this->owner($app)->id, new DateTimeImmutable(self::NOW)));
+        $unsent = $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminder_deliveries WHERE sent_at IS NULL');
+        self::assertEquals(1, $unsent);
+
+        self::assertSame(0, $this->runTasks($app)->remindersSent);
+        self::assertSame(0, $this->runTasks($app)->remindersSent);
+        self::assertSame([], $this->mail->sent);
+        self::assertSame([], $this->http->requests);
+        self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM reminder_deliveries WHERE sent_at IS NULL'), 'still unsent');
+    }
+
     public function testMonthlyDigestOncePerMonth(): void
     {
         $app = $this->createRecordingApp();

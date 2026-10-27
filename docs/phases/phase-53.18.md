@@ -123,21 +123,21 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.3 Usernames by accent (K44)
 
-- [ ] `UserRepository::findByUsername()` and the unique check compare
+- [x] `UserRepository::findByUsername()` and the unique check compare
       exactly on MySQL and MariaDB (binary collation on
       `users.username` and the invitation username), behind one
       documented platform branch.
-- [ ] A Phinx migration that applies and rolls back on all four engines.
+- [x] A Phinx migration that applies and rolls back on all four engines.
       It first reports, and stops on, any pair of usernames differing
       only by an accent (none can exist on PostgreSQL or SQLite).
-- [ ] Tests on every engine: `jose` can be added beside `josé`; signing
+- [x] Tests on every engine: `jose` can be added beside `josé`; signing
       in as `jose` with `josé`'s password fails; `AUTH_PROXY_LINK=username`
       with `Remote-User: jose` doesn't sign in as `josé`. Spec §6 *User*
       and §7.9 already say so. `upgrade-tester` runs the migration.
 
 ### 53.18.4 Unsent claims (K56)
 
-- [ ] Spec §7.6 and `docs/notification-channels.md`: say an interrupted run's claim
+- [x] Spec §7.6 and `docs/notification-channels.md`: say an interrupted run's claim
       (empty `sent_at`) is never retried. A test pins it: a claim row
       with empty `sent_at` isn't sent by the next pass.
 

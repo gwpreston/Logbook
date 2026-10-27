@@ -452,6 +452,10 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   delivers, their claims are released and the next run retries; channels
   that did deliver are recorded and are not repeated. One person's failure
   never resends to another.
+- A run that is killed after claiming a reminder but before sending it leaves
+  a claim with no sent time, and that claim is **never retried**: at most one
+  notification per person and status, so a missed one is still visible in the
+  app (Reminders, the dashboard) rather than risking a duplicate.
 - With no channel reaching someone, nothing is claimed for them: whatever is
   still due is sent once they set a channel up.
 - The optional monthly digest goes out on the first run of each month (each
