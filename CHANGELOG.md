@@ -6,6 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.10] — 2026-10-27
+
 Phase 53.18: **date range, far-out due dates, usernames and unsent claims
 from the known-issues log**
 ([docs/phases/phase-53.18.md](docs/phases/phase-53.18.md)). One migration
@@ -4131,7 +4133,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.19.9...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.19.10...HEAD
+[3.19.10]: https://github.com/gwpreston16/Logbook/compare/v3.19.9...v3.19.10
 [3.19.9]: https://github.com/gwpreston16/Logbook/compare/v3.19.8...v3.19.9
 [3.19.8]: https://github.com/gwpreston16/Logbook/compare/v3.19.7...v3.19.8
 [3.19.7]: https://github.com/gwpreston16/Logbook/compare/v3.19.6...v3.19.7

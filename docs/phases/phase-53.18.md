@@ -6,8 +6,7 @@ due date projected past the horizon isn't shown, usernames that differ
 by an accent are different users on every engine, and an interrupted
 reminder claim is said to stay unsent.*
 
-Status: ✅ complete · file lives in `docs/phases/` · no release of its
-own: it ships with the next releasing phase
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.19.10**
 
 This is the next batch after [Phase 53.17](phase-53.17.md). It takes K42,
 K43, K44 and K56, which waited on #450, #451, #452 and #458; the owner
@@ -153,6 +152,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
       #450, #451, #452, #458 and #558 marked built.
 - [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, bug-hunter, upgrade-tester), then merge.
+
+### Release
+
+- [x] `VERSION`, CHANGELOG, README status.
+- [x] Tag `v3.19.10` once merged.
 
 ## Acceptance criteria
 
