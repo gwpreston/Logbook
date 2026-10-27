@@ -6,6 +6,45 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 53.18: **date range, far-out due dates, usernames and unsent claims
+from the known-issues log**
+([docs/phases/phase-53.18.md](docs/phases/phase-53.18.md)). One migration
+(usernames on MySQL and MariaDB); pull and restart.
+
+### Changed
+- **A date you enter, send to the API or put in a URL must be in
+  1900–2100.** Outside it, a form shows "Enter a date between 1900 and
+  2100.", the API answers `422` (`400` for a query parameter) and a URL
+  date or `?year=` falls back to the default. Before, a fill-up, expense or
+  document dated 9999-12-31 made the dashboard, History and the vehicle
+  page fail, a report range in 9999 looped until memory ran out, and a
+  business-mileage `?year=0000` returned a server error (K42). The vehicle
+  forms' earlier 1885 floor for *First registered*, *First MOT due* and a
+  starting reading's date is now 1900 too.
+- **Usernames that differ only by an accent are different users on MySQL
+  and MariaDB too**, as on PostgreSQL and SQLite: `jose` can be added
+  beside `josé`, signing in or a proxy `Remote-User` as `jose` no longer
+  signs in `josé` (K44). The migration changes the username columns'
+  collation and stops, naming them, if it finds two names that differ only
+  by an accent (none is expected); rolling back stops the same way while
+  both spellings exist.
+
+### Fixed
+- **A distance-based due date projected more than 100 years away is no
+  longer stored or shown.** A vehicle driven almost nothing stays on its
+  distance left; before, `/`, `/reminders` and its page could return a
+  server error (K43). Tyre wear-out dates follow the same rule.
+
+### Documented
+- **A reminder claim left by a run that was killed before sending is never
+  retried**: at most one notification per person and status, and a missed
+  one is still visible in the app (K56).
+
+### Upgrade note
+- A date already stored outside 1900–2100 (a fill-up or document typed in
+  before this release) stays as it is and is not refused again; correct it
+  by hand.
+
 ## [3.19.9] — 2026-10-27
 
 Phase 53.17: **dev suite, search accents and decided notes from the
