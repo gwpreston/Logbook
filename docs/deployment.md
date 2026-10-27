@@ -562,6 +562,12 @@ archive first and shows what it contains; nothing changes until you tick
 3. replaces the uploaded photos and attachments,
 4. signs everyone out. Sign in with the account and password **from the backup**.
 
+A backup doesn't carry each table's id counter, so after a restore the next
+new record gets the highest id in the backup plus one. A record you deleted
+before the backup (the newest of its kind) can therefore have its id given to
+the next one you add, and a webhook may then send `entry.deleted` and
+`entry.created` for the same id.
+
 ### How old is the last backup?
 
 From 3.12, Settings → Backup starts with when the last backup was made and

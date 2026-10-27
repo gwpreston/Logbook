@@ -4468,8 +4468,7 @@ vehicles; a disabled module cannot be imported).
   that are safe relative paths; anything wrong changes nothing), then an
   automatic backup of the current data is written to `BACKUP_PATH`
   (`pre-restore-<timestamp>.zip`), then every table is emptied and refilled
-  in one transaction (PostgreSQL id sequences are moved past the restored
-  ids: the one documented platform branch), then the uploads directory is
+  in one transaction (every table's id counter is set to the highest restored id plus one, the one documented platform branch; a backup doesn't carry the counters, so an id deleted before the backup can be given to the next new record, and a webhook may send `entry.deleted` then `entry.created` for it: K146, #559), then the uploads directory is
   swapped for the archive's files. Every session ends (sign in again with
   the restored account's password).
 - A backup from another app version with a different schema is refused with
@@ -10664,6 +10663,7 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   record, and says so in one line under the heading. A reverted
   modification is left off (it is no longer on the car); the page ends with
   "Reverted: {n}" only when there are some.
+  - ***Declared on* is `Manage`-only on every path** (K3, #485, Phase 53.19): the modification create, edit and convert forms ignore a `declared_on` field from anyone without `Manage` (an edit keeps the stored date), and the REST API refuses it from a `Log` member (403); a `Manage` user may set or clear it on any path.
   - ***Mark declared*** (`Manage`) is a small form on the page: a date,
     today by default (not in the future, not before the modification's
     date; a blank date says "Enter the date you told your insurer" beside
@@ -12376,6 +12376,13 @@ task breakdowns live in the per-phase files; this is the map.
   are different usernames on every engine (§6, K44, #452); and an
   interrupted reminder claim is not retried (§7.6, K56, #458). One
   migration (K44); no release of its own. See [`phase-53.18.md`](docs/phases/phase-53.18.md).
+- **Phase 53.19 — Declared on and backup id counters from the known-issues
+  log + patch release** (planned). A modification's *Declared on* can be set
+  or cleared only by `Manage` on every path: the forms ignore it and the API
+  refuses it from a `Log` member (§7.39, K3, #485), and the backup guide and
+  §7 *Backup and restore* say a restore may reuse an id deleted before the
+  backup (K146, #559). No migration. Releases v3.19.11. See
+  [`phase-53.19.md`](docs/phases/phase-53.19.md).
 
 ---
 
