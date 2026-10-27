@@ -12370,7 +12370,7 @@ task breakdowns live in the per-phase files; this is the map.
   upgrade note (K67, #483). No migration. Releases v3.19.9. See
   [`phase-53.17.md`](docs/phases/phase-53.17.md).
 - **Phase 53.18 — Date range, far-out due dates, usernames and unsent
-  claims from the known-issues log** (planned). An entered, API or URL
+  claims from the known-issues log** (in progress). An entered, API or URL
   date must be in 1900–2100 (§8, K42, #450); a due date projected beyond
   100 years isn't shown or stored (§7.4, K43, #451); `josé` and `jose`
   are different usernames on every engine (§6, K44, #452); and an

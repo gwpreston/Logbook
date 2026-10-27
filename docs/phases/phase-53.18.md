@@ -6,7 +6,7 @@ due date projected past the horizon isn't shown, usernames that differ
 by an accent are different users on every engine, and an interrupted
 reminder claim is said to stay unsent.*
 
-Status: 📋 planned · file lives in `docs/phases/` · no release of its
+Status: 🚧 in progress · file lives in `docs/phases/` · no release of its
 own: it ships with the next releasing phase
 
 This is the next batch after [Phase 53.17](phase-53.17.md). It takes K42,
@@ -92,8 +92,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 
 ### 53.18.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). The still-open #374–#377 and
+      #559 don't touch dates, due dates, usernames or claims; nothing to
+      ask. The spec already carries all four decisions (§6 *User*, §7.4,
+      §7.6, §8).
 
 ### 53.18.1 Date range (K42)
 
