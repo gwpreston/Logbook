@@ -33,6 +33,7 @@ final readonly class CreateModificationAction
 {
     public function __construct(
         private ModificationService $modifications,
+        private DeclaredInput $declared,
         private ModificationFormPage $page,
         private RecordPartsPicker $parts,
         private CostInput $costs,
@@ -66,7 +67,11 @@ final readonly class CreateModificationAction
             return $this->page->render($request, $response, $vehicle, $values);
         }
 
-        $input = $this->costs->guard($request, $vehicle, RequestContext::form($request));
+        $input = $this->declared->guard(
+            $request,
+            $vehicle,
+            $this->costs->guard($request, $vehicle, RequestContext::form($request)),
+        );
         $values = RequestContext::formValues($request);
         if (RecordPartsForm::more($input) !== null) {
             return $this->page->render($request, $response, $vehicle, $values);

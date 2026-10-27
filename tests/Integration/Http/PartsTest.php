@@ -101,6 +101,19 @@ final class PartsTest extends AppTestCase
 
     /**
      * @param App<ContainerInterface> $app
+     */
+    private function modificationById(App $app, Vehicle $vehicle, int $id): Modification
+    {
+        foreach ($this->service($app, ModificationRepository::class)->listForVehicles([$vehicle->id]) as $modification) {
+            if ($modification->id === $id) {
+                return $modification;
+            }
+        }
+        self::fail('No modification ' . $id);
+    }
+
+    /**
+     * @param App<ContainerInterface> $app
      * @return array<string, Part>
      */
     private function parts(App $app, Vehicle $vehicle): array
@@ -811,6 +824,73 @@ final class PartsTest extends AppTestCase
         // The owner, with costs, sees them.
         self::assertStringContainsString('1,234.56', self::body($owner->get($v . '/parts/' . $roofBox->id)));
         self::assertStringContainsString('7,777', self::body($owner->get($v . '/modifications/' . $towBar->id)));
+    }
+
+    /**
+     * *Declared on* records what the owner told the insurer, so a `declared_on` posted by a `Log`
+     * member is ignored on create, edit and convert, while `Manage` still sets and clears it
+     * (spec.md §7.39, K3, #485).
+     */
+    public function testDeclaredOnIsManageOnlyOnTheCreateEditAndConvertForms(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $v = '/vehicles/' . $golf->id;
+        $shares = $this->service($app, VehicleShareRepository::class);
+        $now = new DateTimeImmutable(self::NOW);
+        $logger = $this->createMember($app, 'logger');
+        $shares->insert($golf->id, $logger->id, ShareLevel::Log, true, false, $now);
+        $manager = $this->createMember($app, 'manager');
+        $shares->insert($golf->id, $manager->id, ShareLevel::Manage, true, true, $now);
+        $theirs = $this->browserFor($app, 'logger');
+        $managing = $this->browserFor($app, 'manager');
+        $declared = static fn(Modification $m): ?string => $m->data->declaredOn?->format('Y-m-d');
+        $mods = fn(): array => $this->service($app, ModificationRepository::class)->listForVehicles([$golf->id]);
+
+        // Create: the Log member's crafted field changes nothing; Manage's is kept.
+        $theirs->post($v . '/modifications/new', self::towBar(['declared_on' => '2026-06-01']));
+        self::assertCount(1, $mods());
+        self::assertNull($declared($mods()[0]));
+        $managing->post($v . '/modifications/new', self::towBar(['title' => 'Remap', 'declared_on' => '2026-06-01']));
+        $byTitle = [];
+        foreach ($mods() as $modification) {
+            $byTitle[$modification->data->title] = $modification;
+        }
+        self::assertSame('2026-06-01', $declared($byTitle['Remap']));
+
+        // Edit: the Log member can neither move nor clear the stored date; Manage can do both.
+        $own = $byTitle['Tow bar'];
+        $theirs->post($v . '/modifications/' . $own->id . '/edit', self::towBar(['declared_on' => '2026-06-02']));
+        self::assertNull($declared($this->modificationById($app, $golf, $own->id)));
+        $managing->post($v . '/modifications/' . $own->id . '/edit', self::towBar(['declared_on' => '2026-06-02']));
+        self::assertSame('2026-06-02', $declared($this->modificationById($app, $golf, $own->id)));
+        $theirs->post($v . '/modifications/' . $own->id . '/edit', self::towBar(['title' => 'Tow bar 2', 'declared_on' => '']));
+        $kept = $this->modificationById($app, $golf, $own->id);
+        self::assertSame('Tow bar 2', $kept->data->title, 'the rest of their edit still saves');
+        self::assertSame('2026-06-02', $declared($kept), 'a blank field does not clear it');
+        $managing->post($v . '/modifications/' . $own->id . '/edit', self::towBar(['title' => 'Tow bar 2', 'declared_on' => '']));
+        self::assertNull($declared($this->modificationById($app, $golf, $own->id)), 'Manage clears it');
+
+        // Convert: the Log member converts their own expense, and the field is dropped; Manage's is kept.
+        $theirs->post($v . '/expenses/new', [
+            'category' => 'accessories', 'spent_on' => '2026-02-01', 'amount' => '35', 'note' => 'LED bulbs',
+        ]);
+        $expenses = $this->service($app, \Logbook\Repository\ExpenseEntryRepository::class)->listForVehicle($golf->id);
+        self::assertCount(1, $expenses);
+        $form = ['title' => 'LED bulbs', 'category' => 'lighting', 'done_on' => '2026-02-01'];
+        $theirs->post($v . '/expenses/' . $expenses[0]->id . '/modification', $form + ['declared_on' => '2026-06-03']);
+        $led = array_values(array_filter($mods(), static fn(Modification $m): bool => $m->data->title === 'LED bulbs'));
+        self::assertCount(1, $led, 'their own expense converts');
+        self::assertNull($declared($led[0]));
+        $other = $this->expense($app, $golf, '2026-03-01', '12.00', ExpenseCategory::Accessories, 'Mats');
+        $managing->post($v . '/expenses/' . $other->id . '/modification', [
+            'title' => 'Mats', 'category' => 'other', 'done_on' => '2026-03-01', 'declared_on' => '2026-06-03',
+        ]);
+        $mats = array_values(array_filter($mods(), static fn(Modification $m): bool => $m->data->title === 'Mats'));
+        self::assertCount(1, $mats);
+        self::assertSame('2026-06-03', $declared($mats[0]), 'Manage may set it while converting');
     }
 
     /**
