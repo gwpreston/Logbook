@@ -7,7 +7,7 @@ the same on every engine, Ask's and MCP's `note` hints are said to stay
 English, and a part removal made without a record is said to stay as
 entered.*
 
-Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.9**, the
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.19.9**, the
 patch after Phase 53.16's release
 
 This is the next batch after [Phase 53.16](phase-53.16.md). It takes K143,
@@ -125,7 +125,7 @@ tagged.
 ### Release
 
 - [x] `VERSION`, CHANGELOG, README status.
-- [ ] Tag v3.19.9 once merged.
+- [x] Tag `v3.19.9` once merged.
 
 ## Acceptance criteria
 
