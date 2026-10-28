@@ -4418,7 +4418,13 @@ vehicles; a disabled module cannot be imported).
   defaults to ISO. The *number format* (dot decimal `1,234.56` or comma
   decimal `1.234,56`) defaults to the owner's locale and decides how a
   number cell such as `45,123` or `13.000` is read; a cell the format
-  can't read is invalid (Phase 54.2, K1, #484, #573). The preview lists every row with what will happen to it.
+  can't read is invalid (Phase 54.2, K1, #484, #573). A file whose every
+  column header is one of Logbook's own export headers (in any of its
+  languages) defaults to dot decimal instead, since the export writes
+  plain decimals, so an owner's own export imports back as it was (#581).
+  Thousands groups must be whole: a first group of more than three digits
+  (`48280.320`) or a lone `0` (`0.500`) is not read as grouped under
+  comma decimal; it is invalid. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
   every row that was not, with its line number and reason. For fill-ups it
   also says how many of the imported ones are flagged by the economy check

@@ -98,6 +98,7 @@ final class DecimalTest extends TestCase
         yield 'letters rejected' => ['12abc', 'en', null];
         yield 'empty' => ['   ', 'en', null];
         yield 'lone sign' => ['-', 'en', null];
+        yield 'the owner\'s locale still allows a long first group' => ['1234.567,5', 'de', '1234567.5'];
     }
 
     #[DataProvider('parsed')]
@@ -124,6 +125,11 @@ final class DecimalTest extends TestCase
         yield 'comma: negative' => ['-3,25', NumberFormat::CommaDecimal, '-3.25'];
         yield 'comma: plain integer' => ['42', NumberFormat::CommaDecimal, '42'];
         yield 'comma: decimal dot refused, not read as canonical' => ['13.5', NumberFormat::CommaDecimal, null];
+        yield 'comma: a first group of four digits is not grouping (#581)' => ['48280.320', NumberFormat::CommaDecimal, null];
+        yield 'comma: a lone 0 is not a group (#581)' => ['0.500', NumberFormat::CommaDecimal, null];
+        yield 'dot: a lone 0 is not a group (#581)' => ['0,500', NumberFormat::DotDecimal, null];
+        yield 'dot: a first group of four digits is not grouping' => ['1234,567', NumberFormat::DotDecimal, null];
+        yield 'comma: three-digit first group reads' => ['123.456,7', NumberFormat::CommaDecimal, '123456.7'];
     }
 
     #[DataProvider('formatted')]

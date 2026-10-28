@@ -33,7 +33,7 @@ final class DecimalParser
         if ($format !== null) {
             // Dot decimal reads every canonical number the same way; comma decimal reads none of them.
             return ($format === NumberFormat::DotDecimal ? self::canonical($value) : null)
-                ?? self::withSymbols($value, $format->decimalSeparator(), $format->groupingSeparator());
+                ?? self::withSymbols($value, $format->decimalSeparator(), $format->groupingSeparator(), true);
         }
 
         $canonical = self::canonical($value);
@@ -52,12 +52,18 @@ final class DecimalParser
 
     /**
      * Read a number written with these separators; grouping separators
-     * must sit in the right places.
+     * must sit in the right places. With $wholeGroups (a chosen format) the
+     * first group is whole too: one to three digits and not a lone 0, so
+     * `48280.320` and `0.500` aren't read as thousands (#581).
      *
      * @param non-empty-string $decimalSymbol
      */
-    private static function withSymbols(string $value, string $decimalSymbol, string $groupingSymbol): ?string
-    {
+    private static function withSymbols(
+        string $value,
+        string $decimalSymbol,
+        string $groupingSymbol,
+        bool $wholeGroups = false,
+    ): ?string {
         $value = self::normaliseMinus($value);
         $negative = str_starts_with($value, '-');
         $value = ltrim($value, '-+');
@@ -71,7 +77,7 @@ final class DecimalParser
         $groupingSymbols = in_array($groupingSymbol, self::SPACES, true)
             ? self::SPACES
             : [$groupingSymbol, ...self::SPACES];
-        $whole = self::ungroup($whole ?? '', $groupingSymbols);
+        $whole = self::ungroup($whole ?? '', $groupingSymbols, $wholeGroups);
         if ($whole === null) {
             return null;
         }
@@ -103,7 +109,7 @@ final class DecimalParser
      *
      * @param list<string> $symbols
      */
-    private static function ungroup(string $whole, array $symbols): ?string
+    private static function ungroup(string $whole, array $symbols, bool $wholeFirst = false): ?string
     {
         $pattern = '/(?:' . implode('|', array_map(static fn (string $s): string => preg_quote($s, '/'), $symbols)) . ')/u';
         $groups = preg_split($pattern, $whole);
@@ -116,7 +122,13 @@ final class DecimalParser
             if (preg_match('/^\d+$/', $group) !== 1) {
                 return null;
             }
-            if ($index === 0 || $count === 1) {
+            if ($count === 1) {
+                continue;
+            }
+            if ($index === 0) {
+                if ($wholeFirst && (strlen($group) > 3 || $group === '0')) {
+                    return null;
+                }
                 continue;
             }
             $length = strlen($group);

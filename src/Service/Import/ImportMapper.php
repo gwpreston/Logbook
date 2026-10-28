@@ -95,7 +95,9 @@ final class ImportMapper
             $distance,
             $volume,
             $zone,
-            NumberFormat::forLocale($preferences->locale),
+            self::ownExport($fields, $mapping, $csv, $vocabulary)
+                ? NumberFormat::DotDecimal
+                : NumberFormat::forLocale($preferences->locale),
         );
     }
 
@@ -148,6 +150,31 @@ final class ImportMapper
             LocalTime::isValidTimezone($zone) ? $zone : $guess->timezone,
             NumberFormat::tryFrom($string('number_format')) ?? $guess->numberFormat,
         );
+    }
+
+    /**
+     * Whether the file is Logbook's own export: every matched column has
+     * its export header. The export writes plain decimals, so it reads with
+     * a decimal point whatever the owner's language (#581).
+     *
+     * @param list<ImportField> $fields
+     * @param array<string, int|null> $mapping
+     */
+    private static function ownExport(array $fields, array $mapping, CsvReader $csv, ImportVocabulary $vocabulary): bool
+    {
+        $matched = 0;
+        foreach ($fields as $field) {
+            $column = $mapping[$field->key];
+            if ($column === null) {
+                continue;
+            }
+            if (!$vocabulary->headerMatches($field, $csv->header[$column] ?? '', true)) {
+                return false;
+            }
+            $matched++;
+        }
+
+        return $matched > 1;
     }
 
     private static function firstValue(CsvReader $csv, int $column): ?string

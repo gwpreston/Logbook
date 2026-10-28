@@ -66,10 +66,12 @@ same category, amount and note.
 
 - **Numbers** are read in the chosen *Numbers* format: *Decimal point*
   (`1,234.56`) or *Decimal comma* (`1.234,56`), your own language's by
-  default. It decides whether `45,123` is 45123 or 45.123, and `13.000` 13
+  default, or *Decimal point* for a file of Logbook's own export (it writes
+  plain decimals, `48280.32`, whatever your language). It decides whether `45,123` is 45123 or 45.123, and `13.000` 13
   or 13000. A space between thousands (`1 234`) is read in both. A number
-  the chosen format can't read (`13,5` under *Decimal point*) is a problem
-  row, never read the other way. Quantities are read in the units chosen for the file and converted
+  the chosen format can't read (`13,5` under *Decimal point*, or
+  `48280.320` under *Decimal comma*, whose first group is too long) is a
+  problem row, never read the other way. Quantities are read in the units chosen for the file and converted
   exactly, so an exported file imports back to the very same values.
 - **Money** is in the vehicle's currency and never converted. A *Currency*
   column is optional; a row in another currency is refused. `0` is a valid cost.
