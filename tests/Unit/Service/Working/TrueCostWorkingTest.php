@@ -137,6 +137,27 @@ final class TrueCostWorkingTest extends TestCase
         self::assertSame('The parts’ changes add up exactly to the change in the total.', $working->notes[0]);
     }
 
+    /** #564 (Phase 54): the working of a period says how much cover it leaves out. */
+    public function testThePeriodNamesCoverOutsideOwnership(): void
+    {
+        $golf = self::vehicle('2025-01-01', null, '2026-03-31', null);
+        $before = self::document($golf, '2024-12-01', '365.000', '2025-11-30');
+        $after = self::document($golf, '2026-01-01', '365.000', '2026-12-31');
+        $items = [$before, $after];
+        $ownership = self::ownership($golf, $items, [], [], '2026-09-01');
+        $since = TrueCost::sinceBought($ownership, $items);
+        $notes = [];
+        foreach (TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-03-31')) as $year) {
+            $cost = self::period($golf, $year, $items, []);
+            $vtc = new VehicleTrueCost($golf, 'GBP', $ownership, $since, $cost, null, [], []);
+            $notes[] = implode(' ', $this->builder()->period($vtc, $cost, self::date('2026-09-01'))->notes ?? []);
+        }
+
+        self::assertStringContainsString('£31.00 of cover before you bought it isn’t counted', $notes[0]);
+        self::assertStringNotContainsString('after you sold it', $notes[0]);
+        self::assertStringContainsString('£275.00 of cover after you sold it isn’t counted', $notes[1]);
+    }
+
     /**
      * The Golf's year-2026 cost over a stretch of it.
      *

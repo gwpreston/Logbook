@@ -129,6 +129,13 @@ final readonly class TrueCostWorking
             array_push($steps, ...$depreciation->steps);
             array_push($notes, ...$depreciation->notes);
         }
+        // Cover outside ownership (spec.md §7.35, #564).
+        if ($cost->coverBefore !== null) {
+            $notes[] = $this->t('working.true_cost.cover_before', ['amount' => $this->format->money($cost->coverBefore)]);
+        }
+        if ($cost->coverAfter !== null) {
+            $notes[] = $this->t('working.true_cost.cover_after', ['amount' => $this->format->money($cost->coverAfter)]);
+        }
 
         return new Working(
             $inputs,

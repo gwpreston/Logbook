@@ -504,8 +504,11 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   its monthly average over the 12 months before ("about 10% more than
   your monthly average"), and a line for all vehicles together (spend
   per currency, never converted). The figures are the Reports page's for
-  that month. Spend and cost per distance appear only to people who may
-  see the vehicle's costs; cost per distance needs at least 100 km in
+  that month. A vehicle sold, written off or archived since the first of
+  last month is still listed there, so the month's spend is complete; the
+  other sections cover only vehicles you still have. Spend and cost per
+  distance appear only to people who may see the vehicle's costs; cost
+  per distance needs at least 100 km in
   the month; an average needs 3 months to compare with. When one entry
   is more than half of the month's spend it is named ("including
   Insurance £412"). Then come the **insights**: the computed ones, and,
@@ -525,7 +528,10 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   per currency, `display`, or null), `issues` (`vehicle_id`, `vehicle`,
   `open`) and `insights` (`kind`, `source` `computed` or `ai`,
   `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
-  other event; `items` and `attention` keep their shape.
+  other event; `items` and `attention` keep their shape. `last_month` and
+  `fleet` include a vehicle archived since the first of last month, so a
+  `vehicle_id` may be an archived vehicle: look it up with
+  `GET /vehicles?status=all`.
 - The server's webhook (`WEBHOOK_URL`) receives every member's digest,
   so from 3.9.0 its copy leaves out spend, cost per distance and the
   insights (in the text and the JSON); distances and open issues stay.

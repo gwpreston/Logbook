@@ -2962,6 +2962,22 @@ toggles.
   first, then *Check*, up to eight. With none: "Nothing needs attention"
   (the widget keeps its place). The *your vehicles* tiles carry the
   garage cards' *Needs attention* marker (§7.1).
+- **Empty widgets** (Phase 54, decided 2026-10-28, #563): a widget whose
+  data has nothing to show (its empty message would be all it says)
+  shrinks to its header and that one muted line, in its place, so the
+  arranged layout doesn't move as data comes and goes. Whether a widget is
+  empty is decided by the dashboard service, from the data it already
+  built, never in the template. The widgets that shrink: *Upcoming
+  reminders*, *Coming up*, *Insights*, *Monthly spend*, *Recent fuel*,
+  *Efficiency*, *Compliance*, *Recent activity* and *True cost*; an empty
+  *True cost* drops its period switch and an empty *Recent fuel* its *Log
+  fill-up* button (*Log entry* stays in the navigation), so each is one
+  line. Never shrinking: *Needs attention* ("Nothing needs attention" is
+  the reassurance), *Spend this month* (£0.00 is a figure), *Expense
+  breakdown* (its period chips choose what it shows), and the widgets
+  without an empty state (*Your vehicles*, *Calendar*, *Mileage*, *Business
+  mileage*, *Cheapest fuel*, *Finance*). *Customise* shows every widget at
+  full size. It works without JS.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
   and from the keyboard — plus "reset layout". With JS, widgets can also be
@@ -3656,8 +3672,11 @@ Extensible channel interface so more can be added.
     (5) the link.
   - **Last month** (while the reports module is on, #368): the previous
     calendar month in the user's time zone, for each active recipient
-    vehicle with a distance or (with `ViewCosts`) a spend in that month
-    (#369);
+    vehicle, and each one archived (sold, written off or archived) on or
+    after the first day of that month that would otherwise be one (#374,
+    Phase 54: the month's spend is then complete), with a distance or
+    (with `ViewCosts`) a spend in that month (#369); the other sections
+    stay active vehicles only;
     the averages still look back over the 12 months before it:
     - *Distance*: the month's distance driven (§7.7, `PeriodDistance`),
       against the average of the 12 months before it, each measured the
@@ -3750,6 +3769,10 @@ Extensible channel interface so more can be added.
     `{"distance", "spend": {currency: amount}, "display"}` or null; `issues`
     is a list of `{"vehicle_id", "vehicle", "open"}`; `insights` a list of
     `{"kind", "source": "computed"|"ai", "vehicle_ids", "title", "body"}`.
+    From Phase 54 (#374), `last_month` and `fleet` include a vehicle
+    archived since the first of last month, so a row's `vehicle_id` may be
+    an archived vehicle (`GET /vehicles?status=all` finds it); the shape
+    is unchanged.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
@@ -9697,7 +9720,20 @@ it replaces none of the other figures.
   out in micro-units and the last day takes the remainder, so a document's
   shares add up exactly to its cost. A document without both dates counts
   on its ledger date. *Since bought* counts documents on their ledger date,
-  exactly as §7.7 does.
+  exactly as §7.7 does. **Cover outside ownership** (Phase 54, decided
+  2026-10-28, #564): the days of a document's cover before the purchase
+  date or after the sale date fall in no period, since the periods are cut
+  to the ownership period. *Since bought* still goes by the ledger date
+  (§7.7): a policy starting before the purchase isn't in it at all, while
+  the years count its owned days; one starting while owned is in it whole,
+  while the years stop at the sale. So the years and *Since bought* can
+  differ either way, and the working of the first or the sale's period
+  says how much cover it leaves out ("£40 of cover before you bought it
+  isn't counted", "… after you sold it …"). A document wholly before the
+  purchase date (its cover ends before it) or wholly after the sale date
+  (dated after it) is in no period and, being dated outside ownership,
+  not in *Since bought* either; the first or the sale's period names it
+  whole.
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
   the date it is measured to (below). Rates are kept per km to 6 places:
@@ -11422,6 +11458,9 @@ Real environment variables override `.env`; an empty value counts as unset.
 
 ## 12. Future / optional (not in core phases)
 
+- Household actions (considered 2026-10-28, Phase 54): assigning a
+  reminder or an issue to one member, so the dashboard can show "yours".
+  Today a reminder goes to everyone with access to the vehicle (§7.21).
 - Shares on the invitation (Phase 46, #393): the invite form choosing
   vehicles and a quick pick, applied when the link is used. Today an
   admin invites and the owner shares by username afterwards.
@@ -12415,6 +12454,15 @@ task breakdowns live in the per-phase files; this is the map.
   repeated one is taken as the first with a warning (§7 *CSV export* and
   *Import*, K13, #561). No migration. Releases v3.19.12. See
   [`phase-53.20.md`](docs/phases/phase-53.20.md).
+
+- **Phase 54 — Finance scenarios, quiet empty widgets and last month's
+  sold vehicles** (complete). A scenario suite checks whole vehicle lives
+  across the cost-of-ownership page, the API and the CSV; an empty
+  dashboard widget shrinks to one line (§7.8, #563); true-cost periods
+  leave out cover outside ownership and the working says how much (§7.35,
+  #564); the briefing's *Last month* keeps vehicles archived during it
+  (§7.11, #374); the test bootstrap runs only under `APP_ENV=testing`
+  (K148). No migration. See [`phase-54.md`](docs/phases/phase-54.md).
 
 ---
 

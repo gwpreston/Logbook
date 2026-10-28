@@ -65,6 +65,10 @@ final readonly class TrueCost
         public ?PeriodDepreciation $depreciationDetail = null,
         /** The two readings the distance is the difference of, for the working. */
         public ?DistanceSpan $distanceSpan = null,
+        /** Cover before the purchase that the first period leaves out (#564); null when none. */
+        public ?Money $coverBefore = null,
+        /** Cover after the sale that the sale's period leaves out (#564); null when none. */
+        public ?Money $coverAfter = null,
     ) {
     }
 
@@ -229,6 +233,8 @@ final readonly class TrueCost
             gap: $gap,
             depreciationDetail: $depreciation,
             distanceSpan: $span,
+            coverBefore: self::coverOutside($vehicle, $period, $items, before: true),
+            coverAfter: self::coverOutside($vehicle, $period, $items, before: false),
         );
     }
 
@@ -365,9 +371,68 @@ final readonly class TrueCost
         if ($period->to < $item->date || $period->from > $cover) {
             return null;
         }
+
+        return self::coverShare(
+            $item,
+            $cover,
+            $period->from > $item->date ? $period->from : $item->date,
+            $period->to < $cover ? $period->to : $cover,
+        );
+    }
+
+    /**
+     * The cover a period leaves out because it falls before the purchase
+     * (the period starting on the purchase date) or after the sale (the one
+     * ending on the sale date): spec.md §7.35 *Cover outside ownership*, #564.
+     * Null when there is none, and always for *Since bought*.
+     *
+     * @param list<CostItem> $items
+     */
+    private static function coverOutside(Vehicle $vehicle, TrueCostPeriod $period, array $items, bool $before): ?Money
+    {
+        $edge = $before ? $vehicle->data->purchaseDate : $vehicle->data->saleDate;
+        $bound = $before ? $period->from : $period->to;
+        if (
+            $edge === null
+            || $period->range === TrueCostRange::SinceBought
+            || $bound->format('Y-m-d') !== $edge->format('Y-m-d')
+        ) {
+            return null;
+        }
+        $left = null;
+        foreach ($items as $item) {
+            $cover = $item->source === CostSource::Compliance ? $item->coverTo : null;
+            if ($item->vehicle->id !== $vehicle->id || $cover === null || TruePart::ofGroup($item->group()) === null) {
+                continue;
+            }
+            // A document wholly outside ownership is left out whole.
+            $share = match (true) {
+                $before && $cover < $edge, !$before && $item->date > $edge => $item->amount,
+                $before && $item->date < $edge
+                    => self::coverShare($item, $cover, $item->date, $edge->modify('-1 day')),
+                !$before && $cover > $edge
+                    => self::coverShare($item, $cover, $edge->modify('+1 day'), $cover),
+                default => null,
+            };
+            if ($share !== null && !$share->isZero()) {
+                $left = $left === null ? $share : $left->add($share);
+            }
+        }
+
+        return $left;
+    }
+
+    /**
+     * A document's share for the days from $from to $to of its cover
+     * (both inclusive, inside its cover).
+     */
+    private static function coverShare(
+        CostItem $item,
+        DateTimeImmutable $cover,
+        DateTimeImmutable $from,
+        DateTimeImmutable $to,
+    ): Money {
         $days = LocalTime::daysBetween($item->date, $cover) + 1;
-        $from = $period->from > $item->date ? $period->from : $item->date;
-        $to = $period->to < $cover ? $period->to : $cover;
         $before = LocalTime::daysBetween($item->date, $from);
         $through = LocalTime::daysBetween($item->date, $to) + 1;
         $micros = $item->amount->micros;

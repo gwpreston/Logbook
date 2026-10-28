@@ -51,7 +51,8 @@ build work and its parts (costs and prices only where the key's user may
 see costs).
 `ownership`, `true_cost`, `finance`, `coming_up` and `trips_summary` also
 return a `working` for their headline figures: the dated inputs, the sum in
-words and what Logbook did not assume, so a client can answer "how did you
+words and plain-text notes (what Logbook did not assume or left out, to
+show rather than match), so a client can answer "how did you
 get that?" by quoting it ([ai.md](ai.md#how-did-you-get-that)).
 
 A **read and write** key also gets:

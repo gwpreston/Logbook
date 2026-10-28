@@ -4,11 +4,14 @@
 {% set widget_data = dashboard.trueCost %}
 {# The vehicle chip and the expense breakdown's period are kept. #}
 {% set chip = (selected ? {vehicle: selected.id} : {})|merge(dashboard.expenseBreakdown ? dashboard.expenseBreakdown.period.toQuery() : {}) %}
-{{ tcm.switch(
-    widget_data.range,
-    url_for('home', {}, chip|merge({true_cost: 'since_bought'})) ~ '#widget-true_cost',
-    url_for('home', {}, chip) ~ '#widget-true_cost'
-) }}
+{# Empty, the widget is one line (spec.md §7.8 *Empty widgets*, #563): no switch. #}
+{% if not widget_data.isEmpty() %}
+    {{ tcm.switch(
+        widget_data.range,
+        url_for('home', {}, chip|merge({true_cost: 'since_bought'})) ~ '#widget-true_cost',
+        url_for('home', {}, chip) ~ '#widget-true_cost'
+    ) }}
+{% endif %}
 {% if widget_data.isEmpty() %}
     <p class="muted">{{ 'true_cost.widget_empty'|trans }}</p>
 {% else %}

@@ -2,8 +2,8 @@
 {% import 'macros/ui.twig' as ui %}
 {% import 'macros/fuel.twig' as fuel_ui %}
 {% if dashboard.recentFuel is empty %}
+    {# One line (spec.md §7.8 *Empty widgets*, #563): *Log entry* stays in the navigation. #}
     <p class="muted">{{ 'dashboard.fuel.empty'|trans }}</p>
-    <a class="btn btn--soft" href="{{ url_for('fuel.quick') }}">{{ ui.icon('add') }}{{ 'nav.log_fill_up'|trans }}</a>
 {% else %}
     <ul class="list">
         {% for row in dashboard.recentFuel %}

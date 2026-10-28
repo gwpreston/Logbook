@@ -102,6 +102,33 @@ final readonly class Dashboard
         return $this->layout->isHidden($widget);
     }
 
+    /**
+     * Nothing to show but its empty message (spec.md §7.8 *Empty widgets*,
+     * #563): the widget shrinks to its header and that line, its own
+     * controls left out (true cost's switch, recent fuel's button). *Needs
+     * attention* never does, nor does the breakdown, whose periods choose
+     * what it shows, nor spend, whose £0.00 is a figure.
+     */
+    public function isEmpty(DashboardWidget $widget): bool
+    {
+        return match ($widget) {
+            DashboardWidget::Reminders => $this->reminders === null || $this->reminders->top(1) === [],
+            DashboardWidget::ComingUp => $this->comingUp?->isEmpty() ?? false,
+            DashboardWidget::Compliance => array_all(
+                $this->compliance,
+                static fn (VehicleCompliance $row): bool => $row->attention() === [],
+            ),
+            DashboardWidget::Insights => ($this->insights ?? []) === []
+                && ($this->aiInsights === null || $this->aiInsights->insights === []),
+            DashboardWidget::Efficiency => $this->efficiency === [],
+            DashboardWidget::RecentFuel => $this->recentFuel === [],
+            DashboardWidget::RecentActivity => $this->activity === [],
+            DashboardWidget::MonthlyExpenses => $this->monthlySpend?->isEmpty() ?? false,
+            DashboardWidget::TrueCost => $this->trueCost?->isEmpty() ?? false,
+            default => false,
+        };
+    }
+
     public function hasVehicles(): bool
     {
         return $this->vehicles !== [];

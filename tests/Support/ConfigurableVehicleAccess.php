@@ -67,9 +67,9 @@ final class ConfigurableVehicleAccess implements VehicleAccess
         return array_values(array_map(static fn (Vehicle $vehicle): int => $vehicle->id, $visible));
     }
 
-    public function recipientVehicleIds(User $user): array
+    public function recipientVehicleIds(User $user, bool $archived = false): array
     {
-        return $this->vehicles->idsOwnedBy($user->id, VehicleStatus::Active);
+        return $this->vehicles->idsOwnedBy($user->id, $archived ? null : VehicleStatus::Active);
     }
 
     public function forget(): void

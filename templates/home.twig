@@ -114,7 +114,7 @@
                     {% set hidden = dashboard.isHidden(widget) %}
                     {% set title = ('dashboard.widget.' ~ widget.value)|trans %}
                     {% set link = widget_links[widget.value] ?? null %}
-                    <section class="widget{{ widget.isWide() ? ' widget--wide' }}{{ hidden ? ' widget--hidden' }}" id="widget-{{ widget.value }}" data-widget="{{ widget.value }}" aria-labelledby="widget-{{ widget.value }}-title">
+                    <section class="widget{{ widget.isWide() ? ' widget--wide' }}{{ hidden ? ' widget--hidden' }}{{ not customise and dashboard.isEmpty(widget) ? ' widget--empty' }}" id="widget-{{ widget.value }}" data-widget="{{ widget.value }}" aria-labelledby="widget-{{ widget.value }}-title">
                         <div class="widget__header">
                             {% if customise %}<span class="widget__handle" data-drag-handle hidden>{{ ui.icon('drag_indicator') }}</span>{% endif %}
                             <span class="widget__icon">{{ ui.icon(widget.icon()) }}</span>

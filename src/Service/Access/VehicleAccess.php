@@ -28,12 +28,14 @@ interface VehicleAccess
 
     /**
      * The ids of the active vehicles whose reminders the user receives: the
-     * ones they own and those shared with *Send me its reminders* (Phase 19).
+     * ones they own and those shared with *Send me its reminders* (Phase 19);
+     * with `$archived`, the archived ones too (the briefing's *Last month*,
+     * #374).
      *
      * @phpstan-impure
      * @return list<int>
      */
-    public function recipientVehicleIds(User $user): array;
+    public function recipientVehicleIds(User $user, bool $archived = false): array;
 
     /**
      * Drop remembered answers: called when a request starts and after a

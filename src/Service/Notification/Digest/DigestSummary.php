@@ -72,7 +72,7 @@ final readonly class DigestSummary
     }
 
     /**
-     * @param list<Vehicle> $vehicles the user's recipient vehicles
+     * @param list<Vehicle> $vehicles the user's recipient vehicles, archived ones included
      * @param DateTimeImmutable $today the user's calendar date
      */
     public function build(
@@ -82,10 +82,19 @@ final readonly class DigestSummary
         NotificationPreferences $preferences,
     ): DigestContent {
         $active = array_values(array_filter($vehicles, static fn (Vehicle $v): bool => !$v->isArchived()));
+        // #374: *Last month* also keeps a vehicle archived (sold, written off) on
+        // or after its first day, so the month's spend is complete.
+        $since = LocalTime::addMonths($today->modify('first day of this month'), -1)->format('Y-m-d');
+        $zone = $user->preferences->timeZone();
+        $lastMonth = array_values(array_filter(
+            $vehicles,
+            static fn (Vehicle $v): bool => !$v->isArchived()
+                || ($v->archivedAt !== null && LocalTime::dateOf($v->archivedAt, $zone)->format('Y-m-d') >= $since),
+        ));
 
         return new DigestContent(
             $preferences->digestIncludes(DigestSection::Attention) ? $this->openIssues($active) : [],
-            $preferences->digestIncludes(DigestSection::LastMonth) ? $this->lastMonth($user, $active, $today) : null,
+            $preferences->digestIncludes(DigestSection::LastMonth) ? $this->lastMonth($user, $lastMonth, $today) : null,
             $preferences->digestIncludes(DigestSection::Insights) ? $this->insights($user, $active, $today) : [],
             $this->backup($user),
         );

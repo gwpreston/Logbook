@@ -262,6 +262,15 @@ choose; one typed in full is encrypted with a key derived from
 |---|---|---|
 | `PRICE_HISTORY_DAYS` | `1095` | Days of listed price history kept for stations someone has used or favourited (three years). At least `30`: a smaller value is treated as 30. The hourly `cleanup` job deletes older entries. |
 
+## MOT history
+
+MOT history from DVSA (UK only, [mot-history.md](mot-history.md)) has no
+variables of its own: it is **off** until an admin enters DVSA's four
+credentials on Settings → MOT history and switches it on. *Test* there
+checks them without sending any vehicle. A credential can be typed as
+`env:NAME` to read it from any variable you choose. Without it, MOT dates
+are entered by hand as MOT certificates.
+
 ## Demo mode
 
 A public demo that resets itself ([demo-mode.md](demo-mode.md)). Off unless
