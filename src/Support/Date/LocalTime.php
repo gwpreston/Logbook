@@ -21,8 +21,9 @@ use Psr\Clock\ClockInterface;
  *
  * Local times that do not exist (the hour skipped when clocks go forward) are
  * moved forward by the gap; ambiguous ones (the repeated hour when clocks go
- * back) resolve to the later, standard-time instant (firstOfRepeated() gives
- * the other). Both follow PHP. A time
+ * back) resolve to whichever of the two instants PHP picks, which depends on
+ * the zone (the later one in London, the first in New York); firstOfRepeated()
+ * gives the first. Both follow PHP. A time
  * written with its UTC offset ("2026-10-25T01:30:00+00:00", or "Z") is
  * exact, and the zone is not consulted (CSV import, K13); wallClock() says
  * whether a time without one is skipped or repeated.
@@ -62,7 +63,8 @@ final class LocalTime
 
         $exact = self::withOffset($input);
         if ($exact !== false) {
-            return $exact;
+            // The offset can carry the instant across the year limit the text itself is within.
+            return $exact !== null && self::yearInRange((int) $exact->format('Y')) ? $exact : null;
         }
 
         foreach (self::LOCAL_FORMATS as $format) {

@@ -100,6 +100,8 @@ final class LocalTimeTest extends TestCase
         self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+15:00', $zone));
         self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00-13:00', $zone));
         self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00-12:00', $zone));
+        self::assertNull(LocalTime::toUtc('2100-12-31T23:30:00-05:00', $zone), 'the offset carries it into 2101');
+        self::assertNull(LocalTime::toUtc('1900-01-01T00:00:00+14:00', $zone), 'the offset carries it into 1899');
         self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00+14:00', $zone));
         self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+01:75', $zone));
         self::assertNull(LocalTime::toUtc('2026-02-30T01:30:00+01:00', $zone));
