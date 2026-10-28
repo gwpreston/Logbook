@@ -4635,6 +4635,27 @@ a.list__title:hover {
     opacity: 0.6;
 }
 
+/* An empty widget (spec.md §7.8 *Empty widgets*, #563): its header and the
+   one muted line, in its place. */
+.widget--empty {
+    gap: var(--space-1);
+    padding-block: var(--space-3);
+}
+
+.widget--empty .widget__header {
+    min-height: 0;
+}
+
+.widget--empty .widget__title {
+    font-size: var(--fs-base);
+}
+
+.widget--empty > p,
+.widget--empty .widget__ok {
+    margin: 0;
+    font-size: var(--fs-sm);
+}
+
 .widget--ghost {
     border-color: var(--accent);
     opacity: 0.5;

@@ -2557,6 +2557,8 @@ return [
             'change_row' => '{before} → {after} ({difference})',
             'change_sum' => '{now} {after} − {was} {before} = {change}.',
             'change_note' => 'Die Änderungen der Teile ergeben genau die Änderung der Summe.',
+            'cover_before' => '{amount} Deckung vor dem Kauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
+            'cover_after' => '{amount} Deckung nach dem Verkauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
         ],
         'finance' => [
             'quote' => 'Angebot des Kreditgebers',

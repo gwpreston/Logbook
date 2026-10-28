@@ -9711,9 +9711,13 @@ it replaces none of the other figures.
   exactly as §7.7 does. **Cover outside ownership** (Phase 54, decided
   2026-10-28, #564): the days of a document's cover before the purchase
   date or after the sale date fall in no period, since the periods are cut
-  to the ownership period, so the years can add up to less than *Since
-  bought*; the working of a period that loses such days says how much
-  ("£40 of cover before you bought it isn't counted").
+  to the ownership period. *Since bought* still goes by the ledger date
+  (§7.7): a policy starting before the purchase isn't in it at all, while
+  the years count its owned days; one starting while owned is in it whole,
+  while the years stop at the sale. So the years and *Since bought* can
+  differ either way, and the working of the first or the sale's period
+  says how much cover it leaves out ("£40 of cover before you bought it
+  isn't counted", "… after you sold it …").
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
   the date it is measured to (below). Rates are kept per km to 6 places:

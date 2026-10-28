@@ -110,6 +110,47 @@ final class TrueCostTest extends TestCase
         self::assertSame('365.000', $since->amount(TruePart::Documents)?->toDecimal(3), 'on its date, as Phase 14.2');
     }
 
+    /** #564 (Phase 54): cover before the purchase counts in no year, and the first year says how much. */
+    public function testCoverBeforeThePurchaseIsLeftOutAndNamed(): void
+    {
+        // £365 from 1 Dec 2024 to 30 Nov 2025, £1 a day; bought 1 Jan 2025: 31 days before.
+        $car = self::vehicle('2025-01-01', '10000.000');
+        $policy = self::document($car, '2024-12-01', '365.000', '2025-11-30');
+
+        [$y2025] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-09-01'));
+        $first = self::period($car, $y2025, [$policy], []);
+        $since = TrueCost::sinceBought(self::ownership($car, [$policy], [], [], '2026-09-01'), [$policy]);
+
+        self::assertSame('334.000', $first->amount(TruePart::Documents)?->toDecimal(3), 'the owned days only');
+        self::assertSame('31.000', $first->coverBefore?->toDecimal(3));
+        self::assertNull($first->coverAfter);
+        self::assertTrue($since->amount(TruePart::Documents)?->isZero(), 'dated before the purchase: outside §7.7\'s period');
+    }
+
+    /** #564: cover after the sale counts in no year; the sale's year says how much, Since bought keeps it all. */
+    public function testCoverAfterTheSaleIsLeftOutAndNamed(): void
+    {
+        // £365 from 1 Jul 2025 to 30 Jun 2026; sold 31 Mar 2026: 91 days after.
+        $car = self::vehicle('2025-01-01', '10000.000', '2026-03-31', '8000.000');
+        $policy = self::document($car, '2025-07-01', '365.000', '2026-06-30');
+
+        [$y2025, $y2026] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-03-31'));
+        $first = self::period($car, $y2025, [$policy], []);
+        $last = self::period($car, $y2026, [$policy], []);
+        $since = TrueCost::sinceBought(self::ownership($car, [$policy], [], [], '2026-09-01'), [$policy]);
+
+        self::assertNull($first->coverAfter, 'only the period ending on the sale date');
+        self::assertSame('90.000', $last->amount(TruePart::Documents)?->toDecimal(3), '1 Jan to 31 Mar');
+        self::assertSame('91.000', $last->coverAfter?->toDecimal(3));
+        self::assertSame('365.000', $since->amount(TruePart::Documents)?->toDecimal(3));
+        self::assertSame(
+            '365.000',
+            $first->amount(TruePart::Documents)?->add($last->amount(TruePart::Documents))
+                ->add($last->coverAfter)->toDecimal(3),
+            'the years and what they leave out add up to the policy',
+        );
+    }
+
     public function testDocumentSharesAlwaysAddUpToTheCost(): void
     {
         // £100 over 7 days: shares of 14.285714… a day.
