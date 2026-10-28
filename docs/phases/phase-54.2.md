@@ -76,17 +76,17 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### 54.2.1 Number format on import (K1)
 
-- [ ] `NumberFormat` enum (dot decimal, comma decimal) and
+- [x] `NumberFormat` enum (dot decimal, comma decimal) and
       `DecimalParser::parse()` taking it; the canonical form is no longer
       tried first when a format is chosen (`DecimalParserTest`).
-- [ ] `ImportOptions`, `ImportMapper::guess()` and the query
+- [x] `ImportOptions`, `ImportMapper::guess()` and the query
       (`number_format`) carry it; `CsvImporter` reads distance, volume and
       amount cells with it (`CsvImporterTest`: `45,123` and `13.000` under
       both formats, English and German owners).
 - [ ] The preview's picker in `templates/import/map.twig`, translations in
       every catalogue; works without JS. Check at 375, 768 and 1280 px,
       light and dark.
-- [ ] Spec §7.13 says so. `docs/` import guide updated.
+- [x] Spec §7.13 says so. `docs/` import guide updated.
 
 ### 54.2.2 Offline fill-ups per user (K40)
 

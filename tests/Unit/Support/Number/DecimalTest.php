@@ -7,6 +7,7 @@ namespace Logbook\Tests\Unit\Support\Number;
 use InvalidArgumentException;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
+use Logbook\Support\Number\NumberFormat;
 use OverflowException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -103,5 +104,41 @@ final class DecimalTest extends TestCase
     public function testParser(string $input, string $locale, ?string $expected): void
     {
         self::assertSame($expected, DecimalParser::parse($input, $locale));
+    }
+
+    /**
+     * @return iterable<string, array{string, NumberFormat, ?string}>
+     */
+    public static function formatted(): iterable
+    {
+        yield 'dot: comma is grouping' => ['45,123', NumberFormat::DotDecimal, '45123'];
+        yield 'dot: dot is decimal' => ['13.000', NumberFormat::DotDecimal, '13.000'];
+        yield 'dot: canonical still reads' => ['.5', NumberFormat::DotDecimal, '0.5'];
+        yield 'dot: grouped with decimals' => ['1,234.56', NumberFormat::DotDecimal, '1234.56'];
+        yield 'dot: space grouping' => ['1 234.5', NumberFormat::DotDecimal, '1234.5'];
+        yield 'dot: decimal comma refused' => ['13,5', NumberFormat::DotDecimal, null];
+        yield 'comma: comma is decimal' => ['45,123', NumberFormat::CommaDecimal, '45.123'];
+        yield 'comma: dot is grouping' => ['13.000', NumberFormat::CommaDecimal, '13000'];
+        yield 'comma: grouped with decimals' => ['1.234,56', NumberFormat::CommaDecimal, '1234.56'];
+        yield 'comma: space grouping' => ["1\u{202F}234,5", NumberFormat::CommaDecimal, '1234.5'];
+        yield 'comma: negative' => ['-3,25', NumberFormat::CommaDecimal, '-3.25'];
+        yield 'comma: plain integer' => ['42', NumberFormat::CommaDecimal, '42'];
+        yield 'comma: decimal dot refused, not read as canonical' => ['13.5', NumberFormat::CommaDecimal, null];
+    }
+
+    #[DataProvider('formatted')]
+    public function testParserWithAChosenFormatReadsOnlyThatFormat(string $input, NumberFormat $format, ?string $expected): void
+    {
+        // The owner's locale plays no part once a format is chosen.
+        self::assertSame($expected, DecimalParser::parse($input, 'en_GB', $format));
+        self::assertSame($expected, DecimalParser::parse($input, 'de_DE', $format));
+    }
+
+    public function testTheLocalesFormatIsItsDecimalSeparator(): void
+    {
+        self::assertSame(NumberFormat::DotDecimal, NumberFormat::forLocale('en_GB'));
+        self::assertSame(NumberFormat::DotDecimal, NumberFormat::forLocale('en_US'));
+        self::assertSame(NumberFormat::CommaDecimal, NumberFormat::forLocale('de_DE'));
+        self::assertSame(NumberFormat::CommaDecimal, NumberFormat::forLocale('fr_FR'));
     }
 }

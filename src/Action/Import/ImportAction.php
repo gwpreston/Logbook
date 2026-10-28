@@ -23,6 +23,7 @@ use Logbook\Support\Http\LongRequest;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
 use Logbook\Support\Storage\StagedFiles;
+use Logbook\Support\Number\NumberFormat;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\View\FormOptions;
@@ -178,6 +179,7 @@ final readonly class ImportAction
             'options' => $options,
             'query' => $options->toQuery(),
             'date_orders' => DateOrder::cases(),
+            'number_formats' => NumberFormat::cases(),
             'distance_units' => DistanceUnit::cases(),
             'volume_units' => VolumeUnit::cases(),
             'timezone_options' => FormOptions::timezones(),

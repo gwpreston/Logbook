@@ -746,6 +746,74 @@ final class ImportTest extends AppTestCase
         self::assertSame(['2026-04-05 09:15', '2026-04-06 12:00', '2026-04-07 09:15', '2026-04-08 09:15'], $times);
     }
 
+    /**
+     * K1 (#484, #573): the preview's number format decides how `45,123`
+     * and `13.000` read, defaulting to the owner's locale; a cell the
+     * format can't read is a problem row, never read the locale's way.
+     */
+    public function testTheNumberFormatDecidesHowSeparatorsRead(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $readings = $this->service($app, OdometerReadingRepository::class);
+        $fills = $this->service($app, FuelEntryRepository::class);
+        $csv = "Date,Odometer\n2026-06-01,\"45,123\"\n2026-06-02,13.000\n";
+
+        // English owner: a decimal point by default.
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $map = $this->upload($browser, $golf->id, 'odometer', $csv);
+        $mapping = self::body($browser->get($map));
+        self::assertStringContainsString('<option value="dot" selected>Decimal point (1,234.56)</option>', $mapping);
+        $this->commit($browser, $map, $this->preview($browser, $map, ['distance_unit' => 'km']));
+        $km = array_map(static fn ($r): string => $r->readingKm, $readings->listForVehicle($golf->id));
+        sort($km);
+        self::assertSame(['13.000', '45123.000'], $km);
+
+        // The same file under a decimal comma.
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'odometer', $csv);
+        $preview = $this->preview($browser, $map, ['number_format' => 'comma', 'distance_unit' => 'km']);
+        self::assertStringContainsString('name="number_format" value="comma"', $preview, 'the commit keeps the choice');
+        $this->commit($browser, $map, $preview);
+        $km = array_map(static fn ($r): string => $r->readingKm, $readings->listForVehicle($polo->id));
+        sort($km);
+        self::assertSame(['45.123', '13000.000'], $km);
+
+        // An amount the decimal comma can't read is a problem row, not read as canonical.
+        $fiesta = $this->vehicle($app, 'Ford', 'Fiesta');
+        $map = $this->upload($browser, $fiesta->id, 'fuel', "Date,Odometer,Litres,Total\n2026-06-01 09:00,1000,40,65.83\n");
+        $preview = $this->preview($browser, $map, ['number_format' => 'comma', 'distance_unit' => 'km', 'volume_unit' => 'l']);
+        self::assertStringContainsString('Enter a number, e.g. 1234.5.', $preview);
+        self::assertStringContainsString('Nothing to import', $preview);
+
+        // German owner: a decimal comma by default, for distances, volumes and amounts.
+        $browser->get('/profile');
+        $saved = $browser->post('/settings/preferences', [
+            'display_name' => 'Owner', 'theme' => 'system', 'distance_unit' => 'km', 'volume_unit' => 'l',
+            'consumption_unit' => 'l_per_100km', 'depth_unit' => 'mm', 'currency' => 'EUR', 'locale' => 'de_DE',
+            'timezone' => 'Europe/Berlin',
+        ]);
+        self::assertSame(303, $saved->getStatusCode(), self::body($saved));
+        $csv = "Date,Odometer,Litres,Total\n2026-06-01 09:00,13.000,\"45,123\",\"65,83\"\n";
+        $map = $this->upload($browser, $fiesta->id, 'fuel', $csv);
+        self::assertStringContainsString('<option value="comma" selected>', self::body($browser->get($map)));
+        $this->commit($browser, $map, $this->preview($browser, $map, ['volume_unit' => 'l']));
+        $saved = $fills->listForVehicle($fiesta->id);
+        self::assertCount(1, $saved);
+        self::assertSame('13000.000', $saved[0]->data->odometerKm);
+        self::assertSame('45.123', $saved[0]->data->volume);
+        self::assertSame('65.830', $saved[0]->data->totalCost);
+
+        // ...and under a decimal point, `65,83` is not read the German way.
+        $ka = $this->vehicle($app, 'Ford', 'Ka');
+        $map = $this->upload($browser, $ka->id, 'fuel', "Date,Odometer,Litres,Total\n2026-06-01 09:00,13.000,40,\"65,83\"\n");
+        $preview = $this->preview($browser, $map, ['number_format' => 'dot', 'distance_unit' => 'km', 'volume_unit' => 'l']);
+        $response = $this->commit($browser, $map, $preview, ['skip_invalid' => '1']);
+        self::assertSame(422, $response->getStatusCode(), 'nothing importable');
+        self::assertSame([], $fills->listForVehicle($ka->id));
+    }
+
     public function testGuards(): void
     {
         $app = $this->createApp();

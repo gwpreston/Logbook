@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Logbook\Service\Import;
 
+use Logbook\Support\Number\NumberFormat;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 
 /**
  * How to read an uploaded file (spec.md §7.13): which column fills which
- * field, how dates are written, the file's units and time zone.
+ * field, how dates and numbers are written, the file's units and time
+ * zone.
  */
 final readonly class ImportOptions
 {
@@ -22,6 +24,7 @@ final readonly class ImportOptions
         public DistanceUnit $distanceUnit,
         public VolumeUnit $volumeUnit,
         public string $timezone,
+        public NumberFormat $numberFormat,
     ) {
     }
 
@@ -44,6 +47,7 @@ final readonly class ImportOptions
 
         return $query + [
             'date_order' => $this->dateOrder->value,
+            'number_format' => $this->numberFormat->value,
             'distance_unit' => $this->distanceUnit->value,
             'volume_unit' => $this->volumeUnit->value,
             'zone' => $this->timezone,

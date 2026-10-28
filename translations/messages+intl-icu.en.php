@@ -3216,6 +3216,11 @@ return [
             'dmy' => 'Day first (27/09/2026)',
             'mdy' => 'Month first (09/27/2026)',
         ],
+        'number_format' => 'Numbers',
+        'number_format_option' => [
+            'dot' => 'Decimal point (1,234.56)',
+            'comma' => 'Decimal comma (1.234,56)',
+        ],
         'distance_unit' => 'Odometer in',
         'volume_unit' => 'Volumes and prices per',
         'volume_unit_hint' => 'Unless a row names its own unit. Charging is always in kWh.',

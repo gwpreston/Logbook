@@ -60,6 +60,14 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="field">
+                        <label class="field__label" for="f-number-format">{{ 'import.number_format'|trans }}</label>
+                        <select class="select" id="f-number-format" name="number_format">
+                            {% for format in number_formats %}
+                                <option value="{{ format.value }}"{% if format == options.numberFormat %} selected{% endif %}>{{ ('import.number_format_option.' ~ format.value)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     {% if uses_distance %}
                         <div class="field">
                             <label class="field__label" for="f-distance-unit">{{ 'import.distance_unit'|trans }}</label>

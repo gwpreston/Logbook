@@ -7,6 +7,7 @@ namespace Logbook\Service\Import;
 use Logbook\Support\Csv\CsvReader;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Number\NumberFormat;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 
@@ -94,6 +95,7 @@ final class ImportMapper
             $distance,
             $volume,
             $zone,
+            NumberFormat::forLocale($preferences->locale),
         );
     }
 
@@ -144,6 +146,7 @@ final class ImportMapper
             DistanceUnit::tryFrom($string('distance_unit')) ?? $guess->distanceUnit,
             VolumeUnit::tryFrom($string('volume_unit')) ?? $guess->volumeUnit,
             LocalTime::isValidTimezone($zone) ? $zone : $guess->timezone,
+            NumberFormat::tryFrom($string('number_format')) ?? $guess->numberFormat,
         );
     }
 
