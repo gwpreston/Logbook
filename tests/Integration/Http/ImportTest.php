@@ -849,6 +849,22 @@ final class ImportTest extends AppTestCase
         self::assertSame(['2026-03-29 01:30', '2026-06-01 11:00', '2026-10-25 00:30', '2026-10-25 01:30'], $times);
     }
 
+    public function testAnAbsurdlyLongTimeCellIsAProblemRowAndReadsQuickly(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = "Date,Odometer,Litres,Price\n" . str_repeat('T', 200000) . "!,1000,40,1.60\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $started = microtime(true);
+        $preview = $this->preview($browser, $map);
+
+        self::assertLessThan(5.0, microtime(true) - $started);
+        self::assertStringContainsString('Enter a valid date and time', $preview);
+    }
+
     private function upload(TestBrowser $browser, int $vehicleId, string $module, string $csv, string $name = 'data.csv'): string
     {
         $response = $browser->post('/vehicles/' . $vehicleId . '/import/' . $module, [], ['file' => $this->file($csv, $name)]);

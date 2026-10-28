@@ -454,6 +454,10 @@ final readonly class CsvImporter
      */
     private function dateTime(string $value, DateOrder $order): string
     {
+        // No date and time is this long; a longer cell would only feed the pattern below (ReDoS).
+        if (strlen($value) > 40) {
+            return $value;
+        }
         if (preg_match('/^(\S+?)(?:[T ]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2})?)?$/i', trim($value), $m) !== 1) {
             return $value;
         }
