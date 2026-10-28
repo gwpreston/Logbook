@@ -117,7 +117,7 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 ### Release
 
 - [x] `VERSION`, CHANGELOG, README status.
-- [ ] Tag `v3.19.12` once merged.
+- [x] Tag `v3.19.12` once merged.
 
 ## Acceptance criteria
 
