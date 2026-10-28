@@ -4,7 +4,7 @@
 on re-import, the true-cost cover note, two edges of the empty dashboard
 widgets, and two test-run guards.*
 
-Status: ✅ complete · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.20.1**, a patch release · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md) and
 [Phase 53.20](phase-53.20.md). Like them, it takes small open rows. The owner
@@ -129,12 +129,12 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 - [x] Known-issues rows K147, K153, K155, K156, K157 and K158 *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Merge review; merge.
 
 ### Release
 
 - [x] VERSION 3.20.1, CHANGELOG 3.20.1, README status (#572).
-- [ ] Tag `v3.20.1` once merged.
+- [x] Tag `v3.20.1` once merged.
 
 ## Review notes
 
