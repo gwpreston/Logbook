@@ -102,7 +102,7 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
       offsets and import as two rows; a file without offsets still
       imports; the nonexistent and repeated local times behave as
       described, on all four engines.
-- [ ] API contract: the REST API and webhooks are unchanged; only the
+- [x] API contract: the REST API and webhooks are unchanged; only the
       exports' time columns change (run api-contract-checker).
 
 ### 53.20.3 Finish
