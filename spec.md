@@ -2980,6 +2980,8 @@ toggles.
   (#566, Phase 54.1). An empty *Monthly spend* for a viewer with a vehicle
   shared without costs keeps its §7.21 note inside the one line: "No costs
   in the last 12 months (excludes 1 vehicle shared without costs)" (#571).
+  A short empty widget may leave blank space beside a tall
+  neighbour: the layout is never repacked as data comes and goes (#569).
   *Customise* shows every widget at full size. It works without JS.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
@@ -9744,7 +9746,9 @@ it replaces none of the other figures.
   purchase date (its cover ends before it) or wholly after the sale date
   (dated after it) is in no period and, being dated outside ownership,
   not in *Since bought* either; the first or the sale's period names it
-  whole.
+  whole. The note for the first or the sale's period also shows once
+  under the yearly table, so it is seen however old the vehicle is, not
+  only when that year has a drawn working (Phase 54.4, #568).
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
   the date it is measured to (below). Rates are kept per km to 6 places:
@@ -12501,6 +12505,12 @@ task breakdowns live in the per-phase files; this is the map.
   (60 queries, 500 ms; §8, §7.35, K150, #576); the monthly digest job's
   queries don't grow with vehicles (§7.11, K151). Releases v3.21.1
   (#577). No migration. See [`phase-54.3.md`](docs/phases/phase-54.3.md).
+- **Phase 54.4 — The true-cost cover note from the known-issues log +
+  patch release** (planned). The note for cover outside ownership shows
+  once under the true-cost yearly table whatever the vehicle's age (§7.35,
+  K152, #568); short empty dashboard widgets keep their blank space
+  (§7.8, K154, #569). Releases v3.21.2 (#578). No migration. See
+  [`phase-54.4.md`](docs/phases/phase-54.4.md).
 
 ---
 

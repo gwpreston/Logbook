@@ -135,6 +135,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | 📋 |
 | [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | 📋 |
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | 📋 |
+| [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1803,6 +1804,19 @@ household (K149–K151). Releases v3.21.1.*
 - Every figure stays the same. No migration.
 
 → [`phase-54.3.md`](docs/phases/phase-54.3.md)
+
+---
+
+## Phase 54.4 — The true-cost cover note from the known-issues log + patch release
+
+*One open row closed: the "cover before you bought it" note shows once
+under the true-cost yearly table, whatever the vehicle's age (K152, #568).
+Releases v3.21.2.*
+
+- K154's blank space beside short empty widgets is left as it is (#569).
+  No migration.
+
+→ [`phase-54.4.md`](docs/phases/phase-54.4.md)
 
 ---
 
