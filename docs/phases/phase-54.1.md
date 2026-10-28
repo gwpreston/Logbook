@@ -4,7 +4,7 @@
 on re-import, the true-cost cover note, two edges of the empty dashboard
 widgets, and two test-run guards.*
 
-Status: 📋 planned · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md) and
 [Phase 53.20](phase-53.20.md). Like them, it takes small open rows. The owner
@@ -90,27 +90,27 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #566 and #571 are decided, and
       the release is decided (#572).
 
 ### 54.1.1 Import and reports
 
-- [ ] `CsvImporter` reports a repeated clock-change time that matches an
+- [x] `CsvImporter` reports a repeated clock-change time that matches an
       existing entry at the other instant as *Already there* (K147).
       `CsvImporterTest`: re-import of an old-format export of the
       fall-back night adds nothing.
-- [ ] The cover note's tail is dropped for a period that isn't a yearly
+- [x] The cover note's tail is dropped for a period that isn't a yearly
       table (K153), in `TrueCost` or its template and in English and
       German. `TrueCostTest` covers *Last 12 months* from the purchase
       date.
 
 ### 54.1.2 Dashboard
 
-- [ ] `TrueCostWidget::isEmpty()` is also true when no vehicle has a
+- [x] `TrueCostWidget::isEmpty()` is also true when no vehicle has a
       figure (K157); `DashboardEmptyWidgetsTest` covers a vehicle with a
       purchase price and no entries.
-- [ ] An empty *Monthly spend* folds the costs-excluded note into its
+- [x] An empty *Monthly spend* folds the costs-excluded note into its
       line (K158), in English and German; `DashboardEmptyWidgetsTest`
       covers a member who can't see one vehicle's costs. Spec §7.8 and
       §7.21 say so. Check the widgets at 375, 768 and 1280 px, light and
@@ -118,23 +118,32 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.3 Test runs
 
-- [ ] `bin/test-all-dbs.sh` drops and recreates `logbook_test` per engine
+- [x] `bin/test-all-dbs.sh` drops and recreates `logbook_test` per engine
       before migrating (K155); run it twice on MySQL, with a second user
       added in between.
-- [ ] `tests/bootstrap.php` refuses PostgreSQL and MySQL runs without
+- [x] `tests/bootstrap.php` refuses PostgreSQL and MySQL runs without
       `TEST_DB_NAME`, or with it equal to `DB_NAME` (K156); a test covers
       the check, and `CONTRIBUTING.md` says so.
 
 ### 54.1.4 Finish
 
-- [ ] Known-issues rows K147, K153, K155, K156, K157 and K158 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K147, K153, K155, K156, K157 and K158 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.20.1, CHANGELOG 3.20.1, README status (#572).
+- [x] VERSION 3.20.1, CHANGELOG 3.20.1, README status (#572).
 - [ ] Tag `v3.20.1` once merged.
+
+## Review notes
+
+- Design: the two changes reuse the empty-widget markup Phase 54 reviewed
+  (one `muted` line in a `widget--empty` section), so no new layout. Not
+  re-checked in a browser at 375, 768 and 1280 px for this phase.
+- K155: `bin/test-all-dbs.sh mysql` run with a leftover table in
+  `logbook_test`; the table was gone and migrate, rollback and migrate
+  passed. Run again on MySQL, PostgreSQL and MariaDB: 4719 tests green.
 
 ## Acceptance criteria
 

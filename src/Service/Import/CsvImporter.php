@@ -146,7 +146,7 @@ final readonly class CsvImporter
             }
 
             $key = DuplicateKey::of($result);
-            if (isset($seen[$key])) {
+            if (isset($seen[$key]) || $this->atOtherInstant($result, $warning, $options, $seen)) {
                 $rows[] = new ImportRow($row['line'], ImportRowStatus::Duplicate, $values);
                 continue;
             }
@@ -156,6 +156,32 @@ final readonly class CsvImporter
         }
 
         return new ImportPreview($rows);
+    }
+
+    /**
+     * Whether a row whose time is the first of a repeated clock-change time already has its
+     * entry at the other instant: an old-format export wrote both as the same text, so the
+     * later one reads as the first and would land an hour early (K147, #561).
+     *
+     * @param array{key: string, params: array<string, string>}|null $warning
+     * @param array<string, true> $seen
+     */
+    private function atOtherInstant(object $result, ?array $warning, ImportOptions $options, array $seen): bool
+    {
+        if ($warning === null || $warning['key'] !== 'import.warning.time_repeated') {
+            return false;
+        }
+        $first = match (true) {
+            $result instanceof FuelEntryData => $result->filledAt,
+            $result instanceof OdometerReadingData => $result->recordedAt,
+            default => null,
+        };
+        if ($first === null) {
+            return false;
+        }
+        $other = LocalTime::otherOfRepeated($first, new DateTimeZone($options->timezone));
+
+        return isset($seen[DuplicateKey::of($result, $other)]);
     }
 
     /**

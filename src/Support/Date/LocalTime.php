@@ -126,6 +126,19 @@ final class LocalTime
     }
 
     /**
+     * The other instant of a repeated wall-clock time, given the first one
+     * (01:30 GMT for 01:30 BST): the first moved by the change in offset.
+     * Only meaningful for the first of a repeated time (`firstOfRepeated`).
+     */
+    public static function otherOfRepeated(DateTimeImmutable $first, DateTimeZone $zone): DateTimeImmutable
+    {
+        $summer = $zone->getOffset($first);
+        $winter = $zone->getOffset($first->modify('+1 day'));
+
+        return $first->modify(sprintf('%+d seconds', $summer - $winter));
+    }
+
+    /**
      * For a wall-clock time without an offset, on a day the zone's offset
      * changes: the reading as if it were UTC and the two offsets in force
      * a day either side. Null for any other time.

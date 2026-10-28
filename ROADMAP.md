@@ -132,7 +132,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.19](docs/phases/phase-53.19.md) | Declared on and backup id counters from the known-issues log + patch release | ✅ |
 | [53.20](docs/phases/phase-53.20.md) | Page security headers and export times from the known-issues log + patch release | ✅ |
 | [54](docs/phases/phase-54.md) | Finance scenarios, quiet empty widgets and last month's sold vehicles | ✅ |
-| [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | 📋 |
+| [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | ✅ |
 | [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | 📋 |
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | 📋 |
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | 📋 |

@@ -158,6 +158,27 @@ final class TrueCostWorkingTest extends TestCase
         self::assertStringContainsString('£275.00 of cover after you sold it isn’t counted', $notes[1]);
     }
 
+    /** K153 (Phase 54.1): outside the yearly table the note doesn't mention the years. */
+    public function testALast12MonthsPeriodNamesCoverWithoutTheYearsTail(): void
+    {
+        $golf = self::vehicle('2025-10-01', null, '2026-12-31', null);
+        $before = self::document($golf, '2025-09-01', '365.000', '2026-08-31');
+        $after = self::document($golf, '2026-06-01', '365.000', '2027-05-31');
+        $items = [$before, $after];
+        $ownership = self::ownership($golf, $items, [], [], '2026-09-01');
+        $since = TrueCost::sinceBought($ownership, $items);
+        $today = self::date('2026-09-01');
+
+        $period = TrueCostPeriod::twelveMonths($today, self::date('2025-10-01'), self::date('2026-12-31'));
+        self::assertNotNull($period);
+        $cost = self::period($golf, $period, $items, []);
+        $vtc = new VehicleTrueCost($golf, 'GBP', $ownership, $since, $cost, null, [], []);
+        $note = implode(' ', $this->builder()->period($vtc, $cost, $today)->notes ?? []);
+
+        self::assertStringContainsString('£30.00 of cover before you bought it isn’t counted.', $note);
+        self::assertStringNotContainsString('so the years can differ', $note);
+    }
+
     /**
      * The Golf's year-2026 cost over a stretch of it.
      *

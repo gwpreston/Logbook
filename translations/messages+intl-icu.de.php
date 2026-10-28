@@ -2559,6 +2559,8 @@ return [
             'change_note' => 'Die Änderungen der Teile ergeben genau die Änderung der Summe.',
             'cover_before' => '{amount} für die Zeit vor dem Kauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
             'cover_after' => '{amount} für die Zeit nach dem Verkauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
+            'cover_before_short' => '{amount} für die Zeit vor dem Kauf werden nicht gezählt.',
+            'cover_after_short' => '{amount} für die Zeit nach dem Verkauf werden nicht gezählt.',
         ],
         'finance' => [
             'quote' => 'Angebot des Kreditgebers',
@@ -3628,6 +3630,7 @@ return [
             'breakdown_period' => 'Zeitraum der Aufteilung',
             'breakdown_empty' => 'Keine Kosten in diesem Zeitraum.',
             'monthly_empty' => 'Keine Kosten in den letzten 12 Monaten.',
+            'monthly_empty_excluded' => 'Keine Kosten in den letzten 12 Monaten (ohne {count, plural, one {# Fahrzeug, das ohne Kosten geteilt ist} other {# Fahrzeuge, die ohne Kosten geteilt sind}}).',
             'monthly_chart' => 'Ausgaben pro Monat in den letzten 12 Monaten in {currency}, nach Kategorie',
             'monthly_average' => 'Durchschnittlich {amount} im Monat',
         ],

@@ -849,6 +849,33 @@ final class ImportTest extends AppTestCase
         self::assertSame(['2026-03-29 01:30', '2026-06-01 11:00', '2026-10-25 00:30', '2026-10-25 01:30'], $times);
     }
 
+    /**
+     * K147: an old-format export wrote both 01:30s of the clock-fall-back night as the same
+     * text; re-imported into the vehicle it came from, neither is added again.
+     */
+    public function testAnOldFormatExportOfTheClockChangeNightAddsNothingWhenReimported(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $this->fillUp($app, $golf, '2026-10-25T00:30:00Z', '1000.000', '40.000', '60.00', pricePerLitre: '1.500000');
+        $this->fillUp($app, $golf, '2026-10-25T01:30:00Z', '1500.000', '30.000', '45.00', pricePerLitre: '1.500000');
+        $csv = implode("\n", [
+            'Date,Odometer (km),Litres,Price',
+            '2026-10-25 01:30,1000,40,1.50',
+            '2026-10-25 01:30,1500,30,1.50',
+            '2026-10-25 01:30,1700,30,1.50',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map);
+        self::assertStringContainsString('Import 1 row', $preview, 'only the new fill-up at 1700 is added');
+        $this->commit($browser, $map, $preview);
+
+        self::assertCount(3, $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id));
+    }
+
     public function testAnAbsurdlyLongTimeCellIsAProblemRowAndReadsQuickly(): void
     {
         $app = $this->createApp();

@@ -4456,7 +4456,10 @@ vehicles; a disabled module cannot be imported).
   there (02:30 on the night the clocks go forward) makes the row invalid
   ("that time doesn't exist in your time zone"), and one that happens twice
   (01:30 on the night they go back) is taken as the first and carries a
-  warning on the preview. Fuelio's own `Data` column stays local
+  warning on the preview; if the vehicle already has an entry with the same
+  values at the *other* 01:30, the row is *Already there* and not added, so
+  re-importing an old-format export of that night adds nothing (K147,
+  Phase 54.1). Fuelio's own `Data` column stays local
   wall-clock, as another app's format.
 - **Row outcomes:** *import*; *invalid* (errors listed, never silently
   dropped; importing the valid rows then needs an explicit "skip the invalid
@@ -9748,7 +9751,11 @@ it replaces none of the other figures.
   not in *Since bought* either; the first or the sale's period names it
   whole. The note for the first or the sale's period also shows once
   under the yearly table, so it is seen however old the vehicle is, not
-  only when that year has a drawn working (Phase 54.4, #568).
+  only when that year has a drawn working (Phase 54.4, #568). A *Last 12
+  months* period that starts on the purchase date (or ends on the sale
+  date) names the cover it leaves out without "so the years can differ from
+  Since bought", which only makes sense beside the yearly table (K153,
+  Phase 54.1).
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
   the date it is measured to (below). Rates are kept per km to 6 places:
@@ -12483,7 +12490,7 @@ task breakdowns live in the per-phase files; this is the map.
   (§7.11, #374); the test bootstrap runs only under `APP_ENV=testing`
   (K148). No migration. Releases v3.20.0. See [`phase-54.md`](docs/phases/phase-54.md).
 - **Phase 54.1 — Clock-change imports, empty-widget edges and test-run
-  guards from the known-issues log + patch release** (planned). A
+  guards from the known-issues log + patch release** (complete). A
   repeated clock-change time that matches an existing entry is *Already
   there* on re-import (§7.13, K147); the true-cost cover note on a
   non-yearly period drops "so the years can differ" (§7.35, K153); an

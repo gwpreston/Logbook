@@ -172,7 +172,9 @@ COMPOSE_PROJECT_NAME=smoke-two APP_PORT=18180 PROXY_PORT=18181 bin/smoke-test.sh
 ## Tests and databases
 
 The suite never touches `DB_*`. It uses `TEST_DB_*`, which defaults to a
-throwaway SQLite file. CI runs lint, static analysis and the full suite
+throwaway SQLite file. A PostgreSQL or MySQL run must set `TEST_DB_NAME`
+to a database of its own, never the one `DB_NAME` names: the bootstrap
+refuses to start otherwise, so a run can't empty the app's data. CI runs lint, static analysis and the full suite
 (migrate → full rollback → migrate → PHPUnit) against **PostgreSQL 17,
 MySQL 8.4 and MariaDB 11.4** on PHP 8.4 and 8.5. It then builds the
 multi-arch image and smoke-tests it at the root and at a subpath behind nginx.

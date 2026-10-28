@@ -226,4 +226,22 @@ final class LocalTimeTest extends TestCase
         self::assertTrue(LocalTime::yearInRange(2026));
         self::assertFalse(LocalTime::yearInRange(1899));
     }
+
+    public function testTheOtherOfARepeatedTimeIsTheFirstMovedByTheOffsetChange(): void
+    {
+        $london = new DateTimeZone('Europe/London');
+        $first = LocalTime::firstOfRepeated('2026-10-25 01:30', $london);
+        self::assertNotNull($first);
+        self::assertSame('2026-10-25 00:30', $first->format('Y-m-d H:i'));
+        self::assertSame('2026-10-25 01:30', LocalTime::otherOfRepeated($first, $london)->format('Y-m-d H:i'));
+
+        // A half-hour change (Lord Howe) moves by 30 minutes, not an hour.
+        $howe = new DateTimeZone('Australia/Lord_Howe');
+        $firstHowe = LocalTime::firstOfRepeated('2026-04-05 01:45', $howe);
+        self::assertNotNull($firstHowe);
+        self::assertSame(
+            1800,
+            LocalTime::otherOfRepeated($firstHowe, $howe)->getTimestamp() - $firstHowe->getTimestamp(),
+        );
+    }
 }

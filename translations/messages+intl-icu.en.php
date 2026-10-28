@@ -2561,6 +2561,8 @@ return [
             'change_note' => 'The parts’ changes add up exactly to the change in the total.',
             'cover_before' => '{amount} of cover before you bought it isn’t counted, so the years can differ from Since bought.',
             'cover_after' => '{amount} of cover after you sold it isn’t counted, so the years can differ from Since bought.',
+            'cover_before_short' => '{amount} of cover before you bought it isn’t counted.',
+            'cover_after_short' => '{amount} of cover after you sold it isn’t counted.',
         ],
         'finance' => [
             'quote' => 'Lender’s quote',
@@ -3631,6 +3633,7 @@ return [
             'breakdown_period' => 'Breakdown period',
             'breakdown_empty' => 'No costs in this period.',
             'monthly_empty' => 'No costs in the last 12 months.',
+            'monthly_empty_excluded' => 'No costs in the last 12 months (excludes {count, plural, one {# vehicle} other {# vehicles}} shared without costs).',
             'monthly_chart' => 'Spend per month over the last 12 months in {currency}, by category',
             'monthly_average' => '{amount} a month on average',
         ],

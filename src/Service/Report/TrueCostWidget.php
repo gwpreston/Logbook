@@ -50,8 +50,20 @@ final readonly class TrueCostWidget
         return new self($range, $byCurrency);
     }
 
+    /**
+     * Nothing to rank: no vehicle in view, or none with a figure (all "No costs
+     * logged" or "Not enough mileage logged"; spec.md §7.8, #566, K157).
+     */
     public function isEmpty(): bool
     {
-        return $this->byCurrency === [];
+        foreach ($this->byCurrency as $rows) {
+            foreach ($rows as $vehicle) {
+                if ($vehicle->period($this->range)?->perKm !== null) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
