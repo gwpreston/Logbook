@@ -163,7 +163,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   five offline form paths), `offline.test.js` (a download), `ImportTest`.
 - Checks (at the final commit): `bin/test-all-dbs.sh` green on SQLite,
   PostgreSQL, MySQL and MariaDB (4742 tests each, migrate, rollback and
-  migrate); `node --test tests/js` 41 green; `composer lint` and
+  migrate); `node --test tests/js` 42 green; `composer lint` and
   `composer analyse` clean; line coverage 95.15% (floor 95%).
 
 ## Acceptance criteria
