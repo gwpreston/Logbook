@@ -149,7 +149,19 @@ final class PwaTest extends AppTestCase
         self::assertFalse($signIn->hasHeader('X-Logbook-User'));
         self::assertStringContainsString('<body>', self::body($signIn));
 
-        $worker = self::body($browser->get('/sw.js'));
-        self::assertStringContainsString("var USER_HEADER = 'X-Logbook-User';", $worker);
+        $worker = $browser->get('/sw.js');
+        self::assertStringContainsString("var USER_HEADER = 'X-Logbook-User';", self::body($worker));
+
+        // Files a shared cache may keep never name the user.
+        self::assertFalse($worker->hasHeader('X-Logbook-User'));
+        self::assertFalse($browser->get('/manifest.webmanifest')->hasHeader('X-Logbook-User'));
+        $offline = $browser->get('/offline');
+        self::assertFalse($offline->hasHeader('X-Logbook-User'));
+        self::assertStringContainsString('data-offline-page', self::body($offline));
+        self::assertStringNotContainsString('data-user', self::body($offline), 'the offline page is nobody\'s');
+
+        // Signing out names nobody on the way out.
+        $browser->get('/');
+        self::assertFalse($browser->post('/logout')->hasHeader('X-Logbook-User'));
     }
 }

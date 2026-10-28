@@ -769,6 +769,19 @@
             });
     }
 
+    // A signed-out page makes the service worker forget the user (#580),
+    // even one it never fetched itself (a sign-out answered by a POST, or a
+    // proxy's own sign-in page). Not the offline page, which is nobody's.
+    function forgetUserWhenSignedOut() {
+        if (pageUser || !('caches' in window) || document.querySelector('[data-offline-page]')) {
+            return;
+        }
+        var base = document.documentElement.getAttribute('data-base') || '';
+        caches.open('logbook-session')
+            .then(function (cache) { return cache.put(base + '/sw-user', new Response('')); })
+            .catch(function () {});
+    }
+
     // Fill-ups queued before Phase 54.2 go to the first user signed in (#579).
     function adoptUntagged() {
         if (!pageUser || !outbox.available) {
@@ -1316,6 +1329,7 @@
         registerServiceWorker();
         modal.init();
         pageUser = document.body.getAttribute('data-user') || '';
+        forgetUserWhenSignedOut();
         outboxBox = document.querySelector('[data-offline-outbox]');
         document.querySelectorAll('form[data-offline-queue]').forEach(enhanceOfflineForm);
         cacheOfflineForms(Array.prototype.slice.call(document.querySelectorAll('a[data-offline-cache]')));

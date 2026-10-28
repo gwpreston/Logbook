@@ -27,7 +27,7 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
     public const string ATTRIBUTE = 'user';
 
     /**
-     * Names the signed-in user on every response (spec.md §7.15, K40): the
+     * Names the signed-in user on their personal pages (spec.md §7.15, K40): the
      * service worker remembers it, and keeps and serves a fill-up page,
      * and the page sends a queued fill-up, only for that user.
      */
@@ -64,6 +64,12 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 
         $response = $handler->handle($request->withAttribute(self::ATTRIBUTE, $user));
 
-        return $user === null ? $response : $response->withHeader(self::USER_HEADER, (string) $user->id);
+        // Only on personal pages (never stored by shared caches), and not once
+        // the request has signed the user out.
+        $personal = str_contains($response->getHeaderLine('Cache-Control'), 'no-store');
+
+        return $user === null || !$personal || $session->userId() !== $user->id
+            ? $response
+            : $response->withHeader(self::USER_HEADER, (string) $user->id);
     }
 }

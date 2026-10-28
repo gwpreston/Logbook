@@ -450,6 +450,9 @@ final class HeaderSignInTest extends AppTestCase
         self::assertSame(200, $response->getStatusCode(), 'a page, not a redirect into signing straight back in');
         self::assertStringContainsString('your proxy signs you straight back in', self::body($response));
         self::assertStringContainsString('data-proxy-signed-out', self::body($response));
+        // K40 (#580): the sign-out page names nobody, so the page makes the worker forget the user.
+        self::assertFalse($response->hasHeader('X-Logbook-User'));
+        self::assertStringContainsString('<body>', self::body($response));
     }
 
     public function testSignOutGoesToTheProxysLogoutUrl(): void

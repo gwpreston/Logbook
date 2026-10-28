@@ -11,7 +11,8 @@
  *     are kept for offline use; any other page offline gets the offline page.
  *     A kept page is served only to the user it was kept for (K40): each
  *     response names its user (X-Logbook-User), and the worker remembers
- *     the user of the last page it fetched, nobody after a signed-out one.
+ *     the user of the last page it fetched, nobody after a signed-out one
+ *     (a signed-out page the worker didn't fetch clears it too, js/app.js).
  *   - Everything else (POSTs, downloads, other sites) is left alone. An
  *     offline fill-up is queued by the page itself (js/app.js).
  */
