@@ -1,0 +1,43 @@
+{
+    "scenario": "Bought 1 Mar 2025 for 14,250.37, valued 9,876.54 on 1 Mar 2026, one 71.37 fill-up; shared with a member who may or may not see costs",
+    "derivation": [
+        "Spec 5 and 7.21: ViewCosts is granted by Manage, or by Log/View with 'can see costs'. Cost of ownership, the ownership CSV and Reports need it: without it the vehicle's page and its API route answer 403 (spec 7.20, 7.1) and the report and CSV leave the vehicle out, so none of the amounts below may appear in what the member is sent.",
+        "The figures the owner (and a member who may see costs) get: period 1 Mar 2025 to today, 1 Sep 2026. Running = the 71.37 fill-up. Depreciation 14,250.37 - 9,876.54 = 4,373.83 (to 1 Mar 2026, 6 months old, not stale), exactly 12 months so 4,373.83 a year. Total 71.37 + 4,373.83 = 4,445.20.",
+        "Distance 10,000 mi on 1 Mar 2025 to 15,000 mi on 1 Sep 2026 = 5,000 mi = 8,046.72 km; to the valuation date (13,000 mi) 3,000 mi = 4,828.032 km. Per km: running 71.37 / 8,046.72 = 0.008869; depreciation 4,373.83 / 4,828.032 = 0.905924; together 0.914793 a km = 1.472217 a mile, shown 1.472/mi (running 0.014273, depreciation 1.457943).",
+        "Per month: 19 calendar months (Mar 2025 to Sep 2026): 71.37 / 19 = 3.756316; plus 4,373.83 / 12 = 364.485833; 368.242149, shown 368.24."
+    ],
+    "hidden": ["14,250.37", "14250.37", "9,876.54", "9876.54", "4,373.83", "4373.83", "4,445.20", "4445.20", "71.37", "368.24", "1.472"],
+    "ownership": {
+        "api": {
+            "since": "2025-03-01",
+            "distance_km": "8046.720",
+            "running_costs": "71.370",
+            "purchase_price": "14250.370",
+            "current_value.amount": "9876.540",
+            "depreciation.change": "-4373.830",
+            "depreciation.per_year": "4373.830",
+            "valuation_stale_months": null,
+            "total": "4445.200",
+            "per_km": "0.914793",
+            "per_month": "368.242",
+            "display.running_costs": "£71.37",
+            "display.per_distance": "£1.472/mi",
+            "display.per_month": "£368.24"
+        },
+        "csv": {
+            "Distance owned (Miles)": "5000",
+            "Running costs": "71.37",
+            "Depreciation": "4373.83",
+            "Total": "4445.20",
+            "Running per distance (per mi)": "0.014273",
+            "Depreciation per distance (per mi)": "1.457943",
+            "Total per distance (per mi)": "1.472217",
+            "Total per month": "368.242"
+        },
+        "page": [
+            "Total cost £4,445.20 since purchase",
+            "Per month £368.24 all-in",
+            "Per mile £1.472/mi 5,000 mi driven"
+        ]
+    }
+}

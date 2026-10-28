@@ -1,0 +1,89 @@
+{
+    "scenario": "Bought 1 Mar 2023 for 20,000 on a PCP, sold 1 Mar 2026 for 11,000; today is 1 Sep 2026",
+    "derivation": [
+        "Spec 7.7 Cost of ownership. Period: purchase date to sale date, both inclusive (1 Mar 2023 to 1 Mar 2026); a sold vehicle's figures are exact lifetime figures and the sale ends both periods.",
+        "Running costs, the ledger lines dated in the period: fuel 600 + 700 + 800 = 2,100; maintenance 450 + 350 = 800; insurance documents 732 + 730 + 730 = 2,192 (counted on their ledger date, spec 7.35); finance 99.",
+        "Finance (spec 7.32): a PCP counts only credit charges, never capital. At 0% APR the interest is 0, so the only line is the 99 documentation fee on the first payment date (1 Apr 2023). The 2,000 deposit, 36 x 250 and the 9,000 final payment are capital: the 20,000 price is already counted through depreciation. The final payment falls after the sale and is outside the period in any case.",
+        "Running = 2,100 + 800 + 2,192 + 99 = 5,191 over 9 entries (3 fill-ups, 2 services, 3 documents, 1 fee).",
+        "Depreciation (spec 7.1): price paid 20,000 - sale price 11,000 = 9,000 lost over exactly 36 months = 3,000 a year. Total = 5,191 + 9,000 = 14,191.",
+        "Distance: readings 10,000 mi on 1 Mar 2023 and 60,000 mi on 1 Mar 2026 = 50,000 mi = 80,467.2 km (1 mi = 1.609344 km).",
+        "Per km, kept to 6 places: running 5,191 / 80,467.2 = 0.064511; depreciation 9,000 / 80,467.2 = 0.111847; together 0.176358 a km = 0.176358 x 1.609344 = 0.283821 a mile, shown 0.284/mi (CSV running 0.10382, depreciation 0.18).",
+        "Per month (spec 7.7): the period touches 37 calendar months (Mar 2023 to Mar 2026): running 5,191 / 37 = 140.297; depreciation 3,000 / 12 = 250; together 390.297, shown 390.30.",
+        "Years (spec 7.35): an insurance document is spread by day over its cover, 2 a day for each of the three (366, 365 and 365 days at 732, 730 and 730): 2023 = 306 days = 612; 2024 = 60 + 306 days = 120 + 612 = 732; 2025 = 59 + 306 days = 118 + 612 = 730; 2026 to 1 Mar = 59 days = 118. Total 2,192 = since bought.",
+        "Years' depreciation is a straight line from 20,000 on 1 Mar 2023 to 11,000 on 1 Mar 2026 (1,096 days, 9,000 / 1,096 a day): 2023 from 1 Mar to the end of 31 Dec = 306 days = 2,512.774; 2024 = 366 days = 3,005.474; 2025 = 365 days = 2,997.263; 2026 to 1 Mar = 59 days = 484.489; they add up to 9,000.",
+        "The 99 fee is in 2023. Fuel falls in the year of each fill-up; services on their dates (2024: 450, 2025: 350)."
+    ],
+    "ownership": {
+        "api": {
+            "since": "2023-03-01",
+            "distance_km": "80467.200",
+            "running_costs": "5191.000",
+            "running_costs_entries": 9,
+            "purchase_price": "20000.000",
+            "current_value.amount": "11000.000",
+            "current_value.on": "2026-03-01",
+            "current_value.kind": "sold",
+            "depreciation.state": "ready",
+            "depreciation.change": "-9000.000",
+            "depreciation.per_year": "3000.000",
+            "depreciation.per_km": "0.111847",
+            "valuation_stale_months": null,
+            "total": "14191.000",
+            "per_km": "0.176358",
+            "per_km_is_running_only": false,
+            "per_month": "390.297",
+            "per_month_is_running_only": false,
+            "display.running_costs": "£5,191.00",
+            "display.per_distance": "£0.284/mi",
+            "display.per_month": "£390.30"
+        },
+        "csv": {
+            "Vehicle": "Volkswagen Golf",
+            "Currency": "GBP",
+            "Owned from": "2023-03-01",
+            "Owned to": "2026-03-01",
+            "Started": "Purchase",
+            "Sold": "yes",
+            "Distance owned (Miles)": "50000",
+            "Running costs: Fuel": "2100.00",
+            "Running costs: Maintenance": "800.00",
+            "Running costs: Documents": "2192.00",
+            "Running costs: Other": "99.00",
+            "Insurance payouts": "",
+            "Running costs": "5191.00",
+            "Depreciation": "9000.00",
+            "Depreciation to": "2026-03-01",
+            "Total": "14191.00",
+            "Running per distance (per mi)": "0.10382",
+            "Depreciation per distance (per mi)": "0.18",
+            "Total per distance (per mi)": "0.283821",
+            "Running per month": "140.297",
+            "Depreciation per month": "250.00",
+            "Total per month": "390.297"
+        },
+        "page": [
+            "Total cost £14,191.00 since purchase",
+            "Per month £390.30 all-in",
+            "Per mile £0.284/mi 50,000 mi driven",
+            "Depreciation 63% £9,000.00",
+            "Insurance, tax and MOT 15% £2,192.00",
+            "Fuel 15% £2,100.00",
+            "Maintenance 6% £800.00",
+            "Other 1% £99.00",
+            "Total: £5,191.00 of running costs + £9,000.00 of depreciation = £14,191.00.",
+            "Running costs £5,191.00 ÷ 50,000 mi driven = £0.104/mi."
+        ]
+    },
+    "true_cost": {
+        "since_bought": {
+            "total": "14191.000",
+            "parts": {"fuel": "2100.000", "maintenance": "800.000", "compliance": "2192.000", "other": "99.000", "depreciation": "9000.000"}
+        },
+        "years": [
+            {"label": "2023 from 1 Mar", "csv_year": 2023, "total": "3823.774", "csv_total": "3823.774", "parts": {"fuel": "600.000", "maintenance": "0.000", "compliance": "612.000", "other": "99.000", "depreciation": "2512.774"}},
+            {"label": "2024", "csv_year": 2024, "total": "4887.474", "csv_total": "4887.474", "parts": {"fuel": "700.000", "maintenance": "450.000", "compliance": "732.000", "other": "0.000", "depreciation": "3005.474"}},
+            {"label": "2025", "csv_year": 2025, "total": "4877.263", "csv_total": "4877.263", "parts": {"fuel": "800.000", "maintenance": "350.000", "compliance": "730.000", "other": "0.000", "depreciation": "2997.263"}},
+            {"label": "2026 to 1 Mar", "csv_year": 2026, "total": "602.489", "csv_total": "602.489", "parts": {"fuel": "0.000", "maintenance": "0.000", "compliance": "118.000", "other": "0.000", "depreciation": "484.489"}}
+        ]
+    }
+}

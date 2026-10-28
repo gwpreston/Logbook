@@ -1,0 +1,68 @@
+{
+    "scenario": "Two cars bought on 1 Jan 2025, one in pounds (Golf) and one in euros (Leon); same dates and mileage, today is 1 Sep 2026",
+    "derivation": [
+        "Spec 7.7: figures are in each vehicle's own currency and never converted; the Ownership report groups by currency and its CSV has one row per vehicle with a Currency column, so no figure may add pounds to euros.",
+        "Both cars: period 1 Jan 2025 to 1 Sep 2026, 21 calendar months; 10,000 mi (16,093.44 km) from 1 Jan 2025 to 1 Sep 2026, 5,000 mi (8,046.72 km) to the valuation date, 1 Jan 2026; the valuation is 8 months old, so not stale. Depreciation is over exactly 12 months, so a year's loss is the loss.",
+        "Golf (GBP): running = one 500 fill-up; depreciation 10,000 - 8,000 = 2,000; total 2,500. Per km: 500 / 16,093.44 = 0.031069; 2,000 / 8,046.72 = 0.248548; together 0.279617 = 0.45 a mile (running 0.050001, depreciation 0.399999). Per month: 500 / 21 = 23.809524 + 2,000 / 12 = 166.666667 = 190.476191 (190.48).",
+        "Leon (EUR): running = one 1,000 fill-up; depreciation 20,000 - 15,000 = 5,000; total 6,000. Per km: 1,000 / 16,093.44 = 0.062137; 5,000 / 8,046.72 = 0.621371; together 0.683508 = 1.099999 a mile, shown 1.10 (running 0.1, depreciation 1). Per month: 1,000 / 21 = 47.619048 + 5,000 / 12 = 416.666667 = 464.285715 (464.29).",
+        "The report: one section per currency, 2,500.00 in British Pound and 6,000.00 in Euro; a sum of 8,500 would be wrong."
+    ],
+    "report_page": ["In British Pound", "In Euro", "£2,500.00", "€6,000.00"],
+    "never": ["8,500", "8500"],
+    "gbp": {
+        "ownership": {
+            "api": {
+                "currency": "GBP",
+                "running_costs": "500.000",
+                "depreciation.change": "-2000.000",
+                "total": "2500.000",
+                "per_km": "0.279617",
+                "per_month": "190.476",
+                "display.running_costs": "£500.00",
+                "display.per_distance": "£0.45/mi",
+                "display.per_month": "£190.48"
+            },
+            "csv": {
+                "Currency": "GBP",
+                "Distance owned (Miles)": "10000",
+                "Running costs": "500.00",
+                "Depreciation": "2000.00",
+                "Total": "2500.00",
+                "Running per distance (per mi)": "0.050001",
+                "Depreciation per distance (per mi)": "0.399999",
+                "Total per distance (per mi)": "0.45",
+                "Depreciation per month": "166.667",
+                "Total per month": "190.476"
+            },
+            "page": ["Total cost £2,500.00 since purchase", "Per month £190.48 all-in", "Per mile £0.45/mi 10,000 mi driven"]
+        }
+    },
+    "eur": {
+        "ownership": {
+            "api": {
+                "currency": "EUR",
+                "running_costs": "1000.000",
+                "depreciation.change": "-5000.000",
+                "total": "6000.000",
+                "per_km": "0.683508",
+                "per_month": "464.286",
+                "display.running_costs": "€1,000.00",
+                "display.per_distance": "€1.10/mi",
+                "display.per_month": "€464.29"
+            },
+            "csv": {
+                "Currency": "EUR",
+                "Distance owned (Miles)": "10000",
+                "Running costs": "1000.00",
+                "Depreciation": "5000.00",
+                "Total": "6000.00",
+                "Running per distance (per mi)": "0.1",
+                "Depreciation per distance (per mi)": "1",
+                "Total per distance (per mi)": "1.099999",
+                "Depreciation per month": "416.667",
+                "Total per month": "464.286"
+            },
+            "page": ["Total cost €6,000.00 since purchase", "Per month €464.29 all-in", "Per mile €1.10/mi 10,000 mi driven"]
+        }
+    }
+}

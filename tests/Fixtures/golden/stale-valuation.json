@@ -1,0 +1,52 @@
+{
+    "scenario": "Bought 1 Jan 2023 for 15,000; the only valuation is 11,000 on 1 Jun 2024, 27 months before today (1 Sep 2026), past the 12-month default",
+    "derivation": [
+        "Spec 7.7: period 1 Jan 2023 to today, 1 Sep 2026. Running = one fill-up of 800 (1 Jun 2023) = 800 over 1 entry. Depreciation: 15,000 - latest value 11,000 = 4,000, measured to the value's own date (1 Jun 2024): total 4,800.",
+        "Spec 7.1 *Stale value* and 8 *As of*: the value is dated 1 Jun 2024; 1 Jun 2024 + 12 months is before today, so it is stale; whole months from the valuation to today = 2 years 3 months = 27. The API says as_of {date 2024-06-01, kind valuation, stale true} and the page shows 'as of 1 Jun 2024' flagged 'out of date'.",
+        "Distance: 10,000 mi on 1 Jan 2023, 20,000 mi on 1 Jun 2024 and 30,000 mi on 1 Sep 2026: the period's 20,000 mi = 32,186.88 km; to the valuation date 10,000 mi = 16,093.44 km.",
+        "Per km, 6 places: running 800 / 32,186.88 = 0.024855; depreciation 4,000 / 16,093.44 = 0.248548; together 0.273403 = 0.44 a mile (running 0.04, depreciation 0.399999).",
+        "Per month: 45 calendar months touched (Jan 2023 to Sep 2026): 800 / 45 = 17.777778. Depreciation per year = 4,000 x 12 / 17 months (1 Jan 2023 to 1 Jun 2024) = 2,823.529, per month 235.294083. Together 253.071861, shown 253.07."
+    ],
+    "ownership": {
+        "api": {
+            "since": "2023-01-01",
+            "distance_km": "32186.880",
+            "running_costs": "800.000",
+            "current_value.amount": "11000.000",
+            "current_value.on": "2024-06-01",
+            "current_value.kind": "valuation",
+            "depreciation.change": "-4000.000",
+            "depreciation.per_year": "2823.529",
+            "depreciation.per_km": "0.248548",
+            "valuation_stale_months": 27,
+            "as_of.date": "2024-06-01",
+            "as_of.kind": "valuation",
+            "as_of.stale": true,
+            "total": "4800.000",
+            "per_km": "0.273403",
+            "per_month": "253.072",
+            "display.per_distance": "£0.44/mi",
+            "display.per_month": "£253.07"
+        },
+        "csv": {
+            "Sold": "no",
+            "Distance owned (Miles)": "20000",
+            "Running costs": "800.00",
+            "Depreciation": "4000.00",
+            "Depreciation to": "2024-06-01",
+            "Total": "4800.00",
+            "Running per distance (per mi)": "0.04",
+            "Depreciation per distance (per mi)": "0.399999",
+            "Total per distance (per mi)": "0.439999",
+            "Total per month": "253.072"
+        },
+        "page": [
+            "Total cost £4,800.00 since purchase",
+            "Per month £253.07 all-in",
+            "Per mile £0.44/mi 20,000 mi driven",
+            "Depreciation as of 1 Jun 2024 · out of date",
+            "Latest value £11,000.00 as of 1 Jun 2024 · out of date",
+            "Depreciation: price paid £15,000.00 − latest value £11,000.00 (1 Jun 2024) = £4,000.00."
+        ]
+    }
+}

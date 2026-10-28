@@ -1,0 +1,33 @@
+{
+    "scenario": "The same car as us-imperial.json, owned by a user in kilometres and pounds",
+    "derivation": [
+        "Figures as in us-imperial.json (running 500, depreciation 2,000, total 2,500; 16,093.44 km; per km 0.279617 = running 0.031069 + depreciation 0.248548; per month 190.476191), shown per kilometre with no conversion: the same numbers as the API's canonical ones."
+    ],
+    "ownership": {
+        "api": {
+            "currency": "GBP",
+            "distance_km": "16093.440",
+            "running_costs": "500.000",
+            "total": "2500.000",
+            "per_km": "0.279617",
+            "per_month": "190.476",
+            "display.per_distance": "£0.28/km",
+            "display.per_month": "£190.48"
+        },
+        "csv": {
+            "Currency": "GBP",
+            "Distance owned (Kilometres)": "16093.44",
+            "Running costs": "500.00",
+            "Total": "2500.00",
+            "Running per distance (per km)": "0.031069",
+            "Depreciation per distance (per km)": "0.248548",
+            "Total per distance (per km)": "0.279617",
+            "Total per month": "190.476"
+        },
+        "page": [
+            "Total cost £2,500.00 since purchase",
+            "Per month £190.48 all-in",
+            "Per km £0.28/km"
+        ]
+    }
+}
