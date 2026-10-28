@@ -1,0 +1,137 @@
+# Phase 54 — Finance scenarios, quiet empty widgets and last month's sold vehicles
+
+*A review of Logbook's priorities found most of them already built (the
+guided first run in Phase 49, "as of" dates and the working in Phases
+48.1–48.2, the MOT test button and fallbacks in Phase 41). This phase
+takes what was left: a scenario suite that checks one vehicle's whole life
+across the page, the API and the CSV; empty dashboard widgets that shrink
+to one line; and last month's briefing figures that keep a vehicle sold
+during that month (#374). It also stops the test bootstrap deleting the
+dev database (K148).*
+
+Status: 📋 planned · file lives in `docs/phases/` · a minor release
+
+Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.8 *Dashboard*,
+§7.11 *The monthly briefing*, §7.35 *True cost*, §8 *Show the working*),
+and [`open-questions.md`](open-questions.md) first.
+
+**Prerequisites:** [Phase 53.20](phase-53.20.md) merged.
+
+---
+
+## Goals
+
+1. **Finance scenarios.** One suite of whole-life scenarios, each a
+   vehicle built from purchase to sale, checks that the cost-of-ownership
+   page, `GET /api/v1/vehicles/{id}/ownership?include=working` and the
+   CSV give the same figures, against golden values kept in
+   `tests/Fixtures/golden/`. Scenarios: purchase, PCP and sale; insurance
+   cover that starts before the purchase and runs past the sale; a claim
+   with a payout; a stale valuation; a member without `ViewCosts`; two
+   currencies; imperial units.
+2. **Quiet empty widgets (#563).** A dashboard widget with nothing to
+   show shrinks to its header and one muted line, in its place. *Needs
+   attention* keeps its full "Nothing needs attention", which reassures.
+   *Customise* shows every widget at full size.
+3. **Cover outside ownership (#564).** In the true-cost yearly and
+   12-month periods, a document's days of cover before the purchase or
+   after the sale count in no period; *Since bought* still counts the
+   whole document on its ledger date, and the working says why the years
+   don't add up to it.
+4. **Last month's sold vehicles (#374).** The briefing's *Last month*
+   includes a recipient vehicle archived (sold, written off or just
+   archived) on or after the first day of last month, so last month's
+   spend is complete. The other sections stay active vehicles only.
+5. **K148.** `tests/bootstrap.php` refuses to run unless `APP_ENV` is
+   `testing`, so phpunit without its configuration can't migrate or
+   delete the dev database.
+6. **Docs.** `docs/configuration.md` points to `docs/mot-history.md` for
+   MOT history (set in Settings, not the environment).
+
+## Not in scope
+
+- A per-user "simple / advanced" mode: module switches (§7.10) and the
+  Household layout (Phase 49.2) already give a short app.
+- Assigning actions to household members: a feature of its own, listed in
+  spec §12 *After 1.0* as a candidate.
+- A source date on the fuel-saving insight: it already uses only prices
+  no older than 48 hours and says "Today's prices" (§7.8).
+- #375–#377 (other briefing questions), still open for the owner.
+
+---
+
+## Decisions (and why)
+
+- **#563 (decided 2026-10-28):** collapse to one line, not hide, so the
+  layout the owner arranged doesn't jump about as data comes and goes.
+- **#564 (decided 2026-10-28):** drop the outside days. They paid for
+  someone else's ownership; folding them into the first year would put
+  costs in a period the vehicle wasn't owned.
+- **#374 (decided 2026-10-28):** include. A month's spend that leaves out
+  the car sold in it would undercount, and the Reports page counts it.
+
+## Tasks
+
+### 54.0 Start of phase
+
+- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12).
+
+### 54.1 Finance scenarios
+
+- [ ] `tests/Integration/Scenario/`, one test class per scenario, built
+      with the existing fixtures (`tests/Support/CostFixtures.php`,
+      `FinanceFixtures`, `TrueCostFixtures`), each checking the page, the
+      API (`?include=working`) and the CSV against its golden file.
+- [ ] Run on all four engines (`bin/test-all-dbs.sh`).
+
+### 54.2 Quiet empty widgets (#563)
+
+- [ ] The dashboard view says per widget whether it is empty (from the
+      data it already has; no logic in templates); `home.twig` adds
+      `widget--empty`, and the CSS shrinks it. Not in *Customise*, and
+      never *Needs attention*.
+- [ ] Tests: each widget's empty state is flagged, a widget with data is
+      not, *Customise* shows them full size; works without JS.
+
+### 54.3 Cover outside ownership (#564)
+
+- [ ] Confirm `TrueCost` drops the outside days (a scenario of 54.1);
+      the true-cost working names the dropped amount when there is one.
+
+### 54.4 Last month's sold vehicles (#374)
+
+- [ ] The digest's *Last month* takes recipient vehicles archived on or
+      after the first of last month as well as the active ones.
+- [ ] Tests: sold mid-month is listed with its distance and spend; sold
+      before last month is not; other sections unchanged.
+
+### 54.5 K148 and docs
+
+- [ ] `tests/bootstrap.php` stops with a message unless the environment
+      is `testing`.
+- [ ] `docs/configuration.md` links MOT history.
+
+### 54.6 Finish
+
+- [ ] K148 *Fixed*; #374, #563, #564 marked built.
+- [ ] CHANGELOG, spec §13, ROADMAP status.
+- [ ] Merge review (spec-keeper, bug-hunter, design-reviewer,
+      api-contract-checker), then merge.
+
+## Acceptance criteria
+
+- Each scenario fails if a figure on one surface differs from another or
+  from its golden value.
+- `composer lint`, `composer analyse`, `composer coverage:check` and
+  `bin/test-all-dbs.sh` pass on all four engines.
+- No migration. New strings are in every catalogue in `translations/`.
+
+## Open questions
+
+- **#374. Decided 2026-10-28:** include vehicles archived during last
+  month in *Last month*. Not chosen: active vehicles only.
+- **#563. Decided 2026-10-28:** an empty widget collapses to one line.
+  Not chosen: hide it; leave it as is.
+- **#564. Decided 2026-10-28:** cover outside ownership counts in no
+  period. Not chosen: fold it into the first or last period.
