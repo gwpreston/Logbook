@@ -4,7 +4,7 @@
 misreads `45,123` or `13.000`, and offline fill-ups that stay with the person
 who made them.*
 
-Status: 📋 planned · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.1](phase-54.1.md). The owner asked for
 the open rows that wait on no decision, and chose K1 and K40: each was
@@ -70,8 +70,9 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### 54.2.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #573, #574 and #575 are decided.
+      None still open bears on K1 or K40 (log intro, 2026-10-28).
 
 ### 54.2.1 Number format on import (K1)
 

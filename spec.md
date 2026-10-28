@@ -12500,7 +12500,7 @@ task breakdowns live in the per-phase files; this is the map.
   fresh and refuse the app's own database (K155, K156). Releases
   v3.20.1 (#572). No migration. See [`phase-54.1.md`](docs/phases/phase-54.1.md).
 - **Phase 54.2 — CSV number separators and offline fill-ups per user
-  from the known-issues log + minor release** (planned). The import
+  from the known-issues log + minor release** (in progress). The import
   preview's *Number format* picker (dot or comma decimal, default the
   owner's locale) decides how `45,123` and `13.000` are read (§7.13, K1,
   #484, #573); queued offline fill-ups and cached fill-up pages belong to
