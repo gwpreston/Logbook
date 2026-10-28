@@ -17,6 +17,9 @@ use Logbook\Support\Units\VolumeUnit;
  */
 final class ImportMapper
 {
+    /** Fields read as numbers, in the file's number format. */
+    private const array NUMBER_KINDS = [FieldKind::Number, FieldKind::Distance, FieldKind::Volume, FieldKind::UnitPrice];
+
     /** 2026-09-27, 27/09/2026, 9.27.2026, optionally followed by a time. */
     private const string DATE_LIKE = '/^(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4})'
         . '([T ]\d{1,2}:\d{2}(:\d{2})?)?$/';
@@ -154,7 +157,7 @@ final class ImportMapper
 
     /**
      * Whether the file is Logbook's own export: every matched column has
-     * its export header. The export writes plain decimals, so it reads with
+     * its export header, and no number has a comma. The export writes plain decimals, so it reads with
      * a decimal point whatever the owner's language (#581).
      *
      * @param list<ImportField> $fields
@@ -170,6 +173,14 @@ final class ImportMapper
             }
             if (!$vocabulary->headerMatches($field, $csv->header[$column] ?? '', true)) {
                 return false;
+            }
+            // The export never writes a comma in a number: a file that does was written by hand.
+            if (in_array($field->kind, self::NUMBER_KINDS, true)) {
+                foreach ($csv->rows as $row) {
+                    if (str_contains($row['cells'][$column] ?? '', ',')) {
+                        return false;
+                    }
+                }
             }
             $matched++;
         }

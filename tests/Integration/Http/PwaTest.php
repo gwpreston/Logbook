@@ -135,7 +135,7 @@ final class PwaTest extends AppTestCase
      */
     public function testSignedInPagesNameTheirUserAndSignedOutPagesNobody(): void
     {
-        $app = $this->createApp();
+        $app = $this->createApp(['FEATURES_TRIPS' => 'true']);
         $browser = $this->signedIn($app);
         $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
         $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
@@ -145,9 +145,23 @@ final class PwaTest extends AppTestCase
         self::assertSame((string) $owner->id, $form->getHeaderLine('X-Logbook-User'));
         self::assertStringContainsString('<body data-user="' . $owner->id . '">', self::body($form));
 
+        // Every page the service worker keeps for offline use names its user.
+        $golfPath = '/vehicles/' . $golf->id;
+        $paths = ['/log/new', '/fuel/new', $golfPath . '/fuel/new', '/log/new/trip', $golfPath . '/trips/new'];
+        foreach ($paths as $path) {
+            // With one vehicle, the choosers go straight to its form.
+            $page = $browser->get($path);
+            if ($page->getStatusCode() === 303) {
+                $page = $browser->follow($page);
+            }
+            self::assertSame(200, $page->getStatusCode(), $path);
+            self::assertSame((string) $owner->id, $page->getHeaderLine('X-Logbook-User'), $path);
+        }
+
         $signIn = (new TestBrowser($app))->get('/login');
         self::assertFalse($signIn->hasHeader('X-Logbook-User'));
         self::assertStringContainsString('<body>', self::body($signIn));
+        self::assertStringContainsString('data-signed-out-page', self::body($signIn), 'the page that makes the worker forget');
 
         $worker = $browser->get('/sw.js');
         self::assertStringContainsString("var USER_HEADER = 'X-Logbook-User';", self::body($worker));
@@ -157,7 +171,6 @@ final class PwaTest extends AppTestCase
         self::assertFalse($browser->get('/manifest.webmanifest')->hasHeader('X-Logbook-User'));
         $offline = $browser->get('/offline');
         self::assertFalse($offline->hasHeader('X-Logbook-User'));
-        self::assertStringContainsString('data-offline-page', self::body($offline));
         self::assertStringNotContainsString('data-user', self::body($offline), 'the offline page is nobody\'s');
 
         // Signing out names nobody on the way out.

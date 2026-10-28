@@ -11,8 +11,9 @@
  *     are kept for offline use; any other page offline gets the offline page.
  *     A kept page is served only to the user it was kept for (K40): each
  *     response names its user (X-Logbook-User), and the worker remembers
- *     the user of the last page it fetched, nobody after a signed-out one
- *     (a signed-out page the worker didn't fetch clears it too, js/app.js).
+ *     the user of the last HTML page it fetched, nobody after a signed-out
+ *     one (the sign-in page clears it too, js/app.js, for a sign-out the
+ *     worker never saw).
  *   - Everything else (POSTs, downloads, other sites) is left alone. An
  *     offline fill-up is queued by the page itself (js/app.js).
  */
@@ -84,7 +85,9 @@ function offline(url) {
 function page(request, url) {
     return fetch(request)
         .then(function (response) {
-            var remembering = response.ok
+            // Only a page counts: a download or a picture names nobody.
+            var html = (response.headers.get('Content-Type') || '').indexOf('text/html') === 0;
+            var remembering = response.ok && html
                 ? remember(response.headers.get(USER_HEADER) || '').catch(function () {})
                 : Promise.resolve();
             var finalPath = response.url ? new URL(response.url).pathname : url.pathname;

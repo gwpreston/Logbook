@@ -4419,8 +4419,9 @@ vehicles; a disabled module cannot be imported).
   decimal `1.234,56`) defaults to the owner's locale and decides how a
   number cell such as `45,123` or `13.000` is read; a cell the format
   can't read is invalid (Phase 54.2, K1, #484, #573). A file whose every
-  column header is one of Logbook's own export headers (in any of its
-  languages) defaults to dot decimal instead, since the export writes
+  matched column has Logbook's own export header (in any of its
+  languages), with no comma in a number cell, defaults to dot decimal
+  instead, since the export writes
   plain decimals, so an owner's own export imports back as it was (#581).
   Thousands groups must be whole: a first group of more than three digits
   (`48280.320`) or a lone `0` (`0.500`) is not read as grouped under
@@ -4953,7 +4954,10 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   A queued entry and a cached fill-up page belong to the user who made
   them: the browser remembers the last signed-in user, an entry is sent,
   listed and reviewed only for that user, and a cached page is served
-  only to the same user (otherwise the offline page). Nothing is cleared
+  only to the same user (otherwise the offline page). Responses name
+  their user in an `X-Logbook-User` header (not the manifest, the
+  service worker or the offline page, which shared caches may keep), and
+  the worker remembers it from each HTML page it fetches. Nothing is cleared
   at sign-out (Phase 54.2, K40, #449, #574). A page loaded signed out
   (the sign-in page after signing out, or an expired session) forgets the
   remembered user, so no cached page is served until someone signs in

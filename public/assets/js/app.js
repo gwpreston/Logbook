@@ -9,7 +9,7 @@
 
     // Node (tests/js) gets the offline queue's pure helpers, nothing else.
     if (typeof document === 'undefined') {
-        module.exports = { ownedBy: ownedBy, untagged: untagged, sentAs: sentAs };
+        module.exports = { ownedBy: ownedBy, untagged: untagged, sentAs: sentAs, forgetsUser: forgetsUser };
         return;
     }
 
@@ -769,11 +769,16 @@
             });
     }
 
-    // A signed-out page makes the service worker forget the user (#580),
-    // even one it never fetched itself (a sign-out answered by a POST, or a
-    // proxy's own sign-in page). Not the offline page, which is nobody's.
+    // The sign-in page, or a proxy's signed-out page, makes the service
+    // worker forget the user (#580), even when the worker never fetched it
+    // (a sign-out answered by a POST). Not any page without a user: an
+    // error page or the offline page names nobody either.
+    function forgetsUser(user, signedOutPage) {
+        return !user && signedOutPage;
+    }
+
     function forgetUserWhenSignedOut() {
-        if (pageUser || !('caches' in window) || document.querySelector('[data-offline-page]')) {
+        if (!forgetsUser(pageUser, !!document.querySelector('[data-signed-out-page]')) || !('caches' in window)) {
             return;
         }
         var base = document.documentElement.getAttribute('data-base') || '';

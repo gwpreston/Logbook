@@ -864,6 +864,11 @@ final class ImportTest extends AppTestCase
         $trip = $this->service($app, TripRepository::class)->listForVehicle($polo->id)[0];
         self::assertSame('1234.567', $trip->data->distanceKm);
 
+        // The export's own words with a comma in a number were written by hand: a decimal comma.
+        $csv = "Datum und Uhrzeit,Kilometerstand,Menge\n2026-06-01 09:00,49000,\"45,123\"\n";
+        $map = $this->upload($browser, $polo->id, 'fuel', $csv);
+        self::assertStringContainsString('<option value="comma" selected>', self::body($browser->get($map)));
+
         // A hand-made file with the same columns in other words keeps the owner's decimal comma.
         $map = $this->upload($browser, $polo->id, 'fuel', "Datum,Kilometerstand,Liter\n2026-06-01 09:00,\"49.000\",\"40,5\"\n");
         self::assertStringContainsString('<option value="comma" selected>', self::body($browser->get($map)));

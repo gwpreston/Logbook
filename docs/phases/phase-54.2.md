@@ -153,6 +153,14 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   `/manifest.webmanifest`, `/sw.js` and `/offline`, which shared caches
   may keep. Carried: K160 (`symfony/mime` advisory, on master) and K161
   (an OIDC provider that doesn't send the browser back).
+- Follow-up to both reviews: the header is left off only what shared
+  caches may keep (`public`, `no-cache`), the worker remembers a user only
+  from an HTML page (a download or a picture names nobody), and only the
+  sign-in and proxy signed-out pages clear it in the page (an error page
+  or the offline page names nobody too). Own-export detection also needs
+  no comma in any number cell, so a hand-made file with the export's
+  column names and `45,123` keeps the decimal comma. Tests: `PwaTest` (all
+  five offline form paths), `offline.test.js` (a download), `ImportTest`.
 - Checks (at the final commit): `bin/test-all-dbs.sh` green on SQLite,
   PostgreSQL, MySQL and MariaDB (4742 tests each, migrate, rollback and
   migrate); `node --test tests/js` 41 green; `composer lint` and

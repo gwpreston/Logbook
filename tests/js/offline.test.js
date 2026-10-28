@@ -11,7 +11,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {ownedBy, untagged, sentAs} = require('../../assets/js/app.js');
+const {ownedBy, untagged, sentAs, forgetsUser} = require('../../assets/js/app.js');
 
 const alice = {id: 1, userId: '1', fields: [['notes', 'ALICE-QUEUED-1']]};
 const bob = {id: 2, userId: '2', fields: [['notes', 'BOB']]};
@@ -32,6 +32,12 @@ test('a queued fill-up is sent only when the server names its user', () => {
     assert.equal(sentAs(alice, '2'), false, 'Bob signed in since: not sent as Bob');
     assert.equal(sentAs(alice, null), false, 'signed out');
     assert.equal(sentAs(old, null), false);
+});
+
+test('only the sign-in or signed-out page forgets the user, not an error or the offline page (#580)', () => {
+    assert.equal(forgetsUser('', true), true);
+    assert.equal(forgetsUser('', false), false, 'an error page or the offline page names nobody too');
+    assert.equal(forgetsUser('1', true), false);
 });
 
 /*
@@ -81,7 +87,11 @@ function worker(base) {
         if (!network.online) {
             throw new TypeError('Failed to fetch');
         }
-        const headers = network.user === null ? {} : {'X-Logbook-User': network.user};
+        const download = request.url.endsWith('.csv');
+        const headers = {'Content-Type': download ? 'text/csv' : 'text/html; charset=utf-8'};
+        if (network.user !== null && !download) {
+            headers['X-Logbook-User'] = network.user;
+        }
         const body = network.user === null ? 'SIGN IN' : 'FORM FOR ' + network.user;
         const response = new Response(body, {status: 200, headers});
         Object.defineProperty(response, 'url', {value: request.url});
@@ -113,6 +123,12 @@ for (const base of ['', '/logbook']) {
         assert.equal(await visit('/vehicles/7/fuel/new'), 'FORM FOR 1');
         network.online = false;
         assert.equal(await visit('/vehicles/7/fuel/new'), 'FORM FOR 1', 'Alice offline: her kept page');
+
+        // A download names nobody but isn't a signed-out page.
+        network.online = true;
+        await visit('/vehicles/7/export/fuel.csv');
+        network.online = false;
+        assert.equal(await visit('/vehicles/7/fuel/new'), 'FORM FOR 1', 'still Alice after a download');
 
         // Alice signs out: the signed-out page makes the worker forget her (#580).
         network.online = true;
