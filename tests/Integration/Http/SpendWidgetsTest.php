@@ -82,6 +82,8 @@ final class SpendWidgetsTest extends AppTestCase
         $this->start();
         $golf = $this->vehicle($this->app);
         $this->costs($golf);
+        // A distance, so True cost has a figure and keeps its period switch (K157).
+        $this->reading($this->app, $golf, '1000', '2025-09-01T09:00:00Z');
 
         $widget = self::widget(self::body($this->browser->get('/')), 'expense_breakdown');
         self::assertStringContainsString('class="stack-bar"', $widget, 'the bar, drawn without JS');

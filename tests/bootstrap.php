@@ -12,6 +12,7 @@ use Logbook\Kernel;
 use Logbook\Support\Config\AppEnvironment;
 use Logbook\Support\Config\DatabaseDriver;
 use Logbook\Tests\Support\Migrator;
+use Logbook\Tests\Support\TestDatabaseGuard;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -21,6 +22,13 @@ $settings = Kernel::settings();
 // name the app's own database, which the lines below would delete and migrate.
 if ($settings->environment !== AppEnvironment::Testing) {
     fwrite(STDERR, "Refusing to run: APP_ENV is not \"testing\". Run phpunit with phpunit.xml.dist.\n");
+    exit(1);
+}
+
+// K156: a server database must be named by TEST_DB_NAME and not be the app's own.
+$refusal = TestDatabaseGuard::refusal($settings->database->driver, $settings->env);
+if ($refusal !== null) {
+    fwrite(STDERR, "Refusing to run: {$refusal}\n");
     exit(1);
 }
 

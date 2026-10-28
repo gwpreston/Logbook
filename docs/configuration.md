@@ -296,7 +296,9 @@ seeded as a demo.
 
 `TEST_DB_DRIVER`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_NAME`,
 `TEST_DB_USER`, `TEST_DB_PASSWORD` — same shape as `DB_*`; default SQLite at
-`var/testing.sqlite`. PHPUnit never reads `DB_*`.
+`var/testing.sqlite`. PHPUnit never reads `DB_*`. With PostgreSQL or MySQL,
+`TEST_DB_NAME` is required and must differ from `DB_NAME`; the suite refuses to
+start otherwise.
 
 ---
 
