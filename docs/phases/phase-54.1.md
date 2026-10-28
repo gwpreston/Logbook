@@ -4,7 +4,7 @@
 on re-import, the true-cost cover note, two edges of the empty dashboard
 widgets, and two test-run guards.*
 
-Status: 📋 planned · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md) and
 [Phase 53.20](phase-53.20.md). Like them, it takes small open rows. The owner
@@ -90,7 +90,7 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #566 and #571 are decided, and
       the release is decided (#572).
 
