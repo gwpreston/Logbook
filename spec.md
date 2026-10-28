@@ -12406,7 +12406,7 @@ task breakdowns live in the per-phase files; this is the map.
   backup (K146, #559). No migration. Releases v3.19.11. See
   [`phase-53.19.md`](docs/phases/phase-53.19.md).
 - **Phase 53.20 — Page security headers and export times from the
-  known-issues log + patch release** (in progress). The app sends
+  known-issues log + patch release** (complete). The app sends
   `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and
   `Referrer-Policy: same-origin` on every page on every install, without a
   page CSP (§10, K54, #456), and a CSV export writes each date and time
