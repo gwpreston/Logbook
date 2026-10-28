@@ -28,7 +28,7 @@ final class DashboardEmptyWidgetsTest extends AppTestCase
 
         $empty = self::emptyWidgets(self::body($browser->get('/')));
 
-        foreach (['reminders', 'recent_fuel', 'efficiency', 'compliance'] as $widget) {
+        foreach (['reminders', 'coming_up', 'recent_fuel', 'efficiency', 'compliance'] as $widget) {
             self::assertContains($widget, $empty, $widget . ' has nothing to show');
         }
         self::assertNotContains('needs_attention', $empty, '"Nothing needs attention" keeps its size');

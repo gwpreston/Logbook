@@ -112,6 +112,7 @@ final readonly class Dashboard
     {
         return match ($widget) {
             DashboardWidget::Reminders => $this->reminders === null || $this->reminders->top(1) === [],
+            DashboardWidget::ComingUp => $this->comingUp?->isEmpty() ?? false,
             DashboardWidget::Compliance => array_all(
                 $this->compliance,
                 static fn (VehicleCompliance $row): bool => $row->attention() === [],
