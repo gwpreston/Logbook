@@ -4,7 +4,7 @@
 misreads `45,123` or `13.000`, and offline fill-ups that stay with the person
 who made them.*
 
-Status: 🚧 in progress · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.1](phase-54.1.md). The owner asked for
 the open rows that wait on no decision, and chose K1 and K40: each was
@@ -82,8 +82,8 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 - [x] `ImportOptions`, `ImportMapper::guess()` and the query
       (`number_format`) carry it; `CsvImporter` reads distance, volume and
       amount cells with it (`CsvImporterTest`: `45,123` and `13.000` under
-      both formats, English and German owners).
-- [ ] The preview's picker in `templates/import/map.twig`, translations in
+      both formats, English and German owners); a German owner's own export reads back under a decimal point, #581).
+- [x] The preview's picker in `templates/import/map.twig`, translations in
       every catalogue; works without JS. Check at 375, 768 and 1280 px,
       light and dark.
 - [x] Spec §7.13 says so. `docs/` import guide updated.
@@ -111,14 +111,52 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### 54.2.3 Finish
 
-- [ ] Known-issues rows K1 and K40 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Known-issues rows K1 and K40 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
+- [x] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.0, CHANGELOG 3.21.0, README status (#575).
+- [x] VERSION 3.21.0, CHANGELOG 3.21.0, README status (#575).
 - [ ] Tag `v3.21.0` once merged.
+
+## Review notes
+
+- Design: the *Numbers* select joins *How the file is written* as a
+  second field after *Dates*, the same `field`/`select` markup, so the
+  reading card wraps one more row (3 + 2 on the fill-up import). Checked in
+  a browser at `/logbook` (a subpath) at 375 px light, 768 px dark and
+  1280 px light: one column at 375 px with no sideways scroll, three at
+  768 and 1280. The long option labels clip inside the select as *Dates*
+  already does. The preview is a GET form and the commit carries
+  `number_format` as a hidden field, so it works without JS.
+- K40 in a real browser at `/logbook`: after visiting the fill-up forms
+  signed in, the worker remembered user 1 and every kept page carried
+  `X-Logbook-User: 1`; signing out landed on the sign-in page and left
+  nobody remembered.
+
+- Bug hunt (at `4c516492`): **HIGH**, fixed: a German or French
+  owner's default *Decimal comma* couldn't read Logbook's own export
+  (`48280.32` a problem row, `48280.320` read as 48280320); decided as
+  #581 and built here (own export defaults to a decimal point; whole
+  thousands groups under a chosen format). **MEDIUM**, fixed by the same
+  change: a cost of `1.500` read as 1500 is still read so under *Decimal
+  comma* (that is the format), but `0.500` is now a problem row. K40
+  found sound.
+- Security review (at `4c516492`): **HIGH**, fixed: with header sign-in,
+  signing out (a POST answered with a page, or a redirect to the proxy)
+  never showed the worker a signed-out page, so it kept the user; and the
+  sign-out page named the departing user. Now `X-Logbook-User` is sent
+  only on personal (`no-store`) pages whose session still holds the user,
+  and any signed-out page other than the offline page clears the
+  remembered user itself (`app.js`). **LOW**, fixed: the header was on
+  `/manifest.webmanifest`, `/sw.js` and `/offline`, which shared caches
+  may keep. Carried: K160 (`symfony/mime` advisory, on master) and K161
+  (an OIDC provider that doesn't send the browser back).
+- Checks (at the final commit): `bin/test-all-dbs.sh` green on SQLite,
+  PostgreSQL, MySQL and MariaDB (4742 tests each, migrate, rollback and
+  migrate); `node --test tests/js` 41 green; `composer lint` and
+  `composer analyse` clean; line coverage 95.15% (floor 95%).
 
 ## Acceptance criteria
 
@@ -146,3 +184,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   signed out forgets the remembered user, so no cached fill-up page is
   served until someone signs in; queued entries stay (K40). Not chosen:
   keep the last user until another signs in.
+- **#581. Decided 2026-10-28** (found by the bug hunt while building it):
+  Logbook's own export writes plain decimals, which a comma-decimal
+  default can't read (`48280.32` a problem row, `48280.320` read as
+  48280320). A file whose every matched column has its export header
+  defaults to dot decimal; under a chosen format a thousands group must be
+  whole (first group 1–3 digits, not a lone `0`), so `48280.320` and
+  `0.500` are problem rows, never ×1000 (K1). Not chosen: always the
+  locale's default; the export written in the owner's format.
