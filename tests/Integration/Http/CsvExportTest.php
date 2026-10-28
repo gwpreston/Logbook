@@ -121,7 +121,11 @@ final class CsvExportTest extends AppTestCase
         $odometer = self::rows(self::body($browser->get($base . 'odometer.csv')));
         self::assertSame(['Date and time (Europe/London)', 'Odometer (Miles)', 'Source', 'Note'], $odometer[0]);
         self::assertSame(['2026-09-01T10:00:00+01:00', '621.681878', 'Manual', ''], $odometer[1]);
-        self::assertSame(['2026-09-14T12:00:00+01:00', '1000', 'Service', ''], $odometer[2], 'the maintenance reading, at local noon');
+        self::assertSame(
+            ['2026-09-14T12:00:00+01:00', '1000', 'Service', ''],
+            $odometer[2],
+            'the maintenance reading, at local noon',
+        );
         $stored = $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id)[0]->readingKm;
         self::assertSame($stored, DistanceUnit::Mile->toKmDecimal($odometer[1][1], 3));
 
