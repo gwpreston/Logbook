@@ -10902,7 +10902,11 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   (`QueryCounter`), so the repeated per-vehicle read can't creep back.
   Time is a review target, not a test: 200 ms typical and 500 ms at most
   for either page on a 10-vehicle household (1,500 fill-ups, 200
-  readings, 150 services and 20 documents per vehicle). A page request
+  readings, 150 services and 20 documents per vehicle).
+  From Phase 54.3 (#576) the reports, the true-cost report first, join the
+  60-query, 500 ms budget with the same count for 1 and 10 vehicles, and
+  the monthly digest job's query count must not grow with the number of
+  vehicles. A page request
   (GET or HEAD) remembers what its repositories read (`RequestReads`):
   one query per table for every vehicle on the page (`VehicleDataPrimer`),
   all the settings of an owner in one, and the rest of the page's
@@ -12491,6 +12495,12 @@ task breakdowns live in the per-phase files; this is the map.
   #484, #573); queued offline fill-ups and cached fill-up pages belong to
   the user who made them (§7.15, K40, #449, #574). Releases v3.21.0
   (#575). No migration. See [`phase-54.2.md`](docs/phases/phase-54.2.md).
+- **Phase 54.3 — Dashboard, true-cost and digest speed from the
+  known-issues log + patch release** (planned). The dashboard meets its
+  500 ms target (§8, K149); the true-cost report joins the page budget
+  (60 queries, 500 ms; §8, §7.35, K150, #576); the monthly digest job's
+  queries don't grow with vehicles (§7.11, K151). Releases v3.21.1
+  (#577). No migration. See [`phase-54.3.md`](docs/phases/phase-54.3.md).
 
 ---
 
