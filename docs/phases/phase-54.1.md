@@ -96,7 +96,7 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.1 Import and reports
 
-- [ ] `CsvImporter` reports a repeated clock-change time that matches an
+- [x] `CsvImporter` reports a repeated clock-change time that matches an
       existing entry at the other instant as *Already there* (K147).
       `CsvImporterTest`: re-import of an old-format export of the
       fall-back night adds nothing.

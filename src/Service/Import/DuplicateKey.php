@@ -20,7 +20,11 @@ use LogicException;
  */
 final class DuplicateKey
 {
-    public static function of(object $data): string
+    /**
+     * @param DateTimeImmutable|null $at the instant to key a fill-up or reading by instead of its own
+     *                                   (the other of a repeated clock-change time, K147)
+     */
+    public static function of(object $data, ?DateTimeImmutable $at = null): string
     {
         // Line breaks as `\n`: text saved before 3.15.0 may hold `\r\n`, and the same text
         // sent today is stored with `\n` (#433), so both must give the same key.
@@ -34,12 +38,12 @@ final class DuplicateKey
         return match (true) {
             $data instanceof FuelEntryData => implode('|', [
                 'fuel',
-                $minute($data->filledAt),
+                $minute($at ?? $data->filledAt),
                 Decimal::trim($data->odometerKm),
             ]),
             $data instanceof OdometerReadingData => implode('|', [
                 'odometer',
-                $minute($data->recordedAt),
+                $minute($at ?? $data->recordedAt),
                 Decimal::trim($data->readingKm),
             ]),
             $data instanceof MaintenanceEntryData => implode('|', [
