@@ -119,20 +119,31 @@ and [`open-questions.md`](open-questions.md) first.
 - [ ] Merge review (spec-keeper, bug-hunter, design-reviewer,
       api-contract-checker), then merge.
 
-### Found by the first merge review (2026-10-28, at `1fde47a1`)
+### Found by the merge reviews (2026-10-28)
 
-- Fixed here: the user guides for #374, #563 and #564 (`docs/reports.md`,
+- **First review (at `1fde47a1`), fixed here:** the user guides for #374, #563 and #564 (`docs/reports.md`,
   `docs/notification-channels.md`, `docs/getting-started.md`); spec §7.8
   lists the widgets that shrink and the ones that never do; an empty *True
   cost* drops its period switch and an empty *Recent fuel* its button, so
   each is one line; a document wholly before the purchase or after the
   sale is named in the working too; the German notes reworded.
-- Left as follow-ups, logged in `known-issues.md` as K149–K155 (with
-  #565–#570 for the choices): the dashboard, true-cost report and digest
-  over budget on a heavy household (already on master); the first year's
-  cover note unseen past three years; the *Last 12 months* note wording;
-  blank space beside short empty cards; `bin/test-all-dbs.sh` failing on a
-  test database left with users.
+- **Second review (at `511158c8`), fixed here:** spec §7.35 covers a
+  document wholly outside ownership; spec §7.11 and the webhook guide say
+  `last_month` may list an archived vehicle; working notes are described
+  as display text in `openapi.json`, `docs/api.md` and `docs/mcp.md`.
+- **Third review (at `e5424949`):** MERGE.
+- **Left as follow-ups,** logged in `known-issues.md`:
+  - From the first two reviews, K149–K155, with #565–#570 for the
+    choices: the dashboard, true-cost report and digest over budget on a
+    heavy household (already on master); the first year's cover note
+    unseen past three years; the *Last 12 months* note wording; blank
+    space beside short empty cards; `bin/test-all-dbs.sh` failing on a
+    test database left with users.
+  - From the issue sweep of the third review, K156–K158, with #571: a
+    test run without `TEST_DB_NAME` on a server engine using the app's
+    database; *True cost* with vehicles but no costs not shrinking; an
+    empty *Monthly spend*'s second "costs excluded" line. K159 (this
+    section credited only the first review) is fixed here.
 
 ## Acceptance criteria
 
@@ -150,5 +161,5 @@ and [`open-questions.md`](open-questions.md) first.
   Not chosen: hide it; leave it as is.
 - **#564. Decided 2026-10-28:** cover outside ownership counts in no
   period. Not chosen: fold it into the first or last period.
-- **#565–#570 (open, found by the merge reviews):** see
+- **#565–#571 (open, found by the merge reviews and the issue sweep):** see
   [`open-questions.md`](open-questions.md).
