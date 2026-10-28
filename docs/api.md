@@ -280,7 +280,10 @@ words with the real numbers, so a script can show or check them.
 measured stretch. `result` is the headline figure as shown, and
 `result_value` is the same figure as a number: the cost per distance
 (per km) where the working explains one, otherwise the amount or distance it
-ends at. Without the parameter nothing changes, and anything
+ends at. `notes` are plain-text remarks in your language (what Logbook
+did not assume, what it left out, such as cover outside ownership): show
+them, but don't match their text or count them, as new ones can appear.
+Without the parameter nothing changes, and anything
 other than `working` in `include` is a 400. It is additive: the API stays
 `v1`.
 

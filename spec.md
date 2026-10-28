@@ -3769,6 +3769,10 @@ Extensible channel interface so more can be added.
     `{"distance", "spend": {currency: amount}, "display"}` or null; `issues`
     is a list of `{"vehicle_id", "vehicle", "open"}`; `insights` a list of
     `{"kind", "source": "computed"|"ai", "vehicle_ids", "title", "body"}`.
+    From Phase 54 (#374), `last_month` and `fleet` include a vehicle
+    archived since the first of last month, so a row's `vehicle_id` may be
+    an archived vehicle (`GET /vehicles?status=all` finds it); the shape
+    is unchanged.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
@@ -9725,7 +9729,11 @@ it replaces none of the other figures.
   while the years stop at the sale. So the years and *Since bought* can
   differ either way, and the working of the first or the sale's period
   says how much cover it leaves out ("£40 of cover before you bought it
-  isn't counted", "… after you sold it …").
+  isn't counted", "… after you sold it …"). A document wholly before the
+  purchase date (its cover ends before it) or wholly after the sale date
+  (dated after it) is in no period and, being dated outside ownership,
+  not in *Since bought* either; the first or the sale's period names it
+  whole.
 - **Per distance** for a period = each part's amount ÷ the period's
   distance driven (§7.7), the depreciation part ÷ the distance driven up to
   the date it is measured to (below). Rates are kept per km to 6 places:

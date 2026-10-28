@@ -528,7 +528,10 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   per currency, `display`, or null), `issues` (`vehicle_id`, `vehicle`,
   `open`) and `insights` (`kind`, `source` `computed` or `ai`,
   `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
-  other event; `items` and `attention` keep their shape.
+  other event; `items` and `attention` keep their shape. `last_month` and
+  `fleet` include a vehicle archived since the first of last month, so a
+  `vehicle_id` may be an archived vehicle: look it up with
+  `GET /vehicles?status=all`.
 - The server's webhook (`WEBHOOK_URL`) receives every member's digest,
   so from 3.9.0 its copy leaves out spend, cost per distance and the
   insights (in the text and the JSON); distances and open issues stay.

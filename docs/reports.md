@@ -74,7 +74,8 @@ the working under the first year or the year of the sale says how much
 ("£40 of cover before you bought it isn't counted"). So the years can
 differ from *Since bought* either way: a policy that starts before the
 purchase date isn't in *Since bought* at all, while one still running at
-the sale is in it whole.
+the sale is in it whole. A policy that ended before you bought the vehicle,
+or starts after you sold it, is in neither, and the working names it whole.
 
 ### Depreciation for a period
 

@@ -21163,7 +21163,7 @@
             "items": {
               "type": "string"
             },
-            "description": "What Logbook did not assume."
+            "description": "Plain-text remarks in the key owner's language: what Logbook did not assume and what it left out. Show them; don't match their text or count them, as entries can be added."
           },
           "result": {
             "type": "string",

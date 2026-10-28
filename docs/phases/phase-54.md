@@ -127,12 +127,12 @@ and [`open-questions.md`](open-questions.md) first.
   cost* drops its period switch and an empty *Recent fuel* its button, so
   each is one line; a document wholly before the purchase or after the
   sale is named in the working too; the German notes reworded.
-- Left as follow-ups (`known-issues.md` once the final review is done):
-  the *Last 12 months* note wording when that period starts on the
-  purchase date; blank space beside short empty cards; the dashboard and
-  true-cost page over budget on a heavy household (already on master);
-  `bin/test-all-dbs.sh` failing when an earlier run left users in a test
-  database.
+- Left as follow-ups, logged in `known-issues.md` as K149–K155 (with
+  #565–#570 for the choices): the dashboard, true-cost report and digest
+  over budget on a heavy household (already on master); the first year's
+  cover note unseen past three years; the *Last 12 months* note wording;
+  blank space beside short empty cards; `bin/test-all-dbs.sh` failing on a
+  test database left with users.
 
 ## Acceptance criteria
 
@@ -150,3 +150,5 @@ and [`open-questions.md`](open-questions.md) first.
   Not chosen: hide it; leave it as is.
 - **#564. Decided 2026-10-28:** cover outside ownership counts in no
   period. Not chosen: fold it into the first or last period.
+- **#565–#570 (open, found by the merge reviews):** see
+  [`open-questions.md`](open-questions.md).
