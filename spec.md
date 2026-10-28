@@ -2976,8 +2976,11 @@ toggles.
   the reassurance), *Spend this month* (£0.00 is a figure), *Expense
   breakdown* (its period chips choose what it shows), and the widgets
   without an empty state (*Your vehicles*, *Calendar*, *Mileage*, *Business
-  mileage*, *Cheapest fuel*, *Finance*). *Customise* shows every widget at
-  full size. It works without JS.
+  mileage*, *Cheapest fuel*, *Finance*). *True cost* is also empty when every vehicle in view has no costs
+  (#566, Phase 54.1). An empty *Monthly spend* for a viewer with a vehicle
+  shared without costs keeps its §7.21 note inside the one line: "No costs
+  in the last 12 months (excludes 1 vehicle shared without costs)" (#571).
+  *Customise* shows every widget at full size. It works without JS.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
   and from the keyboard — plus "reset layout". With JS, widgets can also be
@@ -12463,6 +12466,16 @@ task breakdowns live in the per-phase files; this is the map.
   #564); the briefing's *Last month* keeps vehicles archived during it
   (§7.11, #374); the test bootstrap runs only under `APP_ENV=testing`
   (K148). No migration. Releases v3.20.0. See [`phase-54.md`](docs/phases/phase-54.md).
+- **Phase 54.1 — Clock-change imports, empty-widget edges and test-run
+  guards from the known-issues log + patch release** (planned). A
+  repeated clock-change time that matches an existing entry is *Already
+  there* on re-import (§7.13, K147); the true-cost cover note on a
+  non-yearly period drops "so the years can differ" (§7.35, K153); an
+  empty-looking *True cost* (every vehicle without costs) is one line
+  (§7.8, K157, #566); an empty *Monthly spend* folds its costs-excluded
+  note into its one line (§7.8, §7.21, K158, #571); the test runs start
+  fresh and refuse the app's own database (K155, K156). Releases
+  v3.20.1 (#572). No migration. See [`phase-54.1.md`](docs/phases/phase-54.1.md).
 
 ---
 
