@@ -6,6 +6,37 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.20.1] — 2026-10-28
+
+Phase 54.1: **clock-change imports, empty-widget edges and test-run guards
+from the known-issues log** ([docs/phases/phase-54.1.md](docs/phases/phase-54.1.md)).
+No migration: pull and restart.
+
+### Changed
+- **An empty *True cost* widget is one line when no vehicle has a figure.**
+  A vehicle with a purchase price but no entries ("No costs logged", "Not
+  enough mileage logged") used to keep the widget full size with its
+  period switch; now it shrinks like one with nothing to show (#566, K157).
+- **An empty *Monthly spend* is one line even for a viewer with a vehicle
+  shared without costs:** "No costs in the last 12 months (excludes 1
+  vehicle shared without costs)." (#571, K158).
+
+### Fixed
+- **Re-importing an older export of the clock-change night adds nothing.**
+  Both 01:30s of the night the clocks go back were written as the same
+  text before 3.19.12; the later one was read as the first and added again
+  an hour early. A fill-up or reading whose repeated time matches one
+  already logged at the other instant is now *Already there* (K147).
+- **The true-cost note for *Last 12 months* no longer mentions the years.**
+  "… isn’t counted, so the years can differ from Since bought" only makes
+  sense beside the yearly table; elsewhere the note stops at "isn’t
+  counted." (K153).
+- **The test runs are safer.** `bin/test-all-dbs.sh` starts each server
+  engine from a fresh `logbook_test` database, so a leftover user from an
+  earlier run can't stop the rollback (K155), and the test bootstrap
+  refuses a PostgreSQL or MySQL run without `TEST_DB_NAME`, or with it
+  equal to `DB_NAME`, so a run can't empty the app's own database (K156).
+
 ## [3.20.0] — 2026-10-28
 
 Phase 54: **finance scenarios, quiet empty widgets and last month's sold

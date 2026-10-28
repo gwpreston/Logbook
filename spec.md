@@ -12490,7 +12490,7 @@ task breakdowns live in the per-phase files; this is the map.
   (§7.11, #374); the test bootstrap runs only under `APP_ENV=testing`
   (K148). No migration. Releases v3.20.0. See [`phase-54.md`](docs/phases/phase-54.md).
 - **Phase 54.1 — Clock-change imports, empty-widget edges and test-run
-  guards from the known-issues log + patch release** (in progress). A
+  guards from the known-issues log + patch release** (complete). A
   repeated clock-change time that matches an existing entry is *Already
   there* on re-import (§7.13, K147); the true-cost cover note on a
   non-yearly period drops "so the years can differ" (§7.35, K153); an

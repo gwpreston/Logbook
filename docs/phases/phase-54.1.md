@@ -4,7 +4,7 @@
 on re-import, the true-cost cover note, two edges of the empty dashboard
 widgets, and two test-run guards.*
 
-Status: 🚧 in progress · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.20.1**, a patch release · file lives in `docs/phases/`
 
 This is the next batch after [Phase 52.2](phase-52.2.md) and
 [Phase 53.20](phase-53.20.md). Like them, it takes small open rows. The owner
@@ -118,23 +118,32 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.3 Test runs
 
-- [ ] `bin/test-all-dbs.sh` drops and recreates `logbook_test` per engine
+- [x] `bin/test-all-dbs.sh` drops and recreates `logbook_test` per engine
       before migrating (K155); run it twice on MySQL, with a second user
       added in between.
-- [ ] `tests/bootstrap.php` refuses PostgreSQL and MySQL runs without
+- [x] `tests/bootstrap.php` refuses PostgreSQL and MySQL runs without
       `TEST_DB_NAME`, or with it equal to `DB_NAME` (K156); a test covers
       the check, and `CONTRIBUTING.md` says so.
 
 ### 54.1.4 Finish
 
-- [ ] Known-issues rows K147, K153, K155, K156, K157 and K158 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K147, K153, K155, K156, K157 and K158 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.20.1, CHANGELOG 3.20.1, README status (#572).
+- [x] VERSION 3.20.1, CHANGELOG 3.20.1, README status (#572).
 - [ ] Tag `v3.20.1` once merged.
+
+## Review notes
+
+- Design: the two changes reuse the empty-widget markup Phase 54 reviewed
+  (one `muted` line in a `widget--empty` section), so no new layout. Not
+  re-checked in a browser at 375, 768 and 1280 px for this phase.
+- K155: `bin/test-all-dbs.sh mysql` run with a leftover table in
+  `logbook_test`; the table was gone and migrate, rollback and migrate
+  passed. Run again on MySQL, PostgreSQL and MariaDB: 4719 tests green.
 
 ## Acceptance criteria
 
