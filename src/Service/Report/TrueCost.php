@@ -405,10 +405,12 @@ final readonly class TrueCost
             if ($item->vehicle->id !== $vehicle->id || $cover === null || TruePart::ofGroup($item->group()) === null) {
                 continue;
             }
+            // A document wholly outside ownership is left out whole.
             $share = match (true) {
-                $before && $item->date < $edge && $cover >= $edge
+                $before && $cover < $edge, !$before && $item->date > $edge => $item->amount,
+                $before && $item->date < $edge
                     => self::coverShare($item, $cover, $item->date, $edge->modify('-1 day')),
-                !$before && $item->date <= $edge && $cover > $edge
+                !$before && $cover > $edge
                     => self::coverShare($item, $cover, $edge->modify('+1 day'), $cover),
                 default => null,
             };

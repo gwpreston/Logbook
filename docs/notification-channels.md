@@ -504,8 +504,11 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   its monthly average over the 12 months before ("about 10% more than
   your monthly average"), and a line for all vehicles together (spend
   per currency, never converted). The figures are the Reports page's for
-  that month. Spend and cost per distance appear only to people who may
-  see the vehicle's costs; cost per distance needs at least 100 km in
+  that month. A vehicle sold, written off or archived since the first of
+  last month is still listed there, so the month's spend is complete; the
+  other sections cover only vehicles you still have. Spend and cost per
+  distance appear only to people who may see the vehicle's costs; cost
+  per distance needs at least 100 km in
   the month; an average needs 3 months to compare with. When one entry
   is more than half of the month's spend it is named ("including
   Insurance £412"). Then come the **insights**: the computed ones, and,

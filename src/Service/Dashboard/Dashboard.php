@@ -104,9 +104,10 @@ final readonly class Dashboard
 
     /**
      * Nothing to show but its empty message (spec.md §7.8 *Empty widgets*,
-     * #563): the widget shrinks to its header and that line. *Needs
-     * attention* never does, and neither does a widget with controls of its
-     * own (the breakdown's periods) or a figure that reads as one (spend).
+     * #563): the widget shrinks to its header and that line, its own
+     * controls left out (true cost's switch, recent fuel's button). *Needs
+     * attention* never does, nor does the breakdown, whose periods choose
+     * what it shows, nor spend, whose £0.00 is a figure.
      */
     public function isEmpty(DashboardWidget $widget): bool
     {

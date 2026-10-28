@@ -2967,8 +2967,16 @@ toggles.
   shrinks to its header and that one muted line, in its place, so the
   arranged layout doesn't move as data comes and goes. Whether a widget is
   empty is decided by the dashboard service, from the data it already
-  built, never in the template. *Needs attention* never shrinks: "Nothing
-  needs attention" is the reassurance. *Customise* shows every widget at
+  built, never in the template. The widgets that shrink: *Upcoming
+  reminders*, *Coming up*, *Insights*, *Monthly spend*, *Recent fuel*,
+  *Efficiency*, *Compliance*, *Recent activity* and *True cost*; an empty
+  *True cost* drops its period switch and an empty *Recent fuel* its *Log
+  fill-up* button (*Log entry* stays in the navigation), so each is one
+  line. Never shrinking: *Needs attention* ("Nothing needs attention" is
+  the reassurance), *Spend this month* (£0.00 is a figure), *Expense
+  breakdown* (its period chips choose what it shows), and the widgets
+  without an empty state (*Your vehicles*, *Calendar*, *Mileage*, *Business
+  mileage*, *Cheapest fuel*, *Finance*). *Customise* shows every widget at
   full size. It works without JS.
 - **Customise** (`/?customise=1`, also a button): each widget gets move up /
   move down / hide-show buttons — plain forms, so arranging works without JS
@@ -12440,7 +12448,7 @@ task breakdowns live in the per-phase files; this is the map.
   [`phase-53.20.md`](docs/phases/phase-53.20.md).
 
 - **Phase 54 — Finance scenarios, quiet empty widgets and last month's
-  sold vehicles** (planned). A scenario suite checks whole vehicle lives
+  sold vehicles** (complete). A scenario suite checks whole vehicle lives
   across the cost-of-ownership page, the API and the CSV; an empty
   dashboard widget shrinks to one line (§7.8, #563); true-cost periods
   leave out cover outside ownership and the working says how much (§7.35,

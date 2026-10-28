@@ -151,6 +151,19 @@ final class TrueCostTest extends TestCase
         );
     }
 
+    /** #564: a policy wholly before the purchase or after the sale is named whole (found by the Phase 54 review). */
+    public function testCoverWhollyOutsideOwnershipIsNamedWhole(): void
+    {
+        $car = self::vehicle('2025-01-01', '10000.000', '2026-03-31', '8000.000');
+        $old = self::document($car, '2024-06-01', '200.000', '2024-12-15');
+        $late = self::document($car, '2026-05-01', '365.000', '2027-04-30');
+
+        [$y2025, $y2026] = TrueCostPeriod::years(self::date('2025-01-01'), self::date('2026-03-31'));
+
+        self::assertSame('200.000', self::period($car, $y2025, [$old, $late], [])->coverBefore?->toDecimal(3));
+        self::assertSame('365.000', self::period($car, $y2026, [$old, $late], [])->coverAfter?->toDecimal(3));
+    }
+
     public function testDocumentSharesAlwaysAddUpToTheCost(): void
     {
         // £100 over 7 days: shares of 14.285714… a day.

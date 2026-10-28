@@ -6,6 +6,40 @@ is called out explicitly.
 
 ## [Unreleased]
 
+Phase 54: **finance scenarios, quiet empty widgets and last month's sold
+vehicles** ([docs/phases/phase-54.md](docs/phases/phase-54.md)). No
+migration: pull and restart.
+
+### Changed
+- **An empty dashboard widget shrinks to one line,** its header and the
+  "nothing yet" message, in its place, so the layout you arranged doesn't
+  jump about. An empty *True cost* leaves out its period switch and an
+  empty *Recent fuel* its *Log fill-up* button (*Log entry* is in the
+  navigation). *Needs attention*, *Spend this month* and *Expense
+  breakdown* keep their size, and *Customise* shows every widget full size
+  (#563).
+- **The monthly briefing's *Last month* keeps a vehicle sold, written off
+  or archived during that month,** so the month's spend is complete. The
+  webhook's `last_month` rows and `fleet` totals include it too; their
+  shape is unchanged, and a row's `vehicle_id` can now be an archived
+  vehicle. The other sections still cover only vehicles you have (#374).
+- **True cost says how much cover it leaves out.** Days of a document's
+  cover before the purchase or after the sale count in no year, as
+  before; the working under the first year and the year of the sale now
+  names the amount, so the years differing from *Since bought* is
+  explained. A working's `notes` (API `?include=working`, Ask, MCP) are
+  plain text and can gain entries like these (#564).
+
+### Fixed
+- **The test suite can't delete your database.** Run without its
+  configuration, phpunit used to resolve the app's own database and
+  delete and migrate it; the test bootstrap now stops unless `APP_ENV` is
+  `testing` (K148).
+
+### Documented
+- The configuration guide points to MOT history, which is set in Settings,
+  not by environment variables.
+
 ## [3.19.12] — 2026-10-27
 
 Phase 53.20: **page security headers and export times from the

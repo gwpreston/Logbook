@@ -128,7 +128,8 @@ anything you don't use. Switching a module off hides it everywhere and
 deletes nothing; switching it back on brings everything back.
 
 The dashboard is yours to arrange: **Customise** adds, removes and reorders
-widgets.
+widgets. A widget with nothing to show yet shrinks to one line in its
+place; *Customise* shows it full size.
 
 <br clear="right">
 

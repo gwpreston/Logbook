@@ -26,12 +26,18 @@ final class DashboardEmptyWidgetsTest extends AppTestCase
         $browser = $this->signedIn($app);
         $this->vehicle($app);
 
-        $empty = self::emptyWidgets(self::body($browser->get('/')));
+        $html = self::body($browser->get('/'));
+        $empty = self::emptyWidgets($html);
 
         foreach (['reminders', 'coming_up', 'recent_fuel', 'efficiency', 'compliance'] as $widget) {
             self::assertContains($widget, $empty, $widget . ' has nothing to show');
         }
         self::assertNotContains('needs_attention', $empty, '"Nothing needs attention" keeps its size');
+        self::assertContains('true_cost', $empty);
+        $trueCost = self::widget($html, 'true_cost');
+        self::assertStringNotContainsString('true_cost=since_bought', $trueCost, 'an empty true cost has no switch');
+        self::assertStringNotContainsString('href="/vehicles', self::widget($html, 'recent_fuel'), 'nor recent fuel its button');
+        self::assertStringNotContainsString('/fuel/new', self::widget($html, 'recent_fuel'));
         self::assertNotContains('spend', $empty, 'a £0.00 figure is a figure');
     }
 
@@ -59,6 +65,13 @@ final class DashboardEmptyWidgetsTest extends AppTestCase
         $this->vehicle($app);
 
         self::assertSame([], self::emptyWidgets(self::body($browser->get('/?customise=1'))));
+    }
+
+    private static function widget(string $html, string $id): string
+    {
+        self::assertSame(1, preg_match('/<section[^>]* id="widget-' . $id . '".*?<\/section>/s', $html, $m), $id);
+
+        return $m[0];
     }
 
     /**

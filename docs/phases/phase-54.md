@@ -9,7 +9,7 @@ to one line; and last month's briefing figures that keep a vehicle sold
 during that month (#374). It also stops the test bootstrap deleting the
 dev database (K148).*
 
-Status: 📋 planned · file lives in `docs/phases/` · a minor release
+Status: ✅ complete · file lives in `docs/phases/` · a minor release
 
 Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.8 *Dashboard*,
 §7.11 *The monthly briefing*, §7.35 *True cost*, §8 *Show the working*),
@@ -74,50 +74,65 @@ and [`open-questions.md`](open-questions.md) first.
 
 ### 54.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 54.1 Finance scenarios
 
-- [ ] `tests/Integration/Scenario/`, one test class per scenario, built
+- [x] `tests/Integration/Scenario/`, one test class per scenario, built
       with the existing fixtures (`tests/Support/CostFixtures.php`,
       `FinanceFixtures`, `TrueCostFixtures`), each checking the page, the
       API (`?include=working`) and the CSV against its golden file.
-- [ ] Run on all four engines (`bin/test-all-dbs.sh`).
+- [x] Run on all four engines (`bin/test-all-dbs.sh`).
 
 ### 54.2 Quiet empty widgets (#563)
 
-- [ ] The dashboard view says per widget whether it is empty (from the
+- [x] The dashboard view says per widget whether it is empty (from the
       data it already has; no logic in templates); `home.twig` adds
       `widget--empty`, and the CSS shrinks it. Not in *Customise*, and
       never *Needs attention*.
-- [ ] Tests: each widget's empty state is flagged, a widget with data is
+- [x] Tests: each widget's empty state is flagged, a widget with data is
       not, *Customise* shows them full size; works without JS.
 
 ### 54.3 Cover outside ownership (#564)
 
-- [ ] Confirm `TrueCost` drops the outside days (a scenario of 54.1);
+- [x] Confirm `TrueCost` drops the outside days (a scenario of 54.1);
       the true-cost working names the dropped amount when there is one.
 
 ### 54.4 Last month's sold vehicles (#374)
 
-- [ ] The digest's *Last month* takes recipient vehicles archived on or
+- [x] The digest's *Last month* takes recipient vehicles archived on or
       after the first of last month as well as the active ones.
-- [ ] Tests: sold mid-month is listed with its distance and spend; sold
+- [x] Tests: sold mid-month is listed with its distance and spend; sold
       before last month is not; other sections unchanged.
 
 ### 54.5 K148 and docs
 
-- [ ] `tests/bootstrap.php` stops with a message unless the environment
+- [x] `tests/bootstrap.php` stops with a message unless the environment
       is `testing`.
-- [ ] `docs/configuration.md` links MOT history.
+- [x] `docs/configuration.md` links MOT history.
 
 ### 54.6 Finish
 
-- [ ] K148 *Fixed*; #374, #563, #564 marked built.
-- [ ] CHANGELOG, spec §13, ROADMAP status.
+- [x] K148 *Fixed*; #374, #563, #564 marked built.
+- [x] CHANGELOG, spec §13, ROADMAP status.
 - [ ] Merge review (spec-keeper, bug-hunter, design-reviewer,
       api-contract-checker), then merge.
+
+### Found by the first merge review (2026-10-28, at `1fde47a1`)
+
+- Fixed here: the user guides for #374, #563 and #564 (`docs/reports.md`,
+  `docs/notification-channels.md`, `docs/getting-started.md`); spec §7.8
+  lists the widgets that shrink and the ones that never do; an empty *True
+  cost* drops its period switch and an empty *Recent fuel* its button, so
+  each is one line; a document wholly before the purchase or after the
+  sale is named in the working too; the German notes reworded.
+- Left as follow-ups (`known-issues.md` once the final review is done):
+  the *Last 12 months* note wording when that period starts on the
+  purchase date; blank space beside short empty cards; the dashboard and
+  true-cost page over budget on a heavy household (already on master);
+  `bin/test-all-dbs.sh` failing when an earlier run left users in a test
+  database.
 
 ## Acceptance criteria
 

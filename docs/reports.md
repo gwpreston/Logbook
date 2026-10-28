@@ -68,6 +68,14 @@ months ago still counts for the months it covers, and a year never counts
 two renewals. *Since bought* counts each document on its date, as the cost
 of ownership card does.
 
+Cover outside the time you owned the vehicle counts in no year: the days
+of a policy before you bought it or after you sold it are left out, and
+the working under the first year or the year of the sale says how much
+("£40 of cover before you bought it isn't counted"). So the years can
+differ from *Since bought* either way: a policy that starts before the
+purchase date isn't in *Since bought* at all, while one still running at
+the sale is in it whole.
+
 ### Depreciation for a period
 
 Logbook knows the vehicle's value on a few dates: what you paid, each
