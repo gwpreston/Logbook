@@ -100,7 +100,7 @@ cost*), and [`open-questions.md`](open-questions.md) first.
       existing entry at the other instant as *Already there* (K147).
       `CsvImporterTest`: re-import of an old-format export of the
       fall-back night adds nothing.
-- [ ] The cover note's tail is dropped for a period that isn't a yearly
+- [x] The cover note's tail is dropped for a period that isn't a yearly
       table (K153), in `TrueCost` or its template and in English and
       German. `TrueCostTest` covers *Last 12 months* from the purchase
       date.

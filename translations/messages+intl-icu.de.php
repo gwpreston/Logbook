@@ -2559,6 +2559,8 @@ return [
             'change_note' => 'Die Änderungen der Teile ergeben genau die Änderung der Summe.',
             'cover_before' => '{amount} für die Zeit vor dem Kauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
             'cover_after' => '{amount} für die Zeit nach dem Verkauf werden nicht gezählt, daher können die Jahre von „Seit dem Kauf“ abweichen.',
+            'cover_before_short' => '{amount} für die Zeit vor dem Kauf werden nicht gezählt.',
+            'cover_after_short' => '{amount} für die Zeit nach dem Verkauf werden nicht gezählt.',
         ],
         'finance' => [
             'quote' => 'Angebot des Kreditgebers',

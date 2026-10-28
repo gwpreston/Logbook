@@ -2561,6 +2561,8 @@ return [
             'change_note' => 'The parts’ changes add up exactly to the change in the total.',
             'cover_before' => '{amount} of cover before you bought it isn’t counted, so the years can differ from Since bought.',
             'cover_after' => '{amount} of cover after you sold it isn’t counted, so the years can differ from Since bought.',
+            'cover_before_short' => '{amount} of cover before you bought it isn’t counted.',
+            'cover_after_short' => '{amount} of cover after you sold it isn’t counted.',
         ],
         'finance' => [
             'quote' => 'Lender’s quote',
