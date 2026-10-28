@@ -163,7 +163,8 @@ final class LocalTime
         $offset = strtoupper($m[4]) === 'Z' ? '+00:00' : substr($m[4], 0, 3) . ':' . substr($m[4], -2);
         // Real offsets run from -12:00 to +14:00 in whole minutes.
         $minutes = (int) substr($offset, 1, 2) * 60 + (int) substr($offset, 4, 2);
-        if ((int) substr($offset, 4, 2) > 59 || $minutes > 14 * 60) {
+        $limit = $offset[0] === '-' ? 12 * 60 : 14 * 60;
+        if ((int) substr($offset, 4, 2) > 59 || $minutes > $limit) {
             return null;
         }
 

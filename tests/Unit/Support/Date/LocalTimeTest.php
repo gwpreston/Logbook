@@ -98,6 +98,9 @@ final class LocalTimeTest extends TestCase
         $tokyo = new DateTimeZone('Asia/Tokyo');
         self::assertSame('2026-06-01T00:00:00+00:00', LocalTime::toUtc('2026-06-01T05:30+0530', $tokyo)?->format('c'));
         self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+15:00', $zone));
+        self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00-13:00', $zone));
+        self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00-12:00', $zone));
+        self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00+14:00', $zone));
         self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+01:75', $zone));
         self::assertNull(LocalTime::toUtc('2026-02-30T01:30:00+01:00', $zone));
         self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-10-25T01:30:00+01:00', $zone));
