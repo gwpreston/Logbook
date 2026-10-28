@@ -4413,7 +4413,10 @@ vehicles; a disabled module cannot be imported).
   gallon, as for app imports (#464, #505); the
   date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
-  defaults to ISO. The preview lists every row with what will happen to it.
+  defaults to ISO. The *number format* (dot decimal `1,234.56` or comma
+  decimal `1.234,56`) defaults to the owner's locale and decides how a
+  number cell such as `45,123` or `13.000` is read; a cell the format
+  can't read is invalid (Phase 54.2, K1, #484, #573). The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
   every row that was not, with its line number and reason. For fill-ups it
   also says how many of the imported ones are flagged by the economy check
@@ -4936,6 +4939,11 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   removed from the queue; one the server rejects (validation) stays queued,
   and the fill-up page lists it with a link to review. Attachments cannot be
   queued. Nothing else works offline.
+  A queued entry and a cached fill-up page belong to the user who made
+  them: the browser remembers the last signed-in user, an entry is sent,
+  listed and reviewed only for that user, and a cached page is served
+  only to the same user (otherwise the offline page). Nothing is cleared
+  at sign-out (Phase 54.2, K40, #449, #574).
 
 ### 7.16 Vehicle history
 "What has happened to this car?" on one page (Phase 10): everything logged
@@ -12476,6 +12484,13 @@ task breakdowns live in the per-phase files; this is the map.
   note into its one line (§7.8, §7.21, K158, #571); the test runs start
   fresh and refuse the app's own database (K155, K156). Releases
   v3.20.1 (#572). No migration. See [`phase-54.1.md`](docs/phases/phase-54.1.md).
+- **Phase 54.2 — CSV number separators and offline fill-ups per user
+  from the known-issues log + minor release** (planned). The import
+  preview's *Number format* picker (dot or comma decimal, default the
+  owner's locale) decides how `45,123` and `13.000` are read (§7.13, K1,
+  #484, #573); queued offline fill-ups and cached fill-up pages belong to
+  the user who made them (§7.15, K40, #449, #574). Releases v3.21.0
+  (#575). No migration. See [`phase-54.2.md`](docs/phases/phase-54.2.md).
 
 ---
 

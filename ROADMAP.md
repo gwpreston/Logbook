@@ -133,6 +133,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.20](docs/phases/phase-53.20.md) | Page security headers and export times from the known-issues log + patch release | ✅ |
 | [54](docs/phases/phase-54.md) | Finance scenarios, quiet empty widgets and last month's sold vehicles | ✅ |
 | [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | 📋 |
+| [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1770,6 +1771,22 @@ dashboard widgets, and two test-run guards. Releases v3.20.1.*
   bootstrap refuses the app's own database (K156). No migration.
 
 → [`phase-54.1.md`](docs/phases/phase-54.1.md)
+
+---
+
+## Phase 54.2 — CSV number separators and offline fill-ups per user from the known-issues log + minor release
+
+*Two HIGH rows of the known-issues log closed: the CSV import has a
+*Number format* picker (K1, #484), and offline fill-ups stay with the user
+who queued them (K40, #449). Releases v3.21.0.*
+
+- `45,123` and `13.000` are read the way the owner chooses on the
+  preview, not silently by locale (K1).
+- Queued fill-ups and cached fill-up pages are tied to their user and
+  never sent or shown to another person on the same browser (K40). No
+  migration.
+
+→ [`phase-54.2.md`](docs/phases/phase-54.2.md)
 
 ---
 
