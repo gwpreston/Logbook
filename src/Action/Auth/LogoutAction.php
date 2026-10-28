@@ -20,6 +20,12 @@ use Psr\Http\Message\ServerRequestInterface;
  * sends it back to sign-in. A session from a proxy's header goes on to
  * AUTH_PROXY_LOGOUT_URL, or without one gets a page explaining that the
  * proxy signs straight back in (spec.md §7.9 *Sign-out*).
+ *
+ * Nothing offline is cleared here (spec.md §7.15, K40, #574): fill-ups
+ * queued in the browser stay, to be sent when their user next signs in,
+ * and the signed-out page the browser lands on makes its service worker
+ * forget the user, so no cached fill-up page is shown until someone
+ * signs in (#580).
  */
 final readonly class LogoutAction
 {

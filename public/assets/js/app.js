@@ -7,6 +7,12 @@
 (function () {
     'use strict';
 
+    // Node (tests/js) gets the offline queue's pure helpers, nothing else.
+    if (typeof document === 'undefined') {
+        module.exports = { ownedBy: ownedBy, untagged: untagged, sentAs: sentAs };
+        return;
+    }
+
     document.documentElement.classList.add('js');
 
     document.addEventListener('alpine:init', function () {
@@ -628,7 +634,29 @@
      * worker (<base>/sw.js) keeps the fill-up forms for offline use; a
      * fill-up submitted without a connection is queued here, in IndexedDB,
      * and sent once the device is online again.
+     *
+     * A queued fill-up belongs to the user who queued it (K40, #449, #574):
+     * it is listed, reviewed and sent only on that user's pages, and sent
+     * only when the server says that user is still signed in. One queued
+     * before Phase 54.2 carries no user: the first user signed in takes it
+     * over (#579).
      */
+    function ownedBy(items, user) {
+        return user ? items.filter(function (item) { return item.userId === user; }) : [];
+    }
+
+    function untagged(items) {
+        return items.filter(function (item) { return !item.userId; });
+    }
+
+    // Whether the form fetched to send an item was the item's user's (the server names it).
+    function sentAs(item, responseUser) {
+        return !!item.userId && responseUser === item.userId;
+    }
+
+    // The signed-in user whose page this is ('' when signed out).
+    var pageUser = '';
+
     var outbox = (function () {
         function open() {
             return new Promise(function (resolve, reject) {
@@ -673,7 +701,8 @@
         if (!outboxBox || !outbox.available) {
             return;
         }
-        outbox.all().then(function (items) {
+        outbox.all().then(function (all) {
+            var items = ownedBy(all, pageUser);
             var list = outboxBox.querySelector('[data-outbox-list]');
             var status = outboxBox.querySelector('[data-outbox-status]');
             list.textContent = '';
@@ -712,7 +741,9 @@
         var path = new URL(item.url, window.location.href).pathname;
         return fetch(item.url, { credentials: 'same-origin' })
             .then(function (response) {
-                if (!response.ok || new URL(response.url).pathname !== path) {
+                // Signed out, or someone else signed in since: keep it for its own user.
+                if (!response.ok || new URL(response.url).pathname !== path
+                    || !sentAs(item, response.headers.get('X-Logbook-User'))) {
                     throw new Error('signed-out');
                 }
                 return response.text();
@@ -738,6 +769,21 @@
             });
     }
 
+    // Fill-ups queued before Phase 54.2 go to the first user signed in (#579).
+    function adoptUntagged() {
+        if (!pageUser || !outbox.available) {
+            return Promise.resolve();
+        }
+        return outbox.all()
+            .then(function (items) {
+                return Promise.all(untagged(items).map(function (item) {
+                    item.userId = pageUser;
+                    return outbox.put(item);
+                }));
+            })
+            .catch(function () {});
+    }
+
     var flushing = false;
     function flushOutbox() {
         if (flushing || navigator.onLine === false || !outbox.available) {
@@ -747,7 +793,7 @@
         var sent = 0;
         outbox.all()
             .then(function (items) {
-                return items.filter(function (item) { return !item.rejected; }).reduce(function (chain, item) {
+                return ownedBy(items, pageUser).filter(function (item) { return !item.rejected; }).reduce(function (chain, item) {
                     return chain.then(function () {
                         return sendQueued(item).then(function (ok) { sent += ok ? 1 : 0; });
                     });
@@ -791,7 +837,7 @@
         var match = /^#offline-(\d+)$/.exec(window.location.hash);
         if (match && outbox.available) {
             outbox.get(parseInt(match[1], 10)).then(function (item) {
-                if (!item) {
+                if (!item || ownedBy([item], pageUser).length === 0) {
                     return;
                 }
                 item.fields.forEach(function (pair) {
@@ -818,6 +864,7 @@
                 }
             });
             outbox.add({
+                userId: pageUser,
                 url: form.action,
                 label: form.getAttribute('data-offline-label') || '',
                 fields: fields,
@@ -1268,11 +1315,14 @@
         sendSchedulerBeacon();
         registerServiceWorker();
         modal.init();
+        pageUser = document.body.getAttribute('data-user') || '';
         outboxBox = document.querySelector('[data-offline-outbox]');
         document.querySelectorAll('form[data-offline-queue]').forEach(enhanceOfflineForm);
         cacheOfflineForms(Array.prototype.slice.call(document.querySelectorAll('a[data-offline-cache]')));
-        renderOutbox();
-        flushOutbox();
+        adoptUntagged().then(function () {
+            renderOutbox();
+            flushOutbox();
+        });
         window.addEventListener('online', flushOutbox);
 
         // Settings: "Quick setup" buttons fill in the four unit preferences,

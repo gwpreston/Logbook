@@ -90,16 +90,24 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### 54.2.2 Offline fill-ups per user (K40)
 
-- [ ] The page carries the signed-in user's id; `app.js` remembers it at
-      sign-in and every queued item stores it (`userId`).
-- [ ] `sendQueued`/`flushOutbox` and the outbox list use only the current
-      user's items; *Review* never shows another user's values.
-- [ ] `cacheOfflineForms` and `service-worker.js` cache a page for its
+- [x] The page carries the signed-in user's id (`<body data-user>`, and
+      an `X-Logbook-User` header on every signed-in response); every
+      queued item stores it (`userId`). The service worker, not `app.js`,
+      remembers the user, from each page it fetches: a page served from
+      its cache must not re-remember its own user, and a signed-out page
+      forgets it (#580).
+- [x] `sendQueued`/`flushOutbox` and the outbox list use only the current
+      user's items, and send one only when the fetched form's header names
+      its user; *Review* never shows another user's values. Items queued
+      before the upgrade go to the first user signed in (#579).
+- [x] `cacheOfflineForms` and `service-worker.js` cache a page for its
       user and serve it only to the same user; no remembered user gets the
       offline page.
-- [ ] A browser test or script (the repo's JS tests) covers two users on
-      one browser, queued and cached; `LogoutAction` and spec §7.15
-      describe the behaviour. Rebuild and commit the built assets.
+- [x] A browser test or script (the repo's JS tests) covers two users on
+      one browser, queued and cached (`tests/js/offline.test.js`, the real
+      service worker at the root and at a subpath); `LogoutAction` and
+      spec §7.15 describe the behaviour. Rebuild and commit the built
+      assets.
 
 ### 54.2.3 Finish
 
