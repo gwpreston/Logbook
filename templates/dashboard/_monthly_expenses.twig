@@ -6,7 +6,9 @@
     <p class="muted">{{ 'dashboard.spend.no_vehicles'|trans }}</p>
 {% else %}
     {% if spend.isEmpty() %}
-        <p class="muted">{{ 'dashboard.spend.monthly_empty'|trans }}</p>
+        {# One line: the costs-excluded note (§7.21) folds into it (#571). #}
+        {% set excluded = costs_excluded() %}
+        <p class="muted">{{ excluded > 0 ? 'dashboard.spend.monthly_empty_excluded'|trans({count: excluded}) : 'dashboard.spend.monthly_empty'|trans }}</p>
     {% endif %}
     {% for section in spend.sections() %}
         {% set label = 'dashboard.spend.monthly_chart'|trans({currency: section.currency}) %}
@@ -43,5 +45,5 @@
             </div>
         </div>
     {% endfor %}
-    {{ ui.costs_excluded_note() }}
+    {% if not spend.isEmpty() %}{{ ui.costs_excluded_note() }}{% endif %}
 {% endif %}

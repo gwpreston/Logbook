@@ -3630,6 +3630,7 @@ return [
             'breakdown_period' => 'Zeitraum der Aufteilung',
             'breakdown_empty' => 'Keine Kosten in diesem Zeitraum.',
             'monthly_empty' => 'Keine Kosten in den letzten 12 Monaten.',
+            'monthly_empty_excluded' => 'Keine Kosten in den letzten 12 Monaten (ohne {count, plural, one {# Fahrzeug, das ohne Kosten geteilt ist} other {# Fahrzeuge, die ohne Kosten geteilt sind}}).',
             'monthly_chart' => 'Ausgaben pro Monat in den letzten 12 Monaten in {currency}, nach Kategorie',
             'monthly_average' => 'Durchschnittlich {amount} im Monat',
         ],

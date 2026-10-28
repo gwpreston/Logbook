@@ -107,10 +107,10 @@ cost*), and [`open-questions.md`](open-questions.md) first.
 
 ### 54.1.2 Dashboard
 
-- [ ] `TrueCostWidget::isEmpty()` is also true when no vehicle has a
+- [x] `TrueCostWidget::isEmpty()` is also true when no vehicle has a
       figure (K157); `DashboardEmptyWidgetsTest` covers a vehicle with a
       purchase price and no entries.
-- [ ] An empty *Monthly spend* folds the costs-excluded note into its
+- [x] An empty *Monthly spend* folds the costs-excluded note into its
       line (K158), in English and German; `DashboardEmptyWidgetsTest`
       covers a member who can't see one vehicle's costs. Spec §7.8 and
       §7.21 say so. Check the widgets at 375, 768 and 1280 px, light and

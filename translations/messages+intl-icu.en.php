@@ -3633,6 +3633,7 @@ return [
             'breakdown_period' => 'Breakdown period',
             'breakdown_empty' => 'No costs in this period.',
             'monthly_empty' => 'No costs in the last 12 months.',
+            'monthly_empty_excluded' => 'No costs in the last 12 months (excludes {count, plural, one {# vehicle} other {# vehicles}} shared without costs).',
             'monthly_chart' => 'Spend per month over the last 12 months in {currency}, by category',
             'monthly_average' => '{amount} a month on average',
         ],
