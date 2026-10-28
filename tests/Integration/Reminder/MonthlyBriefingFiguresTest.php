@@ -341,18 +341,43 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         self::assertStringNotContainsString('Polo', $this->digestText());
     }
 
-    public function testAnArchivedVehicleIsLeftOut(): void
+    public function testAVehicleArchivedBeforeLastMonthIsLeftOut(): void
     {
         $this->start();
         $golf = $this->car();
         $polo = $this->car('Polo');
         $this->spend($golf, '2026-09-05', '30');
         $this->spend($polo, '2026-09-05', '40');
+        $this->clock->set(new DateTimeImmutable('2026-08-31T22:00:00Z')); // 23:00 on 31 Aug in London
         $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $polo);
+        $this->clock->set(new DateTimeImmutable(self::NOW));
 
         $this->runTasks();
 
         self::assertStringNotContainsString('Polo', $this->digestText());
+    }
+
+    /** #374 (Phase 54): sold during last month, its spend still counts in that month. */
+    public function testAVehicleArchivedDuringLastMonthIsKeptInLastMonthOnly(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $polo = $this->car('Polo');
+        $this->spend($golf, '2026-09-05', '30');
+        $this->spend($polo, '2026-09-05', '40');
+        $this->clock->set(new DateTimeImmutable('2026-08-31T23:30:00Z')); // 00:30 on 1 Sep in London
+        $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $polo);
+        $this->clock->set(new DateTimeImmutable(self::NOW));
+
+        $this->runTasks();
+
+        $rows = $this->digestJson()['last_month'] ?? null;
+        self::assertIsArray($rows);
+        self::assertCount(2, $rows);
+        self::assertStringContainsString('Polo', $this->digestText());
+        $fleet = $this->digestJson()['fleet'] ?? null;
+        self::assertIsArray($fleet);
+        self::assertStringContainsString('70', (string) json_encode($fleet), 'the fleet spend counts it');
     }
 
     public function testTheLargeEntryIsNamedOnlyAboveHalfTheMonth(): void

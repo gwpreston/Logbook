@@ -50,11 +50,12 @@ final class SharedVehicleAccess implements VehicleAccess
         );
     }
 
-    public function recipientVehicleIds(User $user): array
+    public function recipientVehicleIds(User $user, bool $archived = false): array
     {
         return $this->idsWhere(
             $user,
-            static fn (VehicleGrant $grant): bool => $grant->status === VehicleStatus::Active && $grant->notifies(),
+            static fn (VehicleGrant $grant): bool => ($archived || $grant->status === VehicleStatus::Active)
+                && $grant->notifies(),
         );
     }
 

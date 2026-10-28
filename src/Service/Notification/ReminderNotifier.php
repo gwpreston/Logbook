@@ -236,7 +236,9 @@ final readonly class ReminderNotifier
         $checks = $preferences->digestIncludes(DigestSection::Attention)
             ? $this->attention->forVehicles($user, $vehicles, sync: false)->checks()
             : [];
-        $content = $this->summary->build($user, $vehicles, $today, $preferences);
+        // Archived ones too: *Last month* keeps one archived during it (#374).
+        $withArchived = $this->vehicles->listByIds($this->access->recipientVehicleIds($user, archived: true));
+        $content = $this->summary->build($user, $withArchived, $today, $preferences);
         if ($entries === [] && $checks === [] && $content->isEmpty()) {
             $this->settings->markDigestSent($user->id, $month);
 
