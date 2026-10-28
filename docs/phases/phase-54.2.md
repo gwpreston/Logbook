@@ -130,3 +130,11 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   shown only to a match (K40). Not chosen: also clearing at sign-out.
 - **#575. Release. Decided 2026-10-28:** on its own as minor release
   v3.21.0. Not chosen: a patch release, or with the next releasing phase.
+- **#579. Decided 2026-10-28** (found while starting it): a fill-up queued
+  before the upgrade carries no user; the first user signed in after the
+  upgrade takes it over and it sends as before (K40). Not chosen: never
+  send it; list it with *Discard* only.
+- **#580. Decided 2026-10-28** (found while starting it): a page loaded
+  signed out forgets the remembered user, so no cached fill-up page is
+  served until someone signs in; queued entries stay (K40). Not chosen:
+  keep the last user until another signs in.

@@ -4948,7 +4948,12 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   them: the browser remembers the last signed-in user, an entry is sent,
   listed and reviewed only for that user, and a cached page is served
   only to the same user (otherwise the offline page). Nothing is cleared
-  at sign-out (Phase 54.2, K40, #449, #574).
+  at sign-out (Phase 54.2, K40, #449, #574). A page loaded signed out
+  (the sign-in page after signing out, or an expired session) forgets the
+  remembered user, so no cached page is served until someone signs in
+  again; queued entries stay and are sent when their user next signs in
+  (#580). An entry queued before Phase 54.2 carries no user: the first
+  user signed in after the upgrade takes it over (#579).
 
 ### 7.16 Vehicle history
 "What has happened to this car?" on one page (Phase 10): everything logged
