@@ -132,6 +132,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [53.19](docs/phases/phase-53.19.md) | Declared on and backup id counters from the known-issues log + patch release | ✅ |
 | [53.20](docs/phases/phase-53.20.md) | Page security headers and export times from the known-issues log + patch release | ✅ |
 | [54](docs/phases/phase-54.md) | Finance scenarios, quiet empty widgets and last month's sold vehicles | ✅ |
+| [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1751,6 +1752,24 @@ keeps a vehicle sold during it (#374); the test bootstrap can't delete the
 dev database (K148). Releases v3.20.0.*
 
 → [`phase-54.md`](docs/phases/phase-54.md)
+
+---
+
+## Phase 54.1 — Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release
+
+*Six open rows of the known-issues log closed: a repeated clock-change
+time on re-import, the true-cost cover note, two edges of the empty
+dashboard widgets, and two test-run guards. Releases v3.20.1.*
+
+- Re-importing the clock-fall-back night's old-format export doesn't add
+  a duplicate (K147); the cover note on *Last 12 months* drops its
+  "years can differ" tail (K153).
+- *True cost* and *Monthly spend* shrink to one line when every vehicle
+  has no costs or one is shared without costs (K157, K158; #566, #571).
+- `bin/test-all-dbs.sh` starts each engine fresh (K155) and the test
+  bootstrap refuses the app's own database (K156). No migration.
+
+→ [`phase-54.1.md`](docs/phases/phase-54.1.md)
 
 ---
 
