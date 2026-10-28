@@ -12462,7 +12462,7 @@ task breakdowns live in the per-phase files; this is the map.
   leave out cover outside ownership and the working says how much (§7.35,
   #564); the briefing's *Last month* keeps vehicles archived during it
   (§7.11, #374); the test bootstrap runs only under `APP_ENV=testing`
-  (K148). No migration. See [`phase-54.md`](docs/phases/phase-54.md).
+  (K148). No migration. Releases v3.20.0. See [`phase-54.md`](docs/phases/phase-54.md).
 
 ---
 

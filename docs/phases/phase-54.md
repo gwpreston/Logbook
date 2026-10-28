@@ -9,7 +9,7 @@ to one line; and last month's briefing figures that keep a vehicle sold
 during that month (#374). It also stops the test bootstrap deleting the
 dev database (K148).*
 
-Status: ✅ complete · file lives in `docs/phases/` · a minor release
+Status: ✅ complete · file lives in `docs/phases/` · released as **v3.20.0**, a minor release
 
 Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.8 *Dashboard*,
 §7.11 *The monthly briefing*, §7.35 *True cost*, §8 *Show the working*),
@@ -116,7 +116,7 @@ and [`open-questions.md`](open-questions.md) first.
 
 - [x] K148 *Fixed*; #374, #563, #564 marked built.
 - [x] CHANGELOG, spec §13, ROADMAP status.
-- [ ] Merge review (spec-keeper, bug-hunter, design-reviewer,
+- [x] Merge review (spec-keeper, bug-hunter, design-reviewer,
       api-contract-checker), then merge.
 
 ### Found by the merge reviews (2026-10-28)
@@ -144,6 +144,11 @@ and [`open-questions.md`](open-questions.md) first.
     database; *True cost* with vehicles but no costs not shrinking; an
     empty *Monthly spend*'s second "costs excluded" line. K159 (this
     section credited only the first review) is fixed here.
+
+### Release
+
+- [x] `VERSION`, CHANGELOG, README status.
+- [x] Tag `v3.20.0` once merged.
 
 ## Acceptance criteria
 

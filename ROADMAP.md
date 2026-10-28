@@ -1748,7 +1748,7 @@ clock-change hour stays distinct on re-import (K13). Releases v3.19.12.*
 CSV; empty dashboard widgets shrink to one line (#563); true-cost periods
 leave out cover outside ownership and say so (#564); last month's briefing
 keeps a vehicle sold during it (#374); the test bootstrap can't delete the
-dev database (K148).*
+dev database (K148). Releases v3.20.0.*
 
 → [`phase-54.md`](docs/phases/phase-54.md)
 

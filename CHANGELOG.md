@@ -6,6 +6,8 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.20.0] — 2026-10-28
+
 Phase 54: **finance scenarios, quiet empty widgets and last month's sold
 vehicles** ([docs/phases/phase-54.md](docs/phases/phase-54.md)). No
 migration: pull and restart.
@@ -4217,7 +4219,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.19.12...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.20.0...HEAD
+[3.20.0]: https://github.com/gwpreston16/Logbook/compare/v3.19.12...v3.20.0
 [3.19.12]: https://github.com/gwpreston16/Logbook/compare/v3.19.11...v3.19.12
 [3.19.11]: https://github.com/gwpreston16/Logbook/compare/v3.19.10...v3.19.11
 [3.19.10]: https://github.com/gwpreston16/Logbook/compare/v3.19.9...v3.19.10
