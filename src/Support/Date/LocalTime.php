@@ -21,7 +21,12 @@ use Psr\Clock\ClockInterface;
  *
  * Local times that do not exist (the hour skipped when clocks go forward) are
  * moved forward by the gap; ambiguous ones (the repeated hour when clocks go
- * back) resolve to the later, standard-time instant. Both follow PHP.
+ * back) resolve to whichever of the two instants PHP picks, which depends on
+ * the zone (the later one in London, the first in New York); firstOfRepeated()
+ * gives the first. Both follow PHP. A time
+ * written with its UTC offset ("2026-10-25T01:30:00+00:00", or "Z") is
+ * exact, and the zone is not consulted (CSV import, K13); wallClock() says
+ * whether a time without one is skipped or repeated.
  */
 final class LocalTime
 {
@@ -30,6 +35,9 @@ final class LocalTime
     public const int MAX_YEAR = 2100;
 
     private const array LOCAL_FORMATS = ['!Y-m-d\TH:i', '!Y-m-d\TH:i:s', '!Y-m-d H:i', '!Y-m-d H:i:s'];
+
+    /** A date and time followed by a UTC offset: `…T01:30:00+01:00`, `…T00:30Z`, `… 01:30 +0100`. */
+    private const string WITH_OFFSET = '/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:?\d{2})$/i';
 
     public static function utc(): DateTimeZone
     {
@@ -53,6 +61,12 @@ final class LocalTime
             return null;
         }
 
+        $exact = self::withOffset($input);
+        if ($exact !== false) {
+            // The offset can carry the instant across the year limit the text itself is within.
+            return $exact !== null && self::yearInRange((int) $exact->format('Y')) ? $exact : null;
+        }
+
         foreach (self::LOCAL_FORMATS as $format) {
             $parsed = DateTimeImmutable::createFromFormat($format, $input, $zone);
             $errors = DateTimeImmutable::getLastErrors();
@@ -66,6 +80,106 @@ final class LocalTime
         }
 
         return null;
+    }
+
+    /**
+     * Whether a wall-clock time without an offset is one instant in $zone,
+     * falls in the hour skipped when the clocks go forward, or in the hour
+     * repeated when they go back. A time with an offset, or one that doesn't
+     * parse, is `Exists`: there is nothing to ask of the zone.
+     */
+    public static function wallClock(string $localDateTime, DateTimeZone $zone): WallClock
+    {
+        $pair = self::clockChange($localDateTime, $zone);
+        if ($pair === null) {
+            return WallClock::Exists;
+        }
+        [$seconds, $before, $after] = $pair;
+        $valid = 0;
+        foreach ([$before, $after] as $offset) {
+            if ($zone->getOffset(new DateTimeImmutable('@' . ($seconds - $offset))) === $offset) {
+                $valid++;
+            }
+        }
+
+        return match ($valid) {
+            0 => WallClock::Skipped,
+            2 => WallClock::Repeated,
+            default => WallClock::Exists,
+        };
+    }
+
+    /**
+     * The earlier of the two instants a repeated wall-clock time is (01:30
+     * BST rather than 01:30 GMT); null when the time isn't repeated.
+     */
+    public static function firstOfRepeated(string $localDateTime, DateTimeZone $zone): ?DateTimeImmutable
+    {
+        if (self::wallClock($localDateTime, $zone) !== WallClock::Repeated) {
+            return null;
+        }
+        $pair = self::clockChange($localDateTime, $zone);
+        assert($pair !== null);
+
+        // The larger offset is the summer one, whose reading comes first.
+        return (new DateTimeImmutable('@' . ($pair[0] - max($pair[1], $pair[2]))))->setTimezone(self::utc());
+    }
+
+    /**
+     * For a wall-clock time without an offset, on a day the zone's offset
+     * changes: the reading as if it were UTC and the two offsets in force
+     * a day either side. Null for any other time.
+     *
+     * @return array{int, int, int}|null
+     */
+    private static function clockChange(string $localDateTime, DateTimeZone $zone): ?array
+    {
+        $input = trim($localDateTime);
+        if (preg_match(self::WITH_OFFSET, $input) === 1) {
+            return null;
+        }
+        foreach (self::LOCAL_FORMATS as $format) {
+            $naive = DateTimeImmutable::createFromFormat($format, $input, self::utc());
+            if ($naive === false || DateTimeImmutable::getLastErrors() !== false) {
+                continue;
+            }
+            $seconds = $naive->getTimestamp();
+            $before = $zone->getOffset(new DateTimeImmutable('@' . ($seconds - 86400)));
+            $after = $zone->getOffset(new DateTimeImmutable('@' . ($seconds + 86400)));
+
+            return $before === $after ? null : [$seconds, $before, $after];
+        }
+
+        return null;
+    }
+
+    /**
+     * A date and time with a UTC offset as a UTC instant; null when it isn't
+     * one, false when the text has no offset.
+     */
+    private static function withOffset(string $input): DateTimeImmutable|false|null
+    {
+        if (preg_match(self::WITH_OFFSET, $input, $m) !== 1) {
+            return false;
+        }
+        $offset = strtoupper($m[4]) === 'Z' ? '+00:00' : substr($m[4], 0, 3) . ':' . substr($m[4], -2);
+        // Real offsets run from -12:00 to +14:00 in whole minutes.
+        $minutes = (int) substr($offset, 1, 2) * 60 + (int) substr($offset, 4, 2);
+        $limit = $offset[0] === '-' ? 12 * 60 : 14 * 60;
+        if ((int) substr($offset, 4, 2) > 59 || $minutes > $limit) {
+            return null;
+        }
+
+        $parsed = DateTimeImmutable::createFromFormat(
+            'Y-m-d\TH:i:sP',
+            sprintf('%sT%s:%s%s', $m[1], $m[2], $m[3] === '' ? '00' : $m[3], $offset),
+        );
+        $errors = DateTimeImmutable::getLastErrors();
+        if ($parsed === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            return null;
+        }
+
+        return $parsed->setTimezone(self::utc());
     }
 
     /**

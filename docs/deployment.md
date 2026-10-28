@@ -402,6 +402,17 @@ a subpath install is installable and works offline like one at the root; the
 proxy needs no extra rules. Browsers only allow service workers over HTTPS (or
 on `localhost`).
 
+### Page security headers
+
+From 3.19.12 Logbook itself sends `X-Frame-Options: SAMEORIGIN`,
+`X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin` on every
+page, on every install (the Docker image, Apache, nginx and `php -S`), so no
+other site can frame a signed-in page. Your web server or proxy doesn't need to
+add them; if it does, a response may carry them twice. Logbook sends no
+Content-Security-Policy. Files your web server serves itself (the image sends
+`nosniff` on `/assets`) and its own error pages don't pass through Logbook, so
+they carry whatever the server adds.
+
 ### The REST API behind a proxy
 
 The API ([api.md](api.md)) lives under `<base>/api/v1` and needs no extra

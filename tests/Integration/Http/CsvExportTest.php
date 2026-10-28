@@ -85,12 +85,12 @@ final class CsvExportTest extends AppTestCase
         ], $rows[0]);
         self::assertSame(
             [
-                '2026-04-01 00:30', '30000', 'Petrol', 'E5 super unleaded, 97 RON', 'e5_97', '10.047755', 'UK gallons',
+                '2026-04-01T00:30:00+01:00', '30000', 'Petrol', 'E5 super unleaded, 97 RON', 'e5_97', '10.047755', 'UK gallons',
                 '6.63274531', '66.64', 'GBP', 'no', 'no', '', '',
             ],
             $rows[1],
         );
-        self::assertSame('2026-04-20 18:05', $rows[2][0]);
+        self::assertSame('2026-04-20T18:05:00+01:00', $rows[2][0]);
         self::assertSame(['', ''], [$rows[2][3], $rows[2][4]], 'no grade recorded: both grade cells empty');
         self::assertSame('0.00', $rows[2][8], 'a free fill-up exports as 0');
         self::assertSame('yes', $rows[2][10]);
@@ -120,8 +120,12 @@ final class CsvExportTest extends AppTestCase
 
         $odometer = self::rows(self::body($browser->get($base . 'odometer.csv')));
         self::assertSame(['Date and time (Europe/London)', 'Odometer (Miles)', 'Source', 'Note'], $odometer[0]);
-        self::assertSame(['2026-09-01 10:00', '621.681878', 'Manual', ''], $odometer[1]);
-        self::assertSame(['2026-09-14 12:00', '1000', 'Service', ''], $odometer[2], 'the maintenance reading, at local noon');
+        self::assertSame(['2026-09-01T10:00:00+01:00', '621.681878', 'Manual', ''], $odometer[1]);
+        self::assertSame(
+            ['2026-09-14T12:00:00+01:00', '1000', 'Service', ''],
+            $odometer[2],
+            'the maintenance reading, at local noon',
+        );
         $stored = $this->service($app, OdometerReadingRepository::class)->listForVehicle($golf->id)[0]->readingKm;
         self::assertSame($stored, DistanceUnit::Mile->toKmDecimal($odometer[1][1], 3));
 

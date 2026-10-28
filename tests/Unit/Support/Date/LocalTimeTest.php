@@ -7,6 +7,7 @@ namespace Logbook\Tests\Unit\Support\Date;
 use DateTimeImmutable;
 use DateTimeZone;
 use Logbook\Support\Date\LocalTime;
+use Logbook\Support\Date\WallClock;
 use Logbook\Tests\Support\MutableClock;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -82,6 +83,54 @@ final class LocalTimeTest extends TestCase
         $summer = LocalTime::toUtc('2026-07-15T09:45', $zone);
         self::assertNotNull($summer);
         self::assertSame('2026-07-15T09:45', LocalTime::fromUtc($summer, $zone)->format('Y-m-d\TH:i'));
+    }
+
+    /**
+     * K13: a time with an offset is exact, whatever the zone says.
+     */
+    public function testATimeWithAnOffsetIsExactAndTheZoneIsNotConsulted(): void
+    {
+        $zone = new DateTimeZone('Europe/London');
+
+        self::assertSame('2026-10-25T00:30:00+00:00', LocalTime::toUtc('2026-10-25T01:30:00+01:00', $zone)?->format('c'));
+        self::assertSame('2026-10-25T01:30:00+00:00', LocalTime::toUtc('2026-10-25T01:30:00+00:00', $zone)?->format('c'));
+        self::assertSame('2026-10-25T01:30:00+00:00', LocalTime::toUtc('2026-10-25 01:30Z', $zone)?->format('c'));
+        $tokyo = new DateTimeZone('Asia/Tokyo');
+        self::assertSame('2026-06-01T00:00:00+00:00', LocalTime::toUtc('2026-06-01T05:30+0530', $tokyo)?->format('c'));
+        self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+15:00', $zone));
+        self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00-13:00', $zone));
+        self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00-12:00', $zone));
+        self::assertNull(LocalTime::toUtc('2100-12-31T23:30:00-05:00', $zone), 'the offset carries it into 2101');
+        self::assertNull(LocalTime::toUtc('1900-01-01T00:00:00+14:00', $zone), 'the offset carries it into 1899');
+        self::assertNotNull(LocalTime::toUtc('2026-10-25T01:30:00+14:00', $zone));
+        self::assertNull(LocalTime::toUtc('2026-10-25T01:30:00+01:75', $zone));
+        self::assertNull(LocalTime::toUtc('2026-02-30T01:30:00+01:00', $zone));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-10-25T01:30:00+01:00', $zone));
+    }
+
+    public function testWallClockSaysWhenTheClocksSkipOrRepeatATime(): void
+    {
+        $london = new DateTimeZone('Europe/London');
+
+        self::assertSame(WallClock::Skipped, LocalTime::wallClock('2026-03-29T01:30', $london));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-03-29 02:30', $london));
+        self::assertSame(WallClock::Repeated, LocalTime::wallClock('2026-10-25 01:30', $london));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-10-25T02:00', $london));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-06-01T12:00', $london));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('2026-10-25T01:30', new DateTimeZone('UTC')));
+        self::assertSame(WallClock::Exists, LocalTime::wallClock('not a time', $london));
+        // A zone that changes by 30 minutes (Lord Howe).
+        $lordHowe = new DateTimeZone('Australia/Lord_Howe');
+        self::assertSame(WallClock::Repeated, LocalTime::wallClock('2026-04-05T01:45', $lordHowe));
+    }
+
+    public function testTheFirstOfARepeatedTimeIsTheSummerOne(): void
+    {
+        $london = new DateTimeZone('Europe/London');
+
+        self::assertSame('2026-10-25T00:30:00+00:00', LocalTime::firstOfRepeated('2026-10-25T01:30', $london)?->format('c'));
+        self::assertNull(LocalTime::firstOfRepeated('2026-10-25T02:30', $london));
+        self::assertNull(LocalTime::firstOfRepeated('2026-10-25T01:30Z', $london));
     }
 
     public function testInvalidLocalTimesAreRejected(): void

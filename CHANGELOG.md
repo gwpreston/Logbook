@@ -6,6 +6,35 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.19.12] — 2026-10-27
+
+Phase 53.20: **page security headers and export times from the
+known-issues log** ([docs/phases/phase-53.20.md](docs/phases/phase-53.20.md)).
+No migration: pull and restart.
+
+**Upgrade note:** a CSV export now writes each date and time with its UTC
+offset (`2026-10-25T01:30:00+01:00`) instead of `2026-10-25 01:30`. Logbook's
+importer reads both. A spreadsheet or script that parses the old shape needs
+to read the offset too.
+
+### Changed
+- **A CSV export carries each time with its UTC offset,** so the two 01:30s
+  of the night the clocks go back are different times and re-import as two
+  fill-ups, not one. The importer uses an offset when there is one. A time
+  with no offset (an older export, a file from another app) is read in your
+  time zone as before, except that a time the clocks skip is a problem row
+  and one they repeat is taken as the first, with a note in the preview
+  (K13). Fuelio's own times are unchanged.
+
+### Security
+- **Every install sends the same page security headers.** The app itself
+  sends `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: same-origin` on every response (a response that sets its
+  own keeps it), so a bare-PHP, `php -S` or reverse-proxied install no longer
+  lets another site frame a signed-in page, as the Docker image already
+  didn't. The image's web-server config no longer adds them, so none is sent
+  twice. There is still no page Content-Security-Policy (K54).
+
 ## [3.19.11] — 2026-10-27
 
 Phase 53.19: **declared on and backup id counters from the known-issues

@@ -6,7 +6,7 @@ from the app (K54), and a CSV export carries the time with its UTC offset
 so two fill-ups in the clock-change hour stay distinct on re-import
 (K13).*
 
-Status: 📋 planned · file lives in `docs/phases/` · releases **v3.19.12**, a
+Status: ✅ complete · file lives in `docs/phases/` · releases **v3.19.12**, a
 patch release
 
 This is the next batch after [Phase 53.19](phase-53.19.md). It takes K54
@@ -76,46 +76,47 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
 
 ### 53.20.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12).
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). #456, #561 and #562 are decided;
+      the other open rows (#374–#377, #537, #539 …) are not touched here.
 
 ### 53.20.1 Page security headers (K54)
 
-- [ ] A middleware in `src/Middleware/` (registered in
+- [x] A middleware in `src/Middleware/` (registered in
       `config/middleware.php`) adds the three headers to every response
       that doesn't set them. Remove the duplicates the Docker vhost
       (`docker/apache/logbook.conf`) adds, and update
       `docs/deployment.md` and spec §10 to say the app sends them.
-- [ ] Tests: a page, a redirect, an error page and the API each carry the
+- [x] Tests: a page, a redirect, an error page and the API each carry the
       three headers once; a download keeps its own `nosniff`, and a
       sign-in link keeps `Referrer-Policy: no-referrer`.
 
 ### 53.20.2 Export times with an offset (K13)
 
-- [ ] `CsvExporter::localDateTime()` writes ISO 8601 with the owner's
+- [x] `CsvExporter::localDateTime()` writes ISO 8601 with the owner's
       offset. The CSV importer reads an offset when present and otherwise
       the owner's time zone; a nonexistent local time is refused with a
       row message and a repeated one is taken as the first with a preview
       warning. Spec §7 (*CSV export* and *Import*) and `docs/` say so.
-- [ ] Tests: two fill-ups in the clock-change hour export with different
+- [x] Tests: two fill-ups in the clock-change hour export with different
       offsets and import as two rows; a file without offsets still
       imports; the nonexistent and repeated local times behave as
       described, on all four engines.
-- [ ] API contract: the REST API and webhooks are unchanged; only the
+- [x] API contract: the REST API and webhooks are unchanged; only the
       exports' time columns change (run api-contract-checker).
 
 ### 53.20.3 Finish
 
-- [ ] Known-issues rows K54 and K13 *Fixed*; open questions #456, #561 and
+- [x] Known-issues rows K54 and K13 *Fixed*; open questions #456, #561 and
       #562 marked built.
-- [ ] CHANGELOG (with an upgrade note on the export's new time format);
+- [x] CHANGELOG (with an upgrade note on the export's new time format);
       spec §13; ROADMAP status.
 - [ ] Merge review (spec-keeper, security-scanner, bug-hunter,
       import-tester, deploy-checker), then merge.
 
 ### Release
 
-- [ ] `VERSION`, CHANGELOG, README status.
+- [x] `VERSION`, CHANGELOG, README status.
 - [ ] Tag `v3.19.12` once merged.
 
 ## Acceptance criteria

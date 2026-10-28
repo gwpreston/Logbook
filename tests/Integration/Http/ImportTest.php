@@ -781,6 +781,90 @@ final class ImportTest extends AppTestCase
         self::assertStringNotContainsString('Import CSV', self::body($browser->get('/vehicles/' . $golf->id . '/expenses')));
     }
 
+    /**
+     * K13, #561: the two 01:30s of the night the clocks go back export with
+     * different offsets and import as two fill-ups, not one.
+     */
+    public function testTheClockChangeHourExportsWithItsOffsetAndImportsAsTwoRows(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $this->fillUp($app, $golf, '2026-10-25T00:30:00Z', '1000.000', '40.000', '60.00', pricePerLitre: '1.500000');
+        $this->fillUp($app, $golf, '2026-10-25T01:30:00Z', '1500.000', '30.000', '45.00', pricePerLitre: '1.500000');
+
+        $csv = self::body($browser->get('/vehicles/' . $golf->id . '/export/fuel.csv'));
+        self::assertStringContainsString('2026-10-25T01:30:00+01:00', $csv);
+        self::assertStringContainsString('2026-10-25T01:30:00+00:00', $csv);
+
+        $polo = $this->vehicle($app, 'Volkswagen', 'Polo');
+        $map = $this->upload($browser, $polo->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map);
+        self::assertStringContainsString('Import 2 rows', $preview);
+        self::assertStringNotContainsString('happens twice', $preview, 'an exact time needs no warning');
+        $this->commit($browser, $map, $preview);
+
+        $times = array_map(
+            static fn ($e): string => $e->data->filledAt->format('Y-m-d H:i'),
+            $this->service($app, FuelEntryRepository::class)->listForVehicle($polo->id),
+        );
+        sort($times);
+        self::assertSame(['2026-10-25 00:30', '2026-10-25 01:30'], $times);
+    }
+
+    /**
+     * K13: an offset-less time is read in the owner's zone as before, except
+     * that a time the clocks skip is refused and a repeated one is flagged.
+     */
+    public function testATimeWithoutAnOffsetThatTheClocksSkipIsRefusedAndOneTheyRepeatIsFlagged(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = implode("\n", [
+            'Date,Odometer,Litres,Price',
+            '2026-03-29 01:30,1000,40,1.60',
+            '2026-03-29 02:30,1300,30,1.45',
+            '2026-10-25 01:30,1600,30,1.45',
+            '2026-06-01 12:00,1900,30,1.45',
+            '2026-10-25T01:30:00Z,2200,30,1.45',
+        ]) . "\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $preview = $this->preview($browser, $map);
+        self::assertSame(1, substr_count($preview, 'doesn’t exist in your time zone'), $preview);
+        self::assertSame(1, substr_count($preview, 'happens twice that night'));
+        self::assertStringContainsString('Import 4 rows', $preview);
+        $response = $this->commit($browser, $map, $preview, ['skip_invalid' => '1']);
+        self::assertSame(200, $response->getStatusCode());
+
+        $times = array_map(
+            static fn ($e): string => $e->data->filledAt->format('Y-m-d H:i'),
+            $this->service($app, FuelEntryRepository::class)->listForVehicle($golf->id),
+        );
+        sort($times);
+        // 01:30 repeated → the first (00:30 UTC); 02:30 BST → 01:30 UTC; noon BST → 11:00; the Z row as written.
+        self::assertSame(['2026-03-29 01:30', '2026-06-01 11:00', '2026-10-25 00:30', '2026-10-25 01:30'], $times);
+    }
+
+    public function testAnAbsurdlyLongTimeCellIsAProblemRowAndReadsQuickly(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $csv = "Date,Odometer,Litres,Price\n" . str_repeat('T', 200000) . "!,1000,40,1.60\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $started = microtime(true);
+        $preview = $this->preview($browser, $map);
+
+        self::assertLessThan(5.0, microtime(true) - $started);
+        self::assertStringContainsString('Enter a valid date and time', $preview);
+    }
+
     private function upload(TestBrowser $browser, int $vehicleId, string $module, string $csv, string $name = 'data.csv'): string
     {
         $response = $browser->post('/vehicles/' . $vehicleId . '/import/' . $module, [], ['file' => $this->file($csv, $name)]);

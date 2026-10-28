@@ -72,7 +72,12 @@ same category, amount and note.
 - **Dates:** `2026-09-27`, or day-first / month-first as chosen. A date
   written year first (`2026-09-27`) is read whichever order is chosen.
   **Times** are local to the chosen time zone; a fill-up or reading with
-  only a date is taken as noon.
+  only a date is taken as noon. A time may end with its UTC offset
+  (`2026-10-25T01:30:00+01:00`, or `Z`), which Logbook's own export now writes:
+  the offset is used as written, so the two 01:30s of the night the clocks go
+  back stay two fill-ups. Without an offset, a time the clocks skip that night
+  (01:30 when the clocks go forward in the UK) is a problem row, and one they
+  repeat is taken as the first of the two, with a note in the preview.
 - **Text** is kept as written, except that one apostrophe before `=`, `+`,
   `-`, `@`, a tab or a line break is taken off, as a spreadsheet does: the
   export adds it so a spreadsheet doesn't run the text as a formula, so a
