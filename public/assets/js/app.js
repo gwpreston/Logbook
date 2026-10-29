@@ -777,14 +777,36 @@
         return !user && signedOutPage;
     }
 
-    function forgetUserWhenSignedOut() {
-        if (!forgetsUser(pageUser, !!document.querySelector('[data-signed-out-page]')) || !('caches' in window)) {
-            return;
+    // Resolves once the worker's remembered user is cleared, or can't be.
+    function forgetUser() {
+        if (!('caches' in window)) {
+            return Promise.resolve();
         }
         var base = document.documentElement.getAttribute('data-base') || '';
-        caches.open('logbook-session')
+        return caches.open('logbook-session')
             .then(function (cache) { return cache.put(base + '/sw-user', new Response('')); })
             .catch(function () {});
+    }
+
+    function forgetUserWhenSignedOut() {
+        if (forgetsUser(pageUser, !!document.querySelector('[data-signed-out-page]'))) {
+            forgetUser();
+        }
+    }
+
+    // Signing out forgets the user before the form leaves: a sign-out that
+    // goes on to a proxy or a provider may never bring the browser back to a
+    // Logbook page (K161, K162).
+    function enhanceSignOut(form) {
+        var leaving = false;
+        form.addEventListener('submit', function (event) {
+            if (leaving) {
+                return;
+            }
+            event.preventDefault();
+            leaving = true;
+            forgetUser().then(function () { form.submit(); });
+        });
     }
 
     // Fill-ups queued before Phase 54.2 go to the first user signed in (#579).
@@ -1335,6 +1357,7 @@
         modal.init();
         pageUser = document.body.getAttribute('data-user') || '';
         forgetUserWhenSignedOut();
+        document.querySelectorAll('form[data-sign-out]').forEach(enhanceSignOut);
         outboxBox = document.querySelector('[data-offline-outbox]');
         document.querySelectorAll('form[data-offline-queue]').forEach(enhanceOfflineForm);
         cacheOfflineForms(Array.prototype.slice.call(document.querySelectorAll('a[data-offline-cache]')));

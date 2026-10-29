@@ -62,7 +62,7 @@ final class HomePageTest extends AppTestCase
         self::assertStringContainsString('action="/settings/theme"', $html);
         // Sign-out is a POST form.
         self::assertMatchesRegularExpression(
-            '~<form method="post" action="/logout">\s*<input type="hidden" name="csrf_name"~',
+            '~<form method="post" action="/logout" data-sign-out>\s*<input type="hidden" name="csrf_name"~',
             $html,
         );
     }

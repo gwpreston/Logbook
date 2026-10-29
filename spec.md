@@ -4415,7 +4415,7 @@ vehicles; a disabled module cannot be imported).
   gallon, as for app imports (#464, #505); the
   date order
   (ISO `2026-09-27`, day-first `27/09/2026`, month-first `09/27/2026`)
-  defaults to ISO. The *number format* (dot decimal `1,234.56` or comma
+  defaults to ISO. The *Numbers* choice (dot decimal `1,234.56` or comma
   decimal `1.234,56`) defaults to the owner's locale and decides how a
   number cell such as `45,123` or `13.000` is read; a cell the format
   can't read is invalid (Phase 54.2, K1, #484, #573). A file whose every
@@ -4954,15 +4954,18 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   A queued entry and a cached fill-up page belong to the user who made
   them: the browser remembers the last signed-in user, an entry is sent,
   listed and reviewed only for that user, and a cached page is served
-  only to the same user (otherwise the offline page). Responses name
-  their user in an `X-Logbook-User` header (not the manifest, the
-  service worker or the offline page, which shared caches may keep), and
-  the worker remembers it from each HTML page it fetches. Nothing is cleared
-  at sign-out (Phase 54.2, K40, #449, #574). A page loaded signed out
-  (the sign-in page after signing out, or an expired session) forgets the
+  only to the same user (otherwise the offline page). Personal HTML pages
+  name their user in an `X-Logbook-User` header (not the API or MCP,
+  whose user is the key's, nor the manifest, the service worker or the
+  offline page, which shared caches may keep), and the worker remembers
+  it from each HTML page it fetches, except the offline page. Queued
+  entries and cached pages are not cleared at sign-out (Phase 54.2, K40,
+  #449, #574). Submitting the sign-out form, or loading a page signed out
+  (the sign-in page after signing out, or an expired session), forgets the
   remembered user, so no cached page is served until someone signs in
-  again; queued entries stay and are sent when their user next signs in
-  (#580). An entry queued before Phase 54.2 carries no user: the first
+  again, even when sign-out goes on to a proxy or provider that never
+  sends the browser back (K161, K162); queued entries stay and are sent
+  when their user next signs in (#580). An entry queued before Phase 54.2 carries no user: the first
   user signed in after the upgrade takes it over (#579).
 
 ### 7.16 Vehicle history
@@ -12516,7 +12519,7 @@ task breakdowns live in the per-phase files; this is the map.
   v3.20.1 (#572). No migration. See [`phase-54.1.md`](docs/phases/phase-54.1.md).
 - **Phase 54.2 — CSV number separators and offline fill-ups per user
   from the known-issues log + minor release** (complete). The import
-  preview's *Number format* picker (dot or comma decimal, default the
+  preview's *Numbers* picker (dot or comma decimal, default the
   owner's locale) decides how `45,123` and `13.000` are read (§7.13, K1,
   #484, #573); queued offline fill-ups and cached fill-up pages belong to
   the user who made them (§7.15, K40, #449, #574). Releases v3.21.0

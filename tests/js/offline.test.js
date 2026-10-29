@@ -89,7 +89,9 @@ function worker(base) {
         }
         const download = request.url.endsWith('.csv');
         const headers = {'Content-Type': download ? 'text/csv' : 'text/html; charset=utf-8'};
-        if (network.user !== null && !download) {
+        // The offline page names nobody, like the files shared caches keep.
+        const offlinePage = new URL(request.url).pathname === base + '/offline';
+        if (network.user !== null && !download && !offlinePage) {
             headers['X-Logbook-User'] = network.user;
         }
         const body = network.user === null ? 'SIGN IN' : 'FORM FOR ' + network.user;
@@ -129,6 +131,12 @@ for (const base of ['', '/logbook']) {
         await visit('/vehicles/7/export/fuel.csv');
         network.online = false;
         assert.equal(await visit('/vehicles/7/fuel/new'), 'FORM FOR 1', 'still Alice after a download');
+
+        // Opening the offline page online names nobody but signs nobody out (K166).
+        network.online = true;
+        await visit('/offline');
+        network.online = false;
+        assert.equal(await visit('/vehicles/7/fuel/new'), 'FORM FOR 1', 'still Alice after the offline page');
 
         // Alice signs out: the signed-out page makes the worker forget her (#580).
         network.online = true;

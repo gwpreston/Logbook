@@ -64,13 +64,15 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 
         $response = $handler->handle($request->withAttribute(self::ATTRIBUTE, $user));
 
-        // Not on what shared caches may keep (the manifest, `public`; the
+        // Only on pages (not the API or MCP, whose user is the key's, K167),
+        // not on what shared caches may keep (the manifest, `public`; the
         // service worker and offline page, `no-cache`), nor once the request
         // has signed the user out.
+        $page = str_starts_with($response->getHeaderLine('Content-Type'), 'text/html');
         $cache = $response->getHeaderLine('Cache-Control');
         $shared = str_contains($cache, 'public') || $cache === 'no-cache';
 
-        return $user === null || $shared || $session->userId() !== $user->id
+        return $user === null || !$page || $shared || $session->userId() !== $user->id
             ? $response
             : $response->withHeader(self::USER_HEADER, (string) $user->id);
     }

@@ -131,7 +131,7 @@
                     <div class="sidebar__account">
                         {# Your profile (spec.md §8 *Profile page*, #172). #}
                         <a class="sidebar__user" href="{{ url_for('profile') }}"{% if current_nav == 'profile' %} aria-current="page"{% endif %}>{{ ui.avatar(user) }}<span>{{ user.displayName }}</span></a>
-                        <form method="post" action="{{ url_for('logout') }}">
+                        <form method="post" action="{{ url_for('logout') }}" data-sign-out>
                             {{ ui.csrf(csrf) }}
                             <button type="submit" class="btn btn--ghost sidebar__logout">{{ ui.icon('logout') }}{{ 'auth.sign_out'|trans }}</button>
                         </form>

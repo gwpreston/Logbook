@@ -12,8 +12,8 @@
  *     A kept page is served only to the user it was kept for (K40): each
  *     response names its user (X-Logbook-User), and the worker remembers
  *     the user of the last HTML page it fetched, nobody after a signed-out
- *     one (the sign-in page clears it too, js/app.js, for a sign-out the
- *     worker never saw).
+ *     one (the offline page aside). The sign-in page and the sign-out form
+ *     clear it too (js/app.js), for a sign-out the worker never sees.
  *   - Everything else (POSTs, downloads, other sites) is left alone. An
  *     offline fill-up is queued by the page itself (js/app.js).
  */
@@ -87,7 +87,8 @@ function page(request, url) {
         .then(function (response) {
             // Only a page counts: a download or a picture names nobody.
             var html = (response.headers.get('Content-Type') || '').indexOf('text/html') === 0;
-            var remembering = response.ok && html
+            // The offline page names nobody, but nobody signed out (K166).
+            var remembering = response.ok && html && url.pathname !== CONFIG.offline
                 ? remember(response.headers.get(USER_HEADER) || '').catch(function () {})
                 : Promise.resolve();
             var finalPath = response.url ? new URL(response.url).pathname : url.pathname;
