@@ -88,6 +88,11 @@ final class CostVisibilityTemplateTest extends TestCase
                 . '(IncidentView::amounts, i.e. EntryAccess::canSeeAmount), and has none without them',
             'excess|money)' => 'claims_stats(): as the paid tile',
         ],
+        'reports/true_cost.twig' => [
+            'year.coverBefore|money' => 'the cover note under the yearly table: TrueCostService only builds rows '
+                . 'for vehicles the viewer may see costs for (VehicleAbility::ViewCosts)',
+            'year.coverAfter|money' => 'the cover note under the yearly table: as the cover before note',
+        ],
         'vehicles/archive.twig' => [
             "(agreement.data.finalPayment ?? '0')|money(currency)" => 'the agreement block: ArchiveVehicleAction passes '
                 . 'finance only from FinanceService::archiveAgreement(), null without Manage and ViewCosts',

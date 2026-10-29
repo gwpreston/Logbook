@@ -7,6 +7,8 @@ namespace Logbook\Tests\Integration\Http;
 use DateTimeImmutable;
 use Logbook\Domain\Compliance\ComplianceType;
 use Logbook\Domain\Feature\Feature;
+use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Units\UnitPreset;
 use Logbook\Domain\Valuation\VehicleValuationData;
 use Logbook\Domain\Vehicle\FuelType;
 use Logbook\Domain\Vehicle\Vehicle;
@@ -116,6 +118,46 @@ final class TrueCostPagesTest extends AppTestCase
             'aria-labelledby="true-cost-heading"',
         );
         self::assertStringContainsString('True cost by year', $expenses);
+    }
+
+    public function testTheCoverNoteShowsOnceUnderTheTableForAVehicleOlderThanThreeYears(): void
+    {
+        // Bought in 2021, so 2021 is not among the three years with a drawn working (K152, #568).
+        $build = function (App $app): void {
+            $car = $this->car($app, 'Volkswagen', 'Golf', '2021-07-01', '15000');
+            $this->reading($app, $car, '1000', '2021-07-01T09:00:00Z');
+            $this->fillUp($app, $car, '2026-10-01T09:00:00Z', '25000', '400', '600.00');
+            // A year's policy from 1 January: 181 of its 365 days fall before the purchase.
+            $this->document($app, $car, ComplianceType::Insurance, '2021-01-01', '2021-12-31', '365.00');
+        };
+
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $build($app);
+        $report = self::body($browser->get('/reports/true-cost'));
+        self::assertSame(
+            1,
+            substr_count($report, 'of cover before you bought it isn’t counted, so the years can differ from Since bought.'),
+        );
+        self::assertStringContainsString('£181.00 of cover before you bought it', $report);
+
+        $german = $this->createApp();
+        $this->pinClock($german, self::NOW);
+        $this->resetDatabase($german);
+        $preset = UnitPreset::Metric;
+        $this->createOwner($german, 'owner', new DisplayPreferences(
+            'de_DE',
+            'Europe/Berlin',
+            $preset->distance(),
+            $preset->volume(),
+            $preset->consumption(),
+            'GBP',
+        ));
+        $browser = $this->browserFor($german, 'owner');
+        $build($german);
+        $report = self::body($browser->get('/reports/true-cost'));
+        self::assertSame(1, substr_count($report, 'für die Zeit vor dem Kauf werden nicht gezählt, daher können die Jahre'));
     }
 
     public function testASwitchedOffModuleLeavesItsPartOut(): void

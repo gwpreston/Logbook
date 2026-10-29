@@ -12538,7 +12538,7 @@ task breakdowns live in the per-phase files; this is the map.
   vehicles (§7.11, K151). Releases v3.21.1
   (#577). No migration. See [`phase-54.3.md`](docs/phases/phase-54.3.md).
 - **Phase 54.4 — The true-cost cover note from the known-issues log +
-  patch release** (planned). The note for cover outside ownership shows
+  patch release** (complete). The note for cover outside ownership shows
   once under the true-cost yearly table whatever the vehicle's age (§7.35,
   K152, #568); short empty dashboard widgets keep their blank space
   (§7.8, K154, #569). Releases v3.21.2 (#578). No migration. See
