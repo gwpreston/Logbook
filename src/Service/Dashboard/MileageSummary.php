@@ -114,7 +114,7 @@ final readonly class MileageSummary
         $owned = PeriodDistance::owned($readings, $purchased, $zone);
         $known = array_filter(
             $owned,
-            static fn (OdometerReading $r): bool => LocalTime::dateOf($r->recordedAt, $zone) <= $period->to,
+            static fn (OdometerReading $r): bool => PeriodDistance::day($r->recordedAt, $zone) <= $period->to,
         );
         if ($known === []) {
             return null;

@@ -6,6 +6,28 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.1] — 2026-10-29
+
+Phase 54.3: **Dashboard, true-cost and digest speed from the known-issues
+log** ([docs/phases/phase-54.3.md](docs/phases/phase-54.3.md)). No
+migration: pull and restart.
+
+### Fixed
+- **The monthly digest no longer slows down with every vehicle.** It read
+  each table again for each vehicle and each step; for an owner with ten
+  vehicles that was 861 queries and now it is 247, the same as for one
+  vehicle. The digest says exactly what it did (#576, K151).
+- **The true-cost report reads each table once for all your vehicles:** 21
+  queries for ten vehicles instead of 99. Its figures are unchanged (#576,
+  K150).
+- **The dashboard is about a third faster on a big garage.** A vehicle's
+  fuel history and economy checks are worked out once per page, not
+  four times; the mileage widget no longer converts every reading's date
+  for each month; and the fuel price check finds its 30-day window directly.
+  On ten vehicles with 400 fill-ups each it went from 2.3 s to 1.5 s with
+  the same queries and the same figures (K149). It is still over its
+  500 ms target on that garage; the true-cost page too (0.7 s) (#583).
+
 ## [3.21.0] — 2026-10-28
 
 Phase 54.2: **CSV number separators and offline fill-ups per user from the

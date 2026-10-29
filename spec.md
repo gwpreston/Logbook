@@ -10935,13 +10935,18 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   From Phase 54.3 (#576) the reports, the true-cost report first, join the
   60-query, 500 ms budget with the same count for 1 and 10 vehicles, and
   the monthly digest job's query count must not grow with the number of
-  vehicles. A page request
+  vehicles; tests hold the counts (the time stays a review target, and on
+  the 10-vehicle household with 400 fill-ups, 150 services and 16 years of
+  documents each it is over, #583). A page request
   (GET or HEAD) remembers what its repositories read (`RequestReads`):
   one query per table for every vehicle on the page (`VehicleDataPrimer`),
   all the settings of an owner in one, and the rest of the page's
   per-vehicle reads find them already read. A write to a table, seen at
   the connection, makes the request forget what came from it. Anything
-  else (a POST, a job, a command) reads the database as before.
+  else (a POST, a job, a command) reads the database as before, except
+  the monthly digest: it remembers reads for the length of one user's run
+  (`RequestReads::scoped()`), so ten vehicles cost the job the queries one
+  does (Phase 54.3, K151).
 - **Accessibility:** keyboard navigation, labels, contrast, focus states.
 - **Tap targets** (#457, decided 2026-10-21): at narrow widths every
   interactive control has a hit area at least 44 × 44 px. Compact
@@ -12525,10 +12530,12 @@ task breakdowns live in the per-phase files; this is the map.
   the user who made them (§7.15, K40, #449, #574). Releases v3.21.0
   (#575). No migration. See [`phase-54.2.md`](docs/phases/phase-54.2.md).
 - **Phase 54.3 — Dashboard, true-cost and digest speed from the
-  known-issues log + patch release** (planned). The dashboard meets its
-  500 ms target (§8, K149); the true-cost report joins the page budget
-  (60 queries, 500 ms; §8, §7.35, K150, #576); the monthly digest job's
-  queries don't grow with vehicles (§7.11, K151). Releases v3.21.1
+  known-issues log + patch release** (complete). The dashboard is a
+  third faster on a heavy household (1.5 s from 2.3 s, with the same 61
+  queries; §8, K149, still over its 500 ms target, #583); the true-cost
+  report reads each table once for all vehicles (21 queries from 99; §8,
+  §7.35, K150, #576); the monthly digest job's queries don't grow with
+  vehicles (§7.11, K151). Releases v3.21.1
   (#577). No migration. See [`phase-54.3.md`](docs/phases/phase-54.3.md).
 - **Phase 54.4 — The true-cost cover note from the known-issues log +
   patch release** (planned). The note for cover outside ownership shows
@@ -12536,6 +12543,12 @@ task breakdowns live in the per-phase files; this is the map.
   K152, #568); short empty dashboard widgets keep their blank space
   (§7.8, K154, #569). Releases v3.21.2 (#578). No migration. See
   [`phase-54.4.md`](docs/phases/phase-54.4.md).
+- **Phase 54.5 — The 500 ms target for the dashboard and true-cost report
+  from the known-issues log + patch release** (planned). The dashboard
+  and the true-cost report meet §8's 500 ms on the heavy household by
+  lighter working-out, not by caching or loading widgets later (K149,
+  K150, #583). Figures unchanged. No migration. See
+  [`phase-54.5.md`](docs/phases/phase-54.5.md).
 
 ---
 

@@ -15,6 +15,7 @@ use Logbook\Service\Expense\CostItem;
 use Logbook\Service\Expense\CostLedger;
 use Logbook\Service\Valuation\ValuationService;
 use Logbook\Service\Vehicle\Depreciation;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Number\Decimal;
@@ -38,6 +39,7 @@ final readonly class TrueCostService
         private ValuationService $valuations,
         private OwnershipService $ownership,
         private AttentionSettingsStore $attentionSettings,
+        private VehicleDataPrimer $primer,
     ) {
     }
 
@@ -63,6 +65,8 @@ final readonly class TrueCostService
         if ($vehicles === []) {
             return [];
         }
+        // Every vehicle's readings, valuations and the rest once, not per vehicle.
+        $this->primer->prime($vehicles);
         /** @var array<int, list<CostItem>> $items */
         $items = [];
         foreach ($this->ledger->items($user, $vehicles) as $item) {

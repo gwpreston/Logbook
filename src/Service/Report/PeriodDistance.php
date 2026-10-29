@@ -9,6 +9,7 @@ use DateTimeZone;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Number\Decimal;
+use WeakMap;
 
 /**
  * Distance a vehicle was driven in a period, from its mileage log (spec.md
@@ -20,6 +21,9 @@ use Logbook\Support\Number\Decimal;
  */
 final class PeriodDistance
 {
+    /** @var WeakMap<DateTimeImmutable, array<string, DateTimeImmutable>>|null the local day of each instant, by zone */
+    private static ?WeakMap $days = null;
+
     /**
      * @param list<OdometerReading> $readings oldest first
      * @param DateTimeImmutable|null $purchased the vehicle's purchase date, null when unknown
@@ -119,15 +123,28 @@ final class PeriodDistance
 
         return array_values(array_filter(
             $readings,
-            static fn (OdometerReading $r): bool => LocalTime::fromUtc($r->recordedAt, $zone)->format('Y-m-d') >= $from,
+            static fn (OdometerReading $r): bool => self::day($r->recordedAt, $zone)->format('Y-m-d') >= $from,
         ));
     }
 
-    private static function day(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
+    /**
+     * The owner's calendar day of an instant. A page asks it of the same
+     * readings for many periods, so it is worked out once per instant and
+     * zone (the instants are immutable, and the cache goes with them).
+     */
+    public static function day(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
     {
-        $day = LocalTime::parseCalendarDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
-        assert($day instanceof DateTimeImmutable);
+        self::$days ??= new WeakMap();
 
-        return $day;
+        $name = $zone->getName();
+        $known = self::$days[$instant] ?? [];
+        if (!isset($known[$name])) {
+            $day = LocalTime::parseCalendarDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));
+            assert($day instanceof DateTimeImmutable);
+            $known[$name] = $day;
+            self::$days[$instant] = $known;
+        }
+
+        return $known[$name];
     }
 }
