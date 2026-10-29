@@ -182,7 +182,8 @@ changing how those are worked out or shown (#583).
   in spec §8 (#350, #359); the true-cost report and the other reports join
   it (60 queries, 500 ms), and the digest job's query count must not grow
   with vehicles. Not chosen: time only, with no new query budgets.
-- **#583. Time on the heavy household. Needs a decision (found while
-  building it):** see [`open-questions.md`](open-questions.md).
+- **#583. Time on the heavy household. Decided 2026-10-29:** keep the
+  500 ms target and reach it by lighter working-out, in
+  [Phase 54.5](phase-54.5.md).
 - **#577. Release. Decided 2026-10-28:** on its own as patch release
   v3.21.1. Not chosen: minor release; with the next releasing phase.
