@@ -3,7 +3,7 @@
 *The two rows [Phase 54.3](phase-54.3.md) left open closed: the dashboard and
 the true-cost report meet spec §8's 500 ms on the heavy household.*
 
-Status: 📋 planned · releases **v3.21.3**, a patch release (#584, to be decided) · file lives in `docs/phases/`
+Status: 📋 planned · releases **v3.21.3**, a patch release (#584) · file lives in `docs/phases/`
 
 Phase 54.3 removed the repeated reads (digest 861 to 247 queries, true-cost
 99 to 21) and cut the dashboard from 2.3 s to 1.5 s, but what is left is
@@ -57,7 +57,7 @@ budgets*, §7.24, §7.35, [phase-54.3.md](phase-54.3.md) (its *Profile* and
 ### 54.5.0 Start of phase
 
 - [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). #583 is decided; decide #584.
+      `known-issues.md` (CLAUDE.md §12). #583 is decided; #584 is decided.
 - [ ] Profile the dashboard and the report again on the heavy household and
       record it here.
 
@@ -97,5 +97,5 @@ budgets*, §7.24, §7.35, [phase-54.3.md](phase-54.3.md) (its *Profile* and
 - **#583. Decided 2026-10-29:** keep the 500 ms target and reach it by
   lighter working-out. Not chosen: load the heavy widgets after the page;
   relax the target to 2 s.
-- **#584. Release. Needs a decision:** on its own as patch release v3.21.3
-  (recommended), or with the next releasing phase.
+- **#584. Release. Decided 2026-10-29:** on its own as patch release
+  v3.21.3. Not chosen: with the next releasing phase.
