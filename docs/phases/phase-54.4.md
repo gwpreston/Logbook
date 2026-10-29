@@ -3,7 +3,7 @@
 *One open row of the known-issues log closed: the first year's "cover before
 you bought it" note shows on the true-cost report however old the vehicle is.*
 
-Status: ✅ complete · releases **v3.21.2**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.2**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.3](phase-54.3.md). The owner asked for
 the open rows that wait on no decision; after 54.1–54.3 the only ones left
@@ -75,12 +75,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.35
 
 - [x] Known-issues row K152 *Fixed*; K154 *Won't fix* (done in the plan).
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Merge review; merge.
 
 ### Release
 
 - [x] VERSION 3.21.2, CHANGELOG 3.21.2, README status (#578).
-- [ ] Tag `v3.21.2` once merged.
+- [x] Tag `v3.21.2` once merged.
 
 ## Acceptance criteria
 
