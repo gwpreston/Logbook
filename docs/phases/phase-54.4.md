@@ -3,7 +3,7 @@
 *One open row of the known-issues log closed: the first year's "cover before
 you bought it" note shows on the true-cost report however old the vehicle is.*
 
-Status: 📋 planned · releases **v3.21.2**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.2**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.3](phase-54.3.md). The owner asked for
 the open rows that wait on no decision; after 54.1–54.3 the only ones left
@@ -56,7 +56,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.35
 
 ### 54.4.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #568 and #569 are decided and the
       release is decided (#578).
 
