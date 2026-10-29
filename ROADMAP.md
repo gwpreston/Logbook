@@ -134,7 +134,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54](docs/phases/phase-54.md) | Finance scenarios, quiet empty widgets and last month's sold vehicles | ✅ |
 | [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | ✅ |
 | [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | ✅ |
-| [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | 🚧 |
+| [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | ✅ |
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
@@ -1794,13 +1794,15 @@ who queued them (K40, #449). Releases v3.21.0.*
 
 ## Phase 54.3 — Dashboard, true-cost and digest speed from the known-issues log + patch release
 
-*Three open performance rows closed: the dashboard, the true-cost report
-and the monthly digest job stop repeating reads per vehicle on a heavy
-household (K149–K151). Releases v3.21.1.*
+*The dashboard, the true-cost report and the monthly digest job stop
+repeating work per vehicle on a heavy household (K149–K151). Releases
+v3.21.1.*
 
-- The dashboard answers within 500 ms and its query limits, the true-cost
-  report within 500 ms and 60 queries, and the digest job's queries don't
-  grow with vehicles (#570, #576).
+- The digest job's queries no longer grow with vehicles (861 to 247 for
+  ten), and the true-cost report reads each table once (99 queries to 21),
+  both held by tests (#570, #576).
+- The dashboard is a third faster (2.3 s to 1.5 s on the heavy household);
+  it and the report are still over 500 ms, and #583 asks what to do.
 - Every figure stays the same. No migration.
 
 → [`phase-54.3.md`](docs/phases/phase-54.3.md)
