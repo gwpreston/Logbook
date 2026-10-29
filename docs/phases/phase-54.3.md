@@ -3,7 +3,7 @@
 *Three open performance rows of the known-issues log closed: the dashboard,
 the true-cost report and the monthly digest job on a heavy household.*
 
-Status: ✅ complete · releases **v3.21.1**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.1**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.2](phase-54.2.md). The owner asked for the
 open rows that wait on no decision; after K1 and K40 (54.2) only K149,
@@ -67,7 +67,7 @@ budgets* (#350, #359), §7.8, §7.11 (the digest), §7.35 (*True cost*), and
 
 ### 54.3.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #570 is decided (#576) and the
       release is decided (#577).
 - [x] Profile the three cases on the heavy household and record the
@@ -129,12 +129,12 @@ vehicle.
 - [x] Known-issues rows: K151 *Fixed*; K149 and K150 stay *Open* with
       what was measured, and #583 asks what to do about the time.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (performance-auditor included); merge.
+- [x] Merge review (performance-auditor included); merge.
 
 ### Release
 
 - [x] VERSION 3.21.1, CHANGELOG 3.21.1, README status (#577).
-- [ ] Tag `v3.21.1` once merged.
+- [x] Tag `v3.21.1` once merged.
 
 ## Result (SQLite, the heavy household, 2026-10-29)
 
