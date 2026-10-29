@@ -73,6 +73,31 @@ final class PageQueryBudgetTest extends AppTestCase
         self::assertLessThanOrEqual($costs[1] + 2, $costs[10], 'a query per vehicle would add nine or more');
     }
 
+    /**
+     * The true-cost report (spec.md §7.35, §8, Phase 54.3, K150) reads each
+     * table once for every vehicle: on master it ran 99 queries for ten
+     * vehicles.
+     */
+    public function testTheTrueCostReportStaysWithinTheBudgetWhateverTheNumberOfVehicles(): void
+    {
+        $costs = [];
+        foreach ([1, 10] as $count) {
+            $household = $this->household($count, 12);
+            $browser = $household['browser'];
+            $browser->get('/reports/true-cost');
+            $response = null;
+            $costs[$count] = $household['counter']->during(static function () use ($browser, &$response): void {
+                $response = $browser->get('/reports/true-cost');
+            });
+            self::assertSame(200, $response?->getStatusCode());
+            self::assertStringContainsString('Model' . ($count - 1), self::body($response));
+        }
+
+        self::assertGreaterThan(0, $costs[1], 'the counter counts');
+        self::assertLessThanOrEqual(self::BUDGET, $costs[10], 'the true-cost report, ten vehicles');
+        self::assertLessThanOrEqual($costs[1] + 2, $costs[10], 'a query per vehicle would add nine or more');
+    }
+
     public function testQueriesDoNotGrowWithWhatEachVehicleHolds(): void
     {
         $household = $this->household(10, 4);
