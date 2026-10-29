@@ -173,8 +173,17 @@ final class PwaTest extends AppTestCase
         self::assertFalse($offline->hasHeader('X-Logbook-User'));
         self::assertStringNotContainsString('data-user', self::body($offline), 'the offline page is nobody\'s');
 
+        // Not on the API, whose user is the key's, even with a session cookie (K167).
+        $api = $browser->get('/api/v1/vehicles');
+        self::assertSame(401, $api->getStatusCode());
+        self::assertFalse($api->hasHeader('X-Logbook-User'));
+
+        // Signing out forgets the user before the form leaves (K161, K162).
+        $home = self::body($browser->get('/'));
+        self::assertMatchesRegularExpression('#<form method="post" action="[^"]*/logout" data-sign-out>#', $home);
+        self::assertStringContainsString('data-sign-out class="profile-header__signout"', self::body($browser->get('/profile')));
+
         // Signing out names nobody on the way out.
-        $browser->get('/');
         self::assertFalse($browser->post('/logout')->hasHeader('X-Logbook-User'));
     }
 }

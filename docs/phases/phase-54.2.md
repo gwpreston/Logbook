@@ -24,7 +24,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### Import
 
-1. **K1.** The import preview has a *Number format* picker, like the date
+1. **K1.** The import preview has a *Numbers* picker, like the date
    order picker, defaulting to the owner's locale. Under *1,234.56* the
    cell `45,123` is 45123 and `13.000` is 13; under *1.234,56* they are
    45.123 and 13000. The choice is kept in the preview's address and
@@ -82,7 +82,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 - [x] `ImportOptions`, `ImportMapper::guess()` and the query
       (`number_format`) carry it; `CsvImporter` reads distance, volume and
       amount cells with it (`CsvImporterTest`: `45,123` and `13.000` under
-      both formats, English and German owners); a German owner's own export reads back under a decimal point, #581).
+      both formats, English and German owners).
+- [x] Logbook's own export defaults to a decimal point, and thousands
+      groups must be whole under a chosen format (#581; `ImportTest`: a
+      German owner's own export reads back).
 - [x] The preview's picker in `templates/import/map.twig`, translations in
       every catalogue; works without JS. Check at 375, 768 and 1280 px,
       light and dark.
@@ -91,7 +94,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 ### 54.2.2 Offline fill-ups per user (K40)
 
 - [x] The page carries the signed-in user's id (`<body data-user>`, and
-      an `X-Logbook-User` header on every signed-in response); every
+      an `X-Logbook-User` header on personal (`no-store`) HTML pages); every
       queued item stores it (`userId`). The service worker, not `app.js`,
       remembers the user, from each page it fetches: a page served from
       its cache must not re-remember its own user, and a signed-out page
@@ -157,10 +160,23 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   caches may keep (`public`, `no-cache`), the worker remembers a user only
   from an HTML page (a download or a picture names nobody), and only the
   sign-in and proxy signed-out pages clear it in the page (an error page
-  or the offline page names nobody too). Own-export detection also needs
+  or the offline page names nobody too). That review's fix covered the
+  sign-out answered with a page, not the redirect to the proxy's logout
+  URL; the issue sweep found that (K162). Own-export detection also needs
   no comma in any number cell, so a hand-made file with the export's
   column names and `45,123` keeps the decimal comma. Tests: `PwaTest` (all
   five offline form paths), `offline.test.js` (a download), `ImportTest`.
+- Issue sweep (at `7c394378`: bug-hunter, security-scanner,
+  import-tester, deploy-checker, design-reviewer, performance-auditor,
+  spec-keeper, api-contract-checker): K162–K170 logged and #582 opened.
+  Fixed here: **K162** (MEDIUM) and K161, the sign-out form forgets the
+  user before it leaves, so a proxy or provider logout URL can't keep
+  them remembered; **K165** (MEDIUM), the CHANGELOG's upgrade note for
+  decimal-comma owners; **K166** (LOW), the worker no longer forgets the
+  user on the offline page; **K167** (LOW), the header is only on HTML
+  pages, not the API or MCP; **K170** (LOW), this file's wording. Left
+  open: K163, K164, K168 (on master) and K169 (#582). Tests: `PwaTest`,
+  `offline.test.js`.
 - Checks (at the final commit): `bin/test-all-dbs.sh` green on SQLite,
   PostgreSQL, MySQL and MariaDB (4742 tests each, migrate, rollback and
   migrate); `node --test tests/js` 42 green; `composer lint` and
@@ -200,3 +216,10 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   whole (first group 1–3 digits, not a lone `0`), so `48280.320` and
   `0.500` are problem rows, never ×1000 (K1). Not chosen: always the
   locale's default; the export written in the owner's format.
+- **#582. Needs a decision** (found in review, issue sweep at
+  `7c394378`): a number cell the chosen *Numbers* format can't read shows
+  the form's "Enter a number, e.g. 1234.5.", whose example is in the
+  owner's language format, not the chosen one (K169). Options: (1) keep
+  the generic message, as Goal 1 says; (2) a new import message that names
+  the *Numbers* setting and its choice; (3) the generic message with its
+  example in the chosen format.

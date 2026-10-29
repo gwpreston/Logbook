@@ -36,7 +36,20 @@ No migration: pull and restart.
   only for the user it was kept for, and not at all after signing out.
   Nothing is cleared at sign-out: a waiting fill-up is sent when its user
   next signs in, and one queued before this version goes to the first
-  user who signs in (#449, #574, #579, #580, K40).
+  user who signs in (#449, #574, #579, #580, K40). Signing out forgets
+  the user before the browser leaves, so this holds when sign-out goes on
+  to a proxy or a single sign-on provider too (K161, K162).
+
+### Upgrade notes
+- **CSV import, decimal comma languages:** for an owner whose language
+  writes a decimal comma (German), the import now reads number cells as
+  *Decimal comma* by default. A file from another tool that writes
+  decimal points (`13.5`, `48280.32`), which imported before, now shows
+  those rows as problems: choose *Decimal point* under *Numbers* in the
+  preview. Under a chosen format a thousands group must be whole, so
+  `48280.320` and `0.500` are refused under *Decimal comma* rather than
+  read as 48280320 or 500 (#581, K165). Logbook's own export is
+  recognised and imports as before.
 
 ## [3.20.1] — 2026-10-28
 
