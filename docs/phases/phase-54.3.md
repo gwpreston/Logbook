@@ -70,8 +70,36 @@ budgets* (#350, #359), §7.8, §7.11 (the digest), §7.35 (*True cost*), and
 - [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #570 is decided (#576) and the
       release is decided (#577).
-- [ ] Profile the three cases on the heavy household and record the
-      queries and time per widget, report section and digest step here.
+- [x] Profile the three cases on the heavy household and record the
+      queries and time per widget, report section and digest step here
+      (*Profile*, below).
+
+#### Profile (master, SQLite, 2026-10-29)
+
+The heavy household: 10 vehicles, each with 403 fill-ups, 150 services and
+16 years of insurance and inspection documents, on PHP 8.5 with the test
+app's SQLite file. The time is CPU in PHP more than queries (the dashboard
+runs 59 and is inside spec §8's 60).
+
+| Case | Time | Queries |
+|------|------|---------|
+| Dashboard, warm | 2.1 s (first load 2.3 s) | 59 |
+| `/reports/true-cost` | 0.65 s | 99 |
+| Scheduled tasks run with the monthly digest | 2.3 s | 847 |
+
+Where the dashboard's first load goes (ms): needs-attention 570 (of which
+the trend checks 228, the economy checks 170), the true-cost widget 298,
+mileage 231, insights 183, recent fuel 170, vehicle snapshots 140, fuel
+histories 123, reading all vehicles' tables once 106, coming up 91, spend
+67, reminders 38. Ten fuel histories were worked out forty times (four
+widgets each) and ten economy checks twenty times, 820 ms of it; the
+mileage widget converted every reading to the owner's day once per period
+(about 230,000 conversions).
+
+The digest: one `Reports` comparison with a ledger read per vehicle in
+*Last month*, and a read of the vehicle's tables per vehicle and per step,
+because a job reads the database as before (spec §8): about 64 queries a
+vehicle.
 
 ### 54.3.1 Dashboard (K149)
 
