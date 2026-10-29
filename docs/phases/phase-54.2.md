@@ -4,7 +4,7 @@
 misreads `45,123` or `13.000`, and offline fill-ups that stay with the person
 who made them.*
 
-Status: ✅ complete · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.0**, a minor release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.1](phase-54.1.md). The owner asked for
 the open rows that wait on no decision, and chose K1 and K40: each was
@@ -121,7 +121,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 ### Release
 
 - [x] VERSION 3.21.0, CHANGELOG 3.21.0, README status (#575).
-- [ ] Tag `v3.21.0` once merged.
+- [x] Tag `v3.21.0` once merged.
 
 ## Review notes
 
