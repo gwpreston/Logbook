@@ -73,6 +73,49 @@ final class PriceOutlierTest extends TestCase
         self::assertSame([], self::judge([...$far, $fill]), 'no neighbours: not judged');
     }
 
+    /**
+     * The window is found by bisection (K149); a fill-up exactly 30 days away
+     * still counts and one a second further does not, as when every other
+     * fill-up was looked at in turn.
+     */
+    public function testTheWindowIncludesExactly30DaysAndNotASecondMore(): void
+    {
+        $fill = $this->fill('2026-09-12', '1.500');
+        $at = $fill->data->filledAt;
+        $inside = [
+            $this->fillAt($at->modify('-30 days'), '1.000'),
+            $this->fillAt($at->modify('+30 days'), '1.000'),
+            $this->fillAt($at->modify('+1 day'), '1.000'),
+        ];
+        $outside = [
+            $this->fillAt($at->modify('-30 days -1 second'), '1.000'),
+            $this->fillAt($at->modify('+30 days +1 second'), '1.000'),
+        ];
+
+        self::assertCount(1, self::judge([...$inside, $fill]), 'three neighbours: judged against 1.000');
+        self::assertSame(
+            [],
+            self::judge([$inside[0], $inside[1], ...$outside, $fill]),
+            'two inside and two just outside: only two neighbours',
+        );
+        $found = self::judge([...$inside, ...$outside, $fill]);
+        self::assertCount(1, $found);
+        self::assertSame('1.0000000', $found[0]->median);
+    }
+
+    public function testManyFillUpsAreJudgedLikeTheirNeighboursOnly(): void
+    {
+        // Weekly at 1.000 for two years, one at 1.600 in the middle: only it is flagged.
+        $fills = [];
+        $start = new DateTimeImmutable('2025-01-01 09:00', new DateTimeZone('UTC'));
+        for ($week = 0; $week < 104; $week++) {
+            $fills[] = $this->fillAt($start->modify('+' . (7 * $week) . ' days'), $week === 52 ? '1.600' : '1.000');
+        }
+
+        $found = self::judge($fills);
+        self::assertSame([$fills[52]->id], array_map(static fn (PriceFinding $f): int => $f->entry->id, $found));
+    }
+
     public function testFewerThanThreeNeighboursFallsBackToTheOwnersOtherVehicles(): void
     {
         $own = [$this->fill('2026-09-01', '1.400'), $this->fill('2026-09-20', '1.400')];
@@ -219,6 +262,17 @@ final class PriceOutlierTest extends TestCase
             $this->fill('2026-09-08', $price, $grade, $fuel),
             $this->fill('2026-09-22', $price, $grade, $fuel),
         ];
+    }
+
+    private function fillAt(DateTimeImmutable $at, string $price): FuelEntry
+    {
+        return new FuelEntry(
+            $this->nextId++,
+            1,
+            new FuelEntryData($at, '10000', Fuel::Petrol, '40.00', $price, '55.60'),
+            $at,
+            $at,
+        );
     }
 
     private function fill(string $date, string $price, ?FuelGrade $grade = null, ?Fuel $fuel = null, int $vehicle = 1): FuelEntry

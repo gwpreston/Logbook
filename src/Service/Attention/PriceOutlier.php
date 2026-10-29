@@ -28,6 +28,8 @@ final class PriceOutlier
     public const int WINDOW_DAYS = 30;
     public const int MIN_NEIGHBOURS = 3;
 
+    private const array EMPTY = ['entries' => [], 'at' => []];
+
     /**
      * @param list<FuelEntry> $entries the vehicle's fill-ups
      * @param Closure(): list<FuelEntry> $owners the owner's fill-ups on every vehicle in this one's
@@ -48,11 +50,11 @@ final class PriceOutlier
                 continue;
             }
             $key = self::key($entry);
-            $prices = self::neighbours($entry, $own[$key] ?? []);
+            $prices = self::neighbours($entry, $own[$key] ?? self::EMPTY);
             $wider = false;
             if (count($prices) < self::MIN_NEIGHBOURS) {
                 $all ??= self::groups($owners());
-                $prices = self::neighbours($entry, $all[$key] ?? []);
+                $prices = self::neighbours($entry, $all[$key] ?? self::EMPTY);
                 $wider = true;
             }
             if (count($prices) < self::MIN_NEIGHBOURS) {
@@ -76,22 +78,30 @@ final class PriceOutlier
     /**
      * The prices of the fill-ups within the window of $entry, itself left out.
      *
-     * @param list<FuelEntry> $group one fuel and grade, oldest first
+     * @param array{entries: list<FuelEntry>, at: list<int>} $group one fuel and grade, oldest first, with when each was filled
      * @return list<string>
      */
     private static function neighbours(FuelEntry $entry, array $group): array
     {
         $at = $entry->data->filledAt->getTimestamp();
         $window = self::WINDOW_DAYS * 86400;
+        $times = $group['at'];
+
+        // The first fill-up within the window, by bisection: a vehicle's whole history is not scanned for each of its fill-ups.
+        $low = 0;
+        $high = count($times);
+        while ($low < $high) {
+            $middle = intdiv($low + $high, 2);
+            if ($times[$middle] - $at < -$window) {
+                $low = $middle + 1;
+            } else {
+                $high = $middle;
+            }
+        }
+
         $prices = [];
-        foreach ($group as $other) {
-            $delta = $other->data->filledAt->getTimestamp() - $at;
-            if ($delta < -$window) {
-                continue;
-            }
-            if ($delta > $window) {
-                break;
-            }
+        for ($i = $low, $count = count($times); $i < $count && $times[$i] - $at <= $window; $i++) {
+            $other = $group['entries'][$i];
             if ($other->id === $entry->id && $other->vehicleId === $entry->vehicleId) {
                 continue;
             }
@@ -102,17 +112,20 @@ final class PriceOutlier
     }
 
     /**
-     * Priced fill-ups by fuel and grade, each oldest first.
+     * Priced fill-ups by fuel and grade, each oldest first, with when each was filled.
      *
      * @param list<FuelEntry> $entries
-     * @return array<string, list<FuelEntry>>
+     * @return array<string, array{entries: list<FuelEntry>, at: list<int>}>
      */
     private static function groups(array $entries): array
     {
         $groups = [];
         foreach (self::sorted($entries) as $entry) {
             if (self::isPriced($entry)) {
-                $groups[self::key($entry)][] = $entry;
+                $key = self::key($entry);
+                $groups[$key] ??= self::EMPTY;
+                $groups[$key]['entries'][] = $entry;
+                $groups[$key]['at'][] = $entry->data->filledAt->getTimestamp();
             }
         }
 

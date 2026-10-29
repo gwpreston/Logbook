@@ -26,6 +26,7 @@ use Logbook\Service\Attachment\PendingUploads;
 use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Odometer\OdometerWarning;
 use Logbook\Service\Station\StationLinker;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Database\Transaction;
 use Psr\Clock\ClockInterface;
 
@@ -39,6 +40,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class FuelService
 {
+    /** Named for the tables it comes from, so a write to either forgets it (RequestReads::forget). */
+    private const string ANALYSIS_READS = 'fuel_entries+stations+analysis';
+
     public function __construct(
         private FuelEntryRepository $entries,
         private OdometerService $odometer,
@@ -48,12 +52,22 @@ final readonly class FuelService
         private AccessContext $author,
         private StationLinker $stations,
         private WebhookEvents $webhooks,
+        private RequestReads $reads,
     ) {
     }
 
+    /**
+     * A page works a vehicle's history out once, however many widgets ask
+     * (spec.md §8 *Page budgets*); a write to its fill-ups or stations
+     * makes the request forget it.
+     */
     public function history(Vehicle $vehicle): FuelHistory
     {
-        return FuelEconomy::analyse($this->entries($vehicle));
+        return $this->reads->remember(
+            self::ANALYSIS_READS,
+            $vehicle->id,
+            fn (): FuelHistory => FuelEconomy::analyse($this->entries($vehicle)),
+        );
     }
 
     /**
@@ -62,7 +76,20 @@ final readonly class FuelService
      */
     public function checks(FuelHistory $history): EconomyChecks
     {
-        return EconomyCheck::of($history);
+        $latest = $history->latest();
+        if ($latest === null) {
+            return EconomyCheck::of($history);
+        }
+
+        // Worked out once per history the page holds; a history of the same
+        // vehicle that isn't the remembered one gets its own.
+        $remembered = $this->reads->remember(
+            self::ANALYSIS_READS . '+checks',
+            $latest->entry->vehicleId,
+            static fn (): array => [$history, EconomyCheck::of($history)],
+        );
+
+        return $remembered[0] === $history ? $remembered[1] : EconomyCheck::of($history);
     }
 
     /**
