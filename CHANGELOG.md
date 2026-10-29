@@ -6,6 +6,20 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.2] — 2026-10-29
+
+Phase 54.4: **The true-cost cover note from the known-issues log**
+([docs/phases/phase-54.4.md](docs/phases/phase-54.4.md)). No migration: pull
+and restart.
+
+### Fixed
+- **The true-cost report names cover left out at the start of ownership
+  for a vehicle of any age.** The note ("£181 of cover before you bought it
+  isn't counted") showed only inside the first year's working, which the
+  report draws for the latest three years; for an older vehicle it was
+  never seen. It now shows once under the yearly table. The figures are
+  unchanged (#568, K152).
+
 ## [3.21.1] — 2026-10-29
 
 Phase 54.3: **Dashboard, true-cost and digest speed from the known-issues

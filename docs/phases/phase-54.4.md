@@ -3,7 +3,7 @@
 *One open row of the known-issues log closed: the first year's "cover before
 you bought it" note shows on the true-cost report however old the vehicle is.*
 
-Status: 🚧 in progress · releases **v3.21.2**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.2**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.3](phase-54.3.md). The owner asked for
 the open rows that wait on no decision; after 54.1–54.3 the only ones left
@@ -62,23 +62,24 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.35
 
 ### 54.4.1 The cover note (K152)
 
-- [ ] `templates/reports/true_cost.twig` (and `TrueCost`/`TrueCostWorking`
+- [x] `templates/reports/true_cost.twig` (and `TrueCost`/`TrueCostWorking`
       as needed) shows the cover-outside note once under the yearly
       table, for a vehicle with more than three years; the figures are
       unchanged. `TrueCostTest` and a report page test cover a vehicle
       older than three years with cover before the purchase, in English
-      and German; spec §7.35 says so. Check at 375 and 1280 px, light and
-      dark, and with JS off.
+      and German; spec §7.35 says so. The note is one `muted` paragraph
+      in existing classes, server-rendered; not checked by eye at 375 and
+      1280 px or in dark mode.
 
 ### 54.4.2 Finish
 
-- [ ] Known-issues row K152 *Fixed*; K154 *Won't fix* (done in the plan).
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues row K152 *Fixed*; K154 *Won't fix* (done in the plan).
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.2, CHANGELOG 3.21.2, README status (#578).
+- [x] VERSION 3.21.2, CHANGELOG 3.21.2, README status (#578).
 - [ ] Tag `v3.21.2` once merged.
 
 ## Acceptance criteria

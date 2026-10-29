@@ -135,7 +135,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.1](docs/phases/phase-54.1.md) | Clock-change imports, empty-widget edges and test-run guards from the known-issues log + patch release | ✅ |
 | [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | ✅ |
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | ✅ |
-| [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | 🚧 |
+| [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | ✅ |
 | [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
