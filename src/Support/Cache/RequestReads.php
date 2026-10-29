@@ -40,6 +40,30 @@ final class RequestReads
         $this->end();
     }
 
+    /**
+     * Run $run with reads remembered, unless they already are (a page
+     * request): for a job's unit of work that reads the same vehicles' tables
+     * many times, as the monthly digest does for each user (spec.md §8
+     * *Page budgets*). What it remembered is forgotten when it ends.
+     *
+     * @template T
+     * @param callable(): T $run
+     * @return T
+     */
+    public function scoped(callable $run): mixed
+    {
+        if ($this->active || !$this->enabled) {
+            return $run();
+        }
+
+        $this->begin();
+        try {
+            return $run();
+        } finally {
+            $this->end();
+        }
+    }
+
     public function end(): void
     {
         $this->active = false;

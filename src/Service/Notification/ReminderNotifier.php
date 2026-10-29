@@ -18,6 +18,8 @@ use Logbook\Service\Reminder\ReminderEntry;
 use Logbook\Service\Reminder\ReminderService;
 use Logbook\Service\Reminder\ReminderSettingsStore;
 use Logbook\Service\Reminder\ReminderSync;
+use Logbook\Service\Vehicle\VehicleDataPrimer;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Date\LocalTime;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
@@ -59,6 +61,8 @@ final readonly class ReminderNotifier
         private AttentionList $attention,
         private VehicleRepository $vehicles,
         private DigestSummary $summary,
+        private RequestReads $reads,
+        private VehicleDataPrimer $primer,
     ) {
     }
 
@@ -130,9 +134,12 @@ final readonly class ReminderNotifier
         ) {
             return false;
         }
-        $this->sync->sync($user);
+        // One read of each table for all the user's vehicles, however many steps ask (spec.md §8).
+        return $this->reads->scoped(function () use ($user, $recipient, $preferences, $today): bool {
+            $this->sync->sync($user);
 
-        return $this->sendDigest($user, $recipient, $preferences, $today);
+            return $this->sendDigest($user, $recipient, $preferences, $today);
+        });
     }
 
     private function isQuiet(User $user, NotificationPreferences $preferences): bool
@@ -238,6 +245,7 @@ final readonly class ReminderNotifier
             : [];
         // Archived ones too: *Last month* keeps one archived during it (#374).
         $withArchived = $this->vehicles->listByIds($this->access->recipientVehicleIds($user, archived: true));
+        $this->primer->prime($withArchived);
         $content = $this->summary->build($user, $withArchived, $today, $preferences);
         if ($entries === [] && $checks === [] && $content->isEmpty()) {
             $this->settings->markDigestSent($user->id, $month);
