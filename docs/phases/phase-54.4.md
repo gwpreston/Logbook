@@ -65,7 +65,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.35
 - [x] `templates/reports/true_cost.twig` (and `TrueCost`/`TrueCostWorking`
       as needed) shows the cover-outside note once under the yearly
       table, for a vehicle with more than three years; the figures are
-      unchanged. `TrueCostTest` and a report page test cover a vehicle
+      unchanged. `TrueCostPagesTest` covers a vehicle
       older than three years with cover before the purchase, in English
       and German; spec §7.35 says so. The note is one `muted` paragraph
       in existing classes, server-rendered; not checked by eye at 375 and
