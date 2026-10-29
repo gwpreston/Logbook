@@ -3,7 +3,7 @@
 *Three open performance rows of the known-issues log closed: the dashboard,
 the true-cost report and the monthly digest job on a heavy household.*
 
-Status: 📋 planned · releases **v3.21.1**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.1**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.2](phase-54.2.md). The owner asked for the
 open rows that wait on no decision; after K1 and K40 (54.2) only K149,

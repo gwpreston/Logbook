@@ -12525,7 +12525,7 @@ task breakdowns live in the per-phase files; this is the map.
   the user who made them (§7.15, K40, #449, #574). Releases v3.21.0
   (#575). No migration. See [`phase-54.2.md`](docs/phases/phase-54.2.md).
 - **Phase 54.3 — Dashboard, true-cost and digest speed from the
-  known-issues log + patch release** (planned). The dashboard meets its
+  known-issues log + patch release** (in progress). The dashboard meets its
   500 ms target (§8, K149); the true-cost report joins the page budget
   (60 queries, 500 ms; §8, §7.35, K150, #576); the monthly digest job's
   queries don't grow with vehicles (§7.11, K151). Releases v3.21.1
