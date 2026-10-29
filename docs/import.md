@@ -30,8 +30,8 @@ spreadsheet, another app, or another Logbook.
    Columns named like Logbook's export (in your language or English) or with a
    common name ("Mileage", "Cost", "Notes") are matched already, and so is an
    unnamed column that holds dates. Then say how the file is written: the date
-   order, the odometer unit, the volume unit (fuel) and the time zone (fuel and
-   mileage). Units and zone default to what the header says ("Odometer
+   order, the number format, the odometer unit, the volume unit (fuel) and the
+   time zone (fuel and mileage). Units and zone default to what the header says ("Odometer
    (Miles)", "Volume (UK gallons)", "Date and time (Europe/London)"), else
    your own settings. A unit can be written as Logbook writes it, in any of
    its languages, or in common English words: "litre" or "liter", "ltr",
@@ -64,8 +64,14 @@ same category, amount and note.
 
 ## Values
 
-- **Numbers:** `1234.5` always works; your own format (`1.234,5` in German)
-  too. Quantities are read in the units chosen for the file and converted
+- **Numbers** are read in the chosen *Numbers* format: *Decimal point*
+  (`1,234.56`) or *Decimal comma* (`1.234,56`), your own language's by
+  default, or *Decimal point* for a file of Logbook's own export (it writes
+  plain decimals, `48280.32`, whatever your language). It decides whether `45,123` is 45123 or 45.123, and `13.000` 13
+  or 13000. A space between thousands (`1 234`) is read in both. A number
+  the chosen format can't read (`13,5` under *Decimal point*, or
+  `48280.320` under *Decimal comma*, whose first group is too long) is a
+  problem row, never read the other way. Quantities are read in the units chosen for the file and converted
   exactly, so an exported file imports back to the very same values.
 - **Money** is in the vehicle's currency and never converted. A *Currency*
   column is optional; a row in another currency is refused. `0` is a valid cost.

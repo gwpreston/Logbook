@@ -6,6 +6,38 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.0] — 2026-10-28
+
+Phase 54.2: **CSV number separators and offline fill-ups per user from the
+known-issues log** ([docs/phases/phase-54.2.md](docs/phases/phase-54.2.md)).
+No migration: pull and restart.
+
+### Added
+- **The CSV import preview has a *Numbers* choice:** *Decimal point*
+  (`1,234.56`) or *Decimal comma* (`1.234,56`), your own language's by
+  default, like the date order. It decides whether `45,123` is 45123 or
+  45.123, and `13.000` 13 or 13000, for distances, volumes, prices and
+  amounts. A space between thousands reads in both. A file of Logbook's
+  own export defaults to *Decimal point*, since it writes plain decimals,
+  so it imports back as it was in any language (#581). Imports from other
+  apps keep their own formats (#573, K1).
+
+### Fixed
+- **A number the import's format can't read is a problem row.** `45,123`
+  litres used to import as 45123 for an English owner, and `13.000` km as
+  13 for a German one, with no warning; a cell like `13,5` under *Decimal
+  point* is now refused with "Enter a number", never read the other way
+  (#484, K1).
+- **Offline fill-ups stay with the person who saved them.** On a shared
+  browser, a fill-up queued offline is sent, listed and reviewed only for
+  its own user, and sent only when the server confirms that user is signed
+  in; before, it could be sent as whoever signed in next, and *Review*
+  filled their form with it. A fill-up form kept for offline use opens
+  only for the user it was kept for, and not at all after signing out.
+  Nothing is cleared at sign-out: a waiting fill-up is sent when its user
+  next signs in, and one queued before this version goes to the first
+  user who signs in (#449, #574, #579, #580, K40).
+
 ## [3.20.1] — 2026-10-28
 
 Phase 54.1: **clock-change imports, empty-widget edges and test-run guards

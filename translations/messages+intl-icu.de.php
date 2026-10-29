@@ -3213,6 +3213,11 @@ return [
             'dmy' => 'Tag zuerst (27.09.2026)',
             'mdy' => 'Monat zuerst (09/27/2026)',
         ],
+        'number_format' => 'Zahlen',
+        'number_format_option' => [
+            'dot' => 'Dezimalpunkt (1,234.56)',
+            'comma' => 'Dezimalkomma (1.234,56)',
+        ],
         'distance_unit' => 'Kilometerstand in',
         'volume_unit' => 'Mengen und Preise pro',
         'volume_unit_hint' => 'Sofern eine Zeile nicht ihre eigene Einheit nennt. Laden ist immer in kWh.',

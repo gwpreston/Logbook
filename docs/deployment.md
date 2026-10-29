@@ -468,6 +468,15 @@ returns. If the server rejects it (say, a typo in the odometer), it stays on
 the phone and the fill-up page offers **Review**. Attachments cannot be added
 offline. Other pages show an "offline" notice until the connection is back.
 
+On a phone or computer shared by several people, a fill-up kept offline is
+sent, listed and reviewed only for the person who saved it, and only once the
+server confirms they are the one signed in. The fill-up form kept for offline
+use opens only for the person it was kept for: after signing out, or when
+someone else signs in, it shows the "offline" notice instead. Signing out
+doesn't throw anything away: a fill-up still waiting is sent when its person
+next signs in. A fill-up kept by a version before 3.21.0 goes to the first
+person who signs in after the upgrade.
+
 ---
 
 ## Background jobs

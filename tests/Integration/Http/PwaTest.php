@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Http;
 
 use Logbook\Domain\Feature\Feature;
+use Logbook\Repository\UserRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CostFixtures;
@@ -126,5 +127,54 @@ final class PwaTest extends AppTestCase
         $manifest = json_decode(self::body((new TestBrowser($app))->get('/manifest.webmanifest')), true);
         self::assertIsArray($manifest);
         self::assertArrayNotHasKey('shortcuts', $manifest);
+    }
+
+    /**
+     * K40 (#574): every signed-in page names its user, for the service
+     * worker and the offline queue; a signed-out page names nobody.
+     */
+    public function testSignedInPagesNameTheirUserAndSignedOutPagesNobody(): void
+    {
+        $app = $this->createApp(['FEATURES_TRIPS' => 'true']);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $owner = $this->service($app, UserRepository::class)->findByUsername('owner');
+        self::assertNotNull($owner);
+
+        $form = $browser->get('/vehicles/' . $golf->id . '/fuel/new');
+        self::assertSame((string) $owner->id, $form->getHeaderLine('X-Logbook-User'));
+        self::assertStringContainsString('<body data-user="' . $owner->id . '">', self::body($form));
+
+        // Every page the service worker keeps for offline use names its user.
+        $golfPath = '/vehicles/' . $golf->id;
+        $paths = ['/log/new', '/fuel/new', $golfPath . '/fuel/new', '/log/new/trip', $golfPath . '/trips/new'];
+        foreach ($paths as $path) {
+            // With one vehicle, the choosers go straight to its form.
+            $page = $browser->get($path);
+            if ($page->getStatusCode() === 303) {
+                $page = $browser->follow($page);
+            }
+            self::assertSame(200, $page->getStatusCode(), $path);
+            self::assertSame((string) $owner->id, $page->getHeaderLine('X-Logbook-User'), $path);
+        }
+
+        $signIn = (new TestBrowser($app))->get('/login');
+        self::assertFalse($signIn->hasHeader('X-Logbook-User'));
+        self::assertStringContainsString('<body>', self::body($signIn));
+        self::assertStringContainsString('data-signed-out-page', self::body($signIn), 'the page that makes the worker forget');
+
+        $worker = $browser->get('/sw.js');
+        self::assertStringContainsString("var USER_HEADER = 'X-Logbook-User';", self::body($worker));
+
+        // Files a shared cache may keep never name the user.
+        self::assertFalse($worker->hasHeader('X-Logbook-User'));
+        self::assertFalse($browser->get('/manifest.webmanifest')->hasHeader('X-Logbook-User'));
+        $offline = $browser->get('/offline');
+        self::assertFalse($offline->hasHeader('X-Logbook-User'));
+        self::assertStringNotContainsString('data-user', self::body($offline), 'the offline page is nobody\'s');
+
+        // Signing out names nobody on the way out.
+        $browser->get('/');
+        self::assertFalse($browser->post('/logout')->hasHeader('X-Logbook-User'));
     }
 }

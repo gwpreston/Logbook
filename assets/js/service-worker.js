@@ -9,6 +9,11 @@
  *     so a new release replaces it).
  *   - Pages: network first. The Log entry chooser and the fill-up forms
  *     are kept for offline use; any other page offline gets the offline page.
+ *     A kept page is served only to the user it was kept for (K40): each
+ *     response names its user (X-Logbook-User), and the worker remembers
+ *     the user of the last HTML page it fetched, nobody after a signed-out
+ *     one (the sign-in page clears it too, js/app.js, for a sign-out the
+ *     worker never saw).
  *   - Everything else (POSTs, downloads, other sites) is left alone. An
  *     offline fill-up is queued by the page itself (js/app.js).
  */
@@ -17,6 +22,10 @@
 var CONFIG = self.LOGBOOK;
 var STATIC = 'logbook-static-' + CONFIG.version;
 var PAGES = 'logbook-pages';
+var USER_HEADER = 'X-Logbook-User';
+// Where the remembered user is kept: the worker's memory doesn't last.
+var SESSION = 'logbook-session';
+var REMEMBERED = CONFIG.base + '/sw-user';
 var FORM = new RegExp('^' + CONFIG.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(log/new|fuel/new|vehicles/[0-9]+/fuel/new|log/new/trip|vehicles/[0-9]+/trips/new)$');
 
 self.addEventListener('install', function (event) {
@@ -50,9 +59,37 @@ function detached(response) {
     });
 }
 
+// The user of the last page fetched from the server ('' for nobody).
+function remember(user) {
+    return caches.open(SESSION).then(function (cache) {
+        return cache.put(REMEMBERED, new Response(user));
+    });
+}
+
+function remembered() {
+    return caches.open(SESSION)
+        .then(function (cache) { return cache.match(REMEMBERED); })
+        .then(function (stored) { return stored ? stored.text() : ''; });
+}
+
+// A kept page for the remembered user, else the offline page.
+function offline(url) {
+    return Promise.all([caches.open(PAGES).then(function (cache) { return cache.match(url.pathname); }), remembered()])
+        .then(function (found) {
+            var cached = found[0];
+            var user = found[1];
+            return cached && user !== '' && cached.headers.get(USER_HEADER) === user ? cached : caches.match(CONFIG.offline);
+        });
+}
+
 function page(request, url) {
     return fetch(request)
         .then(function (response) {
+            // Only a page counts: a download or a picture names nobody.
+            var html = (response.headers.get('Content-Type') || '').indexOf('text/html') === 0;
+            var remembering = response.ok && html
+                ? remember(response.headers.get(USER_HEADER) || '').catch(function () {})
+                : Promise.resolve();
             var finalPath = response.url ? new URL(response.url).pathname : url.pathname;
             if (response.ok && FORM.test(finalPath)) {
                 var copy = response.clone();
@@ -66,12 +103,10 @@ function page(request, url) {
                     });
                 });
             }
-            return response;
+            return remembering.then(function () { return response; });
         })
         .catch(function () {
-            return caches.open(PAGES)
-                .then(function (cache) { return cache.match(url.pathname); })
-                .then(function (cached) { return cached || caches.match(CONFIG.offline); });
+            return offline(url);
         });
 }
 

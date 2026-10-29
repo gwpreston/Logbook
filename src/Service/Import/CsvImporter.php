@@ -66,6 +66,13 @@ final readonly class CsvImporter
 {
     public const int MAX_ROWS = 5000;
 
+    /**
+     * What the form gets for a number cell the file's number format can't
+     * read: no format reads it, so the row gets the form's own "not a
+     * number" message rather than the cell read another way (K1).
+     */
+    private const string UNREADABLE = 'NaN';
+
     public function __construct(
         private FuelService $fuel,
         private OdometerService $odometer,
@@ -395,21 +402,21 @@ final readonly class CsvImporter
                     }
                     break;
                 case FieldKind::Distance:
-                    $number = DecimalParser::parse($value, $owner->locale);
+                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
                     $input[$field->key] = $number === null
-                        ? $value
+                        ? self::UNREADABLE
                         : $options->distanceUnit->toKmDecimal($number, OdometerReadingForm::KM_SCALE);
                     break;
                 case FieldKind::Volume:
-                    $number = DecimalParser::parse($value, $owner->locale);
+                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
                     $input[$field->key] = $number === null || $electric
-                        ? $value
+                        ? $number ?? self::UNREADABLE
                         : $volumeUnit->toLitresDecimal($number, FuelAmounts::VOLUME_SCALE);
                     break;
                 case FieldKind::UnitPrice:
-                    $number = DecimalParser::parse($value, $owner->locale);
+                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
                     $input[$field->key] = $number === null || $electric
-                        ? $value
+                        ? $number ?? self::UNREADABLE
                         : $volumeUnit->pricePerLitre($number, FuelAmounts::PRICE_SCALE);
                     break;
                 case FieldKind::Grade:
@@ -423,6 +430,9 @@ final readonly class CsvImporter
                 case FieldKind::VolumeUnit:
                     break;
                 case FieldKind::Number:
+                    $input[$field->key] = DecimalParser::parse($value, $owner->locale, $options->numberFormat)
+                        ?? self::UNREADABLE;
+                    break;
                 case FieldKind::Text:
                     $input[$field->key] = $value;
                     break;

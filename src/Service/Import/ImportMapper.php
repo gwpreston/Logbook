@@ -7,6 +7,7 @@ namespace Logbook\Service\Import;
 use Logbook\Support\Csv\CsvReader;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Display\DisplayPreferences;
+use Logbook\Support\Number\NumberFormat;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 
@@ -16,6 +17,9 @@ use Logbook\Support\Units\VolumeUnit;
  */
 final class ImportMapper
 {
+    /** Fields read as numbers, in the file's number format. */
+    private const array NUMBER_KINDS = [FieldKind::Number, FieldKind::Distance, FieldKind::Volume, FieldKind::UnitPrice];
+
     /** 2026-09-27, 27/09/2026, 9.27.2026, optionally followed by a time. */
     private const string DATE_LIKE = '/^(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4})'
         . '([T ]\d{1,2}:\d{2}(:\d{2})?)?$/';
@@ -94,6 +98,9 @@ final class ImportMapper
             $distance,
             $volume,
             $zone,
+            self::ownExport($fields, $mapping, $csv, $vocabulary)
+                ? NumberFormat::DotDecimal
+                : NumberFormat::forLocale($preferences->locale),
         );
     }
 
@@ -144,7 +151,41 @@ final class ImportMapper
             DistanceUnit::tryFrom($string('distance_unit')) ?? $guess->distanceUnit,
             VolumeUnit::tryFrom($string('volume_unit')) ?? $guess->volumeUnit,
             LocalTime::isValidTimezone($zone) ? $zone : $guess->timezone,
+            NumberFormat::tryFrom($string('number_format')) ?? $guess->numberFormat,
         );
+    }
+
+    /**
+     * Whether the file is Logbook's own export: every matched column has
+     * its export header, and no number has a comma. The export writes plain decimals, so it reads with
+     * a decimal point whatever the owner's language (#581).
+     *
+     * @param list<ImportField> $fields
+     * @param array<string, int|null> $mapping
+     */
+    private static function ownExport(array $fields, array $mapping, CsvReader $csv, ImportVocabulary $vocabulary): bool
+    {
+        $matched = 0;
+        foreach ($fields as $field) {
+            $column = $mapping[$field->key];
+            if ($column === null) {
+                continue;
+            }
+            if (!$vocabulary->headerMatches($field, $csv->header[$column] ?? '', true)) {
+                return false;
+            }
+            // The export never writes a comma in a number: a file that does was written by hand.
+            if (in_array($field->kind, self::NUMBER_KINDS, true)) {
+                foreach ($csv->rows as $row) {
+                    if (str_contains($row['cells'][$column] ?? '', ',')) {
+                        return false;
+                    }
+                }
+            }
+            $matched++;
+        }
+
+        return $matched > 1;
     }
 
     private static function firstValue(CsvReader $csv, int $column): ?string

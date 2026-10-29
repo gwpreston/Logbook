@@ -75,7 +75,8 @@
     <script defer src="{{ asset('vendor/alpine.min.js') }}"></script>
     {% block head %}{% endblock %}
 </head>
-<body>
+{# Whose page this is, for the offline fill-up queue (spec.md §7.15, K40). #}
+<body{% if signed_in %} data-user="{{ user.id }}"{% endif %}>
     <a class="skip-link" href="#main">{{ 'nav.skip_to_content'|trans }}</a>
 
     <div class="app{{ signed_in ? '' : ' app--signed-out' }}">

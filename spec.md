@@ -4418,7 +4418,14 @@ vehicles; a disabled module cannot be imported).
   defaults to ISO. The *number format* (dot decimal `1,234.56` or comma
   decimal `1.234,56`) defaults to the owner's locale and decides how a
   number cell such as `45,123` or `13.000` is read; a cell the format
-  can't read is invalid (Phase 54.2, K1, #484, #573). The preview lists every row with what will happen to it.
+  can't read is invalid (Phase 54.2, K1, #484, #573). A file whose every
+  matched column has Logbook's own export header (in any of its
+  languages), with no comma in a number cell, defaults to dot decimal
+  instead, since the export writes
+  plain decimals, so an owner's own export imports back as it was (#581).
+  Thousands groups must be whole: a first group of more than three digits
+  (`48280.320`) or a lone `0` (`0.500`) is not read as grouped under
+  comma decimal; it is invalid. The preview lists every row with what will happen to it.
   (3) Import: one transaction; the result page lists what was imported and
   every row that was not, with its line number and reason. For fill-ups it
   also says how many of the imported ones are flagged by the economy check
@@ -4947,8 +4954,16 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   A queued entry and a cached fill-up page belong to the user who made
   them: the browser remembers the last signed-in user, an entry is sent,
   listed and reviewed only for that user, and a cached page is served
-  only to the same user (otherwise the offline page). Nothing is cleared
-  at sign-out (Phase 54.2, K40, #449, #574).
+  only to the same user (otherwise the offline page). Responses name
+  their user in an `X-Logbook-User` header (not the manifest, the
+  service worker or the offline page, which shared caches may keep), and
+  the worker remembers it from each HTML page it fetches. Nothing is cleared
+  at sign-out (Phase 54.2, K40, #449, #574). A page loaded signed out
+  (the sign-in page after signing out, or an expired session) forgets the
+  remembered user, so no cached page is served until someone signs in
+  again; queued entries stay and are sent when their user next signs in
+  (#580). An entry queued before Phase 54.2 carries no user: the first
+  user signed in after the upgrade takes it over (#579).
 
 ### 7.16 Vehicle history
 "What has happened to this car?" on one page (Phase 10): everything logged
@@ -12500,7 +12515,7 @@ task breakdowns live in the per-phase files; this is the map.
   fresh and refuse the app's own database (K155, K156). Releases
   v3.20.1 (#572). No migration. See [`phase-54.1.md`](docs/phases/phase-54.1.md).
 - **Phase 54.2 — CSV number separators and offline fill-ups per user
-  from the known-issues log + minor release** (planned). The import
+  from the known-issues log + minor release** (complete). The import
   preview's *Number format* picker (dot or comma decimal, default the
   owner's locale) decides how `45,123` and `13.000` are read (§7.13, K1,
   #484, #573); queued offline fill-ups and cached fill-up pages belong to

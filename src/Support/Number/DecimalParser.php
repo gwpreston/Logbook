@@ -14,17 +14,26 @@ use NumberFormatter;
  * format is accepted ("1.234,5" in German, "1 234,5" in French); grouping
  * separators must sit in the right places, so "1,5" is rejected in English
  * rather than silently read as 15.
+ *
+ * An import names the file's format instead (K1, #573): then only that
+ * format is read, so `13.000` is 13000 under comma decimal, not 13.
  */
 final class DecimalParser
 {
     /** Spaces people (and locales) use as thousands separators. */
     private const array SPACES = [' ', "\u{00A0}", "\u{202F}", "\u{2009}"];
 
-    public static function parse(string $input, string $locale): ?string
+    public static function parse(string $input, string $locale, ?NumberFormat $format = null): ?string
     {
         $value = trim($input);
         if ($value === '') {
             return null;
+        }
+
+        if ($format !== null) {
+            // Dot decimal reads every canonical number the same way; comma decimal reads none of them.
+            return ($format === NumberFormat::DotDecimal ? self::canonical($value) : null)
+                ?? self::withSymbols($value, $format->decimalSeparator(), $format->groupingSeparator(), true);
         }
 
         $canonical = self::canonical($value);
@@ -33,9 +42,28 @@ final class DecimalParser
         }
 
         $formatter = new NumberFormatter($locale, NumberFormatter::DECIMAL);
-        $decimalSymbol = $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL) ?: '.';
-        $groupingSymbol = $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL);
 
+        return self::withSymbols(
+            $value,
+            $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL) ?: '.',
+            $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL),
+        );
+    }
+
+    /**
+     * Read a number written with these separators; grouping separators
+     * must sit in the right places. With $wholeGroups (a chosen format) the
+     * first group is whole too: one to three digits and not a lone 0, so
+     * `48280.320` and `0.500` aren't read as thousands (#581).
+     *
+     * @param non-empty-string $decimalSymbol
+     */
+    private static function withSymbols(
+        string $value,
+        string $decimalSymbol,
+        string $groupingSymbol,
+        bool $wholeGroups = false,
+    ): ?string {
         $value = self::normaliseMinus($value);
         $negative = str_starts_with($value, '-');
         $value = ltrim($value, '-+');
@@ -49,7 +77,7 @@ final class DecimalParser
         $groupingSymbols = in_array($groupingSymbol, self::SPACES, true)
             ? self::SPACES
             : [$groupingSymbol, ...self::SPACES];
-        $whole = self::ungroup($whole ?? '', $groupingSymbols);
+        $whole = self::ungroup($whole ?? '', $groupingSymbols, $wholeGroups);
         if ($whole === null) {
             return null;
         }
@@ -81,7 +109,7 @@ final class DecimalParser
      *
      * @param list<string> $symbols
      */
-    private static function ungroup(string $whole, array $symbols): ?string
+    private static function ungroup(string $whole, array $symbols, bool $wholeFirst = false): ?string
     {
         $pattern = '/(?:' . implode('|', array_map(static fn (string $s): string => preg_quote($s, '/'), $symbols)) . ')/u';
         $groups = preg_split($pattern, $whole);
@@ -94,7 +122,13 @@ final class DecimalParser
             if (preg_match('/^\d+$/', $group) !== 1) {
                 return null;
             }
-            if ($index === 0 || $count === 1) {
+            if ($count === 1) {
+                continue;
+            }
+            if ($index === 0) {
+                if ($wholeFirst && (strlen($group) > 3 || $group === '0')) {
+                    return null;
+                }
                 continue;
             }
             $length = strlen($group);

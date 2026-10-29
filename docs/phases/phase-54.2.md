@@ -4,7 +4,7 @@
 misreads `45,123` or `13.000`, and offline fill-ups that stay with the person
 who made them.*
 
-Status: 📋 planned · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.0**, a minor release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.1](phase-54.1.md). The owner asked for
 the open rows that wait on no decision, and chose K1 and K40: each was
@@ -70,46 +70,101 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
 
 ### 54.2.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #573, #574 and #575 are decided.
+      None still open bears on K1 or K40 (log intro, 2026-10-28).
 
 ### 54.2.1 Number format on import (K1)
 
-- [ ] `NumberFormat` enum (dot decimal, comma decimal) and
+- [x] `NumberFormat` enum (dot decimal, comma decimal) and
       `DecimalParser::parse()` taking it; the canonical form is no longer
       tried first when a format is chosen (`DecimalParserTest`).
-- [ ] `ImportOptions`, `ImportMapper::guess()` and the query
+- [x] `ImportOptions`, `ImportMapper::guess()` and the query
       (`number_format`) carry it; `CsvImporter` reads distance, volume and
       amount cells with it (`CsvImporterTest`: `45,123` and `13.000` under
-      both formats, English and German owners).
-- [ ] The preview's picker in `templates/import/map.twig`, translations in
+      both formats, English and German owners); a German owner's own export reads back under a decimal point, #581).
+- [x] The preview's picker in `templates/import/map.twig`, translations in
       every catalogue; works without JS. Check at 375, 768 and 1280 px,
       light and dark.
-- [ ] Spec §7.13 says so. `docs/` import guide updated.
+- [x] Spec §7.13 says so. `docs/` import guide updated.
 
 ### 54.2.2 Offline fill-ups per user (K40)
 
-- [ ] The page carries the signed-in user's id; `app.js` remembers it at
-      sign-in and every queued item stores it (`userId`).
-- [ ] `sendQueued`/`flushOutbox` and the outbox list use only the current
-      user's items; *Review* never shows another user's values.
-- [ ] `cacheOfflineForms` and `service-worker.js` cache a page for its
+- [x] The page carries the signed-in user's id (`<body data-user>`, and
+      an `X-Logbook-User` header on every signed-in response); every
+      queued item stores it (`userId`). The service worker, not `app.js`,
+      remembers the user, from each page it fetches: a page served from
+      its cache must not re-remember its own user, and a signed-out page
+      forgets it (#580).
+- [x] `sendQueued`/`flushOutbox` and the outbox list use only the current
+      user's items, and send one only when the fetched form's header names
+      its user; *Review* never shows another user's values. Items queued
+      before the upgrade go to the first user signed in (#579).
+- [x] `cacheOfflineForms` and `service-worker.js` cache a page for its
       user and serve it only to the same user; no remembered user gets the
       offline page.
-- [ ] A browser test or script (the repo's JS tests) covers two users on
-      one browser, queued and cached; `LogoutAction` and spec §7.15
-      describe the behaviour. Rebuild and commit the built assets.
+- [x] A browser test or script (the repo's JS tests) covers two users on
+      one browser, queued and cached (`tests/js/offline.test.js`, the real
+      service worker at the root and at a subpath); `LogoutAction` and
+      spec §7.15 describe the behaviour. Rebuild and commit the built
+      assets.
 
 ### 54.2.3 Finish
 
-- [ ] Known-issues rows K1 and K40 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Known-issues rows K1 and K40 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
+- [x] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.0, CHANGELOG 3.21.0, README status (#575).
+- [x] VERSION 3.21.0, CHANGELOG 3.21.0, README status (#575).
 - [ ] Tag `v3.21.0` once merged.
+
+## Review notes
+
+- Design: the *Numbers* select joins *How the file is written* as a
+  second field after *Dates*, the same `field`/`select` markup, so the
+  reading card wraps one more row (3 + 2 on the fill-up import). Checked in
+  a browser at `/logbook` (a subpath) at 375 px light, 768 px dark and
+  1280 px light: one column at 375 px with no sideways scroll, three at
+  768 and 1280. The long option labels clip inside the select as *Dates*
+  already does. The preview is a GET form and the commit carries
+  `number_format` as a hidden field, so it works without JS.
+- K40 in a real browser at `/logbook`: after visiting the fill-up forms
+  signed in, the worker remembered user 1 and every kept page carried
+  `X-Logbook-User: 1`; signing out landed on the sign-in page and left
+  nobody remembered.
+
+- Bug hunt (at `4c516492`): **HIGH**, fixed: a German or French
+  owner's default *Decimal comma* couldn't read Logbook's own export
+  (`48280.32` a problem row, `48280.320` read as 48280320); decided as
+  #581 and built here (own export defaults to a decimal point; whole
+  thousands groups under a chosen format). **MEDIUM**, fixed by the same
+  change: a cost of `1.500` read as 1500 is still read so under *Decimal
+  comma* (that is the format), but `0.500` is now a problem row. K40
+  found sound.
+- Security review (at `4c516492`): **HIGH**, fixed: with header sign-in,
+  signing out (a POST answered with a page, or a redirect to the proxy)
+  never showed the worker a signed-out page, so it kept the user; and the
+  sign-out page named the departing user. Now `X-Logbook-User` is sent
+  only on personal (`no-store`) pages whose session still holds the user,
+  and any signed-out page other than the offline page clears the
+  remembered user itself (`app.js`). **LOW**, fixed: the header was on
+  `/manifest.webmanifest`, `/sw.js` and `/offline`, which shared caches
+  may keep. Carried: K160 (`symfony/mime` advisory, on master) and K161
+  (an OIDC provider that doesn't send the browser back).
+- Follow-up to both reviews: the header is left off only what shared
+  caches may keep (`public`, `no-cache`), the worker remembers a user only
+  from an HTML page (a download or a picture names nobody), and only the
+  sign-in and proxy signed-out pages clear it in the page (an error page
+  or the offline page names nobody too). Own-export detection also needs
+  no comma in any number cell, so a hand-made file with the export's
+  column names and `45,123` keeps the decimal comma. Tests: `PwaTest` (all
+  five offline form paths), `offline.test.js` (a download), `ImportTest`.
+- Checks (at the final commit): `bin/test-all-dbs.sh` green on SQLite,
+  PostgreSQL, MySQL and MariaDB (4742 tests each, migrate, rollback and
+  migrate); `node --test tests/js` 42 green; `composer lint` and
+  `composer analyse` clean; line coverage 95.15% (floor 95%).
 
 ## Acceptance criteria
 
@@ -129,3 +184,19 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   shown only to a match (K40). Not chosen: also clearing at sign-out.
 - **#575. Release. Decided 2026-10-28:** on its own as minor release
   v3.21.0. Not chosen: a patch release, or with the next releasing phase.
+- **#579. Decided 2026-10-28** (found while starting it): a fill-up queued
+  before the upgrade carries no user; the first user signed in after the
+  upgrade takes it over and it sends as before (K40). Not chosen: never
+  send it; list it with *Discard* only.
+- **#580. Decided 2026-10-28** (found while starting it): a page loaded
+  signed out forgets the remembered user, so no cached fill-up page is
+  served until someone signs in; queued entries stay (K40). Not chosen:
+  keep the last user until another signs in.
+- **#581. Decided 2026-10-28** (found by the bug hunt while building it):
+  Logbook's own export writes plain decimals, which a comma-decimal
+  default can't read (`48280.32` a problem row, `48280.320` read as
+  48280320). A file whose every matched column has its export header
+  defaults to dot decimal; under a chosen format a thousands group must be
+  whole (first group 1–3 digits, not a lone `0`), so `48280.320` and
+  `0.500` are problem rows, never ×1000 (K1). Not chosen: always the
+  locale's default; the export written in the owner's format.

@@ -26,6 +26,13 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 {
     public const string ATTRIBUTE = 'user';
 
+    /**
+     * Names the signed-in user on their own responses (spec.md §7.15, K40): the
+     * service worker remembers it, and keeps and serves a fill-up page,
+     * and the page sends a queued fill-up, only for that user.
+     */
+    public const string USER_HEADER = 'X-Logbook-User';
+
     public function __construct(
         private UserRepository $users,
         private VehicleAccess $access,
@@ -55,6 +62,16 @@ final readonly class CurrentUserMiddleware implements MiddlewareInterface
 
         $this->context->apply($user);
 
-        return $handler->handle($request->withAttribute(self::ATTRIBUTE, $user));
+        $response = $handler->handle($request->withAttribute(self::ATTRIBUTE, $user));
+
+        // Not on what shared caches may keep (the manifest, `public`; the
+        // service worker and offline page, `no-cache`), nor once the request
+        // has signed the user out.
+        $cache = $response->getHeaderLine('Cache-Control');
+        $shared = str_contains($cache, 'public') || $cache === 'no-cache';
+
+        return $user === null || $shared || $session->userId() !== $user->id
+            ? $response
+            : $response->withHeader(self::USER_HEADER, (string) $user->id);
     }
 }

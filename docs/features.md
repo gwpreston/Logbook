@@ -227,7 +227,8 @@ the guide to a feature.
 
 ## 9. Import, backup and the phone app
 
-- **CSV import** with a preview ([import.md](import.md)).
+- **CSV import** with a preview, reading the file's own date order and
+  number format (`1,234.56` or `1.234,56`) ([import.md](import.md)).
 - **Your whole history from Fuelio:** its CSV export, or a backup with the
   fill-up photos on the command line, previewed with Fuelio's own economy
   beside Logbook's, and safe to repeat with a newer export.
@@ -237,7 +238,8 @@ the guide to a feature.
 - **One-click backup and restore** of everything, scheduled backups, and a
   warning when the last backup is too old
   ([deployment.md](deployment.md#backups)).
-- **An installable phone app** that logs fill-ups and trips offline
+- **An installable phone app** that logs fill-ups and trips offline,
+  each kept for the person who saved it on a shared phone
   ([deployment.md](deployment.md)).
 - **Background jobs** you can see and run from Settings, with a warning
   when they stop and ways to run them without cron.
