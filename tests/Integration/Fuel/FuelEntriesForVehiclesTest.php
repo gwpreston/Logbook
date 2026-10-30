@@ -45,6 +45,7 @@ final class FuelEntriesForVehiclesTest extends AppTestCase
             $entries = $fuel->listForVehicles($ids);
         });
         $again = $counter->during(static fn () => $fuel->listForVehicles($ids));
+        self::assertCount(4, $fuel->listForVehicles([...$ids, $golf->id]), 'a vehicle named twice is listed once');
         $reads->end();
 
         self::assertSame(1, $queries, 'only the Up is read');

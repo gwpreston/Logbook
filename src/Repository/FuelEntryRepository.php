@@ -81,7 +81,8 @@ final readonly class FuelEntryRepository
         }
         $this->prime($vehicleIds);
         $entries = [];
-        foreach ($vehicleIds as $vehicleId) {
+        // Each vehicle once, as the query's IN gives them.
+        foreach (array_unique($vehicleIds) as $vehicleId) {
             array_push($entries, ...$this->listForVehicle($vehicleId));
         }
 
