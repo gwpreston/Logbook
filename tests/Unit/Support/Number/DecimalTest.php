@@ -135,7 +135,7 @@ final class DecimalTest extends TestCase
         yield 'comma: a leading decimal comma reads (K168)' => [',5', NumberFormat::CommaDecimal, '0.5'];
         yield 'comma: a negative leading decimal comma reads (K168)' => ['-,5', NumberFormat::CommaDecimal, '-0.5'];
         yield 'comma: a lone decimal comma is not a number (K168)' => [',', NumberFormat::CommaDecimal, null];
-        yield 'comma: a decimal comma with nothing either side is not a number (K168)' => ['-,', NumberFormat::CommaDecimal, null];
+        yield 'comma: a sign and a lone decimal comma is not a number (K168)' => ['-,', NumberFormat::CommaDecimal, null];
         yield 'dot: a leading comma is grouping, not decimal (K168)' => [',5', NumberFormat::DotDecimal, null];
         yield 'comma: three-digit first group reads' => ['123.456,7', NumberFormat::CommaDecimal, '123456.7'];
     }

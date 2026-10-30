@@ -150,7 +150,8 @@ final class TrueCostPagesTest extends AppTestCase
 
     public function testTheCoverNoteShowsForAPurchaseYearAmongTheLatestThreeWithNoWorking(): void
     {
-        // Bought 1 Mar 2026; the only policy ran 1 Mar 2025 to 28 Feb 2026, wholly before the purchase, so 2026 has no costs and no working (K171).
+        // Bought 1 Mar 2026; the only policy ended 28 Feb 2026, wholly before the purchase,
+        // so 2026 has no costs and no working (K171).
         $build = function (App $app): void {
             $car = $this->car($app, 'Volkswagen', 'Golf', '2026-03-01', '15000');
             $this->reading($app, $car, '1000', '2026-03-01T09:00:00Z');
@@ -171,7 +172,8 @@ final class TrueCostPagesTest extends AppTestCase
 
     public function testTheCoverNoteShowsForAYoungVehicleWithAWorkingAndAfterASale(): void
     {
-        // Bought 1 Jan 2025, sold 31 Mar 2026: a policy from 1 Jul 2025 for a year leaves 91 days after the sale; one from 1 Jan 2024 leaves 365 days before the purchase out (K173).
+        // Bought 1 Jan 2025, sold 31 Mar 2026: a policy from 1 Jul 2025 leaves 91 days after the sale out,
+        // and a 2024 one is wholly before the purchase (K173).
         [$app, $browser] = $this->start();
         $car = $this->car($app, 'Volkswagen', 'Golf', '2025-01-01', '15000', null, '2026-03-31', '12000');
         $this->reading($app, $car, '1000', '2025-01-01T09:00:00Z');
