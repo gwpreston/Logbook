@@ -144,7 +144,15 @@ operation, a median of up to ten values sorted with it for each of
 - [x] Spec §8 states the heavy household's times as met.
 - [x] Known-issues rows K149 and K150 *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (performance-auditor included); merge.
+- [x] Merge review (performance-auditor included); merge. 2026-10-30:
+      performance-auditor, bug-hunter and spec-keeper. No regression on
+      any page measured (every one faster or equal, memory equal or lower,
+      a one-vehicle garage faster too); the dashboard 437 ms and the
+      report 441 ms on an idle machine. The bug hunt fuzzed every integer
+      path, the bisection and the formatters against master's code and
+      found no difference; its one latent note (a vehicle named twice in
+      `FuelEntryRepository::listForVehicles` would be listed twice) was
+      fixed. The owner merges.
 
 ### Release
 
@@ -167,7 +175,9 @@ API's attention list, true cost, fill-ups and vehicles are byte-for-byte
 what master gives on this data, with 81 price and 10 economy findings
 among them (compared after masking the CSRF and CSP tokens). The
 dashboard's fewer queries include the wider price comparison using the
-fill-ups the page has read. On master this household measured 1.72 s
+fill-ups the page has read. `composer lint`, `composer analyse`,
+`MarkdownLinksTest` and `bin/test-all-dbs.sh` pass on SQLite, PostgreSQL,
+MySQL and MariaDB. On master this household measured 1.72 s
 when profiled and 1.6 s here; the machine's speed varies by about 5%
 between runs, which is why the two are measured back to back.
 
