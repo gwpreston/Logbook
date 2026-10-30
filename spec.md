@@ -9769,7 +9769,10 @@ it replaces none of the other figures.
   not in *Since bought* either; the first or the sale's period names it
   whole. The note for the first or the sale's period also shows once
   under the yearly table, so it is seen however old the vehicle is, not
-  only when that year has a drawn working (Phase 54.4, #568). A *Last 12
+  only when that year has a drawn working (Phase 54.4, #568): every year
+  that leaves cover out has its line there, including a purchase or sale
+  year with no costs inside ownership, and the note stays in that year's
+  working when it has one (Phase 54.6, K171, K173, #585). A *Last 12
   months* period that starts on the purchase date (or ends on the sale
   date) names the cover it leaves out without "so the years can differ from
   Since bought", which only makes sense beside the yearly table (K153,
@@ -12549,6 +12552,14 @@ task breakdowns live in the per-phase files; this is the map.
   lighter working-out, not by caching or loading widgets later (K149,
   K150, #583). Figures unchanged. No migration. See
   [`phase-54.5.md`](docs/phases/phase-54.5.md).
+- **Phase 54.6 — The true-cost cover note and a leading decimal comma
+  from the known-issues log + patch release** (planned). The note for
+  cover outside ownership shows under the true-cost yearly table for every
+  year that leaves cover out, including a purchase or sale year with no
+  working, and stays in the year's working (§7.35, K171, K173, #585). A
+  number with a leading decimal comma (`,5`) reads as 0.5 under a comma
+  decimal, as `.5` does (§7.13, §7.27, K168). Releases v3.21.4 (#586). No
+  migration. See [`phase-54.6.md`](docs/phases/phase-54.6.md).
 
 ---
 
