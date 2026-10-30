@@ -138,9 +138,11 @@ final readonly class TrueCostService
         $curve = ValueCurve::of($vehicle, $valuations);
         $from = $ownership->period->from;
         $to = $ownership->period->to;
+        // Each period gets only the lines that can count in it (Phase 54.5).
+        $index = new PeriodItems($items);
         $period = fn (?TrueCostPeriod $p, int $minDays = 0): ?TrueCost => $p === null
             ? null
-            : TrueCost::forPeriod($vehicle, $currency, $p, $items, $readings, $curve, $payouts, $zone, $minDays);
+            : TrueCost::forPeriod($vehicle, $currency, $p, $index->for($p), $readings, $curve, $payouts, $zone, $minDays);
 
         $years = [];
         foreach (TrueCostPeriod::years($from, $to) as $year) {
