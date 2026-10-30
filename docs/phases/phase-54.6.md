@@ -73,7 +73,7 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 
 ### 54.6.1 The cover note under the yearly table (K171, K173)
 
-- [ ] `templates/reports/true_cost.twig` names each year's cover outside
+- [x] `templates/reports/true_cost.twig` names each year's cover outside
       ownership under the yearly table for every year, not only
       `slice(3)`; the figures are unchanged. `TrueCostPagesTest` covers a
       vehicle bought in one of the latest three years with no costs that
