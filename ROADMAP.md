@@ -137,6 +137,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | ✅ |
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | ✅ |
 | [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | 📋 |
+| [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1833,6 +1834,21 @@ true-cost report meet spec §8's 500 ms on the heavy household (#583).*
 - No migration.
 
 → [`phase-54.5.md`](docs/phases/phase-54.5.md)
+
+---
+
+## Phase 54.6 — The true-cost cover note and a leading decimal comma from the known-issues log + patch release
+
+*Three open rows of the known-issues log closed: the true-cost cover note
+shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
+
+- The note for cover outside ownership shows under the yearly table for
+  every year that leaves cover out, including a purchase or sale year with
+  no working and the sale's "after you sold it" note (K171, K173, #585).
+- A leading decimal comma (`,5`) reads as 0.5, as `.5` does (K168).
+  Releases v3.21.4 (#586). No migration.
+
+→ [`phase-54.6.md`](docs/phases/phase-54.6.md)
 
 ---
 
