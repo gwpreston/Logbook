@@ -20,6 +20,7 @@ use Logbook\Repository\PartRepository;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Service\Finance\FinanceService;
 use Logbook\Service\Vehicle\VehicleService;
+use Logbook\Support\Cache\RequestReads;
 
 /**
  * The unified cost ledger (spec.md §7.7): fill-ups, maintenance and documents
@@ -30,6 +31,10 @@ use Logbook\Service\Vehicle\VehicleService;
  */
 final readonly class CostLedger
 {
+    /** Every table the ledger is built from (RequestReads::forget()). */
+    private const string READS = 'fuel_entries+maintenance_entries+compliance_documents+expense_entries'
+        . '+modifications+parts+part_fittings+finance_agreements+finance_payment_events+settings';
+
     public function __construct(
         private FuelEntryRepository $fuel,
         private MaintenanceEntryRepository $maintenance,
@@ -40,6 +45,7 @@ final readonly class CostLedger
         private FinanceService $finance,
         private ModificationRepository $modifications,
         private PartRepository $parts,
+        private RequestReads $reads,
     ) {
     }
 
@@ -48,6 +54,25 @@ final readonly class CostLedger
      * @return list<CostItem> oldest first (see CostItem::compare())
      */
     public function items(User $user, array $vehicles): array
+    {
+        // A page's widgets ask for the same ledger several times: built
+        // once per request, and forgotten when any table it reads is
+        // written (a write to vehicles or users forgets everything) (Phase 54.5).
+        $key = implode('|', [
+            $user->id,
+            $user->preferences->timezone,
+            $user->preferences->currency,
+            implode(',', array_map(static fn (Vehicle $v): int => $v->id, $vehicles)),
+        ]);
+
+        return $this->reads->remember(self::READS, $key, fn (): array => $this->build($user, $vehicles));
+    }
+
+    /**
+     * @param list<Vehicle> $vehicles
+     * @return list<CostItem>
+     */
+    private function build(User $user, array $vehicles): array
     {
         $zone = $user->preferences->timeZone();
         $enabled = $this->features->all();
