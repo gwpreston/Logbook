@@ -136,7 +136,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.2](docs/phases/phase-54.2.md) | CSV number separators and offline fill-ups per user from the known-issues log + minor release | ✅ |
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | ✅ |
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | ✅ |
-| [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | 🚧 |
+| [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | ✅ |
 | [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
@@ -1827,10 +1827,13 @@ Releases v3.21.2.*
 ## Phase 54.5 — The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release
 
 *The two rows Phase 54.3 left open, K149 and K150: the dashboard and the
-true-cost report meet spec §8's 500 ms on the heavy household (#583).*
+true-cost report meet spec §8's 500 ms on the heavy household (#583).
+Releases v3.21.3.*
 
-- Lighter working-out: the price check, the true-cost widget and report,
-  the fuel analysis; a lighter true-cost page. Every figure stays the same.
+- The dashboard 1.6 s to 0.42 s and the true-cost report 0.9 s to
+  0.40 s on the heavy household: work a page repeated per widget is done
+  once, periods are found by bisection, the checks compare in whole
+  numbers, and formatters are made once. Every figure stays the same.
 - No migration.
 
 → [`phase-54.5.md`](docs/phases/phase-54.5.md)

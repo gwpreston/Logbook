@@ -3,7 +3,7 @@
 *The two rows [Phase 54.3](phase-54.3.md) left open closed: the dashboard and
 the true-cost report meet spec §8's 500 ms on the heavy household.*
 
-Status: 🚧 in progress · releases **v3.21.3**, a patch release (#584) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.3**, a patch release (#584) · file lives in `docs/phases/`
 
 Phase 54.3 removed the repeated reads (digest 861 to 247 queries, true-cost
 99 to 21) and cut the dashboard from 2.3 s to 1.5 s, but what is left is
@@ -74,14 +74,14 @@ app's services: 10 vehicles, each with 400 fill-ups a fortnight apart
 since November 2010, 150 services and 16 years of insurance and
 inspection documents, on PHP 8.5 with a SQLite file (a scratch test in
 `var/`, not committed). Its 16 full years make the true-cost page larger
-than 54.3's (472 KB, was 350 KB), so its times are a little higher. The
+than 54.3's (476 KB, was 350 KB), so its times are a little higher. The
 500 ms target is judged on this household. Times are the median of seven
 warm requests, in process, as in 54.3.
 
 | Case | Time | Queries | Page |
 |------|------|---------|------|
-| Dashboard | 1.69 s | 61 | 147 KB |
-| `/reports/true-cost` | 0.96 s | 21 | 472 KB |
+| Dashboard | 1.72 s | 61 | 147 KB |
+| `/reports/true-cost` | 0.98 s | 21 | 476 KB |
 
 Where the dashboard goes (ms): *Needs attention* 684 (of which the price
 check 308 and the economy checks 274), the true-cost widget 321, the fuel
@@ -92,7 +92,7 @@ reminders 39, the vehicle tiles 18; the template about 30.
 Where the report goes (ms): working out 489 (each year's costs summed
 over every item, 198; reading every table once, 121; the rest of each
 vehicle's ownership, readings and valuations about 130; the ledger 39),
-the charts 59, and rendering the 472 KB page about 450.
+the charts 59, and rendering the 476 KB page about 450.
 
 Both are CPU in PHP. The price check and the economy checks spend most of
 their time in exact decimal arithmetic on strings (about 2 µs an
@@ -101,26 +101,75 @@ operation, a median of up to ten values sorted with it for each of
 
 ### 54.5.1 Dashboard (K149)
 
-- [ ] Cut the price check, the fuel analysis, the true-cost widget and
+- [x] Cut the price check, the fuel analysis, the true-cost widget and
       whatever else the profile names, until the dashboard is within
-      500 ms. Figures unchanged; tests for each change.
+      500 ms. Figures unchanged; tests for each change. Counting calls
+      showed that much of the time was work done more than once, not slow
+      arithmetic: the cost ledger was built four times a page, each
+      vehicle's mileage history seven times, and each period's distance
+      scanned every reading. Done by:
+      - the price, economy and maintenance cost checks comparing in whole
+        numbers, exactly as the strings did, falling back to the strings
+        for a value with more places than stored (differential tests
+        against the old code for each);
+      - the owner's fill-ups for the price check's wider comparison sorted
+        and grouped once per page, from the reads the page has already,
+        and each vehicle's fill-ups walked in order;
+      - the true-cost widget working out only the periods it shows (not
+        every year and change);
+      - the cost ledger and each vehicle's mileage history worked out once
+        per request (`RequestReads`, forgotten on a write to any table they
+        come from), and the ledger sorted on keys worked out once;
+      - a period's distance found by bisecting the readings, which are in
+        order, and the mileage widget using the page's histories;
+      - a fuel history's running totals kept in whole numbers
+        (`DecimalSum`) and exact decimals that need no rounding read
+        without splitting the string.
 
 ### 54.5.2 True-cost report (K150)
 
-- [ ] Sum a vehicle's items once, not once per period; lighten the page's
-      markup. Within 500 ms; figures unchanged.
+- [x] Sum a vehicle's items once, not once per period; lighten the page's
+      markup. Within 500 ms; figures unchanged. Each period is handed only
+      the lines that can count in it (`PeriodItems`: those dated in it and
+      every line with a cover), which is the same sum without scanning the
+      whole ledger for each of up to 18 periods. The markup did not need
+      lightening: most of the rendering time was making a new intl
+      formatter for every number and date (and a date pattern generator
+      for every year's label), now made once per locale and settings
+      (`IntlFormatters`). The page is byte-for-byte what it was, which also
+      leaves Phase 54.6's template changes as planned.
 
 ### 54.5.3 Finish
 
-- [ ] Spec §8 states the heavy household's times as met.
-- [ ] Known-issues rows K149 and K150 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Spec §8 states the heavy household's times as met.
+- [x] Known-issues rows K149 and K150 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review (performance-auditor included); merge.
 
 ### Release
 
-- [ ] VERSION 3.21.3, CHANGELOG 3.21.3, README status (#584).
+- [x] VERSION 3.21.3, CHANGELOG 3.21.3, README status (#584).
 - [ ] Tag `v3.21.3` once merged.
+
+## Result (SQLite, the heavy household, 2026-10-30)
+
+| Case | Master | Now |
+|------|--------|-----|
+| Dashboard | 1.6 s, 62 queries | 0.42 s, 60 queries |
+| `/reports/true-cost` | 0.9 s, 21 queries | 0.40 s, 21 queries |
+
+The median of nine warm requests, in process, master and this branch
+measured back to back on the same data. Every figure is the same: the
+dashboard (fleet and three single vehicles), the true-cost report (fleet
+and three vehicles) and its CSV, the reports and ownership pages, Insights,
+History, three vehicles' overviews and fuel logs, the costs CSV, and the
+API's attention list, true cost, fill-ups and vehicles are byte-for-byte
+what master gives on this data, with 81 price and 10 economy findings
+among them (compared after masking the CSRF and CSP tokens). The
+dashboard's fewer queries include the wider price comparison using the
+fill-ups the page has read. On master this household measured 1.72 s
+when profiled and 1.6 s here; the machine's speed varies by about 5%
+between runs, which is why the two are measured back to back.
 
 ## Acceptance criteria
 

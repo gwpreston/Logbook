@@ -6,6 +6,27 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.3] — 2026-10-30
+
+Phase 54.5: **The 500 ms target for the dashboard and true-cost report
+from the known-issues log**
+([docs/phases/phase-54.5.md](docs/phases/phase-54.5.md)). No migration:
+pull and restart.
+
+### Fixed
+- **The dashboard is within its 500 ms target on a big garage.** On ten
+  vehicles with 400 fill-ups, 150 services and 16 years of documents each
+  it went from 1.6 s to 0.42 s. A page now builds the cost ledger and
+  each vehicle's mileage history once instead of once per widget, finds a
+  month's or year's distance without scanning every reading, and the
+  price, economy and service-cost checks compare in whole numbers. The
+  true-cost widget works out only the periods it shows. Every figure is
+  the same (#583, K149).
+- **The true-cost report is within 500 ms too** (0.9 s to 0.40 s on
+  the same garage). Each year adds up only its own costs, and numbers and
+  dates are formatted without setting up a new formatter for each one.
+  The page is exactly as it was (#583, K150).
+
 ## [3.21.2] — 2026-10-29
 
 Phase 54.4: **The true-cost cover note from the known-issues log**

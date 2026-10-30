@@ -10938,14 +10938,19 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   From Phase 54.3 (#576) the reports, the true-cost report first, join the
   60-query, 500 ms budget with the same count for 1 and 10 vehicles, and
   the monthly digest job's query count must not grow with the number of
-  vehicles; tests hold the counts (the time stays a review target, and on
+  vehicles; tests hold the counts (the time stays a review target). On
   the 10-vehicle household with 400 fill-ups, 150 services and 16 years of
-  documents each it is over, #583). A page request
+  documents each, both pages are within it from Phase 54.5 (#583, K149,
+  K150): the dashboard in about 0.42 s and the true-cost report in about
+  0.40 s on SQLite. A page request
   (GET or HEAD) remembers what its repositories read (`RequestReads`):
   one query per table for every vehicle on the page (`VehicleDataPrimer`),
   all the settings of an owner in one, and the rest of the page's
   per-vehicle reads find them already read. A write to a table, seen at
-  the connection, makes the request forget what came from it. Anything
+  the connection, makes the request forget what came from it. From Phase
+  54.5 it also remembers what several widgets work out from those reads:
+  each vehicle's mileage history and the cost ledger, forgotten with the
+  tables they come from. Anything
   else (a POST, a job, a command) reads the database as before, except
   the monthly digest: it remembers reads for the length of one user's run
   (`RequestReads::scoped()`), so ten vehicles cost the job the queries one
@@ -12547,10 +12552,12 @@ task breakdowns live in the per-phase files; this is the map.
   (§7.8, K154, #569). Releases v3.21.2 (#578). No migration. See
   [`phase-54.4.md`](docs/phases/phase-54.4.md).
 - **Phase 54.5 — The 500 ms target for the dashboard and true-cost report
-  from the known-issues log + patch release** (in progress). The dashboard
-  and the true-cost report meet §8's 500 ms on the heavy household by
-  lighter working-out, not by caching or loading widgets later (K149,
-  K150, #583). Figures unchanged. No migration. See
+  from the known-issues log + patch release** (complete). The dashboard
+  (1.6 s to 0.42 s) and the true-cost report (0.9 s to
+  0.40 s) meet §8's 500 ms on the heavy household by lighter
+  working-out, not by caching across requests or loading widgets later
+  (K149, K150, #583). Figures unchanged. Releases v3.21.3 (#584). No
+  migration. See
   [`phase-54.5.md`](docs/phases/phase-54.5.md).
 - **Phase 54.6 — The true-cost cover note and a leading decimal comma
   from the known-issues log + patch release** (planned). The note for
