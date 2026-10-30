@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Service\Attention;
 
 use Logbook\Support\Number\Decimal;
+use OverflowException;
 
 /**
  * Arithmetic shared by the price and cost outlier checks (spec.md §7.24
@@ -33,6 +34,42 @@ final class Outlier
         return $count % 2 === 1
             ? Decimal::round($values[$middle], self::SCALE + 1)
             : Decimal::divide(Decimal::add($values[$middle - 1], $values[$middle]), '2', self::SCALE + 1);
+    }
+
+    /**
+     * A value at SCALE + 1 places as an integer, exactly; null for one with
+     * more than SCALE places (never a stored price or cost) or too long.
+     * In integers the checks run a few times faster, and a page runs them
+     * for every fill-up and service (Phase 54.5, K149).
+     */
+    public static function scaled(string $value): ?int
+    {
+        $dot = strpos($value, '.');
+        if (!Decimal::isCanonical($value) || ($dot !== false && strlen($value) - $dot - 1 > self::SCALE)) {
+            return null;
+        }
+        try {
+            return Decimal::toScaledInt($value, self::SCALE + 1);
+        } catch (OverflowException) {
+            return null;
+        }
+    }
+
+    /**
+     * median() of values scaled(): the same number, as an integer at
+     * SCALE + 1 places (Decimal::fromScaledInt() gives median()'s string).
+     * Exact, since values of up to SCALE places are multiples of ten there
+     * and the mean of two middle ones divides evenly.
+     *
+     * @param list<int> $values at least one
+     */
+    public static function scaledMedian(array $values): int
+    {
+        sort($values);
+        $count = count($values);
+        $middle = intdiv($count, 2);
+
+        return $count % 2 === 1 ? $values[$middle] : intdiv($values[$middle - 1] + $values[$middle], 2);
     }
 
     /**

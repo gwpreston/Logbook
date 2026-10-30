@@ -273,6 +273,34 @@ final readonly class CostItem
             ?: $a->sourceId <=> $b->sourceId;
     }
 
+    /**
+     * The items in compare()'s order, keeping the order given among equals
+     * as usort() would, with each item's keys worked out once: a
+     * household's ledger has thousands of lines, and sorting with compare()
+     * was a third of building it (Phase 54.5, K149).
+     *
+     * @param list<self> $items
+     * @return list<self>
+     */
+    public static function sort(array $items): array
+    {
+        $order = array_flip(array_map(static fn (CostSource $s): string => $s->value, CostSource::cases()));
+        $seconds = [];
+        $micros = [];
+        $sources = [];
+        $ids = [];
+        foreach ($items as $item) {
+            $seconds[] = $item->date->getTimestamp();
+            $micros[] = (int) $item->date->format('u');
+            $sources[] = $order[$item->source->value];
+            $ids[] = $item->sourceId;
+        }
+        $positions = array_keys($items);
+        array_multisort($seconds, $micros, $sources, $ids, $positions);
+
+        return array_map(static fn (int $i): self => $items[$i], $positions);
+    }
+
     private static function localDate(DateTimeImmutable $instant, DateTimeZone $zone): DateTimeImmutable
     {
         $date = LocalTime::parseCalendarDate(LocalTime::fromUtc($instant, $zone)->format('Y-m-d'));

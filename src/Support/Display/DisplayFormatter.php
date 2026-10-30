@@ -8,7 +8,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use IntlDateFormatter;
-use IntlDatePatternGenerator;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Support\Date\LocalTime;
 use Logbook\Support\Money\Currency;
@@ -34,6 +33,7 @@ final readonly class DisplayFormatter
     public function __construct(
         private DisplayContext $context,
         private TranslatorInterface $translator,
+        private IntlFormatters $formatters = new IntlFormatters(),
     ) {
     }
 
@@ -44,10 +44,7 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        $formatter = new NumberFormatter($this->locale(), NumberFormatter::DECIMAL);
-        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $minFractionDigits);
-        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxFractionDigits);
-        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+        $formatter = $this->formatters->number($this->locale(), NumberFormatter::DECIMAL, $maxFractionDigits, $minFractionDigits);
 
         return (string) $formatter->format($number);
     }
@@ -63,9 +60,7 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        $formatter = new NumberFormatter($this->locale(), NumberFormatter::PERCENT);
-        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxFractionDigits);
-        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+        $formatter = $this->formatters->number($this->locale(), NumberFormatter::PERCENT, $maxFractionDigits);
 
         return (string) $formatter->format($number);
     }
@@ -443,15 +438,9 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        $pattern = IntlDatePatternGenerator::create($this->locale())?->getBestPattern($short ? 'MMMy' : 'MMMMy');
-        $formatter = new IntlDateFormatter(
-            $this->locale(),
-            IntlDateFormatter::NONE,
-            IntlDateFormatter::NONE,
-            'UTC',
-            null,
-            is_string($pattern) && $pattern !== '' ? $pattern : 'MMM y',
-        );
+        $locale = $this->locale();
+        $pattern = $this->formatters->pattern($locale, $short ? 'MMMy' : 'MMMMy', 'MMM y');
+        $formatter = $this->formatters->date($locale, IntlDateFormatter::NONE, IntlDateFormatter::NONE, 'UTC', $pattern);
         $formatted = $formatter->format($date);
 
         return is_string($formatted) ? $formatted : $date->format('Y-m');
@@ -467,15 +456,9 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        $pattern = IntlDatePatternGenerator::create($this->locale())?->getBestPattern('dMMM');
-        $formatter = new IntlDateFormatter(
-            $this->locale(),
-            IntlDateFormatter::NONE,
-            IntlDateFormatter::NONE,
-            'UTC',
-            null,
-            is_string($pattern) && $pattern !== '' ? $pattern : 'd MMM',
-        );
+        $locale = $this->locale();
+        $pattern = $this->formatters->pattern($locale, 'dMMM', 'd MMM');
+        $formatter = $this->formatters->date($locale, IntlDateFormatter::NONE, IntlDateFormatter::NONE, 'UTC', $pattern);
         $formatted = $formatter->format($date);
 
         return is_string($formatted) ? $formatted : $date->format('m-d');
@@ -492,22 +475,11 @@ final readonly class DisplayFormatter
             return '';
         }
 
-        // A calendar formats ~80 dates with a handful of skeletons: build each formatter once.
-        /** @var array<string, IntlDateFormatter> $formatters */
-        static $formatters = [];
+        // A calendar formats ~80 dates with a handful of skeletons: each formatter is built once.
         $locale = $this->locale();
-        if (!isset($formatters[$locale . '|' . $skeleton])) {
-            $pattern = IntlDatePatternGenerator::create($locale)?->getBestPattern($skeleton);
-            $formatters[$locale . '|' . $skeleton] = new IntlDateFormatter(
-                $locale,
-                IntlDateFormatter::NONE,
-                IntlDateFormatter::NONE,
-                'UTC',
-                null,
-                is_string($pattern) && $pattern !== '' ? $pattern : 'yyyy-MM-dd',
-            );
-        }
-        $formatted = $formatters[$locale . '|' . $skeleton]->format($date);
+        $pattern = $this->formatters->pattern($locale, $skeleton, 'yyyy-MM-dd');
+        $formatted = $this->formatters->date($locale, IntlDateFormatter::NONE, IntlDateFormatter::NONE, 'UTC', $pattern)
+            ->format($date);
 
         return is_string($formatted) ? $formatted : $date->format('Y-m-d');
     }
@@ -518,12 +490,11 @@ final readonly class DisplayFormatter
      */
     public function monthName(int $month, bool $short = false): string
     {
-        $formatter = new IntlDateFormatter(
+        $formatter = $this->formatters->date(
             $this->locale(),
             IntlDateFormatter::NONE,
             IntlDateFormatter::NONE,
             'UTC',
-            null,
             $short ? 'LLL' : 'LLLL',
         );
         $date = new DateTimeImmutable(sprintf('2000-%02d-15', $month), new DateTimeZone('UTC'));
@@ -585,7 +556,7 @@ final readonly class DisplayFormatter
 
     private function formatDate(DateTimeInterface $value, int $dateStyle, int $timeStyle, string $zone): string
     {
-        $formatter = new IntlDateFormatter($this->locale(), $dateStyle, $timeStyle, $zone);
+        $formatter = $this->formatters->date($this->locale(), $dateStyle, $timeStyle, $zone);
         $formatted = $formatter->format($value);
 
         return is_string($formatted) ? $formatted : $value->format('Y-m-d H:i');
@@ -627,10 +598,7 @@ final readonly class DisplayFormatter
 
     private function formatMoney(float $value, string $currency, int $minDigits, int $maxDigits): string
     {
-        $formatter = new NumberFormatter($this->locale(), NumberFormatter::CURRENCY);
-        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, $minDigits);
-        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, $maxDigits);
-        $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, NumberFormatter::ROUND_HALFUP);
+        $formatter = $this->formatters->number($this->locale(), NumberFormatter::CURRENCY, $maxDigits, $minDigits);
 
         return (string) $formatter->formatCurrency($value, $currency);
     }

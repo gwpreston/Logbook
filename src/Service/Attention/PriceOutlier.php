@@ -20,55 +20,55 @@ use Logbook\Support\Number\Decimal;
  * grade on any of their vehicles in the same currency. A price of 0 (a
  * free charge, a courtesy tank) is never flagged and never counted.
  *
- * Pure and exact (Decimal throughout). The owner's other fill-ups are
- * asked for only when a fill-up needs them, and at most once.
+ * Pure and exact (in integers where the prices allow, else Decimal). The
+ * owner's other fill-ups are asked for only when a fill-up needs them, and
+ * at most once.
  */
 final class PriceOutlier
 {
     public const int WINDOW_DAYS = 30;
     public const int MIN_NEIGHBOURS = 3;
 
-    private const array EMPTY = ['entries' => [], 'at' => []];
-
     /**
      * @param list<FuelEntry> $entries the vehicle's fill-ups
-     * @param Closure(): list<FuelEntry> $owners the owner's fill-ups on every vehicle in this one's
-     *        currency (this one's included)
+     * @param Closure(): (list<FuelEntry>|PriceGroups) $owners the owner's fill-ups on every vehicle in
+     *        this one's currency (this one's included), grouped already when a page shares them
      * @param int $percent flagged when more than this far above or below the median
      * @return list<PriceFinding> oldest first
      */
     public static function of(array $entries, Closure $owners, int $percent): array
     {
-        $own = self::groups($entries);
+        $own = PriceGroups::of($entries);
         $all = null;
         $high = Decimal::divide((string) (100 + $percent), '100', 2);
         $low = Decimal::divide((string) (100 - $percent), '100', 2);
 
         $findings = [];
-        foreach (self::sorted($entries) as $entry) {
-            if (!self::isPriced($entry)) {
-                continue;
-            }
-            $key = self::key($entry);
-            $prices = self::neighbours($entry, $own[$key] ?? self::EMPTY);
+        foreach ($own->priced() as [$key, $place]) {
+            $group = $own->group($key);
+            $entry = $group['entries'][$place];
+            $price = $group['scaled'][$place];
+            $near = self::around($group, $place);
             $wider = false;
-            if (count($prices) < self::MIN_NEIGHBOURS) {
-                $all ??= self::groups($owners());
-                $prices = self::neighbours($entry, $all[$key] ?? self::EMPTY);
+            if (count($near) < self::MIN_NEIGHBOURS) {
+                if ($all === null) {
+                    $loaded = $owners();
+                    $all = $loaded instanceof PriceGroups ? $loaded : PriceGroups::of($loaded);
+                }
+                $group = $all->like($entry);
+                $near = self::neighbours($entry, $group);
                 $wider = true;
             }
-            if (count($prices) < self::MIN_NEIGHBOURS) {
+            if (count($near) < self::MIN_NEIGHBOURS) {
                 continue;
             }
 
-            $median = Outlier::median($prices);
-            $price = $entry->data->pricePerUnit;
-            $above = Decimal::compare($price, Decimal::multiply($median, $high, Outlier::SCALE + 3)) > 0;
-            $below = Decimal::compare($price, Decimal::multiply($median, $low, Outlier::SCALE + 3)) < 0;
-            if (!$above && !$below) {
+            $median = self::outside($price, $group, $near, $percent)
+                ?? self::outsideExactly($entry, $group, $near, $high, $low);
+            if ($median === false) {
                 continue;
             }
-            $ratio = Outlier::ratio($price, $median);
+            $ratio = Outlier::ratio($entry->data->pricePerUnit, $median);
             $findings[] = new PriceFinding($entry, $median, $ratio, Outlier::isDigitSlip($ratio), $wider);
         }
 
@@ -76,10 +76,90 @@ final class PriceOutlier
     }
 
     /**
-     * The prices of the fill-ups within the window of $entry, itself left out.
+     * The median when the fill-up is outside the band, false when it is
+     * inside; null when this quick test can't say exactly (a price with
+     * more places than stored, or too large for an int).
      *
-     * @param array{entries: list<FuelEntry>, at: list<int>} $group one fuel and grade, oldest first, with when each was filled
-     * @return list<string>
+     * The test in integers at Outlier::SCALE + 1 places, as exact as
+     * outsideExactly() and a few times faster (Phase 54.5, K149): it is run
+     * for every fill-up on the dashboard.
+     *
+     * @param int|null $price the fill-up's price, Outlier::scaled()
+     * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
+     * @param list<int> $near positions in $group
+     */
+    private static function outside(?int $price, array $group, array $near, int $percent): string|false|null
+    {
+        $prices = [];
+        foreach ($near as $i) {
+            $prices[] = $group['scaled'][$i];
+        }
+        if ($price === null || in_array(null, $prices, true)) {
+            return null;
+        }
+        $median = Outlier::scaledMedian($prices);
+        $factor = max(100, abs(100 + $percent), abs(100 - $percent));
+        if (max($price, $median) > intdiv(PHP_INT_MAX, $factor)) {
+            return null;
+        }
+
+        // price > median × (100 + p) / 100, or below median × (100 - p) / 100.
+        $above = $price * 100 > $median * (100 + $percent);
+        $below = $price * 100 < $median * (100 - $percent);
+
+        return $above || $below ? Decimal::fromScaledInt($median, Outlier::SCALE + 1) : false;
+    }
+
+    /**
+     * The same test on the prices as written, for those outside() can't take.
+     *
+     * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
+     * @param list<int> $near positions in $group
+     */
+    private static function outsideExactly(FuelEntry $entry, array $group, array $near, string $high, string $low): string|false
+    {
+        $prices = [];
+        foreach ($near as $i) {
+            $prices[] = $group['entries'][$i]->data->pricePerUnit;
+        }
+        assert($prices !== []);
+        $median = Outlier::median($prices);
+        $price = $entry->data->pricePerUnit;
+        $above = Decimal::compare($price, Decimal::multiply($median, $high, Outlier::SCALE + 3)) > 0;
+        $below = Decimal::compare($price, Decimal::multiply($median, $low, Outlier::SCALE + 3)) < 0;
+
+        return $above || $below ? $median : false;
+    }
+
+    /**
+     * The positions of the fill-ups within the window of the one at $place
+     * in its own group, itself left out: found by walking out from it.
+     *
+     * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
+     * @return list<int>
+     */
+    private static function around(array $group, int $place): array
+    {
+        $times = $group['at'];
+        $at = $times[$place];
+        $window = self::WINDOW_DAYS * 86400;
+        $near = [];
+        for ($i = $place - 1; $i >= 0 && $at - $times[$i] <= $window; $i--) {
+            $near[] = $i;
+        }
+        for ($i = $place + 1, $count = count($times); $i < $count && $times[$i] - $at <= $window; $i++) {
+            $near[] = $i;
+        }
+
+        return $near;
+    }
+
+    /**
+     * The positions of the fill-ups within the window of $entry, itself left out.
+     *
+     * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group one fuel and grade, oldest
+     *        first, with when each was filled and its price in integers
+     * @return list<int>
      */
     private static function neighbours(FuelEntry $entry, array $group): array
     {
@@ -99,65 +179,15 @@ final class PriceOutlier
             }
         }
 
-        $prices = [];
+        $near = [];
         for ($i = $low, $count = count($times); $i < $count && $times[$i] - $at <= $window; $i++) {
             $other = $group['entries'][$i];
             if ($other->id === $entry->id && $other->vehicleId === $entry->vehicleId) {
                 continue;
             }
-            $prices[] = $other->data->pricePerUnit;
+            $near[] = $i;
         }
 
-        return $prices;
-    }
-
-    /**
-     * Priced fill-ups by fuel and grade, each oldest first, with when each was filled.
-     *
-     * @param list<FuelEntry> $entries
-     * @return array<string, array{entries: list<FuelEntry>, at: list<int>}>
-     */
-    private static function groups(array $entries): array
-    {
-        $groups = [];
-        foreach (self::sorted($entries) as $entry) {
-            if (self::isPriced($entry)) {
-                $key = self::key($entry);
-                $groups[$key] ??= self::EMPTY;
-                $groups[$key]['entries'][] = $entry;
-                $groups[$key]['at'][] = $entry->data->filledAt->getTimestamp();
-            }
-        }
-
-        return $groups;
-    }
-
-    /**
-     * @param list<FuelEntry> $entries
-     * @return list<FuelEntry>
-     */
-    private static function sorted(array $entries): array
-    {
-        usort(
-            $entries,
-            static fn (FuelEntry $a, FuelEntry $b): int => ($a->data->filledAt <=> $b->data->filledAt)
-                ?: ($a->vehicleId <=> $b->vehicleId)
-                ?: ($a->id <=> $b->id),
-        );
-
-        return $entries;
-    }
-
-    private static function isPriced(FuelEntry $entry): bool
-    {
-        return Decimal::compare($entry->data->pricePerUnit, '0') > 0;
-    }
-
-    /**
-     * Same fuel, same grade; no grade matches no grade.
-     */
-    private static function key(FuelEntry $entry): string
-    {
-        return $entry->data->fuel->value . '|' . ($entry->data->grade->value ?? '');
+        return $near;
     }
 }
