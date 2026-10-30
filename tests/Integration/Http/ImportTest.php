@@ -808,6 +808,24 @@ final class ImportTest extends AppTestCase
         self::assertSame([], $fills->listForVehicle($ka->id));
     }
 
+    /** K168: a leading decimal comma reads as 0.5 under *Decimal comma*, as `.5` does under a decimal point. */
+    public function testALeadingDecimalCommaReadsUnderDecimalComma(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $fills = $this->service($app, FuelEntryRepository::class);
+        $golf = $this->vehicle($app, 'Volkswagen', 'Golf');
+        $map = $this->upload($browser, $golf->id, 'fuel', "Date,Odometer,Litres,Total\n2026-06-01 09:00,1000,\",5\",\",75\"\n");
+        $preview = $this->preview($browser, $map, ['number_format' => 'comma', 'distance_unit' => 'km', 'volume_unit' => 'l']);
+        self::assertStringNotContainsString('Enter a number', $preview);
+        $this->commit($browser, $map, $preview);
+        $saved = $fills->listForVehicle($golf->id);
+        self::assertCount(1, $saved);
+        self::assertSame('0.500', $saved[0]->data->volume);
+        self::assertSame('0.750', $saved[0]->data->totalCost);
+    }
+
     /**
      * #581: Logbook's own export writes plain decimals, so a German owner's
      * export imports back as it was, under a decimal point by default.

@@ -3,7 +3,7 @@
 *Three open rows of the known-issues log closed: the true-cost cover note
 shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
 
-Status: 📋 planned · releases **v3.21.4**, a patch release (#586) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.4**, a patch release (#586) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.4](phase-54.4.md). The issue sweep of
 v3.21.2 found that 54.4's note still goes missing when the purchase or sale
@@ -68,12 +68,12 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 
 ### 54.6.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #585 and #586 are decided.
 
 ### 54.6.1 The cover note under the yearly table (K171, K173)
 
-- [ ] `templates/reports/true_cost.twig` names each year's cover outside
+- [x] `templates/reports/true_cost.twig` names each year's cover outside
       ownership under the yearly table for every year, not only
       `slice(3)`; the figures are unchanged. `TrueCostPagesTest` covers a
       vehicle bought in one of the latest three years with no costs that
@@ -83,20 +83,20 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 
 ### 54.6.2 A leading decimal comma (K168)
 
-- [ ] `DecimalParser::withSymbols()` / `ungroup()` read an empty whole part
+- [x] `DecimalParser::withSymbols()` / `ungroup()` read an empty whole part
       as 0, so `,5` and `-,5` read as 0.5 and −0.5 with a comma decimal; `,`
       alone stays invalid. `DecimalTest` covers both, and an import
       under *Decimal comma* in `ImportTest`.
 
 ### 54.6.3 Finish
 
-- [ ] Known-issues rows K168, K171 and K173 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K168, K171 and K173 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.4, CHANGELOG 3.21.4, README status (#586).
+- [x] VERSION 3.21.4, CHANGELOG 3.21.4, README status (#586).
 - [ ] Tag `v3.21.4` once merged.
 
 ## Acceptance criteria

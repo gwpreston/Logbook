@@ -142,22 +142,51 @@ final class TrueCostPagesTest extends AppTestCase
         );
         self::assertStringContainsString('£181.00 of cover before you bought it', $report);
 
-        $german = $this->createApp();
-        $this->pinClock($german, self::NOW);
-        $this->resetDatabase($german);
-        $preset = UnitPreset::Metric;
-        $this->createOwner($german, 'owner', new DisplayPreferences(
-            'de_DE',
-            'Europe/Berlin',
-            $preset->distance(),
-            $preset->volume(),
-            $preset->consumption(),
-            'GBP',
-        ));
-        $browser = $this->browserFor($german, 'owner');
+        [$german, $browser] = $this->germanOwner();
         $build($german);
         $report = self::body($browser->get('/reports/true-cost'));
         self::assertSame(1, substr_count($report, 'für die Zeit vor dem Kauf werden nicht gezählt, daher können die Jahre'));
+    }
+
+    public function testTheCoverNoteShowsForAPurchaseYearAmongTheLatestThreeWithNoWorking(): void
+    {
+        // Bought 1 Mar 2026; the only policy ended 28 Feb 2026, wholly before the purchase,
+        // so 2026 has no costs and no working (K171).
+        $build = function (App $app): void {
+            $car = $this->car($app, 'Volkswagen', 'Golf', '2026-03-01', '15000');
+            $this->reading($app, $car, '1000', '2026-03-01T09:00:00Z');
+            $this->document($app, $car, ComplianceType::Insurance, '2025-03-01', '2026-02-28', '365.00');
+        };
+
+        $english = $this->start();
+        $build($english[0]);
+        $report = self::body($english[1]->get('/reports/true-cost'));
+        self::assertStringContainsString('£365.00 of cover before you bought it', $report);
+        self::assertSame(1, substr_count($report, 'of cover before you bought it'));
+
+        [$german, $browser] = $this->germanOwner();
+        $build($german);
+        $report = self::body($browser->get('/reports/true-cost'));
+        self::assertStringContainsString('für die Zeit vor dem Kauf werden nicht gezählt', $report);
+    }
+
+    public function testTheCoverNoteShowsForAYoungVehicleWithAWorkingAndAfterASale(): void
+    {
+        // Bought 1 Jan 2025, sold 31 Mar 2026: a policy from 1 Jul 2025 leaves 91 days after the sale out,
+        // and a 2024 one is wholly before the purchase (K173).
+        [$app, $browser] = $this->start();
+        $car = $this->car($app, 'Volkswagen', 'Golf', '2025-01-01', '15000', null, '2026-03-31', '12000');
+        $this->reading($app, $car, '1000', '2025-01-01T09:00:00Z');
+        $this->document($app, $car, ComplianceType::Insurance, '2025-07-01', '2026-06-30', '365.00');
+        $this->document($app, $car, ComplianceType::Insurance, '2024-01-01', '2024-12-31', '366.00');
+
+        $report = self::body($browser->get('/reports/true-cost'));
+
+        self::assertStringContainsString('of cover after you sold it', $report);
+        self::assertStringContainsString('of cover before you bought it', $report);
+        self::assertStringContainsString('£91.00 of cover after you sold it', $report);
+        // Once in the sale year's working and once under the yearly table, which no longer skips the latest three years.
+        self::assertSame(2, substr_count($report, 'of cover after you sold it'));
     }
 
     public function testASwitchedOffModuleLeavesItsPartOut(): void
@@ -208,6 +237,8 @@ final class TrueCostPagesTest extends AppTestCase
         string $purchased,
         string $price,
         ?string $currency = null,
+        ?string $sold = null,
+        ?string $salePrice = null,
     ): Vehicle {
         return $this->service($app, VehicleService::class)->create($this->owner($app), new VehicleData(
             VehicleType::Car,
@@ -218,7 +249,30 @@ final class TrueCostPagesTest extends AppTestCase
             currency: $currency,
             purchaseDate: self::date($purchased),
             purchasePrice: $price,
+            saleDate: $sold === null ? null : self::date($sold),
+            salePrice: $salePrice,
         ));
+    }
+
+    /**
+     * @return array{0: App<ContainerInterface>, 1: TestBrowser}
+     */
+    private function germanOwner(): array
+    {
+        $german = $this->createApp();
+        $this->pinClock($german, self::NOW);
+        $this->resetDatabase($german);
+        $preset = UnitPreset::Metric;
+        $this->createOwner($german, 'owner', new DisplayPreferences(
+            'de_DE',
+            'Europe/Berlin',
+            $preset->distance(),
+            $preset->volume(),
+            $preset->consumption(),
+            'GBP',
+        ));
+
+        return [$german, $this->browserFor($german, 'owner')];
     }
 
     /**
