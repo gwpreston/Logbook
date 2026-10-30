@@ -54,9 +54,11 @@ final readonly class TrueCostService
 
     /**
      * @param list<Vehicle> $vehicles
+     * @param bool $years false for the dashboard widget, which shows no year: each
+     *        vehicle's years and changes are then left empty, not worked out (Phase 54.5)
      * @return list<VehicleTrueCost> in the order given, leaving out those without one
      */
-    public function forVehicles(User $user, array $vehicles, DateTimeImmutable $today): array
+    public function forVehicles(User $user, array $vehicles, DateTimeImmutable $today, bool $years = true): array
     {
         $vehicles = array_values(array_filter(
             $vehicles,
@@ -75,7 +77,7 @@ final readonly class TrueCostService
 
         $results = [];
         foreach ($vehicles as $vehicle) {
-            $result = $this->build($user, $vehicle, $items[$vehicle->id] ?? [], $today);
+            $result = $this->build($user, $vehicle, $items[$vehicle->id] ?? [], $today, $years);
             if ($result !== null) {
                 $results[] = $result;
             }
@@ -115,8 +117,13 @@ final readonly class TrueCostService
     /**
      * @param list<CostItem> $items the vehicle's
      */
-    private function build(User $user, Vehicle $vehicle, array $items, DateTimeImmutable $today): ?VehicleTrueCost
-    {
+    private function build(
+        User $user,
+        Vehicle $vehicle,
+        array $items,
+        DateTimeImmutable $today,
+        bool $withYears,
+    ): ?VehicleTrueCost {
         $zone = $user->preferences->timeZone();
         $currency = $this->vehicles->currencyFor($user, $vehicle);
         $readings = $this->readings->listForVehicle($vehicle->id);
@@ -145,7 +152,7 @@ final readonly class TrueCostService
             : TrueCost::forPeriod($vehicle, $currency, $p, $index->for($p), $readings, $curve, $payouts, $zone, $minDays);
 
         $years = [];
-        foreach (TrueCostPeriod::years($from, $to) as $year) {
+        foreach ($withYears ? TrueCostPeriod::years($from, $to) : [] as $year) {
             $years[] = $period($year);
         }
         $years = array_values(array_filter($years));

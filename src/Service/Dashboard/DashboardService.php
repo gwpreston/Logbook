@@ -208,7 +208,7 @@ final readonly class DashboardService
             cheapestFuel: $show(DashboardWidget::CheapestFuel) ? $this->cheapestFuel->build($user, $selected) : null,
             // Only vehicles whose costs the user may see (spec.md §7.35 *Access*).
             trueCost: $show(DashboardWidget::TrueCost)
-                ? TrueCostWidget::of($this->trueCosts->forVehicles($user, $costly, $today), $trueCostRange)
+                ? TrueCostWidget::of($this->trueCosts->forVehicles($user, $costly, $today, years: false), $trueCostRange)
                 : null,
             insights: $show(DashboardWidget::Insights)
                 ? $this->insights->forVehicles($user, $scope, $selected === null, $today, self::INSIGHTS, $claim, $finance)

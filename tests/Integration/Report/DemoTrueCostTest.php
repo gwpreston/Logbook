@@ -106,4 +106,38 @@ final class DemoTrueCostTest extends AppTestCase
 
         return null;
     }
+
+    /**
+     * The dashboard widget shows no year (Phase 54.5, K149): its years and
+     * changes are left out, and what it shows is the report's to the digit.
+     */
+    public function testTheWidgetLeavesTheYearsOutAndShowsTheReportsFigures(): void
+    {
+        $app = $this->createApp();
+        $this->pinClock($app, '2026-10-05T10:00:00Z');
+        $this->resetDatabase($app);
+        Migrator::run('seed:run', ['--seed' => ['DemoDataSeeder']]);
+        $demo = $this->service($app, UserRepository::class)->findByUsername('demo');
+        self::assertInstanceOf(User::class, $demo);
+        $today = LocalTime::parseDate('2026-10-05');
+        self::assertNotNull($today);
+        $vehicles = $this->service($app, VehicleService::class)->listFleet($demo, true);
+        $service = $this->service($app, TrueCostService::class);
+
+        $report = $service->forVehicles($demo, $vehicles, $today);
+        $widget = $service->forVehicles($demo, $vehicles, $today, years: false);
+
+        self::assertCount(count($report), $widget);
+        $reportYears = array_merge(...array_map(static fn ($vtc): array => $vtc->years, $report));
+        self::assertNotSame([], $reportYears, 'the report has years');
+        foreach ($report as $i => $full) {
+            $light = $widget[$i];
+            self::assertSame([], $light->years);
+            self::assertSame([], $light->changes);
+            self::assertEquals($full->sinceBought, $light->sinceBought, $full->vehicle->name());
+            self::assertEquals($full->lastTwelveMonths, $light->lastTwelveMonths, $full->vehicle->name());
+            self::assertEquals($full->previousTwelveMonths, $light->previousTwelveMonths, $full->vehicle->name());
+            self::assertSame($full->twelveMonthChange(), $light->twelveMonthChange());
+        }
+    }
 }

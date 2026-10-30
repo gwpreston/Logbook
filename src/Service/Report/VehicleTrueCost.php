@@ -15,8 +15,8 @@ use Logbook\Support\Number\Decimal;
 final readonly class VehicleTrueCost
 {
     /**
-     * @param list<TrueCost> $years oldest first
-     * @param array<int, CostChange> $changes by the later year
+     * @param list<TrueCost> $years oldest first; empty for the dashboard widget, which shows none
+     * @param array<int, CostChange> $changes by the later year; empty with the years
      */
     public function __construct(
         public Vehicle $vehicle,
