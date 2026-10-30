@@ -3,7 +3,7 @@
 *Three open rows of the known-issues log closed: the true-cost cover note
 shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
 
-Status: 📋 planned · releases **v3.21.4**, a patch release (#586) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.4**, a patch release (#586) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.4](phase-54.4.md). The issue sweep of
 v3.21.2 found that 54.4's note still goes missing when the purchase or sale
@@ -68,7 +68,7 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 
 ### 54.6.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #585 and #586 are decided.
 
 ### 54.6.1 The cover note under the yearly table (K171, K173)
