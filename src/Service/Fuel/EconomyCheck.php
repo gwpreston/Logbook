@@ -21,7 +21,8 @@ use Logbook\Support\Number\Decimal;
  * its closing fill-up is a pair: that shared fill-up is probably the mistake.
  *
  * Derived on every read from FuelEconomy's segments; it changes no figure.
- * Pure and exact (Decimal throughout), so the band edges are unit-tested.
+ * Pure and exact (Decimal, and integers where the figures are always at
+ * the same scale), so the band edges are unit-tested.
  */
 final class EconomyCheck
 {
@@ -77,7 +78,10 @@ final class EconomyCheck
      */
     private static function series(array $measured, EnergyKind $kind): array
     {
-        $earlier = [];   // consumption of the checkable segments so far
+        // Consumption of the checkable segments so far, in millionths: always
+        // exactly SCALE places (per100Km()), so the integers order and add
+        // as the strings do, a few times faster (Phase 54.5, K149).
+        $earlier = [];
         $checks = [];
 
         foreach ($measured as $fill) {
@@ -86,15 +90,21 @@ final class EconomyCheck
                 continue;
             }
             $consumption = self::consumption($segment);
+            $scaled = Decimal::toScaledInt($consumption, self::SCALE);
             $baseline = count($earlier) >= self::MIN_BASELINE_SEGMENTS
-                ? self::median(array_slice($earlier, -self::BASELINE_SEGMENTS))
+                ? self::scaledMedian(array_slice($earlier, -self::BASELINE_SEGMENTS))
                 : null;
-            $earlier[] = $consumption;
+            $earlier[] = $scaled;
             $confirmed = $fill->entry->economyConfirmed;
+            $verdict = $baseline === null
+                ? EconomyVerdict::NotChecked
+                : self::scaledVerdict($kind, $scaled, $baseline)
+                    ?? self::verdict($kind, $consumption, Decimal::fromScaledInt($baseline, self::SCALE + 1));
+            $baseline = $baseline === null ? null : Decimal::fromScaledInt($baseline, self::SCALE + 1);
 
             $checks[] = new SegmentCheck(
                 fill: $fill,
-                verdict: $baseline === null ? EconomyVerdict::NotChecked : self::verdict($kind, $consumption, $baseline),
+                verdict: $verdict,
                 consumption: $consumption,
                 baseline: $baseline,
                 ratio: $baseline === null ? null : Decimal::divide($consumption, $baseline, self::SCALE),
@@ -143,18 +153,41 @@ final class EconomyCheck
     }
 
     /**
-     * @param list<string> $values at least one
+     * The verdict in integers: consumption (SCALE places) against the
+     * baseline (SCALE + 1) × the band (2), exactly as verdict(); null when
+     * the figures are too large for that (verdict() then decides).
      */
-    private static function median(array $values): string
+    private static function scaledVerdict(EnergyKind $kind, int $consumption, int $baseline): ?EconomyVerdict
     {
-        usort($values, Decimal::compare(...));
+        $band = self::BANDS[$kind->value];
+        $more = Decimal::toScaledInt($band['more'], 2);
+        $less = Decimal::toScaledInt($band['less'], 2);
+        $limit = intdiv(PHP_INT_MAX, 1000);
+        if (abs($consumption) > $limit || abs($baseline) > intdiv($limit, max(abs($more), abs($less), 1))) {
+            return null;
+        }
+
+        // Both sides at SCALE + 3 places.
+        return match (true) {
+            $consumption * 1000 >= $baseline * $more => EconomyVerdict::More,
+            $consumption * 1000 <= $baseline * $less => EconomyVerdict::Less,
+            default => EconomyVerdict::Normal,
+        };
+    }
+
+    /**
+     * The median, one place more than the segments (SCALE + 1), so the
+     * mean of two middle ones is exact.
+     *
+     * @param list<int> $values at SCALE places, at least one
+     */
+    private static function scaledMedian(array $values): int
+    {
+        sort($values);
         $count = count($values);
         $middle = intdiv($count, 2);
 
-        // One place more than the segments: the mean of two middle ones is exact.
-        return $count % 2 === 1
-            ? Decimal::round($values[$middle], self::SCALE + 1)
-            : Decimal::divide(Decimal::add($values[$middle - 1], $values[$middle]), '2', self::SCALE + 1);
+        return $count % 2 === 1 ? $values[$middle] * 10 : ($values[$middle - 1] + $values[$middle]) * 5;
     }
 
     private static function per100Km(string $volume, string $distanceKm): string
