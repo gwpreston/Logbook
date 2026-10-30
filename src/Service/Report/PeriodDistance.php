@@ -47,16 +47,28 @@ final class PeriodDistance
         DateTimeZone $zone,
         ?DateTimeImmutable $purchased,
     ): ?DistanceSpan {
-        $before = null;
-        $first = null;
-        $last = null;
-        foreach (self::owned($readings, $purchased, $zone) as $reading) {
-            $day = self::day($reading->recordedAt, $zone);
-            if ($period->from !== null && $day < $period->from) {
-                $before = $reading;
-            } elseif ($day <= $period->to) {
-                $first ??= $reading;
-                $last = $reading;
+        $owned = self::owned($readings, $purchased, $zone);
+        $from = $period->from;
+        if (self::inOrder($owned)) {
+            // Their days are in order too, so the period is a run of them found by bisection: a page
+            // asks for many periods of the same few hundred readings (Phase 54.5, K149).
+            $start = $from === null ? 0 : self::leading($owned, static fn (DateTimeImmutable $day): bool => $day < $from, $zone);
+            $end = self::leading($owned, static fn (DateTimeImmutable $day): bool => $day <= $period->to, $zone);
+            $before = $start > 0 ? $owned[$start - 1] : null;
+            $first = $start < $end ? $owned[$start] : null;
+            $last = $start < $end ? $owned[$end - 1] : null;
+        } else {
+            $before = null;
+            $first = null;
+            $last = null;
+            foreach ($owned as $reading) {
+                $day = self::day($reading->recordedAt, $zone);
+                if ($from !== null && $day < $from) {
+                    $before = $reading;
+                } elseif ($day <= $period->to) {
+                    $first ??= $reading;
+                    $last = $reading;
+                }
             }
         }
 
@@ -120,11 +132,60 @@ final class PeriodDistance
         }
 
         $from = $purchased->format('Y-m-d');
+        if (self::inOrder($readings)) {
+            $earlier = self::leading(
+                $readings,
+                static fn (DateTimeImmutable $day): bool => $day->format('Y-m-d') < $from,
+                $zone,
+            );
+
+            return array_slice($readings, $earlier);
+        }
 
         return array_values(array_filter(
             $readings,
             static fn (OdometerReading $r): bool => self::day($r->recordedAt, $zone)->format('Y-m-d') >= $from,
         ));
+    }
+
+    /**
+     * Whether the readings are oldest first, as callers give them: then
+     * their days are in order too.
+     *
+     * @param list<OdometerReading> $readings
+     */
+    private static function inOrder(array $readings): bool
+    {
+        for ($i = 1, $n = count($readings); $i < $n; $i++) {
+            if ($readings[$i]->recordedAt < $readings[$i - 1]->recordedAt) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * How many readings at the start have a day for which $holds is true,
+     * when it holds for a run at the start and then never: by bisection.
+     *
+     * @param list<OdometerReading> $readings in order
+     * @param callable(DateTimeImmutable): bool $holds
+     */
+    private static function leading(array $readings, callable $holds, DateTimeZone $zone): int
+    {
+        $low = 0;
+        $high = count($readings);
+        while ($low < $high) {
+            $middle = intdiv($low + $high, 2);
+            if ($holds(self::day($readings[$middle]->recordedAt, $zone))) {
+                $low = $middle + 1;
+            } else {
+                $high = $middle;
+            }
+        }
+
+        return $low;
     }
 
     /**

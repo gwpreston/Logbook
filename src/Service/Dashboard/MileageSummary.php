@@ -112,11 +112,15 @@ final readonly class MileageSummary
         ?DateTimeImmutable $purchased,
     ): ?string {
         $owned = PeriodDistance::owned($readings, $purchased, $zone);
-        $known = array_filter(
-            $owned,
-            static fn (OdometerReading $r): bool => PeriodDistance::day($r->recordedAt, $zone) <= $period->to,
-        );
-        if ($known === []) {
+        // Any reading by the period's end: the oldest first, so usually the first one says (Phase 54.5).
+        $known = false;
+        foreach ($owned as $reading) {
+            if (PeriodDistance::day($reading->recordedAt, $zone) <= $period->to) {
+                $known = true;
+                break;
+            }
+        }
+        if (!$known) {
             return null;
         }
 
