@@ -43,6 +43,12 @@ final class CostLedgerReadsTest extends AppTestCase
         $reads->end();
 
         self::assertCount(3, $after, 'a service written: built again');
+        $tables = ['fuel_entries', 'stations', 'compliance_documents', 'part_fittings', 'finance_payment_events'];
+        foreach ($tables as $table) {
+            $before = $ledger->items($owner, [$golf, $polo]);
+            $reads->forget($table);
+            self::assertNotSame($before, $ledger->items($owner, [$golf, $polo]), "a write to $table forgets it");
+        }
         self::assertCount(4, $later, 'an expense written: built again');
         self::assertNotSame($later, $ledger->items($owner, [$golf, $polo]), 'outside a request every call builds it');
         self::assertEquals($later, $ledger->items($owner, [$golf, $polo]), 'to the same lines');

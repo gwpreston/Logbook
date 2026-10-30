@@ -31,9 +31,13 @@ use Logbook\Support\Cache\RequestReads;
  */
 final readonly class CostLedger
 {
-    /** Every table the ledger is built from (RequestReads::forget()). */
-    private const string READS = 'fuel_entries+maintenance_entries+compliance_documents+expense_entries'
-        . '+modifications+parts+part_fittings+finance_agreements+finance_payment_events+settings';
+    /**
+     * Every table the ledger is built from, those its reads join included
+     * (a fill-up's title is its station's name), so a write to any of them
+     * forgets it (RequestReads::forget()).
+     */
+    private const string READS = 'fuel_entries+stations+maintenance_entries+compliance_documents+expense_entries'
+        . '+modifications+parts+part_fittings+finance_agreements+finance_payment_events+settlement_quotes+settings';
 
     public function __construct(
         private FuelEntryRepository $fuel,
