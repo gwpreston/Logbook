@@ -215,7 +215,7 @@ final readonly class TrendChecks
         $currency = $this->currency($vehicle, $owner);
         $findings = PriceOutlier::of(
             $entries,
-            fn (): array => $book->fillUps($owner->id, $currency, fn (): array => $this->ownerFillUps($owner, $currency)),
+            fn (): PriceGroups => $book->fillUps($owner->id, $currency, fn (): array => $this->ownerFillUps($owner, $currency)),
             $thresholds->pricePercent,
         );
 
