@@ -7,6 +7,7 @@ namespace Logbook\Service\Fuel;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\Fuel\FuelEntry;
 use Logbook\Support\Number\Decimal;
+use Logbook\Support\Number\DecimalSum;
 
 /**
  * Derives consumption and cost figures from a vehicle's fill-ups.
@@ -73,8 +74,8 @@ final class FuelEconomy
     {
         $results = [];
         $anchor = null;       // the full fill the open segment started from
-        $volume = '0';        // bought since the anchor
-        $cost = '0';
+        $volume = new DecimalSum();   // bought since the anchor
+        $cost = new DecimalSum();
         $fills = 0;
         $burned = null;       // the grade burned since the anchor, while one grade throughout
         $burnedValue = '0';   // price × volume of the anchor and the partials since
@@ -95,8 +96,8 @@ final class FuelEconomy
             if ($anchor === null) {
                 $status = $entry->isFull() ? EconomyStatus::Baseline : EconomyStatus::Unmeasured;
             } else {
-                $volume = Decimal::add($volume, $data->volume);
-                $cost = Decimal::add($cost, $data->totalCost);
+                $volume->add($data->volume);
+                $cost->add($data->totalCost);
                 $fills++;
 
                 if (!$entry->isFull()) {
@@ -113,8 +114,8 @@ final class FuelEconomy
                         $status = EconomyStatus::Measured;
                         $segment = new EconomySegment(
                             $distance,
-                            $volume,
-                            $cost,
+                            $volume->value(),
+                            $cost->value(),
                             $fills,
                             $data->filledAt,
                             $burned,
@@ -131,8 +132,8 @@ final class FuelEconomy
             if ($entry->isFull()) {
                 // Every full fill (re)starts the next segment.
                 $anchor = $entry;
-                $volume = '0';
-                $cost = '0';
+                $volume = new DecimalSum();
+                $cost = new DecimalSum();
                 $fills = 0;
                 $burned = $data->grade;
                 $burnedValue = self::value($entry);
@@ -159,11 +160,12 @@ final class FuelEconomy
      */
     private static function summarise(EnergyKind $kind, array $series): EconomySummary
     {
-        $totalVolume = '0';
-        $totalCost = '0';
-        $measuredDistance = '0';
-        $measuredVolume = '0';
-        $measuredCost = '0';
+        // Running totals in integers (Phase 54.5, K149): read as Decimal::add() would give them.
+        $totalVolume = new DecimalSum();
+        $totalCost = new DecimalSum();
+        $measuredDistance = new DecimalSum();
+        $measuredVolume = new DecimalSum();
+        $measuredCost = new DecimalSum();
         $segments = 0;
         $last = null;
         $lowest = null;
@@ -171,15 +173,15 @@ final class FuelEconomy
 
         foreach ($series as $fill) {
             $data = $fill->entry->data;
-            $totalVolume = Decimal::add($totalVolume, $data->volume);
-            $totalCost = Decimal::add($totalCost, $data->totalCost);
+            $totalVolume->add($data->volume);
+            $totalCost->add($data->totalCost);
             $lowest = $lowest === null || Decimal::compare($data->odometerKm, $lowest) < 0 ? $data->odometerKm : $lowest;
             $highest = $highest === null || Decimal::compare($data->odometerKm, $highest) > 0 ? $data->odometerKm : $highest;
 
             if ($fill->segment !== null) {
-                $measuredDistance = Decimal::add($measuredDistance, $fill->segment->distanceKm);
-                $measuredVolume = Decimal::add($measuredVolume, $fill->segment->volume);
-                $measuredCost = Decimal::add($measuredCost, $fill->segment->cost);
+                $measuredDistance->add($fill->segment->distanceKm);
+                $measuredVolume->add($fill->segment->volume);
+                $measuredCost->add($fill->segment->cost);
                 $segments++;
                 $last = $fill->segment;
             }
@@ -188,11 +190,11 @@ final class FuelEconomy
         return new EconomySummary(
             kind: $kind,
             fills: count($series),
-            totalVolume: $totalVolume,
-            totalCost: $totalCost,
-            measuredDistanceKm: $measuredDistance,
-            measuredVolume: $measuredVolume,
-            measuredCost: $measuredCost,
+            totalVolume: $totalVolume->value(),
+            totalCost: $totalCost->value(),
+            measuredDistanceKm: $measuredDistance->value(),
+            measuredVolume: $measuredVolume->value(),
+            measuredCost: $measuredCost->value(),
             segments: $segments,
             lastSegment: $last,
             trackedDistanceKm: Decimal::subtract($highest ?? '0', $lowest ?? '0'),
