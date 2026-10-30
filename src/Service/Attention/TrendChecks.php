@@ -284,7 +284,8 @@ final readonly class TrendChecks
     }
 
     /**
-     * The owner's fill-ups on every vehicle of theirs in this currency.
+     * The owner's fill-ups on every vehicle of theirs in this currency, in
+     * no particular order (PriceGroups sorts them).
      *
      * @return list<FuelEntry>
      */
@@ -297,7 +298,7 @@ final readonly class TrendChecks
             }
         }
 
-        return $ids === [] ? [] : $this->fuel->listForVehiclesBetween($ids, null, null);
+        return $ids === [] ? [] : $this->fuel->listForVehicles($ids);
     }
 
     public function currency(Vehicle $vehicle, User $owner): string

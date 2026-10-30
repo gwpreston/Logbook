@@ -66,6 +66,29 @@ final readonly class FuelEntryRepository
     }
 
     /**
+     * Every fill-up of these vehicles, by vehicle and each in the order they
+     * happened. In a request, the ones the page has read already are not
+     * read again (the price check's wider comparison, Phase 54.5); the rest
+     * are read in one query.
+     *
+     * @param list<int> $vehicleIds
+     * @return list<FuelEntry>
+     */
+    public function listForVehicles(array $vehicleIds): array
+    {
+        if (!$this->reads->isActive()) {
+            return $this->listForVehiclesBetween($vehicleIds, null, null);
+        }
+        $this->prime($vehicleIds);
+        $entries = [];
+        foreach ($vehicleIds as $vehicleId) {
+            array_push($entries, ...$this->listForVehicle($vehicleId));
+        }
+
+        return $entries;
+    }
+
+    /**
      * The fill-ups of several vehicles between two instants (the History
      * pages bound a year by its local start and end in UTC; spec.md §7.16).
      *
