@@ -87,9 +87,8 @@ final readonly class CostLedger
         }
 
         $items = array_values(array_filter($items, static fn (?CostItem $item): bool => $item !== null));
-        usort($items, CostItem::compare(...));
 
-        return $items;
+        return CostItem::sort($items);
     }
 
     /**
