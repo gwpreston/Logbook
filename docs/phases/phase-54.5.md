@@ -3,7 +3,7 @@
 *The two rows [Phase 54.3](phase-54.3.md) left open closed: the dashboard and
 the true-cost report meet spec §8's 500 ms on the heavy household.*
 
-Status: ✅ complete · releases **v3.21.3**, a patch release (#584) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.3**, a patch release (#584) · file lives in `docs/phases/`
 
 Phase 54.3 removed the repeated reads (digest 861 to 247 queries, true-cost
 99 to 21) and cut the dashboard from 2.3 s to 1.5 s, but what is left is
@@ -157,7 +157,7 @@ operation, a median of up to ten values sorted with it for each of
 ### Release
 
 - [x] VERSION 3.21.3, CHANGELOG 3.21.3, README status (#584).
-- [ ] Tag `v3.21.3` once merged.
+- [x] Tag `v3.21.3` once merged.
 
 ## Result (SQLite, the heavy household, 2026-10-30)
 

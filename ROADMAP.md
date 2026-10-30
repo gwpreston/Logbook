@@ -1828,7 +1828,7 @@ Releases v3.21.2.*
 
 *The two rows Phase 54.3 left open, K149 and K150: the dashboard and the
 true-cost report meet spec §8's 500 ms on the heavy household (#583).
-Releases v3.21.3.*
+Released as v3.21.3.*
 
 - The dashboard 1.6 s to 0.42 s and the true-cost report 0.9 s to
   0.40 s on the heavy household: work a page repeated per widget is done
