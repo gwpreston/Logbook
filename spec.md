@@ -12547,7 +12547,7 @@ task breakdowns live in the per-phase files; this is the map.
   (§7.8, K154, #569). Releases v3.21.2 (#578). No migration. See
   [`phase-54.4.md`](docs/phases/phase-54.4.md).
 - **Phase 54.5 — The 500 ms target for the dashboard and true-cost report
-  from the known-issues log + patch release** (planned). The dashboard
+  from the known-issues log + patch release** (in progress). The dashboard
   and the true-cost report meet §8's 500 ms on the heavy household by
   lighter working-out, not by caching or loading widgets later (K149,
   K150, #583). Figures unchanged. No migration. See
