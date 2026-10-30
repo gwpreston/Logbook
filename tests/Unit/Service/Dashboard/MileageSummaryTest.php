@@ -9,6 +9,7 @@ use DateTimeZone;
 use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\Odometer\OdometerSource;
 use Logbook\Service\Dashboard\MileageSummary;
+use Logbook\Service\Odometer\OdometerHistory;
 use Logbook\Support\Date\LocalTime;
 use PHPUnit\Framework\TestCase;
 
@@ -38,6 +39,21 @@ final class MileageSummaryTest extends TestCase
 
         $utc = MileageSummary::of([$readings], self::day('2026-09-27'), new DateTimeZone('UTC'), [null]);
         self::assertSame('400', $utc->thisMonthKm, 'in UTC the 2,000 reading is August\'s');
+    }
+
+    /** The page's histories (Phase 54.5) give what the readings alone give. */
+    public function testThePagesHistoriesGiveTheSameSummary(): void
+    {
+        $utc = new DateTimeZone('UTC');
+        $car = [self::reading('1000', '2025-11-02T09:00:00Z'), self::reading('2600', '2026-09-20T12:00:00Z')];
+        $bike = [self::reading('300', '2026-03-01T09:00:00Z'), self::reading('900', '2026-09-01T09:00:00Z')];
+        $histories = [new OdometerHistory($car), new OdometerHistory($bike)];
+
+        $plain = MileageSummary::of([$car, $bike], self::day('2026-09-27'), $utc, [null, null]);
+        $shared = MileageSummary::of([$car, $bike], self::day('2026-09-27'), $utc, [null, null], $histories);
+
+        self::assertEquals($plain, $shared);
+        self::assertNotNull($shared->monthlyAverageKm);
     }
 
     public function testAClockChangeDoesNotMoveAReadingToAnotherMonth(): void

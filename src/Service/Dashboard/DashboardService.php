@@ -13,7 +13,6 @@ use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Fuel\EnergyKind;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
-use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Access\VehicleAccess;
 use Logbook\Service\Compliance\ComplianceService;
 use Logbook\Service\Compliance\DocumentState;
@@ -28,6 +27,8 @@ use Logbook\Service\Fuel\FuelHistory;
 use Logbook\Service\Fuel\FuelService;
 use Logbook\Service\History\ActivityFeed;
 use Logbook\Service\Insights\InsightsService;
+use Logbook\Service\Odometer\OdometerHistory;
+use Logbook\Service\Odometer\OdometerService;
 use Logbook\Service\Reminder\DueCounter;
 use Logbook\Service\Reminder\CalendarMonth;
 use Logbook\Service\Reminder\ReminderOverview;
@@ -67,7 +68,6 @@ final readonly class DashboardService
         private FeatureToggles $features,
         private VehicleService $vehicles,
         private VehicleSnapshots $snapshots,
-        private OdometerReadingRepository $readings,
         private ReminderService $reminders,
         private ReminderSettingsStore $reminderSettings,
         private DueCounter $dueCounter,
@@ -87,6 +87,7 @@ final readonly class DashboardService
         private InsightsService $insights,
         private AiInsightService $aiInsights,
         private VehicleDataPrimer $primer,
+        private OdometerService $odometer,
     ) {
     }
 
@@ -287,11 +288,15 @@ final readonly class DashboardService
     {
         $zone = $user->preferences->timeZone();
 
+        // The histories the page's other widgets worked out (Phase 54.5).
+        $histories = array_map(fn (Vehicle $v): OdometerHistory => $this->odometer->history($v), $vehicles);
+
         return MileageSummary::of(
-            array_map(fn (Vehicle $v): array => $this->readings->listForVehicle($v->id), $vehicles),
+            array_map(static fn (OdometerHistory $h): array => $h->readings, $histories),
             $today,
             $zone,
             array_map(static fn (Vehicle $v): ?DateTimeImmutable => $v->data->purchaseDate, $vehicles),
+            $histories,
         );
     }
 

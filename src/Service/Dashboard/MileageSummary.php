@@ -55,9 +55,16 @@ final readonly class MileageSummary
      *                                                an earlier owner's and stay out of the distances. The average
      *                                                per month is the Mileage tab's figure, from all the readings (§7.8).
      * @param DateTimeImmutable $today the owner's calendar date
+     * @param list<OdometerHistory>|null $histories each vehicle's history of those readings, when the page has
+     *                                             worked them out already (Phase 54.5)
      */
-    public static function of(array $readings, DateTimeImmutable $today, DateTimeZone $zone, array $purchased): self
-    {
+    public static function of(
+        array $readings,
+        DateTimeImmutable $today,
+        DateTimeZone $zone,
+        array $purchased,
+        ?array $histories = null,
+    ): self {
         $month = ReportPeriod::preset(ReportRange::ThisMonth, $today);
         $year = ReportPeriod::preset(ReportRange::ThisYear, $today);
 
@@ -77,7 +84,7 @@ final readonly class MileageSummary
             $bought = $purchased[$i] ?? null;
             $thisMonth = self::add($thisMonth, self::driven($vehicleReadings, $month, $zone, $bought));
             $thisYear = self::add($thisYear, self::driven($vehicleReadings, $year, $zone, $bought));
-            $perMonth = (new OdometerHistory($vehicleReadings))->averageKmPerMonth();
+            $perMonth = ($histories[$i] ?? new OdometerHistory($vehicleReadings))->averageKmPerMonth();
             if ($perMonth !== null) {
                 $average = ($average ?? 0.0) + $perMonth;
             }
