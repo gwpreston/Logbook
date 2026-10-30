@@ -38,7 +38,24 @@ final class Decimal
         }
 
         $negative = str_starts_with($value, '-');
-        [$whole, $fraction] = array_pad(explode('.', ltrim($value, '-'), 2), 2, '');
+
+        // Most calls need no rounding: the value has no more places than
+        // asked for, and its digits fit. Then it is its digits times a power
+        // of ten, worked out without splitting the string (Phase 54.5: a busy
+        // page makes hundreds of thousands of these calls).
+        $unsigned = $negative ? substr($value, 1) : $value;
+        $dot = strpos($unsigned, '.');
+        $shift = $dot === false ? $scale : $scale - (strlen($unsigned) - $dot - 1);
+        if ($shift >= 0) {
+            $raw = $dot === false ? $unsigned : substr($unsigned, 0, $dot) . substr($unsigned, $dot + 1);
+            if (strlen($raw) + $shift <= 18) {
+                $magnitude = (int) $raw * 10 ** $shift;
+
+                return $negative ? -$magnitude : $magnitude;
+            }
+        }
+
+        [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
         $whole = ltrim($whole, '0');
 
         $kept = str_pad(substr($fraction, 0, $scale), $scale, '0');
