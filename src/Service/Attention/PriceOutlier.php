@@ -44,12 +44,11 @@ final class PriceOutlier
         $low = Decimal::divide((string) (100 - $percent), '100', 2);
 
         $findings = [];
-        foreach (PriceGroups::sorted($entries) as $entry) {
-            if (!PriceGroups::isPriced($entry)) {
-                continue;
-            }
-            $group = $own->like($entry);
-            $near = self::neighbours($entry, $group);
+        foreach ($own->priced() as [$key, $place]) {
+            $group = $own->group($key);
+            $entry = $group['entries'][$place];
+            $price = $group['scaled'][$place];
+            $near = self::around($group, $place);
             $wider = false;
             if (count($near) < self::MIN_NEIGHBOURS) {
                 if ($all === null) {
@@ -64,7 +63,7 @@ final class PriceOutlier
                 continue;
             }
 
-            $median = self::outside($entry, $group, $near, $percent)
+            $median = self::outside($price, $group, $near, $percent)
                 ?? self::outsideExactly($entry, $group, $near, $high, $low);
             if ($median === false) {
                 continue;
@@ -85,12 +84,12 @@ final class PriceOutlier
      * outsideExactly() and a few times faster (Phase 54.5, K149): it is run
      * for every fill-up on the dashboard.
      *
+     * @param int|null $price the fill-up's price, Outlier::scaled()
      * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
      * @param list<int> $near positions in $group
      */
-    private static function outside(FuelEntry $entry, array $group, array $near, int $percent): string|false|null
+    private static function outside(?int $price, array $group, array $near, int $percent): string|false|null
     {
-        $price = Outlier::scaled($entry->data->pricePerUnit);
         $prices = [];
         foreach ($near as $i) {
             $prices[] = $group['scaled'][$i];
@@ -130,6 +129,29 @@ final class PriceOutlier
         $below = Decimal::compare($price, Decimal::multiply($median, $low, Outlier::SCALE + 3)) < 0;
 
         return $above || $below ? $median : false;
+    }
+
+    /**
+     * The positions of the fill-ups within the window of the one at $place
+     * in its own group, itself left out: found by walking out from it.
+     *
+     * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
+     * @return list<int>
+     */
+    private static function around(array $group, int $place): array
+    {
+        $times = $group['at'];
+        $at = $times[$place];
+        $window = self::WINDOW_DAYS * 86400;
+        $near = [];
+        for ($i = $place - 1; $i >= 0 && $at - $times[$i] <= $window; $i--) {
+            $near[] = $i;
+        }
+        for ($i = $place + 1, $count = count($times); $i < $count && $times[$i] - $at <= $window; $i++) {
+            $near[] = $i;
+        }
+
+        return $near;
     }
 
     /**

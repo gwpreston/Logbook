@@ -19,8 +19,9 @@ final readonly class PriceGroups
 
     /**
      * @param array<string, array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>}> $groups
+     * @param list<array{string, int}> $priced each priced fill-up's group and place in it, oldest first
      */
-    private function __construct(private array $groups)
+    private function __construct(private array $groups, private array $priced)
     {
     }
 
@@ -30,17 +31,38 @@ final readonly class PriceGroups
     public static function of(array $entries): self
     {
         $groups = [];
+        $priced = [];
         foreach (self::sorted($entries) as $entry) {
-            if (self::isPriced($entry)) {
+            $scaled = Outlier::scaled($entry->data->pricePerUnit);
+            if ($scaled !== null ? $scaled > 0 : self::isPriced($entry)) {
                 $key = self::key($entry);
                 $groups[$key] ??= self::EMPTY;
+                $priced[] = [$key, count($groups[$key]['entries'])];
                 $groups[$key]['entries'][] = $entry;
                 $groups[$key]['at'][] = $entry->data->filledAt->getTimestamp();
-                $groups[$key]['scaled'][] = Outlier::scaled($entry->data->pricePerUnit);
+                $groups[$key]['scaled'][] = $scaled;
             }
         }
 
-        return new self($groups);
+        return new self($groups, $priced);
+    }
+
+    /**
+     * Each priced fill-up, oldest first, as its group's key and its place in that group.
+     *
+     * @return list<array{string, int}>
+     */
+    public function priced(): array
+    {
+        return $this->priced;
+    }
+
+    /**
+     * @return array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>}
+     */
+    public function group(string $key): array
+    {
+        return $this->groups[$key] ?? self::EMPTY;
     }
 
     /**
