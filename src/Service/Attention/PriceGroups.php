@@ -36,7 +36,7 @@ final readonly class PriceGroups
                 $groups[$key] ??= self::EMPTY;
                 $groups[$key]['entries'][] = $entry;
                 $groups[$key]['at'][] = $entry->data->filledAt->getTimestamp();
-                $groups[$key]['scaled'][] = self::scaled($entry->data->pricePerUnit);
+                $groups[$key]['scaled'][] = Outlier::scaled($entry->data->pricePerUnit);
             }
         }
 
@@ -75,20 +75,6 @@ final readonly class PriceGroups
     public static function isPriced(FuelEntry $entry): bool
     {
         return Decimal::compare($entry->data->pricePerUnit, '0') > 0;
-    }
-
-    /**
-     * A price at Outlier::SCALE + 1 places as an integer, exactly; null for
-     * one with more than Outlier::SCALE places (never a stored one).
-     */
-    public static function scaled(string $price): ?int
-    {
-        $dot = strpos($price, '.');
-        if (!Decimal::isCanonical($price) || ($dot !== false && strlen($price) - $dot - 1 > Outlier::SCALE)) {
-            return null;
-        }
-
-        return Decimal::toScaledInt($price, Outlier::SCALE + 1);
     }
 
     /**

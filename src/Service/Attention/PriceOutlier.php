@@ -83,16 +83,14 @@ final class PriceOutlier
      *
      * The test in integers at Outlier::SCALE + 1 places, as exact as
      * outsideExactly() and a few times faster (Phase 54.5, K149): it is run
-     * for every fill-up on the dashboard. Prices of up to six places are
-     * multiples of ten there, so the mean of two middle ones is exact, as
-     * Outlier::median() keeps it.
+     * for every fill-up on the dashboard.
      *
      * @param array{entries: list<FuelEntry>, at: list<int>, scaled: list<?int>} $group
      * @param list<int> $near positions in $group
      */
     private static function outside(FuelEntry $entry, array $group, array $near, int $percent): string|false|null
     {
-        $price = PriceGroups::scaled($entry->data->pricePerUnit);
+        $price = Outlier::scaled($entry->data->pricePerUnit);
         $prices = [];
         foreach ($near as $i) {
             $prices[] = $group['scaled'][$i];
@@ -100,15 +98,11 @@ final class PriceOutlier
         if ($price === null || in_array(null, $prices, true)) {
             return null;
         }
-        sort($prices);
-        $count = count($prices);
-        $middle = intdiv($count, 2);
-        $twice = $count % 2 === 1 ? 2 * $prices[$middle] : $prices[$middle - 1] + $prices[$middle];
+        $median = Outlier::scaledMedian($prices);
         $factor = max(100, abs(100 + $percent), abs(100 - $percent));
-        if ($twice % 2 !== 0 || max($price, $twice) > intdiv(PHP_INT_MAX, 2 * $factor)) {
+        if (max($price, $median) > intdiv(PHP_INT_MAX, $factor)) {
             return null;
         }
-        $median = intdiv($twice, 2);
 
         // price > median × (100 + p) / 100, or below median × (100 - p) / 100.
         $above = $price * 100 > $median * (100 + $percent);
