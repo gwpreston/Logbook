@@ -56,10 +56,48 @@ budgets*, §7.24, §7.35, [phase-54.3.md](phase-54.3.md) (its *Profile* and
 
 ### 54.5.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #583 is decided; #584 is decided.
-- [ ] Profile the dashboard and the report again on the heavy household and
+      None of the questions still open (#221, #375–#377, #390, #391, #460,
+      #462, #537–#542, #551, #565, #567, #582) bears on this phase, which
+      changes no figure, only how long they take. Of the known issues,
+      K149 and K150 are this phase's; the other *Open* rows (K145, K160,
+      K163, K164, K169, K172) are not about the dashboard's or the
+      report's working-out, and K168, K171 and K173 are Phase 54.6's.
+- [x] Profile the dashboard and the report again on the heavy household and
       record it here.
+
+#### Profile (master, SQLite, 2026-10-30)
+
+54.3's seeder was not kept, so the household was built again through the
+app's services: 10 vehicles, each with 400 fill-ups a fortnight apart
+since November 2010, 150 services and 16 years of insurance and
+inspection documents, on PHP 8.5 with a SQLite file (a scratch test in
+`var/`, not committed). Its 16 full years make the true-cost page larger
+than 54.3's (472 KB, was 350 KB), so its times are a little higher. The
+500 ms target is judged on this household. Times are the median of seven
+warm requests, in process, as in 54.3.
+
+| Case | Time | Queries | Page |
+|------|------|---------|------|
+| Dashboard | 1.69 s | 61 | 147 KB |
+| `/reports/true-cost` | 0.96 s | 21 | 472 KB |
+
+Where the dashboard goes (ms): *Needs attention* 684 (of which the price
+check 308 and the economy checks 274), the true-cost widget 321, the fuel
+histories 123, reading and hydrating every table once 114, *Coming up*
+83, mileage 58, spend 57, the maintenance cost check 51, insights 51,
+reminders 39, the vehicle tiles 18; the template about 30.
+
+Where the report goes (ms): working out 489 (each year's costs summed
+over every item, 198; reading every table once, 121; the rest of each
+vehicle's ownership, readings and valuations about 130; the ledger 39),
+the charts 59, and rendering the 472 KB page about 450.
+
+Both are CPU in PHP. The price check and the economy checks spend most of
+their time in exact decimal arithmetic on strings (about 2 µs an
+operation, a median of up to ten values sorted with it for each of
+4,000 fill-ups).
 
 ### 54.5.1 Dashboard (K149)
 
