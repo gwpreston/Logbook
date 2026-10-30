@@ -19,6 +19,7 @@ use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\OdometerReadingRepository;
 use Logbook\Service\Attachment\AttachmentService;
 use Logbook\Service\Attachment\PendingUploads;
+use Logbook\Support\Cache\RequestReads;
 use Logbook\Support\Number\Decimal;
 use Psr\Clock\ClockInterface;
 
@@ -32,6 +33,8 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class OdometerService
 {
+    private const string HISTORY_READS = 'odometer_readings+history';
+
     public function __construct(
         private OdometerReadingRepository $readings,
         private AttachmentService $attachments,
@@ -39,12 +42,22 @@ final readonly class OdometerService
         private AccessContext $author,
         private WebhookEvents $webhooks,
         private Transaction $transaction,
+        private RequestReads $reads,
     ) {
     }
 
+    /**
+     * Worked out once per request for each vehicle: a page's widgets ask
+     * for it several times each (Phase 54.5, K149). A write to the
+     * readings forgets it with them.
+     */
     public function history(Vehicle $vehicle): OdometerHistory
     {
-        return new OdometerHistory($this->readings->listForVehicle($vehicle->id));
+        return $this->reads->remember(
+            self::HISTORY_READS,
+            $vehicle->id,
+            fn (): OdometerHistory => new OdometerHistory($this->readings->listForVehicle($vehicle->id)),
+        );
     }
 
     /**

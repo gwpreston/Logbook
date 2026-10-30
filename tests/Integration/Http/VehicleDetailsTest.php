@@ -120,6 +120,7 @@ final class VehicleDetailsTest extends AppTestCase
             $this->service($app, AccessContext::class),
             $this->service($app, WebhookEvents::class),
             $this->service($app, Transaction::class),
+            $this->service($app, RequestReads::class),
         ));
         $browser = $this->signedIn($app);
 
