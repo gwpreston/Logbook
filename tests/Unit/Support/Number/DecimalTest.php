@@ -90,6 +90,9 @@ final class DecimalTest extends TestCase
         yield 'zero' => ['0', 'en', '0'];
         yield 'English grouping' => ['1,234.5', 'en', '1234.5'];
         yield 'German format' => ['1.234,5', 'de', '1234.5'];
+        yield 'German leading decimal comma (K168)' => [',5', 'de', '0.5'];
+        yield 'German negative leading decimal comma (K168)' => ['-,5', 'de', '-0.5'];
+        yield 'German lone decimal comma (K168)' => [',', 'de', null];
         yield 'German decimal comma' => ['0,459', 'de', '0.459'];
         yield 'French narrow space grouping' => ["1\u{202F}234,5", 'fr', '1234.5'];
         yield 'plain space grouping' => ['1 234,5', 'fr', '1234.5'];
@@ -129,6 +132,11 @@ final class DecimalTest extends TestCase
         yield 'comma: a lone 0 is not a group (#581)' => ['0.500', NumberFormat::CommaDecimal, null];
         yield 'dot: a lone 0 is not a group (#581)' => ['0,500', NumberFormat::DotDecimal, null];
         yield 'dot: a first group of four digits is not grouping' => ['1234,567', NumberFormat::DotDecimal, null];
+        yield 'comma: a leading decimal comma reads (K168)' => [',5', NumberFormat::CommaDecimal, '0.5'];
+        yield 'comma: a negative leading decimal comma reads (K168)' => ['-,5', NumberFormat::CommaDecimal, '-0.5'];
+        yield 'comma: a lone decimal comma is not a number (K168)' => [',', NumberFormat::CommaDecimal, null];
+        yield 'comma: a decimal comma with nothing either side is not a number (K168)' => ['-,', NumberFormat::CommaDecimal, null];
+        yield 'dot: a leading comma is grouping, not decimal (K168)' => [',5', NumberFormat::DotDecimal, null];
         yield 'comma: three-digit first group reads' => ['123.456,7', NumberFormat::CommaDecimal, '123456.7'];
     }
 

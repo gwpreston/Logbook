@@ -77,6 +77,8 @@ final class DecimalParser
         $groupingSymbols = in_array($groupingSymbol, self::SPACES, true)
             ? self::SPACES
             : [$groupingSymbol, ...self::SPACES];
+        // An empty whole part before the decimal symbol is 0, as `.5` is under canonical (K168); a lone symbol stays invalid.
+        $whole = $whole === '' && $fraction !== null && $fraction !== '' ? '0' : $whole;
         $whole = self::ungroup($whole ?? '', $groupingSymbols, $wholeGroups);
         if ($whole === null) {
             return null;

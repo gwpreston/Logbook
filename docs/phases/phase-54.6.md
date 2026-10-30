@@ -83,7 +83,7 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 
 ### 54.6.2 A leading decimal comma (K168)
 
-- [ ] `DecimalParser::withSymbols()` / `ungroup()` read an empty whole part
+- [x] `DecimalParser::withSymbols()` / `ungroup()` read an empty whole part
       as 0, so `,5` and `-,5` read as 0.5 and −0.5 with a comma decimal; `,`
       alone stays invalid. `DecimalTest` covers both, and an import
       under *Decimal comma* in `ImportTest`.
