@@ -4960,10 +4960,17 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   and the fill-up page lists it with a link to review. An entry whose form
   now answers 403 or 404 (the vehicle was deleted, the share revoked)
   stays queued the same way and is passed over, so the entries after it
-  are still sent; "signed out" is said only when the sign-in page answers
+  are still sent (never discarded automatically, #589); the fill-up page
+  names it in a note such as "1 fill-up couldn't be sent: its vehicle is
+  gone or no longer shared with you", with the link to review or discard
+  it (#590). "Signed out" is said only when the sign-in page answers
   (K164, Phase 54.8). The fill-up shortcut `/fuel/new`, which redirects to
-  the one vehicle's form, is kept for offline use under both paths
-  (K163, Phase 54.8). Attachments cannot be
+  the one vehicle's form, is kept for offline use under both paths: the
+  worker fetches the form paths following redirects and stores the result
+  under `/fuel/new` and the vehicle's path (K163, #591). Offline, the
+  `/fuel/new` copy is served only while it is still the one-vehicle
+  redirect; with several vehicles the chooser, else the offline page,
+  shows, so an entry is never logged against the wrong vehicle (#592). Attachments cannot be
   queued. Nothing else works offline.
   A queued entry and a cached fill-up page belong to the user who made
   them: the browser remembers the last signed-in user, an entry is sent,

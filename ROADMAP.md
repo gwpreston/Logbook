@@ -1883,7 +1883,7 @@ no longer holds up the rest.*
   vehicle's form (K163).
 - A queued fill-up its form now refuses (403 or 404) is passed over, the
   later ones are still sent, and "signed out" is said only when it is true
-  (K164). Releases v3.21.6 (#588). No migration.
+  (K164). Releases v3.21.6 (#588). No migration. Decisions #589–#592 are recorded.
 
 → [`phase-54.8.md`](docs/phases/phase-54.8.md)
 

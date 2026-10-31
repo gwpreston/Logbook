@@ -48,31 +48,40 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
   standard, not a real browser: reproduce it first, with a test that fakes a
   redirect (`offline.test.js` never does).
 - **K164** treats a form that now answers 403 or 404 like a rejected entry
-  (spec §7.15: it stays queued), rather than as the sign-out the code
-  assumes, and goes on to the next item. Spec §7.15 now says so (written in
-  the planning commit, as CLAUDE.md §12 asks).
+  (spec §7.15: it stays queued, #589), rather than as the sign-out the code
+  assumes, and goes on to the next item. The fill-up page names it ("1
+  fill-up couldn't be sent: its vehicle is gone or no longer shared with
+  you") with the review link (#590). Spec §7.15 says so (written in the
+  planning commit, as CLAUDE.md §12 asks).
+- **K163** follows redirects for the form paths and stores the result under
+  both paths (#591). The `/fuel/new` copy is served offline only while it is
+  still the one-vehicle redirect; with several vehicles the chooser, else the
+  offline page, shows (#592).
 
 ## Tasks
 
 ### 54.8.0 Start of phase
 
 - [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). #588 is decided.
+      `known-issues.md` (CLAUDE.md §12). #588–#592 are decided.
 
 ### 54.8.1 The fill-up shortcut offline (K163)
 
 - [ ] `assets/js/service-worker.js` (`page()`, `detached()`) follows the
       redirect for the form paths and keeps the page under `/fuel/new` and
-      the vehicle's path; `cacheOfflineForms` (`assets/js/app.js`) no longer
-      skips it. `tests/js/offline.test.js` fakes a redirect and fails
-      without the fix.
+      the vehicle's path (#591); `cacheOfflineForms` (`assets/js/app.js`) no
+      longer skips it. Offline, the cached `/fuel/new` is served only while it
+      is the one-vehicle redirect (#592). `tests/js/offline.test.js` fakes a
+      redirect, and a second vehicle, and fails without the fix.
 
 ### 54.8.2 A refused queued fill-up (K164)
 
 - [ ] `sendQueued` / `flushOutbox` (`assets/js/app.js`) pass over an item
-      whose form answers 403 or 404, keep it queued, and send the rest; the
-      "signed out" note shows only for a sign-in page. A JS test with three
-      queued items, the first refused, fails without the fix.
+      whose form answers 403 or 404, keep it queued (#589), and send the
+      rest; the fill-up page's note names it with the review link (#590),
+      and "signed out" shows only for a sign-in page. New strings in every
+      catalogue. A JS test with three queued items, the first refused, fails
+      without the fix.
 
 ### 54.8.3 Finish
 
@@ -97,3 +106,11 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 
 - **#588. Release. Decided 2026-10-31:** on its own as patch release
   v3.21.6, after 54.7. Not chosen: with the next releasing phase.
+- **#589. Decided 2026-10-31:** a refused queued entry stays queued and is
+  passed over. Not chosen: discard it; stop the queue.
+- **#590. Decided 2026-10-31:** a note naming the entry, with the review
+  link. Not chosen: a generic note.
+- **#591. Decided 2026-10-31:** follow redirects and store under both
+  paths. Not chosen: cache only the vehicle path.
+- **#592. Decided 2026-10-31:** serve the cached `/fuel/new` only while it
+  is the one-vehicle redirect. Not chosen: always the cached form.
