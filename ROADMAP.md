@@ -1855,6 +1855,22 @@ shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
 
 ---
 
+## Phase 54.7 — Digest fleet line, cost per distance and archived rows from the open-questions log
+
+*Three decisions of 2026-10-31 built: the digest's fleet line says when it
+covers only some vehicles, its 12-month cost per distance never overstates,
+and webhook rows say a vehicle is archived.*
+
+- The fleet line's spend is labelled "vehicles whose costs you see" when
+  the viewer may see only some listed vehicles' costs (#375).
+- The 12-month cost per distance needs readings that reach back (#376).
+- Each `last_month` webhook row carries `archived` (#567). Releases
+  v3.21.5 (#587). No migration.
+
+→ [`phase-54.7.md`](docs/phases/phase-54.7.md)
+
+---
+
 ## After 1.0
 
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)

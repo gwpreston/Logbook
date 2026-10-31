@@ -264,10 +264,11 @@ Numbered in `open-questions.md` when logged. Not built until decided.
     the full list; it is stored as "all", as #268 decided (#372). The
     security review found that a kept AI set could quote costs after a
     share lost cost access; that now forgets the member's set (#373).
-  - **Open, for the owner (found by the reviews, 2026-10-10):** the fleet
-    line's spend over only the vehicles whose costs are visible (#375);
-    the 12-month cost per distance when costs predate the readings (#376);
-    distances and open issues on the server's webhook (#377).
+  - **Decided 2026-10-31 (found by the reviews, 2026-10-10):** the fleet
+    line says when its spend covers only the vehicles whose costs are
+    visible (#375, built in [54.7](phase-54.7.md)); the 12-month cost per
+    distance needs readings that reach back (#376, built in 54.7); the
+    server's webhook keeps distances and open issues (#377).
   - **Decided 2026-10-28, built in [Phase 54](phase-54.md) (found by the
     bug hunt):** vehicles archived during last month stay in *Last month*
     (#374).

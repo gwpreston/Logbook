@@ -166,5 +166,9 @@ and [`open-questions.md`](open-questions.md) first.
   Not chosen: hide it; leave it as is.
 - **#564. Decided 2026-10-28:** cover outside ownership counts in no
   period. Not chosen: fold it into the first or last period.
-- **#565–#571 (open, found by the merge reviews and the issue sweep):** see
+- **#565. Decided 2026-10-31:** shrink, as today. Not chosen: keep full
+  size.
+- **#567. Decided 2026-10-31:** add `archived` to the digest webhook's
+  `last_month` rows, built in [54.7](phase-54.7.md). Not chosen: leave it.
+- **#566 and #568–#571 (open, found by the merge reviews and the issue sweep):** see
   [`open-questions.md`](open-questions.md).

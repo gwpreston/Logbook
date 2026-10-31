@@ -3700,9 +3700,15 @@ Extensible channel interface so more can be added.
       in the month and in its average), only when that distance is at least 100 km (as §7.35);
       otherwise "—". Its average is the 12 months' spend ÷ their distance
       (a ratio of totals, as the Reports page gives for that range), with
-      the same 100 km floor.
+      the same 100 km floor, and only when the vehicle's readings reach
+      back to the start of those 12 months (`reachesBack`, as true cost,
+      §7.35); otherwise "—" (#376, decided 2026-10-31: the figure is never
+      overstated when costs predate the readings).
     - *Fleet line* (two or more vehicles listed): distance summed; spend
-      summed **per currency**, never converted.
+      summed **per currency**, never converted. When the viewer may see
+      the costs of only some of the listed vehicles, the spend carries the
+      note "vehicles whose costs you see" (translated), and the JSON
+      `fleet` gains `"spend_partial": true` (#375, decided 2026-10-31).
     - *Nothing spent* (#367): a month with a distance and no spending
       reads "nothing spent", with no comparison, and its cost per
       distance is "—" (null in the JSON).
@@ -3776,8 +3782,10 @@ Extensible channel interface so more can be added.
     `{"kind", "source": "computed"|"ai", "vehicle_ids", "title", "body"}`.
     From Phase 54 (#374), `last_month` and `fleet` include a vehicle
     archived since the first of last month, so a row's `vehicle_id` may be
-    an archived vehicle (`GET /vehicles?status=all` finds it); the shape
-    is unchanged.
+    an archived vehicle (`GET /vehicles?status=all` finds it). Each
+    `last_month` row carries `archived` (boolean, true for such a vehicle,
+    else false), so a consumer needn't ask again (#567, decided
+    2026-10-31); a compatible addition.
 - **Content** is translated into the recipient's language and formatted in their
   units and time zone, and links to the reminder list (absolute URL from
   `APP_URL` and `APP_BASE_PATH`).
