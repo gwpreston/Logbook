@@ -64,6 +64,6 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
 
 ## Open questions
 
-- **Release.** Is Phase 54.7 released on its own as a patch release
+- **#587. Release.** Is Phase 54.7 released on its own as a patch release
   (v3.21.5) or with the next releasing phase? Options: on its own, like
   54.1, 54.3 and 54.6; with the next releasing phase. Open.
