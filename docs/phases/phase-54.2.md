@@ -216,10 +216,12 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.13
   whole (first group 1–3 digits, not a lone `0`), so `48280.320` and
   `0.500` are problem rows, never ×1000 (K1). Not chosen: always the
   locale's default; the export written in the owner's format.
-- **#582. Needs a decision** (found in review, issue sweep at
+- **#582. Decided 2026-10-31, built in [54.9](phase-54.9.md):** option 2, a
+  new import message naming the cell, the format and an example. (Asked as
+  follows. Found in review, issue sweep at
   `7c394378`): a number cell the chosen *Numbers* format can't read shows
   the form's "Enter a number, e.g. 1234.5.", whose example is in the
   owner's language format, not the chosen one (K169). Options: (1) keep
   the generic message, as Goal 1 says; (2) a new import message that names
   the *Numbers* setting and its choice; (3) the generic message with its
-  example in the chosen format.
+  example in the chosen format.)

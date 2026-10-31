@@ -140,6 +140,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | ✅ |
 | [54.7](docs/phases/phase-54.7.md) | Digest fleet line, cost per distance and archived rows from the open-questions log | 📋 |
 | [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | 📋 |
+| [54.9](docs/phases/phase-54.9.md) | The import number message and merge-review records from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1886,6 +1887,23 @@ no longer holds up the rest.*
   (K164). Releases v3.21.6 (#588). No migration. Decisions #589–#592 are recorded.
 
 → [`phase-54.8.md`](docs/phases/phase-54.8.md)
+
+---
+
+## Phase 54.9 — The import number message and merge-review records from the known-issues log + patch release
+
+*Two open rows of the known-issues log closed: an unreadable import number
+says which format it was read in, and the missing merge-review records are
+settled.*
+
+- A number cell the chosen *Numbers* format can't read shows "“65.83” isn't
+  a number in the Decimal comma format chosen for this import. Write it
+  like 1.234,56." (K169, #582, #594).
+- Phases 53.16–53.20 and 54.4 record that they were merged and released
+  without a merge review, and the release skill's check names the box
+  (K172, #595). Releases v3.21.7 (#593). No migration.
+
+→ [`phase-54.9.md`](docs/phases/phase-54.9.md)
 
 ---
 
