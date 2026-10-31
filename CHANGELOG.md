@@ -6,6 +6,24 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.4] — 2026-10-30
+
+Phase 54.6: **The true-cost cover note and a leading decimal comma from
+the known-issues log**
+([docs/phases/phase-54.6.md](docs/phases/phase-54.6.md)). No migration: pull
+and restart.
+
+### Fixed
+- **The true-cost report names cover left out of ownership for every
+  year.** A vehicle bought or sold in one of the latest three years now shows
+  "£x of cover before you bought it isn't counted" (or "after you sold
+  it") under the yearly table even when that year has no costs and so no
+  working, and a younger vehicle shows it there too, as well as in the
+  year's working. The figures are the same (#585, K171, K173).
+- **A number with a leading decimal comma reads as 0.5.** `,5` and `-,5`
+  are accepted under the import's *Decimal comma* and for a German-locale
+  user, as `.5` already was; a lone `,` is still refused (K168).
+
 ## [3.21.3] — 2026-10-30
 
 Phase 54.5: **The 500 ms target for the dashboard and true-cost report

@@ -94,8 +94,8 @@
                         {{ ui.working(working, 'working.summary_for'|trans({period: true_cost_wording.label(period)}), true, vtc.vehicle.name()) }}
                     {% endif %}
                 {% endfor %}
-                {# Years older than the three with a working: their cover outside ownership is named here (spec.md §7.35, K152, #568). #}
-                {% for year in vtc.years|reverse|slice(3) %}
+                {# Every year's cover outside ownership is named here, whatever the vehicle's age and whether or not the year has a drawn working (spec.md §7.35, K152, K171, K173, #568, #585). #}
+                {% for year in vtc.years|reverse %}
                     {% if year.coverBefore is not null %}
                         <p class="muted true-cost__cover">{{ 'working.true_cost.cover_before'|trans({amount: year.coverBefore|money}) }}</p>
                     {% endif %}

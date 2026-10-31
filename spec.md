@@ -12568,7 +12568,7 @@ task breakdowns live in the per-phase files; this is the map.
   migration. See
   [`phase-54.5.md`](docs/phases/phase-54.5.md).
 - **Phase 54.6 — The true-cost cover note and a leading decimal comma
-  from the known-issues log + patch release** (planned). The note for
+  from the known-issues log + patch release** (complete). The note for
   cover outside ownership shows under the true-cost yearly table for every
   year that leaves cover out, including a purchase or sale year with no
   working, and stays in the year's working (§7.35, K171, K173, #585). A

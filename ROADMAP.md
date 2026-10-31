@@ -137,7 +137,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.3](docs/phases/phase-54.3.md) | Dashboard, true-cost and digest speed from the known-issues log + patch release | ✅ |
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | ✅ |
 | [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | ✅ |
-| [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | 📋 |
+| [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -1850,12 +1850,23 @@ shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
   no working and the sale's "after you sold it" note (K171, K173, #585).
 - A leading decimal comma (`,5`) reads as 0.5, as `.5` does (K168).
   Releases v3.21.4 (#586). No migration.
-- From the open-questions log (decided 2026-10-31): the digest's fleet line
-  says when it covers only the vehicles whose costs you see (#375), its
-  12-month cost per distance needs readings that reach back (#376), and
-  each `last_month` webhook row carries `archived` (#567).
 
 → [`phase-54.6.md`](docs/phases/phase-54.6.md)
+
+---
+
+## Phase 54.7 — Digest fleet line, cost per distance and archived rows from the open-questions log
+
+*Three decisions of 2026-10-31 built: the digest's fleet line says when it
+covers only some vehicles, its 12-month cost per distance never overstates,
+and webhook rows say a vehicle is archived.*
+
+- The fleet line's spend is labelled "vehicles whose costs you see" when
+  the viewer may see only some listed vehicles' costs (#375).
+- The 12-month cost per distance needs readings that reach back (#376).
+- Each `last_month` webhook row carries `archived` (#567). No migration.
+
+→ [`phase-54.7.md`](docs/phases/phase-54.7.md)
 
 ---
 
