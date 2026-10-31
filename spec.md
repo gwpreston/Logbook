@@ -4426,7 +4426,12 @@ vehicles; a disabled module cannot be imported).
   defaults to ISO. The *Numbers* choice (dot decimal `1,234.56` or comma
   decimal `1.234,56`) defaults to the owner's locale and decides how a
   number cell such as `45,123` or `13.000` is read; a cell the format
-  can't read is invalid (Phase 54.2, K1, #484, #573). A file whose every
+  can't read is invalid (Phase 54.2, K1, #484, #573), and its problem row
+  says so in the import's own words, naming the cell as typed, the chosen
+  format and an example written in it: "“65.83” isn't a number in the
+  Decimal comma format chosen for this import. Write it like 1.234,56."
+  (translated, in every catalogue; Phase 54.9, K169, #582, #594). A row's
+  other fields keep their own messages. A file whose every
   matched column has Logbook's own export header (in any of its
   languages), with no comma in a number cell, defaults to dot decimal
   instead, since the export writes
@@ -12601,6 +12606,13 @@ task breakdowns live in the per-phase files; this is the map.
   its form now refuses no longer strands the ones after it or says the
   user is signed out (§7.15, K164). Releases v3.21.6 (#588). No migration.
   See [`phase-54.8.md`](docs/phases/phase-54.8.md).
+- **Phase 54.9 — The import number message and merge-review records from
+  the known-issues log + patch release** (planned). An import number cell
+  the chosen *Numbers* format can't read gets a message naming the format
+  and an example in it (§7.13, K169, #582, #594). The merge-review boxes of
+  phases 53.16–53.20 and 54.4 are settled honestly, and the release
+  skill's check names them (K172, #595). Releases v3.21.7 (#593). No
+  migration. See [`phase-54.9.md`](docs/phases/phase-54.9.md).
 
 ---
 
