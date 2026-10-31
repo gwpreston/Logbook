@@ -1850,6 +1850,10 @@ shows under the yearly table for every vehicle, and `,5` reads like `.5`.*
   no working and the sale's "after you sold it" note (K171, K173, #585).
 - A leading decimal comma (`,5`) reads as 0.5, as `.5` does (K168).
   Releases v3.21.4 (#586). No migration.
+- From the open-questions log (decided 2026-10-31): the digest's fleet line
+  says when it covers only the vehicles whose costs you see (#375), its
+  12-month cost per distance needs readings that reach back (#376), and
+  each `last_month` webhook row carries `archived` (#567).
 
 → [`phase-54.6.md`](docs/phases/phase-54.6.md)
 

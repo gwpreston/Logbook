@@ -69,7 +69,8 @@ choice), §7.27 (*Numbers* read in the user's locale), and
 ### 54.6.0 Start of phase
 
 - [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). #585 and #586 are decided.
+      `known-issues.md` (CLAUDE.md §12). #585 and #586 are decided; #375, #376 and #567 were decided 2026-10-31
+      and are built in 54.6.3 (#377 and #565 decided, nothing to build).
 
 ### 54.6.1 The cover note under the yearly table (K171, K173)
 
@@ -88,7 +89,21 @@ choice), §7.27 (*Numbers* read in the user's locale), and
       alone stays invalid. `DecimalTest` covers both, and an import
       under *Decimal comma* in `ImportTest`.
 
-### 54.6.3 Finish
+### 54.6.3 Digest decisions from the open-questions log (#375, #376, #567)
+
+- [ ] The digest's *Fleet line* says "vehicles whose costs you see"
+      (translated, every catalogue) when the viewer may see the costs of only
+      some of the listed vehicles; the JSON `fleet` gains
+      `spend_partial` (#375).
+- [ ] The 12-month cost per distance and its average are "—" unless the
+      vehicle's readings reach back to the start of the 12 months
+      (`reachesBack`, as true cost); the Reports page is unchanged (#376).
+- [ ] Each `last_month` row in the webhook JSON carries `archived`
+      (boolean) (#567).
+- [ ] Tests for each, in English and German, on the digest text and JSON;
+      docs/api and notification docs updated.
+
+### 54.6.4 Finish
 
 - [ ] Known-issues rows K168, K171 and K173 *Fixed*.
 - [ ] CHANGELOG; spec §13; ROADMAP status.
@@ -113,5 +128,14 @@ choice), §7.27 (*Numbers* read in the user's locale), and
   for every year that leaves cover out, and still in the year's working
   (K171, K173). Not chosen: only for years without a drawn working, with
   §7.35 narrowed to match.
+- **#375. Decided 2026-10-31:** label the fleet line. Not chosen: leave
+  it; leave the fleet spend out.
+- **#376. Decided 2026-10-31:** require readings that reach back for the
+  digest's 12-month cost per distance. Not chosen: match Reports.
+- **#377. Decided 2026-10-31:** keep distances and open issues on the
+  server's webhook. Not chosen: drop the briefing from its copy.
+- **#565. Decided 2026-10-31:** shrink the reassurance lines, as today.
+- **#567. Decided 2026-10-31:** add `archived` to `last_month` rows.
+  Not chosen: leave it.
 - **#586. Release. Decided 2026-10-30:** on its own as patch release
   v3.21.4, after 54.5. Not chosen: with the next releasing phase.
