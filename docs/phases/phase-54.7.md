@@ -4,7 +4,7 @@
 covers only some vehicles, its 12-month cost per distance never overstates,
 and webhook rows say a vehicle is archived.*
 
-Status: 📋 planned · file lives in `docs/phases/`
+Status: 📋 planned · releases **v3.21.5**, a patch release (#587) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.6](phase-54.6.md). The owner decided
 #375, #376 and #567 on 2026-10-31, after 54.6's plan was written; they are
@@ -29,7 +29,7 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
   of the 12 months (`reachesBack`). The Reports page is unchanged.
 - **Archived rows (#567):** each `last_month` webhook row carries `archived`
   (boolean), a compatible addition.
-- No migration. Release: decide with the owner (open question below).
+- No migration. Released on its own as patch release v3.21.5 (#587).
 
 ---
 
@@ -54,6 +54,11 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
 - [ ] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
+### Release
+
+- [ ] VERSION 3.21.5, CHANGELOG 3.21.5, README status (#587).
+- [ ] Tag `v3.21.5` once merged.
+
 ## Acceptance criteria
 
 - Each of #375, #376 and #567 has a regression test that fails without its
@@ -64,6 +69,5 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
 
 ## Open questions
 
-- **#587. Release.** Is Phase 54.7 released on its own as a patch release
-  (v3.21.5) or with the next releasing phase? Options: on its own, like
-  54.1, 54.3 and 54.6; with the next releasing phase. Open.
+- **#587. Release. Decided 2026-10-31:** on its own as patch release
+  v3.21.5, after 54.6. Not chosen: with the next releasing phase.

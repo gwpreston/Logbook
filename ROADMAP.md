@@ -1864,7 +1864,8 @@ and webhook rows say a vehicle is archived.*
 - The fleet line's spend is labelled "vehicles whose costs you see" when
   the viewer may see only some listed vehicles' costs (#375).
 - The 12-month cost per distance needs readings that reach back (#376).
-- Each `last_month` webhook row carries `archived` (#567). No migration.
+- Each `last_month` webhook row carries `archived` (#567). Releases
+  v3.21.5 (#587). No migration.
 
 → [`phase-54.7.md`](docs/phases/phase-54.7.md)
 
