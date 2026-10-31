@@ -112,6 +112,19 @@ call):
    recommendation. If the owner would rather not decide now, drop that
    row from the batch.
 
+4. **How each fix should behave, before the plan is written.** For every
+   chosen row, work out from the code and the spec what the fix has to
+   decide that the row does not say: what happens to the thing that
+   can't be handled (keep, discard, stop), what the user is told and in
+   which words, which of two ways to build it, and the edge it must
+   survive (a second vehicle, an empty list, a viewer without access,
+   another locale). Ask each of those now, one question each, with the
+   options and a recommendation (batches of four per call, as many calls
+   as it takes). A row whose fix has no such decision needs none: say
+   so. Do not leave a decision for the build: `/next-phase` should find
+   nothing to ask. If the owner would rather not decide one, drop that
+   row.
+
 The release question and any question from point 3 become open questions
 in step 5: *Decided* with today's date if the owner answered, *Needs a
 decision* if not.
@@ -177,8 +190,10 @@ Copy the shape of commit `59b5c448`. These files change, and nothing else:
   - `## Not in scope`: the candidates left out and why (waiting on #n, too
     large, another batch), so the next run doesn't re-plan them.
   - `## Decisions (and why)`: for each row, why the fix is the right one,
-    usually "makes the code do what spec §x already says". Name any
-    question the owner decided in step 3.
+    usually "makes the code do what spec §x already says", then every
+    behaviour decision from step 3 point 4 as a sentence with its
+    question number, so the builder has no choice left. The task lines
+    name those numbers and the exact wording of any new message.
   - `## Tasks`: `### N.M.0 Start of phase` (read the logs, CLAUDE.md §12),
     then one `- [ ]` per row naming the class or template and the
     regression test, then `### N.M.k Finish`: rows *Fixed*, CHANGELOG,
@@ -216,6 +231,12 @@ Copy the shape of commit `59b5c448`. These files change, and nothing else:
   ```bash
   grep -rhoE '#[0-9]{3}\b' docs/phases spec.md | sort -t'#' -k2 -n | tail -1
   ```
+
+  Every step 3 question gets a row: the release one *Decided*, and each
+  behaviour one *Scheduled* (it is built in this phase) with the option
+  chosen and the ones not chosen. The same decisions go into **spec.md**
+  now, in the section the row touches, with the question numbers (spec
+  first, CLAUDE.md §12), so building is only coding and tests.
 
   Update the log's intro paragraph if the questions were decided, in the
   style of the entries already there.
