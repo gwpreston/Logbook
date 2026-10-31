@@ -4957,7 +4957,13 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   soon as the device is online again (on the `online` event or the next page
   load), fetching a fresh CSRF token from the form first. A sent entry is
   removed from the queue; one the server rejects (validation) stays queued,
-  and the fill-up page lists it with a link to review. Attachments cannot be
+  and the fill-up page lists it with a link to review. An entry whose form
+  now answers 403 or 404 (the vehicle was deleted, the share revoked)
+  stays queued the same way and is passed over, so the entries after it
+  are still sent; "signed out" is said only when the sign-in page answers
+  (K164, Phase 54.8). The fill-up shortcut `/fuel/new`, which redirects to
+  the one vehicle's form, is kept for offline use under both paths
+  (K163, Phase 54.8). Attachments cannot be
   queued. Nothing else works offline.
   A queued entry and a cached fill-up page belong to the user who made
   them: the browser remembers the last signed-in user, an entry is sent,
@@ -12575,6 +12581,19 @@ task breakdowns live in the per-phase files; this is the map.
   number with a leading decimal comma (`,5`) reads as 0.5 under a comma
   decimal, as `.5` does (§7.13, §7.27, K168). Releases v3.21.4 (#586). No
   migration. See [`phase-54.6.md`](docs/phases/phase-54.6.md).
+- **Phase 54.7 — Digest fleet line, cost per distance and archived rows
+  from the open-questions log + patch release** (planned). The digest's
+  fleet line says when its spend covers only some listed vehicles (§7.11,
+  #375); its 12-month cost per distance needs readings that reach back
+  (§7.11, #376); each `last_month` webhook row carries `archived` (§7.11,
+  #567). Releases v3.21.5 (#587). No migration. See
+  [`phase-54.7.md`](docs/phases/phase-54.7.md).
+- **Phase 54.8 — Offline fill-ups from the known-issues log + patch
+  release** (planned). The PWA's *Log fill-up* shortcut `/fuel/new` is kept
+  for offline use with one vehicle (§7.15, K163), and one queued fill-up
+  its form now refuses no longer strands the ones after it or says the
+  user is signed out (§7.15, K164). Releases v3.21.6 (#588). No migration.
+  See [`phase-54.8.md`](docs/phases/phase-54.8.md).
 
 ---
 

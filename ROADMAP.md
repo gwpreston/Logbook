@@ -138,6 +138,8 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.4](docs/phases/phase-54.4.md) | The true-cost cover note from the known-issues log + patch release | ✅ |
 | [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | ✅ |
 | [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | ✅ |
+| [54.7](docs/phases/phase-54.7.md) | Digest fleet line, cost per distance and archived rows from the open-questions log | 📋 |
+| [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1868,6 +1870,22 @@ and webhook rows say a vehicle is archived.*
   v3.21.5 (#587). No migration.
 
 → [`phase-54.7.md`](docs/phases/phase-54.7.md)
+
+---
+
+## Phase 54.8 — Offline fill-ups from the known-issues log + patch release
+
+*Two open rows of the known-issues log closed: the *Log fill-up* shortcut
+works offline for an owner with one vehicle, and one refused queued fill-up
+no longer holds up the rest.*
+
+- `/fuel/new` is kept for offline use when it redirects to the one
+  vehicle's form (K163).
+- A queued fill-up its form now refuses (403 or 404) is passed over, the
+  later ones are still sent, and "signed out" is said only when it is true
+  (K164). Releases v3.21.6 (#588). No migration.
+
+→ [`phase-54.8.md`](docs/phases/phase-54.8.md)
 
 ---
 
