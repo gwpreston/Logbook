@@ -6,6 +6,27 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.5] — 2026-11-01
+
+Phase 54.7: **Digest fleet line, cost per distance and archived rows from
+the open-questions log**
+([docs/phases/phase-54.7.md](docs/phases/phase-54.7.md)). No migration: pull
+and restart.
+
+### Changed
+- **The digest's fleet line says when it covers only some vehicles.** When
+  you may see the costs of only some of the listed vehicles, the spend now
+  reads "£30.00 spent (vehicles whose costs you see)", and the webhook's
+  `fleet` gains `"spend_partial": true` (#375).
+- **The digest's 12-month cost per distance never overstates.** It shows
+  "—" unless the vehicle's readings reach back to the start of those 12
+  months, as the true-cost report requires, so costs from before the first
+  reading are no longer divided by a shorter distance. The Reports page is
+  unchanged (#376).
+- **Each `last_month` webhook row says whether the vehicle is archived.** A
+  new `archived` boolean beside `vehicle`, so a consumer needn't look the
+  vehicle up (#567). A compatible addition.
+
 ## [3.21.4] — 2026-10-30
 
 Phase 54.6: **The true-cost cover note and a leading decimal comma from

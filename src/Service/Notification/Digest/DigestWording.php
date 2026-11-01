@@ -113,7 +113,8 @@ final readonly class DigestWording
             ]);
         }
         if ($lastMonth->fleetSpend !== []) {
-            $parts[] = $this->translator->trans('notifications.digest.fleet_spend', [
+            $key = $lastMonth->spendPartial ? 'fleet_spend_partial' : 'fleet_spend';
+            $parts[] = $this->translator->trans('notifications.digest.' . $key, [
                 'amounts' => implode(', ', array_map(
                     fn (Money $m): string => $this->formatter->money($m),
                     $lastMonth->fleetSpend,
@@ -159,6 +160,7 @@ final readonly class DigestWording
             $row = [
                 'vehicle_id' => $line->vehicle->id,
                 'vehicle' => $line->vehicle->name(),
+                'archived' => $line->vehicle->archivedAt !== null,
                 'month' => $lastMonth->month->format('Y-m'),
                 'distance' => Serializer::dec($line->distanceKm, Serializer::QUANTITY_SCALE),
                 'distance_average' => Serializer::dec($line->distanceAverageKm, Serializer::QUANTITY_SCALE),
@@ -186,7 +188,7 @@ final readonly class DigestWording
     /**
      * The webhook's `fleet`, or null with fewer than two vehicles.
      *
-     * @return array{distance: string|null, spend: array<string, string>, display: string}|null
+     * @return array{distance: string|null, spend: array<string, string>, display: string, spend_partial?: true}|null
      */
     public function fleetJson(LastMonth $lastMonth): ?array
     {
@@ -194,7 +196,7 @@ final readonly class DigestWording
             return null;
         }
 
-        return [
+        $fleet = [
             'distance' => Serializer::dec($lastMonth->fleetDistanceKm, Serializer::QUANTITY_SCALE),
             'spend' => array_map(
                 static fn (Money $m): string => $m->toDecimal(Serializer::QUANTITY_SCALE),
@@ -202,6 +204,11 @@ final readonly class DigestWording
             ),
             'display' => self::unbulleted($this->fleetLine($lastMonth)),
         ];
+        if ($lastMonth->spendPartial) {
+            $fleet['spend_partial'] = true;
+        }
+
+        return $fleet;
     }
 
     /**
