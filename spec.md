@@ -12613,6 +12613,12 @@ task breakdowns live in the per-phase files; this is the map.
   phases 53.16–53.20 and 54.4 are settled honestly, and the release
   skill's check names them (K172, #595). Releases v3.21.7 (#593). No
   migration. See [`phase-54.9.md`](docs/phases/phase-54.9.md).
+- **Phase 54.10 — Dependabot version updates** (planned). A new
+  `.github/dependabot.yml` has Dependabot open weekly pull requests for
+  Composer, npm, GitHub Actions and the Docker and compose images, minor and
+  patch updates grouped per ecosystem and each major update on its own. No
+  release of its own, no migration. See
+  [`phase-54.10.md`](docs/phases/phase-54.10.md).
 
 ---
 

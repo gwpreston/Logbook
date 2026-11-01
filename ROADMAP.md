@@ -1907,6 +1907,19 @@ settled.*
 
 ---
 
+## Phase 54.10 — Dependabot version updates
+
+*Weekly, grouped dependency-update pull requests, as in the owner's Renovo
+repo.*
+
+- `.github/dependabot.yml` covers Composer, npm, GitHub Actions, the
+  Dockerfile and the compose files; minor and patch updates are grouped, a
+  major update stands alone. No release of its own, no migration.
+
+→ [`phase-54.10.md`](docs/phases/phase-54.10.md)
+
+---
+
 ## After 1.0
 
 Considered for later, not part of the phases above (see [`spec.md`](spec.md)
