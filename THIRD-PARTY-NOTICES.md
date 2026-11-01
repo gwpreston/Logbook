@@ -32,7 +32,7 @@ Production dependencies only; development tools are not shipped.
 | firebase/php-jwt | v7.2.1 | BSD-3-Clause | https://github.com/googleapis/php-jwt |
 | laravel/serializable-closure | v2.1.0 | MIT | https://github.com/laravel/serializable-closure |
 | league/container | 5.2.0 | MIT | https://github.com/thephpleague/container |
-| monolog/monolog | 3.12.0 | MIT | https://github.com/Seldaek/monolog |
+| monolog/monolog | 3.12.1 | MIT | https://github.com/Seldaek/monolog |
 | nikic/fast-route | 1.3.1 | BSD-3-Clause | https://github.com/nikic/FastRoute |
 | paragonie/constant_time_encoding | v3.1.3 | MIT | https://github.com/paragonie/constant_time_encoding |
 | paragonie/random_compat | v9.99.100 | MIT | https://github.com/paragonie/random_compat |
@@ -54,7 +54,7 @@ Production dependencies only; development tools are not shipped.
 | slim/csrf | 1.5.1 | MIT | https://www.slimframework.com |
 | slim/psr7 | 1.8.0 | MIT | https://www.slimframework.com |
 | slim/slim | 4.15.3 | MIT | https://www.slimframework.com |
-| smalot/pdfparser | v2.12.5 | LGPL-3.0 | https://www.pdfparser.org |
+| smalot/pdfparser | v2.13.1 | LGPL-3.0 | https://www.pdfparser.org |
 | symfony/config | v8.0.15 | MIT | https://symfony.com |
 | symfony/console | v8.0.15 | MIT | https://symfony.com |
 | symfony/deprecation-contracts | v3.7.1 | MIT | https://symfony.com |
