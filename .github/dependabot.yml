@@ -12,6 +12,11 @@ updates:
     groups:
       composer-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # phpseclib 4 renamed its namespace; firebase/php-jwt still loads
+      # phpseclib3 for PS256 (known-issues K174).
+      - dependency-name: phpseclib/phpseclib
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /
@@ -46,3 +51,12 @@ updates:
     groups:
       compose-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # A database major is a planned upgrade, not a routine bump
+      # (known-issues K177, open question #596).
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+      - dependency-name: mysql
+        update-types: ["version-update:semver-major"]
+      - dependency-name: mariadb
+        update-types: ["version-update:semver-major"]
