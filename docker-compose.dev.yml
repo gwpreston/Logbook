@@ -81,7 +81,7 @@ services:
       retries: 40
 
   mariadb:
-    image: mariadb:11.4
+    image: mariadb:13.0
     profiles: ["mariadb", "all"]
     environment:
       MARIADB_DATABASE: logbook
