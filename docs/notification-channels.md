@@ -521,11 +521,14 @@ For tests, see `tests/Unit/Service/Notification/Personal/ChannelFormTest.php`,
   Reminders → *Include*: *Needs attention and open issues*, *Last month* and *Insights*
   (all on until you choose; what's due is always included).
 - The webhook's JSON gains `last_month` (per vehicle: `vehicle_id`,
-  `vehicle`, `month`, `distance` and `distance_average` in kilometres,
+  `vehicle`, `archived` (true for a vehicle archived since the first of
+  last month), `month`, `distance` and `distance_average` in kilometres,
   and with cost access `currency`, `spend`, `spend_average`,
-  `cost_per_distance` and `cost_per_distance_average` per kilometre, as
-  decimal strings or null, plus `display`), `fleet` (`distance`, `spend`
-  per currency, `display`, or null), `issues` (`vehicle_id`, `vehicle`,
+  `cost_per_distance` and `cost_per_distance_average` per kilometre (the
+  average is null unless the vehicle's readings reach back to the start of
+  the 12 months), as decimal strings or null, plus `display`), `fleet` (`distance`, `spend`
+  per currency, `display`, and `spend_partial: true` when you may see the
+  costs of only some of the listed vehicles, or null), `issues` (`vehicle_id`, `vehicle`,
   `open`) and `insights` (`kind`, `source` `computed` or `ai`,
   `vehicle_ids`, `title`, `body`). They are empty (`fleet` null) for every
   other event; `items` and `attention` keep their shape. `last_month` and

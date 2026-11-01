@@ -6,6 +6,7 @@ namespace Logbook\Tests\Integration\Reminder;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Logbook\Domain\Access\ShareLevel;
 use Logbook\Domain\Expense\ExpenseCategory;
 use Logbook\Domain\Part\ModificationCategory;
 use Logbook\Domain\Part\ModificationData;
@@ -19,10 +20,12 @@ use Logbook\Service\Report\ReportFilter;
 use Logbook\Service\Report\ReportPeriod;
 use Logbook\Service\Report\ReportRange;
 use Logbook\Service\Report\ReportService;
+use Logbook\Service\Sharing\SharingService;
 use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Number\Decimal;
 use Logbook\Tests\Support\BriefingTestCase;
 use Logbook\Tests\Support\Migrator;
+use Symfony\Component\Mime\Email;
 
 /**
  * The monthly briefing's *Last month* figures (spec.md §7.11 *The monthly
@@ -241,7 +244,7 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
     {
         $this->start();
         $golf = $this->car();
-        $this->reading($golf, '9000', '2026-01-10');
+        $this->reading($golf, '9000', '2025-08-10');
         $this->reading($golf, '10000', '2026-08-20');
         $this->reading($golf, '10050', '2026-09-10');
         $this->spend($golf, '2026-03-05', '90');
@@ -271,6 +274,41 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         self::assertSame('90.000', $row['distance']);
         self::assertNull($row['cost_per_distance']);
         self::assertNull($row['cost_per_distance_average']);
+    }
+
+    /** #376 (Phase 54.7): costs from before the first reading must not be divided by the shorter distance. */
+    public function testTheTwelveMonthCostPerDistanceIsADashWhenTheReadingsDoNotReachBack(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $this->reading($golf, '9000', '2026-01-10');
+        $this->reading($golf, '10000', '2026-08-20');
+        $this->reading($golf, '10400', '2026-09-10');
+        $this->spend($golf, '2025-10-05', '900');
+        $this->spend($golf, '2026-09-05', '30');
+
+        $this->runTasks();
+
+        $row = self::row($this->digestJson());
+        self::assertSame('0.0750', $row['cost_per_distance'], "last month's own figure is unchanged");
+        self::assertNull($row['cost_per_distance_average'], 'the first reading is after 1 September 2025');
+    }
+
+    /** #376: the same vehicle with a reading before the window shows the average. */
+    public function testTheTwelveMonthCostPerDistanceShowsWhenTheReadingsReachBack(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $this->reading($golf, '9000', '2025-08-10');
+        $this->reading($golf, '10000', '2026-08-20');
+        $this->reading($golf, '10400', '2026-09-10');
+        $this->spend($golf, '2025-10-05', '900');
+        $this->spend($golf, '2026-09-05', '30');
+
+        $this->runTasks();
+
+        $row = self::row($this->digestJson());
+        self::assertIsString($row['cost_per_distance_average']);
     }
 
     public function testACostPerDistanceFromAHundredKilometresIsShown(): void
@@ -310,6 +348,120 @@ final class MonthlyBriefingFiguresTest extends BriefingTestCase
         $text = $this->digestText();
         self::assertStringContainsString('• All vehicles: 497 mi driven; £30.00, €20.00 spent', $text);
         self::assertStringContainsString('• Volkswagen Polo: €20.00 spent', $text);
+    }
+
+    /** #375 (Phase 54.7): a spend over only some of the listed vehicles says so. */
+    public function testTheFleetSpendSaysWhenSomeCostsAreHidden(): void
+    {
+        $this->partialViewer();
+
+        $this->runTasks();
+
+        $fleet = $this->digestJson('viewer')['fleet'] ?? null;
+        self::assertIsArray($fleet);
+        self::assertSame(['GBP' => '30.000'], $fleet['spend']);
+        self::assertTrue($fleet['spend_partial']);
+        self::assertStringContainsString(
+            '• All vehicles: 497 mi driven; £30.00 spent (vehicles whose costs you see)',
+            $this->digestText('viewer@example.com'),
+        );
+
+        $owner = $this->digestJson()['fleet'] ?? null;
+        self::assertIsArray($owner);
+        self::assertArrayNotHasKey('spend_partial', $owner, 'the owner sees every cost');
+        self::assertStringNotContainsString('vehicles whose costs you see', $this->digestText());
+    }
+
+    /** #375: a viewer who sees no costs at all has no fleet spend to qualify. */
+    public function testAViewerWithNoCostsAtAllGetsNoPartialNote(): void
+    {
+        $this->partialViewer(false);
+
+        $this->runTasks();
+
+        $fleet = $this->digestJson('viewer')['fleet'] ?? null;
+        self::assertIsArray($fleet);
+        self::assertSame([], $fleet['spend']);
+        self::assertArrayNotHasKey('spend_partial', $fleet);
+        self::assertStringNotContainsString('vehicles whose costs you see', $this->digestText('viewer@example.com'));
+    }
+
+    /** #375 in German. */
+    public function testThePartialFleetSpendIsTranslated(): void
+    {
+        $this->partialViewer();
+        $users = $this->service($this->app, UserRepository::class);
+        $viewer = $users->findByUsername('viewer');
+        self::assertNotNull($viewer);
+        $users->updateProfile(
+            $viewer->id,
+            $viewer->displayName,
+            $viewer->preferences->withLocale('de_DE'),
+            new DateTimeImmutable(self::NOW),
+        );
+
+        $this->runTasks();
+
+        $mails = array_values(array_filter(
+            $this->mail->sent,
+            static fn (Email $e): bool => $e->getTo()[0]->getAddress() === 'viewer@example.com',
+        ));
+        self::assertCount(1, $mails);
+        $text = (string) $mails[0]->getTextBody();
+        self::assertStringContainsString('• Alle Fahrzeuge: 497 mi gefahren; ', $text);
+        self::assertStringContainsString('ausgegeben (Fahrzeuge, deren Kosten du siehst)', $text);
+    }
+
+    /** #567 (Phase 54.7): each last_month row says whether the vehicle is archived. */
+    public function testEachLastMonthRowSaysWhetherTheVehicleIsArchived(): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $polo = $this->car('Polo');
+        $this->spend($golf, '2026-09-05', '30');
+        $this->spend($polo, '2026-09-05', '40');
+        $this->clock->set(new DateTimeImmutable('2026-08-31T23:30:00Z')); // 00:30 on 1 Sep in London
+        $this->service($this->app, VehicleService::class)->archive($this->owner($this->app), $polo);
+        $this->clock->set(new DateTimeImmutable(self::NOW));
+
+        $this->runTasks();
+
+        $rows = $this->digestJson()['last_month'] ?? null;
+        self::assertIsArray($rows);
+        $archived = [];
+        foreach ($rows as $row) {
+            self::assertIsArray($row);
+            self::assertIsBool($row['archived']);
+            self::assertIsString($row['vehicle']);
+            $archived[$row['vehicle']] = $row['archived'];
+        }
+        self::assertCount(2, $archived);
+        self::assertFalse($archived[$golf->name()]);
+        self::assertTrue($archived[$polo->name()]);
+    }
+
+    /**
+     * Two cars, both driven and spent on last month (£30 and £20), shared
+     * with a viewer: the Polo's costs are never theirs, the Golf's are
+     * unless $golfCosts is false.
+     */
+    private function partialViewer(bool $golfCosts = true): void
+    {
+        $this->start();
+        $golf = $this->car();
+        $polo = $this->car('Polo');
+        foreach ([$golf, $polo] as $vehicle) {
+            $this->reading($vehicle, '10000', '2026-08-20');
+            $this->reading($vehicle, '10400', '2026-09-10');
+        }
+        $this->spend($golf, '2026-09-05', '30');
+        $this->spend($polo, '2026-09-06', '20');
+        $this->createMember($this->app, 'viewer');
+        $sharing = $this->service($this->app, SharingService::class);
+        self::assertNull($sharing->add($golf, 'viewer', ShareLevel::View, $golfCosts, true));
+        self::assertNull($sharing->add($polo, 'viewer', ShareLevel::View, false, true));
+        $this->browserFor($this->app, 'viewer')->get('/');
+        $this->saveChannels($this->browserFor($this->app, 'viewer'), 'viewer', 'viewer@example.com');
     }
 
     public function testASingleVehicleHasNoFleetLine(): void

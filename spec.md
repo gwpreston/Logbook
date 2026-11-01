@@ -3777,7 +3777,9 @@ Extensible channel interface so more can be added.
     decimal strings or null), and `display` (the vehicle's lines as
     sent, without the bullets); the
     amounts and `currency` are absent without `ViewCosts`. `fleet` is
-    `{"distance", "spend": {currency: amount}, "display"}` or null; `issues`
+    `{"distance", "spend": {currency: amount}, "display"}` (plus
+    `"spend_partial": true` only when the viewer sees the costs of just
+    some of the listed vehicles, #375) or null; `issues`
     is a list of `{"vehicle_id", "vehicle", "open"}`; `insights` a list of
     `{"kind", "source": "computed"|"ai", "vehicle_ids", "title", "body"}`.
     From Phase 54 (#374), `last_month` and `fleet` include a vehicle
@@ -12594,7 +12596,7 @@ task breakdowns live in the per-phase files; this is the map.
   decimal, as `.5` does (§7.13, §7.27, K168). Releases v3.21.4 (#586). No
   migration. See [`phase-54.6.md`](docs/phases/phase-54.6.md).
 - **Phase 54.7 — Digest fleet line, cost per distance and archived rows
-  from the open-questions log + patch release** (planned). The digest's
+  from the open-questions log + patch release** (complete). The digest's
   fleet line says when its spend covers only some listed vehicles (§7.11,
   #375); its 12-month cost per distance needs readings that reach back
   (§7.11, #376); each `last_month` webhook row carries `archived` (§7.11,

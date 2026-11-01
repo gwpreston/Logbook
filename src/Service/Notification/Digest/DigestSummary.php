@@ -11,6 +11,7 @@ use Logbook\Domain\Access\VehicleAbility;
 use Logbook\Domain\Ai\Insights\AiInsight;
 use Logbook\Domain\Feature\Feature;
 use Logbook\Domain\Issue\IssueStatus;
+use Logbook\Domain\Odometer\OdometerReading;
 use Logbook\Domain\User\User;
 use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Repository\IssueRepository;
@@ -172,6 +173,7 @@ final readonly class DigestSummary
 
         $fleetKm = null;
         $fleetSpend = [];
+        $hidden = false;
         if (count($lines) > 1) {
             foreach ($lines as $line) {
                 if ($line->distanceKm !== null) {
@@ -180,11 +182,14 @@ final readonly class DigestSummary
                 if ($line->costs !== null) {
                     $currency = $line->costs->currency;
                     $fleetSpend[$currency] = ($fleetSpend[$currency] ?? Money::zero($currency))->add($line->costs->spend);
+                } else {
+                    $hidden = true;
                 }
             }
         }
 
-        return new LastMonth($month->from, $lines, $fleetKm, $fleetSpend);
+        // #375: a spend over only some of the listed vehicles says so.
+        return new LastMonth($month->from, $lines, $fleetKm, $fleetSpend, $hidden && $fleetSpend !== []);
     }
 
     /**
@@ -210,7 +215,7 @@ final readonly class DigestSummary
         $costs = null;
         if ($this->access->can($user, VehicleAbility::ViewCosts, $vehicle)) {
             $firstReading = $readings === [] ? null : LocalTime::dateOf($readings[0]->recordedAt, $zone);
-            $costs = $this->costs($user, $vehicle, $month, $window, $firstReading);
+            $costs = $this->costs($user, $vehicle, $month, $window, $firstReading, $readings, $zone);
         }
 
         if ($km === null && ($costs === null || $costs->spend->isZero())) {
@@ -225,6 +230,7 @@ final readonly class DigestSummary
      * them, from one read of the ledger (ReportService::compare()).
      *
      * @param list<ReportPeriod> $window
+     * @param list<OdometerReading> $readings oldest first
      */
     private function costs(
         User $user,
@@ -232,6 +238,8 @@ final readonly class DigestSummary
         ReportPeriod $month,
         array $window,
         ?DateTimeImmutable $firstReading,
+        array $readings,
+        DateTimeZone $zone,
     ): VehicleSpend {
         assert($month->from !== null && $window[0]->from !== null);
         $currency = $this->vehicles->currencyFor($user, $vehicle);
@@ -285,7 +293,10 @@ final readonly class DigestSummary
             $section->total,
             $average,
             $section->total->isZero() ? null : self::perKm($section),
-            self::perKm($this->section($year, $currency)),
+            // #376: costs that predate the readings would overstate it, so the readings must reach the window's start.
+            PeriodDistance::reachesBack($readings, $window[0]->from, $zone, $vehicle->data->purchaseDate)
+                ? self::perKm($this->section($year, $currency))
+                : null,
             $named,
         );
     }

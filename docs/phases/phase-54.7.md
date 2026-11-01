@@ -4,7 +4,7 @@
 covers only some vehicles, its 12-month cost per distance never overstates,
 and webhook rows say a vehicle is archived.*
 
-Status: 📋 planned · releases **v3.21.5**, a patch release (#587) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.5**, a patch release (#587) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.6](phase-54.6.md). The owner decided
 #375, #376 and #567 on 2026-10-31, after 54.6's plan was written; they are
@@ -37,26 +37,26 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
 
 ### 54.7.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 54.7.1 Digest decisions (#375, #376, #567)
 
-- [ ] The fleet line label and `spend_partial` (#375).
-- [ ] The reach-back rule on the 12-month cost per distance (#376).
-- [ ] `archived` on each `last_month` row (#567).
-- [ ] Tests for each, in English and German, on the digest text and JSON;
+- [x] The fleet line label and `spend_partial` (#375).
+- [x] The reach-back rule on the 12-month cost per distance (#376).
+- [x] `archived` on each `last_month` row (#567).
+- [x] Tests for each, in English and German, on the digest text and JSON;
       docs/api and notification docs updated; new strings in every
       catalogue in `translations/`.
 
 ### 54.7.2 Finish
 
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.5, CHANGELOG 3.21.5, README status (#587).
+- [x] VERSION 3.21.5, CHANGELOG 3.21.5, README status (#587).
 - [ ] Tag `v3.21.5` once merged.
 
 ## Acceptance criteria

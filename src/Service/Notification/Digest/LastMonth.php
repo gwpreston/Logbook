@@ -26,6 +26,8 @@ final readonly class LastMonth
         /** Kilometres summed, or null with fewer than two lines or no distance. */
         public ?string $fleetDistanceKm,
         public array $fleetSpend,
+        /** Whether some listed vehicles' costs are hidden from the viewer, so the fleet spend is partial (#375). */
+        public bool $spendPartial = false,
     ) {
     }
 

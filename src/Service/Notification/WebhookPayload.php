@@ -14,10 +14,11 @@ namespace Logbook\Service\Notification;
  *    "items": [{"reminder_id", "title", "detail", "status", "due_on"}],
  *    "attention": [{"vehicle_id", "vehicle", "kind", "title"}] (the
  *    digest's checks, Phase 24; else empty),
- *    "last_month": [{"vehicle_id", "vehicle", "month", "distance",
+ *    "last_month": [{"vehicle_id", "vehicle", "archived", "month", "distance",
  *    "distance_average", "currency", "spend", "spend_average",
  *    "cost_per_distance", "cost_per_distance_average", "display"}],
- *    "fleet": {"distance", "spend": {currency: amount}, "display"}|null,
+ *    "fleet": {"distance", "spend": {currency: amount}, "display",
+ *    "spend_partial": true when some costs are hidden}|null,
  *    "issues": [{"vehicle_id", "vehicle", "open"}],
  *    "insights": [{"kind", "source", "vehicle_ids", "title", "body"}]
  *    (the digest's briefing, Phase 43; else empty),

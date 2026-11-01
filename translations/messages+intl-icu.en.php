@@ -3737,6 +3737,7 @@ return [
             'fleet' => '• All vehicles: {figures}',
             'fleet_distance' => '{distance} driven',
             'fleet_spend' => '{amounts} spent',
+            'fleet_spend_partial' => '{amounts} spent (vehicles whose costs you see)',
             'insights' => '{count, plural, one {One insight:} other {# insights:}}',
             'insight_line' => '• {title} — {body}',
             'ai_insight_line' => '• AI: {title} — {body}',
