@@ -18,7 +18,7 @@ jobs:
     name: Lint + static analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
@@ -92,7 +92,7 @@ jobs:
       TEST_DB_USER: logbook
       TEST_DB_PASSWORD: logbook
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history on the coverage row, so diff-cover can diff against the base branch.
           fetch-depth: ${{ matrix.coverage && '0' || '1' }}
@@ -144,7 +144,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
