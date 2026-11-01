@@ -40,7 +40,7 @@ jobs:
         run: php bin/third-party-notices.php --check
       - name: Docs links, the docs index and screenshots resolve (spec §10)
         run: php bin/tools/check-docs.php
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: JavaScript unit tests (no npm install)
