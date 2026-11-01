@@ -175,7 +175,7 @@ jobs:
 
       - name: Image metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/logbook
           # A release tag v1.2.3 publishes 1.2.3, 1.2, 1 and latest; master
