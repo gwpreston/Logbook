@@ -65,11 +65,11 @@ Production dependencies only; development tools are not shipped.
 | symfony/http-client | v8.0.16 | MIT | https://symfony.com |
 | symfony/http-client-contracts | v3.7.3 | MIT | https://symfony.com |
 | symfony/mailer | v8.0.15 | MIT | https://symfony.com |
-| symfony/mime | v8.0.15 | MIT | https://symfony.com |
+| symfony/mime | v7.4.22 | MIT | https://symfony.com |
 | symfony/polyfill-ctype | v1.37.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-grapheme | v1.41.0 | MIT | https://symfony.com |
-| symfony/polyfill-intl-idn | v1.42.0 | MIT | https://symfony.com |
-| symfony/polyfill-intl-normalizer | v1.42.0 | MIT | https://symfony.com |
+| symfony/polyfill-intl-idn | v1.43.0 | MIT | https://symfony.com |
+| symfony/polyfill-intl-normalizer | v1.43.0 | MIT | https://symfony.com |
 | symfony/service-contracts | v3.7.3 | MIT | https://symfony.com |
 | symfony/string | v8.0.15 | MIT | https://symfony.com |
 | symfony/translation | v8.0.14 | MIT | https://symfony.com |
