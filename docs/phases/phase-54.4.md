@@ -75,7 +75,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.35
 
 - [x] Known-issues row K152 *Fixed*; K154 *Won't fix* (done in the plan).
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [x] Merge review; merge.
+- [x] Merge review; merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 

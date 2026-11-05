@@ -111,8 +111,8 @@ and the *CSV export* in §7, §9 and §10 for deployment), and
       #562 marked built.
 - [x] CHANGELOG (with an upgrade note on the export's new time format);
       spec §13; ROADMAP status.
-- [ ] Merge review (spec-keeper, security-scanner, bug-hunter,
-      import-tester, deploy-checker), then merge.
+- [x] Merge review (spec-keeper, security-scanner, bug-hunter,
+      import-tester, deploy-checker), then merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 

@@ -151,7 +151,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§6, §8, §11, §12), `spec.md` (§6
 - [x] Known-issues rows K42, K43, K44 and K56 *Fixed*; open questions
       #450, #451, #452, #458 and #558 marked built.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (spec-keeper, bug-hunter, upgrade-tester), then merge.
+- [x] Merge review (spec-keeper, bug-hunter, upgrade-tester), then merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 

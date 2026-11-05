@@ -784,8 +784,26 @@ final class ImportTest extends AppTestCase
         $fiesta = $this->vehicle($app, 'Ford', 'Fiesta');
         $map = $this->upload($browser, $fiesta->id, 'fuel', "Date,Odometer,Litres,Total\n2026-06-01 09:00,1000,40,65.83\n");
         $preview = $this->preview($browser, $map, ['number_format' => 'comma', 'distance_unit' => 'km', 'volume_unit' => 'l']);
-        self::assertStringContainsString('Enter a number, e.g. 1234.5.', $preview);
+        // K169: the import's own message names the format and shows one written in it.
+        self::assertStringContainsString(
+            '“65.83” isn’t a number in the Decimal comma format chosen for this import. Write it like 1.234,56.',
+            html_entity_decode($preview, ENT_QUOTES | ENT_HTML5),
+        );
+        self::assertStringNotContainsString('Enter a number, e.g. 1234.5.', $preview);
         self::assertStringContainsString('Nothing to import', $preview);
+
+        // Distances and volumes get the same message, not the form's.
+        $focus = $this->vehicle($app, 'Ford', 'Focus');
+        $map = $this->upload($browser, $focus->id, 'fuel', "Date,Odometer,Litres,Total
+2026-06-01 09:00,65.83,40.15,\"1.234,56\"
+");
+        $preview = html_entity_decode(
+            $this->preview($browser, $map, ['number_format' => 'comma', 'distance_unit' => 'km', 'volume_unit' => 'l']),
+            ENT_QUOTES | ENT_HTML5,
+        );
+        self::assertStringContainsString('“65.83” isn’t a number in the Decimal comma format', $preview);
+        self::assertStringContainsString('“40.15” isn’t a number in the Decimal comma format', $preview);
+        self::assertStringNotContainsString('1.234,56” isn’t', $preview, 'a readable cell has no problem');
 
         // German owner: a decimal comma by default, for distances, volumes and amounts.
         $this->germanOwner($browser);
@@ -803,6 +821,10 @@ final class ImportTest extends AppTestCase
         $ka = $this->vehicle($app, 'Ford', 'Ka');
         $map = $this->upload($browser, $ka->id, 'fuel', "Date,Odometer,Litres,Total\n2026-06-01 09:00,13.000,40,\"65,83\"\n");
         $preview = $this->preview($browser, $map, ['number_format' => 'dot', 'distance_unit' => 'km', 'volume_unit' => 'l']);
+        self::assertStringContainsString(
+            '„65,83“ ist in dem für diesen Import gewählten Format „Dezimalpunkt“ keine Zahl. Schreibe es etwa so: 1,234.56.',
+            html_entity_decode($preview, ENT_QUOTES | ENT_HTML5),
+        );
         $response = $this->commit($browser, $map, $preview, ['skip_invalid' => '1']);
         self::assertSame(422, $response->getStatusCode(), 'nothing importable');
         self::assertSame([], $fills->listForVehicle($ka->id));

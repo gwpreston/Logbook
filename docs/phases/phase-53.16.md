@@ -92,7 +92,7 @@ tagged.
 
 - [x] Known-issues rows K63 and K142 *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (upgrade-tester, deploy-checker), then merge.
+- [x] Merge review (upgrade-tester, deploy-checker), then merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 

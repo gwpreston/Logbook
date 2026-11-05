@@ -3221,6 +3221,10 @@ return [
             'dot' => 'Decimal point (1,234.56)',
             'comma' => 'Decimal comma (1.234,56)',
         ],
+        'number_format_name' => [
+            'dot' => 'Decimal point',
+            'comma' => 'Decimal comma',
+        ],
         'distance_unit' => 'Odometer in',
         'volume_unit' => 'Volumes and prices per',
         'volume_unit_hint' => 'Unless a row names its own unit. Charging is always in kWh.',
@@ -3311,6 +3315,7 @@ return [
             'too_large' => 'The file is too large to read with the memory this server gives PHP. Split it into smaller files, or raise PHP’s memory_limit.',
             'nothing' => 'None of the rows can be imported.',
             'skip_required' => '{count, plural, one {One row has a problem.} other {# rows have problems.}} Tick “Skip” to import the others, or fix the file first.',
+            'number' => '“{value}” isn’t a number in the {format} format chosen for this import. Write it like {example}.',
             'yes_no' => 'Expected yes or no.',
             'currency' => 'In {currency}, but the vehicle uses {vehicle}: amounts are never converted.',
             'unit' => '“{unit}” is not a unit Logbook knows.',

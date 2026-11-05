@@ -47,7 +47,8 @@ gh api repos/gwpreston16/Logbook --jq .permissions.push
     Releases are cut from master only.
   - The tag `vX.Y.Z` already exists locally or on upstream.
   - A ROADMAP row for the phase is 🚧 or 📋, or the phase file still has
-    unticked tasks other than the tag item.
+    unticked tasks other than the tag item (the *Merge review* box
+    included: a phase merged without a review ticks it with a dated note).
   - Open questions for the phase are still open (CLAUDE.md §12).
 
 Then switch to master at upstream: `git switch master && git merge --ff-only upstream/master`.
