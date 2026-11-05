@@ -6,6 +6,22 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.7] — 2026-11-05
+
+Phase 54.9: **A clearer message for an import number**
+([docs/phases/phase-54.9.md](docs/phases/phase-54.9.md)). No migration: pull
+and restart.
+
+### Changed
+- **An import number that the chosen format can't read says so.** A cell
+  such as `65.83` under *Numbers: Decimal comma* used to show "Enter a
+  number, e.g. 1234.5.", an example in your own language's format rather
+  than the one chosen. It now reads "“65.83” isn't a number in the Decimal
+  comma format chosen for this import. Write it like 1.234,56.", in English
+  and German, for every number the importer reads (distances, volumes, unit
+  prices and amounts). Other messages and empty cells are unchanged (K169,
+  #582, #594).
+
 ## [3.21.6] — 2026-11-05
 
 Phase 54.8: **Offline fill-ups from the known-issues log**

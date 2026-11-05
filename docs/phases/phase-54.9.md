@@ -4,7 +4,7 @@
 says which format it was read in, and the missing merge-review records are
 settled.*
 
-Status: 🚧 in progress · releases **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.8](phase-54.8.md). It takes K169, which
 waited on #582 until the owner decided it, and K172, a docs-only row. It is
@@ -65,7 +65,7 @@ import's *Numbers* choice), `.claude/skills/release/SKILL.md` and
 
 ### 54.9.1 The import number message (K169)
 
-- [ ] `CsvImporter` (`src/Service/Import/CsvImporter.php`, around the
+- [x] `CsvImporter` (`src/Service/Import/CsvImporter.php`, around the
       `UNREADABLE` cases for `Distance`, `Volume`, `UnitPrice` and `Number`)
       adds an error `import.error.number` with `value`, `format` and
       `example` instead of letting the form answer; the generic form message
@@ -79,20 +79,20 @@ import's *Numbers* choice), `.claude/skills/release/SKILL.md` and
 
 ### 54.9.2 The merge-review records (K172)
 
-- [ ] The *Merge review* box of `phase-53.16.md`, `53.17`, `53.18`, `53.19`,
+- [x] The *Merge review* box of `phase-53.16.md`, `53.17`, `53.18`, `53.19`,
       `53.20` and `54.4` is ticked with "(2026-10-31: merged and released
       without a recorded merge review, #595)". `.claude/skills/release/SKILL.md`
       (its *Stop* list) names the *Merge review* box.
 
 ### 54.9.3 Finish
 
-- [ ] Known-issues rows K169 and K172 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K169 and K172 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.7, CHANGELOG 3.21.7, README status (#593).
+- [x] VERSION 3.21.7, CHANGELOG 3.21.7, README status (#593).
 - [ ] Tag `v3.21.7` once merged.
 
 ## Acceptance criteria
