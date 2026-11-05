@@ -39,7 +39,13 @@ final class MarkdownLinksTest extends TestCase
             array_push($problems, ...$checker->broken($file, $root));
         }
 
-        self::assertContains($root . '/docs/phases/phase-20.md', $files, 'the scan reaches docs/phases/');
+        // Windows gives backslashes in the root and the scan's paths (K184).
+        $normalised = array_map(static fn (string $file): string => str_replace('\\', '/', $file), $files);
+        self::assertContains(
+            str_replace('\\', '/', $root) . '/docs/phases/phase-20.md',
+            $normalised,
+            'the scan reaches docs/phases/',
+        );
         self::assertSame([], $problems, "Broken Markdown links:\n" . implode("\n", $problems));
     }
 
