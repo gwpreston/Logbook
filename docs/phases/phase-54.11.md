@@ -5,7 +5,7 @@ MariaDB that is supported, the deployment guide names the database versions
 that are tested, Phase 54.10's paperwork says it is done, and one test no
 longer fails on Windows.*
 
-Status: 📋 planned · releases **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.9](phase-54.9.md). It takes K178, K179,
 K181 and K184: the three that need no decision of the owner's beyond the
@@ -79,7 +79,7 @@ tagged.
 
 ### 54.11.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #599–#601 are decided; #597 and
       #598 are open but belong to K182 and K183, which aren't in this
       phase.

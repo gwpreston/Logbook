@@ -141,7 +141,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.7](docs/phases/phase-54.7.md) | Digest fleet line, cost per distance and archived rows from the open-questions log | ✅ |
 | [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | ✅ |
 | [54.9](docs/phases/phase-54.9.md) | The import number message and merge-review records from the known-issues log + patch release | ✅ |
-| [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | 📋 |
+| [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | 🚧 |
 
 *Update the status column as each phase lands.*
 
