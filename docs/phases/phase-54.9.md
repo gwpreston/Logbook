@@ -4,7 +4,7 @@
 says which format it was read in, and the missing merge-review records are
 settled.*
 
-Status: 📋 planned · releases **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.8](phase-54.8.md). It takes K169, which
 waited on #582 until the owner decided it, and K172, a docs-only row. It is
@@ -60,7 +60,7 @@ import's *Numbers* choice), `.claude/skills/release/SKILL.md` and
 
 ### 54.9.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #582 and #593–#595 are decided.
 
 ### 54.9.1 The import number message (K169)
