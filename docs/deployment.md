@@ -193,7 +193,9 @@ The production stacks are unchanged: `true` by default.
   read text from photos on your own server ([reading-files.md](reading-files.md)).
   The Docker image includes it (about 80 MB).
 - `zip` (`php-zip`) for backup and restore; everything else works without it.
-- PostgreSQL 13+ or MySQL 8.0+ / MariaDB 10.6+ (or SQLite for a trial).
+- PostgreSQL, MySQL or MariaDB (or SQLite for a trial). Logbook is tested on
+  PostgreSQL 17, MySQL 8.4 and MariaDB 11.4; older releases may work but
+  aren't tested.
 - Apache 2.4 with `mod_rewrite`, or nginx + php-fpm.
 
 No Node.js is needed: built CSS/JS is committed in `public/assets`.
