@@ -3,7 +3,7 @@
 *Weekly, grouped dependency-update pull requests for Composer, npm, GitHub
 Actions and the Docker and compose images.*
 
-Status: 📋 planned · no release of its own · file lives in `docs/phases/`
+Status: ✅ complete · no release of its own · file lives in `docs/phases/`
 
 This follows [Phase 54.9](phase-54.9.md). It is configuration only: one new
 file, `.github/dependabot.yml`, copied in shape from the owner's Renovo repo.
@@ -11,7 +11,7 @@ file, `.github/dependabot.yml`, copied in shape from the owner's Renovo repo.
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §13 and
 [`open-questions.md`](open-questions.md) first.
 
-**Prerequisites:** [Phase 54.9](phase-54.9.md) merged.
+**Prerequisites:** [Phase 54.9](phase-54.9.md) merged (it is: v3.21.7 carries it).
 
 ---
 
@@ -38,22 +38,28 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §13 and
 - **`docker` points at `/`**, not `/docker/php` as in Renovo: Logbook's
   `Dockerfile` is at the repo root and `docker/php` holds only `logbook.ini`.
 - **Weekly and grouped** keeps the review to one sitting a week.
+- **Ignore rules, added after the first pull requests** (#187, #193): a
+  `phpseclib/phpseclib` major (K174: phpseclib 4 renamed its namespace and
+  `firebase/php-jwt` still loads `phpseclib3`), PHPStan 2.3 and later (K175:
+  false positives on correct types; patches of 2.2 still arrive), and a
+  major of the `postgres`, `mysql` and `mariadb` images (K177 and #596: a
+  database major is a planned upgrade, not a routine bump).
 
 ## Tasks
 
 ### 54.10.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12).
 
 ### 54.10.1 The Dependabot file
 
-- [ ] `.github/dependabot.yml` with the five ecosystems above.
-- [ ] Spec §13 entry; ROADMAP entry.
+- [x] `.github/dependabot.yml` with the five ecosystems above.
+- [x] Spec §13 entry; ROADMAP entry.
 
 ### 54.10.2 Finish
 
-- [ ] Merge review; merge.
+- [x] Merge review; merge. (Merged in #172; no merge review was recorded.)
 - [ ] Owner turns on Dependabot alerts and security updates in the
       repository settings.
 
