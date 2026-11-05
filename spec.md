@@ -12624,7 +12624,7 @@ task breakdowns live in the per-phase files; this is the map.
   release of its own, no migration. See
   [`phase-54.10.md`](docs/phases/phase-54.10.md).
 - **Phase 54.11 — The Dependabot paperwork, database versions and a Windows
-  test from the known-issues log + patch release** (in progress). The dev stack
+  test from the known-issues log + patch release** (complete). The dev stack
   runs MariaDB 11.4 on its own volume, with a test that keeps it on CI's
   image (§4, K178, #600); Phase 54.10's file, spec entry and ROADMAP row say
   it is complete (K179); the deployment guide names the tested database
