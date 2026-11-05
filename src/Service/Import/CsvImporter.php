@@ -46,6 +46,7 @@ use Logbook\Support\Date\WallClock;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
+use Logbook\Support\Number\NumberFormat;
 use Logbook\Support\Units\DistanceUnit;
 use Logbook\Support\Units\VolumeUnit;
 use Logbook\Support\Validation\ValidationErrors;
@@ -403,18 +404,27 @@ final readonly class CsvImporter
                     break;
                 case FieldKind::Distance:
                     $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
+                    if ($number === null) {
+                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
+                    }
                     $input[$field->key] = $number === null
                         ? self::UNREADABLE
                         : $options->distanceUnit->toKmDecimal($number, OdometerReadingForm::KM_SCALE);
                     break;
                 case FieldKind::Volume:
                     $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
+                    if ($number === null) {
+                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
+                    }
                     $input[$field->key] = $number === null || $electric
                         ? $number ?? self::UNREADABLE
                         : $volumeUnit->toLitresDecimal($number, FuelAmounts::VOLUME_SCALE);
                     break;
                 case FieldKind::UnitPrice:
                     $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
+                    if ($number === null) {
+                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
+                    }
                     $input[$field->key] = $number === null || $electric
                         ? $number ?? self::UNREADABLE
                         : $volumeUnit->pricePerLitre($number, FuelAmounts::PRICE_SCALE);
@@ -430,8 +440,11 @@ final readonly class CsvImporter
                 case FieldKind::VolumeUnit:
                     break;
                 case FieldKind::Number:
-                    $input[$field->key] = DecimalParser::parse($value, $owner->locale, $options->numberFormat)
-                        ?? self::UNREADABLE;
+                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
+                    if ($number === null) {
+                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
+                    }
+                    $input[$field->key] = $number ?? self::UNREADABLE;
                     break;
                 case FieldKind::Text:
                     $input[$field->key] = $value;
@@ -475,12 +488,44 @@ final readonly class CsvImporter
         };
 
         if ($parsed instanceof ValidationErrors) {
+            // A cell already reported as unreadable keeps the import's own message (K169).
+            $reported = array_column($errors, 'field');
             foreach ($parsed->all() as $field => $error) {
+                if (in_array($field, $reported, true)) {
+                    continue;
+                }
                 $errors[] = ['field' => $field, 'key' => $error['key'], 'params' => $error['params']];
             }
         }
 
         return $errors === [] ? $parsed : $errors;
+    }
+
+    /**
+     * The error for a number cell the chosen *Numbers* format can't read:
+     * it names the format and shows a number written in it, since the form's
+     * own example is in the owner's format, not the chosen one (K169, #582, #594).
+     *
+     * @return array{field: string, key: string, params: array<string, int|string|TranslatableInterface>}
+     */
+    private function unreadableNumber(string $field, string $value, NumberFormat $format, string $locale): array
+    {
+        $comma = $format === NumberFormat::CommaDecimal;
+
+        return [
+            'field' => $field,
+            'key' => 'import.error.number',
+            'params' => [
+                'value' => $value,
+                'format' => $this->translator->trans(
+                    'import.number_format_name.' . ($comma ? 'comma' : 'dot'),
+                    [],
+                    null,
+                    $locale,
+                ),
+                'example' => $comma ? '1.234,56' : '1,234.56',
+            ],
+        ];
     }
 
     /**

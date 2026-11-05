@@ -3218,6 +3218,10 @@ return [
             'dot' => 'Dezimalpunkt (1,234.56)',
             'comma' => 'Dezimalkomma (1.234,56)',
         ],
+        'number_format_name' => [
+            'dot' => 'Dezimalpunkt',
+            'comma' => 'Dezimalkomma',
+        ],
         'distance_unit' => 'Kilometerstand in',
         'volume_unit' => 'Mengen und Preise pro',
         'volume_unit_hint' => 'Sofern eine Zeile nicht ihre eigene Einheit nennt. Laden ist immer in kWh.',
@@ -3308,6 +3312,7 @@ return [
             'too_large' => 'Die Datei ist zu groß für den Speicher, den dieser Server PHP gibt. Teile sie in kleinere Dateien auf oder erhöhe PHPs memory_limit.',
             'nothing' => 'Keine der Zeilen kann importiert werden.',
             'skip_required' => '{count, plural, one {Eine Zeile hat ein Problem.} other {# Zeilen haben Probleme.}} Setze den Haken bei „Überspringen“, um die übrigen zu importieren, oder korrigiere zuerst die Datei.',
+            'number' => '„{value}“ ist in dem für diesen Import gewählten Format „{format}“ keine Zahl. Schreibe es etwa so: {example}.',
             'yes_no' => 'Erwartet: ja oder nein.',
             'currency' => 'In {currency}, aber das Fahrzeug nutzt {vehicle}: Beträge werden nie umgerechnet.',
             'unit' => '„{unit}“ ist keine Einheit, die Logbook kennt.',
