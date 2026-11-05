@@ -3981,6 +3981,9 @@ return [
         'review' => 'Review',
         'discard' => 'Discard',
         'signed_out' => 'Sign in again to send the fill-ups saved on this device.',
+        'refused' => 'its vehicle is gone or no longer shared with you; review or discard it',
+        'refused_one' => '1 fill-up couldn’t be sent: its vehicle is gone or no longer shared with you.',
+        'refused_many' => '{count} fill-ups couldn’t be sent: their vehicles are gone or no longer shared with you.',
     ],
     'modules' => [
         'install_off' => 'Switched off when Logbook was installed; switch on any time.',

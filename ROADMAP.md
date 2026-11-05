@@ -139,7 +139,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.5](docs/phases/phase-54.5.md) | The 500 ms target for the dashboard and true-cost report from the known-issues log + patch release | ✅ |
 | [54.6](docs/phases/phase-54.6.md) | The true-cost cover note and a leading decimal comma from the known-issues log + patch release | ✅ |
 | [54.7](docs/phases/phase-54.7.md) | Digest fleet line, cost per distance and archived rows from the open-questions log | ✅ |
-| [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | 📋 |
+| [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | ✅ |
 | [54.9](docs/phases/phase-54.9.md) | The import number message and merge-review records from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*

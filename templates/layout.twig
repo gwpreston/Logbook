@@ -199,7 +199,9 @@
                              data-text-queued="{{ 'pwa.queued'|trans }}" data-text-waiting="{{ 'pwa.waiting'|trans }}"
                              data-text-pending="{{ 'pwa.pending'|trans }}" data-text-sent="{{ 'pwa.sent'|trans }}"
                              data-text-rejected="{{ 'pwa.rejected'|trans }}" data-text-review="{{ 'pwa.review'|trans }}"
-                             data-text-discard="{{ 'pwa.discard'|trans }}" data-text-signed-out="{{ 'pwa.signed_out'|trans }}">
+                             data-text-discard="{{ 'pwa.discard'|trans }}" data-text-signed-out="{{ 'pwa.signed_out'|trans }}"
+                             data-text-refused="{{ 'pwa.refused'|trans }}" data-text-refused-one="{{ 'pwa.refused_one'|trans }}"
+                             data-text-refused-many="{{ 'pwa.refused_many'|trans({count: '%n%'}) }}">
                         <h2 id="outbox-heading" class="card__title">{{ ui.icon('cloud_off') }}{{ 'pwa.outbox_title'|trans }}</h2>
                         <p data-outbox-status role="status"></p>
                         <ul class="outbox__list" data-outbox-list></ul>

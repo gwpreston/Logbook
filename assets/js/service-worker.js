@@ -82,9 +82,40 @@ function offline(url) {
         });
 }
 
+// Where a form path redirects (/fuel/new with one vehicle) a navigation
+// gets an opaque redirect, so the worker never sees the form. Fetch it once
+// more, following the redirect, and keep it under both paths (K163, #591).
+// Once the owner has several vehicles, the next online visit to the shortcut
+// shows the chooser, which replaces the copy (#592).
+function keepRedirected(url) {
+    return fetch(url.pathname, { credentials: 'same-origin', redirect: 'follow' })
+        .then(function (response) {
+            var finalPath = response.url ? new URL(response.url).pathname : url.pathname;
+            var html = (response.headers.get('Content-Type') || '').indexOf('text/html') === 0;
+            if (!response.ok || !html || finalPath === url.pathname || !FORM.test(finalPath)) {
+                return null;
+            }
+            return response.blob().then(function (body) {
+                // The browser is on its way to the form: that page's user is the remembered one.
+                var user = response.headers.get(USER_HEADER) || '';
+                var form = function () {
+                    return new Response(body, { status: 200, headers: response.headers });
+                };
+                return caches.open(PAGES).then(function (cache) {
+                    return Promise.all([cache.put(finalPath, form()), cache.put(url.pathname, form()), remember(user)]);
+                });
+            });
+        })
+        .catch(function () {});
+}
+
 function page(request, url) {
     return fetch(request)
         .then(function (response) {
+            if (response.type === 'opaqueredirect' && FORM.test(url.pathname)) {
+                keepRedirected(url);
+                return response;
+            }
             // Only a page counts: a download or a picture names nobody.
             var html = (response.headers.get('Content-Type') || '').indexOf('text/html') === 0;
             // The offline page names nobody, but nobody signed out (K166).

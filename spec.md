@@ -12603,7 +12603,7 @@ task breakdowns live in the per-phase files; this is the map.
   #567). Releases v3.21.5 (#587). No migration. See
   [`phase-54.7.md`](docs/phases/phase-54.7.md).
 - **Phase 54.8 — Offline fill-ups from the known-issues log + patch
-  release** (planned). The PWA's *Log fill-up* shortcut `/fuel/new` is kept
+  release** (complete). The PWA's *Log fill-up* shortcut `/fuel/new` is kept
   for offline use with one vehicle (§7.15, K163), and one queued fill-up
   its form now refuses no longer strands the ones after it or says the
   user is signed out (§7.15, K164). Releases v3.21.6 (#588). No migration.
