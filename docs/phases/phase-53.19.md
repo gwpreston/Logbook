@@ -93,7 +93,7 @@ Read [`CLAUDE.md`](../../CLAUDE.md) (§11, §12), `spec.md` (§7.39
 - [x] Known-issues rows K3 and K146 *Fixed*; open questions #485 and #559
       marked built.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (spec-keeper, security-scanner, bug-hunter), then merge.
+- [x] Merge review (spec-keeper, security-scanner, bug-hunter), then merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 

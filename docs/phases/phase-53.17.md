@@ -120,7 +120,7 @@ tagged.
 - [x] Known-issues rows K143, K144, K72 and K67 *Fixed*; open questions
       #488, #549, #552 and #483 marked built.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review (spec-keeper, deploy-checker, bug-hunter), then merge.
+- [x] Merge review (spec-keeper, deploy-checker, bug-hunter), then merge. (2026-10-31: merged and released without a recorded merge review, #595)
 
 ### Release
 
