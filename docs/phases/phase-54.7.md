@@ -57,7 +57,7 @@ cost, `reachesBack`) and [`open-questions.md`](open-questions.md) first.
 ### Release
 
 - [x] VERSION 3.21.5, CHANGELOG 3.21.5, README status (#587).
-- [ ] Tag `v3.21.5` once merged.
+- [x] Tag `v3.21.5` once merged.
 
 ## Acceptance criteria
 

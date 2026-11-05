@@ -27,6 +27,16 @@ and restart.
   new `archived` boolean beside `vehicle`, so a consumer needn't look the
   vehicle up (#567). A compatible addition.
 
+### Fixed
+- **A security fix in a dependency used for email.** `symfony/mime` moves
+  from 8.0.15 to 7.4.22, which fixes CVE-2026-45070 (email header injection
+  through MIME parameter names). Logbook's mail code is unchanged. Pull and
+  rebuild or run `composer install` to get it (K176).
+
+### Upgrade notes
+- Bare-PHP installs: run `composer install --no-dev` after pulling. Docker
+  images already include it.
+
 ## [3.21.4] — 2026-10-30
 
 Phase 54.6: **The true-cost cover note and a leading decimal comma from
@@ -4391,7 +4401,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.4...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.5...HEAD
+[3.21.5]: https://github.com/gwpreston16/Logbook/compare/v3.21.4...v3.21.5
 [3.21.4]: https://github.com/gwpreston16/Logbook/compare/v3.21.3...v3.21.4
 [3.21.3]: https://github.com/gwpreston16/Logbook/compare/v3.21.2...v3.21.3
 [3.21.2]: https://github.com/gwpreston16/Logbook/compare/v3.21.1...v3.21.2
