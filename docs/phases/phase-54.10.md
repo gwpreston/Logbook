@@ -66,4 +66,17 @@ Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §13 and
 
 ## Open questions
 
-None.
+Found in the 2026-11-04 release sweep (see
+[`known-issues.md`](known-issues.md) K182 and K183):
+
+- **#597 (Needs a decision).** How should `symfony/http-client` get the fix
+  for the 2026-11-04 advisories (K182), given that 8.0.x has no fixed
+  release and 8.1.11 needs PHP 8.4.1 or later while `config.platform.php`
+  is 8.4.0? Options: (1) raise the platform pin and move to 8.1.x;
+  (2) widen the constraint to `^7.4|^8.0` and lock 7.4.23; (3) stay on
+  8.0.x and wait for a backport.
+- **#598 (Needs a decision).** How should Dependabot's npm updates to the
+  bundled front-end libraries reach `assets/vendor` (K183)? Options:
+  (1) Dependabot ignores them; (2) keep the PRs and add a CI check that
+  vendored versions match `package-lock.json`; (3) keep the PRs and
+  re-vendor by hand on each bump.
