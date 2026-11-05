@@ -12609,7 +12609,7 @@ task breakdowns live in the per-phase files; this is the map.
   user is signed out (§7.15, K164). Releases v3.21.6 (#588). No migration.
   See [`phase-54.8.md`](docs/phases/phase-54.8.md).
 - **Phase 54.9 — The import number message and merge-review records from
-  the known-issues log + patch release** (planned). An import number cell
+  the known-issues log + patch release** (complete). An import number cell
   the chosen *Numbers* format can't read gets a message naming the format
   and an example in it (§7.13, K169, #582, #594). The merge-review boxes of
   phases 53.16–53.20 and 54.4 are settled honestly, and the release
