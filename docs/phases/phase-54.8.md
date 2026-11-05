@@ -4,7 +4,7 @@
 shortcut works offline for an owner with one vehicle, and one refused queued
 fill-up no longer holds up the rest.*
 
-Status: ✅ complete · releases **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.6](phase-54.6.md) (and 54.7's planned
 digest decisions). It takes the two rows 54.6 left out as "another batch",
@@ -92,7 +92,7 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 ### Release
 
 - [x] VERSION 3.21.6, CHANGELOG 3.21.6, README status (#588).
-- [ ] Tag `v3.21.6` once merged.
+- [x] Tag `v3.21.6` once merged.
 
 ## Acceptance criteria
 
