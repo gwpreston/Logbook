@@ -4,7 +4,7 @@
 says which format it was read in, and the missing merge-review records are
 settled.*
 
-Status: ✅ complete · releases **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.7**, a patch release (#593) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.8](phase-54.8.md). It takes K169, which
 waited on #582 until the owner decided it, and K172, a docs-only row. It is
@@ -88,12 +88,12 @@ import's *Numbers* choice), `.claude/skills/release/SKILL.md` and
 
 - [x] Known-issues rows K169 and K172 *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Merge review; merge. (2026-11-05: merge review MERGE at 0107bbcc; merged in #197.)
 
 ### Release
 
 - [x] VERSION 3.21.7, CHANGELOG 3.21.7, README status (#593).
-- [ ] Tag `v3.21.7` once merged.
+- [x] Tag `v3.21.7` once merged.
 
 ## Acceptance criteria
 

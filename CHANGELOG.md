@@ -4439,7 +4439,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.6...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.7...HEAD
+[3.21.7]: https://github.com/gwpreston16/Logbook/compare/v3.21.6...v3.21.7
 [3.21.6]: https://github.com/gwpreston16/Logbook/compare/v3.21.5...v3.21.6
 [3.21.5]: https://github.com/gwpreston16/Logbook/compare/v3.21.4...v3.21.5
 [3.21.4]: https://github.com/gwpreston16/Logbook/compare/v3.21.3...v3.21.4
