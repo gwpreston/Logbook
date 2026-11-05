@@ -26,7 +26,10 @@ final class DatabaseVersionsTest extends TestCase
     public function testThatMariaDbIsTheVersionTheSpecNames(): void
     {
         $spec = self::read('spec.md');
-        self::assertSame(1, preg_match('/\bMariaDB (\d+\.\d+)\)/', $spec, $named), 'spec §4 names the MariaDB version');
+        preg_match('/\bMariaDB (\d+\.\d+)\)/', $spec, $named);
+        if (!isset($named[1])) {
+            self::fail('spec §4 names the MariaDB version');
+        }
 
         foreach (self::images(self::read('docker-compose.dev.yml')) as $image) {
             self::assertSame('mariadb:' . $named[1], $image);
@@ -36,7 +39,10 @@ final class DatabaseVersionsTest extends TestCase
     public function testTheDevMariaDbKeepsItsDataInAVolumeNamedForTheVersion(): void
     {
         $compose = self::read('docker-compose.dev.yml');
-        self::assertSame(1, preg_match('/mariadb:(\d+)\.(\d+)/', $compose, $version));
+        preg_match('/mariadb:(\d+)\.(\d+)/', $compose, $version);
+        if (!isset($version[1], $version[2])) {
+            self::fail('docker-compose.dev.yml names a MariaDB version');
+        }
         $volume = 'mariadb_' . $version[1] . '_' . $version[2];
 
         self::assertStringContainsString('- ' . $volume . ':/var/lib/mysql', $compose, 'the service mounts the volume');
