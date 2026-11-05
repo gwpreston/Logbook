@@ -121,6 +121,13 @@ the next start runs `composer install` (`docker/dev/composer-install.sh`),
 so `--stop --reset` isn't needed for that. The check is in the dev image,
 which `bin/dev-setup.sh` rebuilds on each start.
 
+The dev MariaDB is **11.4**, the version CI tests and the one the
+deployment guide calls tested. It keeps its data in the volume
+`mariadb_11_4`. An earlier dev stack ran MariaDB 13.0, and 11.4 can't open
+that data: it isn't carried over, and the old volume is left alone. Delete
+the leftover with `docker volume prune` (or `docker volume rm` on the old
+`…_mariadb` volume) once nothing needs it.
+
 Every email the app sends in development (password resets, invitations,
 reminders, digests) can be caught by **Mailpit**: open `http://localhost:8025`.
 If another project already uses 8025, the script picks the next free port and
