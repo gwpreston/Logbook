@@ -68,7 +68,7 @@ No per-file SPDX headers (decided 2026-10-13, `docs/phases/open-questions.md`
 | DI | PHP-DI | Slim's recommended container |
 | DB access | Doctrine DBAL (not ORM) | Portable queries + schema across MySQL/Postgres without ORM weight |
 | Migrations | Phinx | Framework-independent, native MySQL + Postgres, up/down |
-| Databases | PostgreSQL + MySQL/MariaDB | User requirement; SQLite optional for zero-config demo. Supported versions are the long-term-support ones the compose files ship and CI tests (PostgreSQL 17, MySQL 8.4, MariaDB 11.4); a move to a newer major happens only when one nears end of life, as a planned phase that changes the compose files, the CI matrix and the upgrade docs together (decided 2026-11-01, #596) |
+| Databases | PostgreSQL + MySQL/MariaDB | User requirement; SQLite optional for zero-config demo. Supported versions are the long-term-support ones the compose files ship and CI tests (PostgreSQL 17, MySQL 8.4, MariaDB 11.4); a move to a newer major happens only when one nears end of life, as a planned phase that changes the compose files, the CI matrix and the upgrade docs together (decided 2026-11-01, #596). The dev stack runs the same MariaDB 11.4 on its own named data volume, and a test keeps the dev compose file and CI on one image (Phase 54.11, K178, #600); the deployment guide says these are the tested versions and older ones may work but aren't tested (Phase 54.11, K181, #601) |
 | Templating | Twig | Server-rendered, autoescaped, fits bare-PHP hosting |
 | JS | Alpine.js + Chart.js + SortableJS | Progressive enhancement, no SPA, no runtime Node |
 | i18n | symfony/translation | ICU, pluralization, multi-locale |
@@ -12621,6 +12621,14 @@ task breakdowns live in the per-phase files; this is the map.
   patch updates grouped per ecosystem and each major update on its own. No
   release of its own, no migration. See
   [`phase-54.10.md`](docs/phases/phase-54.10.md).
+- **Phase 54.11 — The Dependabot paperwork, database versions and a Windows
+  test from the known-issues log + patch release** (planned). The dev stack
+  runs MariaDB 11.4 on its own volume, with a test that keeps it on CI's
+  image (§4, K178, #600); Phase 54.10's file, spec entry and ROADMAP row say
+  it is complete (K179); the deployment guide names the tested database
+  versions (§4, K181, #601); and `MarkdownLinksTest` passes on Windows
+  (K184). Releases v3.21.8 (#599). No migration. See
+  [`phase-54.11.md`](docs/phases/phase-54.11.md).
 
 ---
 

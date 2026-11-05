@@ -141,6 +141,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.7](docs/phases/phase-54.7.md) | Digest fleet line, cost per distance and archived rows from the open-questions log | ✅ |
 | [54.8](docs/phases/phase-54.8.md) | Offline fill-ups from the known-issues log + patch release | ✅ |
 | [54.9](docs/phases/phase-54.9.md) | The import number message and merge-review records from the known-issues log + patch release | ✅ |
+| [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1917,6 +1918,25 @@ repo.*
   major update stands alone. No release of its own, no migration.
 
 → [`phase-54.10.md`](docs/phases/phase-54.10.md)
+
+---
+
+## Phase 54.11 — The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release
+
+*Four open rows of the known-issues log closed: the dev stack runs the
+MariaDB that is supported, the deployment guide names the tested database
+versions, Phase 54.10's paperwork says it is done, and one test no longer
+fails on Windows.*
+
+- The dev stack's MariaDB is 11.4 on its own volume, and a test keeps it on
+  CI's image (K178, #600).
+- Phase 54.10's file, spec entry and ROADMAP row say it is complete (K179).
+- The deployment guide says PostgreSQL 17, MySQL 8.4 and MariaDB 11.4 are
+  tested and older ones may work (K181, #601).
+- `MarkdownLinksTest` passes on Windows (K184). Releases v3.21.8 (#599). No
+  migration.
+
+→ [`phase-54.11.md`](docs/phases/phase-54.11.md)
 
 ---
 
