@@ -4,7 +4,7 @@
 shortcut works offline for an owner with one vehicle, and one refused queued
 fill-up no longer holds up the rest.*
 
-Status: 📋 planned · releases **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.6](phase-54.6.md) (and 54.7's planned
 digest decisions). It takes the two rows 54.6 left out as "another batch",
@@ -62,7 +62,7 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 
 ### 54.8.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #588–#592 are decided.
 
 ### 54.8.1 The fill-up shortcut offline (K163)
