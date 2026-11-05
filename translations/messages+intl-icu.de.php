@@ -3978,6 +3978,9 @@ return [
         'review' => 'Prüfen',
         'discard' => 'Verwerfen',
         'signed_out' => 'Melde dich erneut an, um die auf diesem Gerät gespeicherten Tankfüllungen zu senden.',
+        'refused' => 'ihr Fahrzeug ist gelöscht oder nicht mehr mit dir geteilt; prüfen oder verwerfen',
+        'refused_one' => '1 Tankfüllung konnte nicht gesendet werden: ihr Fahrzeug ist gelöscht oder nicht mehr mit dir geteilt.',
+        'refused_many' => '{count} Tankfüllungen konnten nicht gesendet werden: ihre Fahrzeuge sind gelöscht oder nicht mehr mit dir geteilt.',
     ],
     'modules' => [
         'install_off' => 'Bei der Installation von Logbook ausgeschaltet; jederzeit einschaltbar.',

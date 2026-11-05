@@ -4,7 +4,7 @@
 shortcut works offline for an owner with one vehicle, and one refused queued
 fill-up no longer holds up the rest.*
 
-Status: 🚧 in progress · releases **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.6**, a patch release (#588) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.6](phase-54.6.md) (and 54.7's planned
 digest decisions). It takes the two rows 54.6 left out as "another batch",
@@ -67,7 +67,7 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 
 ### 54.8.1 The fill-up shortcut offline (K163)
 
-- [ ] `assets/js/service-worker.js` (`page()`, `detached()`) follows the
+- [x] `assets/js/service-worker.js` (`page()`, `detached()`) follows the
       redirect for the form paths and keeps the page under `/fuel/new` and
       the vehicle's path (#591); `cacheOfflineForms` (`assets/js/app.js`) no
       longer skips it. Offline, the cached `/fuel/new` is served only while it
@@ -76,7 +76,7 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 
 ### 54.8.2 A refused queued fill-up (K164)
 
-- [ ] `sendQueued` / `flushOutbox` (`assets/js/app.js`) pass over an item
+- [x] `sendQueued` / `flushOutbox` (`assets/js/app.js`) pass over an item
       whose form answers 403 or 404, keep it queued (#589), and send the
       rest; the fill-up page's note names it with the review link (#590),
       and "signed out" shows only for a sign-in page. New strings in every
@@ -85,13 +85,13 @@ PWA: *Offline fill-up*), `docs/deployment.md` (*Offline*) and
 
 ### 54.8.3 Finish
 
-- [ ] Known-issues rows K163 and K164 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K163 and K164 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.6, CHANGELOG 3.21.6, README status (#588).
+- [x] VERSION 3.21.6, CHANGELOG 3.21.6, README status (#588).
 - [ ] Tag `v3.21.6` once merged.
 
 ## Acceptance criteria

@@ -9,7 +9,10 @@
 
     // Node (tests/js) gets the offline queue's pure helpers, nothing else.
     if (typeof document === 'undefined') {
-        module.exports = { ownedBy: ownedBy, untagged: untagged, sentAs: sentAs, forgetsUser: forgetsUser };
+        module.exports = {
+            ownedBy: ownedBy, untagged: untagged, sentAs: sentAs, forgetsUser: forgetsUser,
+            formVerdict: formVerdict, sendAll: sendAll,
+        };
         return;
     }
 
@@ -654,6 +657,40 @@
         return !!item.userId && responseUser === item.userId;
     }
 
+    // What the form fetched to send a queued fill-up says about it (K164):
+    // 'ok' (the form, for its user), 'gone' (the form itself answers 403 or
+    // 404: the vehicle was deleted or the share revoked), 'signed-out' (a
+    // page other than the form, or another user's: the sign-in page) or
+    // 'failed' (an error or a proxy's page: try again later).
+    function formVerdict(item, status, finalPath, path, responseUser) {
+        var ok = status >= 200 && status < 300;
+        if ((status === 403 || status === 404) && finalPath === path) {
+            return 'gone';
+        }
+        if (ok) {
+            return finalPath === path && sentAs(item, responseUser) ? 'ok' : 'signed-out';
+        }
+        return 'failed';
+    }
+
+    // Send each item in turn with send(item), which resolves 'sent', 'refused'
+    // or anything else (kept as it is) and rejects to stop the queue. A refused
+    // item is passed over, so the ones after it still go (K164, #589).
+    function sendAll(items, send) {
+        var result = { sent: 0, refused: 0 };
+        return items.reduce(function (chain, item) {
+            return chain.then(function () {
+                return send(item).then(function (outcome) {
+                    result.sent += outcome === 'sent' ? 1 : 0;
+                    result.refused += outcome === 'refused' ? 1 : 0;
+                });
+            });
+        }, Promise.resolve()).then(function () { return result; }, function (error) {
+            error.result = result;
+            throw error;
+        });
+    }
+
     // The signed-in user whose page this is ('' when signed out).
     var pageUser = '';
 
@@ -714,7 +751,7 @@
                 li.className = 'outbox__item';
                 var label = document.createElement('span');
                 label.textContent = item.label + ' · ' + when.format(new Date(item.savedAt))
-                    + ' — ' + (item.rejected ? text('rejected') : text('pending'));
+                    + ' — ' + (item.refused ? text('refused') : item.rejected ? text('rejected') : text('pending'));
                 li.appendChild(label);
                 if (item.rejected) {
                     var review = document.createElement('a');
@@ -741,31 +778,39 @@
         var path = new URL(item.url, window.location.href).pathname;
         return fetch(item.url, { credentials: 'same-origin' })
             .then(function (response) {
-                // Signed out, or someone else signed in since: keep it for its own user.
-                if (!response.ok || new URL(response.url).pathname !== path
-                    || !sentAs(item, response.headers.get('X-Logbook-User'))) {
-                    throw new Error('signed-out');
+                var verdict = formVerdict(item, response.status, new URL(response.url).pathname, path,
+                    response.headers.get('X-Logbook-User'));
+                if (verdict === 'gone') {
+                    // Its vehicle is gone or no longer shared: keep it, pass it over.
+                    item.rejected = true;
+                    item.refused = true;
+                    return outbox.put(item).then(function () { return 'refused'; });
                 }
-                return response.text();
-            })
-            .then(function (html) {
-                var form = new DOMParser().parseFromString(html, 'text/html');
-                var body = new FormData();
-                form.querySelectorAll('input[name^="csrf_"]').forEach(function (input) {
-                    body.append(input.name, input.value);
-                });
-                item.fields.forEach(function (field) { body.append(field[0], field[1]); });
-                return fetch(item.url, { method: 'POST', body: body, credentials: 'same-origin' });
-            })
+                if (verdict !== 'ok') {
+                    // Signed out, or someone else signed in since: keep it for its own user.
+                    throw new Error(verdict);
+                }
+                return response.text().then(function (html) { return postQueued(item, html); });
+            });
+    }
+
+    function postQueued(item, html) {
+        var form = new DOMParser().parseFromString(html, 'text/html');
+        var body = new FormData();
+        form.querySelectorAll('input[name^="csrf_"]').forEach(function (input) {
+            body.append(input.name, input.value);
+        });
+        item.fields.forEach(function (field) { body.append(field[0], field[1]); });
+        return fetch(item.url, { method: 'POST', body: body, credentials: 'same-origin' })
             .then(function (response) {
                 if (response.ok && response.redirected) {
-                    return outbox.remove(item.id).then(function () { return true; });
+                    return outbox.remove(item.id).then(function () { return 'sent'; });
                 }
                 if (response.status === 422) {
                     item.rejected = true;
-                    return outbox.put(item).then(function () { return false; });
+                    return outbox.put(item).then(function () { return 'rejected'; });
                 }
-                return false;
+                return 'kept';
             });
     }
 
@@ -830,21 +875,25 @@
             return;
         }
         flushing = true;
-        var sent = 0;
         outbox.all()
             .then(function (items) {
-                return ownedBy(items, pageUser).filter(function (item) { return !item.rejected; }).reduce(function (chain, item) {
-                    return chain.then(function () {
-                        return sendQueued(item).then(function (ok) { sent += ok ? 1 : 0; });
-                    });
-                }, Promise.resolve());
+                return sendAll(ownedBy(items, pageUser).filter(function (item) { return !item.rejected; }), sendQueued);
             })
-            .then(function () { outboxNote = sent ? text('sent') : ''; })
-            .catch(function (error) { outboxNote = error && error.message === 'signed-out' ? text('signed-out') : ''; })
+            .then(function (result) {
+                outboxNote = refusedNote(result.refused) || (result.sent ? text('sent') : '');
+            }, function (error) {
+                var refused = error && error.result ? error.result.refused : 0;
+                outboxNote = refusedNote(refused) || (error && error.message === 'signed-out' ? text('signed-out') : '');
+            })
             .then(function () {
                 flushing = false;
                 renderOutbox();
             });
+    }
+
+    // "1 fill-up couldn't be sent: its vehicle is gone …" (#590).
+    function refusedNote(count) {
+        return count ? text(count === 1 ? 'refused-one' : 'refused-many').replace('%n%', String(count)) : '';
     }
 
     function enhanceOfflineForm(form) {
@@ -929,9 +978,26 @@
         caches.open('logbook-pages').then(function (cache) {
             links.forEach(function (link) {
                 fetch(link.href, { credentials: 'same-origin' }).then(function (response) {
-                    if (response.ok && !response.redirected) {
-                        cache.put(new URL(link.href).pathname, response);
+                    var path = new URL(link.href).pathname;
+                    if (!response.ok) {
+                        return;
                     }
+                    if (!response.redirected) {
+                        cache.put(path, response);
+                        return;
+                    }
+                    // A link that redirects to a form (the one-vehicle shortcut,
+                    // K163) is kept under both paths; a redirect to the sign-in
+                    // page is not kept.
+                    var finalPath = new URL(response.url).pathname;
+                    if (!/\/(fuel|trips)\/new$|\/log\/new(\/trip)?$/.test(finalPath)) {
+                        return;
+                    }
+                    return response.blob().then(function (body) {
+                        var copy = function () { return new Response(body, { status: 200, headers: response.headers }); };
+                        cache.put(path, copy());
+                        cache.put(finalPath, copy());
+                    });
                 }).catch(function () {});
             });
         });

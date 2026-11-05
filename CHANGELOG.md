@@ -6,6 +6,28 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.6] — 2026-11-05
+
+Phase 54.8: **Offline fill-ups from the known-issues log**
+([docs/phases/phase-54.8.md](docs/phases/phase-54.8.md)). No migration: pull
+and restart.
+
+### Fixed
+- **The *Log fill-up* shortcut works offline with one vehicle.** The
+  installed app's shortcut (`/fuel/new`) sends an owner with one vehicle on
+  to that vehicle's form, and the service worker never kept it, so offline
+  it showed the offline page. It now keeps the form under both paths, so the
+  shortcut opens offline after it was used online. With several vehicles the
+  chooser is kept instead, replacing the old copy the next time you open
+  the shortcut online (K163, #591, #592).
+- **One refused fill-up no longer holds up the rest.** A fill-up saved
+  offline whose vehicle has since been deleted, or no longer shared with you,
+  was never sent and stopped every fill-up saved after it, while the page said
+  you were signed out. It now stays saved on the device, is passed over, and
+  the page says "1 fill-up couldn't be sent: its vehicle is gone or no longer
+  shared with you", with *Review* and *Discard*. The others are sent; "sign in
+  again" shows only when the sign-in page answers (K164, #589, #590).
+
 ## [3.21.5] — 2026-11-01
 
 Phase 54.7: **Digest fleet line, cost per distance and archived rows from
