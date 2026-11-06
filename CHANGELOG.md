@@ -6,6 +6,31 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.8] — 2026-11-05
+
+Phase 54.11: **The Dependabot paperwork, database versions and a Windows
+test from the known-issues log**
+([docs/phases/phase-54.11.md](docs/phases/phase-54.11.md)). No migration: pull
+and restart. Only developers and people reading the deployment guide notice
+this release.
+
+### Changed
+- **The deployment guide names the database versions that are tested.** Its
+  requirements said "PostgreSQL 13+ or MySQL 8.0+ / MariaDB 10.6+". They now
+  say Logbook is tested on PostgreSQL 17, MySQL 8.4 and MariaDB 11.4, and
+  that older releases may work but aren't tested (K181, #601).
+- **The development stack runs MariaDB 11.4**, the version the tests and the
+  deployment guide name, instead of 13.0 (K178, #600). It keeps its data in
+  a new volume, `mariadb_11_4`: data from the 13.0 container isn't carried
+  over, and `CONTRIBUTING.md` says how to delete the old volume. A test now
+  fails if the dev stack and CI run different MariaDB images.
+
+### Fixed
+- **The Markdown link test passes on Windows** (K184).
+- **Phase 54.10 (Dependabot) is recorded as complete**: its phase file,
+  spec entry and ROADMAP row, including the ignore rules added after it
+  (K179).
+
 ## [3.21.7] — 2026-11-05
 
 Phase 54.9: **A clearer message for an import number**

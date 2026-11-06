@@ -12615,14 +12615,16 @@ task breakdowns live in the per-phase files; this is the map.
   phases 53.16–53.20 and 54.4 are settled honestly, and the release
   skill's check names them (K172, #595). Releases v3.21.7 (#593). No
   migration. See [`phase-54.9.md`](docs/phases/phase-54.9.md).
-- **Phase 54.10 — Dependabot version updates** (planned). A new
+- **Phase 54.10 — Dependabot version updates** (complete). A new
   `.github/dependabot.yml` has Dependabot open weekly pull requests for
   Composer, npm, GitHub Actions and the Docker and compose images, minor and
-  patch updates grouped per ecosystem and each major update on its own. No
+  patch updates grouped per ecosystem and each major update on its own,
+  except a phpseclib major (K174), PHPStan 2.3 and later (K175) and a
+  PostgreSQL, MySQL or MariaDB major (K177, #596), which it leaves alone. No
   release of its own, no migration. See
   [`phase-54.10.md`](docs/phases/phase-54.10.md).
 - **Phase 54.11 — The Dependabot paperwork, database versions and a Windows
-  test from the known-issues log + patch release** (planned). The dev stack
+  test from the known-issues log + patch release** (complete). The dev stack
   runs MariaDB 11.4 on its own volume, with a test that keeps it on CI's
   image (§4, K178, #600); Phase 54.10's file, spec entry and ROADMAP row say
   it is complete (K179); the deployment guide names the tested database

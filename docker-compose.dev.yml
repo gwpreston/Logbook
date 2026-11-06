@@ -81,7 +81,7 @@ services:
       retries: 40
 
   mariadb:
-    image: mariadb:13.0
+    image: mariadb:11.4
     profiles: ["mariadb", "all"]
     environment:
       MARIADB_DATABASE: logbook
@@ -89,6 +89,9 @@ services:
       MARIADB_PASSWORD: logbook
       MARIADB_RANDOM_ROOT_PASSWORD: "yes"
     volumes:
+      # Named for the version: data written by an older or newer MariaDB (the dev stack once
+      # ran 13.0) stays in its own volume, because 11.4 can't open it (spec.md §4, K178).
+      - mariadb_11_4:/var/lib/mysql
       - ./docker/dev/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
@@ -98,3 +101,4 @@ services:
 volumes:
   vendor:
   dev_data:
+  mariadb_11_4:

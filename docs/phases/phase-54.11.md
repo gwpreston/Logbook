@@ -5,7 +5,7 @@ MariaDB that is supported, the deployment guide names the database versions
 that are tested, Phase 54.10's paperwork says it is done, and one test no
 longer fails on Windows.*
 
-Status: 📋 planned · releases **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.9](phase-54.9.md). It takes K178, K179,
 K181 and K184: the three that need no decision of the owner's beyond the
@@ -79,14 +79,14 @@ tagged.
 
 ### 54.11.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #599–#601 are decided; #597 and
       #598 are open but belong to K182 and K183, which aren't in this
       phase.
 
 ### 54.11.1 The dev stack's MariaDB (K178)
 
-- [ ] `docker-compose.dev.yml`: `image: mariadb:11.4`, the named volume
+- [x] `docker-compose.dev.yml`: `image: mariadb:11.4`, the named volume
       `mariadb_11_4` at `/var/lib/mysql`, and it listed under `volumes:`.
       `CONTRIBUTING.md` (*Dev stack*) carries the note in the decision above.
       A test in `tests/Unit/Architecture/` reads both files and checks the
@@ -95,33 +95,35 @@ tagged.
 
 ### 54.11.2 Phase 54.10's paperwork (K179)
 
-- [ ] `phase-54.10.md`: status `✅ complete · no release of its own`,
+- [x] `phase-54.10.md`: status `✅ complete · no release of its own`,
       prerequisite note, tasks ticked as merged in #172, Decisions for the
       ignore rules. `spec.md` §13: "(complete)" and a clause for the ignore
       rules. `ROADMAP.md`: a `54.10` row (✅) between 54.9 and 54.11.
 
 ### 54.11.3 The deployment guide (K181)
 
-- [ ] `docs/deployment.md` (requirements, line 196): the sentence in the
+- [x] `docs/deployment.md` (requirements, line 196): the sentence in the
       decision above. Anywhere else the guide or `README.md` names older
       minimums is changed the same way (search `10.6`, `MySQL 8.0`,
       `PostgreSQL 13`).
 
 ### 54.11.4 The Windows link test (K184)
 
-- [ ] `tests/Unit/Docs/MarkdownLinksTest.php:42` compares with normalised
+- [x] `tests/Unit/Docs/MarkdownLinksTest.php:42` compares with normalised
       separators. It passes on Linux in Docker; the Windows run is checked
       on a Windows checkout where possible, and the result noted.
+      Checked on Windows (PHP 8.5, 2026-11-05): the test failed before the
+      change and passes after it, all nine `MarkdownLinksTest` tests.
 
 ### 54.11.5 Finish
 
-- [ ] Known-issues rows K178, K179, K181 and K184 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] Known-issues rows K178, K179, K181 and K184 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.8, CHANGELOG 3.21.8, README status (#599).
+- [x] VERSION 3.21.8, CHANGELOG 3.21.8, README status (#599).
 - [ ] Tag `v3.21.8` once merged.
 
 ## Acceptance criteria
