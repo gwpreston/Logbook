@@ -5,7 +5,7 @@ MariaDB that is supported, the deployment guide names the database versions
 that are tested, Phase 54.10's paperwork says it is done, and one test no
 longer fails on Windows.*
 
-Status: ✅ complete · releases **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.8**, a patch release (#599) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.9](phase-54.9.md). It takes K178, K179,
 K181 and K184: the three that need no decision of the owner's beyond the
@@ -119,12 +119,12 @@ tagged.
 
 - [x] Known-issues rows K178, K179, K181 and K184 *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Merge review; merge. (Merged in #199; no merge review was recorded. Ticked 2026-11-06 for the release.)
 
 ### Release
 
 - [x] VERSION 3.21.8, CHANGELOG 3.21.8, README status (#599).
-- [ ] Tag `v3.21.8` once merged.
+- [x] Tag `v3.21.8` once merged.
 
 ## Acceptance criteria
 
