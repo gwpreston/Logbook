@@ -12639,7 +12639,7 @@ task breakdowns live in the per-phase files; this is the map.
   (K184). Releases v3.21.8 (#599). No migration. See
   [`phase-54.11.md`](docs/phases/phase-54.11.md).
 - **Phase 54.12 — The Windows architecture tests from the known-issues log +
-  patch release** (planned). `MailTransportTest` and `PasswordHashingTest`
+  patch release** (complete). `MailTransportTest` and `PasswordHashingTest`
   compare forward-slash paths so they pass on Windows (K185, the three
   source-scan tests; its Accessibility and time-limit parts stay open), and
   K160 is recorded as fixed by K176. Releases v3.21.9 (#602). No migration.

@@ -54,7 +54,10 @@ final class PasswordHashingTest extends TestCase
         $root = Kernel::rootDir() . '/';
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory)) as $file) {
             if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
-                yield substr($file->getPathname(), strlen($root)) => (string) file_get_contents($file->getPathname());
+                // Windows paths use backslashes; compare with forward slashes so the allowed
+                // files (a constant like HASHER) match on every platform (K185).
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root)));
+                yield $relative => (string) file_get_contents($file->getPathname());
             }
         }
     }

@@ -6,6 +6,20 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.9] — 2026-11-06
+
+Phase 54.12: **The Windows architecture tests from the known-issues log**
+([docs/phases/phase-54.12.md](docs/phases/phase-54.12.md)). No migration: pull
+and restart. Only developers running the tests on Windows notice this release.
+
+### Fixed
+- **Three source-scan tests pass on Windows.** `MailTransportTest` (both
+  tests) and `PasswordHashingTest` flagged the one file each allows because
+  Windows paths use backslashes; they now compare forward-slash paths (K185).
+  Two other Windows failures in K185 stay open.
+- **K160 is recorded as fixed:** `symfony/mime` has been 7.4.22 since K176 and
+  `composer audit` no longer lists the advisory.
+
 ## [3.21.8] — 2026-11-05
 
 Phase 54.11: **The Dependabot paperwork, database versions and a Windows
