@@ -4,7 +4,7 @@
 fixed: three source-scan tests no longer fail on Windows, and K160 is marked
 *Fixed*.*
 
-Status: 🚧 in progress · releases **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.11](phase-54.11.md). Only one open row of
 the log is small and needs no decision: the three architecture tests of
@@ -71,26 +71,29 @@ tagged.
 
 ### 54.12.1 The source-scan tests (K185)
 
-- [ ] `tests/Unit/Architecture/MailTransportTest.php` and
+- [x] `tests/Unit/Architecture/MailTransportTest.php` and
       `PasswordHashingTest.php`: `phpFiles()` yields forward-slash relative
       paths. Run the three tests on Windows before and after and note both
       results here; they pass on Linux either way.
+      Checked on Windows (PHP 8.5, 2026-11-06): the three tests failed before
+      the change and pass after it (4 tests, 6 assertions with their
+      neighbours).
 
 ### 54.12.2 The log (K160, K185)
 
-- [ ] `known-issues.md`: K160 *Fixed* (`symfony/mime` 7.4.22, K176;
+- [x] `known-issues.md`: K160 *Fixed* (`symfony/mime` 7.4.22, K176;
       `composer audit` clean for it). K185's text says the Settings failure is
       really the import-mapping step, and its status returns to *Open* with
       only the Accessibility and time-limit parts left once 54.12.1 is done.
 
 ### 54.12.3 Finish
 
-- [ ] CHANGELOG; spec §13; ROADMAP status.
+- [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
 ### Release
 
-- [ ] VERSION 3.21.9, CHANGELOG 3.21.9, README status (#602).
+- [x] VERSION 3.21.9, CHANGELOG 3.21.9, README status (#602).
 - [ ] Tag `v3.21.9` once merged.
 
 ## Acceptance criteria
