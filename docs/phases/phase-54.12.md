@@ -4,7 +4,7 @@
 fixed: three source-scan tests no longer fail on Windows, and K160 is marked
 *Fixed*.*
 
-Status: ✅ complete · releases **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.11](phase-54.11.md). Only one open row of
 the log is small and needs no decision: the three architecture tests of
@@ -89,12 +89,12 @@ tagged.
 ### 54.12.3 Finish
 
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Merge review; merge. (Merged in #203; no merge review was recorded. Ticked 2026-11-06 for the release.)
 
 ### Release
 
 - [x] VERSION 3.21.9, CHANGELOG 3.21.9, README status (#602).
-- [ ] Tag `v3.21.9` once merged.
+- [x] Tag `v3.21.9` once merged.
 
 ## Acceptance criteria
 
