@@ -143,6 +143,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.9](docs/phases/phase-54.9.md) | The import number message and merge-review records from the known-issues log + patch release | ✅ |
 | [54.10](docs/phases/phase-54.10.md) | Dependabot version updates | ✅ |
 | [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | ✅ |
+| [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1938,6 +1939,20 @@ fails on Windows.*
   migration.
 
 → [`phase-54.11.md`](docs/phases/phase-54.11.md)
+
+---
+
+## Phase 54.12 — The Windows architecture tests from the known-issues log + patch release
+
+*Three source-scan tests stop failing on Windows, and K160 is recorded as
+already fixed.*
+
+- `MailTransportTest` and `PasswordHashingTest` compare forward-slash paths
+  (K185, the three tests; its other two parts stay open).
+- K160 is marked *Fixed* (`symfony/mime` 7.4.22, K176).
+- Releases v3.21.9 (#602). No migration.
+
+→ [`phase-54.12.md`](docs/phases/phase-54.12.md)
 
 ---
 
