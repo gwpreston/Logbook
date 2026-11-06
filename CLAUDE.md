@@ -116,6 +116,14 @@ Wire these up in `composer.json` scripts so they exist as named commands.
 - Enums for fixed sets (fuel type, unit system, reminder status). Value objects
   for money and quantities (see §8).
 - Return typed results; avoid untyped arrays crossing service boundaries.
+- **Comments:** every new or changed class and public method gets a short
+  plain-English docblock saying what it does and why (cite the `spec.md` §
+  a rule comes from). Inside methods, comment each non-obvious step: the
+  business rule, a unit, currency or time-zone conversion, a cross-DB
+  workaround, an edge case kept on purpose (zero cost, partial fill). Don't
+  comment lines that already say what they do. Keep comments true: update or
+  delete them when the code changes. The same goes for JS in `assets/js/`,
+  and Twig `{# #}` comments where template logic isn't obvious.
 
 ---
 
@@ -197,7 +205,8 @@ admin running the app is the one who changes it.
 
 ## 11. Definition of done (every change)
 
-1. Runs on PHP 8.4, passes `lint` and `analyse`.
+1. Runs on PHP 8.4, passes `lint` and `analyse`, is commented per §5 and
+   has been through the code-simplifier pass.
 2. Has tests; suite passes against **both** MySQL and Postgres.
    **Coverage:** at least **80%** of the `src/` lines a change adds or
    modifies are covered, and overall `src/` line coverage stays at or above
