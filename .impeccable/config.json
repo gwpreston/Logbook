@@ -1,0 +1,42 @@
+{
+  "detector": {
+    "extensions": [
+      {
+        "ext": ".twig",
+        "engine": "html"
+      }
+    ],
+    "ignoreFiles": [
+      "design-import/**",
+      "public/assets/**",
+      "assets/vendor/**",
+      "vendor/**",
+      "var/**"
+    ],
+    "ignoreRules": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-11-06T04:50:18.879Z",
+        "reason": "User confirmed: the design-import prototype is the visual source and sets this font"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgb(0, 0, 0)",
+        "files": [
+          "templates/**"
+        ],
+        "createdAt": "2026-11-06T04:50:18.899Z",
+        "reason": "Agent: Twig templates are scanned without app.css, so default black is reported for every element"
+      }
+    ]
+  },
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  }
+}

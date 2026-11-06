@@ -116,10 +116,27 @@ and the conventions in the existing code.
   built ones.
 - Migrations: Phinx, portable, and `migrate`, `rollback`, `migrate` clean
   on every engine.
-- UI changes: check them in the browser (the `run` skill or
-  `bin/dev-setup.sh`) at 375, 768 and 1280 px, light and dark, with JS off
-  for core flows, and at a subpath. Record a design review in the phase
-  file as 33.x did, and fix HIGH and MEDIUM items.
+- UI changes go through the `impeccable` skill, which reads `PRODUCT.md`
+  and `DESIGN.md` (keep `DESIGN.md` true to `assets/css/app.css`, the
+  prototype in `design-import/` and `spec.md` §8; where they disagree,
+  those win). Refine the existing design; never redesign unless the phase
+  file says so.
+  - **Before** building a new page, flow or widget: `/impeccable shape
+    <feature>` to plan it. A choice it raises that the phase file doesn't
+    settle goes to step 3.
+  - **After** building it: `/impeccable audit <templates and CSS changed>`
+    and `/impeccable critique <page>`, then `/impeccable polish` on the
+    changed pages. Fix HIGH and MEDIUM items; the rest go in the design
+    review below.
+  - The design hook flags drift on each edit (`.impeccable/config.json`):
+    fix real findings; add an ignore only with the evidence in `--reason`.
+  - Then check them in the browser (the `run` skill or
+    `bin/dev-setup.sh`) at 375, 768 and 1280 px, light and dark, with JS
+    off for core flows, and at a subpath. Record a design review in the
+    phase file as 33.x did, with what Impeccable found and what was fixed.
+  - If the phase changes a token, colour, font, radius or component,
+    update `DESIGN.md` (and `.impeccable/design.json`) in the same commit:
+    `/impeccable document` refreshes both.
 - Sample data: if the phase file has a *Sample data* task, extend the seeds.
 - Anything the phase file doesn't decide goes to step 3, not into the code.
 - Avoid variable-length lookbehinds in regexes: CI's PCRE2 is older than the
@@ -212,7 +229,8 @@ still running on the PR (`/autofix-pr stop` ends this session's polling).
 
 The phase built and why it was next, the decisions taken (with log
 numbers), the PR URL, the checks and their results per engine, whether
-the simplifier pass ran on every task (and why not, where it didn't), anything
+the simplifier pass ran on every task (and why not, where it didn't), the
+Impeccable audit and critique for UI changes, anything
 skipped or carried over, and whether autofix is on or still waiting for the
 user's `/autofix-pr`. For a releasing phase, remind them that `/release`
 tags it once merged. Say plainly if any step was skipped or failed.

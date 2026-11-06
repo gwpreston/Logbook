@@ -152,6 +152,11 @@ Wire these up in `composer.json` scripts so they exist as named commands.
   validation).
 - Mobile-first, responsive, accessible: keyboard-navigable, labelled inputs,
   sufficient contrast, focus states, `aria` where needed.
+- **Design context:** `PRODUCT.md` (who it's for, brand commitments) and
+  `DESIGN.md` (tokens, components, do's and don'ts) record the existing
+  design for the `impeccable` skill. Use tokens, refine rather than
+  redesign, and keep `DESIGN.md` in step with `assets/css/app.css`.
+  `spec.md` §8 and `design-import/` win where they differ.
 - Ship a **PWA**: web manifest + service worker so quick fuel entry works on a
   phone, including a fast "add fill-up" path.
 - Bundle assets so the bare-PHP install needs no Node at runtime. Commit built
