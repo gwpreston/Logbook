@@ -155,6 +155,11 @@ before writing the fix.
 - Make the fix, following CLAUDE.md (§5–§8, and §11 for done). Add the
   test from the phase file; for a fix tests can't see (CSS, layout) add a
   structural test as 10.2 did and check it in the browser.
+- Comment the fix per CLAUDE.md §5: what was wrong and why the fix is
+  right. Then run the `code-simplifier:code-simplifier` agent on the fix's
+  diff with the same brief as `/next-phase` step 5 (preserve behaviour,
+  keep explanatory comments, touch nothing outside the diff), review its
+  edits and re-run the test.
 - Rebuild assets if any source asset changed, and commit the built ones.
 - New or changed user-facing strings go in every catalogue in
   `translations/`.
