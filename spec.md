@@ -27,6 +27,14 @@ shipped dependency's licence is not on the script's allowlist). Contributions
 are accepted under the same licence with a DCO sign-off (`CONTRIBUTING.md`).
 No per-file SPDX headers (decided 2026-10-13, `docs/phases/open-questions.md`
 #386–#389).
+The bundled front-end libraries in `assets/vendor` are the versions
+`package-lock.json` names: a test compares them with the versions in
+`assets/vendor/THIRD-PARTY-NOTICES.txt`, so a Dependabot npm pull request
+fails until it is re-vendored with `npm run vendor` (Phase 54.13, K183,
+#598, #605). `composer audit --no-dev` runs in CI, and a locked production
+package with a published advisory fails it (K182, #606); `symfony/http-client`
+allows `^7.4 || ^8.0` so the fixed 7.4 line can be locked while the platform
+pin stays PHP 8.4.0 (#597).
 
 ---
 
@@ -12644,6 +12652,14 @@ task breakdowns live in the per-phase files; this is the map.
   source-scan tests; its Accessibility and time-limit parts stay open), and
   K160 is recorded as fixed by K176. Releases v3.21.9 (#602). No migration.
   See [`phase-54.12.md`](docs/phases/phase-54.12.md).
+- **Phase 54.13 — The Symfony advisories and the vendored libraries from the
+  known-issues log + patch release** (planned). `symfony/http-client` is
+  widened to `^7.4 || ^8.0` and the lock moves `http-client`, `config`,
+  `filesystem` and `yaml` to 7.4.23, with `composer audit --no-dev` in CI
+  (§1, K182, #597, #606); the vendored Alpine, Chart.js and icons match
+  `package.json`, with a test comparing the notices with `package-lock.json`
+  (§1, K183, #598, #604, #605). Releases v3.21.10 (#603). No migration. See
+  [`phase-54.13.md`](docs/phases/phase-54.13.md).
 
 ---
 

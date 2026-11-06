@@ -144,6 +144,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.10](docs/phases/phase-54.10.md) | Dependabot version updates | ✅ |
 | [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | ✅ |
 | [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | ✅ |
+| [54.13](docs/phases/phase-54.13.md) | The Symfony advisories and the vendored libraries from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1953,6 +1954,23 @@ already fixed.*
 - Releases v3.21.9 (#602). No migration.
 
 → [`phase-54.12.md`](docs/phases/phase-54.12.md)
+
+---
+
+## Phase 54.13 — The Symfony advisories and the vendored libraries from the known-issues log + patch release
+
+*Two open rows closed: the locked Symfony packages lose their advisories, and
+the bundled front-end libraries match `package.json` with a test to keep
+them so.*
+
+- `symfony/http-client` is widened to `^7.4 || ^8.0` and locked at 7.4.23
+  with `config`, `filesystem` and `yaml`; CI runs `composer audit --no-dev`
+  (K182, #597, #606).
+- The vendored Alpine, Chart.js and icons are rebuilt to the versions in
+  `package.json`, and a test fails when the notices and `package-lock.json`
+  differ (K183, #598, #604, #605). Releases v3.21.10 (#603). No migration.
+
+→ [`phase-54.13.md`](docs/phases/phase-54.13.md)
 
 ---
 
