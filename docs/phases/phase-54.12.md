@@ -4,7 +4,7 @@
 fixed: three source-scan tests no longer fail on Windows, and K160 is marked
 *Fixed*.*
 
-Status: 📋 planned · releases **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.9**, a patch release (#602) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.11](phase-54.11.md). Only one open row of
 the log is small and needs no decision: the three architecture tests of
@@ -65,7 +65,7 @@ tagged.
 
 ### 54.12.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #597 and #598 are open but belong to
       K182 and K183, which aren't in this phase.
 
