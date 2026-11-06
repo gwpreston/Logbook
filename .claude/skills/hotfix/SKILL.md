@@ -154,7 +154,9 @@ before writing the fix.
 
 - Make the fix, following CLAUDE.md (§5–§8, and §11 for done). Add the
   test from the phase file; for a fix tests can't see (CSS, layout) add a
-  structural test as 10.2 did and check it in the browser.
+  structural test as 10.2 did and check it in the browser. For a UI fix,
+  run `/impeccable audit` on the changed template or CSS and keep within
+  `DESIGN.md`.
 - Comment the fix per CLAUDE.md §5: what was wrong and why the fix is
   right. Then run the `code-simplifier:code-simplifier` agent on the fix's
   diff with the same brief as `/next-phase` step 5 (preserve behaviour,

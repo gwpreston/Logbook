@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T00:00:00Z",
+  "title": "Design System: Logbook",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Logbook Blue"
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Cool Paper"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Card White"
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Mist"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Deep Navy Ink"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Slate"
+      },
+      "green": {
+        "role": "status",
+        "displayName": "OK Green"
+      },
+      "amber": {
+        "role": "status",
+        "displayName": "Due-soon Amber"
+      },
+      "red": {
+        "role": "status",
+        "displayName": "Overdue Red"
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 1px 2px rgba(14,28,46,.05), 0 10px 30px rgba(14,28,46,.08)",
+        "purpose": "Only for layers floating over the page: dialogs, sheets, menus, combobox lists."
+      }
+    ],
+    "motion": [
+      {
+        "name": "quick",
+        "value": "0.15s ease",
+        "purpose": "Short state changes; off under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "48rem"
+      },
+      {
+        "name": "wide",
+        "value": "60rem"
+      },
+      {
+        "name": "xl",
+        "value": "72rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action in a card or form.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save fill-up</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--border,#e1e6ed);border-radius:12px;background:var(--surface,#fff);color:var(--text,#0e1c2e);font-weight:700;font-size:14px;cursor:pointer}.ds-btn-primary{border-color:var(--accent,#1667d9);background:var(--accent,#1667d9);color:var(--on-accent,#fff)}.ds-btn-primary:hover{background:color-mix(in oklab,var(--accent,#1667d9) 88%,var(--text,#0e1c2e))}.ds-btn:focus-visible{outline:2px solid var(--accent,#1667d9);outline-offset:2px}"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Secondary actions.",
+      "html": "<button class=\"ds-btn2\">Cancel</button>",
+      "css": ".ds-btn2{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--border,#e1e6ed);border-radius:12px;background:var(--surface,#fff);color:var(--text,#0e1c2e);font-weight:700;font-size:14px;cursor:pointer}.ds-btn2:hover{background:var(--surface-2,#eef1f5)}.ds-btn2:focus-visible{outline:2px solid var(--accent,#1667d9);outline-offset:2px}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text, number and date fields with a label above.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">Odometer</span><input class=\"ds-input\" value=\"48 210\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px}.ds-label{color:var(--muted,#5c6b7e);font-size:13px;font-weight:700}.ds-input{min-height:48px;padding:0 14px;border:1px solid var(--border,#e1e6ed);border-radius:12px;background:var(--surface-2,#eef1f5);color:var(--text,#0e1c2e);font-size:16px}.ds-input:focus-visible{outline:2px solid var(--accent,#1667d9);outline-offset:0;border-color:var(--accent,#1667d9)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat white container on the page.",
+      "html": "<section class=\"ds-card\"><h3>Needs attention</h3><p>MOT due in 12 days</p></section>",
+      "css": ".ds-card{padding:18px;background:var(--surface,#fff);border:1px solid var(--border,#e1e6ed);border-radius:20px;color:var(--text,#0e1c2e)}.ds-card h3{margin:0 0 8px;font-size:17px;font-weight:600}"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "Due soon / overdue / valid, in words and colour.",
+      "html": "<span class=\"ds-pill ds-pill-soon\">Due soon</span>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:700}.ds-pill-soon{background:rgba(232,150,20,.16);color:var(--amber,#945700)}"
+    },
+    {
+      "name": "Number Plate",
+      "kind": "custom",
+      "refersTo": "plate-gb",
+      "description": "The vehicle's registration as on the car.",
+      "html": "<span class=\"ds-plate\"><span class=\"ds-band\">UK</span><span class=\"ds-reg\">AB12 CDE</span></span>",
+      "css": ".ds-plate{display:inline-flex;height:24px;overflow:hidden;border:1px solid #111;border-radius:4px;background:#f6cf3a;color:#111;font-weight:700;font-size:13px}.ds-band{display:flex;align-items:center;padding:0 4px;background:#00309a;color:#fff;font-size:10px}.ds-reg{display:flex;align-items:center;padding:0 8px;letter-spacing:.06em}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Glovebox Ledger",
+    "keyCharacteristics": [
+      "Calm cool-grey canvas, white cards, navy text; one accent.",
+      "Status by colour and words or icons, never colour alone.",
+      "Flat surfaces with hairline borders; shadows only on floating layers.",
+      "44 px minimum targets, 48 px inputs; soft 12–20 px corners.",
+      "Outfit for headings and figures, Plus Jakarta Sans for everything else.",
+      "Light and dark themes and four accents, all from tokens."
+    ],
+    "rules": [
+      {
+        "name": "The Status Is Sacred Rule",
+        "body": "Red, amber and green mean overdue, due soon and OK. They never change with the accent, and they are never used just to add colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Not Colour Alone Rule",
+        "body": "Every state shown in colour is also shown in words, an icon or a tick.",
+        "section": "colors"
+      },
+      {
+        "name": "The Figures In Outfit Rule",
+        "body": "Numbers that matter and the plate use the display font; running text never does.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Until It Floats Rule",
+        "body": "A card resting on the page has a border and no shadow. A shadow means this is on top of something.",
+        "section": "elevation"
+      }
+    ]
+  }
+}

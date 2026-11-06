@@ -10983,7 +10983,14 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   the monthly digest: it remembers reads for the length of one user's run
   (`RequestReads::scoped()`), so ten vehicles cost the job the queries one
   does (Phase 54.3, K151).
-- **Accessibility:** keyboard navigation, labels, contrast, focus states.
+- **Accessibility:** keyboard navigation, labels, contrast, focus states,
+  to WCAG 2.2 AA (decided 2026-11-06).
+- **Design system record:** `DESIGN.md` describes the built design system
+  (tokens, components, do's and don'ts) and `PRODUCT.md` the users, voice
+  and brand commitments, for design work and the `impeccable` skill. They
+  record this section and `assets/css/app.css`; where they differ, this
+  section and the CSS win. A change to a token or component updates
+  `DESIGN.md` in the same change.
 - **Tap targets** (#457, decided 2026-10-21): at narrow widths every
   interactive control has a hit area at least 44 × 44 px. Compact
   controls (soft buttons, segmented tabs, back and card links,
