@@ -6766,11 +6766,19 @@ a.list__title:hover {
     color: var(--green);
 }
 
+/* Closed without adding anything: the plain hairline and a muted status line.
+   No fading: 85% opacity took the muted text to 4.0:1, below AA. */
+.draft-card--duplicate,
 .draft-card--discarded,
 .draft-card--expired,
 .draft-card--undone {
     border-color: var(--border);
-    opacity: 0.85;
+}
+
+/* Every part sits on the card's grid gap; a paragraph's own margin (the
+   derived-value note above a warning) would double it. */
+.draft-card p {
+    margin: 0;
 }
 
 .draft-card__header {
@@ -6805,7 +6813,9 @@ a.list__title:hover {
 
 .draft-card__fields {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    /* 8.5rem keeps two columns on a 360 px phone, so a fill-up's seven fields
+       take four rows instead of seven; at 320 px they fall back to one. */
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
     gap: var(--space-2);
     margin: 0;
 }

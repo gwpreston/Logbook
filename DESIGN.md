@@ -320,6 +320,19 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
 - **Internal Padding:** 18px; header row with a 17px title and an optional
   bold 13px link on the right.
 
+### Draft card (Ask)
+- **Shape:** a 16px-corner tile, 12px padding, its parts spaced only by the
+  card's 8px gap (paragraph margins are off inside it).
+- **Fields:** a grid of label-over-value pairs, at least 8.5rem wide, so a
+  fill-up's fields sit two to a row on a 360px phone.
+- **States by border and status line, never by fading:**
+  - *Waiting:* accent-tinted hairline; Add, Edit and Discard.
+  - *Added:* green-tinted hairline, a green tick and "Added".
+  - *Already logged:* nothing was added, so plain hairline, a muted info icon
+    and the message. It never borrows *Added*'s green.
+  - *Undone, discarded, expired:* plain hairline and a muted status line.
+    No reduced opacity: it took muted text below AA.
+
 ### Inputs / Fields
 - **Style:** Mist fill, hairline border, 12px corners, 48px tall, 16px
   text; the label above in bold 13px Slate, a hint below in muted 12.5px.

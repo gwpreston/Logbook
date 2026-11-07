@@ -201,6 +201,46 @@ final class DraftingTest extends AskTestCase
         self::assertSame(1, $this->rows($this->app, 'fuel_entries'));
     }
 
+    /**
+     * A draft whose entry is already logged adds nothing, so its card must not
+     * look like a success: its own state class, a muted status, no green tick.
+     */
+    public function testADuplicateDraftsCardDoesNotLookAdded(): void
+    {
+        $fillUp = [
+            'vehicle' => $this->bmw->id,
+            'volume' => '51',
+            'volume_unit' => 'l',
+            'price_per_unit' => '1.39',
+            'fuel' => 'E10',
+            'odometer' => '72,341',
+        ];
+        $first = self::id($this->draft('draft_fill_up', $fillUp));
+        $second = self::id($this->draft('draft_fill_up', $fillUp));
+
+        $this->press($first, 'add');
+        $page = $this->press($second, 'add');
+
+        self::assertSame(1, $this->rows($this->app, 'fuel_entries'), 'the second adds nothing');
+        $card = self::card($page, $second);
+        self::assertStringContainsString('draft-card--duplicate', $card);
+        self::assertStringNotContainsString('draft-card--added', $card);
+        self::assertStringContainsString('draft-card__status muted', $card);
+        self::assertStringNotContainsString('#check_circle', $card);
+    }
+
+    /** The markup of one draft's card, cut from the page. */
+    private static function card(string $page, int $draft): string
+    {
+        $start = strpos($page, '<section class="draft-card');
+        while ($start !== false && !str_contains(substr($page, $start, 200), 'id="draft-' . $draft . '"')) {
+            $start = strpos($page, '<section class="draft-card', $start + 1);
+        }
+        self::assertNotFalse($start, 'draft ' . $draft . ' is on the page');
+
+        return substr($page, $start, (int) strpos($page, '</section>', $start) - $start);
+    }
+
     public function testARemindTwoWeeksBeforeTheMotIsWorkedOutFromTheDocument(): void
     {
         $arguments = [
