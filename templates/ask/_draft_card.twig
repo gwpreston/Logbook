@@ -11,7 +11,9 @@
 {% set card = item.card %}
 {% set from_mcp = draft.source.value == 'mcp' %}
 {% set draft_route = from_mcp ? 'drafts.action' : 'insights.questions.draft' %}
-<section class="draft-card draft-card--{{ item.state }}" id="draft-{{ draft.id }}" aria-labelledby="draft-{{ draft.id }}-title" data-draft-card>
+{# A duplicate is an `added` draft that added nothing: it gets its own class so it doesn't look like a success. #}
+{% set duplicate = item.state == 'added' and (card.duplicate ?? false) %}
+<section class="draft-card draft-card--{{ duplicate ? 'duplicate' : item.state }}" id="draft-{{ draft.id }}" aria-labelledby="draft-{{ draft.id }}-title" data-draft-card>
     <header class="draft-card__header">
         {% if item.vehicle %}{{ ui.vehicle_photo(item.vehicle, 'draft-card__photo') }}{% endif %}
         <div>
@@ -50,7 +52,11 @@
                 <button class="btn btn--ghost" type="submit">{{ ui.icon('close') }}{{ 'ask.draft.discard'|trans }}</button>
             </form>
         {% elseif item.state == 'added' %}
-            <p class="draft-card__status" role="status">{{ ui.icon('check_circle') }}{{ (card.duplicate ?? false) ? 'ask.draft.duplicate'|trans : 'ask.draft.added'|trans }}</p>
+            {% if duplicate %}
+                <p class="draft-card__status muted" role="status">{{ ui.icon('info') }}{{ 'ask.draft.duplicate'|trans }}</p>
+            {% else %}
+                <p class="draft-card__status" role="status">{{ ui.icon('check_circle') }}{{ 'ask.draft.added'|trans }}</p>
+            {% endif %}
             <a class="btn btn--ghost" href="{{ url_for(item.view[0], item.view[1]) }}">{{ 'ask.draft.view'|trans }}</a>
             {% if item.can_undo %}
                 <form method="post" action="{{ url_for(draft_route, {draft: draft.id, action: 'undo'}) }}" data-draft-undo="{{ item.undo_seconds }}">
