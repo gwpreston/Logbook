@@ -225,6 +225,16 @@ warm and easy to read at 13–14 px. Both are self-hosted.
   doesn't zoom, and for long text.
 - **Label** (700, 11–13px): field labels (13px, muted) and section labels
   (11px, upper-case, 0.08em tracking).
+- **Meta** (400, 12.5px): field hints and errors, row details in lists.
+
+### Line breaks and measure
+- Headings and titles (h1–h3, card, empty-state, dialog, legend and widget
+  titles) use `text-wrap: balance`, so a long name or a German title
+  splits evenly rather than leaving one word behind.
+- Paragraphs use `text-wrap: pretty`. Both are progressive: older browsers
+  wrap as before.
+- Ask answers, the one place people read paragraphs, stop at 70ch inside
+  their 45rem column.
 
 ### Named Rules
 **The Figures In Outfit Rule.** Numbers that matter (totals, economy,

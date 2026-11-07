@@ -320,6 +320,19 @@ h3 {
     font-family: var(--font-display);
     font-weight: 600;
     line-height: 1.2;
+    /* Even out a heading that wraps, so a long vehicle name or a German title
+       doesn't leave one word on its own line. Browsers without it wrap as before. */
+    text-wrap: balance;
+}
+
+/* Titles that aren't h1–h3 elements wrap the same way. */
+.card__title,
+.empty__title,
+.modal__title,
+.fieldset__legend,
+.widget__title,
+.ask-card__title {
+    text-wrap: balance;
 }
 
 h1 {
@@ -338,6 +351,8 @@ h3 {
 
 p {
     margin: 0 0 var(--space-3);
+    /* Avoid a lone last word in hints, leads and empty states; progressive. */
+    text-wrap: pretty;
 }
 
 p:last-child {
@@ -991,9 +1006,19 @@ a.list__item:hover {
     gap: var(--space-3);
 }
 
+/* Answers are the one place a user reads paragraphs: keep the line to a
+   comfortable measure in the 45rem column instead of ~95 characters. */
+.ask-answer__text {
+    max-width: 70ch;
+}
+
 .ask-answer__text p,
 .ask-answer__text ul {
     margin: 0 0 var(--space-2);
+}
+
+.ask-answer__text li {
+    text-wrap: pretty;
 }
 
 .ask-answer__text > :last-child {
