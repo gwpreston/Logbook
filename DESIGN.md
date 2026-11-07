@@ -59,6 +59,10 @@ typography:
     fontSize: "0.6875rem"
     fontWeight: 700
     letterSpacing: "0.08em"
+  figure:
+    fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 600
   meta:
     fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
     fontSize: "0.78125rem"
@@ -220,12 +224,21 @@ warm and easy to read at 13–14 px. Both are self-hosted.
 - **Display** (600, 30px, 1.2): hero figures such as a total or an economy
   figure.
 - **Headline** (600, 28px, 1.2, -0.02em): page titles (h1).
-- **Title** (600, 17–20px, 1.2): card titles (17px) and dialog titles (20px).
-- **Body** (400–500, 14px, 1.5): all UI text; 16px in inputs so iOS
-  doesn't zoom, and for long text.
+- **Figure** (600, 22px, display face): stat and figure values in cards
+  (`--fs-figure`), one step below the 30px hero figures.
+- **Title** (600, 17–20px, 1.2): card titles (17px), and dialog titles and
+  vehicle card names (20px).
+- **Body** (400–500, 14px, 1.5): all UI text, alerts included; 16px in
+  inputs so iOS doesn't zoom, and for long text.
 - **Label** (700, 11–13px): field labels (13px, muted) and section labels
   (11px, upper-case, 0.08em tracking).
 - **Meta** (400, 12.5px): field hints and errors, row details in lists.
+
+Every text size comes from this scale, with three exceptions that belong to
+a drawn object rather than to the text: the wordmark (21px, 24px in the
+sidebar) is part of the logo lock-up; the plate's "UK" band (10px, 9px on a
+small plate) follows the plate's proportions; avatar initials (10px, 13px,
+18px) scale with their 20, 32 and 48px circles. Print styles use points.
 
 ### Line breaks and measure
 - Headings and titles (h1–h3, card, empty-state, dialog, legend and widget
