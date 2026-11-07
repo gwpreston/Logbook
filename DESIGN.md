@@ -15,6 +15,7 @@ colors:
   green: "#087552"
   amber: "#945700"
   red: "#c02c2c"
+  on-red: "#ffffff"
   c-maint: "#12946c"
   c-ins: "#6d5bd0"
   c-tax: "#b07800"
@@ -263,6 +264,10 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
   into the accent.
 - **Ghost:** no border or fill, accent text; hover takes the soft accent
   tint. **Danger** is the default button with red text.
+- **Danger, solid:** the final confirm on a delete, revoke or restore page.
+  Red fill with `on-red` text: white in the light theme, near-black
+  (`#081020`) in the dark theme, where the red is lighter and white would
+  fall to 2.8:1. The bottom-nav count badge uses the same pair.
 - **Icon button:** 44px square, transparent, Mist on hover.
 - **Focus:** a 2px accent outline offset 2px, on every focusable element.
 
