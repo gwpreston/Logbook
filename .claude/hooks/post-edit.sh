@@ -4,10 +4,12 @@
 set -uo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-file=$(jq -r '.tool_input.file_path // empty')
+# shellcheck source=lib.sh
+. "$(dirname "$0")/lib.sh"
+file=$(hook_file_path)
 case "$file" in *.php) ;; *) exit 0 ;; esac
 [ -f "$file" ] || exit 0
-rel="${file#"$root"/}"
+rel=$(hook_rel_path "$file" "$root")
 case "$rel" in vendor/*) exit 0 ;; esac
 
 cd "$root" || exit 0
