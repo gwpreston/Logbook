@@ -66,6 +66,7 @@
     --amber: #945700;     /* 4.5:1 on --amber-soft (WCAG AA) */
     --amber-soft: rgba(232, 150, 20, 0.16);
     --red: #c02c2c;       /* 4.5:1 on --red-soft (WCAG AA) */
+    --on-red: #ffffff;    /* text on a solid red fill: 5.8:1 */
     --red-soft: rgba(207, 52, 52, 0.1);
     /* Registration plates (spec.md §8): objects, not surfaces, so the same
        in both themes and never moved by the accent. */
@@ -191,6 +192,8 @@
         --amber-soft: rgba(242, 179, 64, 0.15);
         --red: #ff6b6b;
         --red-soft: rgba(255, 107, 107, 0.14);
+        /* White on this lighter red is only 2.8:1, so solid red fills take dark text (6.9:1). */
+        --on-red: #081020;
         --c-maint: #2fbf8c;
         --c-ins: #9a8cff;
         --c-tax: #f2b340;
@@ -221,6 +224,7 @@
     --amber-soft: rgba(242, 179, 64, 0.15);
     --red: #ff6b6b;
     --red-soft: rgba(255, 107, 107, 0.14);
+    --on-red: #081020;    /* see the media-query block above */
     --c-maint: #2fbf8c;
     --c-ins: #9a8cff;
     --c-tax: #f2b340;
@@ -633,7 +637,7 @@ pre {
     padding: 0 5px;
     border-radius: var(--radius-pill);
     background: var(--red);
-    color: #fff;
+    color: var(--on-red);
     font-size: 0.65625rem;
     font-weight: 800;
 }
@@ -1903,7 +1907,7 @@ a.segmented__option {
 .btn--danger-solid {
     border-color: var(--red);
     background: var(--red);
-    color: #fff;
+    color: var(--on-red);
 }
 
 .btn--danger-solid:hover {
@@ -6529,6 +6533,7 @@ a.list__title:hover {
         --amber-soft: #fff !important;
         --red: #000 !important;
         --red-soft: #fff !important;
+        --on-red: #fff !important;
         --brand-blue: #000 !important;
         --wordmark: #000 !important;
 

@@ -36,6 +36,8 @@ final class ColourContrastTest extends TestCase
         ['amber', ['surface', 'amber-soft']],
         ['red', ['surface']],
         ['red', ['surface', 'red-soft']],
+        // Solid red fills: the confirm button on delete pages and the bottom-nav badge.
+        ['on-red', ['red']],
         ['plate-fg', ['plate-bg-gb']],
         ['plate-fg', ['plate-bg-neutral']],
         ['plate-band-fg', ['plate-band']],
