@@ -349,6 +349,8 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
 ### Inputs / Fields
 - **Style:** Mist fill, hairline border, 12px corners, 48px tall, 16px
   text; the label above in bold 13px Slate, a hint below in muted 12.5px.
+- **Placeholder:** full muted Slate (accent for a value Logbook worked
+  out), never faded: placeholder text is text and needs 4.5:1 on the fill.
 - **Focus:** 2px accent outline and an accent border.
 - **Error:** red border (`aria-invalid`) and a bold red message below.
 

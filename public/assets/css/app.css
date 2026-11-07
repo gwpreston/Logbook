@@ -1622,10 +1622,13 @@ a.segmented__option {
     border-color: var(--red);
 }
 
+/* Placeholder text is text (WCAG 1.4.3): full --muted on the input fill is
+   4.8:1. The old 0.8 opacity took it to 3.3:1 light, 4.2:1 dark. Firefox
+   fades placeholders by default, so opacity is reset to 1 here. */
 .input::placeholder,
 .textarea::placeholder {
     color: var(--muted);
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .field__hint {
