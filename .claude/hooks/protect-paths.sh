@@ -4,9 +4,11 @@
 set -euo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-file=$(jq -r '.tool_input.file_path // empty')
+# shellcheck source=lib.sh
+. "$(dirname "$0")/lib.sh"
+file=$(hook_file_path)
 [ -z "$file" ] && exit 0
-rel="${file#"$root"/}"
+rel=$(hook_rel_path "$file" "$root")
 
 block() { echo "Blocked: $rel — $1" >&2; exit 2; }
 

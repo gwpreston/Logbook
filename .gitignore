@@ -21,3 +21,9 @@ Thumbs.db
 # Impeccable: per-developer settings and caches
 .impeccable/config.local.json
 .impeccable/cache/
+# The engine binary is per-platform (20 MB+); the launcher downloads the right
+# one and checks it against scripts/engine-checksums.txt on first run.
+/.claude/skills/impeccable/scripts/bin/
+
+# Claude Code: per-developer settings (shared ones live in .claude/settings.json)
+/.claude/settings.local.json

@@ -1,4 +1,7 @@
 * text=auto eol=lf
+# Windows batch files need CRLF to run reliably under cmd.exe.
+*.cmd text eol=crlf
+*.bat text eol=crlf
 *.png binary
 *.jpg binary
 *.ico binary
