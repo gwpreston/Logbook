@@ -145,8 +145,8 @@ final class MaintenanceTest extends AppTestCase
         self::assertSame('48280.320', $schedule->nextDue->km, '(20,000 + 10,000) mi in km');
 
         $page = self::body($browser->get($base));
-        self::assertStringContainsString('Every 10,000 mi or 12 months', $page);
-        self::assertStringContainsString('Next due 15 Sept 2026 or at 30,000 mi', $page);
+        self::assertStringContainsString("Every 10,000\u{00A0}mi or 12 months", $page);
+        self::assertStringContainsString("Next due 15 Sept 2026 or at 30,000\u{00A0}mi", $page);
         self::assertStringContainsString('Overdue', $page, '15 Sep has passed');
         self::assertStringContainsString($base . '/new?schedule=' . $schedule->id, $page, 'the "Log it" shortcut');
 
@@ -204,7 +204,7 @@ final class MaintenanceTest extends AppTestCase
 
         // Due at 22,000 mi: 1,000 mi to go at 20 mi a day ≈ 50 days.
         $page = self::body($browser->get('/vehicles/' . $golf->id . '/maintenance'));
-        self::assertStringContainsString('Next due at 22,000 mi', $page);
+        self::assertStringContainsString("Next due at 22,000\u{00A0}mi", $page);
         self::assertStringContainsString('Due in about 50 days', $page);
 
         $overview = self::body($browser->get('/vehicles/' . $golf->id));

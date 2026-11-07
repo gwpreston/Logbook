@@ -118,7 +118,7 @@ final class ScanFlowTest extends ScanTestCase
 
         $card = self::body($this->browser->get('/scan/' . $token . '/reminders'));
         self::assertStringContainsString('Front brake pads', $card);
-        self::assertStringContainsString('In about 5,000 mi, about', $card);
+        self::assertStringContainsString("In about 5,000\u{00A0}mi, about", $card);
         self::assertStringContainsString('Wiper blades', $card);
         self::assertStringContainsString('No date given', $card);
 

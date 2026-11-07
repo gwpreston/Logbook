@@ -148,20 +148,20 @@ final class CurrentTyresTest extends AppTestCase
 
         // Measured twice: the depth with its date, the bar from 8.0 to 1.6 mm, the estimate.
         $fl = self::card($html, 'fl');
-        self::assertStringContainsString('4.8 mm</span>', $fl);
+        self::assertStringContainsString("4.8\u{00A0}mm</span>", $fl);
         self::assertStringContainsString('Checked 1 Aug 2026', $fl);
         self::assertMatchesRegularExpression('~data-testid="tyre-bar"><span class="bar__fill" style="--w: 50%"~', $fl);
         self::assertStringContainsString('aria-hidden="true" data-testid="tyre-bar"', $fl, 'the bar is decorative');
-        self::assertStringContainsString('Fitted Jan 2026 · 7,000 mi covered', $fl);
+        self::assertStringContainsString("Fitted Jan 2026 · 7,000\u{00A0}mi covered", $fl);
         self::assertStringContainsString('<span class="visually-hidden">Estimate: </span>about ', $fl);
-        self::assertMatchesRegularExpression('~about [\d.]+ mm now · about [\d,]+ mi left~', $fl);
+        self::assertMatchesRegularExpression('~about [\d.]+\x{00A0}mm now · about [\d,]+\x{00A0}mi left~u', $fl);
         self::assertStringContainsString('data-testid="tyre-pill"', $fl);
         self::assertStringContainsString('Michelin Primacy 4', $fl);
         self::assertStringContainsString('205/55 R16 91V', $fl);
 
         // Measured once: the depth, no bar and no estimate yet.
         $fr = self::card($html, 'fr');
-        self::assertStringContainsString('8.0 mm</span>', $fr);
+        self::assertStringContainsString("8.0\u{00A0}mm</span>", $fr);
         self::assertStringContainsString('Checked 10 Jan 2026', $fr);
         self::assertStringNotContainsString('tyre-bar', $fr);
         self::assertStringNotContainsString('Estimate', $fr);
@@ -172,7 +172,7 @@ final class CurrentTyresTest extends AppTestCase
         self::assertStringNotContainsString(' mm', $rl);
         self::assertStringNotContainsString('tyre-bar', $rl);
         self::assertStringNotContainsString('Fitted ', $rl);
-        self::assertStringContainsString('8,000 mi covered since 3 Oct 2025', $rl);
+        self::assertStringContainsString("8,000\u{00A0}mi covered since 3 Oct 2025", $rl);
         self::assertStringNotContainsString('data-testid="tyre-pill"', $rl, 'nothing judgeable: no pill');
 
         self::assertStringContainsString('No tyre', self::card($html, 'spare'));
@@ -194,15 +194,15 @@ final class CurrentTyresTest extends AppTestCase
 
         self::assertStringNotContainsString('Moved', $html, 'a move never relabels the line (#197)');
         self::assertStringContainsString(
-            'Fitted Jan 2026 · 7,100 mi covered',
+            "Fitted Jan 2026 · 7,100\u{00A0}mi covered",
             self::card($html, 'rl'),
             'rotated: still the first fitting, with its distance since',
         );
         $fl = self::card($html, 'fl');
-        self::assertStringContainsString('8,100 mi covered since 3 Oct 2025', $fl, 'recorded as already on, then moved');
+        self::assertStringContainsString("8,100\u{00A0}mi covered since 3 Oct 2025", $fl, 'recorded as already on, then moved');
         self::assertStringNotContainsString('Fitted ', $fl);
-        self::assertStringContainsString('Fitted Jan 2026 · 7,100 mi covered', self::card($html, 'fr'), 'not moved');
-        self::assertStringContainsString('8,100 mi covered since 3 Oct 2025', self::card($html, 'rr'));
+        self::assertStringContainsString("Fitted Jan 2026 · 7,100\u{00A0}mi covered", self::card($html, 'fr'), 'not moved');
+        self::assertStringContainsString("8,100\u{00A0}mi covered since 3 Oct 2025", self::card($html, 'rr'));
     }
 
     public function testAMotorbikesFrontAndRear(): void
@@ -232,17 +232,17 @@ final class CurrentTyresTest extends AppTestCase
 
         self::assertStringNotContainsString('tyre-pos-fl', $html);
         self::assertStringNotContainsString('tyre-pos-spare', $html);
-        foreach (['front' => '4.2 mm', 'rear' => '3.6 mm'] as $position => $depth) {
+        foreach (['front' => "4.2\u{00A0}mm", 'rear' => "3.6\u{00A0}mm"] as $position => $depth) {
             $card = self::card($html, $position);
             self::assertStringContainsString($depth . '</span>', $card);
             self::assertStringContainsString('data-testid="tyre-bar"', $card);
             self::assertStringContainsString('<span class="visually-hidden">Estimate: </span>about ', $card, $position);
-            self::assertStringContainsString('3,000 mi covered since 1 Mar 2026', $card);
+            self::assertStringContainsString("3,000\u{00A0}mi covered since 1 Mar 2026", $card);
         }
         // Front: (4.2 − 1.0) ÷ (5.0 − 1.0) = 80%, against a motorbike's legal minimum.
         self::assertStringContainsString('style="--w: 80%"', self::card($html, 'front'));
         self::assertStringContainsString(
-            'You replace at 2.0 mm; the legal minimum you set is 1.0 mm.',
+            "You replace at 2.0\u{00A0}mm; the legal minimum you set is 1.0\u{00A0}mm.",
             $html,
             'a motorbike\'s thresholds',
         );
@@ -253,7 +253,8 @@ final class CurrentTyresTest extends AppTestCase
         $this->carWithTyres();
         $html = self::body($this->browser->get($this->base));
         self::assertStringContainsString(
-            'You replace at 3.0 mm; the legal minimum you set is 1.6 mm. Legal minimums differ by country; check yours.',
+            "You replace at 3.0\u{00A0}mm; the legal minimum you set is 1.6\u{00A0}mm."
+            . ' Legal minimums differ by country; check yours.',
             (string) preg_replace('~\s+~', ' ', $html),
         );
 
@@ -262,7 +263,7 @@ final class CurrentTyresTest extends AppTestCase
         $this->service($this->app, TyreSettingsStore::class)
             ->saveThresholds($owner->id, new TyreThresholds(carReplaceMm: '4.000', carLegalMm: '2.000'));
         self::assertStringContainsString(
-            'You replace at 4.0 mm; the legal minimum you set is 2.0 mm.',
+            "You replace at 4.0\u{00A0}mm; the legal minimum you set is 2.0\u{00A0}mm.",
             self::body($this->browser->get($this->base)),
         );
 
@@ -289,6 +290,6 @@ final class CurrentTyresTest extends AppTestCase
         $archived = self::body($this->browser->get($this->base));
         self::assertStringNotContainsString($check, $archived, 'archived: read-only');
         self::assertStringContainsString('>Current tyres</h2>', $archived);
-        self::assertStringContainsString('4.8 mm</span>', self::card($archived, 'fl'));
+        self::assertStringContainsString("4.8\u{00A0}mm</span>", self::card($archived, 'fl'));
     }
 }

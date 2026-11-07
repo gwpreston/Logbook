@@ -5681,10 +5681,13 @@ a.list__title:hover {
     }
 }
 
-/* Mileage widget: three figures side by side. */
+/* Mileage widgets: the figures side by side. A figure keeps its unit on its
+   line ("24,337 mi" is ~95px at this size), so a column never goes below
+   6.5rem: on a phone the grid drops to fewer columns rather than spilling
+   past the column or shrinking the type. */
 .figures {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
     gap: var(--space-3);
     margin: 0;
 }

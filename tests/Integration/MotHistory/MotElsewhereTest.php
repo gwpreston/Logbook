@@ -161,7 +161,7 @@ final class MotElsewhereTest extends MotHistoryTestCase
 
         $pack = (string) $browser->get($path)->getBody();
         self::assertStringContainsString('data-sale-pack-mot', $pack);
-        self::assertMatchesRegularExpression('/15 Feb 2026 · Passed · 43,961(\.\d+)? mi/u', $pack);
+        self::assertMatchesRegularExpression('/15 Feb 2026 · Passed · 43,961(\.\d+)?\x{00A0}mi/u', $pack);
         self::assertStringContainsString('Odometer not read', $pack);
         self::assertStringContainsString('Open Government Licence', $pack);
         self::assertStringContainsString('gov.uk/check-mot-history', $pack, 'the printed DVSA link stays');

@@ -71,18 +71,18 @@ final class VehicleDetailsTest extends AppTestCase
 
         $overview = self::body($browser->follow($created));
         self::assertStringContainsString('2019 Ford Focus 1.5 EcoBoost ST-Line X', $overview);
-        self::assertStringContainsString('42,180 mi', $overview);
+        self::assertStringContainsString("42,180\u{00A0}mi", $overview);
         self::assertStringContainsString('14 Mar 2019', $overview);
         self::assertStringContainsString('(7 yrs 6 mo old)', $overview);
 
-        self::assertStringContainsString('42,180 mi', self::body($browser->get('/garage')));
-        self::assertStringContainsString('42,180 mi', self::body($browser->get('/')));
+        self::assertStringContainsString("42,180\u{00A0}mi", self::body($browser->get('/garage')));
+        self::assertStringContainsString("42,180\u{00A0}mi", self::body($browser->get('/')));
 
         $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
         self::assertStringContainsString('Manual', $mileage);
         self::assertStringContainsString('Per year since first registered', $mileage);
         // 42,180 mi over 2,754 days (7.54 years).
-        self::assertStringContainsString('5,594 mi', $mileage);
+        self::assertStringContainsString("5,594\u{00A0}mi", $mileage);
     }
 
     public function testAZeroOdometerIsAReadingAndABlankOneIsNot(): void
@@ -99,7 +99,7 @@ final class VehicleDetailsTest extends AppTestCase
         $readings = $this->readings($app, $new);
         self::assertCount(1, $readings);
         self::assertSame('0.000', $readings[0]->readingKm);
-        self::assertStringContainsString('0 mi', self::body($browser->get('/vehicles/' . $new->id)));
+        self::assertStringContainsString("0\u{00A0}mi", self::body($browser->get('/vehicles/' . $new->id)));
 
         self::assertSame([], $this->readings($app, $this->vehicleWithVariant($app, 'Blank')));
     }
@@ -148,7 +148,7 @@ final class VehicleDetailsTest extends AppTestCase
 
         $edit = self::body($browser->get($path . '/edit'));
         self::assertStringNotContainsString('name="current_odometer"', $edit);
-        self::assertStringContainsString('100 mi', $edit);
+        self::assertStringContainsString("100\u{00A0}mi", $edit);
         self::assertStringContainsString('href="' . $path . '/odometer/new" data-modal>Add reading</a>', $edit);
         self::assertStringContainsString('value="1.5 EcoBoost ST-Line X"', $edit);
         self::assertStringContainsString('value="2019-03-14"', $edit);
@@ -265,7 +265,7 @@ final class VehicleDetailsTest extends AppTestCase
             $readings,
         ));
         $garage = self::body($browser->get('/garage'));
-        self::assertStringContainsString('42,000 mi', $garage, 'the starting reading is still the latest');
+        self::assertStringContainsString("42,000\u{00A0}mi", $garage, 'the starting reading is still the latest');
     }
 
     public function testADatedStartingReadingIsLocalNoonAndSitsInOrder(): void
@@ -308,10 +308,10 @@ final class VehicleDetailsTest extends AppTestCase
 
         $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
         self::assertStringContainsString('14 Mar 2026', $mileage);
-        self::assertStringContainsString('40,000 mi', $mileage);
-        self::assertStringContainsString('41,000 mi', $mileage, 'the latest');
-        self::assertStringContainsString('41,000 mi', self::body($browser->get('/garage')));
-        self::assertStringContainsString('41,000 mi', self::body($browser->get('/')));
+        self::assertStringContainsString("40,000\u{00A0}mi", $mileage);
+        self::assertStringContainsString("41,000\u{00A0}mi", $mileage, 'the latest');
+        self::assertStringContainsString("41,000\u{00A0}mi", self::body($browser->get('/garage')));
+        self::assertStringContainsString("41,000\u{00A0}mi", self::body($browser->get('/')));
     }
 
     public function testASameDayStartingReadingIsTheMomentOfSaving(): void
@@ -378,8 +378,8 @@ final class VehicleDetailsTest extends AppTestCase
 
         $mileage = self::body($browser->get('/vehicles/' . $focus->id . '/odometer'));
         // About 4,537 mi a year to the reading's date, not 3,010 mi a year to today.
-        self::assertStringContainsString('4,537 mi', $mileage);
-        self::assertStringNotContainsString('3,010 mi', $mileage);
+        self::assertStringContainsString("4,537\u{00A0}mi", $mileage);
+        self::assertStringNotContainsString("3,010\u{00A0}mi", $mileage);
         $overview = self::body($browser->get('/vehicles/' . $focus->id));
         self::assertStringContainsString('(7 yrs 6 mo old)', $overview, 'age is to today');
     }

@@ -57,7 +57,7 @@ final class VehicleTest extends AppTestCase
         self::assertStringContainsString('Volkswagen Golf 1.5 TSI Life was added to your garage.', $show);
         self::assertStringContainsString('<span class="plate__text">LB19 KTR</span>', $show);
         // Owner uses UK units: 11 L stays litres; zero purchase price is valid and shown.
-        self::assertStringContainsString('11 L', $show);
+        self::assertStringContainsString("11\u{00A0}L", $show);
         self::assertStringContainsString('£0.00', $show);
         self::assertStringContainsString('14 Mar 2021', $show);
         self::assertStringContainsString('GBP — British Pound', $show);
@@ -127,7 +127,7 @@ final class VehicleTest extends AppTestCase
         self::assertSame('1.459', $vehicle->data->purchasePrice, '3 decimals survive');
 
         $show = self::body($browser->follow($created));
-        self::assertStringContainsString('13.21 US gal', $show);
+        self::assertStringContainsString("13.21\u{00A0}US\u{00A0}gal", $show);
         self::assertStringContainsString('$1.46', $show);
         self::assertStringContainsString('value="13.207"', self::body($browser->get('/vehicles/' . $vehicle->id . '/edit')));
     }

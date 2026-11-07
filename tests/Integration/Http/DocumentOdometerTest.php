@@ -49,7 +49,7 @@ final class DocumentOdometerTest extends AppTestCase
         $created = $browser->post($base . '/new', self::MOT);
         self::assertSame(303, $created->getStatusCode());
         $list = self::body($browser->follow($created));
-        self::assertStringContainsString('Odometer 30,000 mi', $list, 'the documents list shows it');
+        self::assertStringContainsString("Odometer 30,000\u{00A0}mi", $list, 'the documents list shows it');
 
         $document = $this->service($app, ComplianceDocumentRepository::class)->listForVehicle($golf->id)[0];
         self::assertSame('48280.320', $document->data->odometerKm);

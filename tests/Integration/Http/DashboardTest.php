@@ -50,7 +50,7 @@ final class DashboardTest extends AppTestCase
         self::assertSame(self::DEFAULT_ORDER, self::widgetOrder($html), 'no saved layout: the default order');
         self::assertStringContainsString('Your vehicles', $html);
         self::assertStringContainsString('Volkswagen Golf', $html);
-        self::assertStringContainsString('6,711 mi', $html, 'current odometer (10,800 km)');
+        self::assertStringContainsString("6,711\u{00A0}mi", $html, 'current odometer (10,800 km)');
         self::assertStringContainsString('1 archived vehicle', $html);
         self::assertStringNotContainsString('Ford Fiesta', $html, 'archived vehicles stay off the dashboard');
         // Spend this month: fuel + toll, not the sold car's fill-up; last month for comparison.
@@ -58,7 +58,7 @@ final class DashboardTest extends AppTestCase
         self::assertStringContainsString('last month £58.00', $html);
         self::assertStringContainsString('September 2026 so far', $html);
         // Recent fuel with the full-to-full economy (800 km on 45.461 L = 49.7 mpg UK).
-        self::assertStringContainsString('49.7 mpg', $html);
+        self::assertStringContainsString("49.7\u{00A0}mpg", $html);
         // Compliance: the policy expiring in 8 days.
         self::assertStringContainsString('Expires in 8 days', $html);
         // Upcoming reminders come from the same document.

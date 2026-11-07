@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Logbook\Support\View;
 
+use Closure;
 use DateTimeImmutable;
 use Logbook\Kernel;
 use Logbook\Service\Notification\Personal\ReplyWords;
@@ -77,19 +78,22 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('money', $this->formatter->money(...)),
             new TwigFilter('mileage_rate', $this->formatter->rate(...)),
             new TwigFilter('chart_value', $this->formatter->chartValue(...)),
-            new TwigFilter('distance', $this->formatter->distance(...)),
-            new TwigFilter('volume', $this->formatter->volume(...)),
-            new TwigFilter('depth', $this->formatter->depth(...)),
-            new TwigFilter('about_distance', $this->formatter->aboutDistance(...)),
-            new TwigFilter('energy', $this->formatter->energy(...)),
-            new TwigFilter('quantity', $this->formatter->quantity(...)),
-            new TwigFilter('consumption', $this->formatter->consumption(...)),
-            new TwigFilter('efficiency', $this->formatter->efficiency(...)),
-            new TwigFilter('economy', $this->formatter->economy(...)),
-            new TwigFilter('unit_price', $this->formatter->unitPrice(...)),
-            new TwigFilter('per_distance', $this->formatter->perDistance(...)),
-            new TwigFilter('per_thousand_distance', $this->formatter->perThousandDistance(...)),
-            new TwigFilter('file_size', $this->formatter->fileSize(...)),
+            // Figures with a unit: on screen the number never parts from its unit.
+            new TwigFilter('distance', self::keepTogether($this->formatter->distance(...))),
+            new TwigFilter('volume', self::keepTogether($this->formatter->volume(...))),
+            new TwigFilter('depth', self::keepTogether($this->formatter->depth(...))),
+            new TwigFilter('about_distance', self::keepTogether($this->formatter->aboutDistance(...))),
+            new TwigFilter('energy', self::keepTogether($this->formatter->energy(...))),
+            new TwigFilter('quantity', self::keepTogether($this->formatter->quantity(...))),
+            new TwigFilter('consumption', self::keepTogether($this->formatter->consumption(...))),
+            new TwigFilter('efficiency', self::keepTogether($this->formatter->efficiency(...))),
+            new TwigFilter('economy', self::keepTogether($this->formatter->economy(...))),
+            new TwigFilter('unit_price', self::keepTogether($this->formatter->unitPrice(...))),
+            new TwigFilter('per_distance', self::keepTogether($this->formatter->perDistance(...))),
+            new TwigFilter('per_thousand_distance', self::keepTogether($this->formatter->perThousandDistance(...))),
+            new TwigFilter('file_size', self::keepTogether($this->formatter->fileSize(...))),
+            // The same for a figure a template joins itself: (n|number ~ ' ' ~ symbol)|keep_together.
+            new TwigFilter('keep_together', self::keepTogether(static fn (string $figure): string => $figure)),
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
             new TwigFilter('instant_date', $this->formatter->instantDate(...)),
@@ -98,6 +102,30 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('date_skeleton', $this->formatter->skeleton(...)),
             new TwigFilter('channel_error', $this->channelError(...)),
         ];
+    }
+
+    /**
+     * Wraps a unit formatter so its figure stays on one line on screen:
+     * every ordinary space ("12,480 mi", "48.7 mpg (US)", "£1.459/US gal")
+     * becomes a no-break space (U+00A0), so a narrow column wraps the figure
+     * as a whole rather than leaving "mi" alone on the next line. Only the
+     * Twig filters do this: DisplayFormatter also writes API, MCP, AI and
+     * notification text, which keeps its plain spaces.
+     *
+     * The variadic wrapper takes positional arguments only, as every
+     * template passes them; Twig's named arguments would not reach it.
+     *
+     * @param Closure $format a DisplayFormatter method returning the figure
+     *
+     * @return Closure(mixed...): string
+     */
+    public static function keepTogether(Closure $format): Closure
+    {
+        return static function (mixed ...$args) use ($format): string {
+            $figure = $format(...$args);
+
+            return is_string($figure) ? str_replace(' ', "\u{00A0}", $figure) : '';
+        };
     }
 
     /**

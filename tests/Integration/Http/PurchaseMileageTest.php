@@ -191,7 +191,7 @@ final class PurchaseMileageTest extends AppTestCase
 
         $overview = self::body($browser->get('/vehicles/' . $golf->id));
         self::assertStringContainsString('From Halden Motors', $overview);
-        self::assertStringContainsString('30,000 mi when bought', $overview);
+        self::assertStringContainsString("30,000\u{00A0}mi when bought", $overview);
 
         $mileage = self::body($browser->get('/vehicles/' . $golf->id . '/odometer'));
         self::assertStringContainsString('<span class="pill">Bought</span>', $mileage);

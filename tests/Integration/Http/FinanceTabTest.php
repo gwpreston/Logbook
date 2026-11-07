@@ -244,7 +244,7 @@ final class FinanceTabTest extends AppTestCase
             self::assertStringContainsString('hand it back, or part-exchange it', $html, $page . ': the PCP end note');
             // Purchase, and Value & equity.
             self::assertStringContainsString('Halden Motors', $html, $page);
-            self::assertStringContainsString('12,000 mi', $html, $page);
+            self::assertStringContainsString("12,000\u{00A0}mi", $html, $page);
             self::assertStringContainsString('How it was paid', $html, $page);
             self::assertStringContainsString('Value &amp; equity', $html, $page);
             self::assertStringContainsString('Add a valuation to see your equity', $html, $page);

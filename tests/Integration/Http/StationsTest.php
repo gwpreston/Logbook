@@ -288,7 +288,7 @@ final class StationsTest extends AppTestCase
         self::assertSame(303, $response->getStatusCode(), self::body($response));
         $list = self::body($browser->get('/stations'));
         // 0.009 degrees of latitude: 1.0 km, 0.6 mi.
-        self::assertStringContainsString('0.6 mi from Home', $list);
+        self::assertStringContainsString("0.6\u{00A0}mi from Home", $list);
         self::assertStringContainsString('(in a straight line)', $list);
 
         $bad = $browser->post('/settings/places/new', ['name' => 'Work', 'latitude' => '95', 'longitude' => '']);

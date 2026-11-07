@@ -121,7 +121,7 @@ final class TripsTest extends AppTestCase
         $list = self::body($browser->follow($saved));
         self::assertStringContainsString('Trip saved: Ballymena → Belfast.', $list);
         self::assertStringContainsString('Ballymena → Belfast', $list);
-        self::assertStringContainsString('54.0 mi', $list);
+        self::assertStringContainsString("54.0\u{00A0}mi", $list);
         self::assertStringContainsString('£29.70', $list, '54 mi at 55p this tax year');
         self::assertStringContainsString('Log again', $list);
 
@@ -269,12 +269,12 @@ final class TripsTest extends AppTestCase
         $this->logTrip($browser, $golf, $private);
 
         $trips = self::body($browser->get('/vehicles/' . $golf->id . '/trips'));
-        self::assertMatchesRegularExpression('/Business<\/dt>\s*<dd[^>]*>200 mi</', $trips);
-        $private800 = '/Private<\/dt>\s*<dd[^>]*>800 mi</';
+        self::assertMatchesRegularExpression('/Business<\/dt>\s*<dd[^>]*>200\x{00A0}mi</u', $trips);
+        $private800 = '/Private<\/dt>\s*<dd[^>]*>800\x{00A0}mi</u';
         self::assertMatchesRegularExpression($private800, $trips, 'logged private trips never change the split');
 
         $mileage = self::body($browser->get('/vehicles/' . $golf->id . '/odometer'));
-        self::assertMatchesRegularExpression('/Private<\/dt>\s*<dd[^>]*>800 mi</', $mileage);
+        self::assertMatchesRegularExpression('/Private<\/dt>\s*<dd[^>]*>800\x{00A0}mi</u', $mileage);
 
         // More business than the log shows: "—" and the notice.
         $this->logTrip($browser, $golf, ['distance' => '900', 'travelled_on' => '2026-07-01']);
@@ -296,9 +296,10 @@ final class TripsTest extends AppTestCase
         $page = self::body($browser->get('/vehicles/' . $golf->id . '/trips'));
         $card = self::card($page);
         self::assertStringContainsString('Business and private', $card);
-        self::assertStringContainsString('Tax year 2026/27 · 12,400 mi driven', $card);
-        self::assertStringContainsString('3,100 mi · 25%', $card);
-        self::assertStringContainsString('9,300 mi · 75%', $card);
+        // card() re-serialises through DOM, which writes the no-break space as &nbsp;.
+        self::assertStringContainsString('Tax year 2026/27 · 12,400&nbsp;mi driven', $card);
+        self::assertStringContainsString('3,100&nbsp;mi · 25%', $card);
+        self::assertStringContainsString('9,300&nbsp;mi · 75%', $card);
         self::assertStringContainsString('class="stack-bar stack-bar--lg" aria-hidden="true"', $card);
         self::assertStringContainsString('--w: 25%', $card);
         self::assertStringContainsString('Log trip', $card, 'in the card header');
@@ -373,7 +374,7 @@ final class TripsTest extends AppTestCase
 
         $page = self::body($driver->get($base));
         $card = self::card($page);
-        self::assertStringContainsString('1,000 mi driven', $card);
+        self::assertStringContainsString('1,000&nbsp;mi driven', $card);
         self::assertStringContainsString('only the distance driven is shown', $card);
         self::assertStringNotContainsString('stack-bar', $card);
         self::assertStringNotContainsString('%', $card);

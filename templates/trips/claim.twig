@@ -163,7 +163,7 @@
                     <dl class="details">
                         {% for rate in totals.rates %}
                             <div>
-                                <dt>{{ 'trip.claim.at_rate'|trans({distance: rate.distance|number(1) ~ ' ' ~ ('units.symbol.' ~ rate.unit.value)|trans, rate: rate.rate|mileage_rate(totals.currency)}) }}</dt>
+                                <dt>{{ 'trip.claim.at_rate'|trans({distance: (rate.distance|number(1) ~ ' ' ~ ('units.symbol.' ~ rate.unit.value)|trans)|keep_together, rate: rate.rate|mileage_rate(totals.currency)}) }}</dt>
                                 <dd class="tabular">{{ rate.amount|money(totals.currency) }}</dd>
                             </div>
                         {% endfor %}
