@@ -24,6 +24,13 @@ colors:
   plate-bg-gb: "#f6cf3a"
   plate-fg: "#111111"
   plate-band: "#00309a"
+  avatar-default: "#4a5568"
+  avatar-0: "#1f5fbf"
+  avatar-1: "#0a6f74"
+  avatar-2: "#4b4fd6"
+  avatar-3: "#8a3fb8"
+  avatar-4: "#a3461e"
+  avatar-5: "#3f6b1f"
 typography:
   display:
     fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
@@ -52,9 +59,15 @@ typography:
     fontSize: "0.6875rem"
     fontWeight: 700
     letterSpacing: "0.08em"
+  meta:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "0.78125rem"
+    fontWeight: 400
 rounded:
+  2xs: "3px"
   xs: "4px"
   sm: "10px"
+  icon: "11px"
   md: "12px"
   lg: "16px"
   xl: "20px"
@@ -239,6 +252,8 @@ lists, the sign-in card, and the badges laid over a vehicle photo.
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 1px 2px rgba(14,28,46,.05), 0 10px 30px rgba(14,28,46,.08)`;
   darker in the dark theme): anything that floats over other content.
+- **Raised** (`--shadow-raised`, `0 1px 3px rgba(0,0,0,.12)`): only the
+  selected thumb of a segmented control, lifted off its grey track.
 
 ### Named Rules
 **The Flat Until It Floats Rule.** A card resting on the page has a border
@@ -248,8 +263,13 @@ and no shadow. A shadow means "this is on top of something".
 
 Soft, friendly corners that grow with the size of the thing: 4px on number
 plates, 10px on nav items, 12px on buttons and inputs, 16px on tiles, 20px
-on cards and 22px on dialogs and bottom sheets. Chips, pills and badges are
-fully rounded. Borders are always 1px hairlines in the border colour.
+on cards and 22px on dialogs and bottom sheets. Icon tiles and thumbnails
+in lists take 11px, and small marks (swatches, inline tags) 3px. A shape
+nested inside a padded one takes the outer radius minus the padding (the
+segmented control's 9px thumb in its 12px track). Chips, pills and badges
+are fully rounded. Borders are always 1px hairlines in the border colour,
+tinted towards a status colour when the state needs showing (a waiting
+draft card in Ask), never a thick stripe down one side.
 
 ## Components
 

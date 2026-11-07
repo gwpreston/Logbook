@@ -78,6 +78,18 @@
     --plate-band-fg: #ffffff;
     --overlay: rgba(10, 20, 35, 0.45);
     --shadow: 0 1px 2px rgba(14, 28, 46, 0.05), 0 10px 30px rgba(14, 28, 46, 0.08);
+    /* The selected thumb of a segmented control: lifted off its track, not floating. */
+    --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+    /* Avatar tones: picked per person, the same in both themes. Each is dark
+       enough for white initials (4.5:1+). */
+    --avatar-default: #4a5568;
+    --avatar-0: #1f5fbf;
+    --avatar-1: #0a6f74;
+    --avatar-2: #4b4fd6;
+    --avatar-3: #8a3fb8;
+    --avatar-4: #a3461e;
+    --avatar-5: #3f6b1f;
 
     /* Expense categories (charts, legends). */
     --c-fuel: var(--accent);
@@ -93,6 +105,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --fs-2xs: 0.6875rem;  /* 11px — section labels */
     --fs-xs: 0.75rem;     /* 12px — captions, stat labels */
+    --fs-meta: 0.78125rem; /* 12.5px — field hints and errors, row meta */
     --fs-sm: 0.8125rem;   /* 13px — secondary text, field labels */
     --fs-base: 0.875rem;  /* 14px — UI text */
     --fs-md: 1rem;        /* 16px — inputs (no iOS zoom), long text */
@@ -117,8 +130,10 @@
     --space-14: 3.5rem;
 
     /* Radii. */
+    --radius-2xs: 3px;    /* small marks: swatches, inline tags */
     --radius-xs: 4px;     /* number plates */
     --radius-sm: 10px;    /* nav items */
+    --radius-icon: 11px;  /* icon tiles and thumbnails in lists */
     --radius-md: 12px;    /* buttons, inputs */
     --radius-lg: 16px;    /* tiles */
     --radius-xl: 20px;    /* cards */
@@ -867,7 +882,7 @@ a.list__item:hover {
     width: 2.375rem;
     height: 2.375rem;
     flex: none;
-    border-radius: 11px;
+    border-radius: var(--radius-icon);
     background: var(--surface-2);
     color: var(--muted);
 }
@@ -886,7 +901,7 @@ a.list__item:hover {
 .list__meta {
     display: block;
     color: var(--muted);
-    font-size: 0.78125rem;
+    font-size: var(--fs-meta);
 }
 
 .list__trail {
@@ -903,7 +918,7 @@ a.list__item:hover {
     margin: var(--space-1) 0 0;
     padding: 0;
     list-style: none;
-    font-size: 0.78125rem;
+    font-size: var(--fs-meta);
 }
 
 .ai-test-results li {
@@ -987,7 +1002,7 @@ a.list__item:hover {
 
 .ask-unverified {
     padding: 0 2px;
-    border-radius: 3px;
+    border-radius: var(--radius-2xs);
     background: var(--amber-soft);
     color: inherit;
     text-decoration: underline dotted;
@@ -1321,7 +1336,7 @@ label.chip:has(input:checked):hover {
     min-height: var(--chip-h);
     padding: 0 var(--space-4);
     border: 0;
-    border-radius: 9px;
+    border-radius: calc(var(--radius-md) - 3px); /* concentric inside the track's 3px padding */
     background: transparent;
     color: var(--muted);
     font-size: var(--fs-sm);
@@ -1333,13 +1348,13 @@ label.chip:has(input:checked):hover {
 .segmented__option[aria-current="true"] {
     background: var(--surface);
     color: var(--text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-raised);
 }
 
 label.segmented__option:has(input:checked) {
     background: var(--surface);
     color: var(--text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-raised);
 }
 
 label.segmented__option:hover {
@@ -1585,12 +1600,12 @@ a.segmented__option {
 
 .field__hint {
     color: var(--muted);
-    font-size: 0.78125rem;
+    font-size: var(--fs-meta);
 }
 
 .field__error {
     color: var(--red);
-    font-size: 0.78125rem;
+    font-size: var(--fs-meta);
     font-weight: 600;
 }
 
@@ -2250,7 +2265,7 @@ a.segmented__option {
     object-fit: cover;
     overflow: hidden;
     color: #ffffff;
-    background: #4a5568;
+    background: var(--avatar-default);
     font-weight: 700;
     line-height: 1;
     user-select: none;
@@ -2345,12 +2360,12 @@ a.segmented__option {
     gap: var(--space-1);
 }
 
-.avatar--tone-0 { background: #1f5fbf; }
-.avatar--tone-1 { background: #0a6f74; }
-.avatar--tone-2 { background: #4b4fd6; }
-.avatar--tone-3 { background: #8a3fb8; }
-.avatar--tone-4 { background: #a3461e; }
-.avatar--tone-5 { background: #3f6b1f; }
+.avatar--tone-0 { background: var(--avatar-0); }
+.avatar--tone-1 { background: var(--avatar-1); }
+.avatar--tone-2 { background: var(--avatar-2); }
+.avatar--tone-3 { background: var(--avatar-3); }
+.avatar--tone-4 { background: var(--avatar-4); }
+.avatar--tone-5 { background: var(--avatar-5); }
 
 .sidebar .sidebar__logout {
     justify-content: flex-start;
@@ -3482,7 +3497,7 @@ a.list__title:hover {
 .segmented__option[aria-current="page"] {
     background: var(--surface);
     color: var(--text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-raised);
 }
 
 .cal-overdue {
@@ -3873,7 +3888,7 @@ a.list__title:hover {
     width: 100%;
     height: 100%;
     min-height: 2.75rem;
-    border-radius: var(--radius-sm, 8px);
+    border-radius: var(--radius-sm);
     background: var(--surface-2);
     color: var(--text);
     font-weight: 700;
@@ -3983,7 +3998,7 @@ a.list__title:hover {
     height: 0.625rem;
     flex: none;
     margin-inline-end: var(--space-2);
-    border-radius: 3px;
+    border-radius: var(--radius-2xs);
     background: var(--swatch, var(--c-other));
     vertical-align: baseline;
 }
@@ -5480,7 +5495,7 @@ a.list__title:hover {
     place-items: center;
     width: 2.375rem;
     height: 2.375rem;
-    border-radius: 11px;
+    border-radius: var(--radius-icon);
     background: var(--surface-2);
     color: var(--tone, var(--accent));
 }
@@ -6710,20 +6725,26 @@ a.list__title:hover {
     display: grid;
     gap: var(--space-2);
     padding: var(--space-3);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
+    /* A waiting draft asks for a decision: an accent-tinted hairline all round,
+       keeping the 1px border rule (DESIGN.md *Shapes*) rather than a side stripe. */
+    border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border));
     border-radius: var(--radius-lg);
     background: var(--surface);
 }
 
+/* Settled states: the status line says what happened, the border just follows. */
 .draft-card--added {
-    border-left-color: var(--green);
+    border-color: color-mix(in oklab, var(--green) 45%, var(--border));
+}
+
+.draft-card--added .draft-card__status {
+    color: var(--green);
 }
 
 .draft-card--discarded,
 .draft-card--expired,
 .draft-card--undone {
-    border-left-color: var(--border);
+    border-color: var(--border);
     opacity: 0.85;
 }
 
@@ -6783,7 +6804,7 @@ a.list__title:hover {
 .field__from-message {
     display: inline-block;
     padding: 0 var(--space-1);
-    border-radius: 3px;
+    border-radius: var(--radius-2xs);
     background: var(--accent-soft);
     color: var(--accent);
     font-size: var(--fs-xs);
@@ -7280,7 +7301,7 @@ p.stat__label {
 .channel__head > .list__icon {
     width: 2.5rem;
     height: 2.5rem;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
 }
 
 .channel__body {
@@ -7478,7 +7499,7 @@ p.stat__label {
     height: 2.375rem;
     flex: none;
     overflow: hidden;
-    border-radius: 11px;
+    border-radius: var(--radius-icon);
     background: var(--surface-2);
 }
 
