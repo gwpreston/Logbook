@@ -390,7 +390,10 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
   and 3:1 graphic contrast.
 - **Do** keep core add, edit and list flows working with JavaScript off.
 - **Do** respect `prefers-reduced-motion`; motion is short (about 150ms)
-  and explains a change.
+  and explains a change. Give each animation its own reduced version beside
+  its rule (the modal fades instead of rising, the history chevron turns at
+  once, the dashboard drag stops sliding); there is no blanket switch-off,
+  so fades and state changes that confirm an action stay.
 
 ### Don't:
 - **Don't** add a second accent or use status colours for decoration.

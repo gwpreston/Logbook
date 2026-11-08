@@ -16,6 +16,11 @@ is called out explicitly.
 - **A smaller logo file.** The mark in the top bar, sidebar, sign-in page
   and browser tab is a 128px copy (19 KB) rather than the 256px original
   (96 KB). It looks the same, sharp on 3× screens.
+- **Reduced motion keeps the fades.** With "reduce motion" switched on in
+  the device's settings, a dialog now still fades in (it no longer rises),
+  the history run's arrow turns at once, and dashboard widgets no longer
+  slide aside while you drag one. These used to be cut by one rule that
+  switched every animation off.
 - **Vehicle chips in one row on a phone.** On the dashboard, Coming up,
   history and the calendar, the vehicle chips now stay on one line that
   you swipe sideways, instead of wrapping into a block that pushed the

@@ -517,6 +517,14 @@
      * the new order is saved straight away with the page's CSRF token. The
      * move buttons (plain forms) keep working without this.
      */
+    /**
+     * Whether the visitor asked for less motion (prefers-reduced-motion).
+     * Scripted motion checks this itself; CSS motion has its own reduce rules.
+     */
+    function reducedMotion() {
+        return !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
     function enhanceDashboard(grid) {
         var form = document.querySelector('form[data-dashboard-order]');
         if (!form || typeof window.Sortable !== 'function') {
@@ -529,7 +537,9 @@
             handle: '[data-drag-handle]',
             draggable: '[data-widget]',
             ghostClass: 'widget--ghost',
-            animation: 150,
+            // The other widgets slide aside for 150ms. With reduced motion they
+            // move at once; the ghost still marks where the widget will land.
+            animation: reducedMotion() ? 0 : 150,
             onEnd: function () {
                 var widgets = grid.querySelectorAll('[data-widget]');
                 var order = Array.prototype.map.call(widgets, function (widget, index) {
