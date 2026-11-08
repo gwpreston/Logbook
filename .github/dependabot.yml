@@ -62,5 +62,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: mysql
         update-types: ["version-update:semver-major"]
+      # MariaDB's LTS series are minors (11.4, then 11.8), so a minor
+      # bump is a series change too: hold both (spec.md §4, #596).
+      # Patches of 11.4 still arrive.
       - dependency-name: mariadb
-        update-types: ["version-update:semver-major"]
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
