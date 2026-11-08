@@ -72,7 +72,26 @@ FROM base AS build
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN apt-get update && apt-get install -y --no-install-recommends git unzip && rm -rf /var/lib/apt/lists/*
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
+# Composer fetches every package as a zip from api.github.com, and those
+# downloads sometimes stall or drop on CI runners ("curl error 28/56 ...
+# tried 5 times before giving up"), failing the whole image build. So:
+#  - the zips go in a BuildKit cache shared by both architectures; it is
+#    locked, so arm64 waits for amd64 and then reuses its downloads rather
+#    than fetching them all from GitHub again (the cache is never in the image);
+#  - at most 4 downloads at once instead of Composer's 12;
+#  - the install is retried up to 3 times, with a pause for the network
+#    to recover; a retry fetches only what the cache doesn't already hold.
+RUN --mount=type=cache,id=logbook-composer,target=/tmp/composer-cache,sharing=locked \
+    set -eu; \
+    export COMPOSER_CACHE_DIR=/tmp/composer-cache COMPOSER_MAX_PARALLEL_HTTP=4; \
+    for attempt in 1 2 3; do \
+        if composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader; then \
+            exit 0; \
+        fi; \
+        echo "composer install failed (attempt $attempt of 3)" >&2; \
+        if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi; \
+    done; \
+    exit 1
 COPY . .
 RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction
 
