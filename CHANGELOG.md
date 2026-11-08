@@ -26,6 +26,16 @@ is called out explicitly.
   you swipe sideways, instead of wrapping into a block that pushed the
   page down (seven vehicles took 304px; the row takes 62px). The chosen
   vehicle's chip scrolls into view. Wider screens still wrap them.
+- **Fields are easier to find.** Inputs, drop-downs and text boxes have a
+  darker edge (3:1 against the card and the page, up from 1.25:1), and the
+  file picker's button matches the app's buttons in both themes instead of
+  the browser's grey.
+- **Blue and teal text on a tint stays readable.** A notice, soft button
+  or accent label straight on the page background (not in a card) dropped
+  to 4.2:1 in the light theme. Every tinted background is now laid over
+  white, so the text keeps 4.5:1 or better everywhere. A soft button's
+  hover now outlines it in the accent instead of darkening it, which took
+  its text to 4.0:1.
 
 ## [3.21.9] — 2026-11-06
 

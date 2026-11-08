@@ -24,6 +24,10 @@
         "role": "neutral",
         "displayName": "Hairline"
       },
+      "border-input": {
+        "role": "neutral",
+        "displayName": "Field Edge"
+      },
       "text": {
         "role": "neutral",
         "displayName": "Deep Navy Ink"
@@ -97,7 +101,7 @@
       "refersTo": "input",
       "description": "Text, number and date fields with a label above.",
       "html": "<label class=\"ds-field\"><span class=\"ds-label\">Odometer</span><input class=\"ds-input\" value=\"48 210\"></label>",
-      "css": ".ds-field{display:flex;flex-direction:column;gap:6px}.ds-label{color:var(--muted,#5c6b7e);font-size:13px;font-weight:700}.ds-input{min-height:48px;padding:0 14px;border:1px solid var(--border,#e1e6ed);border-radius:12px;background:var(--surface-2,#eef1f5);color:var(--text,#0e1c2e);font-size:16px}.ds-input:focus-visible{outline:2px solid var(--accent,#1667d9);outline-offset:0;border-color:var(--accent,#1667d9)}"
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px}.ds-label{color:var(--muted,#5c6b7e);font-size:13px;font-weight:700}.ds-input{min-height:48px;padding:0 14px;border:1px solid var(--border-input,#7f8ea1);border-radius:12px;background:var(--surface-2,#eef1f5);color:var(--text,#0e1c2e);font-size:16px}.ds-input:focus-visible{outline:2px solid var(--accent,#1667d9);outline-offset:0;border-color:var(--accent,#1667d9)}"
     },
     {
       "name": "Card",

@@ -151,6 +151,53 @@ final class ColourContrastTest extends TestCase
         self::assertGreaterThanOrEqual(self::AA_TEXT, $ratio, sprintf('red on %s', implode('+', $layers)));
     }
 
+    /**
+     * An input is found by its edge (WCAG 1.4.11, 3:1 for a control's
+     * boundary): the Mist fill alone is only about 1.1:1 against a card, so
+     * the field edge must reach 3:1 on the card and on the page.
+     */
+    #[DataProvider('themes')]
+    public function testTheFieldEdgeIsVisible(string $theme): void
+    {
+        $tokens = self::tokens($theme);
+        $white = [1.0, 1.0, 1.0];
+        foreach (['surface', 'bg'] as $page) {
+            $ratio = self::contrast(
+                self::over(self::colour($tokens['border-input']), $white),
+                self::over(self::colour($tokens[$page]), $white),
+            );
+            self::assertGreaterThanOrEqual(3.0, $ratio, sprintf('field edge on %s: %.2f:1', $page, $ratio));
+        }
+        self::assertMatchesRegularExpression(
+            '/\.input,\s*\.select,\s*\.textarea \{[^}]*border: 1px solid var\(--border-input\);/',
+            self::css(),
+            'inputs use the field edge',
+        );
+    }
+
+    /**
+     * The accent-on-tint pair above is measured over --surface. That holds
+     * wherever the tint sits only because --accent-tint lays it over
+     * --surface: straight on the page the see-through tint took blue to
+     * 4.2:1. So the token must stay that layering, and no rule may put
+     * accent text on the bare --accent-soft.
+     */
+    public function testAccentTextSitsOnTheGuardedTint(): void
+    {
+        $tokens = self::tokens('light');
+        self::assertSame(
+            'linear-gradient(var(--accent-soft), var(--accent-soft)) var(--surface)',
+            $tokens['accent-tint'] ?? null,
+        );
+        preg_match_all('/\{([^{}]*)\}/', self::css(), $rules);
+        $bare = array_filter(
+            $rules[1],
+            static fn (string $body): bool => str_contains($body, 'background: var(--accent-soft)')
+                && preg_match('/(^|[\s;])color: var\(--accent\)/', $body) === 1,
+        );
+        self::assertSame([], array_values($bare), 'accent text on the bare tint');
+    }
+
     public function testBothDarkAccentBlocksMatch(): void
     {
         $css = self::css();

@@ -9,6 +9,7 @@ colors:
   text: "#0e1c2e"
   muted: "#5c6b7e"
   border: "#e1e6ed"
+  border-input: "#7f8ea1"
   wordmark: "#0f2e4f"
   accent: "#1667d9"
   on-accent: "#ffffff"
@@ -181,12 +182,20 @@ three-colour status set.
   current nav item, focus rings and the first chart series. The owner can
   switch it to *Teal*, *Indigo* or *Purple* (Profile → Appearance); only
   the accent tokens change.
+- **Accent tint** (`--accent-tint`): the see-through accent wash
+  (`--accent-soft`) laid over Card White. Use it, not `--accent-soft`, as
+  the background under accent text (alerts, soft buttons, accent pills,
+  the current nav item): it keeps the text at 4.5:1 or better on the page
+  and on Mist as well as in a card, in both themes and all four accents.
 
 ### Neutral
 - **Cool Paper** (bg): the page behind everything.
 - **Card White** (surface): cards, buttons at rest, the chip at rest.
 - **Mist** (surface-2): inputs, hover fills, quiet pills.
-- **Hairline** (border): the 1 px edge on cards, buttons and inputs.
+- **Hairline** (border): the 1 px edge on cards, buttons and chips.
+- **Field Edge** (border-input): the 1 px edge on inputs, selects, text
+  areas and the units joined to them; 3:1 on the card and on the page, so
+  a field can be found by its edge (WCAG 1.4.11).
 - **Deep Navy Ink** (text): body text and headings.
 - **Slate** (muted): field labels, hints, secondary text.
 - **Wordmark Navy** (wordmark): the Logbook wordmark only.
@@ -314,6 +323,11 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
   into the accent.
 - **Ghost:** no border or fill, accent text; hover takes the soft accent
   tint. **Danger** is the default button with red text.
+- **Soft:** accent tint and accent text, no border; hover adds an accent
+  border rather than a deeper fill, which would take the text below 4.5:1.
+- **File button** (the native file input's own button): the default
+  button's look, sized to sit inside the input; hover goes one step
+  deeper than the input's Mist fill.
 - **Danger, solid:** the final confirm on a delete, revoke or restore page.
   Red fill with `on-red` text: white in the light theme, near-black
   (`#081020`) in the dark theme, where the red is lighter and white would
@@ -358,7 +372,7 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
     No reduced opacity: it took muted text below AA.
 
 ### Inputs / Fields
-- **Style:** Mist fill, hairline border, 12px corners, 48px tall, 16px
+- **Style:** Mist fill, Field Edge border, 12px corners, 48px tall, 16px
   text; the label above in bold 13px Slate, a hint below in muted 12.5px.
 - **Placeholder:** full muted Slate (accent for a value Logbook worked
   out), never faded: placeholder text is text and needs 4.5:1 on the fill.
