@@ -23,10 +23,12 @@
     {% endif %}
 {%- endmacro %}
 
-{# Brand lock-up: mark + two-tone wordmark, linking to the dashboard. #}
+{# Brand lock-up: mark + two-tone wordmark, linking to the dashboard. The
+   mark shows at 42px at most, so it uses the 128px copy (3x screens), not
+   the 256px original (96 KB on every page). #}
 {% macro brand() -%}
     <a class="brand" href="{{ url_for('home') }}">
-        <img class="brand__mark" src="{{ asset('images/logbook-mark.png') }}" alt="" width="256" height="242">
+        <img class="brand__mark" src="{{ asset('images/logbook-mark-128.png') }}" alt="" width="128" height="121">
         <span class="brand__wordmark"><span class="visually-hidden">{{ 'app.name'|trans }}</span><span aria-hidden="true">{{ 'brand.wordmark_lead'|trans }}<span class="brand__wordmark-tail">{{ 'brand.wordmark_tail'|trans }}</span></span></span>
     </a>
 {%- endmacro %}
@@ -35,7 +37,7 @@
    *Signed-out pages*). Hidden by CSS when signed in: the sidebar has one. #}
 {% macro auth_brand() -%}
     <p class="auth__brand">
-        <img class="auth__mark" src="{{ asset('images/logbook-mark.png') }}" alt="" width="256" height="242">
+        <img class="auth__mark" src="{{ asset('images/logbook-mark-128.png') }}" alt="" width="128" height="121">
         <span class="brand__wordmark auth__wordmark"><span class="visually-hidden">{{ 'app.name'|trans }}</span><span aria-hidden="true">{{ 'brand.wordmark_lead'|trans }}<span class="brand__wordmark-tail">{{ 'brand.wordmark_tail'|trans }}</span></span></span>
     </p>
 {%- endmacro %}

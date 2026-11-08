@@ -55,7 +55,15 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // js/app.js may add this script after the page has loaded, so start now
+    // if DOMContentLoaded has already fired.
+    function start() {
         document.querySelectorAll('[data-vehicle-lookup]').forEach(enhance);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+    } else {
+        start();
+    }
 }());

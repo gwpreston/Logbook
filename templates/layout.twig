@@ -55,7 +55,7 @@
     <meta name="theme-color" content="#f3f5f8" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0a111c" media="(prefers-color-scheme: dark)">
     <title>{% block title %}{{ 'app.name'|trans }}{% endblock %}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logbook-mark.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/logbook-mark-128.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ url_for('pwa.manifest') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -63,20 +63,28 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     {# Sets data-theme before first paint; everything else is deferred. #}
     <script src="{{ asset('js/theme.js') }}"></script>
-    {# Vendored libraries: progressive enhancement only; every core flow works without JS. #}
-    <script defer src="{{ asset('vendor/sortable.min.js') }}"></script>
-    <script defer src="{{ asset('vendor/chart.umd.min.js') }}"></script>
-    <script defer src="{{ asset('js/file-drop.js') }}"></script>
-    <script defer src="{{ asset('js/first-inspection.js') }}"></script>
-    <script defer src="{{ asset('js/vehicle-lookup.js') }}"></script>
-    <script defer src="{{ asset('js/trip-form.js') }}"></script>
-    <script defer src="{{ asset('js/stations.js') }}"></script>
+    {# Progressive enhancement only; every core flow works without JS.
+       Alpine runs on the core forms (the fill-up form included), so it
+       loads everywhere. Chart.js, SortableJS and the page scripts load only
+       where their markup is: js/app.js reads the URLs from data-scripts on
+       <body> and adds each script when the page, or a form opened in the
+       modal, has its marker. #}
     <script defer src="{{ asset('js/app.js') }}"></script>
     <script defer src="{{ asset('vendor/alpine.min.js') }}"></script>
     {% block head %}{% endblock %}
 </head>
-{# Whose page this is, for the offline fill-up queue (spec.md §7.15, K40). #}
-<body{% if signed_in %} data-user="{{ user.id }}"{% endif %}>
+{# Whose page this is, for the offline fill-up queue (spec.md §7.15, K40),
+   and the scripts js/app.js loads on demand (key => versioned URL). #}
+{% set on_demand_scripts = {
+    'chart': asset('vendor/chart.umd.min.js'),
+    'sortable': asset('vendor/sortable.min.js'),
+    'file-drop': asset('js/file-drop.js'),
+    'first-inspection': asset('js/first-inspection.js'),
+    'vehicle-lookup': asset('js/vehicle-lookup.js'),
+    'trip-form': asset('js/trip-form.js'),
+    'stations': asset('js/stations.js'),
+} %}
+<body{% if signed_in %} data-user="{{ user.id }}"{% endif %} data-scripts="{{ on_demand_scripts|json_encode(constant('JSON_UNESCAPED_SLASHES')) }}">
     <a class="skip-link" href="#main">{{ 'nav.skip_to_content'|trans }}</a>
 
     <div class="app{{ signed_in ? '' : ' app--signed-out' }}">

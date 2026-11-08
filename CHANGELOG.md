@@ -6,6 +6,17 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Changed
+- **Pages load less.** Chart.js, SortableJS and the page scripts (file drop,
+  station picker, trip form, vehicle lookup, first MOT) now load only on the
+  pages, and in the forms opened in a dialog, that use them. Every page used
+  to load all of them. The fill-up form now loads 157 KB of script instead
+  of 412 KB, and the garage 127 KB. Alpine still loads everywhere because
+  the core forms use it.
+- **A smaller logo file.** The mark in the top bar, sidebar, sign-in page
+  and browser tab is a 128px copy (19 KB) rather than the 256px original
+  (96 KB). It looks the same, sharp on 3× screens.
+
 ## [3.21.9] — 2026-11-06
 
 Phase 54.12: **The Windows architecture tests from the known-issues log**
