@@ -5562,14 +5562,46 @@ a.list__title:hover {
     box-shadow: 0 0 0 2px var(--surface);
 }
 
-/* Dashboard vehicle filter. */
+/*
+ * Vehicle filter (dashboard, Coming up, history, calendar). On a phone the
+ * chips stay on one line that scrolls sideways, edge to edge, so a garage
+ * of seven vehicles doesn't push the page down by half a screen. Like the
+ * vehicle tabs (.tabs), it says it scrolls without JS: a shadow at each
+ * edge with more chips beyond it, hidden at the ends by page-coloured
+ * covers that scroll with the chips, and a thin scrollbar a mouse can
+ * drag. app.js brings the current chip into
+ * view. The block padding leaves room for the focus ring, which the strip
+ * would otherwise clip. From the sidebar breakpoint up the chips wrap.
+ */
 .vehicle-filter__list {
+    --strip-shade: color-mix(in srgb, var(--text) 22%, transparent);
     display: flex;
-    flex-wrap: wrap;
     gap: var(--space-2);
-    margin: 0;
-    padding: 0;
+    overflow-x: auto;
+    margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-4));
+    padding: var(--space-1) var(--space-4);
     list-style: none;
+    background:
+        linear-gradient(to right, var(--bg) 40%, transparent) left / 2.5rem 100% no-repeat local,
+        linear-gradient(to left, var(--bg) 40%, transparent) right / 2.5rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, var(--strip-shade), transparent) left / 0.875rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, var(--strip-shade), transparent) right / 0.875rem 100% no-repeat scroll;
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted) transparent;
+}
+
+.vehicle-filter__list > li {
+    flex: none;
+}
+
+@media (min-width: 60rem) {
+    .vehicle-filter__list {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        margin: 0;
+        padding: 0;
+        background: none;
+    }
 }
 
 .chip[aria-current="page"] {

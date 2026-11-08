@@ -327,6 +327,10 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
 - **State:** chosen (checked or `aria-pressed`) fills with the accent and
   shows a tick; a chip marking where you are (`aria-current`) fills but has
   no tick.
+- **Vehicle filter row:** on a phone the chips stay on one line that
+  scrolls sideways edge to edge, like the vehicle tabs: edge shadows and a
+  thin scrollbar say it scrolls, and the current chip is brought into view.
+  From the sidebar breakpoint (60rem) they wrap.
 
 ### Pills (status)
 - 24px, fully rounded, bold 12px: quiet (Mist/Slate), valid (green on green

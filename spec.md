@@ -2931,6 +2931,10 @@ toggles.
   icon. Each chip is a link (`/?vehicle={id}`; the current one has
   `aria-current`), so the choice works without JS, survives a refresh and
   can be bookmarked. An unknown or archived id falls back to *All vehicles*.
+  On a phone the chips stay on one line that scrolls sideways, with the
+  current chip brought into view; from the sidebar breakpoint they wrap.
+  The same applies wherever this filter appears (Coming up, history,
+  calendar).
   With one vehicle selected every widget shows that vehicle only, *your
   vehicles* is hidden, and a **pinned vehicle card** appears under the chips:
   photo, plate (§8), fuel type, name, "descriptive line (§7.1) · current

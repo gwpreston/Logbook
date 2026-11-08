@@ -21,6 +21,11 @@ is called out explicitly.
   the history run's arrow turns at once, and dashboard widgets no longer
   slide aside while you drag one. These used to be cut by one rule that
   switched every animation off.
+- **Vehicle chips in one row on a phone.** On the dashboard, Coming up,
+  history and the calendar, the vehicle chips now stay on one line that
+  you swipe sideways, instead of wrapping into a block that pushed the
+  page down (seven vehicles took 304px; the row takes 62px). The chosen
+  vehicle's chip scrolls into view. Wider screens still wrap them.
 
 ## [3.21.9] — 2026-11-06
 
