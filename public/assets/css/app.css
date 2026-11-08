@@ -56,10 +56,19 @@
     --text: #0e1c2e;
     --muted: #5c6b7e;
     --border: #e1e6ed;
+    /* An input's edge is how you find it (WCAG 1.4.11): 3:1 on --surface
+       and on --bg. The hairline (--border) is 1.25:1, and the Mist fill
+       alone is 1.13:1 against a card. */
+    --border-input: #7f8ea1;
     --wordmark: #0f2e4f;
     --brand-blue: #1570e0;
     --accent: #1667d9;
     --accent-soft: rgba(22, 103, 217, 0.1);
+    /* The accent tint as a background under accent text: laid over
+       --surface, so the text keeps 4.5:1 whatever is behind it. Straight on
+       the page (--bg) or Mist, the see-through tint took blue to 4.2:1 and
+       teal to 4.5:1. Inside a card it looks exactly as before. */
+    --accent-tint: linear-gradient(var(--accent-soft), var(--accent-soft)) var(--surface);
     --on-accent: #ffffff;
     --green: #087552;     /* 4.5:1 on --green-soft (WCAG AA) */
     --green-soft: rgba(10, 133, 96, 0.11);
@@ -197,6 +206,7 @@
         --text: #e6ecf4;
         --muted: #8e9db2;
         --border: #1f2c40;
+        --border-input: #5a6b84;    /* 3.2:1 on --surface, 3.5:1 on --bg */
         --wordmark: #e6ecf4;
         --brand-blue: #4c93f7;
         --accent: #5a9bff;
@@ -229,6 +239,7 @@
     --text: #e6ecf4;
     --muted: #8e9db2;
     --border: #1f2c40;
+    --border-input: #5a6b84;    /* see the media-query block above */
     --wordmark: #e6ecf4;
     --brand-blue: #4c93f7;
     --accent: #5a9bff;
@@ -554,7 +565,7 @@ pre {
 }
 
 .nav-link[aria-current="page"] {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -652,7 +663,7 @@ pre {
 }
 
 .bottom-nav__link[aria-current="page"] .bottom-nav__icon {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 /* Central primary action ("Log") in the tab bar. */
@@ -1015,7 +1026,7 @@ a.list__item:hover {
     margin: 0;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-lg);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     overflow-wrap: anywhere;
 }
 
@@ -1081,7 +1092,7 @@ a.list__item:hover {
 }
 
 .ask-feedback [aria-pressed="true"] {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -1219,7 +1230,7 @@ a.list__item:hover {
 }
 
 .btn--ghost:hover {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 .btn--danger {
@@ -1307,7 +1318,7 @@ a.list__item:hover {
 button.chip:hover,
 label.chip:hover {
     border-color: var(--accent);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 /* A chosen chip shows a tick as well as its fill, so the choice is not
@@ -1487,7 +1498,7 @@ a.segmented__option {
 
 /* A business trip (Phase 22). */
 .pill--accent {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -1610,7 +1621,7 @@ a.segmented__option {
     min-width: 0;
     min-height: var(--input-h);
     padding: 0 0.875rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-input);
     border-radius: var(--radius-md);
     background: var(--surface-2);
     color: var(--text);
@@ -1664,7 +1675,7 @@ a.segmented__option {
     gap: var(--space-2);
     padding: 0.625rem var(--space-3);
     border-radius: var(--radius-md);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
     font-size: var(--fs-base);
     font-weight: 600;
@@ -1805,7 +1816,7 @@ a.segmented__option {
     width: 3.25rem;
     height: 3.25rem;
     border-radius: var(--radius-lg);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -2021,7 +2032,8 @@ a.segmented__option {
     display: flex;
     align-items: center;
     padding: 0 var(--space-3);
-    border: 1px solid var(--border);
+    /* Joined to the input, so it shares the input's edge. */
+    border: 1px solid var(--border-input);
     border-left: 0;
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     background: var(--surface);
@@ -2033,6 +2045,42 @@ a.segmented__option {
 .input--file {
     padding: 0.625rem 0.875rem;
     font-size: var(--fs-base);
+}
+
+/* The file input's own button: the browser's grey default belongs to no
+   theme, so it takes the default button's look (white, hairline, bold
+   navy text) at a size that fits inside the input. Kept as
+   its own rule from the WebKit one below: a browser that doesn't know one
+   pseudo-element would drop a joined rule. */
+.input--file::file-selector-button {
+    min-height: 2.25rem;
+    margin-inline-end: var(--space-3);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.input--file::-webkit-file-upload-button {
+    min-height: 2.25rem;
+    margin-inline-end: var(--space-3);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Mist is the input's own fill, so the hover goes one step deeper. */
+.input--file:hover::file-selector-button {
+    background: var(--stripe);
 }
 
 .checkbox {
@@ -2294,7 +2342,7 @@ a.segmented__option {
 }
 
 .sidebar__user[aria-current="page"] {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -2843,13 +2891,17 @@ a.segmented__option {
     min-height: 2.375rem;
     padding-inline: var(--space-3);
     border-color: transparent;
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
     font-size: var(--fs-sm);
 }
 
+/* Hover outlines it in the accent, like a vehicle chip, and keeps the
+   tint. A deeper fill (it was 12% accent mixed in) took the accent text
+   to 4.0:1 on blue. */
 .btn--soft:hover {
-    background: color-mix(in oklab, var(--accent-soft) 70%, var(--accent) 12%);
+    border-color: var(--accent);
+    background: var(--accent-tint);
 }
 
 .btn--push {
@@ -2906,7 +2958,7 @@ a.segmented__option {
 
 .toggle:has(input:checked) {
     border-color: var(--accent);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 .toggle:has(input:focus-visible) {
@@ -3395,7 +3447,7 @@ a.list__title:hover {
     border-color: var(--accent);
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 .file-drop__prompt {
@@ -3962,7 +4014,7 @@ a.list__title:hover {
 }
 
 .mini-cal__day--upcoming .mini-cal__link {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -4033,7 +4085,7 @@ a.list__title:hover {
 }
 
 .alert--info {
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -4771,7 +4823,7 @@ a.list__title:hover {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: var(--radius-sm);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -4962,7 +5014,7 @@ a.list__title:hover {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: var(--radius-sm);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
@@ -6917,7 +6969,7 @@ a.list__title:hover {
     display: inline-block;
     padding: 0 var(--space-1);
     border-radius: var(--radius-2xs);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
     font-size: var(--fs-xs);
     font-weight: 600;
@@ -6967,7 +7019,7 @@ a.list__title:hover {
     padding: var(--space-4);
     border: 1px solid var(--accent);
     border-radius: var(--radius-lg);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
 }
 
 /* On the notice's tint --muted falls just under 4.5:1 in the light theme (Phase 53.4 design review). */
@@ -7289,7 +7341,7 @@ p.stat__label {
     width: 2.75rem;
     height: 2.75rem;
     border-radius: var(--radius-md);
-    background: var(--accent-soft);
+    background: var(--accent-tint);
     color: var(--accent);
 }
 
