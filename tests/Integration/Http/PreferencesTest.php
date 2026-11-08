@@ -32,7 +32,7 @@ final class PreferencesTest extends AppTestCase
         self::assertMatchesRegularExpression('~value="mpg_uk" checked~', $html);
         self::assertMatchesRegularExpression('~<option value="Europe/London" selected>~', $html);
         self::assertMatchesRegularExpression('~<option value="en_GB" selected>English \(United Kingdom\)</option>~', $html);
-        self::assertStringContainsString('7,671 mi', $html, 'preview in miles');
+        self::assertStringContainsString("7,671\u{00A0}mi", $html, 'preview in miles');
         self::assertStringContainsString('£1,234.50', $html);
     }
 
@@ -49,7 +49,7 @@ final class PreferencesTest extends AppTestCase
         $html = self::body($page);
         self::assertSame('en-US', $page->getHeaderLine('Content-Language'));
         self::assertStringContainsString('Your preferences were saved.', $html);
-        self::assertStringContainsString('12.02 US gal', $html, '45.5 L in US gallons');
+        self::assertStringContainsString("12.02\u{00A0}US\u{00A0}gal", $html, '45.5 L in US gallons');
         self::assertStringContainsString('$1,234.50', $html);
         self::assertStringContainsString('6/32″', $html, 'tread depth in 32nds of an inch');
         self::assertMatchesRegularExpression('~data-unit-preset[^>]*data-depth-unit="in32"~s', $html, 'the US preset sets it');
@@ -64,7 +64,7 @@ final class PreferencesTest extends AppTestCase
         // Metric with km/L: mix and match is allowed.
         $metric = ['distance_unit' => 'km', 'volume_unit' => 'l', 'consumption_unit' => 'km_per_l'];
         $browser->post('/settings/preferences', $metric + self::US);
-        self::assertStringContainsString('12,346 km', self::body($browser->get('/profile')));
+        self::assertStringContainsString("12,346\u{00A0}km", self::body($browser->get('/profile')));
     }
 
     public function testInvalidPreferencesAreRejectedInPlace(): void

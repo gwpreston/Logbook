@@ -459,7 +459,7 @@ final class TyrePagesTest extends AppTestCase
         self::assertStringNotContainsString($this->base, $overview, 'no tab, no card');
         self::assertStringNotContainsString('Tyre change', self::body($this->browser->get('/log/new')));
         $mileage = self::body($this->browser->get('/vehicles/' . $this->car->id . '/odometer'));
-        self::assertStringContainsString('20,000 mi', $mileage, 'the tyre reading stays in the mileage log');
+        self::assertStringContainsString("20,000\u{00A0}mi", $mileage, 'the tyre reading stays in the mileage log');
 
         $toggles->save(Feature::cases());
         self::assertSame(200, $this->browser->get($this->base)->getStatusCode());

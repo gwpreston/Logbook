@@ -152,7 +152,7 @@ final class FuelInsightsTest extends AppTestCase
         self::assertStringContainsString('<th scope="col" class="table__num">2026</th>', $table);
         self::assertStringContainsString('<th scope="col" class="table__num">Average</th>', $table);
         self::assertStringContainsString('<th scope="row">December</th>', $table);
-        $january = '~January</th>\s*<td[^>]*>45\.9 mpg</td>\s*<td[^>]*><strong>45\.9 mpg</strong>~';
+        $january = '~January</th>\s*<td[^>]*>45\.9\x{00A0}mpg</td>\s*<td[^>]*><strong>45\.9\x{00A0}mpg</strong>~u';
         self::assertMatchesRegularExpression($january, $table);
         self::assertMatchesRegularExpression('~February</th>\s*<td[^>]*>—</td>~', $table);
     }

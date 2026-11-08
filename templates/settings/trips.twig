@@ -109,7 +109,7 @@
                                 <span class="list__title"><a href="{{ url_for('settings.trips.rates.edit', {set: set.id}) }}" data-modal>{{ 'trip.claim.rate_set_from'|trans({date: data.effectiveFrom|local_date}) }}</a></span>
                                 <span class="list__meta">
                                     {{- 'trip.rates.car'|trans }} {{ trips_ui.rate(data.carRate, data.currency, unit) -}}
-                                    {%- if data.carThreshold is not null %} · {{ 'trip.rates.after'|trans({threshold: data.carThreshold|number ~ ' ' ~ ('units.symbol.' ~ unit)|trans, rate: trips_ui.rate(data.carRateAfter, data.currency, unit)}) }}{% endif -%}
+                                    {%- if data.carThreshold is not null %} · {{ 'trip.rates.after'|trans({threshold: (data.carThreshold|number ~ ' ' ~ ('units.symbol.' ~ unit)|trans)|keep_together, rate: trips_ui.rate(data.carRateAfter, data.currency, unit)}) }}{% endif -%}
                                     {%- if data.bikeRate is not null %} · {{ 'trip.rates.bike'|trans }} {{ trips_ui.rate(data.bikeRate, data.currency, unit) }}{% endif -%}
                                     {%- if data.passengerRate is not null %} · {{ 'trip.rates.passenger'|trans }} {{ trips_ui.rate(data.passengerRate, data.currency, unit) }}{% endif -%}
                                     {%- if data.hasEmployerRates() %} · {{ 'trip.rates.employer'|trans }} {{ data.employerCarRate is not null ? trips_ui.rate(data.employerCarRate, data.currency, unit) : dash }}{% endif -%}

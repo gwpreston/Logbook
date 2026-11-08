@@ -36,7 +36,7 @@ final class BusinessMileageTest extends AppTestCase
 
         $report = self::body($browser->get('/reports'));
         self::assertStringContainsString('Business mileage', $report);
-        self::assertStringContainsString('100 mi', $report);
+        self::assertStringContainsString("100\u{00A0}mi", $report);
         self::assertStringContainsString('10%', $report, '100 of 1,000 mi');
         self::assertStringContainsString('£55.00', $report);
         self::assertStringContainsString('£0.55/mi', $report, 'the claim per business mile');
@@ -107,9 +107,9 @@ final class BusinessMileageTest extends AppTestCase
 
         $home = self::body($browser->get('/'));
         self::assertStringContainsString('Business mileage', $home);
-        self::assertStringContainsString('3,582 mi', $home);
+        self::assertStringContainsString("3,582\u{00A0}mi", $home);
         self::assertStringContainsString('£1,970.10', $home, '3,582 mi at 55p');
-        self::assertStringContainsString('6,418 mi until the £0.25 rate', $home);
+        self::assertStringContainsString("6,418\u{00A0}mi until the £0.25 rate", $home);
         self::assertStringContainsString('href="/trips/claim"', $home);
     }
 

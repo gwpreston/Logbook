@@ -51,8 +51,8 @@ final class OdometerTest extends AppTestCase
         self::assertSame(OdometerSource::Manual, $readings[1]->source);
 
         $list = self::body($browser->get($base));
-        self::assertStringContainsString('1,235 mi', $list);
-        self::assertStringContainsString('+1,235 mi', $list, 'distance since the reading before');
+        self::assertStringContainsString("1,235\u{00A0}mi", $list);
+        self::assertStringContainsString("+1,235\u{00A0}mi", $list, 'distance since the reading before');
         self::assertStringContainsString('Delivery', $list);
         self::assertStringContainsString('data-chart=', $list);
         self::assertStringContainsString('Monthly average', $list);
@@ -117,9 +117,9 @@ final class OdometerTest extends AppTestCase
         $fromFuel = $readings[1];
 
         $list = self::body($browser->get('/vehicles/' . $car->id . '/odometer'));
-        self::assertStringContainsString('10,250 mi', $list);
+        self::assertStringContainsString("10,250\u{00A0}mi", $list);
         self::assertStringContainsString('Fill-up', $list);
-        self::assertStringContainsString('+250 mi', $list);
+        self::assertStringContainsString("+250\u{00A0}mi", $list);
 
         // A fill-up's reading is changed through the fill-up.
         $edit = $browser->get('/vehicles/' . $car->id . '/odometer/' . $fromFuel->id . '/edit');
@@ -152,7 +152,7 @@ final class OdometerTest extends AppTestCase
         $browser->post('/vehicles/' . $car->id . '/odometer/new', self::reading('48412', '2026-06-01T10:00'));
 
         $html = self::body($browser->get('/vehicles/' . $car->id));
-        self::assertStringContainsString('48,412 mi', $html);
+        self::assertStringContainsString("48,412\u{00A0}mi", $html);
         self::assertStringContainsString('as of 1 Jun 2026', $html);
         self::assertStringContainsString('href="/vehicles/' . $car->id . '/odometer"', $html);
         self::assertStringNotContainsString('No fill-ups yet', $html, 'the latest fill-ups list is gone (Phase 12)');

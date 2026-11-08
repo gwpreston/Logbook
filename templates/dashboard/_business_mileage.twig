@@ -22,7 +22,7 @@
     <p class="muted">
         {{- 'trip.claim.tax_year'|trans({year: claim.filter.taxYear.label()}) }}
         {%- if left %} · {{ (left.isPast() ? 'dashboard.business.past' : 'dashboard.business.left')|trans({
-            distance: left.left|number(0) ~ ' ' ~ ('units.symbol.' ~ left.unit.value)|trans,
+            distance: (left.left|number(0) ~ ' ' ~ ('units.symbol.' ~ left.unit.value)|trans)|keep_together,
             rate: left.rateAfter|mileage_rate(left.currency),
         }) }}{% endif -%}
     </p>

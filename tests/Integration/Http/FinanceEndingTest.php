@@ -234,12 +234,12 @@ final class FinanceEndingTest extends AppTestCase
         $agreement = $this->add($app, $browser, $yaris, self::pcp());
 
         $page = self::body($browser->get('/vehicles/' . $yaris->id . '/finance/' . $agreement->id));
-        self::assertStringContainsString('On track for 30,900 mi against 24,667 mi.', $page);
+        self::assertStringContainsString("On track for 30,900\u{00A0}mi against 24,667\u{00A0}mi.", $page);
         self::assertStringContainsString('About £564 in excess mileage at £0.09 a mile.', $page);
-        self::assertStringContainsString('15,000 mi so far', $page);
+        self::assertStringContainsString("15,000\u{00A0}mi so far", $page);
 
         $overview = self::body($browser->get('/vehicles/' . $yaris->id));
-        self::assertStringContainsString('On track for 30,900 mi against 24,667 mi.', $overview, 'on the card');
+        self::assertStringContainsString("On track for 30,900\u{00A0}mi against 24,667\u{00A0}mi.", $overview, 'on the card');
         self::assertStringContainsString('Heading for about 6,300 mi over your allowance: about £564', $overview);
 
         // Hidden by its fingerprint, until the projection moves by about 100.

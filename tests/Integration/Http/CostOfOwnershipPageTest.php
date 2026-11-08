@@ -158,7 +158,7 @@ final class CostOfOwnershipPageTest extends AppTestCase
             $card,
             'largest first, adding up to 100%',
         );
-        self::assertStringContainsString('£0.444/mi over 39,000 mi', $card);
+        self::assertStringContainsString("£0.444/mi over 39,000\u{00A0}mi", $card);
 
         $minor = self::cardFor($screen, $classic);
         self::assertSame(1, substr_count($minor, 'class="stack-bar__part"'), 'a gain is never drawn');
@@ -206,7 +206,7 @@ final class CostOfOwnershipPageTest extends AppTestCase
         self::assertStringContainsString('since purchase', $html);
         self::assertStringContainsString('£416.54', $html);
         self::assertStringContainsString('£0.444/mi', $html);
-        self::assertStringContainsString('39,000 mi driven', $html);
+        self::assertStringContainsString("39,000\u{00A0}mi driven", $html);
         self::assertStringContainsString('3 yrs 6 mo', $html);
         self::assertStringContainsString('since Mar 2023', $html);
         self::assertStringContainsString('over 42 months since buying it on 1 Mar 2023', $html);

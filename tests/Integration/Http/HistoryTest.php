@@ -60,7 +60,7 @@ final class HistoryTest extends AppTestCase
         self::assertSame(1, substr_count($html, '<details class="history-run">'));
         self::assertStringContainsString('3 fill-ups', $html);
         self::assertStringContainsString('£284.10', $html, 'the run\'s total');
-        self::assertStringContainsString('168.4 L', $html, 'and the volume, in the owner\'s unit');
+        self::assertStringContainsString("168.4\u{00A0}L", $html, 'and the volume, in the owner\'s unit');
         self::assertStringContainsString('Older (2025)', $html);
 
         // Rows open their edit form in the modal and come back here.

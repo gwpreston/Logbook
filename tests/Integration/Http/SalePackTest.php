@@ -97,11 +97,15 @@ final class SalePackTest extends AppTestCase
         self::assertStringContainsString('WVWZZZ1KZ9W000001', $html);
         self::assertStringContainsString('7 yrs 6 mo', $html, 'first registered, with its age');
         self::assertStringContainsString('Owned since March 2021', $html);
-        self::assertStringContainsString('23,874 mi covered', $html, 'from the reading on the purchase day');
-        self::assertStringContainsString('48,729 mi on 12 Sept 2026', $html, 'the current odometer and its date');
+        self::assertStringContainsString("23,874\u{00A0}mi covered", $html, 'from the reading on the purchase day');
+        self::assertStringContainsString("48,729\u{00A0}mi on 12 Sept 2026", $html, 'the current odometer and its date');
         self::assertStringContainsString('a year since first registered', $html);
         self::assertStringContainsString('2 service and repair records', $html);
-        self::assertStringContainsString('last serviced 12 Mar 2024 at 37,282 mi', $html, 'the last service or oil record');
+        self::assertStringContainsString(
+            "last serviced 12 Mar 2024 at 37,282\u{00A0}mi",
+            $html,
+            'the last service or oil record',
+        );
         self::assertStringContainsString('2 with paperwork', $html);
         self::assertStringContainsString('MOT valid until 14 Jun 2027', $html);
         self::assertStringContainsString('Check the full MOT history at gov.uk/check-mot-history', $html);
@@ -182,8 +186,8 @@ final class SalePackTest extends AppTestCase
         self::assertStringContainsString('Dashboard photo', $html);
         self::assertStringNotContainsString('Service record', $html, 'both records have invoices');
         // The fill-up (48,467 mi) and the manual reading without a photo (24,855 mi on purchase day) are not listed.
-        self::assertStringNotContainsString('48,467 mi', $html);
-        self::assertStringNotContainsString('24,855 mi', $html);
+        self::assertStringNotContainsString("48,467\u{00A0}mi", $html);
+        self::assertStringNotContainsString("24,855\u{00A0}mi", $html);
         self::assertSame(4, substr_count($html, '<tr>') - 1, 'four readings and the header');
         self::assertStringContainsString('data-chart=', $html, 'a chart, in the print palette');
         self::assertStringContainsString('&quot;print&quot;:true', $html);

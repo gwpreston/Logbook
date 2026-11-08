@@ -136,7 +136,7 @@ final class TyreTreadTest extends AppTestCase
         self::assertSame(TyreChangeKind::Fit, $change->kind);
         self::assertSame(['8.100', '8.100'], array_values(self::depths($change)));
         $html = self::body($this->browser->get($this->base));
-        self::assertStringContainsString('8.1 mm</span>', $html, 'the card shows the latest depth');
+        self::assertStringContainsString("8.1\u{00A0}mm</span>", $html, 'the card shows the latest depth');
         self::assertStringContainsString('Checked 10 Jan 2026', $html, 'and its date');
         self::assertStringContainsString('Fitted 2 × Michelin Primacy 4 (front) · 8.1 mm', $html, 'depths follow the summary');
     }
@@ -263,7 +263,7 @@ final class TyreTreadTest extends AppTestCase
         self::assertSame(303, $swap->getStatusCode(), self::body($swap));
         self::assertSame([$fitted['fl']->id => '6.100', $fitted['fr']->id => '6.200'], self::depths($this->latest()));
         $stored = self::body($this->browser->get($this->base));
-        self::assertStringContainsString('6.1 mm on 1 Oct 2026', $stored, 'stored tyres show their latest depth');
+        self::assertStringContainsString("6.1\u{00A0}mm on 1 Oct 2026", $stored, 'stored tyres show their latest depth');
 
         $on = $this->browser->post($this->base . '/swap', [
             'done_on' => '2027-04-01',
@@ -284,7 +284,7 @@ final class TyreTreadTest extends AppTestCase
         self::assertSame(303, $remove->getStatusCode(), self::body($remove));
         self::assertSame([$fitted['fl']->id => '1.900'], self::depths($this->latest()));
         $retired = self::body($this->browser->get($this->base));
-        self::assertStringContainsString('1.9 mm on 1 May 2027', $retired, 'a retired tyre shows its last depth');
+        self::assertStringContainsString("1.9\u{00A0}mm on 1 May 2027", $retired, 'a retired tyre shows its last depth');
     }
 
     public function testSettingsSaveInThirtySecondsAndReadBack(): void
@@ -346,7 +346,7 @@ final class TyreTreadTest extends AppTestCase
 
         self::assertStringContainsString('about', self::body($this->browser->get($this->base)), 'the tab has an estimate');
         $print = self::body($this->browser->get('/vehicles/' . $this->car->id . '/history/print'));
-        self::assertStringContainsString('5.4 mm on 1 Aug 2026', $print);
+        self::assertStringContainsString("5.4\u{00A0}mm on 1 Aug 2026", $print);
         self::assertStringNotContainsString('mm now', $print, 'no estimate printed');
         self::assertStringNotContainsString('mi left', $print);
     }
@@ -358,7 +358,7 @@ final class TyreTreadTest extends AppTestCase
 
         $page = self::body($this->browser->get($this->base . '/changes/' . $this->latest()->id . '/delete'));
         self::assertStringContainsString('10/32″', $page);
-        self::assertStringNotContainsString('7.9 mm', $page);
+        self::assertStringNotContainsString("7.9\u{00A0}mm", $page);
     }
 
     public function testCsvCarriesTheDepths(): void

@@ -48,7 +48,7 @@ final class EconomyCheckTest extends AppTestCase
         self::assertStringContainsString('Less than usual', $html);
         self::assertStringContainsString('More than usual', $html);
         self::assertMatchesRegularExpression(
-            '/Used about 43% less than usual \([\d.]+ mpg; usually [\d.]+ mpg\)\./',
+            '/Used about 43% less than usual \([\d.]+\x{00A0}mpg; usually [\d.]+\x{00A0}mpg\)\./u',
             $html,
         );
         $pair = 'Probably the fill-up on ' . $this->date($typo) . ': taken together, these two tanks are normal.';
@@ -194,7 +194,7 @@ final class EconomyCheckTest extends AppTestCase
         self::assertCount(8, $entries);
         $thirsty = $entries[7];
         $edit = self::body($browser->get($base . '/' . $thirsty->id . '/edit'));
-        self::assertStringContainsString('Used about 50% more than usual (37.9 mpg; usually 56.8 mpg).', $edit);
+        self::assertStringContainsString("Used about 50% more than usual (37.9\u{00A0}mpg; usually 56.8\u{00A0}mpg).", $edit);
         self::assertStringContainsString('Check the odometer and the amount.', $edit);
         self::assertStringContainsString('Looks right', $edit);
         self::assertStringContainsString('Edit the fill-up on 7 Jul 2026', $edit);

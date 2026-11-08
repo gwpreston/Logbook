@@ -248,6 +248,11 @@ small plate) follows the plate's proportions; avatar initials (10px, 13px,
   wrap as before.
 - Ask answers, the one place people read paragraphs, stop at 70ch inside
   their 45rem column.
+- A figure never parts from its unit: the unit filters (`distance`,
+  `volume`, `economy` and the rest) join number and unit with a no-break
+  space, and a figure a template builds itself goes through
+  `keep_together`. A grid of figures (`.figures`) drops to fewer columns on
+  a phone (each at least 6.5rem) rather than shrinking the type.
 
 ### Named Rules
 **The Figures In Outfit Rule.** Numbers that matter (totals, economy,

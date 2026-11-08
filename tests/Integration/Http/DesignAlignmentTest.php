@@ -204,7 +204,7 @@ final class DesignAlignmentTest extends AppTestCase
         $one = self::body($browser->get('/?vehicle=' . $golf->id));
         self::assertStringContainsString('data-pinned-vehicle', $one);
         self::assertStringNotContainsString('id="widget-fleet"', $one, 'your vehicles makes way for the card');
-        self::assertStringContainsString('49.7 mpg', $one, '12-month economy in the owner\'s unit');
+        self::assertStringContainsString("49.7\u{00A0}mpg", $one, '12-month economy in the owner\'s unit');
         self::assertStringContainsString('in 4 days', $one);
         self::assertStringContainsString('Road tax', $one);
         // Every widget covers the selected vehicle only: the bike's expense is not recent activity.
@@ -238,8 +238,8 @@ final class DesignAlignmentTest extends AppTestCase
 
         // UK owner, miles: this month 600 km, this year 1,600 km.
         $mileage = explode('id="widget-recent_activity"', explode('id="widget-mileage"', $html)[1] ?? '')[0];
-        self::assertStringContainsString('373 mi', $mileage);
-        self::assertStringContainsString('994 mi', $mileage);
+        self::assertStringContainsString("373\u{00A0}mi", $mileage);
+        self::assertStringContainsString("994\u{00A0}mi", $mileage);
         self::assertStringContainsString('data-chart=', $mileage, 'the last 12 months as bars');
 
         $activity = explode('id="widget-recent_activity"', $html)[1] ?? '';

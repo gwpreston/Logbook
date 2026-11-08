@@ -80,13 +80,13 @@ final class FuelTest extends AppTestCase
         ));
 
         $list = self::body($browser->get($base));
-        self::assertStringContainsString('43.3 mpg', $list);
+        self::assertStringContainsString("43.3\u{00A0}mpg", $list);
         self::assertStringContainsString('Partial fill', $list);
         self::assertStringContainsString('Full · starting point', $list);
         self::assertStringContainsString('£1.50/L', $list);
         self::assertStringContainsString('£123.00', $list, 'spent on fuel');
         self::assertStringContainsString('data-chart=', $list);
-        self::assertStringContainsString('mpg (US)', $list, 'the average in the other units');
+        self::assertStringContainsString("mpg\u{00A0}(US)", $list, 'the average in the other units');
 
         // Editing moves the reading and recomputes everything: now 500 mi.
         $last = $this->entries($app, $golf)[2];
@@ -155,8 +155,8 @@ final class FuelTest extends AppTestCase
         self::assertStringContainsString('Fill-up saved.', $html);
         self::assertStringContainsString('After a missed fill-up: measuring restarts here', $html);
         // The only measured stretch: 400 mi on 40 L = 45.5 mpg (UK).
-        self::assertStringContainsString('45.5 mpg', $html);
-        self::assertStringNotContainsString('90.9 mpg', $html);
+        self::assertStringContainsString("45.5\u{00A0}mpg", $html);
+        self::assertStringNotContainsString("90.9\u{00A0}mpg", $html);
     }
 
     public function testElectricChargesUseKwhAndEfficiency(): void
@@ -178,7 +178,7 @@ final class FuelTest extends AppTestCase
         $html = self::body($browser->follow($saved));
         self::assertStringContainsString('Fill-up saved: 3.1 mi/kWh since the last full tank.', $html);
         $html = self::body($browser->get($base));
-        self::assertStringContainsString('60 kWh', $html);
+        self::assertStringContainsString("60\u{00A0}kWh", $html);
         self::assertStringContainsString('£0.25/kWh', $html);
         self::assertStringContainsString('Average efficiency', $html);
         self::assertStringContainsString('Spent on charging', $html);
@@ -286,7 +286,8 @@ final class FuelTest extends AppTestCase
         self::assertStringContainsString('value="13.207"', $edit);
         self::assertStringContainsString('value="3.499"', $edit);
         self::assertStringContainsString('value="46.21"', $edit);
-        self::assertStringContainsString('$3.499/US gal', self::body($browser->get('/vehicles/' . $car->id . '/fuel')));
+        $list = self::body($browser->get('/vehicles/' . $car->id . '/fuel'));
+        self::assertStringContainsString('$3.499/US' . "\u{00A0}" . 'gal', $list);
     }
 
     public function testFuelPagesWorkAtASubpath(): void
