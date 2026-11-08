@@ -1081,7 +1081,8 @@
     }
 
     /*
-     * Vehicle tabs (spec.md §8 *Vehicle header*): when the strip scrolls,
+     * Vehicle tabs (spec.md §8 *Vehicle header*) and the vehicle filter's
+     * chips on a phone: when the strip scrolls,
      * bring the current tab into view, centred where it can be. Only the
      * strip scrolls, never the page; without JS the strip shows that it
      * scrolls (app.css).
@@ -1618,7 +1619,8 @@
         document.querySelectorAll('[data-print]').forEach(enhancePrint);
         document.querySelectorAll('[data-sale-pack-paperwork]').forEach(enhancePaperwork);
         document.querySelectorAll('a[data-trend-link]').forEach(enhanceTrendLink);
-        document.querySelectorAll('[data-vehicle-tabs]').forEach(enhanceTabs);
+        // The vehicle filter's chips scroll the same way on a phone (app.css).
+        document.querySelectorAll('[data-vehicle-tabs], .vehicle-filter__list').forEach(enhanceTabs);
         document.querySelectorAll('form[data-ai-insights-form]').forEach(enhanceAiInsights);
         document.querySelectorAll('[data-demo-fill]').forEach(enhanceDemoFill);
 
