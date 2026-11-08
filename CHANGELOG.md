@@ -16,6 +16,11 @@ is called out explicitly.
 - **A smaller logo file.** The mark in the top bar, sidebar, sign-in page
   and browser tab is a 128px copy (19 KB) rather than the 256px original
   (96 KB). It looks the same, sharp on 3× screens.
+- **Vehicle chips in one row on a phone.** On the dashboard, Coming up,
+  history and the calendar, the vehicle chips now stay on one line that
+  you swipe sideways, instead of wrapping into a block that pushed the
+  page down (seven vehicles took 304px; the row takes 62px). The chosen
+  vehicle's chip scrolls into view. Wider screens still wrap them.
 
 ## [3.21.9] — 2026-11-06
 
