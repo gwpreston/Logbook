@@ -34,11 +34,11 @@ Production dependencies only; development tools are not shipped.
 | league/container | 5.2.0 | MIT | https://github.com/thephpleague/container |
 | monolog/monolog | 3.12.1 | MIT | https://github.com/Seldaek/monolog |
 | nikic/fast-route | 1.3.1 | BSD-3-Clause | https://github.com/nikic/FastRoute |
-| paragonie/constant_time_encoding | v3.1.3 | MIT | https://github.com/paragonie/constant_time_encoding |
+| paragonie/constant_time_encoding | v3.1.4 | MIT | https://github.com/paragonie/constant_time_encoding |
 | paragonie/random_compat | v9.99.100 | MIT | https://github.com/paragonie/random_compat |
 | php-di/invoker | 2.3.7 | MIT | https://github.com/PHP-DI/Invoker |
 | php-di/php-di | 7.1.1 | MIT | https://php-di.org/ |
-| phpseclib/phpseclib | 3.0.57 | MIT | http://phpseclib.sourceforge.net |
+| phpseclib/phpseclib | 3.0.58 | MIT | http://phpseclib.sourceforge.net |
 | psr/cache | 3.0.0 | MIT | https://github.com/php-fig/cache |
 | psr/clock | 1.0.0 | MIT | https://github.com/php-fig/clock |
 | psr/container | 2.0.2 | MIT | https://github.com/php-fig/container |
