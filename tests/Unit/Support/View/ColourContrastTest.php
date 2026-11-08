@@ -29,6 +29,8 @@ final class ColourContrastTest extends TestCase
         ['accent', ['surface']],
         ['accent', ['bg']],
         ['accent', ['surface', 'accent-soft']],
+        // A derived value's placeholder is accent on the input fill.
+        ['accent', ['surface-2']],
         ['on-accent', ['accent']],
         ['green', ['surface']],
         ['green', ['surface', 'green-soft']],
@@ -191,6 +193,20 @@ final class ColourContrastTest extends TestCase
         self::assertNotSame([], $dark, 'the dark blocks were found');
         self::assertSame([], array_values($plate));
         self::assertArrayHasKey('plate-bg-gb', self::tokens('dark'));
+    }
+
+    /**
+     * Placeholders are text, so the token pairs above only cover them if no
+     * placeholder rule fades its colour: every one sets opacity to exactly 1
+     * (Firefox fades placeholders unless told not to).
+     */
+    public function testPlaceholdersAreNotFaded(): void
+    {
+        preg_match_all('/::placeholder\s*\{([^}]*)\}/', self::css(), $rules);
+        self::assertNotEmpty($rules[1], 'app.css styles placeholders');
+        foreach ($rules[1] as $body) {
+            self::assertMatchesRegularExpression('/opacity:\s*1;/', $body, 'a placeholder rule keeps full opacity');
+        }
     }
 
     public function testBothDarkThemeBlocksMatch(): void

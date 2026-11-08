@@ -110,7 +110,8 @@
     --fs-base: 0.875rem;  /* 14px — UI text */
     --fs-md: 1rem;        /* 16px — inputs (no iOS zoom), long text */
     --fs-lg: 1.0625rem;   /* 17px — card titles */
-    --fs-xl: 1.25rem;     /* 20px — dialog titles, stat values */
+    --fs-xl: 1.25rem;     /* 20px — dialog titles, small section headings, vehicle card names */
+    --fs-figure: 1.375rem; /* 22px — stat and figure values (display face) */
     --fs-2xl: 1.625rem;   /* 26px — section headings */
     --fs-3xl: 1.75rem;    /* 28px — page titles */
     --fs-display: 1.875rem; /* 30px — hero figures */
@@ -482,6 +483,8 @@ pre {
     object-fit: contain;
 }
 
+/* The wordmark is sized to sit beside the 30px mark (and the 36px one in the
+   sidebar), not on the text scale: it's part of the logo lock-up. */
 .brand__wordmark {
     font-family: var(--font-display);
     font-weight: 700;
@@ -668,7 +671,7 @@ pre {
     border-radius: var(--radius-pill);
     background: var(--red);
     color: var(--on-red);
-    font-size: 0.65625rem;
+    font-size: var(--fs-2xs);
     font-weight: 800;
 }
 
@@ -1518,6 +1521,8 @@ a.segmented__option {
     padding: 0 0.4375rem;
 }
 
+/* The band's "UK" is drawn to the plate's proportions (10px, 9px on a small
+   plate), like the plate itself, not taken from the text scale. */
 .plate__band {
     display: flex;
     flex: none;
@@ -1617,10 +1622,13 @@ a.segmented__option {
     border-color: var(--red);
 }
 
+/* Placeholder text is text (WCAG 1.4.3): full --muted on the input fill is
+   4.8:1. The old 0.8 opacity took it to 3.3:1 light, 4.2:1 dark. Firefox
+   fades placeholders by default, so opacity is reset to 1 here. */
 .input::placeholder,
 .textarea::placeholder {
     color: var(--muted);
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .field__hint {
@@ -1643,7 +1651,7 @@ a.segmented__option {
     border-radius: var(--radius-md);
     background: var(--accent-soft);
     color: var(--accent);
-    font-size: 0.84375rem;
+    font-size: var(--fs-base);
     font-weight: 600;
 }
 
@@ -2147,7 +2155,7 @@ a.segmented__option {
 }
 
 .vehicle-card__name {
-    font-size: 1.1875rem;
+    font-size: var(--fs-xl);
     letter-spacing: 0;
 }
 
@@ -2296,6 +2304,8 @@ a.segmented__option {
     user-select: none;
 }
 
+/* Initials scale with the circle (20, 32, 48px), so two letters fill it the
+   same way at every size; only the 32px one lands on a scale step. */
 .avatar--xs {
     width: 1.25rem;
     height: 1.25rem;
@@ -2305,7 +2315,7 @@ a.segmented__option {
 .avatar--sm {
     width: 2rem;
     height: 2rem;
-    font-size: 0.8125rem;
+    font-size: var(--fs-sm);
 }
 
 .avatar--md {
@@ -2599,7 +2609,7 @@ a.segmented__option {
 .stat__value {
     margin-top: var(--space-1);
     font-family: var(--font-display);
-    font-size: 1.375rem;
+    font-size: var(--fs-figure);
     font-weight: 600;
     overflow-wrap: anywhere;
 }
@@ -5704,7 +5714,7 @@ a.list__title:hover {
 
 .figures__value {
     font-family: var(--font-display);
-    font-size: 1.3125rem;
+    font-size: var(--fs-figure);
     font-weight: 600;
 }
 
