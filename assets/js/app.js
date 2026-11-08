@@ -555,6 +555,83 @@
     }
 
     /*
+     * Scripts loaded on demand. Chart.js (208 KB), SortableJS and the page
+     * scripts used to load on every page, the fill-up form included. Each
+     * now loads only where its markup is: on the page, or in a form the
+     * modal opens. Keys match data-scripts on <body> (layout.twig), which
+     * holds the versioned URLs. The selectors are the ones each script's own
+     * enhance() looks for. A script that fails to load is left alone: every
+     * core flow works without it.
+     */
+    var ON_DEMAND = [
+        { key: 'chart', selector: 'canvas[data-chart]' },
+        { key: 'sortable', selector: '[data-dashboard-sortable]' },
+        { key: 'file-drop', selector: '[data-file-drop]' },
+        { key: 'first-inspection', selector: '[data-first-inspection]' },
+        { key: 'vehicle-lookup', selector: '[data-vehicle-lookup]' },
+        { key: 'trip-form', selector: '[data-trip-journeys], [data-trip-journey-submit], [data-trip-return]' },
+        { key: 'stations', selector: '[data-station-field], [data-locate], [data-near-form], a[data-geo-href]' },
+    ];
+
+    var scriptUrls = null;
+    // Per key: an array of callbacks while loading, then 'loaded' or 'failed'.
+    var scriptState = {};
+
+    function onDemandUrls() {
+        if (scriptUrls === null) {
+            try {
+                scriptUrls = JSON.parse(document.body.getAttribute('data-scripts') || '{}');
+            } catch (e) {
+                scriptUrls = {};
+            }
+        }
+        return scriptUrls;
+    }
+
+    // Add the script for `key` once; `done` runs when it has loaded (at once
+    // if it already has). Callbacks queue while it loads.
+    function loadScript(key, done) {
+        var state = scriptState[key];
+        if (state === 'loaded') {
+            if (done) { done(); }
+            return;
+        }
+        if (state === 'failed') {
+            return;
+        }
+        if (state) {
+            if (done) { state.push(done); }
+            return;
+        }
+        var url = onDemandUrls()[key];
+        if (!url) {
+            return;
+        }
+        var waiting = scriptState[key] = done ? [done] : [];
+        var script = document.createElement('script');
+        script.src = url;
+        script.onload = function () {
+            scriptState[key] = 'loaded';
+            waiting.forEach(function (callback) { callback(); });
+        };
+        script.onerror = function () {
+            scriptState[key] = 'failed';
+        };
+        document.head.appendChild(script);
+    }
+
+    // Load what `scope` needs. A page script starts itself on load (its own
+    // enhance(document) covers a modal's body too); `callbacks` are for the
+    // libraries app.js drives itself.
+    function loadScriptsFor(scope, callbacks) {
+        ON_DEMAND.forEach(function (item) {
+            if (scope.querySelector(item.selector)) {
+                loadScript(item.key, callbacks && callbacks[item.key]);
+            }
+        });
+    }
+
+    /*
      * Filter forms (reports): apply a choice as soon as it is made. Typing a
      * date selects "custom" instead, and waits for the button or Enter.
      */
@@ -1067,6 +1144,9 @@
             title.textContent = fragment.getAttribute('data-modal-title') || '';
             body.innerHTML = fragment.innerHTML;
             body.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
+            // A script this page hadn't needed starts on load and enhances the
+            // whole document, this body included; one already here is called below.
+            loadScriptsFor(body);
             if (window.LogbookFileDrop) {
                 window.LogbookFileDrop.enhance(body);
             }
@@ -1534,7 +1614,6 @@
         });
 
         document.querySelectorAll('[data-fuel-amounts]').forEach(enhanceFuelAmounts);
-        document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
         document.querySelectorAll('form[data-auto-submit]').forEach(enhanceAutoSubmit);
         document.querySelectorAll('[data-print]').forEach(enhancePrint);
         document.querySelectorAll('[data-sale-pack-paperwork]').forEach(enhancePaperwork);
@@ -1543,7 +1622,14 @@
         document.querySelectorAll('form[data-ai-insights-form]').forEach(enhanceAiInsights);
         document.querySelectorAll('[data-demo-fill]').forEach(enhanceDemoFill);
 
-        drawCharts();
+        // Charts draw, and the dashboard becomes draggable, once their
+        // library has loaded (only on pages that have them).
+        loadScriptsFor(document, {
+            chart: drawCharts,
+            sortable: function () {
+                document.querySelectorAll('[data-dashboard-sortable]').forEach(enhanceDashboard);
+            },
+        });
         window.addEventListener('beforeprint', beforePrint);
         window.addEventListener('afterprint', afterPrint);
         if (window.matchMedia) {

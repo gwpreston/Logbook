@@ -143,7 +143,8 @@ final class PwaTest extends AppTestCase
 
         $form = $browser->get('/vehicles/' . $golf->id . '/fuel/new');
         self::assertSame((string) $owner->id, $form->getHeaderLine('X-Logbook-User'));
-        self::assertStringContainsString('<body data-user="' . $owner->id . '">', self::body($form));
+        // <body> names its user (it carries other attributes too, such as data-scripts).
+        self::assertMatchesRegularExpression('~<body[^>]* data-user="' . $owner->id . '"[ >]~', self::body($form));
 
         // Every page the service worker keeps for offline use names its user.
         $golfPath = '/vehicles/' . $golf->id;
@@ -160,7 +161,8 @@ final class PwaTest extends AppTestCase
 
         $signIn = (new TestBrowser($app))->get('/login');
         self::assertFalse($signIn->hasHeader('X-Logbook-User'));
-        self::assertStringContainsString('<body>', self::body($signIn));
+        // A signed-out page names nobody: no data-user on <body>.
+        self::assertMatchesRegularExpression('~<body(?![^>]*data-user)[^>]*>~', self::body($signIn));
         self::assertStringContainsString('data-signed-out-page', self::body($signIn), 'the page that makes the worker forget');
 
         $worker = $browser->get('/sw.js');
