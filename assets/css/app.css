@@ -295,10 +295,19 @@
     box-sizing: border-box;
 }
 
+/* Scroll padding keeps a focused control or an anchor target clear of the
+   sticky top bar and the fixed bottom tab bar (WCAG 2.2 2.4.11 Focus Not
+   Obscured; spec.md §8 accessibility). The bottom value only applies when
+   the tab bar is on the page (signed in). The wide layout resets it below. */
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     background: var(--bg);
+    scroll-padding-top: calc(var(--topbar-h) + var(--space-2));
+}
+
+html:has(.bottom-nav) {
+    scroll-padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + var(--space-2));
 }
 
 body {
@@ -763,6 +772,12 @@ pre {
     .topbar,
     .bottom-nav {
         display: none;
+    }
+
+    /* Both bars are gone once the sidebar shows, so nothing can cover
+       focus. Signed-out pages keep their sticky top bar, and its padding. */
+    html:has(.sidebar) {
+        scroll-padding-block: 0;
     }
 
     .app__main {

@@ -263,7 +263,9 @@ mileage) and the plate use the display font; running text never does.
 Mobile-first. Below 60rem the app has a sticky 60px top bar and a 72px
 bottom tab bar with a central *add* button; from 60rem a 252px sidebar
 replaces both. Content is capped at 1140px. Breakpoints in use: 48rem,
-60rem and 72rem.
+60rem and 72rem. While the bars show, `html` carries scroll padding the
+height of each bar plus 8px, so a focused control or an anchor target
+is never hidden under one (WCAG 2.4.11); it drops to 0 with the sidebar.
 
 Spacing runs on a 4px base (4, 8, 12, 16, 20, 24, 32, 40, 56px), with 18px
 inside cards and about 14px between a card's parts. Cards sit in a
