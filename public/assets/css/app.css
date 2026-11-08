@@ -3513,15 +3513,13 @@ a.list__title:hover {
     color: var(--accent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
+/*
+ * Reduced motion: no blanket switch-off. Each animation says what it does
+ * under prefers-reduced-motion beside its own rule: the modal fades instead
+ * of rising, the history-run chevron turns at once, and the dashboard drag
+ * drops its sliding (js/app.js). Fades and state changes stay, because they
+ * confirm what happened; only movement goes.
+ */
 
 /* Reminders: a row with its done / dismiss / reopen actions underneath. */
 .reminder + .reminder {
@@ -5823,9 +5821,15 @@ a.list__title:hover {
     font-size: var(--fs-base);
 }
 
-@media (prefers-reduced-motion: no-preference) {
+/* The modal rises a little as it fades in, so it reads as laid over the page. */
+.modal[open] {
+    animation: modal-in 0.18s ease-out;
+}
+
+/* Reduced motion: the same fade, without the rise. */
+@media (prefers-reduced-motion: reduce) {
     .modal[open] {
-        animation: modal-in 0.18s ease-out;
+        animation-name: modal-fade;
     }
 }
 
@@ -5833,6 +5837,12 @@ a.list__title:hover {
     from {
         opacity: 0;
         transform: translateY(0.5rem);
+    }
+}
+
+@keyframes modal-fade {
+    from {
+        opacity: 0;
     }
 }
 
@@ -5923,6 +5933,13 @@ a.list__title:hover {
 
 .history-run[open] .history-run__toggle {
     transform: rotate(90deg);
+}
+
+/* Reduced motion: the chevron points the new way at once instead of turning. */
+@media (prefers-reduced-motion: reduce) {
+    .history-run__toggle {
+        transition: none;
+    }
 }
 
 .history-run__fills {
