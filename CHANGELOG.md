@@ -44,6 +44,10 @@ Phase 54.12: **The Windows architecture tests from the known-issues log**
 and restart. Only developers running the tests on Windows notice this release.
 
 ### Fixed
+- **The Docker image build survives slow GitHub downloads.** Composer's
+  package downloads now share one cache between the amd64 and arm64
+  builds, run fewer at once, and are retried up to three times, so a
+  dropped download from GitHub no longer fails the whole build (K186).
 - **Three source-scan tests pass on Windows.** `MailTransportTest` (both
   tests) and `PasswordHashingTest` flagged the one file each allows because
   Windows paths use backslashes; they now compare forward-slash paths (K185).
