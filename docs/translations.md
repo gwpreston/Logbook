@@ -82,8 +82,10 @@ Then switch your account to the new language and click through: long words
   the same change.
 - Keys are nested arrays in the PHP files and flattened with dots
   (`'fuel' => ['title' => …]` is `fuel.title`).
-- In production, catalogues are compiled into `var/cache/translations`; clear
-  that directory after editing a catalogue on a live install.
+- In production, catalogues are compiled into `var/cache/translations`;
+  after editing a catalogue on a live install, run `php bin/clear-cache.php`
+  (as the web server user), which empties it and the compiled templates.
+  `composer install` runs it too.
 
 ---
 

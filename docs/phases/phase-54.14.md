@@ -157,19 +157,19 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.2 Upgrade caches (K188)
 
-- [ ] `bin/clear-cache.php`: empties `twig/` and `translations/` under
+- [x] `bin/clear-cache.php`: empties `twig/` and `translations/` under
       `<root>/var/cache` (#611), with no `.env`, container or database; a missing directory is fine; on a
       file it can't delete it prints the #612 message and exits 0.
-- [ ] `composer.json`: `post-install-cmd` and `post-update-cmd` run
+- [x] `composer.json`: `post-install-cmd` and `post-update-cmd` run
       `@php bin/clear-cache.php` (#610). The Docker image is unaffected:
       its build runs `composer install --no-scripts` before `bin/` is
       copied (`Dockerfile:88`), and its cache lives in the container;
       the dev entrypoint's install may run it, which is harmless.
-- [ ] `docs/deployment.md` *Upgrading* (bare PHP) says `composer install`
+- [x] `docs/deployment.md` *Upgrading* (bare PHP) says `composer install`
       clears the compiled templates and strings, and to run
       `php bin/clear-cache.php` as the web server user if it warns;
       `docs/translations.md` (~85) names the script.
-- [ ] Tests: the script against a temporary cache directory holding
+- [x] Tests: the script against a temporary cache directory holding
       `twig/`, `translations/`, `staged/` and `scheduled-tasks.lock`
       empties only the first two; a directory it can't write gives the
       message and exit code 0 (skipped on Windows and as root); an
