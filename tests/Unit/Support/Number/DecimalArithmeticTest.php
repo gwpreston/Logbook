@@ -117,4 +117,51 @@ final class DecimalArithmeticTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         Decimal::multiply('1234567890123456789e3', '2', 2);
     }
+
+    public function testALongNumeratorOverZeroIsTheUsualRefusal(): void
+    {
+        // brick/math's own DivisionByZeroException must not leak out.
+        $this->expectException(InvalidArgumentException::class);
+        Decimal::divide('1234567890123456789', '0', 2);
+    }
+
+    public function testFortyDigitsStillWork(): void
+    {
+        $forty = str_repeat('1234567890', 4);
+        self::assertSame($forty . '.00', Decimal::multiply($forty, '1', 2));
+        self::assertSame('12345678901234567890123456789012345678.90', Decimal::divide($forty, '100', 2));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function absurdOperands(): iterable
+    {
+        yield 'a 41-digit whole number' => ['1' . str_repeat('0', 40)];
+        // The security review's case: an API distance in miles with 30,000
+        // decimals took seconds of CPU in pure-PHP brick/math.
+        yield 'a 30,000-digit fraction' => ['1.' . str_repeat('9', 30000)];
+        yield 'a negative one' => ['-' . str_repeat('9', 60000)];
+    }
+
+    #[DataProvider('absurdOperands')]
+    public function testAbsurdlyLongOperandsAreRefusedAtOnce(string $operand): void
+    {
+        foreach (
+            [
+                static fn () => Decimal::multiply($operand, '1.609344', 3),
+                static fn () => Decimal::multiply('1.609344', $operand, 3),
+                static fn () => Decimal::divide($operand, '4.54609', 3),
+                static fn () => Decimal::divide('4.54609', $operand, 3),
+            ] as $call
+        ) {
+            $started = hrtime(true);
+            try {
+                $call();
+                self::fail('An operand past 40 digits is refused.');
+            } catch (\OverflowException) {
+                self::assertLessThan(100_000_000, hrtime(true) - $started, 'refused at once, not after seconds');
+            }
+        }
+    }
 }
