@@ -12665,12 +12665,17 @@ task breakdowns live in the per-phase files; this is the map.
   K160 is recorded as fixed by K176. Releases v3.21.9 (#602). No migration.
   See [`phase-54.12.md`](docs/phases/phase-54.12.md).
 - **Phase 54.13 — The Symfony advisories and the vendored libraries from the
-  known-issues log + patch release** (planned). `symfony/http-client` is
+  known-issues log + patch release** (in progress). `symfony/http-client` is
   widened to `^7.4 || ^8.0` and the lock moves `http-client`, `config`,
   `filesystem` and `yaml` to 7.4.23, with `composer audit --no-dev` in CI
   (§1, K182, #597, #606); the vendored Alpine, Chart.js and icons match
   `package.json`, with a test comparing the notices with `package-lock.json`
-  (§1, K183, #598, #604, #605). Releases v3.21.10 together with 54.14
+  (§1, K183, #598, #604, #605); the design and accessibility work merged
+  after v3.21.9 (pull requests #206–#224: dark-theme danger contrast, type
+  scale and tokens, placeholder and field-edge contrast, figures kept with
+  their units, focus clear of the phone bars, scripts loaded where used,
+  reduced-motion versions, the vehicle chip row and the audit fixes) is
+  recorded in the phase file and the CHANGELOG (K189, K190). Releases v3.21.10 together with 54.14
   (#603, #609). No migration. See
   [`phase-54.13.md`](docs/phases/phase-54.13.md).
 - **Phase 54.14 — Big odometer readings, upgrade caches and small phone

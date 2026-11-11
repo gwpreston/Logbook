@@ -1,11 +1,11 @@
 # Phase 54.13 — The Symfony advisories and the vendored libraries from the known-issues log + patch release
 
-*Two open rows of the known-issues log closed, each after a decision of the
-owner's: the locked Symfony packages no longer carry the 2026-11-04
+*Four open rows of the known-issues log closed: two after a decision of the
+owner's, the locked Symfony packages no longer carry the 2026-11-04
 advisories, and the bundled front-end libraries match `package.json` with a
 test that keeps them so.*
 
-Status: 📋 planned · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.12](phase-54.12.md). It takes K182 and
 K183, the only open rows that could be fixed once #597 and #598 were
@@ -31,10 +31,19 @@ tagged (run `/release` for 54.12 first).
    so the next advisory shows on the pull request.
 2. **K183.** The bundles in `assets/vendor` and `public/assets/vendor` and
    both third-party notices files carry the versions `package.json` names
-   (Alpine 3.17.5, Chart.js 4.6.1, Material Symbols 0.48.2), and a test
+   (Alpine 3.17.5, Chart.js 4.6.1, Material Symbols 0.48.3), and a test
    fails whenever the versions in the notices differ from
    `package-lock.json`, so a Dependabot npm pull request can't merge
-   without being re-vendored.
+   without being re-vendored. (The plan said icons 0.48.2; Dependabot
+   moved `package.json` to 0.48.3 on 2026-11-07, commit `d17b3a48`, so
+   #604's "the versions `package.json` names" means 0.48.3.)
+3. **K189.** The design and accessibility work merged after v3.21.9 (pull
+   requests #206–#212, #216–#220 and #224) is recorded in this file
+   (*Merged before this phase*), the ROADMAP and spec §13, so it has a
+   phase to ship under.
+4. **K190.** CHANGELOG `[Unreleased]` names every user-facing change since
+   v3.21.9, and the K186 Docker-build line moves there from the
+   already-tagged `[3.21.9]`.
 
 ## Not in scope
 
@@ -71,6 +80,10 @@ tagged (run `/release` for 54.12 first).
   and `package-lock.json` and compares each library's version; it needs no
   Node in CI. Not chosen: a separate CI job that re-runs `npm run vendor`
   and diffs the files.
+- **K189 and K190 in this phase (owner, 2026-11-11, asked when the phase
+  started):** this phase writes the CHANGELOG anyway, so K190 is fixed
+  here; K189's record goes in this file rather than a separate
+  retrospective phase. Not chosen: leaving either open.
 - **Release (#603):** v3.21.10. The lock change touches production
   dependencies. Changed 2026-11-11 (#609): released together with
   [Phase 54.14](phase-54.14.md), whose K188 fix must reach the 3.21.9 →
@@ -105,9 +118,17 @@ tagged (run `/release` for 54.12 first).
       re-vendor. `CONTRIBUTING.md` (~186) says a Dependabot npm pull request
       must be re-vendored before it merges and that this test is what fails.
 
-### 54.13.3 Finish
+### 54.13.3 The record of the work merged after v3.21.9 (K189, K190)
 
-- [ ] Known-issues rows K182 and K183 *Fixed*.
+- [ ] *Merged before this phase* below lists each pull request with what
+      it changed and its audit results; ROADMAP and spec §13 name it.
+- [ ] CHANGELOG `[Unreleased]` gains the missing lines (#206, #208, #209,
+      #211, #212, #216, #224) and the K186 line moves there from
+      `[3.21.9]`.
+
+### 54.13.4 Finish
+
+- [ ] Known-issues rows K182, K183, K189 and K190 *Fixed*.
 - [ ] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge.
 
@@ -141,5 +162,7 @@ tagged (run `/release` for 54.12 first).
   revert `package.json`.
 - **#605. Decided 2026-11-06:** a PHPUnit architecture test. Not chosen: a
   separate CI job with Node.
+- **K189 and K190. Decided 2026-11-11 (owner, at the start of the phase):**
+  both in this phase.
 - **#606. Decided 2026-11-06:** a CI step `composer audit --no-dev`. Not
   chosen: a test of the lock's versions; no guard.
