@@ -393,10 +393,12 @@ a:hover {
 /*
  * A link inside running text (a hint, a row's details, a defect line) is
  * underlined, not only coloured: Logbook Blue sits too close to body and
- * muted text to tell apart by colour alone (WCAG 1.4.1, spec.md §8). The
- * line is a quiet tint of the link's own colour until hover.
+ * muted text to tell apart by colour alone (WCAG 1.4.1, spec.md §8). A
+ * station's name in *Cheapest near me* sits beside its address, so it
+ * counts too. The line is a quiet tint of the link's own colour until
+ * hover.
  */
-:where(p, .field__hint, .list__meta, .mot-defect) a:not([class]),
+:where(p, .field__hint, .list__meta, .mot-defect, .near-table th) a:not([class]),
 .working-link {
     text-decoration: underline;
     text-decoration-thickness: 1px;
@@ -404,7 +406,7 @@ a:hover {
     text-underline-offset: 0.15em;
 }
 
-:where(p, .field__hint, .list__meta, .mot-defect) a:not([class]):hover,
+:where(p, .field__hint, .list__meta, .mot-defect, .near-table th) a:not([class]):hover,
 .working-link:hover {
     text-decoration-color: currentColor;
 }
@@ -2220,8 +2222,11 @@ a.segmented__option {
     text-decoration: none;
 }
 
+/* Archived: a grey card with a dashed edge, plus its "Archived" pill. No
+   fading, which took its text below 4.5:1 (WCAG 1.4.3). */
 .vehicle-card--archived {
-    opacity: 0.7;
+    border-style: dashed;
+    background: var(--surface-2);
 }
 
 .vehicle-card__media {
@@ -2894,6 +2899,13 @@ a.segmented__option {
     gap: var(--space-2);
 }
 
+/* A long label ("Edit the fill-up on 17 May 2026") wraps inside the
+   indented column rather than push a phone's page sideways (WCAG 1.4.10). */
+.economy-check__actions .btn {
+    white-space: normal;
+    text-align: left;
+}
+
 .economy-check__actions form {
     margin: 0;
 }
@@ -3277,7 +3289,8 @@ a.list__title:hover {
     min-width: 0;
 }
 
-.incident-card__title h3 {
+/* h2: the cards sit straight under the page's (hidden) h1. */
+.incident-card__title h2 {
     margin: 0;
     font-size: var(--fs-md);
     font-weight: 700;

@@ -1116,7 +1116,8 @@
      * themselves.
      */
     function enhanceScrollRegion(wrap) {
-        var scrolls = wrap.scrollWidth > wrap.clientWidth + 1;
+        // Any overflow counts, even 1px: the browser scrolls it all the same.
+        var scrolls = wrap.scrollWidth > wrap.clientWidth;
         if (!scrolls) {
             // Undo only what this function added, never markup from the template.
             if (wrap.hasAttribute('data-scroll-region')) {

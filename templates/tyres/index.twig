@@ -80,7 +80,8 @@
                 {% endif %}
                 {% for group in overview.stored %}
                     <div class="tyre-set">
-                        <div class="card__header">
+                        {# Wraps so the swap and edit buttons drop below the name on a phone. #}
+                        <div class="card__header card__header--wrap">
                             <h3 class="tyre-set__name">{{ group.set ? group.set.data.name : 'tyre.not_in_set'|trans }}</h3>
                             {% if group.set and not archived %}
                                 <a class="btn btn--soft" href="{{ url_for('tyres.change', {id: vehicle.id, kind: 'swap'}, {set: group.set.id}) }}" data-modal>{{ ui.icon('inventory_2') }}{{ 'tyre.kind.swap'|trans }}</a>
