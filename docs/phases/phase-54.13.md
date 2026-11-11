@@ -90,6 +90,33 @@ tagged (run `/release` for 54.12 first).
   3.21.10 bare-PHP upgrade; the *Release* tasks below are done once, after
   54.14 is merged.
 
+## Merged before this phase (K189)
+
+Design and accessibility work merged on gwpreston16 after v3.21.9 tagged,
+each as its own pull request from an `/impeccable` audit, polish or typeset
+pass. It had no phase file, ROADMAP row or spec §13 entry (K189); this is
+its record, and it ships in v3.21.10 with this phase. The design rules it
+added reach spec §8 in [Phase 54.14](phase-54.14.md) (K191).
+
+| PR | What changed | Audit result |
+|---|---|---|
+| #206 | `--on-red` token: dark text on solid red buttons and the tab-bar badge in the dark theme | White on dark red 2.78:1 → 6.9:1; `ColourContrastTest` checks it |
+| #207 | Off-scale CSS values become tokens (`--fs-meta`, `--radius-icon`, `--radius-2xs`, `--shadow-raised`, avatar colours); the Ask draft card loses its side stripe | Drift from the #206 audit; same pixels otherwise |
+| #208 | `text-wrap: balance` on headings and titles, `pretty` on paragraphs; Ask answers capped at 70ch | Line length 95 → 70 characters |
+| #209 | Ask draft card: a duplicate no longer looks *Added*; settled cards not faded; even spacing; phone fields | Settled-card text 3.98:1 → AA |
+| #210 | The remaining font sizes on the type scale (`--fs-figure`) | Off-scale sizes from the audit |
+| #211 | Placeholders at full opacity; `ColourContrastTest` checks they aren't faded and the accent placeholder | 3.27:1 → 4.8:1 (light) |
+| #212 | Unit filters join a figure and its unit with a no-break space; `keep_together` filter; `.figures` grid reflows | "mi" no longer wraps alone at 360 px |
+| #216 | `scroll-padding` keeps a focused control clear of the top bar and tab bar | Focused fields hidden under the 72 px tab bar |
+| #217 | Chart.js, SortableJS and the page scripts load only where used (`data-scripts`, loader in `app.js`) | Fill-up form 412 → 157 KB of script |
+| #218 | Each animation gets its own reduced-motion version; SortableJS honours it | The blanket 0.01 ms rule removed |
+| #219 | Vehicle chips in one scrolling row below 60rem | 304 → 62 px tall with seven vehicles |
+| #220 | `--border-input` field edge, themed file button, tints laid over white | Field edge 1.25:1 → 3:1+; tinted text 4.2:1 → 4.5:1+ |
+| #224 | Links in text underlined; "(optional)" labels at full contrast; Settings → Jobs and Profile reflow at 320 px; scrolling tables reachable by keyboard; P2 alert contrast | axe-core 4.10 over 32 pages, light and dark, 1280 and 320 px: no P1 left |
+
+The CHANGELOG `[Unreleased]` section names each user-facing change above,
+and the K186 Docker-build line moved there from `[3.21.9]` (K190).
+
 ## Tasks
 
 ### 54.13.0 Start of phase
