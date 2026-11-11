@@ -83,7 +83,10 @@ the two release together as v3.21.10, #609).
   the fallback is reached (K62 added the fallback for the product only).
   Both check the operands' digit count first and go straight to
   brick/math when either would overflow, rather than catching the
-  exception. Nothing else changes: the fuel page shows what the stored
+  exception. `add()`, `subtract()` and `compare()` keep the int path:
+  odometers are `DECIMAL(12,3)` (under 10⁹ km), so a distance, a month's
+  share of it at 6 places and their sums stay within 15 digits. Nothing
+  else changes: the fuel page shows what the stored
   reading gives, and no warning about an implausible reading is added
   (that would be a feature, not this fix). No owner decision was needed.
 - **K188 (#610):** a Composer script empties the caches, so a `git pull`
@@ -240,7 +243,10 @@ the sample MOT provider), *Look up* filled make and model in place on the
 first open, after closing and reopening, with a photo chosen (still
 chosen afterwards), and after a validation error the server re-rendered;
 the page never left `/logbook/garage`. Without JS the button still
-submits and the form comes back filled, unchanged. Nothing drawn changed
+submits and the form comes back filled, unchanged
+(`VehicleLookupTest::testWithoutJsTheFormComesBackWithTheBlankFieldsFilled`);
+it was not re-run in a browser with JS off. Not looked at: 768 px, and
+375 px dark. Nothing drawn changed
 (no token, colour, font, radius or component), so `DESIGN.md` is
 unchanged and the Impeccable audit, critique and polish were not run. No
 HIGH or MEDIUM items.
