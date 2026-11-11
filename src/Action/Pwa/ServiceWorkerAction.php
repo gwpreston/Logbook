@@ -32,7 +32,11 @@ final readonly class ServiceWorkerAction
         $config = [
             'base' => $this->settings->basePath,
             'version' => Kernel::version() . '-' . $this->assets->version(),
-            'assets' => $this->assets->urls('#^vendor/THIRD-PARTY-NOTICES\.txt$|^js/service-worker\.js$#'),
+            // Not precached: the notices, the worker itself, and the 98 KB
+            // logo no page uses (only README.md shows it; K196, #613).
+            'assets' => $this->assets->urls(
+                '#^vendor/THIRD-PARTY-NOTICES\.txt$|^js/service-worker\.js$|^images/logbook-mark\.png$#',
+            ),
             'offline' => $this->routes->urlFor('pwa.offline'),
         ];
         $script = file_get_contents($this->settings->rootDir . '/public/assets/js/service-worker.js');

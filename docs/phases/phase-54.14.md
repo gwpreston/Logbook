@@ -198,9 +198,9 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.5 The unused logo (K196)
 
-- [ ] `src/Action/Pwa/ServiceWorkerAction.php`: exclude
+- [x] `src/Action/Pwa/ServiceWorkerAction.php`: exclude
       `^images/logbook-mark\.png$` (#613).
-- [ ] An HTTP test of `/service-worker.js`: its asset list has no
+- [x] An HTTP test of `/service-worker.js`: its asset list has no
       `logbook-mark.png` (fails today) and still has
       `logbook-mark-128.png`.
 
