@@ -1735,6 +1735,24 @@ a.segmented__option {
     color: var(--amber);
 }
 
+/*
+ * Inside an alert, secondary text and quiet buttons take the alert's own
+ * colour: muted grey and the accent drop below 4.5:1 on a status tint
+ * (WCAG 1.4.3). Secondary text keeps a lighter weight to stay secondary.
+ */
+.alert .muted,
+.alert .btn--ghost {
+    color: inherit;
+}
+
+.alert .muted {
+    font-weight: 400;
+}
+
+.alert .btn--ghost:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
 /* Error page. */
 .error-page__code {
     color: var(--red);
@@ -2831,11 +2849,19 @@ a.segmented__option {
     font-size: var(--fs-sm);
 }
 
+/* At least 24px tall (WCAG 2.5.8), and 44px where the pointer is a finger. */
 .economy-check__details > summary {
+    padding-block: 0.25rem;
     cursor: pointer;
     color: var(--muted);
     font-weight: 600;
     width: fit-content;
+}
+
+@media (pointer: coarse) {
+    .economy-check__details > summary {
+        padding-block: 0.75rem;
+    }
 }
 
 .economy-check__body {
@@ -3883,10 +3909,11 @@ a.list__title:hover {
         border-right: 1px solid var(--border);
     }
 
+    /* Days from the next or last month: a grey cell and muted numbers. No
+       extra fading, which took the dark theme's numbers below 4.5:1. */
     .cal__day--out {
         background: var(--surface-2);
         color: var(--muted);
-        opacity: 0.6;
     }
 
     .cal__day--today {

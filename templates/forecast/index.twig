@@ -89,7 +89,8 @@
                     {{ ui.working(working_of(totals), 'working.summary_for'|trans({period: 'coming_up.summary.year'|trans})) }}
                     {{ ui.working(working_of(soon), 'working.summary_for'|trans({period: 'coming_up.summary.soon'|trans})) }}
 
-                    <section class="card" aria-labelledby="months-{{ currency }}">
+                    {# With several currencies the name adds the currency's heading (unique per card). #}
+                    <section class="card" aria-labelledby="months-{{ currency }}{{ several ? ' summary-' ~ currency ~ '-heading' }}">
                         <div class="card__header">
                             <h3 id="months-{{ currency }}" class="card__title">{{ 'coming_up.by_month'|trans }}</h3>
                         </div>
