@@ -145,7 +145,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | ✅ |
 | [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | ✅ |
 | [54.13](docs/phases/phase-54.13.md) | The Symfony advisories and the vendored libraries from the known-issues log + patch release | ✅ |
-| [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | 📋 |
+| [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | 🚧 |
 
 *Update the status column as each phase lands.*
 

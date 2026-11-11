@@ -7,7 +7,7 @@ every time the Add vehicle modal opens, two kinds of link get their 44 px
 on a phone, the service worker stops downloading an unused logo, and
 spec §8 records the design rules added after v3.21.9.*
 
-Status: 📋 planned · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.13](phase-54.13.md). It takes the two
 HIGH rows of the v3.21.9..HEAD release sweep (K187, K188), three small LOW
@@ -138,8 +138,11 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). #609–#613 are decided.
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). #609–#613 are decided. Reviewed
+      2026-11-11: none of the questions still open (#221, #390, #391,
+      #460, #462, #537–#542, #551, #607, #608) bears on K187, K188, K191,
+      K194, K195 or K196, and none was found while starting it.
 
 ### 54.14.1 Big odometer readings (K187)
 
