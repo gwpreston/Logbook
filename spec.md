@@ -4966,7 +4966,9 @@ Ship the framework so translations are easy to add; do not hard-code strings.
   cached URLs carry `APP_BASE_PATH` (a subpath install works offline too).
   Installable on a phone (standalone display, app icons).
 - The service worker caches the built assets (cache named after their
-  content hashes, so a new release replaces it) and an offline page; pages
+  content hashes, so a new release replaces it), except the notices file,
+  the worker itself and the large `logbook-mark.png` no page uses (Phase
+  54.14, K196, #613), and an offline page; pages
   are network-first and only the *Log entry* chooser (`/log/new`) and the
   fill-up forms (`/fuel/new` and each active vehicle's
   `/vehicles/{id}/fuel/new`) are kept for offline use. Other pages
@@ -11010,7 +11012,8 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   area grows by padding or a pseudo-element, not the drawn control. One
   narrow-width block in `assets/css/app.css` does it, with the Parts and
   insurer pages' inline row links and row buttons (Phase 53.12, K16,
-  K35, K55).
+  K35, K55), the Insights card actions and the reminder and *Coming up*
+  row title links (Phase 54.14, K195).
 - **Chips and option cards** (Phase 37, decided 2026-10-07, #265): a chip
   (filters, single and multi choice, *Receives*) is at least 44 px tall,
   and a chosen chip (checked, or `aria-pressed`) shows a tick as well as
@@ -11422,7 +11425,12 @@ Real environment variables override `.env`; an empty value counts as unset.
   extension through, #550); Ghostscript or Imagick is optional
   (without it a scanned PDF asks for a photo instead), and so is
   Tesseract (`apt install tesseract-ocr tesseract-ocr-deu`, or PaddleOCR
-  at `OCR_URL`; `docs/reading-files.md`). Document web root = `public/`, Composer install, Phinx
+  at `OCR_URL`; `docs/reading-files.md`). Document web root = `public/`, Composer install
+  (which, from Phase 54.14, runs `bin/clear-cache.php` on install and
+  update to empty only the compiled templates and translation catalogues
+  under the cache directory, so an upgrade never shows the old release's;
+  if a file can't be deleted it warns and the install still succeeds,
+  K188, #610–#612), Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
@@ -12662,8 +12670,23 @@ task breakdowns live in the per-phase files; this is the map.
   `filesystem` and `yaml` to 7.4.23, with `composer audit --no-dev` in CI
   (§1, K182, #597, #606); the vendored Alpine, Chart.js and icons match
   `package.json`, with a test comparing the notices with `package-lock.json`
-  (§1, K183, #598, #604, #605). Releases v3.21.10 (#603). No migration. See
+  (§1, K183, #598, #604, #605). Releases v3.21.10 together with 54.14
+  (#603, #609). No migration. See
   [`phase-54.13.md`](docs/phases/phase-54.13.md).
+- **Phase 54.14 — Big odometer readings, upgrade caches and small phone
+  fixes from the known-issues log + patch release** (planned). A fill-up
+  with a far-off odometer no longer makes the fuel page answer 500, since
+  `Decimal::multiply()` and `divide()` reach their brick/math fallback
+  past 18 digits (§8 *Decimal precision*, K187); `composer install` runs
+  `bin/clear-cache.php`, which empties the compiled templates and
+  translation catalogues so a bare-PHP upgrade shows the new release (§10,
+  K188, #610–#612); *Look up* fills in place each time the Add vehicle
+  modal opens (§7, K194); the Insights card actions and reminder title
+  links get a 44 px hit area on a phone (§8 *Tap targets*, K195); the
+  service worker no longer precaches the unused large logo (§7.15, K196,
+  #613); and §8 records the design rules added after v3.21.9 (K191).
+  Releases v3.21.10 together with 54.13 (#609). No migration. See
+  [`phase-54.14.md`](docs/phases/phase-54.14.md).
 
 ---
 
