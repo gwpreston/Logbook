@@ -4692,6 +4692,12 @@ a.list__title:hover {
     margin: 0 calc(-1 * var(--space-2));
 }
 
+/* A table that scrolls is a tab stop (js/app.js); its focus ring follows
+   the rounded corners of the card around it rather than squaring them. */
+.table-wrap:focus-visible {
+    border-radius: var(--radius-sm);
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;

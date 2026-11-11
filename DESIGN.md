@@ -226,7 +226,9 @@ three-colour status set.
 ### Status
 - **OK Green** (green), **Due-soon Amber** (amber), **Overdue Red** (red):
   each with a `-soft` tint for the background it sits on, at 4.5:1 or
-  better. Never used for decoration.
+  better. Never used for decoration. Inside an alert on one of these
+  tints, secondary text and quiet (ghost) buttons take the alert's own
+  colour: grey or the accent falls below 4.5:1 there.
 
 ### Chart categories
 - Fuel takes the accent; **Maintenance Green** (c-maint), **Insurance
@@ -383,6 +385,9 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
 - **Border:** 1px hairline.
 - **Internal Padding:** 18px; header row with a 17px title and an optional
   bold 13px link on the right.
+- **Archived:** a dashed border on the grey (surface-2) card, beside the
+  "Archived" pill. Never faded with opacity, which takes the text below
+  4.5:1.
 
 ### Draft card (Ask)
 - **Shape:** a 16px-corner tile, 12px padding, its parts spaced only by the
