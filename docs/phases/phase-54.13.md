@@ -81,9 +81,12 @@ tagged (run `/release` for 54.12 first).
   Node in CI. Not chosen: a separate CI job that re-runs `npm run vendor`
   and diffs the files.
 - **K189 and K190 in this phase (owner, 2026-11-11, asked when the phase
-  started):** this phase writes the CHANGELOG anyway, so K190 is fixed
-  here; K189's record goes in this file rather than a separate
-  retrospective phase. Not chosen: leaving either open.
+  started):** fix K190 here, since this phase writes the CHANGELOG anyway;
+  write K189's record (phase file, ROADMAP, spec §13) in this branch. Not
+  chosen: leaving either open. Chosen while building: the record is a
+  section of this file (*Merged before this phase*), with the 54.13 ROADMAP
+  row, section and spec §13 entry naming the work, rather than a separate
+  retrospective phase file and row.
 - **Release (#603):** v3.21.10. The lock change touches production
   dependencies. Changed 2026-11-11 (#609): released together with
   [Phase 54.14](phase-54.14.md), whose K188 fix must reach the 3.21.9 →
