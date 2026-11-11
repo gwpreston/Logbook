@@ -10888,7 +10888,13 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   An entered, API or URL date must fall in 1900-01-01 to 2100-12-31 and is
   refused outside it (decided 2026-10-25, #450); a stored date outside it
   is not repaired (#558).
-- **Decimal precision:** ≥3 decimals for fuel price/volume.
+- **Decimal precision:** ≥3 decimals for fuel price/volume. Arithmetic
+  on a value past a PHP int (more than 18 digits, such as a mistyped
+  odometer's distance times a month's seconds) goes through brick/math,
+  so the page shows the large figure rather than an error (Phase 54.14,
+  K187); an operand of more than 40 digits is refused as too large, so
+  an absurd API field or CSV cell can't hold a worker for seconds
+  (Phase 54.14 merge review).
 - **Validation:** clear errors; never reject legitimate edge values.
   Text keeps its line breaks as `\n`: a browser posts a textarea's as
   `\r\n`, so they are stored and counted once, and the same text fits the
@@ -11453,7 +11459,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   update to empty only the compiled templates and translation catalogues
   under the cache directory, so an upgrade never shows the old release's;
   if a file can't be deleted it warns and the install still succeeds,
-  K188, #610–#612), Phinx
+  K188, #610–#612; a symlinked `twig/` or `translations/` is reported
+  and never followed, Phase 54.14 merge review), Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache

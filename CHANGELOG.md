@@ -96,7 +96,8 @@ Bare-PHP installs: see the upgrade notes.
   install, the pages kept showing the previous release's templates and
   text after an upgrade until the cache was deleted by hand. `composer
   install` now empties the compiled templates and translations, and so
-  can `php bin/clear-cache.php` (K188).
+  can `php bin/clear-cache.php` (K188). It never follows a cache folder
+  that has been replaced by a link.
 - ***Look up* works every time the Add vehicle dialog opens.** On a wide
   screen it filled the form in place only the first time; after closing
   and reopening the dialog, or after a validation error, it sent the whole

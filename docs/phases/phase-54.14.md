@@ -251,6 +251,28 @@ it was not re-run in a browser with JS off. Not looked at: 768 px, and
 unchanged and the Impeccable audit, critique and polish were not run. No
 HIGH or MEDIUM items.
 
+## Merge review (2026-11-11)
+
+MERGE at cdcf1a23: every gate passed on the four engines, and seven agents
+(spec-keeper, bug-hunter, security-scanner, performance-auditor,
+design-reviewer, deploy-checker, ai-evaluator) found nothing CRITICAL or
+HIGH. The dashboard and true-cost report on the heavy household (SQLite)
+took the same time as on master, under 500 ms. At the owner's request two
+MEDIUMs from security-scanner and one LOW from bug-hunter were fixed here:
+
+- `Decimal` refuses an operand of more than 40 digits with
+  `OverflowException`, as it did for anything past 18 before K187, so a
+  30,000-digit API field or CSV cell can't hold a worker for seconds in
+  pure-PHP brick/math (the Docker image has neither gmp nor bcmath). A long
+  number over zero gives the documented `InvalidArgumentException`.
+- `bin/clear-cache.php` never follows a symlinked `twig/` or
+  `translations/` (it warns instead), so whoever can write to `var/cache`
+  can't make a later `composer install` as root empty other files; an empty
+  or root `--cache-dir` is ignored.
+
+The other follow-ups (spec-keeper's #610–#613 status and three small doc
+gaps) don't block; #614 is new.
+
 ## Acceptance criteria
 
 - Each code row (K187, K188, K194, K195, K196) has a regression test that
@@ -280,3 +302,7 @@ HIGH or MEDIUM items.
 - **#613. Decided 2026-11-11:** exclude the file in
   `ServiceWorkerAction`. Not chosen: stop `bin/build-assets.php`
   publishing it.
+- **#614. Open (found by the merge review):** should the REST API and the
+  CSV import answer a number of more than 40 digits with a validation
+  error rather than the `OverflowException` 500 they give, as before this
+  phase? Options: a digit limit with a 422 or row error; or leave it.
