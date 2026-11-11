@@ -5,7 +5,7 @@ owner's: the locked Symfony packages no longer carry the 2026-11-04
 advisories, and the bundled front-end libraries match `package.json` with a
 test that keeps them so.*
 
-Status: 📋 planned · releases **v3.21.10**, a patch release (#603) · file lives in `docs/phases/`
+Status: 📋 planned · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.12](phase-54.12.md). It takes K182 and
 K183, the only open rows that could be fixed once #597 and #598 were
@@ -71,8 +71,11 @@ tagged (run `/release` for 54.12 first).
   and `package-lock.json` and compares each library's version; it needs no
   Node in CI. Not chosen: a separate CI job that re-runs `npm run vendor`
   and diffs the files.
-- **Release (#603):** on its own as v3.21.10. The lock change touches
-  production dependencies.
+- **Release (#603):** v3.21.10. The lock change touches production
+  dependencies. Changed 2026-11-11 (#609): released together with
+  [Phase 54.14](phase-54.14.md), whose K188 fix must reach the 3.21.9 →
+  3.21.10 bare-PHP upgrade; the *Release* tasks below are done once, after
+  54.14 is merged.
 
 ## Tasks
 
@@ -110,8 +113,10 @@ tagged (run `/release` for 54.12 first).
 
 ### Release
 
-- [ ] VERSION 3.21.10, CHANGELOG 3.21.10, README status (#603).
-- [ ] Tag `v3.21.10` once merged.
+- [ ] VERSION 3.21.10, CHANGELOG 3.21.10, README status (#603): done
+      in [Phase 54.14](phase-54.14.md)'s *Release*, after 54.14 is merged
+      (#609). Don't run `/release` for 54.13 alone.
+- [ ] Tag `v3.21.10` once 54.13 and 54.14 are both merged.
 
 ## Acceptance criteria
 
@@ -130,7 +135,8 @@ tagged (run `/release` for 54.12 first).
   them until re-vendored. Not chosen: ignore the bundled libraries; re-vendor
   by hand with nothing enforcing it.
 - **#603. Release. Decided 2026-11-06:** on its own as patch release
-  v3.21.10. Not chosen: with the next releasing phase.
+  v3.21.10. Not chosen: with the next releasing phase. Changed
+  2026-11-11 (#609): v3.21.10 together with Phase 54.14.
 - **#604. Decided 2026-11-06:** re-vendor to the newer versions. Not chosen:
   revert `package.json`.
 - **#605. Decided 2026-11-06:** a PHPUnit architecture test. Not chosen: a

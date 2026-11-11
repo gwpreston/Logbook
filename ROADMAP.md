@@ -145,6 +145,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.11](docs/phases/phase-54.11.md) | The Dependabot paperwork, database versions and a Windows test from the known-issues log + patch release | ✅ |
 | [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | ✅ |
 | [54.13](docs/phases/phase-54.13.md) | The Symfony advisories and the vendored libraries from the known-issues log + patch release | 📋 |
+| [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -1968,9 +1969,30 @@ them so.*
   (K182, #597, #606).
 - The vendored Alpine, Chart.js and icons are rebuilt to the versions in
   `package.json`, and a test fails when the notices and `package-lock.json`
-  differ (K183, #598, #604, #605). Releases v3.21.10 (#603). No migration.
+  differ (K183, #598, #604, #605). Releases v3.21.10 together with 54.14
+  (#603, #609). No migration.
 
 → [`phase-54.13.md`](docs/phases/phase-54.13.md)
+
+---
+
+## Phase 54.14 — Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release
+
+*Six open rows closed: a far-off odometer reading no longer breaks the fuel
+page, a bare-PHP upgrade drops the old templates and strings, and three
+small phone and service-worker fixes, with spec §8 brought up to date.*
+
+- `Decimal::multiply()` and `divide()` reach their brick/math fallback for
+  values past 18 digits, so the fuel page loads (K187); `composer install`
+  runs `bin/clear-cache.php`, which empties the compiled templates and
+  translation catalogues (K188, #610–#612).
+- *Look up* works each time the Add vehicle modal opens (K194); Insights
+  card actions and reminder title links get a 44 px hit area (K195); the
+  service worker no longer precaches the unused large logo (K196, #613);
+  spec §8 records the post-3.21.9 design rules (K191).
+- Releases v3.21.10 together with 54.13 (#609). No migration.
+
+→ [`phase-54.14.md`](docs/phases/phase-54.14.md)
 
 ---
 
