@@ -270,8 +270,14 @@ MEDIUMs from security-scanner and one LOW from bug-hunter were fixed here:
   can't make a later `composer install` as root empty other files; an empty
   or root `--cache-dir` is ignored.
 
+The owner then answered #614 the same day: input past that limit is a
+validation error, not a 500. `JsonInput::decimal()` (every API number
+field) answers 422 `validation.too_large`, the CSV importer gives the row
+that error, and the web price-alert box refuses it like an unreadable
+amount (`ApiVehicleFiguresTest`, `ImportTest`, `FuelPricePagesTest`).
+
 The other follow-ups (spec-keeper's #610–#613 status and three small doc
-gaps) don't block; #614 is new.
+gaps) don't block.
 
 ## Acceptance criteria
 
@@ -302,7 +308,9 @@ gaps) don't block; #614 is new.
 - **#613. Decided 2026-11-11:** exclude the file in
   `ServiceWorkerAction`. Not chosen: stop `bin/build-assets.php`
   publishing it.
-- **#614. Open (found by the merge review):** should the REST API and the
-  CSV import answer a number of more than 40 digits with a validation
-  error rather than the `OverflowException` 500 they give, as before this
-  phase? Options: a digit limit with a 422 or row error; or leave it.
+- **#614. Decided 2026-11-11 (found by the merge review):** a validation
+  error. An API number field of more than 40 digits answers 422
+  `validation.too_large`, a CSV import cell gives its row that error, and
+  the web price-alert amount is refused like an unreadable one, all
+  through `Decimal::tooLong()`. Not chosen: leave it the 500 it was before
+  this phase.

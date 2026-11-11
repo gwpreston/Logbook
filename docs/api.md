@@ -102,6 +102,9 @@ count once towards a limit); text saved before 3.15.0 keeps what it had.
 
 A date or instant you send, and a `year`, must fall in 1900–2100 (a
 value outside answers `422`, or `400` for a query parameter).
+A number you send may have at most 40 digits, whole and decimal
+together; a longer one answers `422` with `validation.too_large` on its
+field.
 
 - Numbers are **decimal strings** at their stored precision, never floats,
   so nothing is lost on the way. Most tools read `"61.370"` as a number

@@ -10894,7 +10894,11 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   so the page shows the large figure rather than an error (Phase 54.14,
   K187); an operand of more than 40 digits is refused as too large, so
   an absurd API field or CSV cell can't hold a worker for seconds
-  (Phase 54.14 merge review).
+  (Phase 54.14 merge review). Input is checked for that first (decided
+  2026-11-11, #614): a REST API number field of more than 40 digits
+  answers 422 with `validation.too_large` ("That number is too large."),
+  a CSV import cell gives its row that error, and a price-alert amount is
+  refused like an unreadable one, never a 500.
 - **Validation:** clear errors; never reject legitimate edge values.
   Text keeps its line breaks as `\n`: a browser posts a textarea's as
   `\r\n`, so they are stored and counted once, and the same text fits the

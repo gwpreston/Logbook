@@ -164,4 +164,13 @@ final class DecimalArithmeticTest extends TestCase
             }
         }
     }
+
+    public function testTooLongSaysWhatMultiplyAndDivideWouldRefuse(): void
+    {
+        self::assertFalse(Decimal::tooLong(str_repeat('9', 40)));
+        self::assertFalse(Decimal::tooLong('0.000' . str_repeat('9', 40)), 'leading zeros are not digits');
+        self::assertTrue(Decimal::tooLong(str_repeat('9', 41)));
+        self::assertTrue(Decimal::tooLong('-1.' . str_repeat('0', 40)));
+        self::assertFalse(Decimal::tooLong(str_repeat('9', 41) . 'x'), 'not a number: parsing refuses it');
+    }
 }

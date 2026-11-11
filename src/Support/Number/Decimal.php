@@ -200,6 +200,19 @@ final class Decimal
     }
 
     /**
+     * Whether a canonical value has more digits than multiply() and divide()
+     * accept (MAX_DIGITS), so input can be refused with a validation error
+     * before it reaches them: the API answers 422, a CSV import marks the
+     * row (#614). A non-canonical value answers false; parsing rejects it.
+     */
+    public static function tooLong(string $value): bool
+    {
+        return strlen($value) > self::MAX_DIGITS
+            && self::isCanonical($value)
+            && self::significantDigits($value) > self::MAX_DIGITS;
+    }
+
+    /**
      * Drop insignificant zeros: "12.500" → "12.5", "3.000" → "3".
      */
     public static function trim(string $value): string
@@ -251,12 +264,20 @@ final class Decimal
         if (strlen($value) <= 18 || !self::isCanonical($value)) {
             return false;
         }
-        $digits = strlen(ltrim(str_replace(['-', '.'], '', $value), '0'));
+        $digits = self::significantDigits($value);
         if ($digits > self::MAX_DIGITS) {
             throw new OverflowException(sprintf('A number of %d digits is too large.', $digits));
         }
 
         return $digits > 18;
+    }
+
+    /**
+     * Digits in a canonical value, whole and fraction, without leading zeros.
+     */
+    private static function significantDigits(string $value): int
+    {
+        return strlen(ltrim(str_replace(['-', '.'], '', $value), '0'));
     }
 
     /**

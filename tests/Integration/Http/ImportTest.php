@@ -1060,6 +1060,28 @@ final class ImportTest extends AppTestCase
         self::assertStringContainsString('Enter a valid date and time', $preview);
     }
 
+    public function testAnAbsurdlyLongNumberIsAProblemRowAndReadsQuickly(): void
+    {
+        // #614: 60,000 digits in miles and gallons used to take seconds of
+        // CPU and then fail the whole import; now it is the row's error.
+        $app = $this->createApp();
+        $this->pinClock($app, self::NOW);
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $long = str_repeat('9', 60000);
+        $csv = "Date,Odometer,Litres,Price\n"
+            . "2026-07-01 09:00,{$long},40,1.60\n"
+            . "2026-07-02 09:00,1000,{$long},1.60\n"
+            . "2026-07-03 09:00,1100,40,1.{$long}\n";
+
+        $map = $this->upload($browser, $golf->id, 'fuel', $csv);
+        $started = microtime(true);
+        $preview = $this->preview($browser, $map, ['distance_unit' => 'mi', 'volume_unit' => 'gal_uk']);
+
+        self::assertLessThan(5.0, microtime(true) - $started);
+        self::assertSame(3, substr_count($preview, 'That number is too large.'), 'one error on each row');
+    }
+
     private function germanOwner(TestBrowser $browser): void
     {
         $browser->get('/profile');

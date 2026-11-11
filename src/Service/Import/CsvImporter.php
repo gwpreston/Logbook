@@ -403,28 +403,19 @@ final readonly class CsvImporter
                     }
                     break;
                 case FieldKind::Distance:
-                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
-                    if ($number === null) {
-                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
-                    }
+                    $number = $this->number($field->key, $value, $owner->locale, $options->numberFormat, $errors);
                     $input[$field->key] = $number === null
                         ? self::UNREADABLE
                         : $options->distanceUnit->toKmDecimal($number, OdometerReadingForm::KM_SCALE);
                     break;
                 case FieldKind::Volume:
-                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
-                    if ($number === null) {
-                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
-                    }
+                    $number = $this->number($field->key, $value, $owner->locale, $options->numberFormat, $errors);
                     $input[$field->key] = $number === null || $electric
                         ? $number ?? self::UNREADABLE
                         : $volumeUnit->toLitresDecimal($number, FuelAmounts::VOLUME_SCALE);
                     break;
                 case FieldKind::UnitPrice:
-                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
-                    if ($number === null) {
-                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
-                    }
+                    $number = $this->number($field->key, $value, $owner->locale, $options->numberFormat, $errors);
                     $input[$field->key] = $number === null || $electric
                         ? $number ?? self::UNREADABLE
                         : $volumeUnit->pricePerLitre($number, FuelAmounts::PRICE_SCALE);
@@ -440,10 +431,7 @@ final readonly class CsvImporter
                 case FieldKind::VolumeUnit:
                     break;
                 case FieldKind::Number:
-                    $number = DecimalParser::parse($value, $owner->locale, $options->numberFormat);
-                    if ($number === null) {
-                        $errors[] = $this->unreadableNumber($field->key, $value, $options->numberFormat, $owner->locale);
-                    }
+                    $number = $this->number($field->key, $value, $owner->locale, $options->numberFormat, $errors);
                     $input[$field->key] = $number ?? self::UNREADABLE;
                     break;
                 case FieldKind::Text:
@@ -499,6 +487,30 @@ final readonly class CsvImporter
         }
 
         return $errors === [] ? $parsed : $errors;
+    }
+
+    /**
+     * A number cell as a canonical decimal, or null with the row's error
+     * added: unreadable in the chosen format, or longer than Decimal accepts
+     * (#614), which would otherwise fail the whole import.
+     *
+     * @param list<array{field: string, key: string, params: array<string, int|string|TranslatableInterface>}> $errors
+     */
+    private function number(string $field, string $value, string $locale, NumberFormat $format, array &$errors): ?string
+    {
+        $number = DecimalParser::parse($value, $locale, $format);
+        if ($number === null) {
+            $errors[] = $this->unreadableNumber($field, $value, $format, $locale);
+
+            return null;
+        }
+        if (Decimal::tooLong($number)) {
+            $errors[] = ['field' => $field, 'key' => 'validation.too_large', 'params' => []];
+
+            return null;
+        }
+
+        return $number;
     }
 
     /**

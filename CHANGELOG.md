@@ -106,6 +106,10 @@ Bare-PHP installs: see the upgrade notes.
   links (*See cheapest near you*, *See reports*) and the title link of a
   reminder or *Coming up* row now take a tap anywhere in 44 × 44 px, and
   look as before (K195).
+- **A number far too long to be real is a clear error.** An API field
+  or CSV cell of more than 40 digits now answers "That number is too
+  large." (a 422 from the API, a problem row in an import) at once,
+  instead of tying up the server for seconds and then failing (#614).
 - **Installing the app no longer downloads an unused logo.** The service
   worker stopped fetching the 98 KB logo that no page shows (K196).
 
