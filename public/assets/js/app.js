@@ -1216,6 +1216,9 @@
             if (window.LogbookStations) {
                 window.LogbookStations.enhance(body);
             }
+            if (window.LogbookVehicleLookup) {
+                window.LogbookVehicleLookup.enhance(body);
+            }
             if (!dialog.open) {
                 dialog.showModal();
             }

@@ -3,8 +3,14 @@
  * which asks DVSA, and fills only the fields that are still blank (the fuel
  * type while it is the form's default). Without JS the button submits and
  * the form comes back filled. Nothing is saved either way.
+ *
+ * enhance(root) is exposed as window.LogbookVehicleLookup, so the modal in
+ * js/app.js can enhance each form it shows, as it does for the other
+ * enhancers (K194: the second time the Add vehicle modal opened, *Look up*
+ * submitted the form instead). Each box is enhanced once. It is also
+ * module.exports for the Node tests (`composer test:js`).
  */
-(function () {
+(function (root) {
     'use strict';
 
     function fill(form, fields) {
@@ -23,13 +29,18 @@
         });
     }
 
-    function enhance(box) {
+    function enhanceBox(box) {
+        // The modal re-enhances a form it shows; one click handler is enough.
+        if (box.dataset.lookupReady) {
+            return;
+        }
         var form = box.closest('form');
         var button = box.querySelector('[data-lookup-button]');
         var message = box.querySelector('[data-lookup-message]');
-        if (!form || !button || !window.fetch || !window.FormData) {
+        if (!form || !button || typeof fetch !== 'function' || typeof FormData !== 'function') {
             return;
         }
+        box.dataset.lookupReady = '1';
         button.addEventListener('click', function (event) {
             event.preventDefault();
             var data = new FormData(form);
@@ -55,15 +66,23 @@
         });
     }
 
-    // js/app.js may add this script after the page has loaded, so start now
-    // if DOMContentLoaded has already fired.
-    function start() {
-        document.querySelectorAll('[data-vehicle-lookup]').forEach(enhance);
+    // Each look-up box inside scope (the whole page by default).
+    function enhance(scope) {
+        (scope || document).querySelectorAll('[data-vehicle-lookup]').forEach(enhanceBox);
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', start);
-    } else {
-        start();
+    var api = {enhance: enhance};
+    if (typeof module === 'object' && module.exports) {
+        module.exports = api;
+        return;
     }
-}());
+    root.LogbookVehicleLookup = api;
+
+    // js/app.js may add this script after the page has loaded, so start now
+    // if DOMContentLoaded has already fired.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { enhance(document); });
+    } else {
+        enhance(document);
+    }
+}(typeof window !== 'undefined' ? window : this));

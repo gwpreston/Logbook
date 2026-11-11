@@ -178,13 +178,13 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.3 Look up in the modal (K194)
 
-- [ ] `assets/js/vehicle-lookup.js`: `enhance(root)` exposed as
+- [x] `assets/js/vehicle-lookup.js`: `enhance(root)` exposed as
       `window.LogbookVehicleLookup` (and `module.exports` for Node), each
       box enhanced once; `assets/js/app.js` `show()` calls it beside the
       other enhancers. Rebuild `public/assets`.
-- [ ] `tests/js/vehicle-lookup.test.js`: the script exposes `enhance`
+- [x] `tests/js/vehicle-lookup.test.js`: the script exposes `enhance`
       (fails today), and enhancing a root twice binds the button once.
-- [ ] Checked in a browser at a subpath: open Add vehicle, close, reopen,
+- [x] Checked in a browser at a subpath: open Add vehicle, close, reopen,
       *Look up* fills in place; after a validation error too; a chosen
       photo is kept.
 
