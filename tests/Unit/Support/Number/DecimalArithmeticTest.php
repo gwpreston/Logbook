@@ -101,4 +101,20 @@ final class DecimalArithmeticTest extends TestCase
         self::assertSame('0.00', Decimal::multiply('-1033.046375995', '0.000000000000', 2));
         self::assertSame('0.13', Decimal::multiply('1033.046375995', '0.000123456789', 2));
     }
+
+    public function testOperandsOfMoreThanEighteenDigitsAreExact(): void
+    {
+        // K187: a mistyped odometer's distance × a month's seconds, then ÷ the
+        // segment's seconds, made the fuel page fail before the fallback.
+        self::assertSame('720604.230000', Decimal::divide('1867806164160.000000', '2592000', 6));
+        self::assertSame('-3703703670370.37', Decimal::multiply('-1234567890123.456789', '3', 2));
+        self::assertSame('-3703703670370.37', Decimal::multiply('3', '-1234567890123.456789', 2));
+        self::assertSame('0.000000000007', Decimal::divide('7', '1000000000000.000001', 12));
+    }
+
+    public function testALongNonCanonicalOperandIsStillRefused(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        Decimal::multiply('1234567890123456789e3', '2', 2);
+    }
 }

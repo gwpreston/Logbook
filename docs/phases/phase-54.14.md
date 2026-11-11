@@ -146,12 +146,12 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.1 Big odometer readings (K187)
 
-- [ ] `Support\Number\Decimal::multiply()` and `divide()`: check each
+- [x] `Support\Number\Decimal::multiply()` and `divide()`: check each
       operand's digit count before `toScaledInt()` and use brick/math when
       it would pass 18 digits. Docblocks say so.
-- [ ] `DecimalTest`: a 19-digit dividend and a 19-digit factor give the
+- [x] `DecimalArithmeticTest`: a 19-digit dividend and a 19-digit factor give the
       exact brick/math result (both throw `OverflowException` today).
-- [ ] An HTTP test: a fill-up at 773,209.8 km after one at 77,320.98 km,
+- [x] An HTTP test: a fill-up at 773,209.8 km after one at 77,320.98 km,
       and `/vehicles/{id}/fuel` answers 200 (500 today);
       `SeasonalEconomyTest` covers the same split directly.
 

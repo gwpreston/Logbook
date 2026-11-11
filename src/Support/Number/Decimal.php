@@ -129,12 +129,18 @@ final class Decimal
     /**
      * $a × $b rounded to $scale places (half away from zero), exactly.
      *
-     * Only if the intermediate product would not fit in a PHP int (far beyond
-     * any real fuel quantity or price) does it fall back to brick/math, which
-     * is slower but just as exact.
+     * Only if an operand or the intermediate product would not fit in a PHP
+     * int (far beyond any real fuel quantity or price) does it fall back to
+     * brick/math, which is slower but just as exact. An operand of more than
+     * 18 digits goes there before toScaledInt() can throw (K187: a mistyped
+     * odometer's distance times a month's seconds).
      */
     public static function multiply(string $a, string $b, int $scale): string
     {
+        if (self::tooLongForInt($a) || self::tooLongForInt($b)) {
+            return self::bigProduct($a, $b, $scale);
+        }
+
         $scaleA = self::scaleOf($a);
         $scaleB = self::scaleOf($b);
         $intA = self::toScaledInt($a, $scaleA);
@@ -149,12 +155,18 @@ final class Decimal
 
     /**
      * $a ÷ $b rounded to $scale places (half away from zero), exactly (with
-     * the same brick/math fallback as multiply()).
+     * the same brick/math fallback as multiply(), also taken first for an
+     * operand of more than 18 digits, K187).
      *
      * @throws InvalidArgumentException when $b is zero
      */
     public static function divide(string $a, string $b, int $scale): string
     {
+        if (self::tooLongForInt($a) || self::tooLongForInt($b)) {
+            // Only a non-zero value can be this long, so $b is never zero here.
+            return self::bigQuotient($a, $b, $scale);
+        }
+
         $scaleA = self::scaleOf($a);
         $scaleB = self::scaleOf($b);
         $numerator = self::toScaledInt($a, $scaleA);
@@ -169,8 +181,7 @@ final class Decimal
         $numerator = $shift >= 0 ? self::timesPowerOfTen($numerator, $shift) : $numerator;
         $denominator = $shift < 0 ? self::timesPowerOfTen($denominator, -$shift) : $denominator;
         if ($numerator === null || $denominator === null) {
-            // HalfUp rounds a tie away from zero, as roundedDivision() does.
-            return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
+            return self::bigQuotient($a, $b, $scale);
         }
 
         return self::fromScaledInt(self::roundedDivision($numerator, $denominator), $scale);
@@ -197,6 +208,28 @@ final class Decimal
     private static function bigProduct(string $a, string $b, int $scale): string
     {
         return BigDecimal::of($a)->multipliedBy($b)->toScale(self::places($scale), RoundingMode::HalfUp)->toString();
+    }
+
+    /**
+     * $a ÷ $b at $scale for quotients whose scaled integers would overflow.
+     * HalfUp rounds a tie away from zero, as roundedDivision() does.
+     */
+    private static function bigQuotient(string $a, string $b, int $scale): string
+    {
+        return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
+    }
+
+    /**
+     * Whether a canonical decimal has more significant digits (whole and
+     * fraction together) than toScaledInt() can hold at its own scale.
+     * A non-canonical value answers false, so toScaledInt() still rejects it.
+     */
+    private static function tooLongForInt(string $value): bool
+    {
+        // The length test first: almost every call is short and stops there.
+        return strlen($value) > 18
+            && self::isCanonical($value)
+            && strlen(ltrim(str_replace(['-', '.'], '', $value), '0')) > 18;
     }
 
     /**

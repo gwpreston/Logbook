@@ -107,6 +107,17 @@ final class SeasonalEconomyTest extends TestCase
         self::assertSame(2026, $months->currentYear);
     }
 
+    public function testAFarOffOdometerIsSplitExactly(): void
+    {
+        // K187: 695,889 km × January's 2,678,400 seconds is past 18 digits
+        // at 6 places; the split used to throw instead of using brick/math.
+        $months = $this->months([['2025-01-01 00:00', '2025-03-15 00:00', '695889', '40']]);
+
+        self::assertSame('295514.506849', $months->cell(2025, 1)?->distanceKm);
+        self::assertSame('266916.328767', $months->cell(2025, 2)?->distanceKm);
+        self::assertSame('133458.164384', $months->cell(2025, 3)?->distanceKm);
+    }
+
     public function testChargingIsItsOwnSeries(): void
     {
         $history = FuelEconomy::analyse([

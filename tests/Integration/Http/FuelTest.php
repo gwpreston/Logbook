@@ -159,6 +159,23 @@ final class FuelTest extends AppTestCase
         self::assertStringNotContainsString("90.9\u{00A0}mpg", $html);
     }
 
+    public function testAFarOffOdometerStillShowsTheFuelPage(): void
+    {
+        $app = $this->createApp();
+        $browser = $this->signedIn($app);
+        $golf = $this->vehicle($app);
+        $base = '/vehicles/' . $golf->id . '/fuel';
+
+        // K187: one extra digit typed (77,320.98 then 773,209.8) made the
+        // economy-by-month split overflow, and the page answered 500.
+        $browser->post($base . '/new', self::fill('2026-05-01T09:00', '77320.98'));
+        $browser->post($base . '/new', self::fill('2026-07-01T09:00', '773209.8'));
+
+        $page = $browser->get($base);
+        self::assertSame(200, $page->getStatusCode());
+        self::assertStringContainsString("773,210\u{00A0}mi", self::body($page));
+    }
+
     public function testElectricChargesUseKwhAndEfficiency(): void
     {
         $app = $this->createApp();
