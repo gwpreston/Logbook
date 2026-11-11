@@ -68,6 +68,26 @@ typography:
     fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
     fontSize: "0.78125rem"
     fontWeight: 400
+  wordmark:
+    fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.3125rem"
+    fontWeight: 700
+  wordmark-lg:
+    fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 700
+  plate-band:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "0.625rem"
+    fontWeight: 700
+  plate-band-sm:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "0.5625rem"
+    fontWeight: 700
+  avatar-md:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 700
 rounded:
   2xs: "3px"
   xs: "4px"
@@ -250,7 +270,10 @@ Every text size comes from this scale, with three exceptions that belong to
 a drawn object rather than to the text: the wordmark (21px, 24px in the
 sidebar) is part of the logo lock-up; the plate's "UK" band (10px, 9px on a
 small plate) follows the plate's proportions; avatar initials (10px, 13px,
-18px) scale with their 20, 32 and 48px circles. Print styles use points.
+18px) scale with their 20, 32 and 48px circles. Each has its own token
+(`--fs-wordmark`, `--fs-wordmark-lg`, `--fs-plate-band`, `--fs-plate-band-sm`,
+`--fs-avatar-xs`, `--fs-avatar-md`; the 13px initials use `--fs-sm`), so no
+literal size sits in the CSS. Print styles use points.
 
 ### Line breaks and measure
 - Headings and titles (h1–h3, card, empty-state, dialog, legend and widget

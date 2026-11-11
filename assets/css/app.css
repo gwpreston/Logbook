@@ -124,6 +124,15 @@
     --fs-2xl: 1.625rem;   /* 26px — section headings */
     --fs-3xl: 1.75rem;    /* 28px — page titles */
     --fs-display: 1.875rem; /* 30px — hero figures */
+    /* Drawn objects, sized to their shape rather than the text scale
+       (DESIGN.md, Typography): the wordmark beside its 30px / 36px mark, the
+       plate's "UK" band, and avatar initials in their 20px and 48px circles. */
+    --fs-wordmark: 1.3125rem;      /* 21px */
+    --fs-wordmark-lg: 1.5rem;      /* 24px — in the sidebar */
+    --fs-plate-band: 0.625rem;     /* 10px */
+    --fs-plate-band-sm: 0.5625rem; /* 9px — on a small plate */
+    --fs-avatar-xs: 0.625rem;      /* 10px — in a 20px circle */
+    --fs-avatar-md: 1.125rem;      /* 18px — in a 48px circle */
     --tracking-tight: -0.02em;
     --tracking-caps: 0.08em;
 
@@ -529,7 +538,7 @@ pre {
 .brand__wordmark {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.3125rem;
+    font-size: var(--fs-wordmark);
     letter-spacing: var(--tracking-tight);
     line-height: 1;
     color: var(--wordmark);
@@ -798,7 +807,7 @@ pre {
     }
 
     .sidebar .brand__wordmark {
-        font-size: 1.5rem;
+        font-size: var(--fs-wordmark-lg);
     }
 
     .topbar,
@@ -1583,14 +1592,14 @@ a.segmented__option {
     background: var(--plate-band);
     color: var(--plate-band-fg);
     font-family: var(--font-sans);
-    font-size: 0.625rem;
+    font-size: var(--fs-plate-band);
     letter-spacing: 0;
     user-select: none;
 }
 
 .plate--sm .plate__band {
     padding: 0 0.1875rem;
-    font-size: 0.5625rem;
+    font-size: var(--fs-plate-band-sm);
 }
 
 /* Only the sale pack cover prints a plate: keep its colours even with the
@@ -2420,7 +2429,7 @@ a.segmented__option {
 .avatar--xs {
     width: 1.25rem;
     height: 1.25rem;
-    font-size: 0.625rem;
+    font-size: var(--fs-avatar-xs);
 }
 
 .avatar--sm {
@@ -2432,7 +2441,7 @@ a.segmented__option {
 .avatar--md {
     width: 3rem;
     height: 3rem;
-    font-size: 1.125rem;
+    font-size: var(--fs-avatar-md);
 }
 
 .avatar-preview {
