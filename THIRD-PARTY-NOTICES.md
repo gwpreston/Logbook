@@ -86,12 +86,12 @@ In `assets/vendor/`, copied to `public/assets/vendor/`.
 
 | File | Package | Version | Licence | Source |
 |---|---|---|---|---|
-| `alpine.min.js` | alpinejs | 3.17.4 | MIT | https://alpinejs.dev |
-| `chart.umd.min.js` | chart.js | 4.5.1 | MIT | https://www.chartjs.org |
+| `alpine.min.js` | alpinejs | 3.17.5 | MIT | https://alpinejs.dev |
+| `chart.umd.min.js` | chart.js | 4.6.1 | MIT | https://www.chartjs.org |
 | `sortable.min.js` | sortablejs | 1.15.7 | MIT | https://github.com/SortableJS/Sortable |
 | `fonts/outfit-*.woff2` | @fontsource-variable/outfit | 5.3.0 | OFL-1.1 | https://fontsource.org/fonts/outfit |
 | `fonts/plus-jakarta-sans-*.woff2` | @fontsource-variable/plus-jakarta-sans | 5.3.0 | OFL-1.1 | https://fontsource.org/fonts/plus-jakarta-sans |
-| `icons.svg` | @material-symbols/svg-400 (Material Symbols Rounded) | 0.47.5 | Apache-2.0 | https://marella.github.io/material-symbols/demo/ |
+| `icons.svg` | @material-symbols/svg-400 (Material Symbols Rounded) | 0.48.3 | Apache-2.0 | https://marella.github.io/material-symbols/demo/ |
 
 The icons are Material Symbols by Google, licensed under the Apache
 License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0),
