@@ -118,13 +118,13 @@ final class ClearCacheTest extends TestCase
      */
     private function listOf(string $relative): array
     {
-        return array_values(array_diff((array) scandir($this->dir . '/' . $relative), ['.', '..']));
+        return array_values(array_diff(scandir($this->dir . '/' . $relative) ?: [], ['.', '..']));
     }
 
     private function remove(string $path): void
     {
         if (is_dir($path) && !is_link($path)) {
-            foreach (array_diff((array) scandir($path), ['.', '..']) as $entry) {
+            foreach (array_diff(scandir($path) ?: [], ['.', '..']) as $entry) {
                 $this->remove($path . '/' . $entry);
             }
             rmdir($path);
