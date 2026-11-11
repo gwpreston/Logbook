@@ -10999,6 +10999,29 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   does (Phase 54.3, K151).
 - **Accessibility:** keyboard navigation, labels, contrast, focus states,
   to WCAG 2.2 AA (decided 2026-11-06).
+  `DESIGN.md` records how; four rules added after v3.21.9 (Phase 54.14,
+  K191):
+  - **Figures keep their units:** on an HTML page, screen and print, a
+    figure and its unit are joined by a no-break space, so a narrow column
+    never leaves the unit alone on the next line: the Twig unit filters
+    (`distance`, `volume`, `economy` and the rest) do it, and a figure a
+    template builds itself goes through `keep_together`. The API, MCP, AI
+    answers, notifications and CSV keep plain spaces (`DESIGN.md` *Line
+    breaks and measure*, PR #212).
+  - **Fields can be read and found:** placeholder text meets 4.5:1 on the
+    field's fill, never faded (PR #211), and a field's edge (inputs,
+    selects, text areas and the units joined to them) meets 3:1 on the card
+    and on the page, WCAG 1.4.11 (`DESIGN.md` *Field Edge*, *Placeholder*,
+    PR #220).
+  - **Reduced motion:** each animation has its own reduced version beside
+    its rule under `prefers-reduced-motion` (the modal fades instead of
+    rising, the history chevron turns at once, the dashboard drag stops
+    sliding). There is no blanket switch-off: fades and state changes that
+    confirm an action stay (`DESIGN.md` *Do's*, PR #218).
+  - **Focus is never hidden:** while the phone's top and bottom bars show,
+    `html` carries scroll padding of each bar's height plus 8 px, so a
+    focused control or an anchor target is never under one, WCAG 2.4.11;
+    it drops to 0 with the sidebar (`DESIGN.md` *Layout*, PR #216).
 - **Design system record:** `DESIGN.md` describes the built design system
   (tokens, components, do's and don'ts) and `PRODUCT.md` the users, voice
   and brand commitments, for design work and the `impeccable` skill. They

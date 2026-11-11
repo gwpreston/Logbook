@@ -206,7 +206,7 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.6 spec §8 (K191)
 
-- [ ] spec.md §8 *Accessibility* (and *Tap targets* where it fits): the
+- [x] spec.md §8 *Accessibility* (and *Tap targets* where it fits): the
       four rules in Goal 6, each citing `DESIGN.md` and the PR it came
       from.
 
