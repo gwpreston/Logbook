@@ -76,6 +76,25 @@ final class ClearCacheTest extends TestCase
         self::assertSame(0, $this->clear($file)[0]);
     }
 
+    public function testASymlinkedCacheDirectoryIsNotFollowed(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::markTestSkipped('needs POSIX symlinks');
+        }
+        // Someone who can write to var/cache points twig/ at files they
+        // mean a privileged `composer install` to delete.
+        $this->put('victim/important.txt');
+        $this->put('translations/catalogue.en.php');
+        symlink($this->dir . '/victim', $this->dir . '/twig');
+
+        [$code, $stderr] = $this->clear();
+
+        self::assertSame(0, $code);
+        self::assertFileExists($this->dir . '/victim/important.txt');
+        self::assertStringContainsString('Could not clear ' . $this->dir . '/twig', $stderr);
+        self::assertSame([], $this->listOf('translations'), 'the real directory is still emptied');
+    }
+
     public function testComposerRunsItOnInstallAndUpdate(): void
     {
         /** @var array{scripts: array<string, string|list<string>>} $composer */

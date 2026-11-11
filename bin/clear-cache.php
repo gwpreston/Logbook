@@ -26,16 +26,25 @@ $root = dirname(__DIR__);
 // The path AppSettings gives cacheDir, worked out here without loading it.
 $cacheDir = $root . '/var/cache';
 foreach ($args as $arg) {
-    if (str_starts_with($arg, '--cache-dir=')) {
-        $cacheDir = rtrim(substr($arg, strlen('--cache-dir=')), '/\\');
+    $given = str_starts_with($arg, '--cache-dir=') ? rtrim(substr($arg, strlen('--cache-dir=')), '/\\') : '';
+    // An empty value (or "/") would aim at /twig and /translations: ignored.
+    if ($given !== '') {
+        $cacheDir = $given;
     }
 }
 
 /**
  * Delete everything inside $dir, keeping $dir itself. True when it is empty
- * afterwards (or never existed).
+ * afterwards (or never existed); false for a symlink, which is left alone.
  */
 $emptyDirectory = static function (string $dir): bool {
+    // A symlinked twig/ or translations/ is never followed: whoever can write
+    // to var/cache (the web server user) could otherwise point it at app
+    // code, and a later `composer install` as root would empty that
+    // (security review of Phase 54.14). It is reported, not cleared.
+    if (is_link($dir)) {
+        return false;
+    }
     if (!is_dir($dir)) {
         // A fresh install or the Docker build has no cache yet.
         return true;
