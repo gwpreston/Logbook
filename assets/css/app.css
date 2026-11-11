@@ -390,6 +390,25 @@ a:hover {
     text-underline-offset: 0.15em;
 }
 
+/*
+ * A link inside running text (a hint, a row's details, a defect line) is
+ * underlined, not only coloured: Logbook Blue sits too close to body and
+ * muted text to tell apart by colour alone (WCAG 1.4.1, spec.md §8). The
+ * line is a quiet tint of the link's own colour until hover.
+ */
+:where(p, .field__hint, .list__meta, .mot-defect) a:not([class]),
+.working-link {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 0.15em;
+}
+
+:where(p, .field__hint, .list__meta, .mot-defect) a:not([class]):hover,
+.working-link:hover {
+    text-decoration-color: currentColor;
+}
+
 button,
 input,
 select,
@@ -1374,9 +1393,14 @@ label.chip:has(input:checked):hover {
     gap: 6px;
 }
 
-/* Segmented control (e.g. System / Light / Dark). */
+/*
+ * Segmented control (e.g. System / Light / Dark). It may wrap onto a
+ * second row rather than push a 320px page sideways (WCAG 1.4.10).
+ */
 .segmented {
     display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
     gap: 2px;
     padding: 3px;
     border-radius: var(--radius-md);
@@ -2005,9 +2029,10 @@ a.segmented__option {
     margin-bottom: 6px;
 }
 
+/* Muted at full strength: fading it further dropped it below 4.5:1. */
 .field__optional {
+    color: var(--muted);
     font-weight: 500;
-    opacity: 0.8;
 }
 
 .field__static {
@@ -5297,6 +5322,20 @@ a.list__title:hover {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     white-space: pre;
+}
+
+/* Ways to fix the scheduler (Settings → Jobs): an ordinary numbered list. */
+.fix-steps {
+    margin: 0 0 var(--space-3);
+    padding-left: 1.25rem;
+}
+
+.fix-steps > li + li {
+    margin-top: var(--space-2);
+}
+
+.fix-steps .code-block {
+    margin-top: var(--space-2);
 }
 
 /* Fill-ups saved offline, waiting to be sent (js/app.js). */

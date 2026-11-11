@@ -181,7 +181,10 @@ three-colour status set.
 - **Logbook Blue** (accent): links, primary buttons, selected chips, the
   current nav item, focus rings and the first chart series. The owner can
   switch it to *Teal*, *Indigo* or *Purple* (Profile → Appearance); only
-  the accent tokens change.
+  the accent tokens change. A link inside running text (a hint, a row's
+  details, a defect line) is also underlined, in a 45% tint of its own
+  colour that firms up on hover: the accent alone is too close to body and
+  muted text to tell a link by colour (WCAG 1.4.1).
 - **Accent tint** (`--accent-tint`): the see-through accent wash
   (`--accent-soft`) laid over Card White. Use it, not `--accent-soft`, as
   the background under accent text (alerts, soft buttons, accent pills,

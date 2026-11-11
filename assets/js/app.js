@@ -1108,6 +1108,51 @@
     }
 
     /*
+     * A table (or a command to copy) too wide for the screen scrolls inside
+     * its own box. That box only gets a tab stop (and a name for screen
+     * readers) while it actually scrolls, so keyboard users can reach the
+     * hidden part (WCAG 2.1.1) without an extra stop on every table on a
+     * desktop. Without JS, current browsers make a scrolling box focusable
+     * themselves.
+     */
+    function enhanceScrollRegion(wrap) {
+        var scrolls = wrap.scrollWidth > wrap.clientWidth + 1;
+        if (!scrolls) {
+            // Undo only what this function added, never markup from the template.
+            if (wrap.hasAttribute('data-scroll-region')) {
+                ['data-scroll-region', 'tabindex', 'role', 'aria-labelledby', 'aria-label']
+                    .forEach(function (name) { wrap.removeAttribute(name); });
+            }
+            return;
+        }
+        if (wrap.hasAttribute('tabindex')) {
+            return;
+        }
+        wrap.setAttribute('data-scroll-region', '');
+        wrap.setAttribute('tabindex', '0');
+        // A group, not a region: it shares its section's name, and a second
+        // landmark with the same name would only add noise.
+        wrap.setAttribute('role', 'group');
+        // Named after the table's caption, else its section's heading (by
+        // reference when the section has one, else by the heading's text).
+        var caption = wrap.querySelector('caption');
+        var labelled = wrap.closest('[aria-labelledby]');
+        var section = wrap.closest('section, .card');
+        var heading = section ? section.querySelector('h2, h3') : null;
+        if (caption && caption.textContent.trim() !== '') {
+            wrap.setAttribute('aria-label', caption.textContent.trim());
+        } else if (labelled) {
+            wrap.setAttribute('aria-labelledby', labelled.getAttribute('aria-labelledby'));
+        } else if (heading && heading.textContent.trim() !== '') {
+            wrap.setAttribute('aria-label', heading.textContent.trim());
+        }
+    }
+
+    function enhanceScrollRegions() {
+        document.querySelectorAll('.table-wrap, .code-block').forEach(enhanceScrollRegion);
+    }
+
+    /*
      * Desktop modal forms (spec.md §5). A link marked data-modal opens its
      * page in the <dialog> when the viewport is wide (the sidebar
      * breakpoint): the page is fetched with X-Logbook-Modal, and the server
@@ -1633,6 +1678,15 @@
         document.querySelectorAll('[data-vehicle-tabs], .vehicle-filter__list').forEach(enhanceTabs);
         document.querySelectorAll('form[data-ai-insights-form]').forEach(enhanceAiInsights);
         document.querySelectorAll('[data-demo-fill]').forEach(enhanceDemoFill);
+
+        // Wide tables and commands: re-checked when the window changes size
+        // (a phone turned sideways may no longer need the scroll).
+        enhanceScrollRegions();
+        var regionResize = 0;
+        window.addEventListener('resize', function () {
+            window.clearTimeout(regionResize);
+            regionResize = window.setTimeout(enhanceScrollRegions, 150);
+        });
 
         // Charts draw, and the dashboard becomes draggable, once their
         // library has loaded (only on pages that have them).
