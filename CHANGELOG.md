@@ -74,6 +74,10 @@ is called out explicitly.
   The HTTP client, config and filesystem libraries move to Symfony 7.4.23,
   which fixes the four advisories of 2026-11-04 (none was reachable from
   Logbook's code), and CI now fails when a new one is published (K182).
+- **`bin/test-all-dbs.sh` no longer leaves a test container behind.**
+  Stopping the script now stops its container too, and a second run is
+  refused while one is going, so two runs can't wipe each other's test
+  database (K198). Only developers running the tests notice this.
 
 ## [3.21.9] — 2026-11-06
 

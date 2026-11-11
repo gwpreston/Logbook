@@ -156,9 +156,16 @@ and the K186 Docker-build line moved there from `[3.21.9]` (K190).
       #211, #212, #216, #224) and the K186 line moves there from
       `[3.21.9]`.
 
+### 54.13.5 Found while building: orphaned test containers (K198)
+
+- [x] `bin/test-all-dbs.sh` names its run containers, refuses a second run
+      while one is going, removes its container on INT, TERM or HUP, and
+      gives the Docker SQLite run its own file (owner's request,
+      2026-11-11).
+
 ### 54.13.4 Finish
 
-- [x] Known-issues rows K182, K183, K189 and K190 *Fixed*.
+- [x] Known-issues rows K182, K183, K189 and K190 *Fixed*; K198 added, *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
 
