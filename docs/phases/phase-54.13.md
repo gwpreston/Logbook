@@ -5,7 +5,7 @@ owner's, the locked Symfony packages no longer carry the 2026-11-04
 advisories, and the bundled front-end libraries match `package.json` with a
 test that keeps them so.*
 
-Status: 🚧 in progress · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.12](phase-54.12.md). It takes K182 and
 K183, the only open rows that could be fixed once #597 and #598 were
@@ -121,13 +121,13 @@ and the K186 Docker-build line moved there from `[3.21.9]` (K190).
 
 ### 54.13.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #597, #598 and #603–#606 are
       decided.
 
 ### 54.13.1 The Symfony advisories (K182)
 
-- [ ] `composer.json`: `symfony/http-client ^7.4 || ^8.0`; `composer update`
+- [x] `composer.json`: `symfony/http-client ^7.4 || ^8.0`; `composer update`
       for `symfony/http-client`, `config`, `filesystem` and `yaml` with their
       dependencies; `composer audit --no-dev` is clean and the full suite
       passes on all four engines (outbound calls go through `OutboundHttp`:
@@ -137,27 +137,27 @@ and the K186 Docker-build line moved there from `[3.21.9]` (K190).
 
 ### 54.13.2 The vendored libraries (K183)
 
-- [ ] `npm ci && npm run vendor` (#604); rebuilt bundles and both
+- [x] `npm ci && npm run vendor` (#604); rebuilt bundles and both
       `THIRD-PARTY-NOTICES` files committed; checked in the browser at a
       subpath (dashboard drag, a chart, icons).
-- [ ] A test in `tests/Unit/Architecture/` (#605) that fails on today's
+- [x] A test in `tests/Unit/Architecture/` (#605) that fails on today's
       3.17.4 against `package-lock.json`'s 3.17.5 and passes after the
       re-vendor. `CONTRIBUTING.md` (~186) says a Dependabot npm pull request
       must be re-vendored before it merges and that this test is what fails.
 
 ### 54.13.3 The record of the work merged after v3.21.9 (K189, K190)
 
-- [ ] *Merged before this phase* below lists each pull request with what
+- [x] *Merged before this phase* above lists each pull request with what
       it changed and its audit results; ROADMAP and spec §13 name it.
-- [ ] CHANGELOG `[Unreleased]` gains the missing lines (#206, #208, #209,
+- [x] CHANGELOG `[Unreleased]` gains the missing lines (#206, #208, #209,
       #211, #212, #216, #224) and the K186 line moves there from
       `[3.21.9]`.
 
 ### 54.13.4 Finish
 
-- [ ] Known-issues rows K182, K183, K189 and K190 *Fixed*.
-- [ ] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge.
+- [x] Known-issues rows K182, K183, K189 and K190 *Fixed*.
+- [x] CHANGELOG; spec §13; ROADMAP status.
+- [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
 
 ### Release
 

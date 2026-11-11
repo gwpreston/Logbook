@@ -12665,7 +12665,7 @@ task breakdowns live in the per-phase files; this is the map.
   K160 is recorded as fixed by K176. Releases v3.21.9 (#602). No migration.
   See [`phase-54.12.md`](docs/phases/phase-54.12.md).
 - **Phase 54.13 — The Symfony advisories and the vendored libraries from the
-  known-issues log + patch release** (in progress). `symfony/http-client` is
+  known-issues log + patch release** (complete). `symfony/http-client` is
   widened to `^7.4 || ^8.0` and the lock moves `http-client`, `config`,
   `filesystem` and `yaml` to 7.4.23, with `composer audit --no-dev` in CI
   (§1, K182, #597, #606); the vendored Alpine, Chart.js and icons match
