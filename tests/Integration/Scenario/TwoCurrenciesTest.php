@@ -50,6 +50,30 @@ final class TwoCurrenciesTest extends ScenarioTestCase
     }
 
     /**
+     * With two currencies the Reports page has a "By month" card for each:
+     * each card's accessible name adds its currency's heading, so screen
+     * readers can tell the pound and euro cards apart.
+     */
+    public function testEachCurrencysReportCardsHaveTheirOwnName(): void
+    {
+        [$app, $browser] = $this->start();
+        $this->car($app, 'Volkswagen', 'Golf', null, '10000', '500', '8000');
+        $this->car($app, 'Seat', 'Leon', 'EUR', '20000', '1000', '15000');
+
+        $page = self::body($browser->get('/reports?range=custom&from=2025-01-01&to=2026-12-31'));
+
+        foreach (['GBP', 'EUR'] as $currency) {
+            foreach (['months', 'groups'] as $card) {
+                self::assertStringContainsString(
+                    sprintf('aria-labelledby="%s-%s report-%s-heading"', $card, $currency, $currency),
+                    $page,
+                    "the {$card} card in {$currency}",
+                );
+            }
+        }
+    }
+
+    /**
      * @param App<ContainerInterface> $app
      */
     private function car(

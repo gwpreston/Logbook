@@ -28,6 +28,7 @@
             {% set summary = section.summary %}
             {% set electric = section.electric %}{% set kind = section.kind %}
             {% set last = summary.lastSegment %}
+            {# With fuel and charging sections, each card's name adds its section's heading (unique per card). #}
             <section class="page__stack" aria-labelledby="summary-{{ section.kind.value }}">
                 <h2 id="summary-{{ section.kind.value }}" class="{{ sections|length > 1 ? 'section-title section-title--sm' : 'visually-hidden' }}">{{ ('fuel.kind.' ~ section.kind.value)|trans }}</h2>
 
@@ -79,12 +80,15 @@
 
                 <div class="split">
                     {% set trend_title = (electric ? 'fuel.chart.efficiency_title' : 'fuel.chart.economy_title')|trans %}
-                    <section class="card" aria-labelledby="economy-{{ section.kind.value }}">
+                    <section class="card" aria-labelledby="economy-{{ section.kind.value }}{{ sections|length > 1 ? ' summary-' ~ section.kind.value }}">
                         <div class="card__header card__header--wrap">
                             <h3 id="economy-{{ section.kind.value }}" class="card__title">{{ trend_title }}</h3>
                             {# Plain links: work without JS and survive a refresh; js/app.js swaps the charts in place. #}
                             {% if costs %}
-                            <nav class="segmented" aria-label="{{ 'fuel.trend.label'|trans }}">
+                            {# Named "Show on the chart" plus the card's title, so a car with fuel and
+                               charging sections has two navs a screen reader can tell apart. #}
+                            <span id="trend-label-{{ section.kind.value }}" hidden>{{ 'fuel.trend.label'|trans }}</span>
+                            <nav class="segmented" aria-labelledby="trend-label-{{ section.kind.value }} economy-{{ section.kind.value }}">
                                 {% for mode in trend_modes %}
                                     <a class="segmented__option" data-trend-link="{{ mode.value }}"
                                        href="{{ url_for('fuel.index', {id: vehicle.id}, mode.query()|merge(to_check ? {check: 1} : {})) }}"
@@ -143,7 +147,7 @@
                         {% endif %}
                     </section>
                     {% if costs %}
-                    <section class="card" aria-labelledby="price-{{ section.kind.value }}">
+                    <section class="card" aria-labelledby="price-{{ section.kind.value }}{{ sections|length > 1 ? ' summary-' ~ section.kind.value }}">
                         <h3 id="price-{{ section.kind.value }}" class="card__title">{{ 'fuel.chart.price_title'|trans }}</h3>
                         {% if section.price_chart.pointCount() >= 2 %}
                             {{ ui.chart(section.price_chart, 'fuel.chart.price_title'|trans) }}
@@ -158,7 +162,7 @@
                 {% set monthly = section.monthly %}
                 {% if monthly.hasFigures() %}
                     {% set monthly_title = (electric ? 'fuel.monthly.title_ev' : 'fuel.monthly.title')|trans %}
-                    <section class="card" aria-labelledby="monthly-{{ section.kind.value }}">
+                    <section class="card" aria-labelledby="monthly-{{ section.kind.value }}{{ sections|length > 1 ? ' summary-' ~ section.kind.value }}">
                         <h3 id="monthly-{{ section.kind.value }}" class="card__title">{{ monthly_title }}</h3>
                         {% if section.monthly_chart.hasData() %}
                             {{ ui.chart(section.monthly_chart, monthly_title) }}

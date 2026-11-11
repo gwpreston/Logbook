@@ -99,14 +99,17 @@ Work through the phase file's tasks in order, following CLAUDE.md §5–§10
 and the conventions in the existing code.
 
 - Per task: write the code **with its comments** (CLAUDE.md §5
-  *Comments*) and its tests, and run them. Then launch the
-  `code-simplifier:code-simplifier` agent on that task's uncommitted diff
-  (`git diff` plus new files), telling it: follow CLAUDE.md; preserve
-  behaviour exactly; **keep the explanatory docblocks and comments** (fix
-  only ones that are wrong or merely restate the code); don't touch files
-  outside the diff, migrations or built assets. Review its edits, re-run the
-  task's tests and `composer lint`, then commit. If the agent isn't
-  available, use the `/simplify` skill instead and say so in the report.
+  *Comments*) and its tests, and run them. Then run the
+  `code-simplification` skill (`.claude/skills/code-simplification/`) on
+  that task's uncommitted diff (`git diff` plus new files), with these
+  limits on top of the skill: follow CLAUDE.md; preserve behaviour
+  exactly; **keep the explanatory docblocks and comments** (fix only ones
+  that are wrong or merely restate the code); don't touch files outside
+  the diff, migrations or built assets. The skill's "commit per
+  simplification / separate refactoring PR" advice doesn't apply here:
+  the simplifications land in the task's own commit. Re-run the task's
+  tests and `composer lint`, then commit. If the skill isn't available,
+  use the `/simplify` skill instead and say so in the report.
 - One commit per task or coherent step, message
   `Phase N.M: <what changed, in the user's words> (N.M.k)`, ending with the
   session's Co-Authored-By line. Tick the task in the phase file as it lands.

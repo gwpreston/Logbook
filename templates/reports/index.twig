@@ -111,6 +111,8 @@
             {% set currency = section.currency %}
             {% set chart = charts[loop.index0] %}
             {% set spent_groups = section.spentGroups() %}
+            {# With several currencies, each card's name adds its currency's heading, so
+               screen readers can tell the GBP and EUR cards apart. #}
             <section class="page__stack report-section" aria-labelledby="report-{{ currency }}-heading">
                 {% if report.hasSeveralCurrencies() %}
                     <h2 id="report-{{ currency }}-heading" class="section-title">{{ 'report.in_currency'|trans({currency: currency_name(currency)}) }}</h2>
@@ -140,7 +142,7 @@
                     </div>
                 {% else %}
                     <div class="split report-grid">
-                        <section class="card report-grid__wide" aria-labelledby="months-{{ currency }}">
+                        <section class="card report-grid__wide" aria-labelledby="months-{{ currency }}{{ report.hasSeveralCurrencies() ? ' report-' ~ currency ~ '-heading' }}">
                             <div class="card__header">
                                 <h3 id="months-{{ currency }}" class="card__title">{{ 'report.by_month'|trans }}</h3>
                             </div>
@@ -185,7 +187,7 @@
                         </section>
 
                         {% set by_vehicle = not selected and section.vehicles|length > 1 %}
-                        <section class="card{{ by_vehicle ? '' : ' report-grid__wide' }}" aria-labelledby="groups-{{ currency }}">
+                        <section class="card{{ by_vehicle ? '' : ' report-grid__wide' }}" aria-labelledby="groups-{{ currency }}{{ report.hasSeveralCurrencies() ? ' report-' ~ currency ~ '-heading' }}">
                             <div class="card__header">
                                 <h3 id="groups-{{ currency }}" class="card__title">{{ 'report.by_group'|trans }}</h3>
                             </div>
@@ -193,7 +195,7 @@
                         </section>
 
                         {% if by_vehicle %}
-                            <section class="card" aria-labelledby="vehicles-{{ currency }}">
+                            <section class="card" aria-labelledby="vehicles-{{ currency }}{{ report.hasSeveralCurrencies() ? ' report-' ~ currency ~ '-heading' }}">
                                 <div class="card__header">
                                     <h3 id="vehicles-{{ currency }}" class="card__title">{{ 'report.by_vehicle'|trans }}</h3>
                                 </div>

@@ -124,6 +124,15 @@
     --fs-2xl: 1.625rem;   /* 26px — section headings */
     --fs-3xl: 1.75rem;    /* 28px — page titles */
     --fs-display: 1.875rem; /* 30px — hero figures */
+    /* Drawn objects, sized to their shape rather than the text scale
+       (DESIGN.md, Typography): the wordmark beside its 30px / 36px mark, the
+       plate's "UK" band, and avatar initials in their 20px and 48px circles. */
+    --fs-wordmark: 1.3125rem;      /* 21px */
+    --fs-wordmark-lg: 1.5rem;      /* 24px — in the sidebar */
+    --fs-plate-band: 0.625rem;     /* 10px */
+    --fs-plate-band-sm: 0.5625rem; /* 9px — on a small plate */
+    --fs-avatar-xs: 0.625rem;      /* 10px — in a 20px circle */
+    --fs-avatar-md: 1.125rem;      /* 18px — in a 48px circle */
     --tracking-tight: -0.02em;
     --tracking-caps: 0.08em;
 
@@ -390,6 +399,27 @@ a:hover {
     text-underline-offset: 0.15em;
 }
 
+/*
+ * A link inside running text (a hint, a row's details, a defect line) is
+ * underlined, not only coloured: Logbook Blue sits too close to body and
+ * muted text to tell apart by colour alone (WCAG 1.4.1, spec.md §8). A
+ * station's name in *Cheapest near me* sits beside its address, so it
+ * counts too. The line is a quiet tint of the link's own colour until
+ * hover.
+ */
+:where(p, .field__hint, .list__meta, .mot-defect, .near-table th) a:not([class]),
+.working-link {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 0.15em;
+}
+
+:where(p, .field__hint, .list__meta, .mot-defect, .near-table th) a:not([class]):hover,
+.working-link:hover {
+    text-decoration-color: currentColor;
+}
+
 button,
 input,
 select,
@@ -508,7 +538,7 @@ pre {
 .brand__wordmark {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.3125rem;
+    font-size: var(--fs-wordmark);
     letter-spacing: var(--tracking-tight);
     line-height: 1;
     color: var(--wordmark);
@@ -777,7 +807,7 @@ pre {
     }
 
     .sidebar .brand__wordmark {
-        font-size: 1.5rem;
+        font-size: var(--fs-wordmark-lg);
     }
 
     .topbar,
@@ -1374,9 +1404,14 @@ label.chip:has(input:checked):hover {
     gap: 6px;
 }
 
-/* Segmented control (e.g. System / Light / Dark). */
+/*
+ * Segmented control (e.g. System / Light / Dark). It may wrap onto a
+ * second row rather than push a 320px page sideways (WCAG 1.4.10).
+ */
 .segmented {
     display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
     gap: 2px;
     padding: 3px;
     border-radius: var(--radius-md);
@@ -1557,14 +1592,14 @@ a.segmented__option {
     background: var(--plate-band);
     color: var(--plate-band-fg);
     font-family: var(--font-sans);
-    font-size: 0.625rem;
+    font-size: var(--fs-plate-band);
     letter-spacing: 0;
     user-select: none;
 }
 
 .plate--sm .plate__band {
     padding: 0 0.1875rem;
-    font-size: 0.5625rem;
+    font-size: var(--fs-plate-band-sm);
 }
 
 /* Only the sale pack cover prints a plate: keep its colours even with the
@@ -1709,6 +1744,24 @@ a.segmented__option {
 .alert--warning {
     background: var(--amber-soft);
     color: var(--amber);
+}
+
+/*
+ * Inside an alert, secondary text and quiet buttons take the alert's own
+ * colour: muted grey and the accent drop below 4.5:1 on a status tint
+ * (WCAG 1.4.3). Secondary text keeps a lighter weight to stay secondary.
+ */
+.alert .muted,
+.alert .btn--ghost {
+    color: inherit;
+}
+
+.alert .muted {
+    font-weight: 400;
+}
+
+.alert .btn--ghost:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 /* Error page. */
@@ -2005,9 +2058,10 @@ a.segmented__option {
     margin-bottom: 6px;
 }
 
+/* Muted at full strength: fading it further dropped it below 4.5:1. */
 .field__optional {
+    color: var(--muted);
     font-weight: 500;
-    opacity: 0.8;
 }
 
 .field__static {
@@ -2177,8 +2231,11 @@ a.segmented__option {
     text-decoration: none;
 }
 
+/* Archived: a grey card with a dashed edge, plus its "Archived" pill. No
+   fading, which took its text below 4.5:1 (WCAG 1.4.3). */
 .vehicle-card--archived {
-    opacity: 0.7;
+    border-style: dashed;
+    background: var(--surface-2);
 }
 
 .vehicle-card__media {
@@ -2372,7 +2429,7 @@ a.segmented__option {
 .avatar--xs {
     width: 1.25rem;
     height: 1.25rem;
-    font-size: 0.625rem;
+    font-size: var(--fs-avatar-xs);
 }
 
 .avatar--sm {
@@ -2384,7 +2441,7 @@ a.segmented__option {
 .avatar--md {
     width: 3rem;
     height: 3rem;
-    font-size: 1.125rem;
+    font-size: var(--fs-avatar-md);
 }
 
 .avatar-preview {
@@ -2806,11 +2863,19 @@ a.segmented__option {
     font-size: var(--fs-sm);
 }
 
+/* At least 24px tall (WCAG 2.5.8), and 44px where the pointer is a finger. */
 .economy-check__details > summary {
+    padding-block: 0.25rem;
     cursor: pointer;
     color: var(--muted);
     font-weight: 600;
     width: fit-content;
+}
+
+@media (pointer: coarse) {
+    .economy-check__details > summary {
+        padding-block: 0.75rem;
+    }
 }
 
 .economy-check__body {
@@ -2841,6 +2906,13 @@ a.segmented__option {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+}
+
+/* A long label ("Edit the fill-up on 17 May 2026") wraps inside the
+   indented column rather than push a phone's page sideways (WCAG 1.4.10). */
+.economy-check__actions .btn {
+    white-space: normal;
+    text-align: left;
 }
 
 .economy-check__actions form {
@@ -3226,7 +3298,8 @@ a.list__title:hover {
     min-width: 0;
 }
 
-.incident-card__title h3 {
+/* h2: the cards sit straight under the page's (hidden) h1. */
+.incident-card__title h2 {
     margin: 0;
     font-size: var(--fs-md);
     font-weight: 700;
@@ -3858,10 +3931,11 @@ a.list__title:hover {
         border-right: 1px solid var(--border);
     }
 
+    /* Days from the next or last month: a grey cell and muted numbers. No
+       extra fading, which took the dark theme's numbers below 4.5:1. */
     .cal__day--out {
         background: var(--surface-2);
         color: var(--muted);
-        opacity: 0.6;
     }
 
     .cal__day--today {
@@ -4618,6 +4692,12 @@ a.list__title:hover {
     margin: 0 calc(-1 * var(--space-2));
 }
 
+/* A table that scrolls is a tab stop (js/app.js); its focus ring follows
+   the rounded corners of the card around it rather than squaring them. */
+.table-wrap:focus-visible {
+    border-radius: var(--radius-sm);
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -5297,6 +5377,20 @@ a.list__title:hover {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     white-space: pre;
+}
+
+/* Ways to fix the scheduler (Settings → Jobs): an ordinary numbered list. */
+.fix-steps {
+    margin: 0 0 var(--space-3);
+    padding-left: 1.25rem;
+}
+
+.fix-steps > li + li {
+    margin-top: var(--space-2);
+}
+
+.fix-steps .code-block {
+    margin-top: var(--space-2);
 }
 
 /* Fill-ups saved offline, waiting to be sent (js/app.js). */

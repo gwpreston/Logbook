@@ -221,8 +221,11 @@
                 item.setAttribute('aria-selected', index === active ? 'true' : 'false');
                 var title = document.createElement('span');
                 title.className = 'combo__name';
+                // The "Add …" wording comes translated from the template
+                // (data-add-label); without it, the bare name is shown
+                // rather than English text.
                 title.textContent = option.kind === 'add'
-                    ? (field.dataset.addLabel || 'Add "{name}"').replace('{name}', option.name)
+                    ? (field.dataset.addLabel || '{name}').replace('{name}', option.name)
                     : (option.favourite ? '★ ' : '') + option.name;
                 item.appendChild(title);
                 if (option.meta) {

@@ -83,7 +83,8 @@
     </div>
 {%- endmacro %}
 
-{# What changed: each comparable year against the one before, newest first. #}
+{# What changed: each comparable year against the one before, newest first.
+   An h3: both callers put it inside a card titled with an h2. #}
 {% macro changes(vtc, wording) -%}
     {%- import 'macros/ui.twig' as ui -%}
     {%- set years = vtc.years -%}
@@ -91,7 +92,7 @@
         {%- set change = vtc.changeFor(years[i].period.year) -%}
         {%- if change -%}
             <section class="true-cost__changed" aria-labelledby="changed-{{ vtc.vehicle.id }}-{{ years[i].period.year }}">
-                <h4 id="changed-{{ vtc.vehicle.id }}-{{ years[i].period.year }}" class="card__subtitle">{{ 'true_cost.what_changed'|trans }}: {{ wording.label(years[i]) }}</h4>
+                <h3 id="changed-{{ vtc.vehicle.id }}-{{ years[i].period.year }}" class="card__subtitle">{{ 'true_cost.what_changed'|trans }}: {{ wording.label(years[i]) }}</h3>
                 <p class="muted">{{ 'true_cost.what_changed_lead'|trans({year: wording.label(years[i]), previous: wording.label(years[i - 1])}) }}</p>
                 <ul class="true-cost__lines">
                     {% for line in change.lines %}

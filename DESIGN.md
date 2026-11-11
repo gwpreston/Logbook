@@ -68,6 +68,26 @@ typography:
     fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
     fontSize: "0.78125rem"
     fontWeight: 400
+  wordmark:
+    fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.3125rem"
+    fontWeight: 700
+  wordmark-lg:
+    fontFamily: "Outfit, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 700
+  plate-band:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "0.625rem"
+    fontWeight: 700
+  plate-band-sm:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "0.5625rem"
+    fontWeight: 700
+  avatar-md:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 700
 rounded:
   2xs: "3px"
   xs: "4px"
@@ -181,7 +201,10 @@ three-colour status set.
 - **Logbook Blue** (accent): links, primary buttons, selected chips, the
   current nav item, focus rings and the first chart series. The owner can
   switch it to *Teal*, *Indigo* or *Purple* (Profile → Appearance); only
-  the accent tokens change.
+  the accent tokens change. A link inside running text (a hint, a row's
+  details, a defect line) is also underlined, in a 45% tint of its own
+  colour that firms up on hover: the accent alone is too close to body and
+  muted text to tell a link by colour (WCAG 1.4.1).
 - **Accent tint** (`--accent-tint`): the see-through accent wash
   (`--accent-soft`) laid over Card White. Use it, not `--accent-soft`, as
   the background under accent text (alerts, soft buttons, accent pills,
@@ -203,7 +226,9 @@ three-colour status set.
 ### Status
 - **OK Green** (green), **Due-soon Amber** (amber), **Overdue Red** (red):
   each with a `-soft` tint for the background it sits on, at 4.5:1 or
-  better. Never used for decoration.
+  better. Never used for decoration. Inside an alert on one of these
+  tints, secondary text and quiet (ghost) buttons take the alert's own
+  colour: grey or the accent falls below 4.5:1 there.
 
 ### Chart categories
 - Fuel takes the accent; **Maintenance Green** (c-maint), **Insurance
@@ -247,7 +272,10 @@ Every text size comes from this scale, with three exceptions that belong to
 a drawn object rather than to the text: the wordmark (21px, 24px in the
 sidebar) is part of the logo lock-up; the plate's "UK" band (10px, 9px on a
 small plate) follows the plate's proportions; avatar initials (10px, 13px,
-18px) scale with their 20, 32 and 48px circles. Print styles use points.
+18px) scale with their 20, 32 and 48px circles. Each has its own token
+(`--fs-wordmark`, `--fs-wordmark-lg`, `--fs-plate-band`, `--fs-plate-band-sm`,
+`--fs-avatar-xs`, `--fs-avatar-md`; the 13px initials use `--fs-sm`), so no
+literal size sits in the CSS. Print styles use points.
 
 ### Line breaks and measure
 - Headings and titles (h1–h3, card, empty-state, dialog, legend and widget
@@ -357,6 +385,9 @@ Sturdy and friendly: generous targets, bold short labels, soft corners.
 - **Border:** 1px hairline.
 - **Internal Padding:** 18px; header row with a 17px title and an optional
   bold 13px link on the right.
+- **Archived:** a dashed border on the grey (surface-2) card, beside the
+  "Archived" pill. Never faded with opacity, which takes the text below
+  4.5:1.
 
 ### Draft card (Ask)
 - **Shape:** a 16px-corner tile, 12px padding, its parts spaced only by the

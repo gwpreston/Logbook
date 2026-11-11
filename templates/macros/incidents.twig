@@ -102,7 +102,7 @@
         <div class="incident-card__head">
             {{ self.tile(incident) }}
             <div class="incident-card__title">
-                <h3><a class="incident-card__link" href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ incident.type.labelKey()|trans }}</a></h3>
+                <h2><a class="incident-card__link" href="{{ url_for('incidents.show', {id: vehicle.id, incident: incident.id}) }}">{{ incident.type.labelKey()|trans }}</a></h2>
                 <p>{{ self.when_where(incident) }}</p>
             </div>
             {{ self.claim_pill(incident) }}
