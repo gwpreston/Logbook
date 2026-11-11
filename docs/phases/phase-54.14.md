@@ -190,9 +190,9 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.4 Tap targets (K195)
 
-- [ ] `assets/css/app.css` narrow-width tap-target block: add
+- [x] `assets/css/app.css` narrow-width tap-target block: add
       `.insight-card__action` and `a.list__title`. Rebuild `public/assets`.
-- [ ] `TapTargetTest`: both selectors get the 44 px hit area (fails
+- [x] `TapTargetTest`: both selectors get the 44 px hit area (fails
       today). Checked at 375 px on the dashboard, a vehicle's overview,
       `/upcoming`, `/reminders` and Insights.
 

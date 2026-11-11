@@ -7856,7 +7856,7 @@ p.stat__label {
 }
 
 /*
- * Tap targets on a phone (spec.md §8, #457; K16, K35, K55): compact controls
+ * Tap targets on a phone (spec.md §8, #457; K16, K35, K55, K195): compact controls
  * keep how they look, and a centred ::after grows what a tap hits to at least
  * 44 × 44 px. A tap on the pseudo-element is a tap on the control.
  */
@@ -7869,7 +7869,9 @@ p.stat__label {
     summary,
     .part-timeline__record,
     .insurer-row__title a,
-    .insurer-row .btn--ghost {
+    .insurer-row .btn--ghost,
+    .insight-card__action,
+    a.list__title {
         position: relative;
     }
 
@@ -7881,7 +7883,9 @@ p.stat__label {
     summary::after,
     .part-timeline__record::after,
     .insurer-row__title a::after,
-    .insurer-row .btn--ghost::after {
+    .insurer-row .btn--ghost::after,
+    .insight-card__action::after,
+    a.list__title::after {
         content: "";
         position: absolute;
         top: 50%;
