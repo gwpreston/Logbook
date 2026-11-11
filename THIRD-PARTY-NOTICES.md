@@ -55,22 +55,23 @@ Production dependencies only; development tools are not shipped.
 | slim/psr7 | 1.8.0 | MIT | https://www.slimframework.com |
 | slim/slim | 4.15.3 | MIT | https://www.slimframework.com |
 | smalot/pdfparser | v2.13.1 | LGPL-3.0 | https://www.pdfparser.org |
-| symfony/config | v8.0.15 | MIT | https://symfony.com |
+| symfony/config | v7.4.23 | MIT | https://symfony.com |
 | symfony/console | v8.0.15 | MIT | https://symfony.com |
-| symfony/deprecation-contracts | v3.7.1 | MIT | https://symfony.com |
+| symfony/deprecation-contracts | v3.8.1 | MIT | https://symfony.com |
 | symfony/dotenv | v8.0.15 | MIT | https://symfony.com |
 | symfony/event-dispatcher | v8.0.15 | MIT | https://symfony.com |
 | symfony/event-dispatcher-contracts | v3.7.1 | MIT | https://symfony.com |
-| symfony/filesystem | v8.0.15 | MIT | https://symfony.com |
-| symfony/http-client | v8.0.16 | MIT | https://symfony.com |
-| symfony/http-client-contracts | v3.7.3 | MIT | https://symfony.com |
+| symfony/filesystem | v7.4.23 | MIT | https://symfony.com |
+| symfony/http-client | v7.4.23 | MIT | https://symfony.com |
+| symfony/http-client-contracts | v3.8.1 | MIT | https://symfony.com |
 | symfony/mailer | v8.0.15 | MIT | https://symfony.com |
 | symfony/mime | v7.4.22 | MIT | https://symfony.com |
 | symfony/polyfill-ctype | v1.37.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-grapheme | v1.41.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-idn | v1.43.0 | MIT | https://symfony.com |
 | symfony/polyfill-intl-normalizer | v1.43.0 | MIT | https://symfony.com |
-| symfony/service-contracts | v3.7.3 | MIT | https://symfony.com |
+| symfony/polyfill-php83 | v1.43.0 | MIT | https://symfony.com |
+| symfony/service-contracts | v3.8.1 | MIT | https://symfony.com |
 | symfony/string | v8.0.15 | MIT | https://symfony.com |
 | symfony/translation | v8.0.14 | MIT | https://symfony.com |
 | symfony/translation-contracts | v3.7.1 | MIT | https://symfony.com |
@@ -85,12 +86,12 @@ In `assets/vendor/`, copied to `public/assets/vendor/`.
 
 | File | Package | Version | Licence | Source |
 |---|---|---|---|---|
-| `alpine.min.js` | alpinejs | 3.17.4 | MIT | https://alpinejs.dev |
-| `chart.umd.min.js` | chart.js | 4.5.1 | MIT | https://www.chartjs.org |
+| `alpine.min.js` | alpinejs | 3.17.5 | MIT | https://alpinejs.dev |
+| `chart.umd.min.js` | chart.js | 4.6.1 | MIT | https://www.chartjs.org |
 | `sortable.min.js` | sortablejs | 1.15.7 | MIT | https://github.com/SortableJS/Sortable |
 | `fonts/outfit-*.woff2` | @fontsource-variable/outfit | 5.3.0 | OFL-1.1 | https://fontsource.org/fonts/outfit |
 | `fonts/plus-jakarta-sans-*.woff2` | @fontsource-variable/plus-jakarta-sans | 5.3.0 | OFL-1.1 | https://fontsource.org/fonts/plus-jakarta-sans |
-| `icons.svg` | @material-symbols/svg-400 (Material Symbols Rounded) | 0.47.5 | Apache-2.0 | https://marella.github.io/material-symbols/demo/ |
+| `icons.svg` | @material-symbols/svg-400 (Material Symbols Rounded) | 0.48.3 | Apache-2.0 | https://marella.github.io/material-symbols/demo/ |
 
 The icons are Material Symbols by Google, licensed under the Apache
 License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0),

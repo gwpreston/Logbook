@@ -194,6 +194,11 @@ Source files live in `assets/`; `composer build-assets` copies them to
 The built output is **committed**, so installs never need Node, and CI fails
 if it is stale. Third-party libraries in `assets/vendor` are pinned in
 `package.json`. Refreshing them is a maintainer-only step (`npm ci && npm run vendor`).
+A Dependabot npm pull request that bumps one of them must be re-vendored
+this way, on its branch, before it merges: `VendoredLibrariesTest` compares
+the versions in `assets/vendor/THIRD-PARTY-NOTICES.txt` with
+`package-lock.json` and fails until it is. Check the charts, the icons and
+dragging a dashboard widget in a browser before committing the rebuilt files.
 
 The visual design (colours, type, spacing, radii) lives as CSS custom properties
 at the top of `assets/css/app.css`, with a light and a dark set; components use

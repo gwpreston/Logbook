@@ -36,6 +36,48 @@ is called out explicitly.
   white, so the text keeps 4.5:1 or better everywhere. A soft button's
   hover now outlines it in the accent instead of darkening it, which took
   its text to 4.0:1.
+- **Headings wrap evenly.** Headings and card titles balance their lines,
+  paragraphs no longer end on a lone word, and an Ask answer stops at
+  about 70 characters a line instead of 95.
+- **Ask draft cards are clearer.** A draft that was already in your log no
+  longer shows the green *Added* tick (nothing was added), closed cards are
+  no longer faded below AA contrast, and the card loses its side stripe.
+- **Links inside text are underlined.** Links in hints, row details and MOT
+  defect lines could only be told from the text around them by colour;
+  they now carry a light underline that goes solid on hover.
+- **Alpine 3.17.5, Chart.js 4.6.1 and Material Symbols 0.48.3.** The
+  bundled scripts and icons are the versions `package.json` names, and a
+  test fails when they drift apart (K183).
+
+### Fixed
+- **Solid red buttons are readable in the dark theme.** The final confirm
+  button on delete, revoke and restore pages, and the count badge in the
+  phone's tab bar, used white on the dark theme's red (2.8:1); they now use
+  dark text (6.9:1).
+- **Placeholder text passes AA contrast** (4.8:1 in the light theme, up
+  from 3.3:1), and so do the "(optional)" labels and muted text inside an
+  alert.
+- **A figure stays with its unit.** On a narrow phone "12,480 mi" no longer
+  breaks with "mi" alone on the next line; every number and its unit are
+  kept together on screen and in print.
+- **Focused fields stay clear of the phone bars.** Tabbing through a form
+  on a phone no longer scrolls the field under the top bar or the bottom
+  tab bar.
+- **Pages fit a 320px screen.** Settings → Jobs and the Profile theme
+  switch no longer make the page scroll sideways, and a table or command
+  that scrolls can be reached with the keyboard.
+- **The Docker image build survives slow GitHub downloads.** Composer's
+  package downloads now share one cache between the amd64 and arm64
+  builds, run fewer at once, and are retried up to three times, so a
+  dropped download from GitHub no longer fails the whole build (K186).
+- **No published security advisories against the bundled PHP libraries.**
+  The HTTP client, config and filesystem libraries move to Symfony 7.4.23,
+  which fixes the four advisories of 2026-11-04 (none was reachable from
+  Logbook's code), and CI now fails when a new one is published (K182).
+- **`bin/test-all-dbs.sh` no longer leaves a test container behind.**
+  Stopping the script now stops its container too, and a second run is
+  refused while one is going, so two runs can't wipe each other's test
+  database (K198). Only developers running the tests notice this.
 
 ## [3.21.9] — 2026-11-06
 
@@ -44,10 +86,6 @@ Phase 54.12: **The Windows architecture tests from the known-issues log**
 and restart. Only developers running the tests on Windows notice this release.
 
 ### Fixed
-- **The Docker image build survives slow GitHub downloads.** Composer's
-  package downloads now share one cache between the amd64 and arm64
-  builds, run fewer at once, and are retried up to three times, so a
-  dropped download from GitHub no longer fails the whole build (K186).
 - **Three source-scan tests pass on Windows.** `MailTransportTest` (both
   tests) and `PasswordHashingTest` flagged the one file each allows because
   Windows paths use backslashes; they now compare forward-slash paths (K185).
