@@ -7,7 +7,7 @@ every time the Add vehicle modal opens, two kinds of link get their 44 px
 on a phone, the service worker stops downloading an unused logo, and
 spec §8 records the design rules added after v3.21.9.*
 
-Status: 🚧 in progress · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.13](phase-54.13.md). It takes the two
 HIGH rows of the v3.21.9..HEAD release sweep (K187, K188), three small LOW
@@ -212,20 +212,38 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.7 Finish
 
-- [ ] Known-issues rows K187, K188, K191, K194, K195 and K196 *Fixed*
+- [x] Known-issues rows K187, K188, K191, K194, K195 and K196 *Fixed*
       (Phase 54.14).
-- [ ] CHANGELOG [Unreleased] (K188's upgrade note under *Upgrade notes*:
+- [x] CHANGELOG [Unreleased] (K188's upgrade note under *Upgrade notes*:
       bare-PHP installs upgrading *to* 3.21.10 from 3.21.9 or earlier run
       `composer install`, which now clears the caches; if it warns, run
       `php bin/clear-cache.php` as the web server user); spec §13;
       ROADMAP status.
-- [ ] Merge review; merge.
+- [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.10, CHANGELOG 3.21.10 covering 54.13 and 54.14,
+- [x] VERSION 3.21.10, CHANGELOG 3.21.10 covering 54.13 and 54.14,
       README status (#609).
 - [ ] Tag `v3.21.10` once both are merged.
+
+## Design review (2026-11-11)
+
+Checked on SQLite with the sample data at `/logbook`. **K195:** at 375 px
+light, every Insights card action and every reminder or *Coming up* title
+link on the dashboard, the Golf's overview, `/upcoming`, `/reminders` and
+Insights has a hit area of at least 44 px each way (the smallest: an
+Insights action drawn 36 px tall, 44 px to a tap), and the cards and rows
+look as before; at 1280 px dark the Reminders page is unchanged, since the
+block is narrow-width only. **K194:** in the Add vehicle modal (1024 px,
+the sample MOT provider), *Look up* filled make and model in place on the
+first open, after closing and reopening, with a photo chosen (still
+chosen afterwards), and after a validation error the server re-rendered;
+the page never left `/logbook/garage`. Without JS the button still
+submits and the form comes back filled, unchanged. Nothing drawn changed
+(no token, colour, font, radius or component), so `DESIGN.md` is
+unchanged and the Impeccable audit, critique and polish were not run. No
+HIGH or MEDIUM items.
 
 ## Acceptance criteria
 

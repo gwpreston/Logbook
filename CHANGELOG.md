@@ -6,6 +6,16 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.10] — 2026-11-11
+
+Phase 54.13: **The Symfony advisories and the vendored libraries from the
+known-issues log** ([docs/phases/phase-54.13.md](docs/phases/phase-54.13.md)),
+with the design and accessibility work merged after 3.21.9 that it records,
+and Phase 54.14: **Big odometer readings, upgrade caches and small phone
+fixes from the known-issues log**
+([docs/phases/phase-54.14.md](docs/phases/phase-54.14.md)). No migration.
+Bare-PHP installs: see the upgrade notes.
+
 ### Changed
 - **Pages load less.** Chart.js, SortableJS and the page scripts (file drop,
   station picker, trip form, vehicle lookup, first MOT) now load only on the
@@ -78,6 +88,32 @@ is called out explicitly.
   Stopping the script now stops its container too, and a second run is
   refused while one is going, so two runs can't wipe each other's test
   database (K198). Only developers running the tests notice this.
+- **A mistyped odometer no longer breaks the fuel page.** A fill-up typed
+  with an extra digit (77,320.98 km, then 773,209.8 km) made the vehicle's
+  fuel page fail on every visit. It now loads and shows the figures that
+  reading gives, so you can open the fill-up and correct it (K187).
+- **An upgrade shows the new release straight away.** On a bare-PHP
+  install, the pages kept showing the previous release's templates and
+  text after an upgrade until the cache was deleted by hand. `composer
+  install` now empties the compiled templates and translations, and so
+  can `php bin/clear-cache.php` (K188).
+- ***Look up* works every time the Add vehicle dialog opens.** On a wide
+  screen it filled the form in place only the first time; after closing
+  and reopening the dialog, or after a validation error, it sent the whole
+  form instead. A chosen photo is kept (K194).
+- **Two more kinds of link are easy to tap on a phone.** The Insights card
+  links (*See cheapest near you*, *See reports*) and the title link of a
+  reminder or *Coming up* row now take a tap anywhere in 44 × 44 px, and
+  look as before (K195).
+- **Installing the app no longer downloads an unused logo.** The service
+  worker stopped fetching the 98 KB logo that no page shows (K196).
+
+### Upgrade notes
+- Bare-PHP installs upgrading to 3.21.10 from 3.21.9 or earlier: run
+  `composer install --no-dev -o` as the upgrade guide says. It now clears
+  the compiled templates and translations; if it prints `Could not clear …`,
+  run `php bin/clear-cache.php` as the web server user (for example
+  `sudo -u www-data php bin/clear-cache.php`). Docker images need nothing.
 
 ## [3.21.9] — 2026-11-06
 

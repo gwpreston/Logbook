@@ -12702,7 +12702,7 @@ task breakdowns live in the per-phase files; this is the map.
   (#603, #609). No migration. See
   [`phase-54.13.md`](docs/phases/phase-54.13.md).
 - **Phase 54.14 — Big odometer readings, upgrade caches and small phone
-  fixes from the known-issues log + patch release** (in progress). A fill-up
+  fixes from the known-issues log + patch release** (complete). A fill-up
   with a far-off odometer no longer makes the fuel page answer 500, since
   `Decimal::multiply()` and `divide()` reach their brick/math fallback
   past 18 digits (§8 *Decimal precision*, K187); `composer install` runs

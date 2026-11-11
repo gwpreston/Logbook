@@ -171,9 +171,9 @@ and the K186 Docker-build line moved there from `[3.21.9]` (K190).
 
 ### Release
 
-- [ ] VERSION 3.21.10, CHANGELOG 3.21.10, README status (#603): done
-      in [Phase 54.14](phase-54.14.md)'s *Release*, after 54.14 is merged
-      (#609). Don't run `/release` for 54.13 alone.
+- [x] VERSION 3.21.10, CHANGELOG 3.21.10, README status (#603): done
+      in [Phase 54.14](phase-54.14.md)'s *Release* (#609). Don't run
+      `/release` for 54.13 alone.
 - [ ] Tag `v3.21.10` once 54.13 and 54.14 are both merged.
 
 ## Acceptance criteria
