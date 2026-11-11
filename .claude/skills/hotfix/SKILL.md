@@ -158,10 +158,10 @@ before writing the fix.
   run `/impeccable audit` on the changed template or CSS and keep within
   `DESIGN.md`.
 - Comment the fix per CLAUDE.md §5: what was wrong and why the fix is
-  right. Then run the `code-simplifier:code-simplifier` agent on the fix's
-  diff with the same brief as `/next-phase` step 5 (preserve behaviour,
-  keep explanatory comments, touch nothing outside the diff), review its
-  edits and re-run the test.
+  right. Then run the `code-simplification` skill on the fix's diff with
+  the same limits as `/next-phase` step 5 (preserve behaviour, keep
+  explanatory comments, touch nothing outside the diff; simplifications go
+  in the fix's own commit), and re-run the test.
 - Rebuild assets if any source asset changed, and commit the built ones.
 - New or changed user-facing strings go in every catalogue in
   `translations/`.
