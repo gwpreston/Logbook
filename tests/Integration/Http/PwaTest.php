@@ -83,6 +83,10 @@ final class PwaTest extends AppTestCase
             self::assertStringStartsWith('/logbook/assets/', $url);
             self::assertStringNotContainsString('THIRD-PARTY', $url);
         }
+        // K196: the large logo no page uses is not downloaded; the one pages show still is.
+        $logos = array_map(static fn (string $url): string => (string) strtok($url, '?'), $config['assets']);
+        self::assertNotContains('/logbook/assets/images/logbook-mark.png', $logos);
+        self::assertContains('/logbook/assets/images/logbook-mark-128.png', $logos);
         self::assertStringContainsString("self.addEventListener('fetch'", $script);
     }
 

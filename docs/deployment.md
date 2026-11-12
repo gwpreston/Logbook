@@ -700,6 +700,11 @@ cannot do, and how to stop being a demo are in [demo-mode.md](demo-mode.md).
      entrypoint applies new migrations before Apache starts.
    - Bare PHP: `git pull && composer install --no-dev -o && vendor/bin/phinx migrate -e production`.
      If PHP runs with opcache, reload php-fpm/Apache afterwards.
+     `composer install` also empties the compiled templates and translation
+     catalogues (`var/cache/twig` and `var/cache/translations`), so the pages
+     show the new release. If it prints `Could not clear …` (the cache
+     belongs to the web server user), run `php bin/clear-cache.php` as that
+     user, for example `sudo -u www-data php bin/clear-cache.php`.
 4. Check `<your URL>/health` and sign in.
 
 Database changes always ship as reversible migrations. To go back, roll the

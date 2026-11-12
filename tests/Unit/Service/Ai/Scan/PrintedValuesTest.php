@@ -136,4 +136,18 @@ final class PrintedValuesTest extends TestCase
     {
         self::assertNull(PrintedNumber::read('n/a', 'en_GB'));
     }
+
+    /**
+     * K199: more significant digits than any stored figure is a misread.
+     * Leading zeros and trailing fraction zeros don't count.
+     */
+    public function testANumberFarTooLongIsNotRead(): void
+    {
+        self::assertNull(PrintedNumber::read('£1234567890123456789.50', 'en_GB'));
+        self::assertNull(PrintedNumber::read('1234567890123', 'en_GB'), '13 digits');
+        self::assertNull(PrintedNumber::read('0.0000000000001', 'en_GB'));
+        self::assertSame('123456789012', PrintedNumber::read('123,456,789,012', 'en_GB'), '12 digits');
+        self::assertSame('1234567890.50', PrintedNumber::read('£1,234,567,890.50', 'en_GB'));
+        self::assertSame('12.5000000000000', PrintedNumber::read('0012.5000000000000', 'en_GB'));
+    }
 }

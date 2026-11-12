@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * On a phone every compact control has a hit area of at least 44 × 44 px and
- * keeps how it looks (spec.md §8 *Tap targets*, #457; K16, K35, K55): one
+ * keeps how it looks (spec.md §8 *Tap targets*, #457; K16, K35, K55, K195): one
  * narrow-width block gives each a centred `::after`, and nothing in it
  * changes the drawn control. A *Coming up* row's cost shrinks and wraps
  * so its title keeps its room (§7.18 *Narrow rows*, K41).
@@ -26,6 +26,8 @@ final class TapTargetTest extends TestCase
             [
                 '.btn--soft', '.segmented__option', '.back-link', '.card__link', 'a.breakdown__label', 'summary',
                 '.part-timeline__record', '.insurer-row__title a', '.insurer-row .btn--ghost',
+                // K195: the Insights card actions and a reminder or *Coming up* row's title link.
+                '.insight-card__action', 'a.list__title',
             ] as $selector
         ) {
             yield $selector => [$selector];

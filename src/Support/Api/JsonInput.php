@@ -1448,6 +1448,12 @@ final class JsonInput
 
             return '';
         }
+        // Past Decimal's limit a number would only fail later as a 500 (#614).
+        if (Decimal::tooLong(trim($value))) {
+            $errors->add($name, 'validation.too_large');
+
+            return '';
+        }
 
         return trim($value);
     }

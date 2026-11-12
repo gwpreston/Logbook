@@ -276,4 +276,18 @@ final class ApiVehicleFiguresTest extends AppTestCase
         $fits = $this->api->post($path, ['title' => 'Belt', 'baseline_odometer' => '00012345.5'] + $body);
         self::assertSame(201, $fits->getStatusCode(), 'leading zeros are not digits: ' . self::body($fits));
     }
+
+    public function testAnAbsurdlyLongNumberIsAFieldErrorNot500(): void
+    {
+        // #614: a short whole part passes K50's check, but 30,000 decimals in
+        // miles used to hold the worker for seconds and then answer 500.
+        $path = '/vehicles/' . $this->golf->id . '/schedules';
+        $long = '1.' . str_repeat('9', 30000);
+        $body = ['category' => 'oil', 'title' => 'Oil change', 'interval_months' => 12];
+        foreach (['interval_distance', 'interval_km', 'interval_months'] as $field) {
+            $created = $this->api->post($path, [$field => $long] + $body);
+            self::assertSame(422, $created->getStatusCode(), $field);
+            self::assertSame('validation.too_large', ApiClient::json($created)->get('errors', $field, 'key'), $field);
+        }
+    }
 }

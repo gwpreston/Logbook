@@ -92,7 +92,9 @@
         "seed": "phinx seed:run --configuration=phinx.php",
         "build-assets": "php bin/build-assets.php",
         "notices": "@php bin/third-party-notices.php",
-        "notices:check": "@php bin/third-party-notices.php --check"
+        "notices:check": "@php bin/third-party-notices.php --check",
+        "post-install-cmd": "@php bin/clear-cache.php",
+        "post-update-cmd": "@php bin/clear-cache.php"
     },
     "scripts-descriptions": {
         "start": "Run the PHP built-in dev server on http://localhost:8090",

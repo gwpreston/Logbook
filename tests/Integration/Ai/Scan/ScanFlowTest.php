@@ -104,6 +104,39 @@ final class ScanFlowTest extends ScanTestCase
     }
 
     /**
+     * K199: a total and a recommended distance read far too long (a model's
+     * misread) are marked unreadable. The form opens, saves once, and the
+     * recommendation is offered with no distance, never a 500.
+     */
+    public function testAFigureReadFarTooLongIsUnreadableNotAnError(): void
+    {
+        $golf = $this->garage['Golf'];
+        $reply = $this->invoiceReply();
+        $fields = is_array($reply['fields'] ?? null) ? $reply['fields'] : [];
+        $fields['total'] = ['value' => '£1234567890123456789.50', 'evidence' => 'Total due £1234567890123456789.50'];
+        $lines = is_array($reply['lines'] ?? null) ? $reply['lines'] : [];
+        $lines['recommendations'] = [
+            ['text' => 'Front brake pads', 'distance' => '12345678901234567890123', 'distance_unit' => 'miles', 'date' => null],
+            ['text' => 'Wiper blades', 'distance' => null, 'distance_unit' => null, 'date' => null],
+        ];
+        $reply = ['fields' => $fields, 'lines' => $lines] + $reply;
+
+        [$form, $token] = $this->scanToForm($this->invoicePhoto(), $reply);
+        self::assertSame(200, $form->getStatusCode());
+        self::assertStringContainsString('Couldn’t read “£1234567890123456789.50”.', self::body($form));
+        $values = Html::formValues(Html::element(Html::document(self::body($form)), 'form.form'));
+        self::assertSame('', $values['cost'] ?? '', 'the cost is left for the user');
+
+        $saved = $this->browser->post('/vehicles/' . $golf->id . '/maintenance/new', $values);
+        self::assertSame(303, $saved->getStatusCode(), self::body($saved));
+        self::assertSame('/scan/' . $token . '/reminders', $saved->getHeaderLine('Location'));
+        self::assertSame(1, $this->rows('maintenance_entries'));
+        $stored = $this->pending($token)->recommendations ?? [];
+        self::assertIsArray($stored['items'] ?? null);
+        self::assertCount(2, $stored['items'], 'both lines are still offered');
+    }
+
+    /**
      * Recommended work is offered, never added on its own; a distance is
      * kept as a distance, labelled with the projected date.
      */

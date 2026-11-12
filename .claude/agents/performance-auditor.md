@@ -56,12 +56,18 @@ which engine, with what data. If you couldn't measure it, it goes under
 
 ## Working budgets
 
-Not in the spec yet: treat them as defaults and propose them as an open
-question rather than as rules. With the heavy household, warm, on a dev
-machine:
+spec.md §8 *Page budgets* sets the page rules; follow it where this list
+differs. Time pages on its **reference household** (#615): 10 vehicles
+with 400 fill-ups a fortnight apart, 150 services and 16 years of
+insurance and inspection documents each, built through the app's
+services, on SQLite, the median of seven warm requests. Name in the
+report when you timed on anything else.
 
-- Page or API request: ≤ 30 queries, no query repeated per row; ≤ 200 ms
-  server time for list and detail pages, ≤ 500 ms for the dashboard and
+- Dashboard and a vehicle's overview (and Insights, the reports): ≤ 60
+  queries, ≤ 80 for the dashboard with every module on and prices synced,
+  the same count for 1 vehicle as for 10, no query repeated per row.
+  Other pages and API requests: no query repeated per row.
+- Time: 200 ms typical, ≤ 500 ms at most for the dashboard, overview and
   reports. Allow ×5 on a Raspberry Pi 4/5.
 - Memory: ≤ 64 MB per web request; imports, exports, backups and
   restores flat in memory as input grows (streamed), well under a 256 MB

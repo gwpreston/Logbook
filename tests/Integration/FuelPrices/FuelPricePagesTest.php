@@ -167,6 +167,11 @@ final class FuelPricePagesTest extends FuelPricesTestCase
             'data-alert-state="armed"',
             (string) $browser->get('/stations/' . $tesco->id)->getBody(),
         );
+        // #614: an absurdly long price is refused like an unreadable one, not a 500.
+        $longPrice = '1.' . str_repeat('9', 30000);
+        $long = $browser->post('/stations/' . $tesco->id . '/alerts', ['grade' => 'e10_95', 'below' => $longPrice]);
+        self::assertSame(303, $long->getStatusCode());
+        self::assertSame(200, $browser->follow($long)->getStatusCode());
 
         $search = new JsonDoc(json_decode((string) $browser->get('/stations/search?q=Tesco')->getBody(), true));
         self::assertSame('1.359', $search->string('results', 0, 'listed', 'e10_95', 'price'));

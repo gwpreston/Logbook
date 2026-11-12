@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Support\Number;
 
 use Brick\Math\BigDecimal;
+use Brick\Math\Exception\DivisionByZeroException;
 use Brick\Math\RoundingMode;
 use InvalidArgumentException;
 use OverflowException;
@@ -19,6 +20,15 @@ use OverflowException;
 final class Decimal
 {
     private const string CANONICAL = '/^-?\d+(?:\.\d+)?$/';
+
+    /**
+     * The most significant digits an operand may have on the brick/math
+     * route. Far past any real reading or price (a mistyped odometer times a
+     * month's seconds is about 25), and short enough that brick/math stays
+     * fast without gmp or bcmath: a 30,000-digit number from an API field or
+     * a CSV cell took seconds of CPU (security review of Phase 54.14).
+     */
+    private const int MAX_DIGITS = 40;
 
     public static function isCanonical(string $value): bool
     {
@@ -129,12 +139,20 @@ final class Decimal
     /**
      * $a × $b rounded to $scale places (half away from zero), exactly.
      *
-     * Only if the intermediate product would not fit in a PHP int (far beyond
-     * any real fuel quantity or price) does it fall back to brick/math, which
-     * is slower but just as exact.
+     * Only if an operand or the intermediate product would not fit in a PHP
+     * int (far beyond any real fuel quantity or price) does it fall back to
+     * brick/math, which is slower but just as exact. An operand of more than
+     * 18 digits goes there before toScaledInt() can throw (K187: a mistyped
+     * odometer's distance times a month's seconds).
+     *
+     * @throws OverflowException when an operand has more than MAX_DIGITS digits
      */
     public static function multiply(string $a, string $b, int $scale): string
     {
+        if (self::tooLongForInt($a) || self::tooLongForInt($b)) {
+            return self::bigProduct($a, $b, $scale);
+        }
+
         $scaleA = self::scaleOf($a);
         $scaleB = self::scaleOf($b);
         $intA = self::toScaledInt($a, $scaleA);
@@ -149,12 +167,18 @@ final class Decimal
 
     /**
      * $a ÷ $b rounded to $scale places (half away from zero), exactly (with
-     * the same brick/math fallback as multiply()).
+     * the same brick/math fallback as multiply(), also taken first for an
+     * operand of more than 18 digits, K187).
      *
      * @throws InvalidArgumentException when $b is zero
+     * @throws OverflowException when an operand has more than MAX_DIGITS digits
      */
     public static function divide(string $a, string $b, int $scale): string
     {
+        if (self::tooLongForInt($a) || self::tooLongForInt($b)) {
+            return self::bigQuotient($a, $b, $scale);
+        }
+
         $scaleA = self::scaleOf($a);
         $scaleB = self::scaleOf($b);
         $numerator = self::toScaledInt($a, $scaleA);
@@ -169,11 +193,23 @@ final class Decimal
         $numerator = $shift >= 0 ? self::timesPowerOfTen($numerator, $shift) : $numerator;
         $denominator = $shift < 0 ? self::timesPowerOfTen($denominator, -$shift) : $denominator;
         if ($numerator === null || $denominator === null) {
-            // HalfUp rounds a tie away from zero, as roundedDivision() does.
-            return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
+            return self::bigQuotient($a, $b, $scale);
         }
 
         return self::fromScaledInt(self::roundedDivision($numerator, $denominator), $scale);
+    }
+
+    /**
+     * Whether a canonical value has more digits than multiply() and divide()
+     * accept (MAX_DIGITS), so input can be refused with a validation error
+     * before it reaches them: the API answers 422, a CSV import marks the
+     * row (#614). A non-canonical value answers false; parsing rejects it.
+     */
+    public static function tooLong(string $value): bool
+    {
+        return strlen($value) > self::MAX_DIGITS
+            && self::isCanonical($value)
+            && self::significantDigits($value) > self::MAX_DIGITS;
     }
 
     /**
@@ -197,6 +233,51 @@ final class Decimal
     private static function bigProduct(string $a, string $b, int $scale): string
     {
         return BigDecimal::of($a)->multipliedBy($b)->toScale(self::places($scale), RoundingMode::HalfUp)->toString();
+    }
+
+    /**
+     * $a ÷ $b at $scale for quotients whose scaled integers would overflow.
+     * HalfUp rounds a tie away from zero, as roundedDivision() does.
+     */
+    private static function bigQuotient(string $a, string $b, int $scale): string
+    {
+        try {
+            return BigDecimal::of($a)->dividedBy($b, self::places($scale), RoundingMode::HalfUp)->toString();
+        } catch (DivisionByZeroException) {
+            // A long $a over a short zero $b lands here: the same exception
+            // as the int path, as divide()'s docblock promises.
+            throw new InvalidArgumentException('Division by zero.');
+        }
+    }
+
+    /**
+     * Whether a canonical decimal has more significant digits (whole and
+     * fraction together) than toScaledInt() can hold at its own scale.
+     * A non-canonical value answers false, so toScaledInt() still rejects it.
+     *
+     * @throws OverflowException past MAX_DIGITS, as toScaledInt() did for
+     *   anything past 18 before brick/math took the long operands
+     */
+    private static function tooLongForInt(string $value): bool
+    {
+        // The length test first: almost every call is short and stops there.
+        if (strlen($value) <= 18 || !self::isCanonical($value)) {
+            return false;
+        }
+        $digits = self::significantDigits($value);
+        if ($digits > self::MAX_DIGITS) {
+            throw new OverflowException(sprintf('A number of %d digits is too large.', $digits));
+        }
+
+        return $digits > 18;
+    }
+
+    /**
+     * Digits in a canonical value, whole and fraction, without leading zeros.
+     */
+    private static function significantDigits(string $value): int
+    {
+        return strlen(ltrim(str_replace(['-', '.'], '', $value), '0'));
     }
 
     /**

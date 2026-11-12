@@ -7886,7 +7886,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Checking values** (`Service\Ai\Scan\Mapper`): every value goes through
   the target form's own parser in the user's locale and units, as typed
   values do. A value that fails is left empty, with the reason under the
-  field ("Couldn't read "l2.50"."). An evidence string that does
+  field ("Couldn't read "l2.50"."); so is a number of more than 12
+  significant digits, longer than any stored figure (K199, §8 *Decimal
+  precision*). An evidence string that does
   not appear in the document's text (text PDFs, and OCR text from Phase
   53.2) drops the value, with the reason under its field ("Not found in
   the file's text: "Total £48.20", so it was left empty."). Against OCR text the match is
@@ -10888,7 +10890,20 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   An entered, API or URL date must fall in 1900-01-01 to 2100-12-31 and is
   refused outside it (decided 2026-10-25, #450); a stored date outside it
   is not repaired (#558).
-- **Decimal precision:** ≥3 decimals for fuel price/volume.
+- **Decimal precision:** ≥3 decimals for fuel price/volume. Arithmetic
+  on a value past a PHP int (more than 18 digits, such as a mistyped
+  odometer's distance times a month's seconds) goes through brick/math,
+  so the page shows the large figure rather than an error (Phase 54.14,
+  K187); an operand of more than 40 digits is refused as too large, so
+  an absurd API field or CSV cell can't hold a worker for seconds
+  (Phase 54.14 merge review). Input is checked for that first (decided
+  2026-11-11, #614): a REST API number field of more than 40 digits
+  answers 422 with `validation.too_large` ("That number is too large."),
+  a CSV import cell gives its row that error, and a price-alert amount is
+  refused like an unreadable one, never a 500. A number a scan reads
+  (§7.27) with more than 12 significant digits, longer than any stored
+  figure, is a misread: its field is left empty and marked unreadable
+  (Phase 54.14, K199).
 - **Validation:** clear errors; never reject legitimate edge values.
   Text keeps its line breaks as `\n`: a browser posts a textarea's as
   `\r\n`, so they are stored and counted once, and the same text fits the
@@ -10975,15 +10990,18 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   fill-ups, readings, services and documents each has. A test holds both
   (`QueryCounter`), so the repeated per-vehicle read can't creep back.
   Time is a review target, not a test: 200 ms typical and 500 ms at most
-  for either page on a 10-vehicle household (1,500 fill-ups, 200
-  readings, 150 services and 20 documents per vehicle).
+  for either page, measured on one reference (decided 2026-11-12, #615,
+  K200): the household Phase 54.5 measured, 10 vehicles each with 400
+  fill-ups a fortnight apart, 150 services and 16 years of insurance and
+  inspection documents, built through the app's services; on SQLite;
+  the median of seven warm requests on a developer machine. A Raspberry
+  Pi 4 or 5 may take five times as long.
   From Phase 54.3 (#576) the reports, the true-cost report first, join the
   60-query, 500 ms budget with the same count for 1 and 10 vehicles, and
   the monthly digest job's query count must not grow with the number of
   vehicles; tests hold the counts (the time stays a review target). On
-  the 10-vehicle household with 400 fill-ups, 150 services and 16 years of
-  documents each, both pages are within it from Phase 54.5 (#583, K149,
-  K150): the dashboard in about 0.42 s and the true-cost report in about
+  the reference household both pages are within it from Phase 54.5 (#583,
+  K149, K150): the dashboard in about 0.42 s and the true-cost report in about
   0.40 s on SQLite. A page request
   (GET or HEAD) remembers what its repositories read (`RequestReads`):
   one query per table for every vehicle on the page (`VehicleDataPrimer`),
@@ -10999,6 +11017,29 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   does (Phase 54.3, K151).
 - **Accessibility:** keyboard navigation, labels, contrast, focus states,
   to WCAG 2.2 AA (decided 2026-11-06).
+  `DESIGN.md` records how; four rules added after v3.21.9 (Phase 54.14,
+  K191):
+  - **Figures keep their units:** on an HTML page, screen and print, a
+    figure and its unit are joined by a no-break space, so a narrow column
+    never leaves the unit alone on the next line: the Twig unit filters
+    (`distance`, `volume`, `economy` and the rest) do it, and a figure a
+    template builds itself goes through `keep_together`. The API, MCP, AI
+    answers, notifications and CSV keep plain spaces (`DESIGN.md` *Line
+    breaks and measure*, PR #212).
+  - **Fields can be read and found:** placeholder text meets 4.5:1 on the
+    field's fill, never faded (PR #211), and a field's edge (inputs,
+    selects, text areas and the units joined to them) meets 3:1 on the card
+    and on the page, WCAG 1.4.11 (`DESIGN.md` *Field Edge*, *Placeholder*,
+    PR #220).
+  - **Reduced motion:** each animation has its own reduced version beside
+    its rule under `prefers-reduced-motion` (the modal fades instead of
+    rising, the history chevron turns at once, the dashboard drag stops
+    sliding). There is no blanket switch-off: fades and state changes that
+    confirm an action stay (`DESIGN.md` *Do's*, PR #218).
+  - **Focus is never hidden:** while the phone's top and bottom bars show,
+    `html` carries scroll padding of each bar's height plus 8 px, so a
+    focused control or an anchor target is never under one, WCAG 2.4.11;
+    it drops to 0 with the sidebar (`DESIGN.md` *Layout*, PR #216).
 - **Design system record:** `DESIGN.md` describes the built design system
   (tokens, components, do's and don'ts) and `PRODUCT.md` the users, voice
   and brand commitments, for design work and the `impeccable` skill. They
@@ -11430,7 +11471,8 @@ Real environment variables override `.env`; an empty value counts as unset.
   update to empty only the compiled templates and translation catalogues
   under the cache directory, so an upgrade never shows the old release's;
   if a file can't be deleted it warns and the install still succeeds,
-  K188, #610–#612), Phinx
+  K188, #610–#612; a symlinked `twig/` or `translations/` is reported
+  and never followed, Phase 54.14 merge review), Phinx
   migrate, cron entry for the reminder/notification task
   (`bin/run-scheduled-tasks.php` every 15 minutes; a lock file stops runs
   overlapping), and Nginx/Apache
@@ -12679,7 +12721,7 @@ task breakdowns live in the per-phase files; this is the map.
   (#603, #609). No migration. See
   [`phase-54.13.md`](docs/phases/phase-54.13.md).
 - **Phase 54.14 — Big odometer readings, upgrade caches and small phone
-  fixes from the known-issues log + patch release** (planned). A fill-up
+  fixes from the known-issues log + patch release** (complete). A fill-up
   with a far-off odometer no longer makes the fuel page answer 500, since
   `Decimal::multiply()` and `divide()` reach their brick/math fallback
   past 18 digits (§8 *Decimal precision*, K187); `composer install` runs
@@ -12689,7 +12731,11 @@ task breakdowns live in the per-phase files; this is the map.
   modal opens (§7, K194); the Insights card actions and reminder title
   links get a 44 px hit area on a phone (§8 *Tap targets*, K195); the
   service worker no longer precaches the unused large logo (§7.15, K196,
-  #613); and §8 records the design rules added after v3.21.9 (K191).
+  #613); §8 records the design rules added after v3.21.9 (K191); and
+  a scan's number too long to be a value is marked unreadable instead of
+  failing the form (§7.27, §8 *Decimal precision*, K199); §8 *Page
+  budgets* names the household, engine and method its times are measured
+  on (#615, K200).
   Releases v3.21.10 together with 54.13 (#609). No migration. See
   [`phase-54.14.md`](docs/phases/phase-54.14.md).
 

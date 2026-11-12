@@ -12,6 +12,7 @@ use Logbook\Service\FuelPrices\PriceAlerts;
 use Logbook\Service\Station\StationService;
 use Logbook\Support\Http\Redirector;
 use Logbook\Support\Http\RequestContext;
+use Logbook\Support\Number\Decimal;
 use Logbook\Support\Number\DecimalParser;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -60,7 +61,10 @@ final readonly class PriceAlertAction
 
         $typed = is_string($input['below'] ?? null) ? $input['below'] : '';
         $perUnit = DecimalParser::parse(trim($typed), $user->preferences->locale);
-        $below = $perUnit === null ? null : $user->preferences->volumeUnit->pricePerLitre($perUnit, 3);
+        // An absurdly long price is refused like an unreadable one (#614).
+        $below = $perUnit === null || Decimal::tooLong($perUnit)
+            ? null
+            : $user->preferences->volumeUnit->pricePerLitre($perUnit, 3);
         try {
             if ($below === null) {
                 throw new PriceAlertRefused('price');

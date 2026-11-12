@@ -7,7 +7,7 @@ every time the Add vehicle modal opens, two kinds of link get their 44 px
 on a phone, the service worker stops downloading an unused logo, and
 spec §8 records the design rules added after v3.21.9.*
 
-Status: 📋 planned · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.13](phase-54.13.md). It takes the two
 HIGH rows of the v3.21.9..HEAD release sweep (K187, K188), three small LOW
@@ -83,7 +83,10 @@ the two release together as v3.21.10, #609).
   the fallback is reached (K62 added the fallback for the product only).
   Both check the operands' digit count first and go straight to
   brick/math when either would overflow, rather than catching the
-  exception. Nothing else changes: the fuel page shows what the stored
+  exception. `add()`, `subtract()` and `compare()` keep the int path:
+  odometers are `DECIMAL(12,3)` (under 10⁹ km), so a distance, a month's
+  share of it at 6 places and their sums stay within 15 digits. Nothing
+  else changes: the fuel page shows what the stored
   reading gives, and no warning about an implausible reading is added
   (that would be a feature, not this fix). No owner decision was needed.
 - **K188 (#610):** a Composer script empties the caches, so a `git pull`
@@ -138,35 +141,38 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
-      `known-issues.md` (CLAUDE.md §12). #609–#613 are decided.
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+      `known-issues.md` (CLAUDE.md §12). #609–#613 are decided. Reviewed
+      2026-11-11: none of the questions still open (#221, #390, #391,
+      #460, #462, #537–#542, #551, #607, #608) bears on K187, K188, K191,
+      K194, K195 or K196, and none was found while starting it.
 
 ### 54.14.1 Big odometer readings (K187)
 
-- [ ] `Support\Number\Decimal::multiply()` and `divide()`: check each
+- [x] `Support\Number\Decimal::multiply()` and `divide()`: check each
       operand's digit count before `toScaledInt()` and use brick/math when
       it would pass 18 digits. Docblocks say so.
-- [ ] `DecimalTest`: a 19-digit dividend and a 19-digit factor give the
+- [x] `DecimalArithmeticTest`: a 19-digit dividend and a 19-digit factor give the
       exact brick/math result (both throw `OverflowException` today).
-- [ ] An HTTP test: a fill-up at 773,209.8 km after one at 77,320.98 km,
+- [x] An HTTP test: a fill-up at 773,209.8 km after one at 77,320.98 km,
       and `/vehicles/{id}/fuel` answers 200 (500 today);
       `SeasonalEconomyTest` covers the same split directly.
 
 ### 54.14.2 Upgrade caches (K188)
 
-- [ ] `bin/clear-cache.php`: empties `twig/` and `translations/` under
+- [x] `bin/clear-cache.php`: empties `twig/` and `translations/` under
       `<root>/var/cache` (#611), with no `.env`, container or database; a missing directory is fine; on a
       file it can't delete it prints the #612 message and exits 0.
-- [ ] `composer.json`: `post-install-cmd` and `post-update-cmd` run
+- [x] `composer.json`: `post-install-cmd` and `post-update-cmd` run
       `@php bin/clear-cache.php` (#610). The Docker image is unaffected:
       its build runs `composer install --no-scripts` before `bin/` is
       copied (`Dockerfile:88`), and its cache lives in the container;
       the dev entrypoint's install may run it, which is harmless.
-- [ ] `docs/deployment.md` *Upgrading* (bare PHP) says `composer install`
+- [x] `docs/deployment.md` *Upgrading* (bare PHP) says `composer install`
       clears the compiled templates and strings, and to run
       `php bin/clear-cache.php` as the web server user if it warns;
       `docs/translations.md` (~85) names the script.
-- [ ] Tests: the script against a temporary cache directory holding
+- [x] Tests: the script against a temporary cache directory holding
       `twig/`, `translations/`, `staged/` and `scheduled-tasks.lock`
       empties only the first two; a directory it can't write gives the
       message and exit code 0 (skipped on Windows and as root); an
@@ -175,54 +181,117 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.3 Look up in the modal (K194)
 
-- [ ] `assets/js/vehicle-lookup.js`: `enhance(root)` exposed as
+- [x] `assets/js/vehicle-lookup.js`: `enhance(root)` exposed as
       `window.LogbookVehicleLookup` (and `module.exports` for Node), each
       box enhanced once; `assets/js/app.js` `show()` calls it beside the
       other enhancers. Rebuild `public/assets`.
-- [ ] `tests/js/vehicle-lookup.test.js`: the script exposes `enhance`
+- [x] `tests/js/vehicle-lookup.test.js`: the script exposes `enhance`
       (fails today), and enhancing a root twice binds the button once.
-- [ ] Checked in a browser at a subpath: open Add vehicle, close, reopen,
+- [x] Checked in a browser at a subpath: open Add vehicle, close, reopen,
       *Look up* fills in place; after a validation error too; a chosen
       photo is kept.
 
 ### 54.14.4 Tap targets (K195)
 
-- [ ] `assets/css/app.css` narrow-width tap-target block: add
+- [x] `assets/css/app.css` narrow-width tap-target block: add
       `.insight-card__action` and `a.list__title`. Rebuild `public/assets`.
-- [ ] `TapTargetTest`: both selectors get the 44 px hit area (fails
+- [x] `TapTargetTest`: both selectors get the 44 px hit area (fails
       today). Checked at 375 px on the dashboard, a vehicle's overview,
       `/upcoming`, `/reminders` and Insights.
 
 ### 54.14.5 The unused logo (K196)
 
-- [ ] `src/Action/Pwa/ServiceWorkerAction.php`: exclude
+- [x] `src/Action/Pwa/ServiceWorkerAction.php`: exclude
       `^images/logbook-mark\.png$` (#613).
-- [ ] An HTTP test of `/service-worker.js`: its asset list has no
+- [x] An HTTP test of `/service-worker.js`: its asset list has no
       `logbook-mark.png` (fails today) and still has
       `logbook-mark-128.png`.
 
 ### 54.14.6 spec §8 (K191)
 
-- [ ] spec.md §8 *Accessibility* (and *Tap targets* where it fits): the
+- [x] spec.md §8 *Accessibility* (and *Tap targets* where it fits): the
       four rules in Goal 6, each citing `DESIGN.md` and the PR it came
       from.
 
 ### 54.14.7 Finish
 
-- [ ] Known-issues rows K187, K188, K191, K194, K195 and K196 *Fixed*
+- [x] Known-issues rows K187, K188, K191, K194, K195, K196, K199 and K200 *Fixed*
       (Phase 54.14).
-- [ ] CHANGELOG [Unreleased] (K188's upgrade note under *Upgrade notes*:
+- [x] CHANGELOG [Unreleased] (K188's upgrade note under *Upgrade notes*:
       bare-PHP installs upgrading *to* 3.21.10 from 3.21.9 or earlier run
       `composer install`, which now clears the caches; if it warns, run
       `php bin/clear-cache.php` as the web server user); spec §13;
       ROADMAP status.
-- [ ] Merge review; merge.
+- [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.10, CHANGELOG 3.21.10 covering 54.13 and 54.14,
+- [x] VERSION 3.21.10, CHANGELOG 3.21.10 covering 54.13 and 54.14,
       README status (#609).
 - [ ] Tag `v3.21.10` once both are merged.
+
+## Design review (2026-11-11)
+
+Checked on SQLite with the sample data at `/logbook`. **K195:** at 375 px
+light, every Insights card action and every reminder or *Coming up* title
+link on the dashboard, the Golf's overview, `/upcoming`, `/reminders` and
+Insights has a hit area of at least 44 px each way (the smallest: an
+Insights action drawn 36 px tall, 44 px to a tap), and the cards and rows
+look as before; at 1280 px dark the Reminders page is unchanged, since the
+block is narrow-width only. **K194:** in the Add vehicle modal (1024 px,
+the sample MOT provider), *Look up* filled make and model in place on the
+first open, after closing and reopening, with a photo chosen (still
+chosen afterwards), and after a validation error the server re-rendered;
+the page never left `/logbook/garage`. Without JS the button still
+submits and the form comes back filled, unchanged
+(`VehicleLookupTest::testWithoutJsTheFormComesBackWithTheBlankFieldsFilled`);
+it was not re-run in a browser with JS off. Not looked at: 768 px, and
+375 px dark. Nothing drawn changed
+(no token, colour, font, radius or component), so `DESIGN.md` is
+unchanged and the Impeccable audit, critique and polish were not run. No
+HIGH or MEDIUM items.
+
+## Merge review (2026-11-11)
+
+MERGE at cdcf1a23: every gate passed on the four engines, and seven agents
+(spec-keeper, bug-hunter, security-scanner, performance-auditor,
+design-reviewer, deploy-checker, ai-evaluator) found nothing CRITICAL or
+HIGH. The dashboard and true-cost report on the heavy household (SQLite)
+took the same time as on master, under 500 ms. At the owner's request two
+MEDIUMs from security-scanner and one LOW from bug-hunter were fixed here:
+
+- `Decimal` refuses an operand of more than 40 digits with
+  `OverflowException`, as it did for anything past 18 before K187, so a
+  30,000-digit API field or CSV cell can't hold a worker for seconds in
+  pure-PHP brick/math (the Docker image has neither gmp nor bcmath). A long
+  number over zero gives the documented `InvalidArgumentException`.
+- `bin/clear-cache.php` never follows a symlinked `twig/` or
+  `translations/` (it warns instead), so whoever can write to `var/cache`
+  can't make a later `composer install` as root empty other files; an empty
+  or root `--cache-dir` is ignored.
+
+The owner then answered #614 the same day: input past that limit is a
+validation error, not a 500. `JsonInput::decimal()` (every API number
+field) answers 422 `validation.too_large`, the CSV importer gives the row
+that error, and the web price-alert box refuses it like an unreadable
+amount (`ApiVehicleFiguresTest`, `ImportTest`, `FuelPricePagesTest`).
+
+The other follow-ups (spec-keeper's #610–#613 status and three small doc
+gaps) don't block.
+
+`/issue-sweep` on the report (2026-11-12, `25be5c79`) found the
+spec-keeper items and three of the unconfirmed ones not to be bugs, and
+recorded two: K199 and K200 (open question #615). K199, fixed here at the
+owner's request: a scan's AI reading of a total, odometer, volume, price
+or recommended distance of 19 or more digits made the prefilled form (or
+saving it) answer 500, because `Decimal::compare()` reads it through its
+int path. `PrintedNumber::read()` now treats a number of more than 12
+significant digits, longer than any stored figure, as unreadable, so the
+field is left empty and marked (`PrintedValuesTest`, `ScanFlowTest`).
+K200 was fixed too, once the owner answered #615: §8 *Page budgets* names
+the reference household, engine and timing method, and
+`.claude/agents/performance-auditor.md` follows §8's query and time
+budgets instead of its own older ones.
 
 ## Acceptance criteria
 
@@ -253,3 +322,16 @@ the two release together as v3.21.10, #609).
 - **#613. Decided 2026-11-11:** exclude the file in
   `ServiceWorkerAction`. Not chosen: stop `bin/build-assets.php`
   publishing it.
+- **#614. Decided 2026-11-11 (found by the merge review):** a validation
+  error. An API number field of more than 40 digits answers 422
+  `validation.too_large`, a CSV import cell gives its row that error, and
+  the web price-alert amount is refused like an unreadable one, all
+  through `Decimal::tooLong()`. Not chosen: leave it the 500 it was before
+  this phase.
+- **#615. Decided 2026-11-12 (found by the issue sweep, K200):** spec §8's
+  200/500 ms page targets are measured on Phase 54.5's household (10
+  vehicles × 400 fill-ups a fortnight apart, 150 services, 16 years of
+  documents), on SQLite, the median of seven warm requests on a developer
+  machine, ×5 allowed on a Raspberry Pi. Not chosen: re-measure on §8's
+  old 1,500-fill-up household; the shared review dataset once it exists;
+  no fixed reference.
