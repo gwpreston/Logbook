@@ -6,7 +6,7 @@ is called out explicitly.
 
 ## [Unreleased]
 
-## [3.21.10] — 2026-11-11
+## [3.21.10] — 2026-11-12
 
 Phase 54.13: **The Symfony advisories and the vendored libraries from the
 known-issues log** ([docs/phases/phase-54.13.md](docs/phases/phase-54.13.md)),
@@ -4597,7 +4597,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.9...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.10...HEAD
+[3.21.10]: https://github.com/gwpreston16/Logbook/compare/v3.21.9...v3.21.10
 [3.21.9]: https://github.com/gwpreston16/Logbook/compare/v3.21.8...v3.21.9
 [3.21.8]: https://github.com/gwpreston16/Logbook/compare/v3.21.7...v3.21.8
 [3.21.7]: https://github.com/gwpreston16/Logbook/compare/v3.21.6...v3.21.7

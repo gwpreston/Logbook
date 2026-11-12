@@ -7,7 +7,7 @@ every time the Add vehicle modal opens, two kinds of link get their 44 px
 on a phone, the service worker stops downloading an unused logo, and
 spec §8 records the design rules added after v3.21.9.*
 
-Status: ✅ complete · releases **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.10** together with Phase 54.13, a patch release (#609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.13](phase-54.13.md). It takes the two
 HIGH rows of the v3.21.9..HEAD release sweep (K187, K188), three small LOW
@@ -222,13 +222,13 @@ the two release together as v3.21.10, #609).
       `composer install`, which now clears the caches; if it warns, run
       `php bin/clear-cache.php` as the web server user); spec §13;
       ROADMAP status.
-- [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
+- [x] Merge review; merge. (Merge review 2026-11-11, below; merged in #228.)
 
 ### Release
 
 - [x] VERSION 3.21.10, CHANGELOG 3.21.10 covering 54.13 and 54.14,
       README status (#609).
-- [ ] Tag `v3.21.10` once both are merged.
+- [x] Tag `v3.21.10` once both are merged.
 
 ## Design review (2026-11-11)
 
