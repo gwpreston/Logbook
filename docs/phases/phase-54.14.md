@@ -215,7 +215,7 @@ the two release together as v3.21.10, #609).
 
 ### 54.14.7 Finish
 
-- [x] Known-issues rows K187, K188, K191, K194, K195 and K196 *Fixed*
+- [x] Known-issues rows K187, K188, K191, K194, K195, K196, K199 and K200 *Fixed*
       (Phase 54.14).
 - [x] CHANGELOG [Unreleased] (K188's upgrade note under *Upgrade notes*:
       bare-PHP installs upgrading *to* 3.21.10 from 3.21.9 or earlier run
@@ -279,6 +279,20 @@ amount (`ApiVehicleFiguresTest`, `ImportTest`, `FuelPricePagesTest`).
 The other follow-ups (spec-keeper's #610–#613 status and three small doc
 gaps) don't block.
 
+`/issue-sweep` on the report (2026-11-12, `25be5c79`) found the
+spec-keeper items and three of the unconfirmed ones not to be bugs, and
+recorded two: K199 and K200 (open question #615). K199, fixed here at the
+owner's request: a scan's AI reading of a total, odometer, volume, price
+or recommended distance of 19 or more digits made the prefilled form (or
+saving it) answer 500, because `Decimal::compare()` reads it through its
+int path. `PrintedNumber::read()` now treats a number of more than 12
+significant digits, longer than any stored figure, as unreadable, so the
+field is left empty and marked (`PrintedValuesTest`, `ScanFlowTest`).
+K200 was fixed too, once the owner answered #615: §8 *Page budgets* names
+the reference household, engine and timing method, and
+`.claude/agents/performance-auditor.md` follows §8's query and time
+budgets instead of its own older ones.
+
 ## Acceptance criteria
 
 - Each code row (K187, K188, K194, K195, K196) has a regression test that
@@ -314,3 +328,10 @@ gaps) don't block.
   the web price-alert amount is refused like an unreadable one, all
   through `Decimal::tooLong()`. Not chosen: leave it the 500 it was before
   this phase.
+- **#615. Decided 2026-11-12 (found by the issue sweep, K200):** spec §8's
+  200/500 ms page targets are measured on Phase 54.5's household (10
+  vehicles × 400 fill-ups a fortnight apart, 150 services, 16 years of
+  documents), on SQLite, the median of seven warm requests on a developer
+  machine, ×5 allowed on a Raspberry Pi. Not chosen: re-measure on §8's
+  old 1,500-fill-up household; the shared review dataset once it exists;
+  no fixed reference.

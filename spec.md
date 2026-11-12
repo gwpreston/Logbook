@@ -7886,7 +7886,9 @@ attached to the entry it creates. Nothing is ever saved without *Save*.
 - **Checking values** (`Service\Ai\Scan\Mapper`): every value goes through
   the target form's own parser in the user's locale and units, as typed
   values do. A value that fails is left empty, with the reason under the
-  field ("Couldn't read "l2.50"."). An evidence string that does
+  field ("Couldn't read "l2.50"."); so is a number of more than 12
+  significant digits, longer than any stored figure (K199, §8 *Decimal
+  precision*). An evidence string that does
   not appear in the document's text (text PDFs, and OCR text from Phase
   53.2) drops the value, with the reason under its field ("Not found in
   the file's text: "Total £48.20", so it was left empty."). Against OCR text the match is
@@ -10898,7 +10900,10 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   2026-11-11, #614): a REST API number field of more than 40 digits
   answers 422 with `validation.too_large` ("That number is too large."),
   a CSV import cell gives its row that error, and a price-alert amount is
-  refused like an unreadable one, never a 500.
+  refused like an unreadable one, never a 500. A number a scan reads
+  (§7.27) with more than 12 significant digits, longer than any stored
+  figure, is a misread: its field is left empty and marked unreadable
+  (Phase 54.14, K199).
 - **Validation:** clear errors; never reject legitimate edge values.
   Text keeps its line breaks as `\n`: a browser posts a textarea's as
   `\r\n`, so they are stored and counted once, and the same text fits the
@@ -10985,15 +10990,18 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   fill-ups, readings, services and documents each has. A test holds both
   (`QueryCounter`), so the repeated per-vehicle read can't creep back.
   Time is a review target, not a test: 200 ms typical and 500 ms at most
-  for either page on a 10-vehicle household (1,500 fill-ups, 200
-  readings, 150 services and 20 documents per vehicle).
+  for either page, measured on one reference (decided 2026-11-12, #615,
+  K200): the household Phase 54.5 measured, 10 vehicles each with 400
+  fill-ups a fortnight apart, 150 services and 16 years of insurance and
+  inspection documents, built through the app's services; on SQLite;
+  the median of seven warm requests on a developer machine. A Raspberry
+  Pi 4 or 5 may take five times as long.
   From Phase 54.3 (#576) the reports, the true-cost report first, join the
   60-query, 500 ms budget with the same count for 1 and 10 vehicles, and
   the monthly digest job's query count must not grow with the number of
   vehicles; tests hold the counts (the time stays a review target). On
-  the 10-vehicle household with 400 fill-ups, 150 services and 16 years of
-  documents each, both pages are within it from Phase 54.5 (#583, K149,
-  K150): the dashboard in about 0.42 s and the true-cost report in about
+  the reference household both pages are within it from Phase 54.5 (#583,
+  K149, K150): the dashboard in about 0.42 s and the true-cost report in about
   0.40 s on SQLite. A page request
   (GET or HEAD) remembers what its repositories read (`RequestReads`):
   one query per table for every vehicle on the page (`VehicleDataPrimer`),
@@ -12723,7 +12731,11 @@ task breakdowns live in the per-phase files; this is the map.
   modal opens (§7, K194); the Insights card actions and reminder title
   links get a 44 px hit area on a phone (§8 *Tap targets*, K195); the
   service worker no longer precaches the unused large logo (§7.15, K196,
-  #613); and §8 records the design rules added after v3.21.9 (K191).
+  #613); §8 records the design rules added after v3.21.9 (K191); and
+  a scan's number too long to be a value is marked unreadable instead of
+  failing the form (§7.27, §8 *Decimal precision*, K199); §8 *Page
+  budgets* names the household, engine and method its times are measured
+  on (#615, K200).
   Releases v3.21.10 together with 54.13 (#609). No migration. See
   [`phase-54.14.md`](docs/phases/phase-54.14.md).
 

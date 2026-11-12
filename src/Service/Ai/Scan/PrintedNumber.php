@@ -19,6 +19,20 @@ final class PrintedNumber
     private const string UNITS = 'p|c|ct|cent|cents|pence|l|ltr|ltrs|litre|litres|liter|liters|kwh'
         . '|km|kms|mi|miles|mls|gal|gals|gallon|gallons|%';
 
+    /**
+     * The most significant digits a read number may have (K199). The widest
+     * stored figure is DECIMAL(14, …), so anything longer is a misread, not a
+     * value; 12 also keeps a converted distance (miles → km at 3 places) and
+     * the comparisons after it within Decimal's 18-digit integer path.
+     */
+    private const int MAX_DIGITS = 12;
+
+    /**
+     * The printed number as a canonical decimal, or null when it can't be
+     * read: other text beside the digits, or more than MAX_DIGITS
+     * significant digits (K199, so a misread "1234567890123456789.50" is
+     * marked unreadable rather than failing the form).
+     */
     public static function read(string $printed, string $locale): ?string
     {
         $number = self::digits($printed);
@@ -49,8 +63,22 @@ final class PrintedNumber
         }
         $clean = ltrim($clean, '0');
         $clean = $clean === '' || str_starts_with($clean, '.') ? '0' . $clean : $clean;
+        if (self::significantDigits($clean) > self::MAX_DIGITS) {
+            return null;
+        }
 
         return ($negative ? '-' : '') . $clean;
+    }
+
+    /**
+     * Digits that carry a value: the whole part without leading zeros and
+     * the fraction without trailing ones ("0012.50" → 3).
+     */
+    private static function significantDigits(string $number): int
+    {
+        [$whole, $fraction] = array_pad(explode('.', $number, 2), 2, '');
+
+        return strlen(ltrim($whole, '0')) + strlen(rtrim($fraction, '0'));
     }
 
     /**

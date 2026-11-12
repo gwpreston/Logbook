@@ -110,6 +110,11 @@ Bare-PHP installs: see the upgrade notes.
   or CSV cell of more than 40 digits now answers "That number is too
   large." (a 422 from the API, a problem row in an import) at once,
   instead of tying up the server for seconds and then failing (#614).
+- **A scan that misreads a figure as an impossibly long number no longer
+  breaks the form.** A total, mileage, volume, price or recommended
+  distance read with more than 12 digits is left empty and marked
+  "Couldn't read", so you can type it in, instead of the form failing
+  to open, or saving twice when retried (K199).
 - **Installing the app no longer downloads an unused logo.** The service
   worker stopped fetching the 98 KB logo that no page shows (K196).
 
