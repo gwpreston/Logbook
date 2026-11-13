@@ -5,7 +5,7 @@ owner's, the locked Symfony packages no longer carry the 2026-11-04
 advisories, and the bundled front-end libraries match `package.json` with a
 test that keeps them so.*
 
-Status: ✅ complete · releases **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.10** together with [Phase 54.14](phase-54.14.md), a patch release (#603, #609) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.12](phase-54.12.md). It takes K182 and
 K183, the only open rows that could be fixed once #597 and #598 were
@@ -167,14 +167,14 @@ and the K186 Docker-build line moved there from `[3.21.9]` (K190).
 
 - [x] Known-issues rows K182, K183, K189 and K190 *Fixed*; K198 added, *Fixed*.
 - [x] CHANGELOG; spec §13; ROADMAP status.
-- [ ] Merge review; merge. (After the pull request; merge as a merge commit, not a squash.)
+- [x] Merge review; merge. (Merged in #227; no review of its own, but Phase 54.14's merge review of 2026-11-11 at `cdcf1a23` covered its changes. Ticked 2026-11-12 for the release.)
 
 ### Release
 
 - [x] VERSION 3.21.10, CHANGELOG 3.21.10, README status (#603): done
       in [Phase 54.14](phase-54.14.md)'s *Release* (#609). Don't run
       `/release` for 54.13 alone.
-- [ ] Tag `v3.21.10` once 54.13 and 54.14 are both merged.
+- [x] Tag `v3.21.10` once 54.13 and 54.14 are both merged.
 
 ## Acceptance criteria
 
