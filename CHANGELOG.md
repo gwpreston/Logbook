@@ -6,13 +6,20 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.11] — 2026-11-13
+
+Phase 54.15: **Category colours on the dashboard's rows**
+([docs/phases/phase-54.15.md](docs/phases/phase-54.15.md)). No migration;
+pull and restart.
+
 ### Changed
 - **Dashboard rows show what they are at a glance.** The icon beside each
   row in *Upcoming reminders*, *Coming up*, *Documents*, *Recent activity*
   and the fuel widgets now takes its category's colour, the same as the
   charts: your accent colour for fuel, green for maintenance and tyres,
   violet for documents and MOTs. How urgent something is stays in its red
-  or amber label. History and tyre lists elsewhere match (Phase 54.15).
+  or amber label. The Reminders and *Coming up* pages, history and tyre
+  lists match.
 
 ## [3.21.10] — 2026-11-12
 
@@ -4605,7 +4612,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.10...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.11...HEAD
+[3.21.11]: https://github.com/gwpreston16/Logbook/compare/v3.21.10...v3.21.11
 [3.21.10]: https://github.com/gwpreston16/Logbook/compare/v3.21.9...v3.21.10
 [3.21.9]: https://github.com/gwpreston16/Logbook/compare/v3.21.8...v3.21.9
 [3.21.8]: https://github.com/gwpreston16/Logbook/compare/v3.21.7...v3.21.8

@@ -5,7 +5,7 @@ tile takes its cost category's colour, as the design prototype draws its
 rows, so fuel, maintenance and documents can be told apart without reading.
 Status colours are untouched.*
 
-Status: 🚧 in progress · no release of its own (goes out with the next one) · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.11**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.14](phase-54.14.md), which is complete
 and released as v3.21.10. It came from an owner request on 2026-11-13
@@ -97,11 +97,20 @@ first.
 
 ### 54.15.4 Finish
 
-- [ ] The suite on MySQL and PostgreSQL (SQLite passes: 4,878 tests).
-- [ ] Design review: dashboard, Reminders, *Coming up* and a vehicle's
+- [x] The suite on MySQL and PostgreSQL (SQLite passes: 4,878 tests).
+      (CI on the merge commit: SQLite, PostgreSQL, MySQL and MariaDB on
+      PHP 8.4, PostgreSQL and MySQL on 8.5.)
+- [x] Design review: dashboard, Reminders, *Coming up* and a vehicle's
       history at 375, 768 and 1440, light and dark, with the Teal and
-      Purple accents.
-- [ ] Merge review; merge (as a merge commit, not a squash).
+      Purple accents. (2026-11-13, in the merge review below.)
+- [x] Merge review; merge (as a merge commit, not a squash). (Merged in
+      #229 on 2026-11-13; the merge review ran afterwards, the same day,
+      below.)
+
+### Release
+
+- [x] VERSION 3.21.11, CHANGELOG 3.21.11, README status.
+- [x] Tag `v3.21.11` once merged.
 
 ## Acceptance criteria
 
@@ -116,3 +125,27 @@ first.
 ## Open questions
 
 None.
+
+## Merge review (2026-11-13)
+
+MERGE at 6b600696, run after the merge. CI on that commit passed every
+gate: lint and analysis, 4,878 tests on the four engines (and PHP 8.5),
+line coverage 95.41% against the 95% floor and all 13 changed lines
+covered. Nine agents (spec-keeper, bug-hunter, security-scanner,
+performance-auditor, design-reviewer, upgrade-tester, deploy-checker,
+api-contract-checker, ai-evaluator) found nothing CRITICAL or HIGH;
+import-tester was skipped, as nothing it covers changed.
+
+- **Design review.** The dashboard, Reminders, *Coming up* and a
+  vehicle's history at 375, 768 and 1440 px, light and dark, Teal and
+  Purple, on the sample data. Every toned glyph is 3:1 or better on its
+  tile (lowest `c-other` 3.32:1 light, 3.33:1 dark; `c-maint` 3.34:1
+  light). No tile outside *Needs attention* is red, amber or green;
+  manual reminders keep the grey tile; nothing scrolls sideways at
+  375 px; print gives black glyphs on white tiles.
+- **Upgrade.** SAFE on SQLite, old → new → old on the same database: no
+  migration, every stored reminder source still maps, and the pages
+  differ only in the new classes.
+- **Paperwork.** spec-keeper's two MEDIUMs (this file's status and the
+  ROADMAP and spec §13 lines) and the CHANGELOG missing the Reminders
+  page are fixed in the release commit.

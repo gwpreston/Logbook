@@ -146,7 +146,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | ✅ |
 | [54.13](docs/phases/phase-54.13.md) | The Symfony advisories and the vendored libraries from the known-issues log + patch release | ✅ |
 | [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | ✅ |
-| [54.15](docs/phases/phase-54.15.md) | Category colours on the dashboard's rows | 🚧 |
+| [54.15](docs/phases/phase-54.15.md) | Category colours on the dashboard's rows + patch release | ✅ |
 
 *Update the status column as each phase lands.*
 
@@ -2010,7 +2010,7 @@ prototype draws its rows; status stays in the pill.*
   3:1 or better in both themes and every accent.
 - *Upcoming reminders*, *Coming up*, *Documents*, the fuel widgets and
   *Recent activity*, with the Reminders, history and tyre rows to match.
-  No migration.
+  Releases v3.21.11. No migration.
 
 → [`phase-54.15.md`](docs/phases/phase-54.15.md)
 

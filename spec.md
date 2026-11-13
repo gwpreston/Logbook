@@ -12751,13 +12751,13 @@ task breakdowns live in the per-phase files; this is the map.
   on (#615, K200).
   Releases v3.21.10 together with 54.13 (#609). No migration. See
   [`phase-54.14.md`](docs/phases/phase-54.14.md).
-- **Phase 54.15 — Category colours on the dashboard's rows** (in
-  progress). The icon tile of each row in *Upcoming reminders*, *Coming
+- **Phase 54.15 — Category colours on the dashboard's rows.** The icon
+  tile of each row in *Upcoming reminders*, *Coming
   up*, *Documents*, the fuel widgets and *Recent activity* takes its cost
   category's colour on a 12% wash, as the prototype draws its rows, with
   the Reminders, history and tyre rows to match; urgency stays in the
-  status pill (§8 *Category colours*). No migration. See
-  [`phase-54.15.md`](docs/phases/phase-54.15.md).
+  status pill (§8 *Category colours*). Releases v3.21.11. No migration.
+  See [`phase-54.15.md`](docs/phases/phase-54.15.md).
 
 ---
 
