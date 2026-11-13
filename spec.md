@@ -11073,6 +11073,19 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
   Status colours (red overdue, amber due soon, green OK) and the number
   plate (below) never change with the accent. Charts read the tokens when
   they draw.
+- **Category colours** (Phase 54.15): the cost-category tokens (`--c-fuel`,
+  which is the accent, `--c-maint`, `--c-ins`, `--c-tax`, `--c-other`,
+  `--c-build`) colour the charts and legends, and the icon tile of a list
+  row that belongs to a category, as the prototype draws its rows: the
+  glyph in the colour on a 12% wash of it, at 3:1 or better in both themes
+  and every accent. On the dashboard that is *Recent activity*, *Upcoming
+  reminders* and *Coming up* (by where the item comes from: maintenance
+  and tyres, documents and the first MOT, finance and issues, parts),
+  *Documents*, and the fuel widgets (*Recent fuel*, *Cheapest fuel*,
+  *Efficiency trend*); history rows and tyre rows elsewhere too. A row
+  with no category (odometer, a manual reminder) keeps the grey tile. A
+  tile says what a row is, never how urgent it is: urgency stays in the
+  status pill, and only *Needs attention* tints a tile red or amber.
 - **Fuel grade badges** (§7.3) follow the pump and charger labels: the
   EN 16942 circle for petrol grades (AKI grades too), a square for diesel, a
   rhombus for LPG (which has no grades but still gets its badge) and the
@@ -12738,6 +12751,13 @@ task breakdowns live in the per-phase files; this is the map.
   on (#615, K200).
   Releases v3.21.10 together with 54.13 (#609). No migration. See
   [`phase-54.14.md`](docs/phases/phase-54.14.md).
+- **Phase 54.15 — Category colours on the dashboard's rows** (in
+  progress). The icon tile of each row in *Upcoming reminders*, *Coming
+  up*, *Documents*, the fuel widgets and *Recent activity* takes its cost
+  category's colour on a 12% wash, as the prototype draws its rows, with
+  the Reminders, history and tyre rows to match; urgency stays in the
+  status pill (§8 *Category colours*). No migration. See
+  [`phase-54.15.md`](docs/phases/phase-54.15.md).
 
 ---
 

@@ -12,7 +12,7 @@
             {% set electric = data.fuel.isElectric() %}{% set kind = data.fuel.kind() %}
             {% set segment = fill.segment %}
             <li class="list__item">
-                <span class="list__icon">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
+                <span class="list__icon list__icon--tone" style="--tone: var(--c-fuel)">{{ ui.icon(electric ? 'ev_station' : 'local_gas_station') }}</span>
                 <span class="list__body">
                     <span class="list__title">
                         {%- if can_change(row.vehicle, fill.entry.createdBy) -%}

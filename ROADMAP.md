@@ -146,6 +146,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.12](docs/phases/phase-54.12.md) | The Windows architecture tests from the known-issues log + patch release | ✅ |
 | [54.13](docs/phases/phase-54.13.md) | The Symfony advisories and the vendored libraries from the known-issues log + patch release | ✅ |
 | [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | ✅ |
+| [54.15](docs/phases/phase-54.15.md) | Category colours on the dashboard's rows | 🚧 |
 
 *Update the status column as each phase lands.*
 
@@ -1996,6 +1997,22 @@ small phone and service-worker fixes, with spec §8 brought up to date.*
 - Releases v3.21.10 together with 54.13 (#609). No migration.
 
 → [`phase-54.14.md`](docs/phases/phase-54.14.md)
+
+---
+
+## Phase 54.15 — Category colours on the dashboard's rows
+
+*Each dashboard row's icon tile takes its cost category's colour, as the
+prototype draws its rows; status stays in the pill.*
+
+- `ReminderSource::tone()` and `ForecastSource::tone()` map rows to the
+  existing category tokens; `.list__icon--tone` washes the tile at 12%,
+  3:1 or better in both themes and every accent.
+- *Upcoming reminders*, *Coming up*, *Documents*, the fuel widgets and
+  *Recent activity*, with the Reminders, history and tyre rows to match.
+  No migration.
+
+→ [`phase-54.15.md`](docs/phases/phase-54.15.md)
 
 ---
 

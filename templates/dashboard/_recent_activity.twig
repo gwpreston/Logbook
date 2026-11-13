@@ -12,7 +12,7 @@
             {% set route = item.kind.editRoute() %}
             <li>
                 <a class="list__item" href="{{ url_for(route[0], {id: item.vehicle.id, (route[1]): item.entryId}) }}" data-modal>
-                    <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
+                    <span class="list__icon list__icon--tone" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
                     <span class="list__body">
                         <span class="list__title">{{ item.kind.value == 'valuation' ? history.title(item) : (item.label != '' ? item.label : item.labelKey|trans) }}{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
                         <span class="list__meta">{{ item.vehicle.name() }} · {{ item.date|local_date }}</span>

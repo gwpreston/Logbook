@@ -5699,6 +5699,16 @@ a.list__title:hover {
     color: var(--tone, var(--muted));
 }
 
+/* A toned tile is washed in its own category colour, as the prototype draws
+   its rows (KCOL), so fuel, maintenance and documents can be told apart at a
+   glance. Mixed into the card's surface rather than laid over it, so the
+   glyph keeps 3:1 or better on the tile in both themes and every accent
+   (c-other and c-maint are the closest, at 3.3:1). Status stays in the
+   pill beside it: the tile says what a row is, never how urgent. */
+.list__icon--tone {
+    background: color-mix(in oklab, var(--tone) 12%, var(--surface));
+}
+
 /* Accent colour chips (Settings, Appearance). */
 .accent-swatch {
     width: 0.875rem;
@@ -6194,6 +6204,11 @@ a.list__title:hover {
         --shadow: none !important;
 
         color-scheme: light;
+    }
+
+    /* The category wash is screen-only: black ink on white in print. */
+    .list__icon--tone {
+        background: #fff !important;
     }
 
     @page {

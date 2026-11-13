@@ -235,11 +235,17 @@ three-colour status set.
   Violet** (c-ins, rose with a violet accent), **Tax Ochre** (c-tax),
   **Other Slate** (c-other), **Build Rust** (c-build). Graphic contrast
   3:1 or better.
+- The same tokens mark what a list row *is*: its icon tile takes the
+  category colour on a 12% wash of it (`.list__icon--tone` with
+  `--tone`), as the prototype draws its rows. On the dashboard: Recent
+  activity, Upcoming reminders, Coming up, Documents and the fuel widgets.
+  A row with no category keeps the grey Mist tile.
 
 ### Named Rules
 **The Status Is Sacred Rule.** Red, amber and green mean overdue, due soon
 and OK. They never change with the accent, and they are never used just to
-add colour.
+add colour. A row's icon tile is red or amber only in Needs attention;
+elsewhere it takes the row's category and the pill carries the urgency.
 
 **The Not Colour Alone Rule.** Every state shown in colour is also shown in
 words, an icon or a tick (a chosen chip has a tick as well as its fill).
