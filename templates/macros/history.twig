@@ -88,7 +88,7 @@
     {% set editable = opens_page or (item.kind.value in ['milestone', 'valuation'] ? can_vehicle(item.vehicle, 'manage') : can_change(item.vehicle, item.createdBy)) %}
     {% set tag = (opts.link ?? true) and editable ? 'a' : 'div' %}
     <{{ tag }} class="list__item history-row{{ item.milestone ? ' history-row--milestone' }}"{% if tag == 'a' %} href="{{ history.edit_url(item, opts.return_to ?? null) }}"{% if not opens_page %} data-modal{% endif %}{% endif %}>
-        <span class="list__icon" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
+        <span class="list__icon list__icon--tone" style="--tone: var(--{{ item.kind.tone() }})">{{ ui.icon(item.icon) }}</span>
         <span class="list__body">
             <span class="list__title">{{ history.title(item, costs) }}{% if item.fuel %} {{ fuel_ui.badge(item.fuel, item.grade) }}{% endif %}</span>
             <span class="list__meta">
@@ -132,7 +132,7 @@
     {% set volume = run.volume() %}
     <details class="history-run">
         <summary class="list__item history-run__summary">
-            <span class="list__icon" style="--tone: var(--c-fuel)">{{ ui.icon(run.isElectric() ? 'ev_station' : 'local_gas_station') }}</span>
+            <span class="list__icon list__icon--tone" style="--tone: var(--c-fuel)">{{ ui.icon(run.isElectric() ? 'ev_station' : 'local_gas_station') }}</span>
             <span class="list__body">
                 <span class="list__title">{{ counts|join(' · ') }}</span>
                 <span class="list__meta">

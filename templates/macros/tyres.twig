@@ -159,7 +159,7 @@
     {% import _self as tyres %}
     {% set tyre = view.tyre %}
     <li class="list__item">
-        <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon('tire_repair') }}</span>
+        <span class="list__icon list__icon--tone" style="--tone: var(--c-maint)">{{ ui.icon('tire_repair') }}</span>
         <span class="list__body">
             <span class="list__title">
                 {%- if vehicle.isArchived() -%}
@@ -192,7 +192,7 @@
     {% import 'macros/ui.twig' as ui %}
     {% set change = item.change %}
     <li class="list__item">
-        <span class="list__icon" style="--tone: var(--c-maint)">{{ ui.icon(change.kind.icon()) }}</span>
+        <span class="list__icon list__icon--tone" style="--tone: var(--c-maint)">{{ ui.icon(change.kind.icon()) }}</span>
         <span class="list__body">
             <span class="list__title">
                 {%- if can_change(vehicle, change.createdBy) -%}

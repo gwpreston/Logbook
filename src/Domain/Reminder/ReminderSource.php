@@ -80,4 +80,21 @@ enum ReminderSource: string
     {
         return $this === self::Finance || $this === self::FinanceEnd;
     }
+
+    /**
+     * Colour token of the reminder's icon tile: the cost category it belongs
+     * to, as the charts and Recent activity use them (spec.md §8 *Category
+     * colours*, Phase 54.15). Never a status colour: how urgent it is stays
+     * in the pill.
+     */
+    public function tone(): string
+    {
+        return match ($this) {
+            self::Schedule, self::Tyre => 'c-maint',
+            self::Compliance, self::FirstInspection => 'c-ins',
+            self::Finance, self::FinanceEnd, self::Issue => 'c-other',
+            self::Part => 'c-build',
+            self::Manual => 'muted',
+        };
+    }
 }

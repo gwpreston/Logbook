@@ -49,7 +49,7 @@
     {% set name = wording.name(reminder) %}
     <li class="reminder">
         <div class="list__item">
-            <span class="list__icon">{{ ui.icon(reminder.icon()) }}</span>
+            <span class="list__icon list__icon--tone" style="--tone: var(--{{ reminder.source.tone() }})">{{ ui.icon(reminder.icon()) }}</span>
             <span class="list__body">
                 {# The source is edited with Manage (a schedule, a document, a manual reminder). #}
                 {% if can_vehicle(entry.vehicle, 'manage') %}

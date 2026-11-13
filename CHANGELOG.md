@@ -6,6 +6,14 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Changed
+- **Dashboard rows show what they are at a glance.** The icon beside each
+  row in *Upcoming reminders*, *Coming up*, *Documents*, *Recent activity*
+  and the fuel widgets now takes its category's colour, the same as the
+  charts: your accent colour for fuel, green for maintenance and tyres, violet for
+  documents and MOTs. How urgent something is stays in its red or amber
+  label. History and tyre lists elsewhere match (Phase 54.15).
+
 ## [3.21.10] — 2026-11-11
 
 Phase 54.13: **The Symfony advisories and the vendored libraries from the
