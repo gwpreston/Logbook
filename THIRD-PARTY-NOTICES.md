@@ -24,8 +24,8 @@ Production dependencies only; development tools are not shipped.
 | cakephp/datasource | 5.4.2 | MIT | https://cakephp.org |
 | cakephp/event | 5.4.2 | MIT | https://cakephp.org |
 | cakephp/utility | 5.4.2 | MIT | https://cakephp.org |
-| doctrine/dbal | 4.5.0 | MIT | https://www.doctrine-project.org/projects/dbal.html |
-| doctrine/deprecations | 1.1.6 | MIT | https://www.doctrine-project.org/ |
+| doctrine/dbal | 4.5.1 | MIT | https://www.doctrine-project.org/projects/dbal.html |
+| doctrine/deprecations | 1.2.0 | MIT | https://www.doctrine-project.org/ |
 | doctrine/lexer | 3.0.2 | MIT | https://www.doctrine-project.org/projects/lexer.html |
 | egulias/email-validator | 4.0.4 | MIT | https://github.com/egulias/EmailValidator |
 | fig/http-message-util | 1.1.5 | MIT | https://github.com/php-fig/http-message-util |
