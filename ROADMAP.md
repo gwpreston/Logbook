@@ -148,6 +148,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.14](docs/phases/phase-54.14.md) | Big odometer readings, upgrade caches and small phone fixes from the known-issues log + patch release | ✅ |
 | [54.15](docs/phases/phase-54.15.md) | Category colours on the dashboard's rows + patch release | ✅ |
 | [54.16](docs/phases/phase-54.16.md) | Charts without JS, the Docker image's tooling and the test runs from the known-issues log + patch release | ✅ |
+| [54.17](docs/phases/phase-54.17.md) | Chart tables, stat tiles and the test runs from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -2035,6 +2036,27 @@ checkout queue, and PHPStan moves to 2.3.*
 - Releases v3.21.12 (#616). No migration.
 
 → [`phase-54.16.md`](docs/phases/phase-54.16.md)
+
+---
+
+## Phase 54.17 — Chart tables, stat tiles and the test runs from the known-issues log + patch release
+
+*Six open rows closed: chart tables stop being invisible tab stops and
+cost little to lay out, long stat figures shrink to keep their units,
+the image drops developer files, and test runs stop when they can't
+reset their database.*
+
+- `enhanceScrollRegion` skips chart-table wrappers (K202, #623);
+  `.js .chart-table` gets `content-visibility: auto`, measured against
+  v3.21.11 (K204, #624); a stat value longer than 9 characters shrinks
+  with its tile, no smaller than `--fs-md` (K208, #627).
+- `.dockerignore` leaves out `design-import`, `export`, `phpunit.xml`,
+  `phpstan.neon` and `Thumbs.db` (K205, #625); the test bootstrap stops
+  when it can't delete its SQLite file (K206, #626); `CONTRIBUTING.md`
+  explains the test-run lock (K207).
+- Releases v3.21.13 (#622). No migration.
+
+→ [`phase-54.17.md`](docs/phases/phase-54.17.md)
 
 ---
 
