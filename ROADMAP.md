@@ -149,6 +149,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.15](docs/phases/phase-54.15.md) | Category colours on the dashboard's rows + patch release | ✅ |
 | [54.16](docs/phases/phase-54.16.md) | Charts without JS, the Docker image's tooling and the test runs from the known-issues log + patch release | ✅ |
 | [54.17](docs/phases/phase-54.17.md) | Chart tables, stat tiles and the test runs from the known-issues log + patch release | 📋 |
+| [54.18](docs/phases/phase-54.18.md) | Telling same-named vehicles apart from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -2057,6 +2058,21 @@ reset their database.*
 - Releases v3.21.13 (#622). No migration.
 
 → [`phase-54.17.md`](docs/phases/phase-54.17.md)
+
+---
+
+## Phase 54.18 — Telling same-named vehicles apart from the known-issues log + patch release
+
+*One open row closed: two vehicles with the same name are told apart by
+their registration, else their year, where they sit side by side.*
+
+- A `VehicleLabels` service adds the registration (else the year, else a
+  number) to a name only when it clashes with another shown alongside it
+  (K203, #621, #630, #631).
+- Used on the true-cost *Fleet* card's table and legend and in every
+  vehicle picker (#629). Releases v3.21.14 (#628). No migration.
+
+→ [`phase-54.18.md`](docs/phases/phase-54.18.md)
 
 ---
 
