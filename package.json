@@ -12,7 +12,7 @@
     "@material-symbols/svg-400": "0.48.3",
     "alpinejs": "3.17.5",
     "chart.js": "4.6.1",
-    "playwright": "1.64.1",
+    "playwright": "1.65.0",
     "sortablejs": "1.15.7"
   }
 }
