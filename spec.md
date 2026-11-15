@@ -11031,7 +11031,11 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
     (`distance`, `volume`, `economy` and the rest) do it, and a figure a
     template builds itself goes through `keep_together`. The API, MCP, AI
     answers, notifications and CSV keep plain spaces (`DESIGN.md` *Line
-    breaks and measure*, PR #212).
+    breaks and measure*, PR #212). A stat tile's value longer than 9
+    characters (`stat__value--long`) shrinks with its tile's width, no
+    smaller than `--fs-md`, so a figure and unit too wide for a narrow
+    tile ("0,301 €/kWh" at 375 px in German) stay on one line; shorter
+    values keep `--fs-figure` at every width (Phase 54.17, K208, #627).
   - **Fields can be read and found:** placeholder text meets 4.5:1 on the
     field's fill, never faded (PR #211), and a field's edge (inputs,
     selects, text areas and the units joined to them) meets 3:1 on the card
@@ -11278,7 +11282,12 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
     *Fleet* card's table has a row per year, newest first, and a column
     per vehicle, `—` where a vehicle has no figure (#618). A hint that
     describes the drawn chart (the *Economy trend*'s dashed line) shows
-    only when the chart is drawn (#617).
+    only when the chart is drawn (#617). With JS a chart table is never a
+    keyboard tab stop: screen readers reach it by browse mode or table
+    navigation, and the scrolling-box enhancement passes over it (Phase
+    54.17, K202, #623). Its rows are laid out only near the screen
+    (`content-visibility: auto`), so a long table costs little (K204,
+    #624).
   - **Layout** (scoped to these pages by `.print-report`, so History's print
     view is unchanged): black on white whatever the theme or accent; the app
     shell, vehicle header and tabs, toolbars, chips and buttons are hidden;
@@ -11451,7 +11460,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `var/testing.sqlite`). PHPUnit never reads `DB_*`. A run takes a lock on
   `var/testing.lock` before it resets the test database, so a second run
   from the same checkout waits, saying so, rather than wiping the first
-  one's database and `var/cache` (Phase 54.16, K197, #619).
+  one's database and `var/cache` (Phase 54.16, K197, #619). A run that
+  can't delete its SQLite file (another process has it open) stops with
+  a message naming the file, rather than testing on the old one (Phase
+  54.17, K206, #626).
 
 ---
 
@@ -11476,7 +11488,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   `docker-compose.yml` has an optional `ocr` profile running PaddleOCR
   beside it (#495), built from `docker/paddleocr/` on amd64 and arm64.
   The image carries no developer tooling (`.claude/`, `.impeccable/`,
-  `.playwright-mcp/`, `.DS_Store`; Phase 54.16, K193, #608).
+  `.playwright-mcp/`, `.DS_Store`; Phase 54.16, K193, #608), and none of
+  a developer's git-ignored files when built from a working tree
+  (`design-import/`, `export/`, `phpunit.xml`, `phpstan.neon`,
+  `Thumbs.db`; Phase 54.17, K205, #625).
   The image sets `LOGBOOK_DOCKER=1` (Phase 28.2), so the update banner
   gives the Docker upgrade line (§7.31).
 - **Page security headers** (Phase 53.20, K54, #456): the app sends
@@ -12787,6 +12802,17 @@ task breakdowns live in the per-phase files; this is the map.
   K197, #619); PHPStan moves to 2.3 with targeted ignores and Dependabot
   stops holding it back (K175, #620). Releases v3.21.12 (#616). No
   migration. See [`phase-54.16.md`](docs/phases/phase-54.16.md).
+- **Phase 54.17 — Chart tables, stat tiles and the test runs from the
+  known-issues log + patch release** (planned). With JS on, a chart's
+  screen-reader table is no longer a keyboard tab stop (§8 *Printing
+  reports*, K202, #623) and is laid out only near the screen (K204,
+  #624); a stat value longer than 9 characters shrinks with its tile, no
+  smaller than `--fs-md` (§8 *Figures keep their units*, K208, #627); an
+  image built from a working tree leaves out the developer's git-ignored
+  files (§10, K205, #625); a test run that can't delete its SQLite file
+  stops (§9, K206, #626); `CONTRIBUTING.md` explains the test-run lock
+  (K207). Releases v3.21.13 (#622). No migration. See
+  [`phase-54.17.md`](docs/phases/phase-54.17.md).
 
 ---
 
