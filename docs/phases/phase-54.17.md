@@ -254,6 +254,9 @@ v3.21.12.
       All six *Fixed*. K209 (an EV's "17,9 kWh/100 km" still splits at
       375 px in German) found while building, *Open*; the owner chose to
       leave it (#632).
+      K210 (the native Windows suite: `CostVisibilityTemplateTest`'s
+      backslash paths, and runs that stop part-way) found while checking
+      it, *Open*; master shows the same.
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
