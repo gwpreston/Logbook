@@ -140,28 +140,53 @@ v3.21.12.
 
 ### 54.17.1 Chart tables (K202, K204)
 
-- [ ] `assets/js/app.js` `enhanceScrollRegion()`: return at once for a
+- [x] `assets/js/app.js` `enhanceScrollRegion()`: return at once for a
       wrapper that is `.chart-table` or inside one, with a comment naming
       K202 and #623. Export `enhanceScrollRegion` beside the offline
       helpers for Node.
-- [ ] `tests/js/scroll-region.test.js`: jsdom-free, with stub elements
+- [x] `tests/js/scroll-region.test.js`: jsdom-free, with stub elements
       whose `scrollWidth` is larger than their `clientWidth`. A
       `.table-wrap.chart-table` wrapper gets no `tabindex`, `role` or
       name (fails today); an ordinary `.table-wrap` that overflows still
       does.
-- [ ] `assets/css/app.css` `.js .chart-table`: `content-visibility: auto`
+- [x] `assets/css/app.css` `.js .chart-table`: `content-visibility: auto`
       and `contain-intrinsic-size: 1px 1px`, with a comment naming K204
-      and #624. Rebuild `public/assets`.
-- [ ] A CSS check (as `TapTargetTest` reads `app.css`) that
+      and #624. Rebuild `public/assets`. The printed report's
+      `.js .print-report .chart-table` sets `content-visibility: visible`,
+      so every row still prints (checked with print emulation on the
+      true-cost report).
+- [x] A CSS check (as `TapTargetTest` reads `app.css`) that
       `.js .chart-table` has `content-visibility: auto` (fails today).
-- [ ] Measured as K204 was: the Fuel and Mileage tabs of a vehicle with
+- [x] Measured as K204 was: the Fuel and Mileage tabs of a vehicle with
       1,500 fill-ups in desktop Chrome, before and after, recorded here.
       If they aren't back near 5.5 ms and 2.3 ms, record the timings in
       K204's row and set it back to *Open* (#624).
-- [ ] Checked in a browser with JS on: Tab through the Fuel tab, the
+      *Measured 2026-11-16* (Chromium via Playwright, 1280 × 800, a copy
+      of the dev database with vehicle 1 raised to 1,500 fill-ups; median
+      of 20 full layouts forced by changing the root font size, a frame
+      apart so `content-visibility` can take effect). This machine is
+      slower than K204's, so v3.21.11's rule (`display: none`) was timed
+      on the same page as the baseline:
+
+      | Tab | v3.21.11 rule | master (v3.21.12) | 54.17 |
+      |---|---|---|---|
+      | Fuel | 9.6–11.1 ms | 76–78 ms | 9.4–11.8 ms |
+      | Mileage | 5.1–5.2 ms | 26–34 ms | 4.5–5.3 ms |
+
+      Back to v3.21.11's cost on both tabs, so K204 is *Fixed*.
+- [x] Checked in a browser with JS on: Tab through the Fuel tab, the
       Mileage tab, the true-cost report and the dashboard and land on no
       invisible stop; a screen reader (or the accessibility tree) still
       lists each chart table.
+      *Checked 2026-11-16* (Playwright, 1280 px): no Tab press lands in a
+      chart table on the Fuel tab, the Mileage tab or the true-cost
+      report, and no chart-table wrapper has a `tabindex`. On the
+      dashboard Tab still reaches *Monthly spend*'s month links, as
+      designed: the table shows itself while one has focus
+      (`.js .monthly-spend__table:focus-within`, 437 × 488 px), and its
+      wrapper is no longer a stop of its own. The accessibility tree
+      lists *Economy trend*, *Price trend*, *Odometer over time* and the
+      true-cost table by name.
 
 ### 54.17.2 Stat tiles (K208)
 

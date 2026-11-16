@@ -7,11 +7,12 @@
 (function () {
     'use strict';
 
-    // Node (tests/js) gets the offline queue's pure helpers, nothing else.
+    // Node (tests/js) gets the offline queue's pure helpers and the
+    // scroll-region check, which only needs the element it is handed.
     if (typeof document === 'undefined') {
         module.exports = {
             ownedBy: ownedBy, untagged: untagged, sentAs: sentAs, forgetsUser: forgetsUser,
-            formVerdict: formVerdict, sendAll: sendAll,
+            formVerdict: formVerdict, sendAll: sendAll, enhanceScrollRegion: enhanceScrollRegion,
         };
         return;
     }
@@ -1116,6 +1117,13 @@
      * themselves.
      */
     function enhanceScrollRegion(wrap) {
+        // A chart's figures table is clipped to 1px for screen readers
+        // (spec.md §8 *Printing reports*): it only looks as if it scrolls,
+        // and nobody can see it, so it is never a tab stop. Screen readers
+        // reach it in browse mode or by table navigation (K202, #623).
+        if (wrap.closest('.chart-table')) {
+            return;
+        }
         // Any overflow counts, even 1px: the browser scrolls it all the same.
         var scrolls = wrap.scrollWidth > wrap.clientWidth;
         if (!scrolls) {
