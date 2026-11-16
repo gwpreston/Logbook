@@ -11043,8 +11043,9 @@ cost, who fitted it, the parts it fitted and what it took off). Decided
     (`distance`, `volume`, `economy` and the rest) do it, and a figure a
     template builds itself goes through `keep_together`. The API, MCP, AI
     answers, notifications and CSV keep plain spaces (`DESIGN.md` *Line
-    breaks and measure*, PR #212). A stat tile's value longer than 9
-    characters (`stat__value--long`) shrinks with its tile's width, no
+    breaks and measure*, PR #212). A stat tile's value showing more than 9
+    characters (counted as shown: markup and screen-reader-only words
+    don't count; `stat__value--long`) shrinks with its tile's width, no
     smaller than `--fs-md`, so a figure and unit too wide for a narrow
     tile ("0,301 €/kWh" at 375 px in German) stay on one line; shorter
     values keep `--fs-figure` at every width (Phase 54.17, K208, #627).

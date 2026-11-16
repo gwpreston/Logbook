@@ -201,6 +201,13 @@ v3.21.12.
       `stat__value--long` on *Durchschnittspreis* and not on a figure of
       9 characters or fewer (fails today); a CSS check that
       `.stat__value--long` has `--fs-md` as its floor.
+- [x] Found by the four-engine run: a value can be markup from a macro
+      (Coming up's *Next 3 months* "—" with "No known cost" for screen
+      readers), and Twig's `length` counted its tags, marking a one-
+      character dash long. The macro now counts what the tile shows, with
+      a `shown_length` filter (`TwigExtension::shownLength()`: tags and
+      visually-hidden text dropped, entities as one character);
+      `ShownLengthTest`, and `ComingUpTest` passes again. spec §8 says so.
 - [x] Checked in a browser at 375 px, German and English, light and dark:
       "0,301 €/kWh" on one line, short tiles unchanged; and wide.
       *Checked 2026-11-16* (Playwright, the Kia EV6 of the dev data):
