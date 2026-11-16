@@ -11475,7 +11475,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   one's database and `var/cache` (Phase 54.16, K197, #619). A run that
   can't delete its SQLite file (another process has it open) stops with
   a message naming the file, rather than testing on the old one (Phase
-  54.17, K206, #626).
+  54.17, K206, #626). On Windows such a delete can succeed but stay
+  pending until the other process closes the file, so the run also
+  creates the file again, empty, and a failed create stops it the same
+  way.
 
 ---
 
@@ -12815,7 +12818,7 @@ task breakdowns live in the per-phase files; this is the map.
   stops holding it back (K175, #620). Releases v3.21.12 (#616). No
   migration. See [`phase-54.16.md`](docs/phases/phase-54.16.md).
 - **Phase 54.17 — Chart tables, stat tiles and the test runs from the
-  known-issues log + patch release** (in progress). With JS on, a chart's
+  known-issues log + patch release** (complete). With JS on, a chart's
   screen-reader table is no longer a keyboard tab stop (§8 *Printing
   reports*, K202, #623) and is laid out only near the screen (K204,
   #624); a stat value longer than 9 characters shrinks with its tile, no

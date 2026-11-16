@@ -8,7 +8,7 @@ tree leaves the developer's git-ignored files out; a test run that can't
 reset its SQLite file stops instead of testing on the old one; and
 `CONTRIBUTING.md` explains the test-run lock.*
 
-Status: 🚧 in progress · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.16](phase-54.16.md), the last
 known-issues batch, and takes six of the seven rows its merge review
@@ -249,15 +249,17 @@ v3.21.12.
 
 ### 54.17.4 Finish
 
-- [ ] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
+- [x] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
       (Phase 54.17), or K204 back to *Open* with its timings (#624).
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+      All six *Fixed*. K209 (an EV's "17,9 kWh/100 km" still splits at
+      375 px in German) found while building, *Open*, with #632.
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.13, CHANGELOG 3.21.13, README status (#622).
+- [x] VERSION 3.21.13, CHANGELOG 3.21.13, README status (#622).
 - [ ] Tag `v3.21.13` once merged.
 
 ## Acceptance criteria
@@ -275,6 +277,28 @@ v3.21.12.
 - No migration and no new setting. No new translated string (the #626
   message is test tooling, in English as the lock's line is).
 - The Docker image builds on amd64 and arm64.
+
+## Design review (2026-11-16)
+
+K202, K204 and K208 change what the browser does; K208 is the only one
+that changes how anything looks. Checked in Chromium (Playwright) on a copy
+of the dev data at 375, 768 and 1280 px, light and dark, German and
+English, with JS on, and in print media for the true-cost report. The
+Impeccable audit (scoped to the 54.17 CSS and the `ui.stat` macro) and its
+detector on the EV's Fuel tab found no HIGH or MEDIUM items. No figure
+overflows its tile; short figures keep `--fs-figure`; the CSS uses
+existing tokens only. `DESIGN.md` notes the long-figure rule beside the
+stat tiles; no token, colour, font or radius changed, so
+`.impeccable/design.json` is unchanged.
+
+Two LOW notes, not changed: an EV's "17,9 kWh/100 km" still splits at
+375 and 768 px in German (K209, #632), as it did at 22 px; and a shrunk
+long figure sits beside a full-size short one in the same row, which #627
+accepted. On the dashboard Tab still reaches *Monthly spend*'s month
+links, by design: the table shows while one has focus. Not covered: a
+real screen reader (the accessibility tree was read instead), a
+no-JS pass (the changed rules are scoped to `.js`, or apply the same
+without JS), and a subpath run (no new page or link).
 
 ## Open questions
 
@@ -302,3 +326,11 @@ v3.21.12.
   are unchanged. Not chosen: every figure shrinking in a narrow tile; a
   break only after `/`; letting the unit wrap whole (which would relax
   §8).
+- **#632 — An EV's economy figure ("17,9 kWh/100 km", 15 characters) still
+  splits its unit in a narrow stat tile at 375 and 768 px in German
+  (K209, found while building).** *Needs a decision.* It is 129 px wide
+  at the `--fs-md` floor in a 124 px tile, so `overflow-wrap: anywhere`
+  breaks it. Options: (1) leave it, since #627 kept `overflow-wrap` as
+  the last resort; (2) a lower floor for long figures (e.g. `--fs-sm`);
+  (3) let `.stats` drop to one column when a tile holds such a figure.
+
