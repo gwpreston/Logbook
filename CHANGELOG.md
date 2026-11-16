@@ -41,6 +41,10 @@ pull and restart.
   old one or failing in the migrations (K206). `CONTRIBUTING.md` explains
   the "Waiting for another test run in this checkout to finish…" line and
   that the wait doesn't reach a run inside Docker Desktop on macOS (K207).
+- **For contributors: the suite runs clean on Windows.** A test that runs a
+  job no longer leaves PHP's time limit set for the tests after it, which
+  on Windows stopped a full run part-way, and the cost-visibility check no
+  longer trips on Windows paths (K210).
 
 ## [3.21.12] — 2026-11-14
 

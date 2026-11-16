@@ -11479,7 +11479,9 @@ Real environment variables override `.env`; an empty value counts as unset.
   54.17, K206, #626). On Windows such a delete can succeed but stay
   pending until the other process closes the file, so the run also
   creates the file again, empty, and a failed create stops it the same
-  way.
+  way. Each test starts with no PHP time limit, whatever the test before
+  it set, since a job action's `set_time_limit()` runs inside the test
+  process (Phase 54.17, K210).
 
 ---
 

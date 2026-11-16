@@ -254,6 +254,19 @@ v3.21.12.
 - [x] A docs test that `CONTRIBUTING.md` contains
       `TestRunLock::WAITING`'s text (fails today).
 
+### 54.17.5 The native Windows suite (K210, asked for by the owner 2026-11-16)
+
+- [x] `CostVisibilityTemplateTest` names templates with forward slashes on
+      every OS, as its exception lists do (32 cases failed on Windows).
+- [x] Each test starts with no time limit: `Tests\Support\NoTimeLimit`, a
+      PHPUnit extension registered in `phpunit.xml.dist`, lifts it after
+      every test. The runs that stopped part-way died on "Maximum
+      execution time of 60 seconds exceeded" in a SQLite commit: a job
+      action (`LongRequest::allow()`, Ask, Scan, OCR settings) had called
+      `set_time_limit()` inside the PHPUnit process, and on Windows PHP
+      counts that limit in wall-clock time. `NoTimeLimitTest` (fails with
+      `--no-extensions`).
+
 ### 54.17.4 Finish
 
 - [x] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
@@ -263,7 +276,7 @@ v3.21.12.
       leave it (#632).
       K210 (the native Windows suite: `CostVisibilityTemplateTest`'s
       backslash paths, and runs that stop part-way) found while checking
-      it, *Open*; master shows the same.
+      it, and fixed in 54.17.5 at the owner's request.
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
