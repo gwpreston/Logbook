@@ -15,6 +15,7 @@ use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Money\Currency;
 use Psr\Clock\ClockInterface;
 use Slim\Interfaces\RouteParserInterface;
+use Stringable;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
@@ -94,6 +95,8 @@ final class TwigExtension extends AbstractExtension
             new TwigFilter('file_size', self::keepTogether($this->formatter->fileSize(...))),
             // The same for a figure a template joins itself: (n|number ~ ' ' ~ symbol)|keep_together.
             new TwigFilter('keep_together', self::keepTogether(static fn (string $figure): string => $figure)),
+            // How long a figure looks on screen, for the stat tile's long-figure rule (K208).
+            new TwigFilter('shown_length', self::shownLength(...)),
             new TwigFilter('local_date', $this->formatter->date(...)),
             new TwigFilter('local_datetime', $this->formatter->dateTime(...)),
             new TwigFilter('instant_date', $this->formatter->instantDate(...)),
@@ -126,6 +129,24 @@ final class TwigExtension extends AbstractExtension
 
             return is_string($figure) ? str_replace(' ', "\u{00A0}", $figure) : '';
         };
+    }
+
+    /**
+     * The number of characters a value shows on screen, for the stat tile's
+     * long-figure rule (spec.md §8 *Figures keep their units*, K208, #627).
+     * A value may be markup from a macro, such as "—" with words for screen
+     * readers (`forecast_ui.no_known_cost()`): its tags and its
+     * visually-hidden text take no room in the tile, so they don't count.
+     * Entities count as the one character they show; the no-break space
+     * before a unit counts as one.
+     */
+    public static function shownLength(mixed $value): int
+    {
+        $html = is_scalar($value) || $value instanceof Stringable ? (string) $value : '';
+        // The app's visually-hidden spans hold plain text, never nested tags.
+        $shown = preg_replace('~<span class="visually-hidden">[^<]*</span>~', '', $html) ?? $html;
+
+        return mb_strlen(trim(html_entity_decode(strip_tags($shown), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
     }
 
     /**

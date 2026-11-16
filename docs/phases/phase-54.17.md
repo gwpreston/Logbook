@@ -8,7 +8,7 @@ tree leaves the developer's git-ignored files out; a test run that can't
 reset its SQLite file stops instead of testing on the old one; and
 `CONTRIBUTING.md` explains the test-run lock.*
 
-Status: 📋 planned · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.16](phase-54.16.md), the last
 known-issues batch, and takes six of the seven rows its merge review
@@ -132,84 +132,158 @@ v3.21.12.
 
 ### 54.17.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #622–#627 were decided when the
-      phase was planned; check that none of those still open bears on
-      K202, K204, K205, K206, K207 or K208.
+      phase was planned. Reviewed 2026-11-16: none of the questions still
+      open (#221, #390, #391, #460, #462, #537–#542, #551) bears on K202,
+      K204, K205, K206, K207 or K208, and none was found while starting it.
 
 ### 54.17.1 Chart tables (K202, K204)
 
-- [ ] `assets/js/app.js` `enhanceScrollRegion()`: return at once for a
+- [x] `assets/js/app.js` `enhanceScrollRegion()`: return at once for a
       wrapper that is `.chart-table` or inside one, with a comment naming
       K202 and #623. Export `enhanceScrollRegion` beside the offline
       helpers for Node.
-- [ ] `tests/js/scroll-region.test.js`: jsdom-free, with stub elements
+- [x] `tests/js/scroll-region.test.js`: jsdom-free, with stub elements
       whose `scrollWidth` is larger than their `clientWidth`. A
       `.table-wrap.chart-table` wrapper gets no `tabindex`, `role` or
       name (fails today); an ordinary `.table-wrap` that overflows still
       does.
-- [ ] `assets/css/app.css` `.js .chart-table`: `content-visibility: auto`
+- [x] `assets/css/app.css` `.js .chart-table`: `content-visibility: auto`
       and `contain-intrinsic-size: 1px 1px`, with a comment naming K204
-      and #624. Rebuild `public/assets`.
-- [ ] A CSS check (as `TapTargetTest` reads `app.css`) that
+      and #624. Rebuild `public/assets`. The printed report's
+      `.js .print-report .chart-table` sets `content-visibility: visible`,
+      so every row still prints (checked with print emulation on the
+      true-cost report).
+- [x] A CSS check (as `TapTargetTest` reads `app.css`) that
       `.js .chart-table` has `content-visibility: auto` (fails today).
-- [ ] Measured as K204 was: the Fuel and Mileage tabs of a vehicle with
+- [x] Measured as K204 was: the Fuel and Mileage tabs of a vehicle with
       1,500 fill-ups in desktop Chrome, before and after, recorded here.
       If they aren't back near 5.5 ms and 2.3 ms, record the timings in
       K204's row and set it back to *Open* (#624).
-- [ ] Checked in a browser with JS on: Tab through the Fuel tab, the
+      *Measured 2026-11-16* (Chromium via Playwright, 1280 × 800, a copy
+      of the dev database with vehicle 1 raised to 1,500 fill-ups; median
+      of 20 full layouts forced by changing the root font size, a frame
+      apart so `content-visibility` can take effect). This machine is
+      slower than K204's, so v3.21.11's rule (`display: none`) was timed
+      on the same page as the baseline:
+
+      | Tab | v3.21.11 rule | master (v3.21.12) | 54.17 |
+      |---|---|---|---|
+      | Fuel | 9.6–11.1 ms | 76–78 ms | 9.4–11.8 ms |
+      | Mileage | 5.1–5.2 ms | 26–34 ms | 4.5–5.3 ms |
+
+      Back to v3.21.11's cost on both tabs, so K204 is *Fixed*.
+- [x] Checked in a browser with JS on: Tab through the Fuel tab, the
       Mileage tab, the true-cost report and the dashboard and land on no
       invisible stop; a screen reader (or the accessibility tree) still
       lists each chart table.
+      *Checked 2026-11-16* (Playwright, 1280 px): no Tab press lands in a
+      chart table on the Fuel tab, the Mileage tab or the true-cost
+      report, and no chart-table wrapper has a `tabindex`. On the
+      dashboard Tab still reaches *Monthly spend*'s month links, as
+      designed: the table shows itself while one has focus
+      (`.js .monthly-spend__table:focus-within`, 437 × 488 px), and its
+      wrapper is no longer a stop of its own. The accessibility tree
+      lists *Economy trend*, *Price trend*, *Odometer over time* and the
+      true-cost table by name.
 
 ### 54.17.2 Stat tiles (K208)
 
-- [ ] `templates/macros/ui.twig` `stat()`: `stat__value--long` when the
+- [x] `templates/macros/ui.twig` `stat()`: `stat__value--long` when the
       value is longer than 9 characters (#627).
-- [ ] `assets/css/app.css`: `.stat` `container-type: inline-size`;
+- [x] `assets/css/app.css`: `.stat` `container-type: inline-size`;
       `.stat__value--long` font size
       `clamp(var(--fs-md), <n>cqi, var(--fs-figure))`. Rebuild
       `public/assets`. `DESIGN.md` notes the long-figure rule beside the
       stat tile.
-- [ ] Tests: the German Fuel tab for an EV renders
+- [x] Tests: the German Fuel tab for an EV renders
       `stat__value--long` on *Durchschnittspreis* and not on a figure of
       9 characters or fewer (fails today); a CSS check that
       `.stat__value--long` has `--fs-md` as its floor.
-- [ ] Checked in a browser at 375 px, German and English, light and dark:
+- [x] Found by the four-engine run: a value can be markup from a macro
+      (Coming up's *Next 3 months* "—" with "No known cost" for screen
+      readers), and Twig's `length` counted its tags, marking a one-
+      character dash long. The macro now counts what the tile shows, with
+      a `shown_length` filter (`TwigExtension::shownLength()`: tags and
+      visually-hidden text dropped, entities as one character);
+      `ShownLengthTest`, and `ComingUpTest` passes again. spec §8 says so.
+- [x] Checked in a browser at 375 px, German and English, light and dark:
       "0,301 €/kWh" on one line, short tiles unchanged; and wide.
+      *Checked 2026-11-16* (Playwright, the Kia EV6 of the dev data):
+      `<n>` is **15** (`15cqi`). "0,301 €/kWh" is 132.6 px at 22 px and the
+      tile's content box 124 px at 375 px, so it shows at 18.6 px on one
+      line; 20.6 px at 768 px (137 px box); 22 px at 1280 px (189 px).
+      "318,29 €" keeps 22 px at every width, light and dark alike, and no
+      value overflows its tile. In English "£0.055/km" (9 characters)
+      keeps 22 px and "£0.301/kWh" shrinks to 18.6 px. "17,9 kWh/100 km"
+      still wraps before "km" at 375 and 768 px, as it did at 22 px: its
+      unit has an ordinary space and is too wide even at `--fs-md` (logged
+      as a known issue).
 
 ### 54.17.3 Docker image and test runs (K205, K206, K207)
 
-- [ ] `.dockerignore`: `design-import`, `export`, `phpunit.xml`,
+- [x] `.dockerignore`: `design-import`, `export`, `phpunit.xml`,
       `phpstan.neon`, `**/Thumbs.db`, with a comment naming K205 and
       #608 (#625).
-- [ ] `LicenceTest`'s `.dockerignore` check lists the five new entries
+- [x] `LicenceTest`'s `.dockerignore` check lists the five new entries
       (fails today).
-- [ ] A local `docker build .` from a checkout with `design-import/`: the
+- [x] A local `docker build .` from a checkout with `design-import/`: the
       image has no `/var/www/html/design-import` (checked by hand,
-      recorded here).
-- [ ] `tests/Support`: a helper that deletes the SQLite file with a
+      recorded here). *Checked 2026-11-16* (Docker 29.9.3, Windows): built
+      from this checkout, which has `design-import/`; the image has no
+      `design-import`, `export`, `phpunit.xml` or `phpstan.neon` under
+      `/var/www/html` and no `Thumbs.db` anywhere in it.
+- [x] `tests/Support`: a helper that deletes the SQLite file with a
       replaceable delete call; `tests/bootstrap.php` uses it and, on
       failure, prints the #626 message naming the file and exits 1.
-- [ ] A unit test with a delete call that fails: the helper reports
+      `TestSqliteFile::delete()`. Found while building: on Windows,
+      deleting a file another PHP process has open *succeeds* but leaves
+      it pending until that process closes it, and nothing can be created
+      under its name meanwhile, so the run went on and failed in Phinx
+      with a long trace. The default delete therefore also creates the
+      file again, empty, and a failed create counts as a failed delete
+      (#626's message, exit 1). Checked by hand with a second process
+      holding `var/testing.sqlite` open: one line, exit 1; released, the
+      run goes on.
+- [x] A unit test with a delete call that fails: the helper reports
       failure and the message names the file it was given (fails today:
       the bootstrap carries on).
-- [ ] `CONTRIBUTING.md` *Tests and databases*: the waiting second run and
+- [x] `CONTRIBUTING.md` *Tests and databases*: the waiting second run and
       its line, and K201's macOS gap (K207).
-- [ ] A docs test that `CONTRIBUTING.md` contains
+- [x] A docs test that `CONTRIBUTING.md` contains
       `TestRunLock::WAITING`'s text (fails today).
+
+### 54.17.5 The native Windows suite (K210, asked for by the owner 2026-11-16)
+
+- [x] `CostVisibilityTemplateTest` names templates with forward slashes on
+      every OS, as its exception lists do (32 cases failed on Windows).
+- [x] Each test starts with no time limit: `Tests\Support\NoTimeLimit`, a
+      PHPUnit extension registered in `phpunit.xml.dist`, lifts it after
+      every test. The runs that stopped part-way died on "Maximum
+      execution time of 60 seconds exceeded" in a SQLite commit: a job
+      action (`LongRequest::allow()`, Ask, Scan, OCR settings) had called
+      `set_time_limit()` inside the PHPUnit process, and on Windows PHP
+      counts that limit in wall-clock time. `NoTimeLimitTest` (fails with
+      `--no-extensions`).
 
 ### 54.17.4 Finish
 
-- [ ] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
+- [x] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
       (Phase 54.17), or K204 back to *Open* with its timings (#624).
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+      All six *Fixed*. K209 (an EV's "17,9 kWh/100 km" still splits at
+      375 px in German) found while building, *Open*; the owner chose to
+      leave it (#632).
+      K210 (the native Windows suite: `CostVisibilityTemplateTest`'s
+      backslash paths, and runs that stop part-way) found while checking
+      it, and fixed in 54.17.5 at the owner's request.
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.13, CHANGELOG 3.21.13, README status (#622).
+- [x] VERSION 3.21.13, CHANGELOG 3.21.13, README status (#622).
 - [ ] Tag `v3.21.13` once merged.
 
 ## Acceptance criteria
@@ -227,6 +301,34 @@ v3.21.12.
 - No migration and no new setting. No new translated string (the #626
   message is test tooling, in English as the lock's line is).
 - The Docker image builds on amd64 and arm64.
+
+## Design review (2026-11-16)
+
+K202, K204 and K208 change what the browser does; K208 is the only one
+that changes how anything looks. Checked in Chromium (Playwright) on a copy
+of the dev data at 375, 768 and 1280 px, light and dark, German and
+English, with JS on, and in print media for the true-cost report. The
+Impeccable audit (scoped to the 54.17 CSS and the `ui.stat` macro) and its
+detector on the EV's Fuel tab found no HIGH or MEDIUM items. No figure
+overflows its tile; short figures keep `--fs-figure`; the CSS uses
+existing tokens only. `DESIGN.md` notes the long-figure rule beside the
+stat tiles; no token, colour, font or radius changed, so
+`.impeccable/design.json` is unchanged.
+
+Two LOW notes, not changed: an EV's "17,9 kWh/100 km" still splits at
+375 and 768 px in German (K209, #632), as it did at 22 px; and a shrunk
+long figure sits beside a full-size short one in the same row, which #627
+accepted. On the dashboard Tab still reaches *Monthly spend*'s month
+links, by design: the table shows while one has focus; at 375 px it
+overflows (469 px in a 306 px box) and ArrowRight from a focused link
+scrolls it, so its columns stay reachable without the wrapper's old tab
+stop. At 375 px, as at 1280, no Tab press lands on a hidden chart table
+on the Fuel tab, the Mileage tab, the true-cost report or the dashboard.
+Only the Impeccable audit and its detector ran; the change is two CSS
+rules and a class, so critique and polish were not. Not covered: a
+real screen reader (the accessibility tree was read instead), a
+no-JS pass (the changed rules are scoped to `.js`, or apply the same
+without JS), and a subpath run (no new page or link).
 
 ## Open questions
 
@@ -254,3 +356,12 @@ v3.21.12.
   are unchanged. Not chosen: every figure shrinking in a narrow tile; a
   break only after `/`; letting the unit wrap whole (which would relax
   §8).
+- **#632 — An EV's economy figure ("17,9 kWh/100 km", 15 characters) still
+  splits its unit in a narrow stat tile at 375 and 768 px in German
+  (K209, found while building).** *Decided 2026-11-16:* leave it, since
+  #627 kept `overflow-wrap` as the last resort; K209 stays *Open* as a
+  recorded LOW. It is 129 px wide at the `--fs-md` floor in a 124 px
+  tile, so `overflow-wrap: anywhere` breaks it. Not chosen: a lower floor
+  for long figures (e.g. `--fs-sm`); `.stats` dropping to one column when
+  a tile holds such a figure.
+

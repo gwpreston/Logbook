@@ -57,14 +57,17 @@ final class LicenceTest extends TestCase
     }
 
     /**
-     * K193 (#608): the developer tooling stays out of the Docker image, and
+     * K193 (#608): the developer tooling stays out of the Docker image, as
+     * do a developer's own git-ignored files (K205, #625), and
      * the vendored impeccable skill carries its Apache 2.0 licence and a
      * notice for the screenshot library it bundles.
      */
     public function testTheToolingStaysOutOfTheImageAndTheSkillKeepsItsLicence(): void
     {
         $ignored = array_map('trim', explode("\n", $this->read('.dockerignore')));
-        foreach (['.claude', '.impeccable', '.playwright-mcp', '**/.DS_Store'] as $entry) {
+        // K205 (#625): and the developer's own git-ignored files.
+        $local = ['design-import', 'export', 'phpunit.xml', 'phpstan.neon', '**/Thumbs.db'];
+        foreach (['.claude', '.impeccable', '.playwright-mcp', '**/.DS_Store', ...$local] as $entry) {
             self::assertContains($entry, $ignored, $entry . ' is left out of the image');
         }
 

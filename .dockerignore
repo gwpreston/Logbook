@@ -25,3 +25,11 @@ docs/*
 .impeccable
 .playwright-mcp
 **/.DS_Store
+# A developer's own git-ignored files stay out of an image built from a
+# working tree too: the design reference, exports, and local PHPUnit and
+# PHPStan configs (Phase 54.17, K205, #625, following #608).
+design-import
+export
+phpunit.xml
+phpstan.neon
+**/Thumbs.db

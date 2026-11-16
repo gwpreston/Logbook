@@ -18,6 +18,7 @@ use Logbook\Service\Vehicle\VehicleService;
 use Logbook\Support\Display\DisplayPreferences;
 use Logbook\Support\Units\UnitPreset;
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\TestBrowser;
 use Psr\Clock\ClockInterface;
 use Psr\Container\ContainerInterface;
@@ -200,6 +201,44 @@ final class FuelTest extends AppTestCase
         self::assertStringContainsString('Average efficiency', $html);
         self::assertStringContainsString('Spent on charging', $html);
         self::assertSame('60.000', $this->entries($app, $ev)[1]->data->volume, 'kWh stored as-is');
+    }
+
+    /**
+     * K208 (#627, spec.md §8 *Figures keep their units*): a figure longer
+     * than 9 characters, as "0,301 €/kWh" in German, is marked to shrink
+     * with its tile rather than break its unit; shorter ones are not.
+     */
+    public function testALongStatFigureIsMarkedToShrinkWithItsTile(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $this->createOwner($app, 'owner', DisplayPreferences::defaults('de_DE', 'Europe/Berlin', 'EUR'));
+        $browser = new TestBrowser($app);
+        $browser->get('/login');
+        $browser->post('/login', ['username' => 'owner', 'password' => self::PASSWORD]);
+        $ev = $this->vehicle($app, FuelType::Electric);
+        $base = '/vehicles/' . $ev->id . '/fuel';
+        $charge = ['fuel' => 'ev', 'volume' => '60', 'price' => '0.301'];
+        $browser->post($base . '/new', self::fill('2026-07-01T09:15', '10000', $charge));
+        $browser->post($base . '/new', self::fill('2026-07-08T09:15', '10300', $charge));
+
+        $document = Html::document(self::body($browser->get($base)));
+        $long = [];
+        foreach ($document->querySelectorAll('.stats .stat') as $tile) {
+            $label = trim((string) $tile->querySelector('.stat__label')?->textContent);
+            $value = $tile->querySelector('.stat__value');
+            self::assertNotNull($value, $label);
+            $figure = trim((string) $value->textContent);
+            $marked = str_contains((string) $value->getAttribute('class'), 'stat__value--long');
+            // The no-break space between figure and unit counts as one character.
+            self::assertSame(mb_strlen($figure) > 9, $marked, $label . ': ' . $figure);
+            if ($marked) {
+                $long[$label] = $figure;
+            }
+        }
+
+        self::assertSame("0,301\u{00A0}€/kWh", $long['Durchschnittspreis'] ?? null);
+        self::assertNotSame(count($long), count($document->querySelectorAll('.stats .stat')), 'short figures too');
     }
 
     public function testQuickLogPath(): void

@@ -356,11 +356,16 @@
     {%- endif -%}
 {%- endmacro %}
 
-{# Figure tile: label, big value, optional caption. `tone`: '', 'good'. #}
+{# Figure tile: label, big value, optional caption. `tone`: '', 'good'.
+   A value showing more than 9 characters (the no-break space before its
+   unit counts as one; markup and screen-reader-only words don't count,
+   see `shown_length`) shrinks with a narrow tile instead of breaking its
+   unit onto a line of its own (spec.md §8 *Figures keep their units*,
+   K208, #627); shorter values are never touched. #}
 {% macro stat(label, value, sub = '', tone = '') -%}
     <div class="stat{{ tone ? ' stat--' ~ tone }}">
         <dt class="stat__label">{{ label }}</dt>
-        <dd class="stat__value tabular">{{ value }}</dd>
+        <dd class="stat__value tabular{{ value|shown_length > 9 ? ' stat__value--long' }}">{{ value }}</dd>
         {% if sub %}<dd class="stat__sub">{{ sub }}</dd>{% endif %}
     </div>
 {%- endmacro %}

@@ -2711,6 +2711,9 @@ a.segmented__option {
 .stat {
     min-width: 0;
     padding: 0.875rem var(--space-4);
+    /* Its width comes from the .stats grid's columns, never its content,
+       so a long figure can size itself to it (K208). */
+    container-type: inline-size;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
@@ -2732,6 +2735,15 @@ a.segmented__option {
     font-size: var(--fs-figure);
     font-weight: 600;
     overflow-wrap: anywhere;
+}
+
+/* A figure longer than 9 characters shrinks with a narrow tile, so
+   "0,301 €/kWh" stays on one line at 375 px rather than leaving its unit's
+   last letter below; it never drops under --fs-md, and overflow-wrap above
+   stays the last resort (spec.md §8 *Figures keep their units*, K208,
+   #627). 15cqi reaches --fs-figure in a tile about 147 px wide inside. */
+.stat__value--long {
+    font-size: clamp(var(--fs-md), 15cqi, var(--fs-figure));
 }
 
 .stat--good .stat__value {
@@ -6055,6 +6067,10 @@ a.list__title:hover {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+    /* Its rows (one per fill-up, 1,500 or more) are laid out only near the
+       screen; skipped content stays in the accessibility tree (K204, #624). */
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 1px;
 }
 
 /* A chart table's caption names the chart and its unit: on screen without
@@ -6988,6 +7004,9 @@ a.list__title:hover {
         overflow: visible;
         clip: auto;
         white-space: normal;
+        /* Every row prints, wherever the table sits on the page (K204). */
+        content-visibility: visible;
+        contain-intrinsic-size: none;
     }
 
     .print-report .chart-table caption,

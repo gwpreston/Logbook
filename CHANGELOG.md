@@ -6,6 +6,46 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.13] — 2026-11-16
+
+Phase 54.17: **Chart tables, stat tiles and the test runs from the
+known-issues log**
+([docs/phases/phase-54.17.md](docs/phases/phase-54.17.md)). No migration;
+pull and restart.
+
+### Fixed
+- **Tab no longer lands on a chart's hidden table.** With scripts on, each
+  chart keeps its figures as a table for screen readers, but pressing Tab
+  stopped on that invisible table, on the Fuel tab's *Economy trend* and
+  *Price trend*, *Odometer over time*, the true-cost *Fleet* card and the
+  dashboard's *Monthly spend*. It is no longer a tab stop; screen readers
+  still read it (K202).
+- **Long fill-up histories lay out fast again.** On a vehicle with 1,500
+  fill-ups the Fuel and Mileage tabs took about seven times as long to lay
+  out as in v3.21.11, because of those screen-reader tables. The browser
+  now lays them out only near the screen, and printed reports still show
+  them in full (K204).
+- **A long figure fits its tile.** On a phone in German, an EV's average
+  price showed "0,301 €/kW" with "h" alone on the next line. A figure
+  longer than 9 characters now shrinks a little in a narrow tile, never
+  below body size; shorter figures look exactly as before (K208).
+- **Images built from a checkout leave out local files.** An image built
+  with `docker build .` from a working tree no longer carries
+  `design-import/`, `export/`, a local `phpunit.xml` or `phpstan.neon`, or
+  `Thumbs.db` files (K205).
+
+### Changed
+- **For contributors: a test run that can't reset its database stops.**
+  When another process still has the SQLite test file open (on Windows),
+  a run now stops at once and names the file, instead of testing on the
+  old one or failing in the migrations (K206). `CONTRIBUTING.md` explains
+  the "Waiting for another test run in this checkout to finish…" line and
+  that the wait doesn't reach a run inside Docker Desktop on macOS (K207).
+- **For contributors: the suite runs clean on Windows.** A test that runs a
+  job no longer leaves PHP's time limit set for the tests after it, which
+  on Windows stopped a full run part-way, and the cost-visibility check no
+  longer trips on Windows paths (K210).
+
 ## [3.21.12] — 2026-11-14
 
 Phase 54.16: **Charts without JS, the Docker image's tooling and the test
