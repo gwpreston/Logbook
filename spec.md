@@ -12815,7 +12815,7 @@ task breakdowns live in the per-phase files; this is the map.
   stops holding it back (K175, #620). Releases v3.21.12 (#616). No
   migration. See [`phase-54.16.md`](docs/phases/phase-54.16.md).
 - **Phase 54.17 — Chart tables, stat tiles and the test runs from the
-  known-issues log + patch release** (planned). With JS on, a chart's
+  known-issues log + patch release** (in progress). With JS on, a chart's
   screen-reader table is no longer a keyboard tab stop (§8 *Printing
   reports*, K202, #623) and is laid out only near the screen (K204,
   #624); a stat value longer than 9 characters shrinks with its tile, no

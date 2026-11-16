@@ -8,7 +8,7 @@ tree leaves the developer's git-ignored files out; a test run that can't
 reset its SQLite file stops instead of testing on the old one; and
 `CONTRIBUTING.md` explains the test-run lock.*
 
-Status: 📋 planned · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.16](phase-54.16.md), the last
 known-issues batch, and takes six of the seven rows its merge review
@@ -132,10 +132,11 @@ v3.21.12.
 
 ### 54.17.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #622–#627 were decided when the
-      phase was planned; check that none of those still open bears on
-      K202, K204, K205, K206, K207 or K208.
+      phase was planned. Reviewed 2026-11-16: none of the questions still
+      open (#221, #390, #391, #460, #462, #537–#542, #551) bears on K202,
+      K204, K205, K206, K207 or K208, and none was found while starting it.
 
 ### 54.17.1 Chart tables (K202, K204)
 
