@@ -296,6 +296,11 @@ literal size sits in the CSS. Print styles use points.
   space, and a figure a template builds itself goes through
   `keep_together`. A grid of figures (`.figures`) drops to fewer columns on
   a phone (each at least 6.5rem) rather than shrinking the type.
+- A stat tile (`.stat`, in a `.stats` grid) is a size container. A value
+  longer than 9 characters gets `.stat__value--long` from the `ui.stat`
+  macro and shrinks with a narrow tile,
+  `clamp(var(--fs-md), 15cqi, var(--fs-figure))`, so "0,301 €/kWh" stays
+  on one line at 375 px; shorter values keep `--fs-figure` at every width.
 
 ### Named Rules
 **The Figures In Outfit Rule.** Numbers that matter (totals, economy,

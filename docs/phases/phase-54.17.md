@@ -190,19 +190,29 @@ v3.21.12.
 
 ### 54.17.2 Stat tiles (K208)
 
-- [ ] `templates/macros/ui.twig` `stat()`: `stat__value--long` when the
+- [x] `templates/macros/ui.twig` `stat()`: `stat__value--long` when the
       value is longer than 9 characters (#627).
-- [ ] `assets/css/app.css`: `.stat` `container-type: inline-size`;
+- [x] `assets/css/app.css`: `.stat` `container-type: inline-size`;
       `.stat__value--long` font size
       `clamp(var(--fs-md), <n>cqi, var(--fs-figure))`. Rebuild
       `public/assets`. `DESIGN.md` notes the long-figure rule beside the
       stat tile.
-- [ ] Tests: the German Fuel tab for an EV renders
+- [x] Tests: the German Fuel tab for an EV renders
       `stat__value--long` on *Durchschnittspreis* and not on a figure of
       9 characters or fewer (fails today); a CSS check that
       `.stat__value--long` has `--fs-md` as its floor.
-- [ ] Checked in a browser at 375 px, German and English, light and dark:
+- [x] Checked in a browser at 375 px, German and English, light and dark:
       "0,301 €/kWh" on one line, short tiles unchanged; and wide.
+      *Checked 2026-11-16* (Playwright, the Kia EV6 of the dev data):
+      `<n>` is **15** (`15cqi`). "0,301 €/kWh" is 132.6 px at 22 px and the
+      tile's content box 124 px at 375 px, so it shows at 18.6 px on one
+      line; 20.6 px at 768 px (137 px box); 22 px at 1280 px (189 px).
+      "318,29 €" keeps 22 px at every width, light and dark alike, and no
+      value overflows its tile. In English "£0.055/km" (9 characters)
+      keeps 22 px and "£0.301/kWh" shrinks to 18.6 px. "17,9 kWh/100 km"
+      still wraps before "km" at 375 and 768 px, as it did at 22 px: its
+      unit has an ordinary space and is too wide even at `--fs-md` (logged
+      as a known issue).
 
 ### 54.17.3 Docker image and test runs (K205, K206, K207)
 
