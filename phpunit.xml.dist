@@ -20,6 +20,12 @@
         </testsuite>
     </testsuites>
 
+    <extensions>
+        <!-- Each test starts with no time limit: a job action's set_time_limit()
+             must not reach later tests (K210). -->
+        <bootstrap class="Logbook\Tests\Support\NoTimeLimit"/>
+    </extensions>
+
     <source>
         <include>
             <directory>src</directory>

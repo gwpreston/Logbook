@@ -108,7 +108,9 @@ final class CostVisibilityTemplateTest extends TestCase
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($files as $file) {
             if ($file instanceof \SplFileInfo && $file->getExtension() === 'twig') {
-                $relative = substr($file->getPathname(), strlen($root) + 1);
+                // Forward slashes on every OS, as the exception lists name
+                // templates (on Windows getPathname() uses "\", K210).
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
                 yield $relative => [$relative];
             }
         }
