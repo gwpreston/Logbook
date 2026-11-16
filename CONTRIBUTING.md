@@ -187,6 +187,16 @@ MySQL 8.4 and MariaDB 11.4** on PHP 8.4 and 8.5. It then builds the
 multi-arch image and smoke-tests it at the root and at a subpath behind nginx.
 A change that is red on any engine is not done.
 
+Every run deletes and re-migrates its test database, so only one runs at a
+time per checkout. A second `composer test` (or `test:coverage`) started
+while one is going prints
+`Waiting for another test run in this checkout to finish…` and starts
+when the first ends; the lock is `var/testing.lock`. It doesn't reach a run
+inside Docker Desktop on macOS (such as `bin/test-all-dbs.sh`, through
+the bind mount), so don't start a native run alongside one there. If a
+SQLite run can't delete its file because another process still has it
+open, it stops at once and names the file.
+
 ## Front-end assets
 
 Source files live in `assets/`; `composer build-assets` copies them to

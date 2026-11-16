@@ -216,23 +216,35 @@ v3.21.12.
 
 ### 54.17.3 Docker image and test runs (K205, K206, K207)
 
-- [ ] `.dockerignore`: `design-import`, `export`, `phpunit.xml`,
+- [x] `.dockerignore`: `design-import`, `export`, `phpunit.xml`,
       `phpstan.neon`, `**/Thumbs.db`, with a comment naming K205 and
       #608 (#625).
-- [ ] `LicenceTest`'s `.dockerignore` check lists the five new entries
+- [x] `LicenceTest`'s `.dockerignore` check lists the five new entries
       (fails today).
-- [ ] A local `docker build .` from a checkout with `design-import/`: the
+- [x] A local `docker build .` from a checkout with `design-import/`: the
       image has no `/var/www/html/design-import` (checked by hand,
-      recorded here).
-- [ ] `tests/Support`: a helper that deletes the SQLite file with a
+      recorded here). *Checked 2026-11-16* (Docker 29.9.3, Windows): built
+      from this checkout, which has `design-import/`; the image has no
+      `design-import`, `export`, `phpunit.xml` or `phpstan.neon` under
+      `/var/www/html` and no `Thumbs.db` anywhere in it.
+- [x] `tests/Support`: a helper that deletes the SQLite file with a
       replaceable delete call; `tests/bootstrap.php` uses it and, on
       failure, prints the #626 message naming the file and exits 1.
-- [ ] A unit test with a delete call that fails: the helper reports
+      `TestSqliteFile::delete()`. Found while building: on Windows,
+      deleting a file another PHP process has open *succeeds* but leaves
+      it pending until that process closes it, and nothing can be created
+      under its name meanwhile, so the run went on and failed in Phinx
+      with a long trace. The default delete therefore also creates the
+      file again, empty, and a failed create counts as a failed delete
+      (#626's message, exit 1). Checked by hand with a second process
+      holding `var/testing.sqlite` open: one line, exit 1; released, the
+      run goes on.
+- [x] A unit test with a delete call that fails: the helper reports
       failure and the message names the file it was given (fails today:
       the bootstrap carries on).
-- [ ] `CONTRIBUTING.md` *Tests and databases*: the waiting second run and
+- [x] `CONTRIBUTING.md` *Tests and databases*: the waiting second run and
       its line, and K201's macOS gap (K207).
-- [ ] A docs test that `CONTRIBUTING.md` contains
+- [x] A docs test that `CONTRIBUTING.md` contains
       `TestRunLock::WAITING`'s text (fails today).
 
 ### 54.17.4 Finish

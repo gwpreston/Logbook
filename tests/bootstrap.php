@@ -15,6 +15,7 @@ use Logbook\Support\Config\DatabaseDriver;
 use Logbook\Tests\Support\Migrator;
 use Logbook\Tests\Support\TestDatabaseGuard;
 use Logbook\Tests\Support\TestRunLock;
+use Logbook\Tests\Support\TestSqliteFile;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -41,8 +42,14 @@ if ($refusal !== null) {
 // run ends.
 TestRunLock::acquire(dirname(__DIR__) . '/var/testing.lock');
 
-if ($settings->database->driver === DatabaseDriver::Sqlite && is_file($settings->database->name)) {
-    unlink($settings->database->name);
+// K206 (#626): a SQLite file another process holds open can't be deleted
+// (on Windows); stop rather than test on the old one.
+if ($settings->database->driver === DatabaseDriver::Sqlite) {
+    $refusal = TestSqliteFile::delete($settings->database->name);
+    if ($refusal !== null) {
+        fwrite(STDERR, $refusal . "\n");
+        exit(1);
+    }
 }
 
 fwrite(STDOUT, sprintf("Test database: %s\n", $settings->database->describe()));

@@ -65,6 +65,20 @@ final class TestRunLockTest extends TestCase
     }
 
     /**
+     * K207: CONTRIBUTING.md tells a contributor what the waiting line means,
+     * and that a run inside Docker Desktop on macOS doesn't share the lock
+     * (K201).
+     */
+    public function testContributingExplainsTheWait(): void
+    {
+        $contributing = (string) file_get_contents(dirname(__DIR__, 3) . '/CONTRIBUTING.md');
+
+        self::assertStringContainsString(rtrim(TestRunLock::WAITING), $contributing);
+        self::assertStringContainsString('var/testing.lock', $contributing);
+        self::assertStringContainsString('Docker Desktop on macOS', $contributing);
+    }
+
+    /**
      * A child process that takes the lock through TestRunLock and says so.
      *
      * @return array{0: resource, 1: resource, 2: resource} process, stdout, stderr
