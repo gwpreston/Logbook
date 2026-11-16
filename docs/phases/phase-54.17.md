@@ -252,7 +252,8 @@ v3.21.12.
 - [x] Known-issues rows K202, K204, K205, K206, K207 and K208 *Fixed*
       (Phase 54.17), or K204 back to *Open* with its timings (#624).
       All six *Fixed*. K209 (an EV's "17,9 kWh/100 km" still splits at
-      375 px in German) found while building, *Open*, with #632.
+      375 px in German) found while building, *Open*; the owner chose to
+      leave it (#632).
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
@@ -295,7 +296,13 @@ Two LOW notes, not changed: an EV's "17,9 kWh/100 km" still splits at
 375 and 768 px in German (K209, #632), as it did at 22 px; and a shrunk
 long figure sits beside a full-size short one in the same row, which #627
 accepted. On the dashboard Tab still reaches *Monthly spend*'s month
-links, by design: the table shows while one has focus. Not covered: a
+links, by design: the table shows while one has focus; at 375 px it
+overflows (469 px in a 306 px box) and ArrowRight from a focused link
+scrolls it, so its columns stay reachable without the wrapper's old tab
+stop. At 375 px, as at 1280, no Tab press lands on a hidden chart table
+on the Fuel tab, the Mileage tab, the true-cost report or the dashboard.
+Only the Impeccable audit and its detector ran; the change is two CSS
+rules and a class, so critique and polish were not. Not covered: a
 real screen reader (the accessibility tree was read instead), a
 no-JS pass (the changed rules are scoped to `.js`, or apply the same
 without JS), and a subpath run (no new page or link).
@@ -328,9 +335,10 @@ without JS), and a subpath run (no new page or link).
   §8).
 - **#632 — An EV's economy figure ("17,9 kWh/100 km", 15 characters) still
   splits its unit in a narrow stat tile at 375 and 768 px in German
-  (K209, found while building).** *Needs a decision.* It is 129 px wide
-  at the `--fs-md` floor in a 124 px tile, so `overflow-wrap: anywhere`
-  breaks it. Options: (1) leave it, since #627 kept `overflow-wrap` as
-  the last resort; (2) a lower floor for long figures (e.g. `--fs-sm`);
-  (3) let `.stats` drop to one column when a tile holds such a figure.
+  (K209, found while building).** *Decided 2026-11-16:* leave it, since
+  #627 kept `overflow-wrap` as the last resort; K209 stays *Open* as a
+  recorded LOW. It is 129 px wide at the `--fs-md` floor in a 124 px
+  tile, so `overflow-wrap: anywhere` breaks it. Not chosen: a lower floor
+  for long figures (e.g. `--fs-sm`); `.stats` dropping to one column when
+  a tile holds such a figure.
 
