@@ -8,7 +8,7 @@ tree leaves the developer's git-ignored files out; a test run that can't
 reset its SQLite file stops instead of testing on the old one; and
 `CONTRIBUTING.md` explains the test-run lock.*
 
-Status: ✅ complete · releases **v3.21.13**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.13**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.16](phase-54.16.md), the last
 known-issues batch, and takes six of the seven rows its merge review
@@ -278,13 +278,15 @@ v3.21.12.
       backslash paths, and runs that stop part-way) found while checking
       it, and fixed in 54.17.5 at the owner's request.
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
-- [ ] Merge review; merge. (After the pull request; merge as a merge
+- [x] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
+      (Merged in #237 on 2026-11-16; the merge review ran afterwards, the
+      same day, below.)
 
 ### Release
 
 - [x] VERSION 3.21.13, CHANGELOG 3.21.13, README status (#622).
-- [ ] Tag `v3.21.13` once merged.
+- [x] Tag `v3.21.13` once merged.
 
 ## Acceptance criteria
 
@@ -301,6 +303,43 @@ v3.21.12.
 - No migration and no new setting. No new translated string (the #626
   message is test tooling, in English as the lock's line is).
 - The Docker image builds on amd64 and arm64.
+
+## Merge review (2026-11-16)
+
+MERGE at 8181f5af, run after the merge, in release mode
+(v3.21.12..8181f5af). CI on that commit passed every gate: lint and
+PHPStan, 53 JS tests, built assets current, 4,905 tests on SQLite,
+PostgreSQL, MySQL and MariaDB (and PHP 8.5), line coverage 95.41% against
+the 95% floor, 4 of 4 changed lines covered (on the PR head), and the
+multi-arch image with its smoke test. All ten agents ran; none found
+anything CRITICAL or HIGH.
+
+- **Correctness and security.** `shown_length` handles markup, hidden
+  text, entities and multibyte figures, adds no unescaped output, and
+  can't reveal a hidden cost's length. `composer audit` and `npm audit`
+  are clean, and an image built from a working tree leaves out the new
+  `.dockerignore` entries.
+- **Upgrade.** SAFE on all four engines with real-looking data: no
+  migration, 0 of 285 figures differ after the doctrine/dbal 4.5.1 patch,
+  rollback, old backups and the image swap work both ways.
+- **Image.** Eight smoke stacks (PostgreSQL, MySQL, header sign-in, demo,
+  Caddy and Traefik at the root and a subpath), the SQLite quick start
+  and an arm64 build pass.
+- **Integrations, AI, imports.** The API, MCP, webhooks, calendar feed
+  and CSV exports are unchanged; the AI and import suites give the same
+  results as v3.21.12.
+- **Design.** A browser pass at 375, 768 and 1440 px, light and dark, in
+  German, with JS off and in print: long figures stay on one line, no
+  Tab stop lands on a chart table, and every chart-table row prints.
+
+Follow-ups (LOW, none new to this phase's code): spec §13 and the
+ROADMAP lacked K210, phase-54.18 called 54.17 not started, and the
+changelog said the suite "runs clean" on Windows when some import and
+OCR tests still fail there natively (all fixed in the release commit).
+On master: `bin/test-all-dbs.sh` doesn't reset its own SQLite file, so a
+second full run fails on SQLite; OCR tests fail instead of skipping when
+`tesseract` is missing; and the native Windows import tests get a 500,
+"Upload target path is not writable".
 
 ## Design review (2026-11-16)
 

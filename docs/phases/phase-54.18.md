@@ -12,7 +12,7 @@ known-issues batch. It takes K203 (MEDIUM), the only *Open* row that can
 be built now: it waited on #621 until the owner decided it on 2026-11-15
 (the registration, only on a clash). It is numbered 54.18 because 54.17
 is the last row of the ROADMAP table and no phase is active (54.17 is
-planned, not started).
+complete and released as v3.21.13).
 
 Read [`CLAUDE.md`](../../CLAUDE.md), [`spec.md`](../../spec.md) §7.1
 (*Telling same-named vehicles apart*), §7.7 (the true-cost report), §8

@@ -2042,10 +2042,11 @@ checkout queue, and PHPStan moves to 2.3.*
 
 ## Phase 54.17 — Chart tables, stat tiles and the test runs from the known-issues log + patch release
 
-*Six open rows closed: chart tables stop being invisible tab stops and
+*Seven open rows closed: chart tables stop being invisible tab stops and
 cost little to lay out, long stat figures shrink to keep their units,
-the image drops developer files, and test runs stop when they can't
-reset their database.*
+the image drops developer files, test runs stop when they can't reset
+their database, and a full native run on Windows no longer stops
+part-way.*
 
 - `enhanceScrollRegion` skips chart-table wrappers (K202, #623);
   `.js .chart-table` gets `content-visibility: auto`, measured against
@@ -2054,7 +2055,9 @@ reset their database.*
 - `.dockerignore` leaves out `design-import`, `export`, `phpunit.xml`,
   `phpstan.neon` and `Thumbs.db` (K205, #625); the test bootstrap stops
   when it can't delete its SQLite file (K206, #626); `CONTRIBUTING.md`
-  explains the test-run lock (K207).
+  explains the test-run lock (K207); no test leaves PHP's time limit
+  set for the next, and the cost-visibility check reads Windows paths
+  (K210).
 - Releases v3.21.13 (#622). No migration.
 
 → [`phase-54.17.md`](docs/phases/phase-54.17.md)

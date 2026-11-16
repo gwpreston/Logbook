@@ -12829,7 +12829,9 @@ task breakdowns live in the per-phase files; this is the map.
   image built from a working tree leaves out the developer's git-ignored
   files (§10, K205, #625); a test run that can't delete its SQLite file
   stops (§9, K206, #626); `CONTRIBUTING.md` explains the test-run lock
-  (K207). Releases v3.21.13 (#622). No migration. See
+  (K207); a full native run on Windows no longer stops part-way and the
+  cost-visibility check reads Windows paths (§9, K210). Releases v3.21.13
+  (#622). No migration. See
   [`phase-54.17.md`](docs/phases/phase-54.17.md).
 - **Phase 54.18 — Telling same-named vehicles apart from the known-issues
   log + patch release** (planned). Two vehicles with the same displayed

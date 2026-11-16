@@ -41,10 +41,14 @@ pull and restart.
   old one or failing in the migrations (K206). `CONTRIBUTING.md` explains
   the "Waiting for another test run in this checkout to finish…" line and
   that the wait doesn't reach a run inside Docker Desktop on macOS (K207).
-- **For contributors: the suite runs clean on Windows.** A test that runs a
-  job no longer leaves PHP's time limit set for the tests after it, which
-  on Windows stopped a full run part-way, and the cost-visibility check no
-  longer trips on Windows paths (K210).
+- **For contributors: a full test run on Windows no longer stops
+  part-way.** A test that runs a job no longer leaves PHP's time limit set
+  for the tests after it, which on Windows stopped a full run part-way,
+  and the cost-visibility check no longer trips on Windows paths (K210).
+  Some import and OCR tests still fail on native Windows; run the suite in
+  Docker (`bin/test-all-dbs.sh`) for a clean result.
+- **Dependency updates:** doctrine/dbal 4.5.1 and doctrine/deprecations
+  1.2.0.
 
 ## [3.21.12] — 2026-11-14
 
@@ -4684,7 +4688,8 @@ First release: Phases 0 and 1 (foundations, accounts and garage).
   sprite (no CDN requests); base components for cards, lists, buttons, chips,
   forms, pills and alerts.
 
-[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.12...HEAD
+[Unreleased]: https://github.com/gwpreston16/Logbook/compare/v3.21.13...HEAD
+[3.21.13]: https://github.com/gwpreston16/Logbook/compare/v3.21.12...v3.21.13
 [3.21.12]: https://github.com/gwpreston16/Logbook/compare/v3.21.11...v3.21.12
 [3.21.11]: https://github.com/gwpreston16/Logbook/compare/v3.21.10...v3.21.11
 [3.21.10]: https://github.com/gwpreston16/Logbook/compare/v3.21.9...v3.21.10
