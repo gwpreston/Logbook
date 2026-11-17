@@ -150,6 +150,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.16](docs/phases/phase-54.16.md) | Charts without JS, the Docker image's tooling and the test runs from the known-issues log + patch release | ✅ |
 | [54.17](docs/phases/phase-54.17.md) | Chart tables, stat tiles and the test runs from the known-issues log + patch release | ✅ |
 | [54.18](docs/phases/phase-54.18.md) | Telling same-named vehicles apart from the known-issues log + patch release | 📋 |
+| [54.19](docs/phases/phase-54.19.md) | Windows and the test runs from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -2076,6 +2077,25 @@ their registration, else their year, where they sit side by side.*
   vehicle picker (#629). Releases v3.21.14 (#628). No migration.
 
 → [`phase-54.18.md`](docs/phases/phase-54.18.md)
+
+---
+
+## Phase 54.19 — Windows and the test runs from the known-issues log + patch release
+
+*Four open rows closed: every engine runs twice in a row, the OCR tests
+pass on Windows, Tesseract and Ghostscript start on a Windows server, and
+K185 is checked and closed.*
+
+- `bin/test-all-dbs.sh` starts its SQLite pass from a fresh file (K211).
+- The tools Logbook starts read from `NUL` on Windows and `/dev/null`
+  elsewhere, and `docs/deployment.md` says how to point it at
+  `tesseract.exe` and `gswin64c` (K213, #633, #635, #637); the OCR tests'
+  stand-in is a PHP script with an `sh` and a `.cmd` launcher (K212,
+  #636).
+- A full native Windows run checks K185's last part (#638). Releases
+  v3.21.15 (#634). No migration.
+
+→ [`phase-54.19.md`](docs/phases/phase-54.19.md)
 
 ---
 

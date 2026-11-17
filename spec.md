@@ -11439,7 +11439,12 @@ Real environment variables override `.env`; an empty value counts as unset.
 - Reading files (§7.27, Phase 26.4): `GHOSTSCRIPT_BINARY` (default `gs`,
   looked up on `PATH`; `off` turns Ghostscript off). Imagick is used when
   the extension is loaded and Ghostscript is not found. With neither, a
-  scanned PDF asks for a photo instead.
+  scanned PDF asks for a photo instead. On Windows Ghostscript's command
+  is `gswin64c`: the default stays `gs` and `docs/deployment.md` says to
+  set `GHOSTSCRIPT_BINARY=gswin64c` (Phase 54.19, #637). Ghostscript and
+  Tesseract read their input from the platform's null device, `NUL` on
+  Windows and `/dev/null` elsewhere, so both start on a bare-PHP Windows
+  server (Phase 54.19, K213, #633, #635).
 - Reading text from images (§7.27, Phase 53.1): `OCR_ENGINE` (`auto`,
   the default, | `tesseract` | `paddleocr` | `off`; anything else stops
   the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up
@@ -11481,7 +11486,13 @@ Real environment variables override `.env`; an empty value counts as unset.
   creates the file again, empty, and a failed create stops it the same
   way. Each test starts with no PHP time limit, whatever the test before
   it set, since a job action's `set_time_limit()` runs inside the test
-  process (Phase 54.17, K210).
+  process (Phase 54.17, K210). `bin/test-all-dbs.sh` removes its own
+  SQLite file (`var/testing-all-dbs.sqlite`) before the SQLite pass
+  migrates, as it recreates `logbook_test` for the server engines, so a
+  second run doesn't stop in the 2.0 rollback (Phase 54.19, K211). The
+  OCR tests' Tesseract stand-in is a PHP script with an `sh` launcher
+  and a `.cmd` launcher, picked by OS, so they pass natively on Windows
+  (Phase 54.19, K212, #636).
 
 ---
 
@@ -12840,6 +12851,14 @@ task breakdowns live in the per-phase files; this is the map.
   and every vehicle picker (§7.1, K203, #621, #629–#631). Releases
   v3.21.14 (#628). No migration. See
   [`phase-54.18.md`](docs/phases/phase-54.18.md).
+- **Phase 54.19 — Windows and the test runs from the known-issues log +
+  patch release** (planned). `bin/test-all-dbs.sh` starts its SQLite pass
+  from a fresh file (§9, K211); Tesseract and Ghostscript read from the
+  platform's null device, so they start on a bare-PHP Windows server,
+  with `gswin64c` documented (§9, K213, #633, #635, #637); the OCR tests'
+  stand-in runs on Windows (§9, K212, #636); a full native Windows run
+  checks and closes K185 (#638). Releases v3.21.15 (#634). No migration.
+  See [`phase-54.19.md`](docs/phases/phase-54.19.md).
 
 ---
 
