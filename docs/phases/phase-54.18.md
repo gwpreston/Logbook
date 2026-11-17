@@ -127,8 +127,10 @@ v3.21.13.
       true-cost report's Fleet table headers, its chart data and its
       picker, and the Reports picker, show both registrations (fails
       today); a household with one Fiesta shows "Ford Fiesta" alone.
-- [ ] Checked in a browser at 375 px and wide, English and German: the
-      Fleet table, legend and pickers with two Fiestas.
+- [x] Checked in a browser at 375 px and wide, English and German: the
+      Fleet table, legend and pickers with two Fiestas. (2026-11-17, the
+      demo garage with its Golf and Corolla renamed "Ford Fiesta 1.0
+      EcoBoost" beside the archived Fiesta: see the design review below.)
 
 ### 54.18.2 Finish
 
@@ -142,6 +144,27 @@ v3.21.13.
 
 - [ ] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
 - [ ] Tag `v3.21.14` once merged.
+
+## Design review (2026-11-17)
+
+No new page, widget or component: the change is the text of existing
+options, table headers and legend entries, so no token, layout or
+`DESIGN.md` change. Checked in the browser (`php -S` on a scratch SQLite
+database with the demo data, two active vehicles renamed "Ford Fiesta
+1.0 EcoBoost" beside the archived "Ford Fiesta 1.0 EcoBoost" WR14 FNE):
+
+- **True cost, 1280 and 375 px, English and German.** The Fleet table's
+  headers and the chart legend read "Ford Fiesta 1.0 EcoBoost (LB19 KTR)"
+  and "(LK22 VXN)"; at 375 px the legend wraps one entry per line and the
+  page has no sideways scroll. The picker lists the archived one as
+  "Ford Fiesta 1.0 EcoBoost (WR14 FNE) (Archiviert)", since it is in the
+  same list (#631).
+- **Reports picker** the same, in German.
+- **Incident history** keeps "Ford Fiesta 1.0 EcoBoost · LB19 KTR" with
+  nothing repeated (#639).
+- **Left as #629 decided:** the true-cost report's per-vehicle cards
+  below the Fleet card still title each vehicle by its plain name, as do
+  the other lists of vehicles.
 
 ## Acceptance criteria
 
