@@ -5,7 +5,7 @@ name (two "Ford Fiesta"s with no nickname) are told apart by their
 registration, else their year, on the true-cost *Fleet* card and in every
 vehicle picker.*
 
-Status: 🚧 in progress · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.17](phase-54.17.md), the last
 known-issues batch. It takes K203 (MEDIUM), the only *Open* row that can
@@ -134,15 +134,15 @@ v3.21.13.
 
 ### 54.18.2 Finish
 
-- [ ] Known-issues row K203 *Fixed* (Phase 54.18); #621 and #629–#631
-      marked as built.
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+- [x] Known-issues row K203 *Fixed* (Phase 54.18); #621 and #629–#631
+      marked as built (and #639).
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
+- [x] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
 - [ ] Tag `v3.21.14` once merged.
 
 ## Design review (2026-11-17)

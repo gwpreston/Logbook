@@ -6,6 +6,23 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.14] — 2026-11-17
+
+Phase 54.18: **Telling same-named vehicles apart**
+([docs/phases/phase-54.18.md](docs/phases/phase-54.18.md)). No migration;
+pull and restart.
+
+### Fixed
+- **Two vehicles with the same name can be told apart.** With two "Ford
+  Fiesta"s and no nicknames, the true-cost report's *Fleet* table had two
+  identical columns and its chart two identical legend entries, and every
+  vehicle picker listed the name twice. Where names clash among the
+  vehicles shown together, each now gains its registration, "Ford Fiesta
+  (AB12 CDE)", else its year, else a number in the order they were added.
+  Pickers that already show the registration (Incident history, the
+  app-import maps, the scan picker) add only what that leaves alike. A
+  garage with no two names alike sees no change (K203).
+
 ## [3.21.13] — 2026-11-16
 
 Phase 54.17: **Chart tables, stat tiles and the test runs from the

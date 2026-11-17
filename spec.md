@@ -12852,7 +12852,7 @@ task breakdowns live in the per-phase files; this is the map.
   (#622). No migration. See
   [`phase-54.17.md`](docs/phases/phase-54.17.md).
 - **Phase 54.18 — Telling same-named vehicles apart from the known-issues
-  log + patch release** (planned). Two vehicles with the same displayed
+  log + patch release** (complete). Two vehicles with the same displayed
   name gain their registration, else their year, else a number, where
   they're shown together: the true-cost *Fleet* card's table and legend
   and every vehicle picker, adding only what a picker's own registration
