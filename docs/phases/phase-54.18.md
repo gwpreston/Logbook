@@ -5,7 +5,7 @@ name (two "Ford Fiesta"s with no nickname) are told apart by their
 registration, else their year, on the true-cost *Fleet* card and in every
 vehicle picker.*
 
-Status: 📋 planned · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.17](phase-54.17.md), the last
 known-issues batch. It takes K203 (MEDIUM), the only *Open* row that can
@@ -78,6 +78,16 @@ v3.21.13.
   list, chart or picker. An archived Fiesta that a picker doesn't list
   doesn't change the active one's label there. Not chosen: the whole
   garage, archived included.
+- **Pickers that already show the registration (#639, found while
+  starting it):** Incident history and the two app-import maps show
+  "Ford Fiesta · AB12 CDE", and the scan picker a plate under the name.
+  There the label adds only what that leaves alike: vehicles are compared
+  by name and registration together, so two Fiestas with different
+  registrations keep their plain names, and those with the same or no
+  registration gain their year, else a number. `VehicleLabels` takes a
+  flag saying the registration is already shown. Not chosen: the full
+  label everywhere ("Ford Fiesta (AB12 CDE) · AB12 CDE"); leaving those
+  four pickers as they are.
 - **How it's built:** one place decides the labels, as
   `Vehicle::description()` does for the descriptive line: a
   `VehicleLabels` service that takes the vehicles shown together and
@@ -90,10 +100,12 @@ v3.21.13.
 
 ### 54.18.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #621 and #628–#631 were decided
       when the phase was planned; check that none of those still open
-      bears on K203.
+      bears on K203. (2026-11-17: none does; #460 asks whether the API may
+      break, and this phase changes no API or MCP output. #639 was found
+      while starting it and decided by the owner the same day.)
 
 ### 54.18.1 Telling same-named vehicles apart (K203)
 
@@ -160,3 +172,8 @@ v3.21.13.
 - **#631 — Which vehicles count when deciding whether two names clash
   (K203)?** *Decided 2026-11-15:* only those shown together. Not chosen:
   the whole garage, archived included.
+- **#639 — Four pickers already show the registration beside the name;
+  what does the label add there (K203, found while starting it)?**
+  *Decided 2026-11-17:* only what that leaves alike: compared by name and
+  registration together, then the year, else a number. Not chosen: the
+  full label everywhere; leaving those four pickers as they are.
