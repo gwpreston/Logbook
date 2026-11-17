@@ -405,13 +405,11 @@ without JS), and a subpath run (no new page or link).
   a tile holds such a figure.
 - **#633 — Should OCR and Ghostscript rendering work on a bare-PHP install
   on Windows (K212, K213, found in the merge review's issue sweep)?**
-  *Needs a decision.* `ProcessRunner` and `GhostscriptRenderer` open
-  `/dev/null`, which Windows doesn't have, so neither tool can start
-  there (K213), and the OCR tests' `sh` stand-in can't start either
-  (K212). Options: (1) yes: use the platform's null device (`NUL` on
-  Windows) in both, and give the OCR tests a stand-in Windows can run;
-  (2) no: document Linux and Docker as the only hosts for OCR and PDF
-  rendering, and skip the stand-in OCR tests on Windows; (3) leave the
-  app as it is and only skip the stand-in OCR tests on Windows, with no
-  doc change.
+  *Decided 2026-11-17:* (1) yes: use the platform's null device (`NUL`
+  on Windows) in `ProcessRunner` and `GhostscriptRenderer`, which open
+  `/dev/null` today so neither tool can start there (K213), and give the
+  OCR tests a stand-in Windows can run (K212). Built in
+  [54.19](phase-54.19.md). Not chosen: (2) Linux and Docker only,
+  documented, with the stand-in OCR tests skipped on Windows; (3) only
+  skipping the stand-in OCR tests on Windows.
 

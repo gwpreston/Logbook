@@ -5,7 +5,7 @@ name (two "Ford Fiesta"s with no nickname) are told apart by their
 registration, else their year, on the true-cost *Fleet* card and in every
 vehicle picker.*
 
-Status: ✅ complete · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.14**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.17](phase-54.17.md), the last
 known-issues batch. It takes K203 (MEDIUM), the only *Open* row that can
@@ -137,13 +137,56 @@ v3.21.13.
 - [x] Known-issues row K203 *Fixed* (Phase 54.18); #621 and #629–#631
       marked as built (and #639).
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
-- [ ] Merge review; merge. (After the pull request; merge as a merge
+- [x] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
+      (Merged in #239 on 2026-11-17; the merge review ran afterwards, the
+      same day, below.)
 
 ### Release
 
 - [x] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
-- [ ] Tag `v3.21.14` once merged.
+- [x] Tag `v3.21.14` once merged.
+
+## Merge review (2026-11-17)
+
+MERGE at d528f0f6, run after the merge, in release mode
+(v3.21.13..d528f0f6). CI on that commit passed every gate: lint and
+PHPStan, 53 JS tests, built assets current, 4,917 tests on SQLite,
+PostgreSQL, MySQL and MariaDB (and PHP 8.5), line coverage 95.41% against
+the 95% floor, 36 of 36 changed lines covered (on the PR head), and the
+multi-arch image with its smoke test. All ten agents ran; none found
+anything CRITICAL or HIGH.
+
+- **Correctness and security.** The labels are escaped wherever they
+  show, ICU syntax in a name or registration comes out literally, and a
+  label is built only from vehicles the viewer can already see, so it
+  can't reveal a hidden vehicle's registration. `composer audit` and
+  `npm audit` are clean.
+- **Speed.** No query added; labelling 1,000 same-named vehicles takes
+  under 3 ms.
+- **Upgrade.** SAFE on all four engines with real-looking data: no
+  migration, 0 of 375 figures differ, rollback, a v3.21.13 backup and the
+  image swap work, and the numbered labels don't swap after a restore.
+- **Image.** Eight smoke stacks, the SQLite quick start on amd64 and
+  arm64, the bare-PHP install with no Node, and the changed pages at
+  `/logbook` pass.
+- **Integrations, AI, imports.** The API, MCP, webhooks, calendar feed
+  and CSV exports are unchanged (the labels are HTML-only); no AI code
+  changed; the app-import maps send the chosen vehicle when two share a
+  name.
+- **Design.** 375 and 1440 px, English and German, light and dark, JS
+  off: every picker, Fleet header and legend entry carries its label.
+
+Follow-ups (MEDIUM and LOW): with very long names the Fleet chart's
+legend clips the suffix at 375 px, and with JS off the Fleet table's
+headers don't wrap; the cost-of-ownership cards still use the plain name
+(as #629 decided); `VehicleLabels` doesn't trim a name with a trailing
+space or ignore a registration of spaces (only reachable by editing the
+database); `docs/reports.md` doesn't mention the labels; spec §9 already
+describes 54.19's Windows null device in the present tense; and
+phase-54.17 still had #633 as *Needs a decision* (fixed in the release
+commit). On master: the sidebar's vehicle list shows same-named vehicles
+alike.
 
 ## Design review (2026-11-17)
 
