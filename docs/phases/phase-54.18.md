@@ -109,19 +109,21 @@ v3.21.13.
 
 ### 54.18.1 Telling same-named vehicles apart (K203)
 
-- [ ] `VehicleLabels` service: given the vehicles shown together, a label
+- [x] `VehicleLabels` service: given the vehicles shown together, a label
       per id as #630 and #631 say; `vehicle.name_distinct` in every
       catalogue in `translations/`.
-- [ ] Unit tests: no clash keeps the plain name; two Fiestas with
+- [x] Unit tests: no clash keeps the plain name; two Fiestas with
       registrations; one without a registration gets its year; two with
       neither are numbered oldest first; "Ford fiesta" clashes with
       "Ford Fiesta"; a nickname that matches another vehicle's make and
       model clashes too.
-- [ ] `TrueCostCharts::fleet()` names each series by its label; the
+- [x] `TrueCostCharts::fleet()` names each series by its label; the
       Fleet table's headers follow (they read the series).
-- [ ] Twig function `vehicle_labels(vehicles)`; the nine picker templates
+- [x] Twig function `vehicle_labels(vehicles)`; the nine picker templates
       (#629) show `labels[vehicle.id]` in place of `vehicle.name()`.
-- [ ] HTTP test: two "Ford Fiesta"s with different registrations; the
+      The four that already show the registration (Incident history, the
+      app-import maps, the scan picker) pass `true` (#639).
+- [x] HTTP test: two "Ford Fiesta"s with different registrations; the
       true-cost report's Fleet table headers, its chart data and its
       picker, and the Reports picker, show both registrations (fails
       today); a household with one Fiesta shows "Ford Fiesta" alone.

@@ -14,6 +14,7 @@ use Logbook\Service\Demo\DemoTwigExtension;
 use Logbook\Service\Import\App\ArchiveReader;
 use Logbook\Service\Incident\IncidentTwigExtension;
 use Logbook\Service\Vehicle\PlateTwigExtension;
+use Logbook\Service\Vehicle\VehicleLabelsTwigExtension;
 use Logbook\Service\Finance\FinanceTwigExtension;
 use Logbook\Service\Working\WorkingTwigExtension;
 use Doctrine\DBAL\Connection;
@@ -353,6 +354,9 @@ return [
         $plates = $c->get(PlateTwigExtension::class);
         assert($plates instanceof PlateTwigExtension);
         $twig->addExtension($plates);
+        $vehicleLabels = $c->get(VehicleLabelsTwigExtension::class);
+        assert($vehicleLabels instanceof VehicleLabelsTwigExtension);
+        $twig->addExtension($vehicleLabels);
         $demo = $c->get(DemoTwigExtension::class);
         assert($demo instanceof DemoTwigExtension);
         $twig->addExtension($demo);

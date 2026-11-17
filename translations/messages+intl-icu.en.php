@@ -438,6 +438,8 @@ return [
             'sale_date_has_files' => 'Remove the sale paperwork first, or keep the sale date.',
         ],
         'add_title' => 'Add a vehicle',
+        // Two vehicles shown together with the same name (spec §7.1, #630): "Ford Fiesta (AB12 CDE)".
+        'name_distinct' => '{name} ({detail})',
         'add_submit' => 'Add vehicle',
         'edit_title' => 'Edit {name}',
         'created' => '{name} was added to your garage.',

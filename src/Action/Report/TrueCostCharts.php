@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Logbook\Action\Report;
 
+use Logbook\Domain\Vehicle\Vehicle;
 use Logbook\Service\Report\TrueCost;
 use Logbook\Service\Report\TrueCostWording;
 use Logbook\Service\Report\TruePart;
 use Logbook\Service\Report\VehicleTrueCost;
+use Logbook\Service\Vehicle\VehicleLabels;
 use Logbook\Support\Display\DisplayContext;
 use Logbook\Support\Money\Currency;
 use Logbook\Support\Units\DistanceUnit;
@@ -28,6 +30,7 @@ final readonly class TrueCostCharts
         private DisplayContext $display,
         private TrueCostWording $wording,
         private TranslatorInterface $translator,
+        private VehicleLabels $labels,
     ) {
     }
 
@@ -58,6 +61,9 @@ final readonly class TrueCostCharts
 
     /**
      * One line per vehicle of the currency: total per distance by year.
+     * Each line is named by its `VehicleLabels` label, so two vehicles with
+     * the same name are told apart in the legend and in the Fleet table,
+     * whose column headers are these series (spec.md §7.1, K203, #629).
      *
      * @param list<VehicleTrueCost> $vehicles of one currency
      */
@@ -76,13 +82,14 @@ final readonly class TrueCostCharts
         sort($labels);
         $labels = array_map('strval', $labels);
         $chart = new BarChart($this->display->preferences(), $labels, Currency::fractionDigits($currency) + 1, $currency, false);
+        $names = $this->labels->labels(array_map(static fn (VehicleTrueCost $vtc): Vehicle => $vtc->vehicle, $vehicles));
         foreach ($vehicles as $i => $vtc) {
             $byYear = [];
             foreach ($vtc->chartYears() as $year) {
                 $byYear[(string) $year->period->year] = $this->perUnit($year->perKm);
             }
             $chart->addSeries(
-                $vtc->vehicle->name(),
+                $names[$vtc->vehicle->id],
                 array_map(static fn (string $label): ?float => $byYear[$label] ?? null, $labels),
                 self::COLORS[$i % count(self::COLORS)],
                 true,

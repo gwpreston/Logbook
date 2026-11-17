@@ -159,6 +159,48 @@ final class TrueCostPagesTest extends AppTestCase
         self::assertSame('—', $rows[2][2], 'the Polo had no 2024');
     }
 
+    /**
+     * K203 (#621, #629–#631, #639): two vehicles with the same name are told
+     * apart by their registration on the Fleet card's table and chart and in
+     * the report pickers; where a picker already shows the registration it
+     * isn't added twice; a household with one Fiesta sees its plain name.
+     */
+    public function testTwoVehiclesWithTheSameNameAreToldApart(): void
+    {
+        [$app, $browser] = $this->start();
+        $this->fiesta($app, 'AB12 CDE');
+        // An option's text, as the picker shows it.
+        $options = static fn (string $html): array => array_map(
+            static fn (Element $option): string => trim((string) $option->textContent),
+            iterator_to_array(Html::document($html)->querySelectorAll('select#f-vehicle option')),
+        );
+
+        self::assertContains('Ford Fiesta', $options(self::body($browser->get('/reports'))), 'one Fiesta keeps its name');
+
+        $this->fiesta($app, 'XY34 ZZZ');
+        $both = ['Ford Fiesta (AB12 CDE)', 'Ford Fiesta (XY34 ZZZ)'];
+
+        $report = self::body($browser->get('/reports/true-cost'));
+        $card = Html::element(Html::document($report), 'section[aria-labelledby="true-cost-fleet-GBP"]');
+        $head = $card->querySelector('table.chart-print-table thead tr') ?? self::fail('no Fleet table');
+        $headers = array_map(
+            static fn (Element $cell): string => trim((string) $cell->textContent),
+            iterator_to_array($head->querySelectorAll('th')),
+        );
+        self::assertSame(['Year', ...$both], $headers);
+        $chart = (string) $card->querySelector('canvas[data-chart]')?->getAttribute('data-chart');
+        foreach ($both as $label) {
+            self::assertStringContainsString(json_encode($label, JSON_THROW_ON_ERROR), $chart, 'the legend: ' . $label);
+            self::assertContains($label, $options($report), 'the true-cost picker');
+        }
+        self::assertSame(['All vehicles', ...$both], $options(self::body($browser->get('/reports'))));
+
+        // Incident history already shows the registration: it isn't repeated (#639).
+        $history = $options(self::body($browser->get('/incidents/history')));
+        self::assertContains('Ford Fiesta · AB12 CDE', $history);
+        self::assertContains('Ford Fiesta · XY34 ZZZ', $history);
+    }
+
     public function testTheCoverNoteShowsOnceUnderTheTableForAVehicleOlderThanThreeYears(): void
     {
         // Bought in 2021, so 2021 is not among the three years with a drawn working (K152, #568).
@@ -267,6 +309,22 @@ final class TrueCostPagesTest extends AppTestCase
     }
 
     /**
+     * A Ford Fiesta bought on 1 Jan 2025 with a year and a bit of fill-ups,
+     * enough for the Fleet chart.
+     *
+     * @param App<ContainerInterface> $app
+     */
+    private function fiesta(App $app, string $registration): Vehicle
+    {
+        $car = $this->car($app, 'Ford', 'Fiesta', '2025-01-01', '9000', registration: $registration);
+        $this->reading($app, $car, '500', '2025-01-01T09:00:00Z');
+        $this->fillUp($app, $car, '2025-12-31T09:00:00Z', '6500', '300', '450.00');
+        $this->fillUp($app, $car, '2026-10-01T09:00:00Z', '11500', '250', '375.00');
+
+        return $car;
+    }
+
+    /**
      * @param App<ContainerInterface> $app
      */
     private function car(
@@ -278,13 +336,14 @@ final class TrueCostPagesTest extends AppTestCase
         ?string $currency = null,
         ?string $sold = null,
         ?string $salePrice = null,
+        ?string $registration = null,
     ): Vehicle {
         return $this->service($app, VehicleService::class)->create($this->owner($app), new VehicleData(
             VehicleType::Car,
             $make,
             $model,
             FuelType::Petrol,
-            registration: strtoupper(substr($model, 0, 2)) . '19 ABC',
+            registration: $registration ?? strtoupper(substr($model, 0, 2)) . '19 ABC',
             currency: $currency,
             purchaseDate: self::date($purchased),
             purchasePrice: $price,
