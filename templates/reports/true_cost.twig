@@ -37,9 +37,11 @@
                     <label class="field__label" for="f-vehicle">{{ 'report.field.vehicle'|trans }}</label>
                     <select class="select" id="f-vehicle" name="vehicle">
                         <option value="">{{ 'report.fleet'|trans }}</option>
+                        {# Two vehicles with the same name are told apart (spec §7.1, #629). #}
+                        {% set labels = vehicle_labels(all_vehicles) %}
                         {% for vehicle in all_vehicles %}
                             <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>
-                                {{- vehicle.name() }}{% if vehicle.isArchived() %} ({{ 'vehicle.status.archived'|trans }}){% endif -%}
+                                {{- labels[vehicle.id] }}{% if vehicle.isArchived() %} ({{ 'vehicle.status.archived'|trans }}){% endif -%}
                             </option>
                         {% endfor %}
                     </select>

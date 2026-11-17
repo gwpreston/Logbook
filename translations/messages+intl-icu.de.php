@@ -437,6 +437,8 @@ return [
             'sale_date_has_files' => 'Entferne zuerst die Verkaufsunterlagen oder behalte das Verkaufsdatum.',
         ],
         'add_title' => 'Fahrzeug hinzufügen',
+        // Two vehicles shown together with the same name (spec §7.1, #630): "Ford Fiesta (AB12 CDE)".
+        'name_distinct' => '{name} ({detail})',
         'add_submit' => 'Fahrzeug hinzufügen',
         'edit_title' => '{name} bearbeiten',
         'created' => '{name} wurde deiner Garage hinzugefügt.',

@@ -35,8 +35,10 @@
                 <div class="field">
                     <label class="field__label" for="n-vehicle">{{ 'fuel_prices.near.vehicle'|trans }}</label>
                     <select class="select" id="n-vehicle" name="vehicle">
+                        {# Two vehicles with the same name are told apart (spec §7.1, #629). #}
+                        {% set labels = vehicle_labels(nearby.vehicles) %}
                         {% for v in nearby.vehicles %}
-                            <option value="{{ v.id }}"{% if v.id == nearby.vehicle.id %} selected{% endif %}>{{ v.name() }}</option>
+                            <option value="{{ v.id }}"{% if v.id == nearby.vehicle.id %} selected{% endif %}>{{ labels[v.id] }}</option>
                         {% endfor %}
                     </select>
                 </div>

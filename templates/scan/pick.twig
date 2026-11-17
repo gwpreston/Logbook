@@ -16,12 +16,14 @@
         </header>
         {% block modal_body %}
             <ul class="pick-list">
+                {# Two vehicles with the same name are told apart (spec §7.1, #629, #639: the plate shows the registration). #}
+                {% set labels = vehicle_labels(vehicles, true) %}
                 {% for vehicle in vehicles %}
                     <li>
                         <a class="pick" href="{{ url_for('scan.result', {token: upload.token}, {vehicle: vehicle.id} + (as ? {as: as.value} : {})) }}">
                             {{ ui.vehicle_photo(vehicle, 'vehicle-photo--thumb') }}
                             <span class="pick__body">
-                                <span class="pick__name">{{ vehicle.name() }}</span>
+                                <span class="pick__name">{{ labels[vehicle.id] }}</span>
                                 <span class="pick__meta">{{ ui.plate(vehicle.data.registration, 'sm', plate_style(vehicle)) }}</span>
                             </span>
                             {{ ui.icon('chevron_right', 'pick__chevron') }}

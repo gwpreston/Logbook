@@ -41,13 +41,15 @@
             <section class="card" aria-labelledby="vehicles-heading">
                 <h2 id="vehicles-heading" class="card__title">{{ 'import_app.tracktor.map.vehicles_heading'|trans }}</h2>
                 <div class="form-row form-row--2">
+                    {# Two vehicles with the same name are told apart (spec §7.1, #629, #639: the registration is shown already). #}
+                    {% set target_labels = vehicle_labels(manageable, true) %}
                     {% for vehicle in export.vehicles %}
                         {% set current = options.vehicles[vehicle.id] ?? 'new' %}
                         <div class="field">
                             <label class="field__label" for="f-vehicle-{{ loop.index }}">{{ vehicle.name() }}{% if vehicle.year %} · {{ vehicle.year }}{% endif %}</label>
                             <select class="select" id="f-vehicle-{{ loop.index }}" name="vehicle[{{ vehicle.id }}]">
                                 {% for target in manageable %}
-                                    <option value="{{ target.id }}"{% if current == target.id ~ '' %} selected{% endif %}>{{ target.name() }}{% if target.data.registration %} · {{ target.data.registration }}{% endif %}</option>
+                                    <option value="{{ target.id }}"{% if current == target.id ~ '' %} selected{% endif %}>{{ target_labels[target.id] }}{% if target.data.registration %} · {{ target.data.registration }}{% endif %}</option>
                                 {% endfor %}
                                 <option value="new"{% if current == 'new' %} selected{% endif %}>{{ 'import_app.map.new_vehicle'|trans({name: vehicle.name()}) }}</option>
                                 <option value="skip"{% if current == 'skip' %} selected{% endif %}>{{ 'import_app.map.skip_vehicle'|trans }}</option>

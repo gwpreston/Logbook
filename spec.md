@@ -1463,10 +1463,17 @@ from fleet totals unless "include archived" is toggled.
   they were added, oldest first, "Ford Fiesta (1)" (#630). Only the
   vehicles in the same list, chart or picker count, so an archived Fiesta
   a picker doesn't list changes nothing there (#631). A name with no
-  clash is unchanged. Built in one place (a `VehicleLabels` service, the
-  wrapper string `vehicle.name_distinct`) and used on the true-cost
-  *Fleet* card's table and legend and in every vehicle picker (#629);
-  other lists of vehicles still show `Vehicle::name()`.
+  clash is unchanged. A vehicle that has nothing to add (no registration
+  and no year) keeps its plain name when that already differs from the
+  others' labels. Where a picker already shows the registration beside
+  the name (Incident history and the app-import maps as "Ford Fiesta ·
+  AB12 CDE", the scan picker as a plate), the label adds only what that
+  leaves alike: two Fiestas with different registrations keep their plain
+  names there, and only vehicles with the same or no registration gain
+  their year, else a number (#639). Built in one place (a `VehicleLabels`
+  service, the wrapper string `vehicle.name_distinct`) and used on the
+  true-cost *Fleet* card's table and legend and in every vehicle picker
+  (#629); other lists of vehicles still show `Vehicle::name()`.
 - **Garage cards** (`/garage`): photo (or a striped placeholder with the
   car / motorbike icon), plate (the registration in the owner's style, §8
   *Registration plate*), fuel type, name and the descriptive line. A due
@@ -12845,10 +12852,11 @@ task breakdowns live in the per-phase files; this is the map.
   (#622). No migration. See
   [`phase-54.17.md`](docs/phases/phase-54.17.md).
 - **Phase 54.18 — Telling same-named vehicles apart from the known-issues
-  log + patch release** (planned). Two vehicles with the same displayed
+  log + patch release** (complete). Two vehicles with the same displayed
   name gain their registration, else their year, else a number, where
   they're shown together: the true-cost *Fleet* card's table and legend
-  and every vehicle picker (§7.1, K203, #621, #629–#631). Releases
+  and every vehicle picker, adding only what a picker's own registration
+  leaves alike (§7.1, K203, #621, #629–#631, #639). Releases
   v3.21.14 (#628). No migration. See
   [`phase-54.18.md`](docs/phases/phase-54.18.md).
 - **Phase 54.19 — Windows and the test runs from the known-issues log +

@@ -70,8 +70,10 @@
                     <label class="field__label" for="f-vehicle">{{ 'incident.history.field.vehicle'|trans }}</label>
                     <select class="select" id="f-vehicle" name="vehicle">
                         <option value="">{{ 'incident.history.every_vehicle'|trans }}</option>
+                        {# Two vehicles with the same name are told apart (spec §7.1, #629, #639: the registration is shown already). #}
+                        {% set labels = vehicle_labels(vehicles, true) %}
                         {% for vehicle in vehicles %}
-                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}{% if vehicle.isArchived() %} ({{ 'incident.history.archived'|trans }}){% endif %}</option>
+                            <option value="{{ vehicle.id }}"{% if filter.vehicleId == vehicle.id %} selected{% endif %}>{{ labels[vehicle.id] }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}{% if vehicle.isArchived() %} ({{ 'incident.history.archived'|trans }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>

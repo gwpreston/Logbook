@@ -5,7 +5,7 @@ name (two "Ford Fiesta"s with no nickname) are told apart by their
 registration, else their year, on the true-cost *Fleet* card and in every
 vehicle picker.*
 
-Status: 📋 planned · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.14**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.17](phase-54.17.md), the last
 known-issues batch. It takes K203 (MEDIUM), the only *Open* row that can
@@ -78,6 +78,16 @@ v3.21.13.
   list, chart or picker. An archived Fiesta that a picker doesn't list
   doesn't change the active one's label there. Not chosen: the whole
   garage, archived included.
+- **Pickers that already show the registration (#639, found while
+  starting it):** Incident history and the two app-import maps show
+  "Ford Fiesta · AB12 CDE", and the scan picker a plate under the name.
+  There the label adds only what that leaves alike: vehicles are compared
+  by name and registration together, so two Fiestas with different
+  registrations keep their plain names, and those with the same or no
+  registration gain their year, else a number. `VehicleLabels` takes a
+  flag saying the registration is already shown. Not chosen: the full
+  label everywhere ("Ford Fiesta (AB12 CDE) · AB12 CDE"); leaving those
+  four pickers as they are.
 - **How it's built:** one place decides the labels, as
   `Vehicle::description()` does for the descriptive line: a
   `VehicleLabels` service that takes the vehicles shown together and
@@ -90,44 +100,71 @@ v3.21.13.
 
 ### 54.18.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #621 and #628–#631 were decided
       when the phase was planned; check that none of those still open
-      bears on K203.
+      bears on K203. (2026-11-17: none does; #460 asks whether the API may
+      break, and this phase changes no API or MCP output. #639 was found
+      while starting it and decided by the owner the same day.)
 
 ### 54.18.1 Telling same-named vehicles apart (K203)
 
-- [ ] `VehicleLabels` service: given the vehicles shown together, a label
+- [x] `VehicleLabels` service: given the vehicles shown together, a label
       per id as #630 and #631 say; `vehicle.name_distinct` in every
       catalogue in `translations/`.
-- [ ] Unit tests: no clash keeps the plain name; two Fiestas with
+- [x] Unit tests: no clash keeps the plain name; two Fiestas with
       registrations; one without a registration gets its year; two with
       neither are numbered oldest first; "Ford fiesta" clashes with
       "Ford Fiesta"; a nickname that matches another vehicle's make and
       model clashes too.
-- [ ] `TrueCostCharts::fleet()` names each series by its label; the
+- [x] `TrueCostCharts::fleet()` names each series by its label; the
       Fleet table's headers follow (they read the series).
-- [ ] Twig function `vehicle_labels(vehicles)`; the nine picker templates
+- [x] Twig function `vehicle_labels(vehicles)`; the nine picker templates
       (#629) show `labels[vehicle.id]` in place of `vehicle.name()`.
-- [ ] HTTP test: two "Ford Fiesta"s with different registrations; the
+      The four that already show the registration (Incident history, the
+      app-import maps, the scan picker) pass `true` (#639).
+- [x] HTTP test: two "Ford Fiesta"s with different registrations; the
       true-cost report's Fleet table headers, its chart data and its
       picker, and the Reports picker, show both registrations (fails
       today); a household with one Fiesta shows "Ford Fiesta" alone.
-- [ ] Checked in a browser at 375 px and wide, English and German: the
-      Fleet table, legend and pickers with two Fiestas.
+- [x] Checked in a browser at 375 px and wide, English and German: the
+      Fleet table, legend and pickers with two Fiestas. (2026-11-17, the
+      demo garage with its Golf and Corolla renamed "Ford Fiesta 1.0
+      EcoBoost" beside the archived Fiesta: see the design review below.)
 
 ### 54.18.2 Finish
 
-- [ ] Known-issues row K203 *Fixed* (Phase 54.18); #621 and #629–#631
-      marked as built.
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+- [x] Known-issues row K203 *Fixed* (Phase 54.18); #621 and #629–#631
+      marked as built (and #639).
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
+- [x] VERSION 3.21.14, CHANGELOG 3.21.14, README status (#628).
 - [ ] Tag `v3.21.14` once merged.
+
+## Design review (2026-11-17)
+
+No new page, widget or component: the change is the text of existing
+options, table headers and legend entries, so no token, layout or
+`DESIGN.md` change. Checked in the browser (`php -S` on a scratch SQLite
+database with the demo data, two active vehicles renamed "Ford Fiesta
+1.0 EcoBoost" beside the archived "Ford Fiesta 1.0 EcoBoost" WR14 FNE):
+
+- **True cost, 1280 and 375 px, English and German.** The Fleet table's
+  headers and the chart legend read "Ford Fiesta 1.0 EcoBoost (LB19 KTR)"
+  and "(LK22 VXN)"; at 375 px the legend wraps one entry per line and the
+  page has no sideways scroll. The picker lists the archived one as
+  "Ford Fiesta 1.0 EcoBoost (WR14 FNE) (Archiviert)", since it is in the
+  same list (#631).
+- **Reports picker** the same, in German.
+- **Incident history** keeps "Ford Fiesta 1.0 EcoBoost · LB19 KTR" with
+  nothing repeated (#639).
+- **Left as #629 decided:** the true-cost report's per-vehicle cards
+  below the Fleet card still title each vehicle by its plain name, as do
+  the other lists of vehicles.
 
 ## Acceptance criteria
 
@@ -160,3 +197,8 @@ v3.21.13.
 - **#631 — Which vehicles count when deciding whether two names clash
   (K203)?** *Decided 2026-11-15:* only those shown together. Not chosen:
   the whole garage, archived included.
+- **#639 — Four pickers already show the registration beside the name;
+  what does the label add there (K203, found while starting it)?**
+  *Decided 2026-11-17:* only what that leaves alike: compared by name and
+  registration together, then the year, else a number. Not chosen: the
+  full label everywhere; leaving those four pickers as they are.

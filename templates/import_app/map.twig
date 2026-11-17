@@ -38,8 +38,10 @@
                 <div class="field">
                     <label class="field__label" for="f-vehicle">{{ 'import_app.map.vehicle_label'|trans }}</label>
                     <select class="select" id="f-vehicle" name="vehicle">
+                        {# Two vehicles with the same name are told apart (spec §7.1, #629, #639: the registration is shown already). #}
+                        {% set labels = vehicle_labels(manageable, true) %}
                         {% for vehicle in manageable %}
-                            <option value="{{ vehicle.id }}"{% if options.vehicle == vehicle.id ~ '' %} selected{% endif %}>{{ vehicle.name() }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</option>
+                            <option value="{{ vehicle.id }}"{% if options.vehicle == vehicle.id ~ '' %} selected{% endif %}>{{ labels[vehicle.id] }}{% if vehicle.data.registration %} · {{ vehicle.data.registration }}{% endif %}</option>
                         {% endfor %}
                         <option value="new"{% if options.vehicle == 'new' %} selected{% endif %}>{{ 'import_app.map.new_vehicle'|trans({name: file_vehicle}) }}</option>
                         <option value="skip"{% if options.vehicle == 'skip' %} selected{% endif %}>{{ 'import_app.map.skip_vehicle'|trans }}</option>
