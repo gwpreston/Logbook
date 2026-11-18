@@ -289,6 +289,12 @@ On macOS with Homebrew, `brew install tesseract tesseract-lang`. If
 `tesseract` isn't on the web server's `PATH`, set `TESSERACT_BINARY` to
 its full path, such as `/opt/homebrew/bin/tesseract`.
 
+On Windows, install Tesseract with its Windows installer and put its
+folder on `PATH`, or set `TESSERACT_BINARY` to the full path, such as
+`C:\Program Files\Tesseract-OCR\tesseract.exe`. Ghostscript's command
+there is `gswin64c`, so set `GHOSTSCRIPT_BINARY=gswin64c`. You don't
+need to type `.exe`. [Deployment](deployment.md) has the details.
+
 Scanned PDFs are rendered with Ghostscript (or Imagick) first, as for AI
 scanning. If the PHP Imagick extension is loaded, Logbook uses it to
 prepare pictures; otherwise it uses GD, which it always needs.

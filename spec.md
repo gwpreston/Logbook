@@ -12876,12 +12876,14 @@ task breakdowns live in the per-phase files; this is the map.
   v3.21.14 (#628). No migration. See
   [`phase-54.18.md`](docs/phases/phase-54.18.md).
 - **Phase 54.19 — Windows and the test runs from the known-issues log +
-  patch release** (in progress). `bin/test-all-dbs.sh` starts its SQLite pass
+  patch release** (complete). `bin/test-all-dbs.sh` starts its SQLite pass
   from a fresh file (§9, K211); Tesseract and Ghostscript read from the
-  platform's null device, so they start on a bare-PHP Windows server,
-  with `gswin64c` documented (§9, K213, #633, #635, #637); the OCR tests'
-  stand-in runs on Windows (§9, K212, #636); a full native Windows run
-  checks and closes K185 (#638). Releases v3.21.15 (#634). No migration.
+  platform's null device and are found as `tesseract.exe` and
+  `gswin64c.exe`, so they start on a bare-PHP Windows server, with
+  `gswin64c` documented (§9, K213, #633, #635, #637, #642); the OCR
+  tests' stand-in runs on Windows (§9, K212, #636); a full native Windows
+  run closes K185 (#638) and records K220–K225. Releases v3.21.15
+  (#634). No migration.
   See [`phase-54.19.md`](docs/phases/phase-54.19.md).
 
 ---

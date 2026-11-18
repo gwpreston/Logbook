@@ -6,6 +6,31 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.15] — 2026-11-18
+
+Phase 54.19: **Windows and the test runs from the known-issues log**
+([docs/phases/phase-54.19.md](docs/phases/phase-54.19.md)). No migration;
+pull and restart.
+
+### Fixed
+- **Reading text from photos and scanned PDFs works on a Windows server.**
+  On a bare-PHP install on Windows, Tesseract and Ghostscript couldn't
+  start, so OCR always showed as not working and scanned PDFs weren't
+  rendered, even with `TESSERACT_BINARY` set. Both now start. A bare
+  `tesseract` or `gswin64c` is found as `tesseract.exe` or `gswin64c.exe`
+  on `PATH`, and a full path may use backslashes. Set
+  `GHOSTSCRIPT_BINARY=gswin64c` there: [deployment.md](docs/deployment.md)
+  says how. Linux and Docker are unchanged (K213).
+
+### Changed
+- **For contributors: `bin/test-all-dbs.sh` can run twice in a row.** The
+  SQLite pass now starts from a fresh file, as the server engines already
+  did. A second run no longer stops with "This install has 7 users" (K211).
+- **For contributors: the OCR tests pass on Windows.** Their Tesseract
+  stand-in is now a PHP script with an `sh` launcher and a `.cmd`
+  launcher, so the 36 OCR tests that failed in a native Windows run pass
+  (K212).
+
 ## [3.21.14] — 2026-11-17
 
 Phase 54.18: **Telling same-named vehicles apart**

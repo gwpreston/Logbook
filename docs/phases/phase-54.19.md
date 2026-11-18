@@ -5,7 +5,7 @@ every engine no longer fails on SQLite, the OCR tests pass on Windows,
 Tesseract and Ghostscript start on a Windows server, and K185 is checked
 and closed.*
 
-Status: 🚧 in progress · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.18](phase-54.18.md), the last
 known-issues batch. It takes K211, K212 and K213, all found by Phase
@@ -133,8 +133,13 @@ v3.21.14.
 - [x] Regression test (`tests/Unit/Docker/TestAllDbsScriptTest`): the
       script's `sqlite` pass removes its file before `phinx migrate`
       (fails today).
-- [ ] Checked by hand: two runs of `bin/test-all-dbs.sh sqlite` in a row
-      both pass; the result goes in the phase file.
+- [x] Checked by hand: two runs of `bin/test-all-dbs.sh sqlite` in a row
+      both pass; the result goes in the phase file. *Checked 2026-11-18*
+      on Docker Desktop for Windows: after a complete
+      `bin/test-all-dbs.sh` (SQLite 4,927 tests, 23 skipped; PostgreSQL,
+      MySQL and MariaDB 4,927, 16 skipped each), `bin/test-all-dbs.sh
+      sqlite` ran twice in a row, both 4,927 tests, 23 skipped, with no
+      stop in the 2.0 rollback.
 
 ### 54.19.2 Tesseract and Ghostscript on Windows (K213)
 
@@ -171,22 +176,36 @@ v3.21.14.
 
 ### 54.19.4 K185 checked
 
-- [ ] On a Windows checkout with `attrib -R /S /D var` done, a full
+- [x] On a Windows checkout with `attrib -R /S /D var` done, a full
       native `composer test`: record the result. With no 60-second stop,
       K185 *Fixed* as #638 says; otherwise the timing goes in its row and
-      it stays *Open*.
+      it stays *Open*. *Done 2026-11-18* (Windows 11, PHP 8.5.12,
+      SQLite): 4,927 tests in 20 min 45 s with no "Maximum execution
+      time", so K185 is *Fixed*. 88 tests failed or errored. 31 were the
+      upload tests on read-only folders: run from Git Bash, `attrib -R /S
+      /D var` had its switches rewritten as paths, and in `cmd` it names
+      only `var` itself; `attrib -R var\* /S /D` from `cmd` clears the
+      subfolders, after which those 31 pass, as does
+      `TesseractEngineTest`'s timing check, which ran 0.56 s against
+      0.5 s under the full suite's load. The other 47 are Windows-only
+      test problems this phase doesn't touch (no process code), recorded
+      as K220–K225: OpenSSL finds no config for the signing-key tests
+      (42), a POSIX `VAR=x` command line, a `0600` file mode, ICU's
+      default region for an empty locale, an unquoted cron path and a
+      wrapped console message.
 
 ### 54.19.5 Finish
 
-- [ ] Known-issues rows K211, K212 and K213 *Fixed* (Phase 54.19); K185
-      as 54.19.4 found; #633 and #635–#638 marked as built.
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+- [x] Known-issues rows K211, K212 and K213 *Fixed* (Phase 54.19); K185
+      as 54.19.4 found; #633 and #635–#638 marked as built (and #642).
+      K220–K225 recorded from 54.19.4's native run.
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.15, CHANGELOG 3.21.15, README status (#634).
+- [x] VERSION 3.21.15, CHANGELOG 3.21.15, README status (#634).
 - [ ] Tag `v3.21.15` once merged.
 
 ## Acceptance criteria
