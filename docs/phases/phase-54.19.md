@@ -83,8 +83,12 @@ v3.21.14.
   backslash path as a name, so the null device alone wouldn't have made
   either tool start. On Windows only, a name holding `\`, `/` or a drive
   letter is a path, and a bare name is tried as given and then with each
-  `PATHEXT` extension (`.COM;.EXE;.BAT;.CMD` when it's empty). Linux is
-  unchanged. Not chosen: documenting a full forward-slash path with
+  `PATHEXT` extension (`.COM;.EXE;.BAT;.CMD` when it's empty). Windows
+  has no execute bit, and PHP's `is_executable()` there is false for a
+  `.cmd` (it looks for a real binary), so on Windows a file counts as
+  runnable when its extension is one `PATHEXT` names, as Windows itself
+  decides; without that, #636's `.cmd` launcher couldn't be found. Linux
+  is unchanged. Not chosen: documenting a full forward-slash path with
   `.exe` as the only way.
 - **K212's stand-in (#636):** the stand-in's logic moves into
   `tests/Fixtures/ocr/fake-tesseract.php`, behaving exactly as the `sh`
@@ -134,16 +138,16 @@ v3.21.14.
 
 ### 54.19.2 Tesseract and Ghostscript on Windows (K213)
 
-- [ ] `Support\Process\NullDevice::path()` (#635); `ProcessRunner::start()`
+- [x] `Support\Process\NullDevice::path()` (#635); `ProcessRunner::start()`
       and `GhostscriptRenderer` use it in place of `/dev/null`.
-- [ ] `Executable::find()` on Windows (#642): a name with `\`, `/` or a
+- [x] `Executable::find()` on Windows (#642): a name with `\`, `/` or a
       drive letter is a path; a bare name is tried as given, then with
       each `PATHEXT` extension. Unit tests for both OSes, the OS and
       `PATHEXT` handed in so Linux CI covers the Windows branch.
-- [ ] Unit test: `NullDevice::path()` is `NUL` on Windows and `/dev/null`
+- [x] Unit test: `NullDevice::path()` is `NUL` on Windows and `/dev/null`
       elsewhere; `ProcessRunner` starts `php -v` and reads its output on
       the OS running the test (fails today on Windows).
-- [ ] `docs/deployment.md`: the Windows note on `tesseract.exe` and
+- [x] `docs/deployment.md`: the Windows note on `tesseract.exe` and
       `GHOSTSCRIPT_BINARY=gswin64c` (#637); spec §9 already says it.
 
 ### 54.19.3 The OCR tests on Windows (K212)

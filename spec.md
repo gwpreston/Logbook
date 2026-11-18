@@ -11464,8 +11464,10 @@ Real environment variables override `.env`; an empty value counts as unset.
   that holds `\`, `/` or a drive letter is a path; a bare name is looked
   up on `PATH` as given and then with each `PATHEXT` extension (`.COM`,
   `.EXE`, `.BAT`, `.CMD` when it's empty), so `tesseract.exe` on `PATH`
-  and `GHOSTSCRIPT_BINARY=gswin64c` are found. Elsewhere the lookup is
-  unchanged (Phase 54.19, K213, #642).
+  and `GHOSTSCRIPT_BINARY=gswin64c` are found. Windows has no execute
+  bit, so there a file counts as runnable when its extension is one
+  `PATHEXT` names. Elsewhere the lookup is unchanged (Phase 54.19, K213,
+  #642).
 - Reading text from images (§7.27, Phase 53.1): `OCR_ENGINE` (`auto`,
   the default, | `tesseract` | `paddleocr` | `off`; anything else stops
   the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up

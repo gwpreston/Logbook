@@ -48,7 +48,9 @@ final class ProcessRunner
             return new ProcessResult(-1, '', 'no temporary file');
         }
         $environment = $env === [] ? null : array_merge(getenv(), $env);
-        $process = @proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => $out, 2 => $err], $pipes, null, $environment);
+        // Nothing is written to its stdin: it reads the platform's null device (`NUL` on Windows, K213).
+        $stdin = ['file', NullDevice::path(), 'r'];
+        $process = @proc_open($command, [0 => $stdin, 1 => $out, 2 => $err], $pipes, null, $environment);
         if (!is_resource($process)) {
             fclose($out);
             fclose($err);
