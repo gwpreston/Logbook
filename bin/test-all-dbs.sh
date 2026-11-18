@@ -57,11 +57,21 @@ recreate() {
     esac
 }
 
+# The SQLite pass's own file and the journals SQLite keeps beside it (K198).
+sqlite_file=var/testing-all-dbs.sqlite
+
 for engine in $engines; do
+    # Run before migrating; empty for the server engines, which recreate() resets instead.
+    fresh=""
     case "$engine" in
         # Its own SQLite file, not var/testing.sqlite, so a native `composer test`
         # (or a hook running one) on the host doesn't delete it mid-run (K198).
-        sqlite)  env="-e TEST_DB_DRIVER=sqlite -e TEST_DB_NAME=var/testing-all-dbs.sqlite" ;;
+        # Like recreate() for the server engines (K155), the pass starts from no file
+        # (K211): the one an earlier run left holds the users its tests added, so the
+        # 2.0 migration's rollback refuses ("This install has 7 users"). The PHPUnit
+        # bootstrap clears it too, but only after the rollback has run.
+        sqlite)  env="-e TEST_DB_DRIVER=sqlite -e TEST_DB_NAME=$sqlite_file"
+                 fresh="rm -f $sqlite_file $sqlite_file-wal $sqlite_file-shm $sqlite_file-journal && " ;;
         pgsql)   env="-e TEST_DB_DRIVER=pgsql -e TEST_DB_HOST=pgsql $server" ;;
         mysql)   env="-e TEST_DB_DRIVER=mysql -e TEST_DB_HOST=mysql $server" ;;
         mariadb) env="-e TEST_DB_DRIVER=mysql -e TEST_DB_HOST=mariadb $server" ;;
@@ -74,7 +84,7 @@ for engine in $engines; do
     # foreground command ends (the whole suite), but `wait` returns at once
     # on a signal, so the trap can stop the container straight away.
     # shellcheck disable=SC2086
-    $compose run --rm --no-deps --name "$current" $env $nosecret app sh -c '
+    $compose run --rm --no-deps --name "$current" $env $nosecret app sh -c "$fresh"'
         vendor/bin/phinx migrate -e testing -q &&
         vendor/bin/phinx rollback -e testing -t 0 -q &&
         vendor/bin/phinx migrate -e testing -q &&

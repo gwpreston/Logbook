@@ -113,11 +113,11 @@ v3.21.14.
 
 ### 54.19.1 Every engine twice in a row (K211)
 
-- [ ] `bin/test-all-dbs.sh`: the `sqlite` pass removes
+- [x] `bin/test-all-dbs.sh`: the `sqlite` pass removes
       `var/testing-all-dbs.sqlite` and its `-wal`, `-shm` and `-journal`
       files inside the run container before migrating, with a comment
       naming K211 beside K155's.
-- [ ] Regression test (`tests/Unit/Docker/TestAllDbsScriptTest`): the
+- [x] Regression test (`tests/Unit/Docker/TestAllDbsScriptTest`): the
       script's `sqlite` pass removes its file before `phinx migrate`
       (fails today).
 - [ ] Checked by hand: two runs of `bin/test-all-dbs.sh sqlite` in a row
