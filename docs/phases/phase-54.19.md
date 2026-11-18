@@ -5,7 +5,7 @@ every engine no longer fails on SQLite, the OCR tests pass on Windows,
 Tesseract and Ghostscript start on a Windows server, and K185 is checked
 and closed.*
 
-Status: 📋 planned · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.18](phase-54.18.md), the last
 known-issues batch. It takes K211, K212 and K213, all found by Phase
@@ -100,10 +100,16 @@ v3.21.14.
 
 ### 54.19.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #633 to #638 were decided when
       the phase was planned; check that none still open bears on these
-      rows.
+      rows. *Done 2026-11-18:* none of those still open (#221, #390,
+      #391, #460, #462, #537–#542, #551) bears on K185, K211, K212 or
+      K213. Phase 54.18's merge review had left #640 and #641 (K214,
+      K216, K217); the owner decided both the same day (the report pages
+      only; a final uniqueness pass) and chose a new Phase 54.20 for
+      K214, K215, K217, K218 and K219 rather than this one; K216 is
+      *Won't fix* (#640, the sidebar keeps the name only).
 
 ### 54.19.1 Every engine twice in a row (K211)
 

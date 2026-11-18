@@ -248,12 +248,16 @@ database with the demo data, two active vehicles renamed "Ford Fiesta
 - **#640 — Should the same-name label also apply to the lists #629 left
   out: the Cost of ownership cards and table, the true-cost per-vehicle
   cards, the Reports breakdown and the sidebar's *Vehicles* list (K214,
-  K216)?** (found in the merge review) *Needs a decision.* Options: (1)
-  yes, on these report pages only; (2) yes, on every list of several
-  vehicles, the sidebar included; (3) no, keep #629's scope.
+  K216)?** (found in the merge review) *Decided 2026-11-18:* (1) yes, on
+  these report pages only (cards, table rows, working-out headings); the
+  sidebar keeps the name only. To be built in Phase 54.20. Not chosen:
+  every list of several vehicles, the sidebar included (2); keeping
+  #629's scope (3).
 - **#641 — Should labels be checked for uniqueness across the whole
   list, so a vehicle named like another's generated label ("Ford Fiesta
-  (1)") is still told apart (K217)?** (found in the merge review) *Needs
-  a decision.* Options: (1) a final pass that treats labels still equal
-  as a clash; (2) leave it as spec §7.1 has it; (3) a different wrapper
-  for the number than for the registration or year.
+  (1)") is still told apart (K217)?** (found in the merge review)
+  *Decided 2026-11-18:* (1) a final pass: labels still equal after the
+  clash groups (trimmed, ignoring case) are treated as a clash and
+  numbered or given more detail. To be built in Phase 54.20. Not chosen:
+  leaving it as spec §7.1 has it (2); a different wrapper for the number
+  than for the registration or year (3).
