@@ -5,7 +5,7 @@ every engine no longer fails on SQLite, the OCR tests pass on Windows,
 Tesseract and Ghostscript start on a Windows server, and K185 is checked
 and closed.*
 
-Status: ✅ complete · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · released as **v3.21.15**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.18](phase-54.18.md), the last
 known-issues batch. It takes K211, K212 and K213, all found by Phase
@@ -200,13 +200,15 @@ v3.21.14.
       as 54.19.4 found; #633 and #635–#638 marked as built (and #642).
       K220–K225 recorded from 54.19.4's native run.
 - [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
-- [ ] Merge review; merge. (After the pull request; merge as a merge
+- [x] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
+      (Merged in #240 on 2026-11-18 without a merge review; the owner
+      chose on 2026-11-18 to release v3.21.15 without one.)
 
 ### Release
 
 - [x] VERSION 3.21.15, CHANGELOG 3.21.15, README status (#634).
-- [ ] Tag `v3.21.15` once merged.
+- [x] Tag `v3.21.15` once merged.
 
 ## Acceptance criteria
 
