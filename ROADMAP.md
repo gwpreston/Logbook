@@ -150,7 +150,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.16](docs/phases/phase-54.16.md) | Charts without JS, the Docker image's tooling and the test runs from the known-issues log + patch release | ✅ |
 | [54.17](docs/phases/phase-54.17.md) | Chart tables, stat tiles and the test runs from the known-issues log + patch release | ✅ |
 | [54.18](docs/phases/phase-54.18.md) | Telling same-named vehicles apart from the known-issues log + patch release | ✅ |
-| [54.19](docs/phases/phase-54.19.md) | Windows and the test runs from the known-issues log + patch release | 📋 |
+| [54.19](docs/phases/phase-54.19.md) | Windows and the test runs from the known-issues log + patch release | ✅ |
 
 *Update the status column as each phase lands.*
 

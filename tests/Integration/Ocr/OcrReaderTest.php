@@ -18,6 +18,7 @@ use Logbook\Support\Process\ProcessRunner;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\CountingPreparer;
 use Logbook\Tests\Support\FakeRenderer;
+use Logbook\Tests\Support\FakeTesseract;
 use Logbook\Tests\Support\ScanFiles;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -29,7 +30,7 @@ use Symfony\Component\HttpClient\MockHttpClient;
  */
 final class OcrReaderTest extends AppTestCase
 {
-    private const string FAKE = __DIR__ . '/../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
 
     private string $photo;
     private FakeRenderer $renderer;

@@ -1473,7 +1473,16 @@ from fleet totals unless "include archived" is toggled.
   their year, else a number (#639). Built in one place (a `VehicleLabels`
   service, the wrapper string `vehicle.name_distinct`) and used on the
   true-cost *Fleet* card's table and legend and in every vehicle picker
-  (#629); other lists of vehicles still show `Vehicle::name()`.
+  (#629). Phase 54.20 (planned) extends it to the report pages (#640,
+  K214): the Cost of ownership cards, table row headers and working-out
+  headings, the true-cost per-vehicle cards and working summaries, and
+  the Reports breakdown rows. The sidebar's *Vehicles* list and other
+  lists of vehicles still show `Vehicle::name()` (K216 stays as decided).
+  From the same phase, a final pass keeps labels unique across the whole
+  list (#641, K217): labels still equal after the clash groups (compared
+  trimmed, ignoring case), such as a vehicle nicknamed "Ford Fiesta (1)"
+  beside two plain Fiestas, are treated as a clash and numbered or given
+  more detail.
 - **Garage cards** (`/garage`): photo (or a striped placeholder with the
   car / motorbike icon), plate (the registration in the owner's style, §8
   *Registration plate*), fuel type, name and the descriptive line. A due
@@ -11451,7 +11460,14 @@ Real environment variables override `.env`; an empty value counts as unset.
   set `GHOSTSCRIPT_BINARY=gswin64c` (Phase 54.19, #637). Ghostscript and
   Tesseract read their input from the platform's null device, `NUL` on
   Windows and `/dev/null` elsewhere, so both start on a bare-PHP Windows
-  server (Phase 54.19, K213, #633, #635).
+  server (Phase 54.19, K213, #633, #635). On Windows a binary setting
+  that holds `\`, `/` or a drive letter is a path; a bare name is looked
+  up on `PATH` as given and then with each `PATHEXT` extension (`.COM`,
+  `.EXE`, `.BAT`, `.CMD` when it's empty), so `tesseract.exe` on `PATH`
+  and `GHOSTSCRIPT_BINARY=gswin64c` are found. Windows has no execute
+  bit, so there a file counts as runnable when its extension is one
+  `PATHEXT` names. Elsewhere the lookup is unchanged (Phase 54.19, K213,
+  #642).
 - Reading text from images (§7.27, Phase 53.1): `OCR_ENGINE` (`auto`,
   the default, | `tesseract` | `paddleocr` | `off`; anything else stops
   the app at start), `TESSERACT_BINARY` (default `tesseract`, looked up
@@ -12860,12 +12876,14 @@ task breakdowns live in the per-phase files; this is the map.
   v3.21.14 (#628). No migration. See
   [`phase-54.18.md`](docs/phases/phase-54.18.md).
 - **Phase 54.19 — Windows and the test runs from the known-issues log +
-  patch release** (planned). `bin/test-all-dbs.sh` starts its SQLite pass
+  patch release** (complete). `bin/test-all-dbs.sh` starts its SQLite pass
   from a fresh file (§9, K211); Tesseract and Ghostscript read from the
-  platform's null device, so they start on a bare-PHP Windows server,
-  with `gswin64c` documented (§9, K213, #633, #635, #637); the OCR tests'
-  stand-in runs on Windows (§9, K212, #636); a full native Windows run
-  checks and closes K185 (#638). Releases v3.21.15 (#634). No migration.
+  platform's null device and are found as `tesseract.exe` and
+  `gswin64c.exe`, so they start on a bare-PHP Windows server, with
+  `gswin64c` documented (§9, K213, #633, #635, #637, #642); the OCR
+  tests' stand-in runs on Windows (§9, K212, #636); a full native Windows
+  run closes K185 (#638) and records K220–K225. Releases v3.21.15
+  (#634). No migration.
   See [`phase-54.19.md`](docs/phases/phase-54.19.md).
 
 ---

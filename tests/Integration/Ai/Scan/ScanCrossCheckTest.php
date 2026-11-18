@@ -10,6 +10,7 @@ use Logbook\Domain\Ai\AiTaskName;
 use Logbook\Domain\Ai\Capability;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Tests\Support\ExifJpeg;
+use Logbook\Tests\Support\FakeTesseract;
 use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\OcrTsv;
 use Logbook\Tests\Support\ScanTestCase;
@@ -23,7 +24,7 @@ use Logbook\Tests\Support\ScanTestCase;
  */
 final class ScanCrossCheckTest extends ScanTestCase
 {
-    private const string FAKE = __DIR__ . '/../../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
     private const string NOT_ON_PAGE = 'Not found on the page, check this carefully.';
     /** A vision answer edited to invent a total. */
     private const array INVENTED = ['total' => ['value' => 'GBP 68.28', 'evidence' => 'TOTAL GBP 68.28']];

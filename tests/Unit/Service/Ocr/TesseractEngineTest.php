@@ -10,6 +10,7 @@ use Logbook\Service\Ocr\TesseractEngine;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Config\Env;
 use Logbook\Support\Process\ProcessRunner;
+use Logbook\Tests\Support\FakeTesseract;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class TesseractEngineTest extends TestCase
 {
-    private const string FAKE = __DIR__ . '/../../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
 
     private string $args;
     private ?string $dir = null;
@@ -86,7 +87,7 @@ final class TesseractEngineTest extends TestCase
         self::assertSame('tesseract', $status->engine);
         self::assertSame('tesseract 5.3.0', $status->version);
         self::assertSame(['deu', 'eng'], $status->languages);
-        self::assertStringEndsWith('fake-tesseract', $status->location);
+        self::assertSame(self::FAKE, $status->location);
     }
 
     public function testEnglishIsUsedWhenNoneOfTheWantedLanguagesIsInstalled(): void
@@ -153,13 +154,20 @@ final class TesseractEngineTest extends TestCase
 
     public function testABinaryPathWithSpacesAndQuotesIsRunAsItIs(): void
     {
-        $this->dir = sys_get_temp_dir() . "/logbook ocr 'quoted' \"dir\" " . bin2hex(random_bytes(4));
+        // Windows can't name a folder with a double quote, so there it keeps the spaces and the single quotes.
+        $windows = PHP_OS_FAMILY === 'Windows';
+        $this->dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "logbook ocr 'quoted' " . ($windows ? '' : '"dir" ')
+            . bin2hex(random_bytes(4));
         mkdir($this->dir);
-        copy(self::FAKE, $this->dir . '/tesseract');
-        chmod($this->dir . '/tesseract', 0755);
-        copy(dirname(self::FAKE) . '/receipt.tsv', $this->dir . '/receipt.tsv');
+        // The launcher, the stand-in it starts from its own folder, and the stand-in's answer.
+        $binary = $this->dir . DIRECTORY_SEPARATOR . ($windows ? 'tesseract.cmd' : 'tesseract');
+        copy(self::FAKE, $binary);
+        chmod($binary, 0755);
+        foreach (['fake-tesseract.php', 'receipt.tsv'] as $file) {
+            copy(dirname(self::FAKE) . DIRECTORY_SEPARATOR . $file, $this->dir . DIRECTORY_SEPARATOR . $file);
+        }
 
-        $result = $this->engine($this->dir . '/tesseract')->read('png', ['eng'], PageLayout::Page);
+        $result = $this->engine($binary)->read('png', ['eng'], PageLayout::Page);
 
         self::assertTrue($result->ok());
         self::assertSame('eng', $this->arguments()[3]);

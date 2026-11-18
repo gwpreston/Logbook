@@ -7,6 +7,7 @@ namespace Logbook\Service\Ai\Scan;
 use FilesystemIterator;
 use Logbook\Support\Config\AppSettings;
 use Logbook\Support\Process\Executable;
+use Logbook\Support\Process\NullDevice;
 
 /**
  * Renders PDF pages with Ghostscript (`GHOSTSCRIPT_BINARY`, default `gs` on
@@ -41,6 +42,8 @@ final class GhostscriptRenderer implements PdfRenderer
         }
 
         try {
+            // Its pages go to files; its streams use the platform's null device (`NUL` on Windows, K213).
+            $null = NullDevice::path();
             $process = proc_open([
                 $binary,
                 '-q',
@@ -55,7 +58,7 @@ final class GhostscriptRenderer implements PdfRenderer
                 '-dLastPage=' . $pages,
                 '-sOutputFile=' . $dir . '/page-%03d.jpg',
                 $pdfPath,
-            ], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
+            ], [0 => ['file', $null, 'r'], 1 => ['file', $null, 'w'], 2 => ['file', $null, 'w']], $pipes);
             if (!is_resource($process)) {
                 return [];
             }

@@ -12,6 +12,7 @@ use Logbook\Domain\Ai\Location;
 use Logbook\Repository\AiConnectionRepository;
 use Logbook\Service\Ai\Scan\Router;
 use Logbook\Service\Ai\Scan\ScanProblem;
+use Logbook\Tests\Support\FakeTesseract;
 use Logbook\Tests\Support\ScanTestCase;
 
 /**
@@ -21,7 +22,7 @@ use Logbook\Tests\Support\ScanTestCase;
  */
 final class RouterTest extends ScanTestCase
 {
-    private const string FAKE = __DIR__ . '/../../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
 
     public function testSendTextWithOcrWorkingReadsThroughOcr(): void
     {

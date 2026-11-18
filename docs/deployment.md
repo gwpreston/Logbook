@@ -192,6 +192,13 @@ The production stacks are unchanged: `true` by default.
 - Optional: **Tesseract** (`apt install tesseract-ocr tesseract-ocr-deu`), to
   read text from photos on your own server ([reading-files.md](reading-files.md)).
   The Docker image includes it (about 80 MB).
+- On a **Windows** server, install Tesseract and Ghostscript with their
+  Windows installers. Put the folder holding `tesseract.exe` on `PATH`, or
+  set `TESSERACT_BINARY` to its full path
+  (`C:\Program Files\Tesseract-OCR\tesseract.exe`). Ghostscript's command
+  there is `gswin64c`, not `gs`, so set `GHOSTSCRIPT_BINARY=gswin64c` with
+  its `bin` folder on `PATH`, or give the full path to `gswin64c.exe`.
+  Names are found without typing `.exe`.
 - `zip` (`php-zip`) for backup and restore; everything else works without it.
 - PostgreSQL, MySQL or MariaDB (or SQLite for a trial). Logbook is tested on
   PostgreSQL 17, MySQL 8.4 and MariaDB 11.4; older releases may work but

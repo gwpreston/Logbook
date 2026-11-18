@@ -5,7 +5,7 @@ every engine no longer fails on SQLite, the OCR tests pass on Windows,
 Tesseract and Ghostscript start on a Windows server, and K185 is checked
 and closed.*
 
-Status: 📋 planned · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
+Status: ✅ complete · releases **v3.21.15**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.18](phase-54.18.md), the last
 known-issues batch. It takes K211, K212 and K213, all found by Phase
@@ -77,6 +77,19 @@ v3.21.14.
   put `tesseract.exe` on `PATH` (or set `TESSERACT_BINARY` to its full
   path), and set `GHOSTSCRIPT_BINARY=gswin64c`. Not chosen: defaulting to
   `gswin64c` on Windows.
+- **Finding the binary on Windows (#642, found while building):** the
+  lookup (`Support\Process\Executable::find()`) couldn't find a bare
+  `tesseract` or `gswin64c`, since it never adds `.exe`, and took a
+  backslash path as a name, so the null device alone wouldn't have made
+  either tool start. On Windows only, a name holding `\`, `/` or a drive
+  letter is a path, and a bare name is tried as given and then with each
+  `PATHEXT` extension (`.COM;.EXE;.BAT;.CMD` when it's empty). Windows
+  has no execute bit, and PHP's `is_executable()` there is false for a
+  `.cmd` (it looks for a real binary), so on Windows a file counts as
+  runnable when its extension is one `PATHEXT` names, as Windows itself
+  decides; without that, #636's `.cmd` launcher couldn't be found. Linux
+  is unchanged. Not chosen: documenting a full forward-slash path with
+  `.exe` as the only way.
 - **K212's stand-in (#636):** the stand-in's logic moves into
   `tests/Fixtures/ocr/fake-tesseract.php`, behaving exactly as the `sh`
   script does today (`FAKE_TESSERACT_MODE` ok, sleep, fail, empty and
@@ -100,64 +113,99 @@ v3.21.14.
 
 ### 54.19.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #633 to #638 were decided when
       the phase was planned; check that none still open bears on these
-      rows.
+      rows. *Done 2026-11-18:* none of those still open (#221, #390,
+      #391, #460, #462, #537–#542, #551) bears on K185, K211, K212 or
+      K213. Phase 54.18's merge review had left #640 and #641 (K214,
+      K216, K217); the owner decided both the same day (the report pages
+      only; a final uniqueness pass) and chose a new Phase 54.20 for
+      K214, K215, K217, K218 and K219 rather than this one; K216 is
+      *Won't fix* (#640, the sidebar keeps the name only).
 
 ### 54.19.1 Every engine twice in a row (K211)
 
-- [ ] `bin/test-all-dbs.sh`: the `sqlite` pass removes
+- [x] `bin/test-all-dbs.sh`: the `sqlite` pass removes
       `var/testing-all-dbs.sqlite` and its `-wal`, `-shm` and `-journal`
       files inside the run container before migrating, with a comment
       naming K211 beside K155's.
-- [ ] Regression test (`tests/Unit/Docker/TestAllDbsScriptTest`): the
+- [x] Regression test (`tests/Unit/Docker/TestAllDbsScriptTest`): the
       script's `sqlite` pass removes its file before `phinx migrate`
       (fails today).
-- [ ] Checked by hand: two runs of `bin/test-all-dbs.sh sqlite` in a row
-      both pass; the result goes in the phase file.
+- [x] Checked by hand: two runs of `bin/test-all-dbs.sh sqlite` in a row
+      both pass; the result goes in the phase file. *Checked 2026-11-18*
+      on Docker Desktop for Windows: after a complete
+      `bin/test-all-dbs.sh` (SQLite 4,927 tests, 23 skipped; PostgreSQL,
+      MySQL and MariaDB 4,927, 16 skipped each), `bin/test-all-dbs.sh
+      sqlite` ran twice in a row, both 4,927 tests, 23 skipped, with no
+      stop in the 2.0 rollback.
 
 ### 54.19.2 Tesseract and Ghostscript on Windows (K213)
 
-- [ ] `Support\Process\NullDevice::path()` (#635); `ProcessRunner::start()`
+- [x] `Support\Process\NullDevice::path()` (#635); `ProcessRunner::start()`
       and `GhostscriptRenderer` use it in place of `/dev/null`.
-- [ ] Unit test: `NullDevice::path()` is `NUL` on Windows and `/dev/null`
+- [x] `Executable::find()` on Windows (#642): a name with `\`, `/` or a
+      drive letter is a path; a bare name is tried as given, then with
+      each `PATHEXT` extension. Unit tests for both OSes, the OS and
+      `PATHEXT` handed in so Linux CI covers the Windows branch.
+- [x] Unit test: `NullDevice::path()` is `NUL` on Windows and `/dev/null`
       elsewhere; `ProcessRunner` starts `php -v` and reads its output on
       the OS running the test (fails today on Windows).
-- [ ] `docs/deployment.md`: the Windows note on `tesseract.exe` and
+- [x] `docs/deployment.md`: the Windows note on `tesseract.exe` and
       `GHOSTSCRIPT_BINARY=gswin64c` (#637); spec §9 already says it.
 
 ### 54.19.3 The OCR tests on Windows (K212)
 
-- [ ] `tests/Fixtures/ocr/fake-tesseract.php` with today's behaviour;
+- [x] `tests/Fixtures/ocr/fake-tesseract.php` with today's behaviour;
       `fake-tesseract` as its `sh` launcher; `fake-tesseract.cmd` as its
       Windows launcher (#636).
-- [ ] One shared constant for the launcher's path, used by the eight
+- [x] One shared constant for the launcher's path, used by the eight
       classes that point at the stand-in (`RouterTest`,
       `ScanCrossCheckTest`, `ScanOcrTest`, `OcrReaderTest`,
       `OcrSettingsTest`, `ScanPageQueriesTest`, `ScanWithoutAiTest`,
       `TesseractEngineTest`).
-- [ ] Checked: those classes pass natively on Windows and on Linux
-      (`bin/test-all-dbs.sh`).
+- [x] Checked: those classes pass natively on Windows and on Linux
+      (`bin/test-all-dbs.sh`). *Checked 2026-11-18:* natively on
+      Windows 11 (PHP 8.5.12, SQLite) the eight classes and the rest of
+      `tests/Unit/Service/Ocr`, `tests/Integration/Ocr` and
+      `tests/Integration/Scan/Rules` pass, 179 tests, 10 skipped (nine
+      need Imagick, one a real Tesseract); in the Linux dev container
+      (PHP 8.4.27) the same 179 pass, 9 skipped. The constant is
+      `Logbook\Tests\Support\FakeTesseract::LAUNCHER`.
 
 ### 54.19.4 K185 checked
 
-- [ ] On a Windows checkout with `attrib -R /S /D var` done, a full
+- [x] On a Windows checkout with `attrib -R /S /D var` done, a full
       native `composer test`: record the result. With no 60-second stop,
       K185 *Fixed* as #638 says; otherwise the timing goes in its row and
-      it stays *Open*.
+      it stays *Open*. *Done 2026-11-18* (Windows 11, PHP 8.5.12,
+      SQLite): 4,927 tests in 20 min 45 s with no "Maximum execution
+      time", so K185 is *Fixed*. 88 tests failed or errored. 31 were the
+      upload tests on read-only folders: run from Git Bash, `attrib -R /S
+      /D var` had its switches rewritten as paths, and in `cmd` it names
+      only `var` itself; `attrib -R var\* /S /D` from `cmd` clears the
+      subfolders, after which those 31 pass, as does
+      `TesseractEngineTest`'s timing check, which ran 0.56 s against
+      0.5 s under the full suite's load. The other 47 are Windows-only
+      test problems this phase doesn't touch (no process code), recorded
+      as K220–K225: OpenSSL finds no config for the signing-key tests
+      (42), a POSIX `VAR=x` command line, a `0600` file mode, ICU's
+      default region for an empty locale, an unquoted cron path and a
+      wrapped console message.
 
 ### 54.19.5 Finish
 
-- [ ] Known-issues rows K211, K212 and K213 *Fixed* (Phase 54.19); K185
-      as 54.19.4 found; #633 and #635–#638 marked as built.
-- [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
+- [x] Known-issues rows K211, K212 and K213 *Fixed* (Phase 54.19); K185
+      as 54.19.4 found; #633 and #635–#638 marked as built (and #642).
+      K220–K225 recorded from 54.19.4's native run.
+- [x] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION 3.21.15, CHANGELOG 3.21.15, README status (#634).
+- [x] VERSION 3.21.15, CHANGELOG 3.21.15, README status (#634).
 - [ ] Tag `v3.21.15` once merged.
 
 ## Acceptance criteria
@@ -195,3 +243,9 @@ v3.21.14.
   2026-11-17:* *Fixed (Phase 54.19)* with each part's cause recorded, or
   left *Open* with the timing if the 60-second stop still happens. Not
   chosen: *Won't fix*.
+- **#642 — On Windows the binary lookup can't find a bare `tesseract` or
+  `gswin64c` and rejects a backslash path: what should it do (K213)?**
+  (found while building) *Decided 2026-11-18:* (1) on Windows only, a
+  name with `\`, `/` or a drive letter is a path, and a bare name is
+  tried as given and then with each `PATHEXT` extension. Not chosen:
+  documenting a full forward-slash path with `.exe` only (2).

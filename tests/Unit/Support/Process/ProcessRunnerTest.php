@@ -154,7 +154,8 @@ final class ProcessRunnerTest extends TestCase
         self::assertNull(Executable::find('logbook-no-such-binary'));
         $sh = Executable::find('sh');
         self::assertNotNull($sh);
-        self::assertStringEndsWith('/sh', $sh);
+        // On Windows (K213, #642) it is found with its extension, as Git for Windows' sh.exe.
+        self::assertMatchesRegularExpression('#[/\\\\]sh(\.exe)?$#i', $sh);
     }
 
     public function testAStoppedRunWritesNothingAfterwards(): void
