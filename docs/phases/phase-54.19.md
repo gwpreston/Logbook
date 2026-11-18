@@ -152,16 +152,22 @@ v3.21.14.
 
 ### 54.19.3 The OCR tests on Windows (K212)
 
-- [ ] `tests/Fixtures/ocr/fake-tesseract.php` with today's behaviour;
+- [x] `tests/Fixtures/ocr/fake-tesseract.php` with today's behaviour;
       `fake-tesseract` as its `sh` launcher; `fake-tesseract.cmd` as its
       Windows launcher (#636).
-- [ ] One shared constant for the launcher's path, used by the eight
+- [x] One shared constant for the launcher's path, used by the eight
       classes that point at the stand-in (`RouterTest`,
       `ScanCrossCheckTest`, `ScanOcrTest`, `OcrReaderTest`,
       `OcrSettingsTest`, `ScanPageQueriesTest`, `ScanWithoutAiTest`,
       `TesseractEngineTest`).
-- [ ] Checked: those classes pass natively on Windows and on Linux
-      (`bin/test-all-dbs.sh`).
+- [x] Checked: those classes pass natively on Windows and on Linux
+      (`bin/test-all-dbs.sh`). *Checked 2026-11-18:* natively on
+      Windows 11 (PHP 8.5.12, SQLite) the eight classes and the rest of
+      `tests/Unit/Service/Ocr`, `tests/Integration/Ocr` and
+      `tests/Integration/Scan/Rules` pass, 179 tests, 10 skipped (nine
+      need Imagick, one a real Tesseract); in the Linux dev container
+      (PHP 8.4.27) the same 179 pass, 9 skipped. The constant is
+      `Logbook\Tests\Support\FakeTesseract::LAUNCHER`.
 
 ### 54.19.4 K185 checked
 

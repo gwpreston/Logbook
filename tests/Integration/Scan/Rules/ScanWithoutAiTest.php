@@ -12,6 +12,7 @@ use Logbook\Repository\SettingRepository;
 use Logbook\Service\Ai\AiPreferences;
 use Logbook\Service\Feature\FeatureToggles;
 use Logbook\Tests\Support\ExifJpeg;
+use Logbook\Tests\Support\FakeTesseract;
 use Logbook\Tests\Support\Html;
 use Logbook\Tests\Support\OcrTsv;
 use Logbook\Tests\Support\ScanFiles;
@@ -27,7 +28,7 @@ use Logbook\Tests\Support\ScanTestCase;
  */
 final class ScanWithoutAiTest extends ScanTestCase
 {
-    private const string FAKE = __DIR__ . '/../../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
     private const array RECEIPT = [
         'SHORELINE FUELS LTD',
         '12 Harbour Road Seaton',

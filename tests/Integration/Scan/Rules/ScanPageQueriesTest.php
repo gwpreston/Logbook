@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Scan\Rules;
 
 use Logbook\Service\Ai\AiPreferences;
+use Logbook\Tests\Support\FakeTesseract;
 use Logbook\Tests\Support\QueryCounter;
 use Logbook\Tests\Support\ScanTestCase;
 
@@ -15,7 +16,7 @@ use Logbook\Tests\Support\ScanTestCase;
  */
 final class ScanPageQueriesTest extends ScanTestCase
 {
-    private const string FAKE = __DIR__ . '/../../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
     /** Was 26 before Phase 53.4 (27 with a cross-checked Internet connection, K118). */
     private const int BUDGET = 11;
 

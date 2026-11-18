@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Logbook\Tests\Integration\Ocr;
 
 use Logbook\Tests\Support\AppTestCase;
+use Logbook\Tests\Support\FakeTesseract;
 
 /**
  * Settings' *Reading text from images* page (spec.md §7.27, Phase 53.1):
@@ -13,7 +14,7 @@ use Logbook\Tests\Support\AppTestCase;
  */
 final class OcrSettingsTest extends AppTestCase
 {
-    private const string FAKE = __DIR__ . '/../../Fixtures/ocr/fake-tesseract';
+    private const string FAKE = FakeTesseract::LAUNCHER;
 
     protected function tearDown(): void
     {
