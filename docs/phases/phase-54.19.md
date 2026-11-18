@@ -77,6 +77,15 @@ v3.21.14.
   put `tesseract.exe` on `PATH` (or set `TESSERACT_BINARY` to its full
   path), and set `GHOSTSCRIPT_BINARY=gswin64c`. Not chosen: defaulting to
   `gswin64c` on Windows.
+- **Finding the binary on Windows (#642, found while building):** the
+  lookup (`Support\Process\Executable::find()`) couldn't find a bare
+  `tesseract` or `gswin64c`, since it never adds `.exe`, and took a
+  backslash path as a name, so the null device alone wouldn't have made
+  either tool start. On Windows only, a name holding `\`, `/` or a drive
+  letter is a path, and a bare name is tried as given and then with each
+  `PATHEXT` extension (`.COM;.EXE;.BAT;.CMD` when it's empty). Linux is
+  unchanged. Not chosen: documenting a full forward-slash path with
+  `.exe` as the only way.
 - **K212's stand-in (#636):** the stand-in's logic moves into
   `tests/Fixtures/ocr/fake-tesseract.php`, behaving exactly as the `sh`
   script does today (`FAKE_TESSERACT_MODE` ok, sleep, fail, empty and
@@ -127,6 +136,10 @@ v3.21.14.
 
 - [ ] `Support\Process\NullDevice::path()` (#635); `ProcessRunner::start()`
       and `GhostscriptRenderer` use it in place of `/dev/null`.
+- [ ] `Executable::find()` on Windows (#642): a name with `\`, `/` or a
+      drive letter is a path; a bare name is tried as given, then with
+      each `PATHEXT` extension. Unit tests for both OSes, the OS and
+      `PATHEXT` handed in so Linux CI covers the Windows branch.
 - [ ] Unit test: `NullDevice::path()` is `NUL` on Windows and `/dev/null`
       elsewhere; `ProcessRunner` starts `php -v` and reads its output on
       the OS running the test (fails today on Windows).
@@ -201,3 +214,9 @@ v3.21.14.
   2026-11-17:* *Fixed (Phase 54.19)* with each part's cause recorded, or
   left *Open* with the timing if the 60-second stop still happens. Not
   chosen: *Won't fix*.
+- **#642 — On Windows the binary lookup can't find a bare `tesseract` or
+  `gswin64c` and rejects a backslash path: what should it do (K213)?**
+  (found while building) *Decided 2026-11-18:* (1) on Windows only, a
+  name with `\`, `/` or a drive letter is a path, and a bare name is
+  tried as given and then with each `PATHEXT` extension. Not chosen:
+  documenting a full forward-slash path with `.exe` only (2).
