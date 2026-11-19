@@ -5,7 +5,7 @@ their keys without the server's `openssl.cnf`, the test-bootstrap, session
 secret, scheduler and rollback tests pass on Windows, and an empty locale
 no longer reads as the server's own region.*
 
-Status: 📋 planned · releases the next patch release (**v3.21.16** if it ships before 54.20) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases the next patch release (**v3.21.16** if it ships before 54.20) · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.19](phase-54.19.md), the last
 known-issues batch. It takes K220 to K225, all found by Phase 54.19's
@@ -120,11 +120,15 @@ for 54.20.
 
 ### 54.21.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #643 to #647 were decided when
       the phase was planned; check that none still open bears on these
       rows, and whether 54.20 has shipped (it decides this release's
-      number).
+      number). *Done 2026-11-19:* none of those still open (#221, #390,
+      #391, #460, #462, #537–#542, #551) bears on K220 to K225. The
+      *Open* rows are K145, K174, K201 and K209, each out of scope as
+      above. 54.20 has no file or ROADMAP row yet, so this release is
+      **v3.21.16**.
 
 ### 54.21.1 Signing keys without the server's openssl.cnf (K220)
 
