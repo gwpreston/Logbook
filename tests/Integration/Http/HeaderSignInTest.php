@@ -11,6 +11,7 @@ use Logbook\Service\Jobs\HeldJobFailures;
 use Logbook\Tests\Support\AppTestCase;
 use Logbook\Tests\Support\HeaderSignIn;
 use Logbook\Tests\Support\TestBrowser;
+use Logbook\Tests\Support\TestKeys;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Container\ContainerInterface;
 use Slim\App;
@@ -562,8 +563,7 @@ final class HeaderSignInTest extends AppTestCase
     {
         [$app, $log, $clock] = $this->jwtApp();
         $this->createOwner($app);
-        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
-        self::assertNotFalse($key);
+        $key = TestKeys::rsa();
         $pem = '';
         openssl_pkey_export($key, $pem);
         self::assertIsString($pem);

@@ -132,13 +132,15 @@ for 54.20.
 
 ### 54.21.1 Signing keys without the server's openssl.cnf (K220)
 
-- [ ] `tests/Fixtures/openssl.cnf` and one shared path for it in
+- [x] `tests/Fixtures/openssl.cnf` and one shared path for it in
       `tests/Support` (#644); `FakeIdentityProvider::rsa()`, `::ec()` and
-      `HeaderSignInTest`'s key pass it as `'config'`.
-- [ ] Regression test: a child PHP started with
+      `HeaderSignInTest`'s key pass it as `'config'`. The helper is
+      `Logbook\Tests\Support\TestKeys` (`rsa()`, `ec()`, `CONFIG`).
+- [x] Regression test: a child PHP started with
       `OPENSSL_CONF=/nonexistent` makes an RSA and an EC key through the
       shared helper (fails today: `openssl_pkey_new()` returns false, as
-      it does on macOS with that variable set).
+      it does on macOS with that variable set). `TestKeysTest`; without
+      `'config'` it fails with "openssl could not make an RSA key".
 
 ### 54.21.2 An empty locale has no region (K223)
 
