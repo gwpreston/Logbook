@@ -1,0 +1,9 @@
+# A minimal OpenSSL configuration for the tests that make signing keys
+# (spec.md §9, Phase 54.21, K220, #644). openssl_pkey_new() fails when PHP
+# finds no openssl.cnf (a WinGet PHP on Windows), so the tests pass this
+# file as 'config' on every OS: see tests/Support/TestKeys.php.
+
+[ req ]
+distinguished_name = req_distinguished_name
+
+[ req_distinguished_name ]

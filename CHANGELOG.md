@@ -6,6 +6,34 @@ is called out explicitly.
 
 ## [Unreleased]
 
+## [3.21.16] — 2026-11-19
+
+Phase 54.21: **The native Windows test run from the known-issues log**
+([docs/phases/phase-54.21.md](docs/phases/phase-54.21.md)). No migration;
+pull and restart.
+
+### Fixed
+- **An account with no language set no longer takes the server's country.**
+  When an account's locale was empty, Logbook read the country from the
+  server's own default locale, so on a server set to British English it
+  got the UK plate, MOT rules, UK gallon, April tax year and HMRC mileage
+  rates whatever the owner wanted. An empty locale now has no country, as
+  a locale without one (`en`, `de`) already did (K223).
+
+### Changed
+- **For contributors: the tests that failed in a native Windows run are
+  fixed.** The 42 tests that make a signing key bring their own minimal
+  `openssl.cnf`, so they pass where PHP finds none, as on a WinGet PHP
+  (K220). `TestBootstrapTest` starts PHP without a shell (K221);
+  `SessionSecretFileTest` checks the file's `0600` mode only where the OS
+  has mode bits (K222); `JobsPagesTest` expects the cron line the page
+  builds, quoted when the install's folder needs it, with a new
+  `SchedulerHealthTest` for the quoting (K224); and phinx's messages are
+  no longer wrapped at a narrow console's width in the tests (K225).
+- **For contributors: `composer analyse` passes on PHP 8.5.** The OCR
+  tests' Tesseract stand-in allows for `$argv` being unset, which
+  PHPStan on 8.5 reported as an error (K226).
+
 ## [3.21.15] — 2026-11-18
 
 Phase 54.19: **Windows and the test runs from the known-issues log**

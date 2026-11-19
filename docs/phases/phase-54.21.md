@@ -5,7 +5,7 @@ their keys without the server's `openssl.cnf`, the test-bootstrap, session
 secret, scheduler and rollback tests pass on Windows, and an empty locale
 no longer reads as the server's own region.*
 
-Status: 📋 planned · releases the next patch release (**v3.21.16** if it ships before 54.20) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.16**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.19](phase-54.19.md), the last
 known-issues batch. It takes K220 to K225, all found by Phase 54.19's
@@ -112,6 +112,17 @@ for 54.20.
   wrong: there is no child. Not chosen: removing whitespace in this one
   assertion, which leaves every other phinx message open to the same
   wrap (2).
+- **K226 (#648, found while building):** `composer analyse` fails on
+  PHP 8.5 with "Variable $argv might not be defined" in
+  `tests/Fixtures/ocr/fake-tesseract.php`, a line from Phase 54.19; CI
+  runs PHPStan on 8.4, where it passes. The owner chose to fix it here:
+  the stand-in reads `$argv ?? []`. Not chosen: recording it for a
+  later batch.
+- **The native Windows check (54.21.4, decided 2026-11-19):** it can't be
+  run from the Mac that built the phase, so the pull request opens with
+  54.21.4 unticked and the owner runs it on Windows before the merge
+  review; K221, K222 and K224 stay *Scheduled* until it passes. Not
+  chosen: holding the pull request until the run is done.
 - **Release (#643):** on its own as the next patch release (v3.21.16 if
   it ships before 54.20, which would otherwise take it). Not chosen: with
   the next releasing phase.
@@ -120,48 +131,60 @@ for 54.20.
 
 ### 54.21.0 Start of phase
 
-- [ ] Read `open-questions.md` and the *Open* and *Scheduled* rows of
+- [x] Read `open-questions.md` and the *Open* and *Scheduled* rows of
       `known-issues.md` (CLAUDE.md §12). #643 to #647 were decided when
       the phase was planned; check that none still open bears on these
       rows, and whether 54.20 has shipped (it decides this release's
-      number).
+      number). *Done 2026-11-19:* none of those still open (#221, #390,
+      #391, #460, #462, #537–#542, #551) bears on K220 to K225. The
+      *Open* rows are K145, K174, K201 and K209, each out of scope as
+      above. 54.20 has no file or ROADMAP row yet, so this release is
+      **v3.21.16**.
 
 ### 54.21.1 Signing keys without the server's openssl.cnf (K220)
 
-- [ ] `tests/Fixtures/openssl.cnf` and one shared path for it in
+- [x] `tests/Fixtures/openssl.cnf` and one shared path for it in
       `tests/Support` (#644); `FakeIdentityProvider::rsa()`, `::ec()` and
-      `HeaderSignInTest`'s key pass it as `'config'`.
-- [ ] Regression test: a child PHP started with
+      `HeaderSignInTest`'s key pass it as `'config'`. The helper is
+      `Logbook\Tests\Support\TestKeys` (`rsa()`, `ec()`, `CONFIG`).
+- [x] Regression test: a child PHP started with
       `OPENSSL_CONF=/nonexistent` makes an RSA and an EC key through the
       shared helper (fails today: `openssl_pkey_new()` returns false, as
-      it does on macOS with that variable set).
+      it does on macOS with that variable set). `TestKeysTest`; without
+      `'config'` it fails with "openssl could not make an RSA key".
 
 ### 54.21.2 An empty locale has no region (K223)
 
-- [ ] `Support\I18n\Region::of()`: null when `trim($locale) === ''`
+- [x] `Support\I18n\Region::of()`: null when `trim($locale) === ''`
       (#645), with the docblock naming K223.
-- [ ] Regression test (`tests/Unit/Support/I18n/RegionTest`): with
+- [x] Regression test (`tests/Unit/Support/I18n/RegionTest`): with
       `Locale::setDefault('en_GB')`, `Region::of('')` and `Region::of('  ')`
       are null and `PlateStyle::forLocale('')` is `Neutral`; `en_GB`
       still gives `GB` and `en` null; the default is put back after (fails
-      today on any OS).
-- [ ] spec §7.14 already says it (#645); CHANGELOG under *Fixed*.
+      today on any OS). Without the fix it fails: "Failed asserting that
+      'GB' is null".
+- [x] spec §7.14 already says it (#645); CHANGELOG under *Fixed*.
 
 ### 54.21.3 The tests that fail on native Windows (K221, K222, K224, K225)
 
-- [ ] `TestBootstrapTest`: `proc_open()` with an argument array and
+- [x] `TestBootstrapTest`: `proc_open()` with an argument array and
       `getenv()` plus the three variables, no shell (K221).
-- [ ] `SessionSecretFileTest`: the `0600` check skipped on Windows only
+- [x] `SessionSecretFileTest`: the `0600` check skipped on Windows only
       (K222).
-- [ ] `JobsPagesTest`: expect `SchedulerHealth::cronLine()`, HTML-escaped
+- [x] `JobsPagesTest`: expect `SchedulerHealth::cronLine()`, HTML-escaped
       (#646); new `SchedulerHealthTest` for a plain path, one with a
       space and a `C:\` path (K224).
-- [ ] `tests/Support/Migrator::run()`: `COLUMNS=1000` while phinx runs,
+- [x] `tests/Support/Migrator::run()`: `COLUMNS=1000` while phinx runs,
       restored after (#647). Regression test: with `COLUMNS=40` set first,
       the refused rollback's message still contains
       `bin/export-user.php` (fails today: `COLUMNS=40 vendor/bin/phpunit
       --filter testRollingBackWorksWithOneUserAndIsRefusedWithTwo` fails
-      on macOS) (K225).
+      on macOS) (K225). The regression test is
+      `UsersAndSharingMigrationTest::testTheRefusalIsReadWholeOnANarrowConsole`;
+      without the fix it fails with the message split over lines.
+
+- [x] `tests/Fixtures/ocr/fake-tesseract.php` reads `$argv ?? []`,
+      so `composer analyse` passes on PHP 8.5 (K226, #648).
 
 ### 54.21.4 Checked on native Windows
 
@@ -173,14 +196,15 @@ for 54.20.
 ### 54.21.5 Finish
 
 - [ ] Known-issues rows K220 to K225 *Fixed* (Phase 54.21); #644 to #647
-      marked as built.
+      marked as built. *So far:* K220, K223, K225 and K226 *Fixed*;
+      K221, K222 and K224 wait for 54.21.4; #644 to #648 built.
 - [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION, CHANGELOG and README status for the next patch release
+- [x] VERSION, CHANGELOG and README status for the next patch release
       (#643): 3.21.16 unless 54.20 has taken it.
 - [ ] Tag the release once merged.
 
@@ -219,3 +243,7 @@ for 54.20.
   the console's width (K225)?** *Decided 2026-11-19:* (1)
   `Migrator::run()` sets a wide `COLUMNS` while phinx runs and restores
   it. Not chosen: removing whitespace in that one assertion (2).
+- **#648 — `composer analyse` fails on PHP 8.5 over the OCR stand-in's
+  `$argv` (K226, found while building).** *Decided 2026-11-19:* (1) fix
+  it in this phase: the stand-in reads `$argv ?? []`. Not chosen:
+  recording it for a later batch (2).

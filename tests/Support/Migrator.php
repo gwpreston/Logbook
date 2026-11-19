@@ -11,7 +11,8 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
- * Runs Phinx commands against the `testing` environment in-process.
+ * Runs Phinx commands against the `testing` environment in-process, with a console wide enough
+ * that phinx never wraps a message (Phase 54.21, K225, #647).
  */
 final class Migrator
 {
@@ -31,7 +32,16 @@ final class Migrator
             '--no-interaction' => true,
         ] + $options);
 
-        $exitCode = $application->run($input, $output);
+        // Symfony Console wraps phinx's messages at the console's width, read from COLUMNS first;
+        // a narrow terminal would split a message the tests look for, so it is wide while phinx
+        // runs and put back after (unset again if it was unset).
+        $columns = getenv('COLUMNS');
+        putenv('COLUMNS=1000');
+        try {
+            $exitCode = $application->run($input, $output);
+        } finally {
+            putenv($columns === false ? 'COLUMNS' : 'COLUMNS=' . $columns);
+        }
         $text = $output->fetch();
 
         if ($exitCode !== 0) {

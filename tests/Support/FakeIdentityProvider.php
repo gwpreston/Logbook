@@ -315,10 +315,7 @@ final class FakeIdentityProvider
      */
     private static function rsa(): array
     {
-        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
-        if ($key === false) {
-            throw new RuntimeException('openssl could not make an RSA key');
-        }
+        $key = TestKeys::rsa();
         $details = openssl_pkey_get_details($key);
         assert(is_array($details) && is_array($details['rsa'] ?? null));
 
@@ -336,10 +333,7 @@ final class FakeIdentityProvider
      */
     private static function ec(): array
     {
-        $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
-        if ($key === false) {
-            throw new RuntimeException('openssl could not make an EC key');
-        }
+        $key = TestKeys::ec();
         $details = openssl_pkey_get_details($key);
         assert(is_array($details) && is_array($details['ec'] ?? null));
 

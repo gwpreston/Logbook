@@ -13,7 +13,9 @@
 
 declare(strict_types=1);
 
-$args = array_slice($argv, 1);
+// `?? []` because PHPStan on PHP 8.5 reports $argv as possibly undefined (Phase 54.21, K226,
+// #648); the launchers always start this script from the command line, where it is set.
+$args = array_slice($argv ?? [], 1);
 $mode = (string) getenv('FAKE_TESSERACT_MODE');
 $mode = $mode === '' ? 'ok' : $mode;
 

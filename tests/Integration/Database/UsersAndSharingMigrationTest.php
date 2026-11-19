@@ -107,6 +107,30 @@ final class UsersAndSharingMigrationTest extends AppTestCase
         self::assertEquals(1, $this->connection($app)->fetchOne('SELECT COUNT(*) FROM users'), 'the user stays');
     }
 
+    /**
+     * K225 (Phase 54.21, #647): phinx's refusal is read whole however narrow the console is, and
+     * the console's width is put back after.
+     */
+    public function testTheRefusalIsReadWholeOnANarrowConsole(): void
+    {
+        $app = $this->createApp();
+        $this->resetDatabase($app);
+        $this->createOwner($app);
+        $this->createMember($app, 'partner');
+
+        $columns = getenv('COLUMNS');
+        putenv('COLUMNS=40');
+        try {
+            Migrator::run('rollback', ['--target' => self::BEFORE]);
+            self::fail('rolling back with two users must be refused');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('bin/export-user.php', $e->getMessage());
+            self::assertSame('40', getenv('COLUMNS'), 'the width is put back');
+        } finally {
+            putenv($columns === false ? 'COLUMNS' : 'COLUMNS=' . $columns);
+        }
+    }
+
     public function testUpgradingARealGarageChangesNothingVisible(): void
     {
         $app = $this->createApp();
