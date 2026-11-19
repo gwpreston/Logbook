@@ -39,7 +39,11 @@ final class SessionSecretFileTest extends AppTestCase
         self::assertSame(SessionSecretFile::GENERATED, $this->service($app, SessionSecretFile::class)->ensure());
         $secret = trim((string) file_get_contents($this->file));
         self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $secret);
-        self::assertSame('0600', substr(sprintf('%o', fileperms($this->file)), -4), 'readable only by its owner');
+        // Windows has no owner-only mode bits (the file's ACL protects it there), so the mode is
+        // checked everywhere else only (Phase 54.21, K222).
+        if (PHP_OS_FAMILY !== 'Windows') {
+            self::assertSame('0600', substr(sprintf('%o', fileperms($this->file)), -4), 'readable only by its owner');
+        }
 
         $settings = Kernel::settings(['SESSION_SECRET' => '', 'SESSION_SECRET_FILE' => $this->file]);
         self::assertSame($secret, $settings->sessionSecret);

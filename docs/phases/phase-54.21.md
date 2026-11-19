@@ -156,19 +156,21 @@ for 54.20.
 
 ### 54.21.3 The tests that fail on native Windows (K221, K222, K224, K225)
 
-- [ ] `TestBootstrapTest`: `proc_open()` with an argument array and
+- [x] `TestBootstrapTest`: `proc_open()` with an argument array and
       `getenv()` plus the three variables, no shell (K221).
-- [ ] `SessionSecretFileTest`: the `0600` check skipped on Windows only
+- [x] `SessionSecretFileTest`: the `0600` check skipped on Windows only
       (K222).
-- [ ] `JobsPagesTest`: expect `SchedulerHealth::cronLine()`, HTML-escaped
+- [x] `JobsPagesTest`: expect `SchedulerHealth::cronLine()`, HTML-escaped
       (#646); new `SchedulerHealthTest` for a plain path, one with a
       space and a `C:\` path (K224).
-- [ ] `tests/Support/Migrator::run()`: `COLUMNS=1000` while phinx runs,
+- [x] `tests/Support/Migrator::run()`: `COLUMNS=1000` while phinx runs,
       restored after (#647). Regression test: with `COLUMNS=40` set first,
       the refused rollback's message still contains
       `bin/export-user.php` (fails today: `COLUMNS=40 vendor/bin/phpunit
       --filter testRollingBackWorksWithOneUserAndIsRefusedWithTwo` fails
-      on macOS) (K225).
+      on macOS) (K225). The regression test is
+      `UsersAndSharingMigrationTest::testTheRefusalIsReadWholeOnANarrowConsole`;
+      without the fix it fails with the message split over lines.
 
 ### 54.21.4 Checked on native Windows
 

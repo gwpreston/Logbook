@@ -19,17 +19,26 @@ final class TestBootstrapTest extends TestCase
         self::assertIsString($database);
         file_put_contents($database, 'not touched');
 
-        $command = sprintf(
-            'APP_ENV=development DB_DRIVER=sqlite DB_NAME=%s %s %s 2>&1',
-            escapeshellarg($database),
-            escapeshellarg(PHP_BINARY),
-            escapeshellarg(dirname(__DIR__, 2) . '/bootstrap.php'),
+        // An argument array and an environment, no shell: a POSIX `VAR=x command` line doesn't run
+        // on Windows (Phase 54.21, K221). The whole environment with the three laid over it, since a
+        // bare array would replace it and PHP on Windows won't start without SystemRoot.
+        $environment = ['APP_ENV' => 'development', 'DB_DRIVER' => 'sqlite', 'DB_NAME' => $database] + getenv();
+        $process = proc_open(
+            [PHP_BINARY, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'bootstrap.php'],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+            null,
+            $environment,
         );
-        exec($command, $output, $status);
+        self::assertIsResource($process);
+        $output = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
 
         try {
-            self::assertSame(1, $status, implode("\n", $output));
-            self::assertStringContainsString('APP_ENV is not "testing"', implode("\n", $output));
+            self::assertSame(1, $status, $output);
+            self::assertStringContainsString('APP_ENV is not "testing"', $output);
             self::assertFileExists($database);
             self::assertSame('not touched', file_get_contents($database));
         } finally {

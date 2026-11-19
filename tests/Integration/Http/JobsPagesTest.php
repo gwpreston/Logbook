@@ -11,6 +11,7 @@ use Logbook\Kernel;
 use Logbook\Repository\JobRunRepository;
 use Logbook\Service\Jobs\BackupSchedule;
 use Logbook\Service\Jobs\JobSettings;
+use Logbook\Service\Jobs\SchedulerHealth;
 use Logbook\Service\Scheduler\ScheduledTasks;
 use Logbook\Tests\Support\ReminderTestCase;
 use Logbook\Tests\Support\TestBrowser;
@@ -80,7 +81,9 @@ final class JobsPagesTest extends ReminderTestCase
 
         $html = self::body($admin->get('/settings/jobs'));
         self::assertStringContainsString('Reminders aren’t being sent automatically: the scheduler has never run.', $html);
-        $cron = '*/15 * * * * cd ' . Kernel::rootDir() . ' &amp;&amp; php bin/run-scheduled-tasks.php';
+        // The line SchedulerHealth builds, as the page escapes it: its folder is quoted when the
+        // install's path needs it (a Windows path, a space), so the test doesn't copy the rule (K224, #646).
+        $cron = htmlspecialchars($this->service($app, SchedulerHealth::class)->cronLine(), ENT_QUOTES);
         self::assertStringContainsString($cron, $html);
         self::assertStringContainsString('/settings/jobs', self::body($admin->get('/settings')), 'linked from Settings');
 
