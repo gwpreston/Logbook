@@ -5,7 +5,7 @@ their keys without the server's `openssl.cnf`, the test-bootstrap, session
 secret, scheduler and rollback tests pass on Windows, and an empty locale
 no longer reads as the server's own region.*
 
-Status: 🚧 in progress · releases the next patch release (**v3.21.16** if it ships before 54.20) · file lives in `docs/phases/`
+Status: 🚧 in progress · releases **v3.21.16**, a patch release · file lives in `docs/phases/`
 
 This is the batch after [Phase 54.19](phase-54.19.md), the last
 known-issues batch. It takes K220 to K225, all found by Phase 54.19's
@@ -112,6 +112,17 @@ for 54.20.
   wrong: there is no child. Not chosen: removing whitespace in this one
   assertion, which leaves every other phinx message open to the same
   wrap (2).
+- **K226 (#648, found while building):** `composer analyse` fails on
+  PHP 8.5 with "Variable $argv might not be defined" in
+  `tests/Fixtures/ocr/fake-tesseract.php`, a line from Phase 54.19; CI
+  runs PHPStan on 8.4, where it passes. The owner chose to fix it here:
+  the stand-in reads `$argv ?? []`. Not chosen: recording it for a
+  later batch.
+- **The native Windows check (54.21.4, decided 2026-11-19):** it can't be
+  run from the Mac that built the phase, so the pull request opens with
+  54.21.4 unticked and the owner runs it on Windows before the merge
+  review; K221, K222 and K224 stay *Scheduled* until it passes. Not
+  chosen: holding the pull request until the run is done.
 - **Release (#643):** on its own as the next patch release (v3.21.16 if
   it ships before 54.20, which would otherwise take it). Not chosen: with
   the next releasing phase.
@@ -172,6 +183,9 @@ for 54.20.
       `UsersAndSharingMigrationTest::testTheRefusalIsReadWholeOnANarrowConsole`;
       without the fix it fails with the message split over lines.
 
+- [x] `tests/Fixtures/ocr/fake-tesseract.php` reads `$argv ?? []`,
+      so `composer analyse` passes on PHP 8.5 (K226, #648).
+
 ### 54.21.4 Checked on native Windows
 
 - [ ] A native `composer test` on Windows (PHP 8.5 from WinGet, as 54.19's
@@ -182,14 +196,15 @@ for 54.20.
 ### 54.21.5 Finish
 
 - [ ] Known-issues rows K220 to K225 *Fixed* (Phase 54.21); #644 to #647
-      marked as built.
+      marked as built. *So far:* K220, K223, K225 and K226 *Fixed*;
+      K221, K222 and K224 wait for 54.21.4; #644 to #648 built.
 - [ ] CHANGELOG [Unreleased]; spec §13; ROADMAP status.
 - [ ] Merge review; merge. (After the pull request; merge as a merge
       commit, not a squash.)
 
 ### Release
 
-- [ ] VERSION, CHANGELOG and README status for the next patch release
+- [x] VERSION, CHANGELOG and README status for the next patch release
       (#643): 3.21.16 unless 54.20 has taken it.
 - [ ] Tag the release once merged.
 
@@ -228,3 +243,7 @@ for 54.20.
   the console's width (K225)?** *Decided 2026-11-19:* (1)
   `Migrator::run()` sets a wide `COLUMNS` while phinx runs and restores
   it. Not chosen: removing whitespace in that one assertion (2).
+- **#648 — `composer analyse` fails on PHP 8.5 over the OCR stand-in's
+  `$argv` (K226, found while building).** *Decided 2026-11-19:* (1) fix
+  it in this phase: the stand-in reads `$argv ?? []`. Not chosen:
+  recording it for a later batch (2).
