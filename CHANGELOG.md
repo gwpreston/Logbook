@@ -6,6 +6,14 @@ is called out explicitly.
 
 ## [Unreleased]
 
+### Fixed
+- **An account with no language set no longer takes the server's country.**
+  When an account's locale was empty, Logbook read the country from the
+  server's own default locale, so on a server set to British English it
+  got the UK plate, MOT rules, UK gallon, April tax year and HMRC mileage
+  rates whatever the owner wanted. An empty locale now has no country, as
+  a locale without one (`en`, `de`) already did (K223).
+
 ## [3.21.15] — 2026-11-18
 
 Phase 54.19: **Windows and the test runs from the known-issues log**

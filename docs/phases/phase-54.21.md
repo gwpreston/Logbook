@@ -144,14 +144,15 @@ for 54.20.
 
 ### 54.21.2 An empty locale has no region (K223)
 
-- [ ] `Support\I18n\Region::of()`: null when `trim($locale) === ''`
+- [x] `Support\I18n\Region::of()`: null when `trim($locale) === ''`
       (#645), with the docblock naming K223.
-- [ ] Regression test (`tests/Unit/Support/I18n/RegionTest`): with
+- [x] Regression test (`tests/Unit/Support/I18n/RegionTest`): with
       `Locale::setDefault('en_GB')`, `Region::of('')` and `Region::of('  ')`
       are null and `PlateStyle::forLocale('')` is `Neutral`; `en_GB`
       still gives `GB` and `en` null; the default is put back after (fails
-      today on any OS).
-- [ ] spec §7.14 already says it (#645); CHANGELOG under *Fixed*.
+      today on any OS). Without the fix it fails: "Failed asserting that
+      'GB' is null".
+- [x] spec §7.14 already says it (#645); CHANGELOG under *Fixed*.
 
 ### 54.21.3 The tests that fail on native Windows (K221, K222, K224, K225)
 

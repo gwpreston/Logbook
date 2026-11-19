@@ -14,10 +14,17 @@ use ResourceBundle;
 final class Region
 {
     /**
-     * Upper case, or null when the locale names none.
+     * Upper case, or null when the locale names none. An empty or blank locale names none
+     * (spec.md §7.14, Phase 54.21, K223, #645): it is answered before ICU is asked, because ICU
+     * reads an empty locale as the server's default, so a server set to `en_GB` would otherwise
+     * give every such user the UK plate, MOT rules, gallon, tax year and mileage rates.
      */
     public static function of(string $locale): ?string
     {
+        if (trim($locale) === '') {
+            return null;
+        }
+
         $region = Locale::getRegion($locale);
 
         return is_string($region) && $region !== '' ? strtoupper($region) : null;
