@@ -4993,6 +4993,11 @@ Ship the framework so translations are easy to add; do not hard-code strings.
 - Tests keep it honest: every key used in templates and PHP exists in the
   English catalogue; every other catalogue uses only English keys with the
   same ICU placeholders. How to add a language: `docs/translations.md`.
+- A locale's region is its own (`en_GB` → GB), read in one place
+  (`Support\I18n\Region::of()`); a locale with no region (`en`, `de`)
+  and an empty or blank one have none, whatever the server's default
+  locale, since ICU would otherwise answer with the default's region
+  (Phase 54.21, K223, #645).
 
 ### 7.15 Installable app (PWA)
 - A web app manifest (`/manifest.webmanifest`) and service worker
@@ -11515,7 +11520,11 @@ Real environment variables override `.env`; an empty value counts as unset.
   second run doesn't stop in the 2.0 rollback (Phase 54.19, K211). The
   OCR tests' Tesseract stand-in is a PHP script with an `sh` launcher
   and a `.cmd` launcher, picked by OS, so they pass natively on Windows
-  (Phase 54.19, K212, #636).
+  (Phase 54.19, K212, #636). The tests make their signing keys with
+  their own minimal `tests/Fixtures/openssl.cnf`, so they pass where PHP
+  finds no OpenSSL configuration, as on a WinGet PHP (Phase 54.21, K220,
+  #644), and run phinx with `COLUMNS` set wide, so its messages aren't
+  wrapped at the console's width (Phase 54.21, K225, #647).
 
 ---
 
@@ -12885,6 +12894,16 @@ task breakdowns live in the per-phase files; this is the map.
   run closes K185 (#638) and records K220–K225. Releases v3.21.15
   (#634). No migration.
   See [`phase-54.19.md`](docs/phases/phase-54.19.md).
+- **Phase 54.21 — The native Windows test run from the known-issues log
+  + patch release** (planned). The signing-key tests pass their own
+  minimal `openssl.cnf`, so they run where PHP finds none (§9, K220,
+  #644); `TestBootstrapTest` sets its variables without a shell (K221);
+  `SessionSecretFileTest` checks the `0600` mode only where the OS has it
+  (K222); an empty or blank locale has no region on any server (§7.14,
+  K223, #645); `JobsPagesTest` expects the cron line the page builds
+  (K224, #646); the test migrator runs phinx at a wide console
+  width (§9, K225, #647). Releases the next patch release (#643). No
+  migration. See [`phase-54.21.md`](docs/phases/phase-54.21.md).
 
 ---
 

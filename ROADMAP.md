@@ -151,6 +151,7 @@ Legend: ✅ complete · 🚧 in progress · 📋 planned
 | [54.17](docs/phases/phase-54.17.md) | Chart tables, stat tiles and the test runs from the known-issues log + patch release | ✅ |
 | [54.18](docs/phases/phase-54.18.md) | Telling same-named vehicles apart from the known-issues log + patch release | ✅ |
 | [54.19](docs/phases/phase-54.19.md) | Windows and the test runs from the known-issues log + patch release | ✅ |
+| [54.21](docs/phases/phase-54.21.md) | The native Windows test run from the known-issues log + patch release | 📋 |
 
 *Update the status column as each phase lands.*
 
@@ -2096,6 +2097,25 @@ K185 is checked and closed.*
   v3.21.15 (#634). No migration.
 
 → [`phase-54.19.md`](docs/phases/phase-54.19.md)
+
+---
+
+## Phase 54.21 — The native Windows test run from the known-issues log + patch release
+
+*Six open rows closed: the tests that failed on 54.19's native Windows
+run pass there, and an empty locale no longer reads as the server's own
+region.*
+
+- The signing-key tests bring their own minimal `openssl.cnf` (K220,
+  #644); the test-bootstrap, session-secret, scheduler and rollback tests
+  stop assuming a POSIX shell, mode bits, an unquoted path or a wide
+  console (K221, K222, K224, #646, K225, #647).
+- `Region::of()` gives no region for an empty or blank locale, whatever
+  the server's default locale (K223, #645).
+- Numbered 54.21 because 54.20 is promised to the same-name labels work.
+  Releases the next patch release (#643). No migration.
+
+→ [`phase-54.21.md`](docs/phases/phase-54.21.md)
 
 ---
 
